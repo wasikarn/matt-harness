@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Pre-commit gate for the kbg-harness plugin repo.
+#
+# This repo is the single source of truth for the harness fleet (agents/,
+# skills/, commands/, hooks/, scripts/, output-styles/, themes/) — the flat
+# (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
+# Validates staged files before they land:
+#   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
+#   2. **/*.json          → jq -e (parses cleanly)
+#   3. {agents,skills,commands,hooks}/* staged → harness-audit ecosystem
+#      health check, blocking on CRITICAL findings only (broken symlink,
+#      missing frontmatter, name/dir mismatch, syntax error). Warnings (drift,
+#      style) are surfaced but do NOT block — often intentional mid-edit.
+#   4. hooks/*.{sh,py} staged → critical-hooks behavioral smoke tests
+#      (the enforcement gates + journal/observability scripts), asserting each
+#      still emits its expected permissionDecision / output. Catches logic
+#      regressions that bash -n / shellcheck can't: a gate that stops denying
+#      but still parses cleanly. The suite depends on scripts/ (governance-
+#      summary, verification-tier-audit, recursive-improve-observe), which live
+#      in this repo — so it runs green here.
+#
+# Wired via: git config core.hooksPath git-hooks
+# Bypass:    git commit --no-verify  (use only when you know why)
+
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
+
+fail=0
+
+if [ "${#STAGED[@]}" -gt 0 ]; then
+  for f in "${STAGED[@]}"; do
+    [ -f "$f" ] || continue
+
+    if [[ "$f" == hooks/*.sh ]]; then
+      if ! bash -n "$f" 2>&1; then
+        echo "  bash syntax error: $f" >&2
+        fail=1
+      fi
+      if ! shellcheck --severity=warning "$f"; then
+        echo "  shellcheck failed: $f" >&2
+        fail=1
+      fi
+    fi
+
+    if [[ "$f" == *.json ]]; then
+      if ! jq -e . "$f" >/dev/null 2>&1; then
+        echo "  invalid JSON: $f" >&2
+        fail=1
+      fi
+    fi
+  done
+fi
+
+# 3. Ecosystem health — run harness-audit only when a fleet artifact is staged
+#    (scoped so doc-only commits aren't slowed). Block on CRITICAL findings
+#    only; warnings are advisory. Prefer the in-repo audit (validates the
+#    version being committed); fall back to the installed copy.
+ecosystem_staged=0
+for f in "${STAGED[@]}"; do
+  case "$f" in
+    agents/*|skills/*|commands/*|hooks/*)
+      ecosystem_staged=1; break ;;
+  esac
+done
+
+if [ "$ecosystem_staged" -eq 1 ]; then
+  AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
+  [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
+  if [ -f "$AUDIT" ]; then
+    # Pass the repo root explicitly so audit's layout detection resolves to
+    # this repo (it FATALs if no fleet is found).
+    audit_out="$(bash "$AUDIT" "$ROOT" 2>&1)"
+    crit_n="$(printf '%s\n' "$audit_out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
+    if [ -z "$crit_n" ]; then
+      # No "Critical:" summary line → audit crashed / FATAL. Fail loud (Rule 12)
+      # rather than treat an aborted audit as a clean pass.
+      echo "  harness-audit did not complete (no summary) — run: bash $AUDIT" >&2
+      printf '%s\n' "$audit_out" | tail -3 >&2
+      fail=1
+    elif [ "$crit_n" -gt 0 ]; then
+      printf '%s\n' "$audit_out" | grep 'CRIT' >&2
+      echo "  harness-audit: $crit_n critical ecosystem issue(s) above" >&2
+      fail=1
+    fi
+  fi
+fi
+
+# 4. Behavioral gates — when a hook script changes, run the enforcement-gate
+#    smoke tests. bash -n / shellcheck above catch syntax + style, but NOT a
+#    logic regression that silently stops a gate from denying. The suite
+#    asserts each gate's emitted permissionDecision, catching that class.
+#    Scoped to hook edits; exits non-zero on any failure → fail loud.
+hooks_staged=0
+for f in "${STAGED[@]}"; do
+  case "$f" in
+    hooks/*.sh|hooks/*.py) hooks_staged=1; break ;;
+  esac
+done
+
+if [ "$hooks_staged" -eq 1 ]; then
+  TESTS="$ROOT/hooks/tests/test-critical-hooks.sh"
+  if [ -f "$TESTS" ]; then
+    if ! test_out="$(bash "$TESTS" 2>&1)"; then
+      printf '%s\n' "$test_out" | grep -E '❌|FAIL' >&2
+      echo "  critical-hooks tests failed — run: bash $TESTS" >&2
+      fail=1
+    fi
+  fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit blocked. Fix issues above, or bypass with: git commit --no-verify" >&2
+  exit 1
+fi
+
+exit 0
