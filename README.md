@@ -7,7 +7,7 @@ subagents, workflow skills, slash commands, governance hooks, always-on doctrine
 ## Install
 
 ```
-/plugin marketplace add BIG-TATHEP/kbg-harness
+/plugin marketplace add wasikarn/kbg-harness
 /plugin install kbg@kobig
 ```
 

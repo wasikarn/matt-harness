@@ -46,6 +46,6 @@ standalone, self-contained Claude Code plugin (`.claude-plugin/{plugin,marketpla
 
 ### Notes
 
-- Not published to a public marketplace. Distribution is private (`BIG-TATHEP/kbg-harness`).
+- Not published to a public marketplace. Distribution is private (`wasikarn/kbg-harness`).
 - Best-effort maintenance; no support SLA or backwards-compatibility guarantee pre-`1.0.0`. Fork to
   customize.
