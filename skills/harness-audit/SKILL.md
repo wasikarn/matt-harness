@@ -69,6 +69,19 @@ INFO:
 Exit: 2
 ```
 
+## Plugin delivery (F1 is plugin-aware)
+
+When `kbg@kobig` is enabled and its plugin cache is populated
+(`~/.claude/plugins/cache/kobig/kbg/0.1.0/{agents,skills,commands,hooks,output-styles}/`),
+F1 ("not symlinked to `~/.claude/…`") treats plugin-delivered components as
+loadable and does **not** fire — Claude Code resolves them via
+`${CLAUDE_PLUGIN_ROOT}` at runtime, not via a symlink. The audit emits an
+`INFO` line confirming plugin-mode is active. Components that are neither
+symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
+The cache path can be overridden with `--plugin-cache <path>` (used by the
+test fixtures in `tests/fixtures/`, which point at fake caches so the F1
+check is exercised without a live install).
+
 ## Integration
 
 Run in CI, pre-commit, or after any fleet change:

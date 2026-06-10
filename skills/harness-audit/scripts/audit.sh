@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 # audit.sh — automated health check for the custom Claude Code ecosystem.
-# Usage: bash audit.sh [<repo-root>]
+# Usage: bash audit.sh [<repo-root>] [--plugin-cache <path>]
 # Exit code = number of findings (0 = clean).
 set -uo pipefail
 
-# cd -P resolves the ~/.claude/skills/harness-audit symlink to its source
-# checkout; plain cd would walk '..' up from $HOME and find no fleet dir.
-REPO_ROOT="${1:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
+# Parse args. Positional [<repo-root>] first; optional --plugin-cache <path>
+# second. Keep backward-compat: a single arg is treated as repo-root (the old
+# call shape `bash audit.sh <repo>` still works).
+REPO_ROOT=""
+PLUGIN_CACHE_ARG=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --plugin-cache) PLUGIN_CACHE_ARG="${2:-}"; shift 2 ;;
+    --plugin-cache=*) PLUGIN_CACHE_ARG="${1#--plugin-cache=}"; shift ;;
+    *) [ -z "$REPO_ROOT" ] && REPO_ROOT="$1"; shift ;;
+  esac
+done
+REPO_ROOT="${REPO_ROOT:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
 # Layout: dotfiles nests the harness under claude/; the extracted kbg-harness
 # plugin repo is flat (agents/, skills/, … at the root). Resolve CLAUDE_DIR to
 # whichever holds the fleet so one audit.sh serves both checkouts.
@@ -50,6 +60,39 @@ if [ -f "$LOCK_FILE" ] && command -v jq >/dev/null 2>&1; then
   while IFS= read -r s; do LOCKED_SKILLS+=("$s"); done < <(jq -r '.skills | keys[]' "$LOCK_FILE")
 fi
 
+# Plugin delivery (kbg-cutover 2026-06-11). The kbg@kobig plugin installs
+# agents/skills/commands/hooks/output-styles into the user-scope plugin cache
+# (default ~/.claude/plugins/cache/kobig/kbg/0.1.0/) and Claude Code loads
+# them from there at runtime — NO symlink into ~/.claude/ is created. Without
+# this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
+# plugin-delivered component as a false positive (62 CRITs on kbg-harness).
+# --plugin-cache <path> overrides the default for testing (see tests/fixtures/).
+PLUGIN_CACHE="${PLUGIN_CACHE_ARG:-$HOME/.claude/plugins/cache/kobig/kbg/0.1.0}"
+PLUGIN_ACTIVE=0
+if [ -d "$PLUGIN_CACHE/agents" ] || [ -d "$PLUGIN_CACHE/skills" ] || \
+   [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ]; then
+  PLUGIN_ACTIVE=1
+fi
+# is_plugin_delivered <kind> <name> — returns 0 if a component named <name>
+# of kind <kind> (skills|agents|commands|hooks|output-styles) is present in
+# the plugin cache. Kinds map to cache subdirs: skills/<name>/SKILL.md,
+# agents/<name>.md, commands/<name>.md, hooks/<name>, output-styles/<name>.md.
+# Skills: a skill is a directory containing SKILL.md, so test the dir+file.
+# Hooks: a hook is a single file (.sh or .py), so test the file directly.
+# Agents/commands/output-styles: a single .md file.
+is_plugin_delivered() {
+  local kind="$1"
+  local name="$2"
+  case "$kind" in
+    skills)        [ -f "$PLUGIN_CACHE/skills/$name/SKILL.md" ] ;;
+    agents)        [ -f "$PLUGIN_CACHE/agents/$name.md" ] ;;
+    commands)      [ -f "$PLUGIN_CACHE/commands/$name.md" ] ;;
+    hooks)         [ -f "$PLUGIN_CACHE/hooks/$name" ] ;;
+    output-styles) [ -f "$PLUGIN_CACHE/output-styles/$name.md" ] ;;
+    *) return 1 ;;
+  esac
+}
+
 id_counter=1
 next_id() {
   local prefix="$1"
@@ -76,6 +119,9 @@ SKILLS=$(ls -d "$CLAUDE_DIR/skills"/[!_]*/ 2>/dev/null | wc -l | tr -d ' ')  # [
 COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
 HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh "$CLAUDE_DIR/hooks"/*.py 2>/dev/null | wc -l | tr -d ' ')
 echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
+if [ "$PLUGIN_ACTIVE" -eq 1 ]; then
+  info "Plugin: kbg@kobig cache detected at $PLUGIN_CACHE — F1 treats plugin-delivered components as loadable"
+fi
 echo ""
 
 # 2. Symlink integrity — skills
@@ -93,7 +139,7 @@ for d in "$CLAUDE_DIR/skills"/*/; do
   for locked in "${LOCKED_SKILLS[@]:-}"; do
     [ "$name" = "$locked" ] && continue 2
   done
-  if [ ! -L "$HOME/.claude/skills/$name" ]; then
+  if [ ! -L "$HOME/.claude/skills/$name" ] && ! is_plugin_delivered skills "$name"; then
     crit "skill '$name' not symlinked to ~/.claude/skills/"
   fi
 done
@@ -110,12 +156,17 @@ for f in "$CLAUDE_DIR/hooks"/*; do
   # *.md = co-located docs (JOURNAL-SCHEMA.md, the evidence-journal contract) —
   # not registrable hooks; install.sh's {sh,py} glob never symlinks them.
   # *.json = plugin hook registry (hooks/hooks.json), not a hook script.
-  case "$name" in _*.sh|*.md|*.json) continue;; esac
+  # *.bak = editor/backup residue (e.g. hooks.json.test.bak from a hook-test
+  # session), not a real hook — should not be symlinked and not in F1.
+  case "$name" in _*.sh|_*.py|*.md|*.json|*.bak) continue;; esac
   # Plugin-mode hooks are wired in hooks/hooks.json and resolved at runtime via
   # ${CLAUDE_PLUGIN_ROOT}; they are intentionally NOT symlinked into ~/.claude.
-  # Distinguishing mark: present in hooks.json but absent from settings.json.
+  # Distinguishing mark: present in hooks.json but absent from settings.json,
+  # OR present in the kbg@kobig plugin cache (delivery model is plugin-enable,
+  # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
   if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
      && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
+  if is_plugin_delivered hooks "$name"; then continue; fi
   if [ ! -L "$HOME/.claude/hooks/$name" ]; then
     crit "hook '$name' not symlinked to ~/.claude/hooks/"
   fi
@@ -128,14 +179,14 @@ done
 for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
-  if [ ! -L "$HOME/.claude/agents/$name" ]; then
+  if [ ! -L "$HOME/.claude/agents/$name" ] && ! is_plugin_delivered agents "${name%.md}"; then
     crit "agent '$name' not symlinked to ~/.claude/agents/ (not loadable by Claude Code)"
   fi
 done
 for f in "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
-  if [ ! -L "$HOME/.claude/commands/$name" ]; then
+  if [ ! -L "$HOME/.claude/commands/$name" ] && ! is_plugin_delivered commands "${name%.md}"; then
     crit "command '$name' not symlinked to ~/.claude/commands/ (not loadable by Claude Code)"
   fi
 done
@@ -147,7 +198,7 @@ done
 for f in "$CLAUDE_DIR/output-styles"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
-  if [ ! -L "$HOME/.claude/output-styles/$name" ]; then
+  if [ ! -L "$HOME/.claude/output-styles/$name" ] && ! is_plugin_delivered output-styles "${name%.md}"; then
     crit "output-style '$name' not symlinked to ~/.claude/output-styles/ (not loadable by Claude Code)"
   fi
 done
