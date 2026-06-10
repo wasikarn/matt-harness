@@ -16,12 +16,35 @@ Karpathy's llm-wiki **Lint** operation for the memory store: catch the bookkeepi
 ## Run
 
 ```bash
+# Detector mode (default — read-only, exit code = finding count)
 python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py
 # or point at a specific store:
 python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py /path/to/memory
+
+# Action mode (apply the A3 trim rubric — dry-run by default)
+python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py --auto-archive --dry-run
+python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py --auto-archive --yes
 ```
 
 Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean.
+
+## Action mode (`--auto-archive`)
+
+Mechanical fold of verbose/closed entries, codified by the A3 rubric in [[project_memory_trim_session_2026_06_04]]:
+
+- **<2KB delta per session** — never collapse the whole store; trim only the worst
+- **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix
+- **Reversible** — every move is `mv` (never `rm`); collapsed pointers stay grep-able in `_archive/`
+
+| Class | Trigger | Action |
+|---|---|---|
+| **A — stale-superseded** | MEMORY.md pointer has `**SUPERSEDED**` marker + topic has 0 surviving inbound `[[wikilinks]]` | `mv <topic> _archive/<date>/` + collapse pointer to 1-line stub |
+| **B — near-budget-collapse** | MEMORY.md >80% cap + pointer ≥250 chars + topic >5KB + pointer ≥ 1.2x first paragraph | Replace pointer with ~80-char stub + add `supersedes:` note in topic |
+| **C — dangling-link-rewrite** | Surviving file's `[[wikilink]]` resolves to nothing or to `_archive/` | Rewrite `[[X]]` → `[[<ledger>]]` |
+
+Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the prompt (use for CI/scripts). `--json` produces machine-readable output (mode-aware: detector JSON for plain lint, action-plan JSON for `--auto-archive --dry-run`).
+
+For the wrapper skill (`plan` / `apply` / `status` subcommands + before/after size deltas), see [[memory-trim]].
 
 ## Checks
 
@@ -45,3 +68,4 @@ Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`)
 
 - `harness-audit` — same shape for the skill/agent/hook ecosystem (check 13 covers MEMORY.md pointer→file; this covers the reverse + links)
 - `inventory` — lists artifacts; doesn't judge memory health
+- `memory-trim` — wraps action mode with `plan` / `apply` / `status` subcommands + before/after size deltas
