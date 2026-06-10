@@ -1,0 +1,70 @@
+{
+  "skill_name": "backend-dev",
+  "evals": [
+    {
+      "id": "api-hello",
+      "prompt": "Create a Python FastAPI endpoint at /health that returns JSON {\"status\": \"ok\"}. Write a pytest test that calls the endpoint and asserts the response status is 200 and the body matches. Run the test and show the output.",
+      "expected_output": "A FastAPI app with /health endpoint and a passing pytest test",
+      "files": [],
+      "assertions": [
+        {"name": "fastapi_app_exists", "description": "A Python file containing FastAPI app creation exists"},
+        {"name": "test_file_exists", "description": "A pytest test file exists"},
+        {"name": "tests_pass", "description": "pytest output shows at least one passing test"},
+        {"name": "health_endpoint_returns_ok", "description": "The /health endpoint returns JSON with status 'ok'"},
+        {"name": "uses_tdd", "description": "Test file was created before or alongside the implementation file"}
+      ]
+    },
+    {
+      "id": "migration-index",
+      "prompt": "Write a reversible Alembic-style SQL migration (using raw SQL in a Python file) that adds a UNIQUE index on the email column of an existing users table. Include a downgrade that drops the index. The migration should be idempotent.",
+      "expected_output": "A Python migration script with upgrade and downgrade functions using raw SQL",
+      "files": [],
+      "assertions": [
+        {"name": "migration_file_exists", "description": "A Python migration file exists"},
+        {"name": "has_upgrade", "description": "Migration contains an upgrade function or method"},
+        {"name": "has_downgrade", "description": "Migration contains a downgrade function or method"},
+        {"name": "uses_raw_sql", "description": "Migration uses raw SQL strings, not ORM abstractions"},
+        {"name": "idempotent_check", "description": "Migration includes IF NOT EXISTS or similar idempotency guard"}
+      ]
+    },
+    {
+      "id": "error-handling-middleware",
+      "prompt": "Create a Python FastAPI middleware that catches all unhandled exceptions, logs the error with traceback and request path, and returns a JSON response with error_id (UUID) and a user-friendly message. Do NOT leak internal exception details. Write tests that verify: (1) a ValueError is caught and returns 500 with error_id, (2) internal exception message is NOT in the response body, (3) the logger was called with the traceback.",
+      "expected_output": "FastAPI middleware with safe error handling, logging, and passing tests",
+      "files": [],
+      "assertions": [
+        {"name": "middleware_file_exists", "description": "A Python file with middleware implementation exists"},
+        {"name": "catches_unhandled_exceptions", "description": "Middleware catches unhandled exceptions"},
+        {"name": "returns_error_id", "description": "Response contains a UUID error_id"},
+        {"name": "hides_internal_details", "description": "Internal exception message is NOT exposed in response"},
+        {"name": "logs_traceback", "description": "Logger was called with traceback information"}
+      ]
+    },
+    {
+      "id": "rate-limiter-redis",
+      "prompt": "Implement a token-bucket rate limiter in Python using Redis. It should accept a key (e.g. user_id or IP), a capacity (max tokens), and a refill rate (tokens per second). Provide a decorator @rate_limit(key_func, capacity, refill_rate) that can be applied to FastAPI endpoints. Include a test that verifies: (1) requests within capacity succeed, (2) requests exceeding capacity return 429, (3) after waiting for refill, requests succeed again.",
+      "expected_output": "Token-bucket rate limiter with Redis backend and passing tests",
+      "files": [],
+      "assertions": [
+        {"name": "rate_limiter_exists", "description": "A Python file with token-bucket implementation exists"},
+        {"name": "uses_redis", "description": "Implementation uses Redis for state"},
+        {"name": "decorator_provided", "description": "A decorator is provided for easy endpoint application"},
+        {"name": "test_within_capacity", "description": "Requests within capacity succeed"},
+        {"name": "test_exceeds_capacity", "description": "Requests exceeding capacity return 429"},
+        {"name": "test_refill", "description": "After waiting, tokens refill and requests succeed again"}
+      ]
+    },
+    {
+      "id": "db-schema-normalization",
+      "prompt": "Review this denormalized schema and refactor it to 3NF. Current tables: orders (id, customer_name, customer_email, product_name, product_price, quantity, total_amount). Create the normalized tables with proper foreign keys, constraints, and a SQL query that reconstructs the original denormalized view. Write a test that verifies data integrity: inserting a new order correctly populates all related tables and the reconstructed view matches.",
+      "expected_output": "Normalized schema (customers, products, order_items, orders) with FKs and passing integrity test",
+      "files": [],
+      "assertions": [
+        {"name": "normalized_tables_exist", "description": "Separate tables for customers, products, orders, order_items"},
+        {"name": "foreign_keys_defined", "description": "Foreign key constraints are defined"},
+        {"name": "reconstruction_query", "description": "SQL query reconstructs the original denormalized view"},
+        {"name": "data_integrity_test", "description": "Test verifies inserting an order populates all tables correctly"}
+      ]
+    }
+  ]
+}

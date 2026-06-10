@@ -1,0 +1,26 @@
+{
+  "skill_name": "orchestrate",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "competing-tasks-backlog",
+      "prompt": "I have a pile of work on my plate: (1) fix the login bug where users get 500s on /api/auth/refresh, (2) refactor the user service to use the new repository pattern, (3) review PR #123 which adds OAuth2 support, (4) update the README with the new setup instructions, and (5) investigate whether we should move from npm to pnpm. I also need to plan the next sprint. What should I work on and in what order?",
+      "expected_output": "A prioritized allocation with routing decisions (inline vs dispatch vs drop) for each task, using an appropriate matrix, and presenting the plan before dispatching any agents. Should include a verify step before combining outputs. Should not silently drop items.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "eval_name": "incident-plus-maintenance-mix",
+      "prompt": "Production /orders is returning 500s with a NullPointerException in the payment gateway. Meanwhile I also need to refactor auth for readability (it's a 400-line mess), my teammate wants a CSV of last month's signups, and someone asked if we should adopt Turborepo. There are 5 open issues in the sprint: fix the flaky test in auth.spec.js, upgrade lodash because of a security alert, implement dark mode toggle, add rate limiting to the API, and write an ADR for the caching layer. Help me figure out what to do.",
+      "expected_output": "Prioritization should recognize the production incident as urgent+important, security as precedence-requiring, trivial tasks as inline or dropped, and architecture questions as research-first. Should use Eisenhower or Value×Risk matrix appropriately. Should include a verify step before combining outputs.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "sequential-phases-etl",
+      "prompt": "I need to extract data from the production PostgreSQL database, transform it to match the new analytics schema, and load it into BigQuery. I also need to review the new API documentation my teammate wrote, fix the failing CI pipeline on the main branch, and write tests for the data validation logic. How should I approach this?",
+      "expected_output": "Should recognize ETL as sequential pipeline phases, route documentation review to code-reviewer (ungated), CI fix to devops-engineer or inline, tests to test-engineer. Should present a phased plan. Should include a verify step before combining outputs.",
+      "files": []
+    }
+  ]
+}

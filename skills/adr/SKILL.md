@@ -1,0 +1,71 @@
+---
+name: adr
+description: "Draft an Architecture Decision Record when a decision is hard to reverse, surprising without context, or the result of a real trade-off. Use when choosing between frameworks, changing data models, introducing dependencies, or retiring patterns. Do NOT use for: trivial choices (use inline comment), documenting what already exists (use README), or decisions with no alternatives considered."
+disable-model-invocation: true
+---
+
+# ADR
+
+Record decisions that future engineers will need to understand. An ADR is not a victory lap — it's a warning sign and a map.
+
+**When to use:** Framework choices, data model changes, dependency introductions, pattern retirements.
+
+**When NOT to use:** Trivial choices, documenting existing code, decisions with only one viable option.
+
+---
+
+## Procedure
+
+1. **Gate Check** — Confirm 3-condition threshold (METHODOLOGY 3-condition ADR):
+   - Hard to reverse?
+   - Surprising without context?
+   - Result of real trade-off?
+   Any 'no' → STOP. Use comment or README instead.
+
+2. **Gather Context** — Date, deciders, stakeholders consulted, constraints, problem statement. Include the gate check rationale in the Context section so future readers understand why this decision warranted an ADR. When a domain-specific technical conflict disqualifies an option (e.g., long-running transactions incompatible with transaction-mode pooling), explain the mechanism so readers understand the exemption rationale without external knowledge.
+
+3. **Document Alternatives** — List 2–4 seriously considered options (include status quo AND the chosen option). For each: description, pros, cons, risks. The chosen option must appear in the table so readers can compare it side-by-side with rejected options. Be honest about chosen option's downsides.
+
+4. **State Decision** — "We will X." Rationale, consequences, mitigations. State the **revisit trigger**: the one condition that, if it changed, would flip this decision (e.g. "if write throughput exceeds 10k/s, revisit"). A decision with no reversal condition is either trivial or untested.
+
+5. **Write ADR** — Markdown in `docs/adr/` or `adr/`:
+   ```markdown
+   # ADR-NNN: Title
+   - Status: proposed
+   - Date: YYYY-MM-DD
+   - Deciders: @name
+   - Consulted: @name
+   ## Context
+   ## Decision
+   ## Consequences
+   ## Alternatives Considered
+   | Alternative | Pros | Cons | Risks |
+   ## Mitigations
+   ## Revisit Trigger
+   ## Links
+   ```
+   Status = proposed initially. Move to `accepted` only after review.
+
+6. **Review & Accept** — Share with stakeholders. Incorporate feedback. Change status to `accepted`. Notify affected teams.
+
+7. **Maintain** — Mark deprecated/superseded as system evolves. Update constraints or mitigations. Maintain index at `docs/adr/README.md`.
+
+Done.
+
+## Constraints
+
+- Alternatives must be real, not strawmen.
+- Status is truth: proposed → accepted → deprecated → superseded.
+- Write for readers 6 months from now who don't have your context.
+
+## METHODOLOGY
+
+- **Rule 1:** Phase 1 gate exists because over-documenting dilutes signal.
+- **Rule 7:** Surface stakeholder conflicts in the ADR.
+- **Rule 12:** If implementation contradicts accepted ADR, the ADR is wrong — update or deprecate.
+
+## Related
+
+- `/deep-dive` — research before the decision
+- `/feature-dev` — implementing the accepted ADR
+- `/migrate` — when an ADR leads to deprecation and migration

@@ -1,0 +1,15 @@
+runtime: python39
+service: user-api
+
+env_variables:
+  DEBUG: "True"
+  DATABASE_URL: "postgres://admin:supersecretpassword123@db.prod.internal:5432/appdb"
+  SECRET_KEY: "django-insecure-1234567890abcdef"
+  AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+  AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+handlers:
+  - url: /static
+    static_dir: static/
+  - url: /.*
+    script: auto

@@ -1,0 +1,95 @@
+{
+  "skill_name": "review-pr",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "full-review-positive",
+      "prompt": "Please review my current changes before I open a PR. I've been working on the payment module refactor.",
+      "expected_output": "Phase 1 scope: current branch, no PR number, aspect=all (default), dispatch=parallel. Phase 2 pin SHAs: BASE_SHA from merge-base, HEAD_SHA from HEAD. Phase 3 route: code-reviewer always + any conditional agents based on diff. Phase 4 dispatch agents. Phase 5 aggregate into Critical/Important/Minor tiers. Phase 6 present tiered findings with fix-now/fix-later/proceed options. Phase 7 summarize + suggest next steps.",
+      "files": [],
+      "assertions": [
+        {"name": "phase_1_scope_current_branch", "description": "Response sets scope to current branch (no PR number detected)"},
+        {"name": "phase_2_pin_shas", "description": "Response pins BASE_SHA and HEAD_SHA (mentions merge-base or HEAD)"},
+        {"name": "phase_3_routes_code_reviewer", "description": "Response routes code-reviewer (always applicable under all/default aspect)"},
+        {"name": "phase_4_dispatch_mode_parallel", "description": "Response defaults to parallel dispatch (or asks user to choose parallel vs sequential)"},
+        {"name": "phase_5_tier_aggregation", "description": "Response consolidates findings into Critical/Important/Minor tiers"},
+        {"name": "phase_6_user_decision_gate", "description": "Response presents findings and asks fix-now / fix-later / proceed per tier"},
+        {"name": "phase_7_summary_next_steps", "description": "Response summarizes agents dispatched, tier counts, and suggests next steps (/ship-merge, re-run /review-pr, /address-review, code-simplifier)"},
+        {"name": "worktree_cleanup_mentioned", "description": "Response mentions worktree cleanup if PR-number review (or stays in current dir if current-branch review)"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "aspect-filter-tests-only",
+      "prompt": "/review-pr tests",
+      "expected_output": "Phase 1 parses aspect='tests'. Phase 3 routes ONLY pr-test-analyzer (if test files changed). Does NOT dispatch code-reviewer, security-reviewer, silent-failure-hunter, or comment-analyzer.",
+      "files": [],
+      "assertions": [
+        {"name": "aspect_parsed_as_tests", "description": "Response acknowledges 'tests' aspect"},
+        {"name": "only_pr_test_analyzer_routed", "description": "Response routes ONLY pr-test-analyzer; does NOT mention code-reviewer, security-reviewer, silent-failure-hunter, or comment-analyzer"},
+        {"name": "conditional_test_files_check", "description": "Response checks if test files were changed before dispatching pr-test-analyzer"},
+        {"name": "no_other_agents_dispatched", "description": "Response does NOT dispatch agents unrelated to tests aspect"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "single-file-redirect",
+      "prompt": "Review this single file: src/utils.js — I only changed one line.",
+      "expected_output": "Single-file diff = review inline, not multi-agent. Should decline /review-pr and redirect to inline review or just Read the file.",
+      "files": [],
+      "assertions": [
+        {"name": "declines_multi_agent_review", "description": "Response declines to run multi-agent /review-pr for a single-file diff"},
+        {"name": "redirect_to_inline", "description": "Response redirects to inline review (Read the file, review directly)"},
+        {"name": "no_agent_dispatch", "description": "Response does NOT dispatch any reviewer agents"},
+        {"name": "no_sha_pinning", "description": "Response does NOT pin BASE_SHA/HEAD_SHA or set up worktrees"}
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "reviewer-by-number-submit-gate",
+      "prompt": "/review-pr 4821",
+      "expected_output": "Phase 1 detects the bare integer 4821 as a PR number -> review that PR in an isolated worktree, NOT the current branch. Phase 2 pins BASE_SHA/HEAD_SHA from `gh pr view 4821 --json baseRefOid,headRefOid` and sets up a detached worktree at a deterministic path (e.g. /tmp/review-pr-4821). Phases 3-5 route/launch/tier as usual. Phase 6 reviewer branch is the SINGLE submit gate: build a review payload preview (event REQUEST_CHANGES if any Critical / COMMENT if only Important+Minor / APPROVE if zero, plus line-level comment count, 2-3 sample comments, and body), run the prior-review check, then ONE AskUserQuestion with options post-line-level / post-summary / fix+push / skip -- NOT the author-flow fix-now/fix-later/proceed options. Phase 7 executes the recorded choice without re-asking (no second submit gate), then removes the throwaway worktree.",
+      "files": [],
+      "assertions": [
+        {"name": "pr_number_detected_worktree", "description": "Response treats 4821 as a PR number and reviews it in an isolated/detached git worktree, NOT the current branch"},
+        {"name": "phase_2_pins_from_pr_refs", "description": "Response pins BASE_SHA/HEAD_SHA from gh pr view --json baseRefOid/headRefOid (PR canonical refs), not from merge-base of the current branch"},
+        {"name": "phase_6_submit_gate_not_fix_options", "description": "Phase 6 for a PR-by-number review presents SUBMIT options (post line-level / post summary / fix+push / skip); it does NOT offer the author fix-now / fix-later / fix-all / proceed options"},
+        {"name": "submit_payload_preview_before_confirm", "description": "Response previews the review payload (event type REQUEST_CHANGES/COMMENT/APPROVE + line-level comment count + 2-3 sample comments + body) before the user confirms submission"},
+        {"name": "single_gate_phase_7_no_reask", "description": "Submit is gated exactly once -- Phase 7 executes the Phase 6 reviewer choice WITHOUT asking a second submit question (no double-gate)"},
+        {"name": "worktree_cleanup_phase_7", "description": "Response removes the throwaway worktree in Phase 7 (git worktree remove --force)"}
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "scrutinize-4-gate",
+      "prompt": "/review-pr (current branch, payment module changes around the charge endpoint with a new retry-on-stale-connection helper and a small auth-predicate tweak)",
+      "expected_output": "Phase 5 must apply the SCRUTINIZE-4 rubric (named, tabular) to every finding before tiering: (Q1) Challenge intent -- is there a simpler way? (Q2) Trace the call graph -- does the change interact with unmodified callers in surprising ways? (Q3) Verify real execution branches -- does the fix break the error path / edge case? (Q4) Evidence requirement -- file:line (or commit SHA) + minimal command/output that confirms it. Findings that fail any check are NOT silently dropped -- they go to .scratch/review-pr-<UTC-timestamp>/rejected.md with a one-line per-question reason. The user sees a per-question tally (e.g. 'Rejected: 4 (Q1: 0, Q2: 1, Q3: 2, Q4: 1)'), not the dropped bodies. Surviving findings are tiered Critical/Important/Minor. A bare 'LGTM' with no file:line findings is treated as no findings returned, not a clean bill of health -- only auditable-clean exits count.",
+      "files": [],
+      "assertions": [
+        {"name": "scrutinize_4_named_table", "description": "Response names all 4 scrutinize questions (Challenge intent / Trace call graph / Verify execution branches / Evidence requirement) and presents them as a table or equivalent named-checklist, not as a prose paragraph"},
+        {"name": "rejected_md_audit_path", "description": "Response writes dropped findings to .scratch/review-pr-<UTC-timestamp>/rejected.md (not issue.md) with a per-question reason, and surfaces only a tally to the user"},
+        {"name": "evidence_required_falsifiable", "description": "Q4 (Evidence requirement) is framed as a falsifiable check (file:line + minimal command/output), not a vibe; plausible-but-unverified findings are rejected, not promoted"},
+        {"name": "execution_branches_q3", "description": "Q3 explicitly demands at least one error/edge branch traced (not just happy path); a happy-path-only trace is grounds for rejection"},
+        {"name": "tally_per_question_visible", "description": "Response surfaces a per-question rejection tally to the user (e.g. 'Rejected: 4 (Q1: 0, Q2: 1, Q3: 2, Q4: 1)') rather than just saying 'some findings dropped'"},
+        {"name": "blanket_lgtm_not_clean", "description": "Response treats a bare 'LGTM' with no file:line evidence as no findings returned, not a clean bill of health"}
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "rejection-rate-ledger",
+      "prompt": "/review-pr (current branch, after a long enough history of past sessions to have rejection data in the ledger)",
+      "expected_output": "Phase 6 trend-line emission must read the per-Q rejection counts from .scratch/review-pr-<UTC-ts>/ledger.md (sibling of rejected.md from eval #4), compute rolling 10-session rates via the awk aggregation helper, and surface the trend to the user. Tightening policy is a TWO-GATE (rate AND sample) -- a Q is eligible for tightening only when (a) rolling 10-session rejection rate is >= 50% AND (b) at least 5 sessions of data exist. A 1-of-1 noisy session must NOT trigger tightening. When tightening fires, the tightened rule is EPHEMERAL (current session only, never persisted to SKILL.md) and the user sees the rule being applied (e.g. 'Q3 tightened for this session (67% rejection over 10 sessions -- was 45%)'). Hard caps: max 1 tightening per Q per 90 days, max 1 tightening per session (if multiple Qs are eligible, pick the highest rate). The sidecar .scratch/review-pr/policy-state.md records each tightening event with format '- Q3 <epoch> tighten' so the 90-day cap is enforceable. Ledger is FIFO-pruned to 200 sessions. Reversibility is one-line: 'skip the policy' reverts to default SCRUTINIZE-4 for the session; deleting .scratch/review-pr-* resets all history; tagging a Q as 'ignored' on the last N ledgers excludes it from the rolling window.",
+      "files": [],
+      "assertions": [
+        {"name": "two_gate_threshold_and_sample", "description": "Tightening eligibility requires BOTH conditions (rate >= 50% AND sample size >= 5 sessions) -- the response does not treat a 1-of-1 noisy session (100% by virtue of one rejection) as eligible, and does not tighten on rate alone without sample"},
+        {"name": "ledger_path_sibling_of_rejected", "description": "Ledger lives at .scratch/review-pr-<UTC-timestamp>/ledger.md (sibling of rejected.md from eval #4), per-Q rows in the format `| Q1 | rejected | survived | rate% |`"},
+        {"name": "trend_line_format", "description": "Trend line format is `Q<n>: <pct>%` per the awk helper (e.g. `Q3: 67%`); 0%-rejection rows are skipped because there is nothing to tighten on"},
+        {"name": "ephemeral_not_persisted", "description": "A tightening is current-session only and is NOT written to SKILL.md or to a persistent doctrine file; the next session re-evaluates eligibility from the (updated) ledger"},
+        {"name": "tightening_surfaced_to_user", "description": "When tightening fires, the user sees the rule being applied (e.g. `Q3 tightened for this session (67% rejection over 10 sessions -- was 45%)`), not a silent enforcement"},
+        {"name": "hard_caps_enforced", "description": "Response enforces BOTH hard caps: max 1 tightening per Q per 90 days (recorded in sidecar policy-state.md) AND max 1 tightening per session across all Qs; if multiple Qs are eligible, pick the one with the highest rate"},
+        {"name": "ledger_pruned_to_200", "description": "Ledger is FIFO-pruned to 200 sessions (oldest first) so the .scratch directory is bounded; pruning uses macOS-portable `find -exec stat -f '%m %N'` (BSD), not GNU `find -printf`"},
+        {"name": "reversibility_three_paths", "description": "Response surfaces all three reversibility paths: (1) 'skip the policy' for this session only, (2) delete .scratch/review-pr-* to reset all history, (3) tag a Q as 'ignored' on the last N ledgers to exclude it from the rolling window"}
+      ]
+    }
+  ]
+}

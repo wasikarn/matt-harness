@@ -1,0 +1,44 @@
+{
+  "skill_name": "inventory",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "list-skills-global",
+      "prompt": "What skills do I have?",
+      "expected_output": "Lists skills from the global ~/.claude/skills/ layer with descriptions extracted from frontmatter. Includes the →/◇ legend. Shows count.",
+      "files": [],
+      "assertions": [
+        {"name": "legend_mentioned", "description": "Response mentions the → and ◇ symbols or explains symlinked vs in-place distinction"},
+        {"name": "global_layer_named", "description": "Response names the global layer as ~/.claude/ or 'Global'"},
+        {"name": "skills_count_present", "description": "Response includes a count or list of skills (not zero skills)"},
+        {"name": "description_extracted", "description": "Response includes at least one skill description (not just bare names)"},
+        {"name": "no_install_advice", "description": "Response does NOT tell user to install or find new skills — inventory only lists what exists"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "list-agents-focus",
+      "prompt": "List my agents.",
+      "expected_output": "Focuses on the agents section. Shows agent names, descriptions, and tool grants if using --boundary view.",
+      "files": [],
+      "assertions": [
+        {"name": "agents_section_present", "description": "Response has a distinct section for agents (not mixed with skills/commands)"},
+        {"name": "agent_count_present", "description": "Response includes agent count or named list"},
+        {"name": "no_skills_only", "description": "Response does NOT return only skills — agents must be visible"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "repo-capabilities-merge",
+      "prompt": "What can this repo do?",
+      "expected_output": "Merges project-local .claude/ with global ~/.claude/. Shows both sections. Uses legend.",
+      "files": [],
+      "assertions": [
+        {"name": "project_local_section", "description": "Response includes a 'Project-local' or repo-specific section"},
+        {"name": "global_section", "description": "Response includes a 'Global' or ~/.claude/ section"},
+        {"name": "legend_present", "description": "Response includes →/◇ legend or equivalent symlinked vs in-place markers"},
+        {"name": "no_install_recommendation", "description": "Response does NOT suggest installing missing skills — inventory is read-only listing"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+---
+name: recursive-improve
+description: "Run ONE bounded, human-gated cycle of harness self-improvement: observe verification + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', 'what should we fix in the harness', or after a session whose verification posture shows gaps. Do NOT use for: a single known bug (use /fix-bug), a new feature (use /feature-dev), external-tool/article evaluation (use /article-mine), refactoring a specific module (use maintenance-engineer), or any autonomous/unattended run — this ritual is human-gated by design and has no autonomous mode."
+disable-model-invocation: true
+---
+
+# Recursive Improve
+
+Close METHODOLOGY Rule 4's loop ("loop until verified") on the harness itself: read the
+signals the harness emits about its own health, propose the highest-leverage fixes, and —
+only with the user's go-ahead — apply and verify them, one bounded iteration at a time.
+
+This is the convergence step of harness-recursive-improvement (Phase 4). Phases 1–3 gave the
+harness eyes (nudge telemetry, the review-pr marker, the verification journal); this skill is
+the hand — but a hand the human always holds.
+
+**The autonomy invariant (load-bearing — do not soften):** there is **no** autonomous,
+multi-iteration, unattended mode. `HARNESS.md §Correction` deliberately rejects an autonomous
+repair loop in this repo ("config repo, no app substrate … all risk, no target"). This skill
+honors that: every iteration stops at an `AskUserQuestion` gate before any mutation, and the
+skill is `disable-model-invocation: true` so the model cannot self-start it. The human is the
+loop's real stop condition; the iteration cap is only a context-exhaustion backstop.
+
+**When to use:** the user explicitly asks to improve / fix / audit the harness, or a session's
+`verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
+deliberate cycle.
+
+**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/feature-dev`), an
+external tool/article (`/article-mine`), or anything unattended. If you cannot present the
+proposal to a human and wait, **stop** — do not proceed plan-only into execution.
+
+---
+
+## Input Contract
+
+- **Needs:** the harness's current self-health signals. The skill gathers them itself in
+  Observe — the user does not paste anything.
+- **When the user named a focus** ("improve the memory store", "the nudge keeps mis-firing"):
+  scope Observe to that area; still run the full signal sweep so the proposal is grounded.
+- **Defaults:** observe the whole harness; one cycle; the recommended candidate order is
+  highest-leverage-first.
+
+## Procedure
+
+### 1. Observe — gather signals (read-only)
+
+- Run the verification-posture reader:
+  `python3 "${CLAUDE_PROJECT_DIR:-$PWD}/claude/scripts/recursive-improve-observe.py"`
+  → latest `verification_summary` per session + sessions whose `gaps > 0` (a feature shipped
+  `no-trail` without a named `optout_reason`). This is the metric / drift-guard baseline.
+- Run `harness-audit` (`bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/harness-audit/scripts/audit.sh"`)
+  → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
+  the reader says *that* improvement is warranted, the audit says *what*.
+- Take a witness pre-snapshot:
+  `bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-BEFORE.md`
+  → records the fleet/boundary state so Surface can attest exactly what the iteration changed.
+- **Success criterion:** a written list of candidate findings, each anchored to a `file:line`,
+  a journal session, or an audit finding id. If both signals are clean → **say so and stop**:
+  a clean harness is not an invitation to invent work (Rule 2).
+
+### 2. Propose — decompose + rank (model judgment)
+
+- Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — inline, do
+  not delegate to `/orchestrate`). If you cannot name the boundary between two candidates, they
+  are entangled — split further or sequence them.
+- Rank by impact × cost × risk. State, per candidate: what changes, who executes (inline vs
+  which agent), blast radius (low / medium / high), dependencies (none / chain).
+- **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
+  **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
+  it and hand it to `/feature-dev`; do not smuggle a large change through this ritual.
+- **Success criterion:** a ranked candidate list ready to present, each within the scope guard
+  or explicitly flagged as "too big — route to /feature-dev".
+
+### 3. ASK — the gate (mandatory)
+
+- Present the ranked list, then **AskUserQuestion** single-select:
+  "[N] candidates: [ranked list]. Blast radius: [low/med/high]. Dependencies: [none/chain].
+  Recommended order: [...]. Approve?"
+  - `Approve — execute in recommended order (Recommended when candidates are independent and blast radius is low)`
+  - `Revise — drop / add / reorder (Recommended when scope or order is off)`
+  - `Reject — keep as analysis only (Recommended when you want the findings without acting)`
+- A planning request is **not** authorization to execute. **Denial ≠ approval.** If
+  `AskUserQuestion` is denied (dontAsk / headless `-p`), render the same question as numbered
+  prose and wait for an explicit reply; if no human can answer, **stop at analysis-only** — never
+  fail open into execution.
+- **Success criterion:** an explicit Approve (with the candidate set the user signed off on) or a
+  Revise/Reject that loops back / ends.
+
+### 4. Act — execute approved candidates
+
+- Route each approved candidate to the cheapest correct executor (inline for trivial; the
+  matching senior agent for specialized work — gated per `orchestrate`). Give each a **done-when**:
+  an observable output, not a topic.
+- Apply changes one candidate at a time so Verify can attribute the metric delta.
+- **Success criterion:** each candidate's done-when is met, or it is recorded as not-done with a
+  reason (no silent drop — Rule 12).
+
+### 5. Verify — did it actually improve? (drift guard)
+
+- Re-run the reader **and** `harness-audit`. Compare to the Observe baseline.
+- **Drift guard:** if no signal improved — `gaps` not down, audit finding count not down, and
+  no other named metric moved — the iteration did **not** help. Do **not** report success.
+  Surface the flat/negative delta and treat it as the rollback decision (Step 6).
+- Run the relevant deterministic check on any code touched (`bash claude/hooks/tests/test-critical-hooks.sh`,
+  `py_compile`, `bash -n`).
+- **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated, not
+  assumed.
+
+### 6. Surface — report + attest + capture (rollback lives here)
+
+- Take the witness post-snapshot + diff:
+  `bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-AFTER.md`
+  then `diff /tmp/ri-BEFORE.md /tmp/ri-AFTER.md` → exactly what fleet state the iteration changed.
+- **Rollback policy — surface + ask, never auto-revert.** A regression is a *signal*, not a silent
+  failure (qmd-reindex precedent). If Verify showed flat/negative delta, present the before/after
+  delta and the witness diff and **ask**: revert, tune, or accept-as-new-baseline. Capture the
+  user's reason as a memory entry. Do not auto-revert and do not bury the regression.
+- Emit the iteration report (Output Format below). Capture any durable WHY (a decision, a deferred
+  candidate, a regression accepted) in memory.
+- **Iteration cap: 5 per session** (soft — the human gates each iteration anyway; this is only a
+  context-exhaustion backstop). If more candidates remain after the cap, surface them as a backlog
+  and stop; do not silently continue.
+
+## Output Format
+
+```
+recursive-improve — iteration <N> report
+  observed:        <reader summary: gaps across N sessions> · <audit: C/W/I counts>
+  proposed:        <N candidates>
+  approved:        <N>   (user gate: approve | revise | reject)
+  executed:        <N>   dropped: <N — and why>
+  per candidate:
+    - <name> · file:line | session | audit-id
+        executor:  inline | <agent>
+        done_when: <observable check>
+        status:    done | not-done (<reason>)
+        delta:     <metric moved? gaps N→M / audit X→Y / n/a>
+  drift_guard:     improved | flat | regressed   (rollback: <none | reverted | tuned | accepted+why>)
+  witness_diff:    <fleet changes, or "none">
+  backlog:         <candidates past the cap / deferred, or "none">
+```
+
+## Failure Modes to Avoid
+
+- **Proposing without observing.** Skipping Step 1 and inventing fixes that don't land. Always
+  anchor each candidate to a reader gap, an audit finding, or a `file:line`.
+- **Treating the gate as a formality.** "We can fix this" is not authorization. The Step 3
+  `AskUserQuestion` is mandatory; denial is not approval; never fail open into execution.
+- **Reintroducing autonomy.** Any wording or behavior that runs multiple iterations unattended
+  violates §Correction. The cap is a backstop, not a license to batch-run without gates.
+- **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"
+  is a hypothesis until the reader/audit confirms it. Flat delta = did not help.
+- **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask
+  (Rule 12) — the regression is information.
+- **Scope creep through the side door.** A candidate over ~5 files / 200 lines is a feature, not a
+  loop iteration. Route it to `/feature-dev`; do not let the ritual become an un-gated refactor.
+
+## Integration Notes (Project-Specific)
+
+- **METHODOLOGY:** Rule 4 (this skill *is* the loop-until-verified instrument for the harness) ·
+  Rule 5 (deterministic journal aggregation lives in `recursive-improve-observe.py`; ranking/judgment
+  lives here) · Rule 7 (drift guard picks the measured delta over the optimistic claim) · Rule 12
+  (surface flat/negative deltas and regressions, never bury them) · Rule 13 (decompose → route →
+  verify → combine, inline).
+- **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit` (the
+  candidate-detail signal) · `recursive-improve-observe.py` (the verification metric) · the witness
+  scripts under `inventory/` (pre/post attestation) · `/feature-dev` (escrow for over-scope candidates).
+- **Reads, never writes, the journal.** The reader is read-only; this skill does not emit a journal
+  event. Iteration evidence is the witness BOUNDARY diff + a memory entry, not a new journal stream
+  (kept minimal per Rule 2 — revisit only if a durable per-iteration history is actually needed).
+- **Origin & locked decisions:** `.scratch/harness-recursive-improvement/phase-4-recursive-loop.md`
+  (metric = `verification_summary` gaps + harness-audit findings; cap = 5; rollback = surface + ask).
+  The autonomous-vs-human-gated question is resolved: **human-gated.**

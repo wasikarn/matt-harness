@@ -1,0 +1,93 @@
+---
+name: decommission
+description: Sign a tamper-evident witness when removing a component so orphans (stray files, crons, launchd jobs, processes) are detected later. Use when deleting a worker, daemon, hook, cron, script, or background component. Do NOT trigger when adding or keeping a component (use assert-presence — asserts presence), for temporary disables (witnesses encode permanent absence), or for one-off file removals with no downstream consumers (overkill for ad-hoc cleanup).
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Decommission
+
+Most "deletions" are partial. Code path goes away but the cron still fires, the launchd job still respawns the daemon, the symlink in `~/.claude/hooks/` still points at a deleted file. Tests don't catch it because nothing is checking for *absence*. This skill makes absence a first-class asserted state, signed with ed25519 so the assertion is tamper-evident.
+
+**Rationale**: Past incident — a worker script was deleted in commit `c3e9b50` but the daemon kept running for weeks, logging 150K silent failures before anyone noticed. A signed `ABSENT_*` witness would have failed the next CI run.
+
+## Install (one-time)
+
+Symlink the skill directory into `~/.claude/skills/` so it's discoverable from any project cwd. Substitute the source path for wherever you cloned this skill (a dotfiles repo, a standalone clone, etc.):
+
+```bash
+# from your dotfiles repo root:
+ln -sf "$(pwd)/claude/skills/decommission" "$HOME/.claude/skills/decommission"
+
+# or with an explicit path:
+ln -sf "/absolute/path/to/decommission" "$HOME/.claude/skills/decommission"
+```
+
+If your dotfiles install script already symlinks the `claude/skills/` directory wholesale, no separate step is needed — re-running it picks up `decommission/` automatically.
+
+Three states with distinct lifetimes:
+
+| State | Where | Lifetime |
+|---|---|---|
+| Keypair | `~/.ssh/witness_ed25519` | per-user, one for all repos |
+| Allowed signers | `<repo>/.witness/allowed_signers` | per-repo, git-tracked |
+| Witnesses + signatures | `<repo>/.witness/<slug>.{txt,sig}` | per-repo, git-tracked |
+
+## Quick start
+
+From inside any project's repo root — no setup step required, sign auto-inits the keypair + `.witness/allowed_signers` on first use:
+
+```bash
+# when decommissioning a component named <slug>:
+bash ~/.claude/skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
+
+# verify (run in CI, pre-commit, or scheduled cron):
+bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission
+```
+
+`witness.sh sign` opens `$EDITOR` on `.witness/<slug>.txt`. Fill in assertions, save, exit — script signs and writes `.witness/<slug>.txt.sig`. Commit both files.
+
+`witness.sh verify` exits `2` and prints `DECOMMISSION DRIFT` if any orphan resurfaced.
+
+If you prefer to seed the keypair + signers file explicitly (e.g. to commit `.witness/allowed_signers` before signing anything yet), run `witness.sh init --namespace=decommission`. It's idempotent and what `witness.sh sign` calls under the hood.
+
+## Assertion grammar
+
+Each non-comment line in `.witness/<slug>.txt` is one assertion. `~` expands to `$HOME`.
+
+| Directive | Checks that... |
+|---|---|
+| `ABSENT_PATH: <path>` | file/dir/symlink does not exist |
+| `ABSENT_CRON_MATCH: <pattern>` | `crontab -l` contains no line with this substring |
+| `ABSENT_LAUNCHD: <label>` | `launchctl list` contains no job with this label (macOS) |
+| `ABSENT_PROCESS_MATCH: <pattern>` | `pgrep -lf` finds no matching process |
+
+Required header comments — verify enforces presence:
+
+```
+# decommission witness: <slug>
+# decommissioned: <ISO-8601 UTC>
+# reason: <one line why>
+# rollback: <how to restore if needed>
+```
+
+See [REFERENCE.md](REFERENCE.md) for edge cases (TOCTOU, path expansion, false positives) and verify-gate wiring (pre-commit, CI, scheduled). See [EXAMPLES.md](EXAMPLES.md) for worked scenarios.
+
+## Workflow
+
+1. **Plan the decommission** — list every artifact the component creates: scripts, hooks, crons, launchd plists, log dirs, sockets.
+2. **AskUserQuestion** single-select: "Decommission plan: [N] artifacts identified ([list]). Removal is permanent. Proceed?"
+   - `Proceed with removal (Recommended when the inventory is complete and the user accepts permanent deletion)` — continue
+   - `Revise plan (Recommended when an artifact is missing or the user wants to keep something)` — stop and revisit step 1
+3. **Remove the artifacts** — `git rm`, `crontab -e`, `launchctl bootout`, etc. Commit.
+4. **Run `witness.sh sign --namespace=decommission <slug>`** — author the negative-assertion manifest.
+5. **Run `witness.sh verify --namespace=decommission` once locally** — confirms the deletion was complete *now*.
+6. **Commit `.witness/<slug>.txt` and `.witness/<slug>.txt.sig`**.
+7. **Wire `witness.sh verify --namespace=decommission` into CI or SessionStart hook** — fails future sessions if orphans return.
+
+## Anti-patterns
+
+- **Witness for things still in use** — this is decommission-only. If the asset should exist, write a test, not a witness.
+- **Rotting witnesses** — if a component is intentionally re-introduced, `git rm` the witness file in the same commit. Don't comment it out.
+- **Skipping the `rollback:` line** — without rollback notes, you'll forget how to restore six months later.
+- **Witness without verify gate** — sign-and-forget is theatre. The skill's value is in the gate.

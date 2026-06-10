@@ -1,0 +1,35 @@
+{
+  "skill_name": "harness-audit",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "audit-skills-basic",
+      "prompt": "Audit my skills.",
+      "expected_output": "Runs deterministic health checks across the Claude ecosystem. Produces report with Fleet count, CRITICAL, WARNINGS, INFO sections. Exit-code semantics.",
+      "files": [],
+      "assertions": [
+        {"name": "fleet_count_present", "description": "Response includes a fleet count (agents, skills, commands, hooks) or inventory summary"},
+        {"name": "critical_section", "description": "Response includes a CRITICAL or [CRIT] findings section"},
+        {"name": "warnings_section", "description": "Response includes a WARNINGS or [WARN] findings section"},
+        {"name": "info_section", "description": "Response includes an INFO or [INFO] section for expected behavior"},
+        {"name": "deterministic_checks", "description": "Response mentions specific deterministic checks (symlinks, frontmatter, names, tool grants, etc.)"},
+        {"name": "exit_code_semantics", "description": "Response mentions exit code = finding count or zero = clean semantics"},
+        {"name": "no_write_fixes", "description": "Response does NOT silently edit or fix files — audit reports findings only"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "ecosystem-health-after-change",
+      "prompt": "I just added a new agent. Check ecosystem health to make sure everything is consistent.",
+      "expected_output": "Checks symlink integrity, frontmatter completeness, name consistency, tool-grant scoping, routing table coverage, and boundary drift. Reports any issues introduced by the new agent.",
+      "files": [],
+      "assertions": [
+        {"name": "symlink_check", "description": "Response mentions symlink verification or repo→~/.claude/ link integrity"},
+        {"name": "frontmatter_check", "description": "Response mentions frontmatter validation (name, description, tools)"},
+        {"name": "tool_grant_scoping", "description": "Response mentions tool-grant scoping or inherit-all detection"},
+        {"name": "boundary_drift_check", "description": "Response mentions BOUNDARY.md drift or routing table coverage"},
+        {"name": "post_change_context", "description": "Response acknowledges the new agent context (not generic audit)"}
+      ]
+    }
+  ]
+}

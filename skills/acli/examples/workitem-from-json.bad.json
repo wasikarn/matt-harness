@@ -1,0 +1,9 @@
+{
+  "_comment": "DO NOT USE — description is a bare string, not an ADF object. See README.md §1. The flag path (--description) accepts plain text; --from-json does not.",
+  "summary": "Stripe webhook: order stuck pending after PromptPay success",
+  "projectKey": "TEAM",
+  "type": "Bug",
+  "assignee": "user@atlassian.com",
+  "labels": ["bug", "payments"],
+  "description": "Order remains pending after the PromptPay charge succeeds. Repro: pay via PromptPay, observe webhook never flips status to paid."
+}

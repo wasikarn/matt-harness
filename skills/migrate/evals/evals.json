@@ -1,0 +1,43 @@
+{
+  "skill_name": "migrate",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "api-v1-to-v2-migration",
+      "prompt": "Migrate our REST API from v1 to v2. v1 uses /api/v1/users with custom auth headers. v2 uses /api/v2/users with OAuth2 Bearer tokens. We have 47 call sites across 12 files. What's the safest pattern?",
+      "expected_output": "The skill must run the 5 go/no-go gate questions first. If all pass, produce a caller inventory, pick a migration pattern (Feature Flag, Strangler Fig, Adapter, or Big Bang) with justification, and produce a phased cut-over plan with rollback triggers.",
+      "files": [],
+      "assertions": [
+        {"name": "five_gates_present", "description": "Response asks the 5 go/no-go gate questions (freeze changes, caller inventory, new target proven, rollback <5min, cost comparison)"},
+        {"name": "caller_inventory_present", "description": "Response produces an inventory of call sites with columns: Symbol, Caller Count, Tested?, Active?, Priority"},
+        {"name": "pattern_justification_present", "description": "Response picks one migration pattern and justifies why (not just lists all 4)"},
+        {"name": "rollback_plan_present", "description": "Response includes explicit rollback triggers and timing (<5 min)"},
+        {"name": "big_bang_banned_at_scale", "description": "Response does NOT recommend Big Bang for 47 call sites across 12 files"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "database-version-upgrade",
+      "prompt": "Upgrade PostgreSQL from 13 to 16 in production. The database is 800GB with 99.9% uptime SLA.",
+      "expected_output": "The skill must flag Big Bang as banned for this scale, recommend a pattern with minimal downtime (likely Feature Flag or blue-green), and include a decommission timeline.",
+      "files": [],
+      "assertions": [
+        {"name": "big_bang_rejected", "description": "Response explicitly rejects Big Bang for an 800GB production database"},
+        {"name": "uptime_sla_respected", "description": "Response respects the 99.9% uptime SLA and does not propose scheduled downtime without explicit user approval"},
+        {"name": "rollback_plan_present", "description": "Response includes a rollback plan with timing"},
+        {"name": "decommission_window_present", "description": "Response mentions a decommission window (7d/24h/30d standard)"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "negative-no-trigger-feature-dev",
+      "prompt": "Build a new payment gateway module that supports Stripe and PayPal. Start from scratch with TDD.",
+      "expected_output": "This is greenfield development with no legacy target. The skill should NOT trigger — it should redirect to /feature-dev or /tdd.",
+      "files": [],
+      "assertions": [
+        {"name": "no_migration_procedure", "description": "Response does NOT run the migration procedure (gates → inventory → pattern → scaffold → cut-over → decommission)"},
+        {"name": "redirect_to_feature_dev", "description": "Response redirects to /feature-dev or /tdd, or explains this is not a migration"}
+      ]
+    }
+  ]
+}

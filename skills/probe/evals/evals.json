@@ -1,0 +1,36 @@
+{
+  "skill_name": "probe",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "architecture-decision-probe",
+      "prompt": "Should we add a Redis cache layer in front of our PostgreSQL database?",
+      "expected_output": "Structured systems-thinking analysis with Boundary, Root Why, What-if scenarios (10x, catastrophic failure, status quo), Shared fate mapping, Contradiction surfacing, Bias check, and one-path recommendation with revisit trigger.",
+      "files": [],
+      "assertions": [
+        {"name": "boundary_section", "description": "Response includes 'Boundary' or scope definition (in/out, time horizon)"},
+        {"name": "root_why_section", "description": "Response includes 'Root Why' or probes one level deeper than user's stated reason"},
+        {"name": "what_if_scenarios", "description": "Response includes What-if scenarios (10x scale, catastrophic failure, or status quo/nothing)"},
+        {"name": "shared_fate_section", "description": "Response includes 'Shared fate' or coupling/loop closure analysis"},
+        {"name": "contradiction_section", "description": "Response surfaces a contradiction (two incompatible assumptions) and picks a winner — does NOT average or blend"},
+        {"name": "bias_check_present", "description": "Response includes self-deception check, counter-case, or disconfirming evidence step"},
+        {"name": "one_path_recommendation", "description": "Response gives ONE recommendation path (not multiple options) with revisit trigger"},
+        {"name": "no_code_written", "description": "Response does NOT write code, edit files, or dispatch sub-agents — probe is read-only analysis"},
+        {"name": "no_immediate_yes", "description": "Response does NOT immediately agree with adding Redis without probing first"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "tradeoff-contradiction-force",
+      "prompt": "What if we remove all error logging to save on observability costs?",
+      "expected_output": "Should surface the contradiction between cost savings and operational visibility. Recommends one path. Does not silently agree.",
+      "files": [],
+      "assertions": [
+        {"name": "contradiction_surfaced", "description": "Response explicitly names two conflicting goals (e.g., cost vs visibility) and picks one as dominant"},
+        {"name": "catastrophic_failure_branch", "description": "Response includes catastrophic-failure or 'what if wrong' branch with detection and rollback"},
+        {"name": "no_silent_agreement", "description": "Response does NOT simply agree that removing logging is a good idea without pushback"},
+        {"name": "structured_output", "description": "Response uses the probe output format (Boundary/Root Why/What-if/Shared fate/Contradiction/Rec) or equivalent sections"}
+      ]
+    }
+  ]
+}

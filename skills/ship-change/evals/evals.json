@@ -1,0 +1,49 @@
+{
+  "skill_name": "ship-change",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "feature-lifecycle-positive",
+      "prompt": "I need to add a new user login feature with OAuth and session management. It's a medium-sized change spanning 4 files.",
+      "expected_output": "Phase 1 classify: 'New feature' (keywords 'add', 'feature'). Phase 2 dispatch /feature-dev. Phase 3 dispatch /review-pr (zero Critical gate). Phase 4 open PR / address-review if comments. Phase 5 /ship-merge.",
+      "files": [],
+      "assertions": [
+        {"name": "phase_1_classify_feature", "description": "Response classifies as 'New feature' or recommends feature classification"},
+        {"name": "phase_2_feature_dev", "description": "Response directs user to run /feature-dev for implementation"},
+        {"name": "phase_3_review_pr", "description": "Response directs user to run /review-pr for self-review"},
+        {"name": "zero_critical_gate", "description": "Response states that zero Critical findings is required before proceeding to Phase 4"},
+        {"name": "phase_4_address_review", "description": "Response mentions /address-review for external PR comments"},
+        {"name": "phase_5_ship_merge", "description": "Response directs user to run /ship-merge when CI green + approvals"},
+        {"name": "handoff_reference_used", "description": "Response references the phase handoff table (1→2→3→4→5 sequencing)"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "one-line-fix-redirect",
+      "prompt": "Fix this typo in the README: 'recieve' should be 'receive'.",
+      "expected_output": "One-line fix = decline ship-change. Redirect to inline fix. Do NOT run Phase 1 classify or any subsequent phases.",
+      "files": [],
+      "assertions": [
+        {"name": "declines_ship_change", "description": "Response explicitly declines /ship-change"},
+        {"name": "one_line_reasoning", "description": "Response states that one-line fixes are out of scope for /ship-change"},
+        {"name": "redirect_to_inline", "description": "Response redirects to inline fix (just fix it)"},
+        {"name": "no_phase_sequence", "description": "Response does NOT run Phase 1-5 sequence"},
+        {"name": "no_classify_question", "description": "Response does NOT ask 'What kind of change is this?' classification question"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "mid-flight-redirect",
+      "prompt": "I'm halfway through fixing the payment bug. I already ran /fix-bug and have a partial solution. Can you help me finish and ship it?",
+      "expected_output": "Mid-flight = decline ship-change. Redirect to the relevant phase command directly (/fix-bug to continue, /review-pr if ready for review).",
+      "files": [],
+      "assertions": [
+        {"name": "declines_ship_change", "description": "Response explicitly declines /ship-change for mid-flight changes"},
+        {"name": "mid_flight_reasoning", "description": "Response states that changes already mid-flight should jump to the relevant phase directly"},
+        {"name": "redirect_to_relevant_phase", "description": "Response redirects to /fix-bug (continue implementation) or /review-pr (if implementation is done)"},
+        {"name": "no_phase_1_classify", "description": "Response does NOT restart Phase 1 classification"},
+        {"name": "no_full_sequence", "description": "Response does NOT run full 1→2→3→4→5 sequence"}
+      ]
+    }
+  ]
+}

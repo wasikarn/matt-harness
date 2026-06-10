@@ -1,0 +1,61 @@
+{
+  "skill_name": "critical-eval",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Critique this PR description:\n\nTitle: Migrate user auth from JWT to session cookies\n\nDescription:\nThis PR migrates our authentication system from JWT tokens to server-side session cookies. The change is definitely safe and minimal risk — we are essentially just moving where the token lives. All existing user sessions will be transparently migrated with zero downtime. We have tested this thoroughly in staging and it works perfectly. The rollback plan is straightforward: just revert the commit. This is a pure improvement with no downsides.\n\nPlease evaluate the reasoning quality, assumptions, and evidence in this PR description.",
+      "expected_output": "Structured critique with confidence killer, identified assumptions with evidentiary status, surfaced alternatives, Verdict: Weak, and 2-3 specific gaps.",
+      "files": [],
+      "expectations": [
+        "Includes a confidence killer — what specific evidence or scenario would reduce confidence by 50% or more",
+        "Flags overconfident language or confidence mismatch",
+        "Identifies at least one unstated assumption with its evidentiary status (proven, plausible, speculative)",
+        "Surfaces at least one unconsidered alternative that was dismissed or never mentioned",
+        "Provides a Verdict of Strong, Cautious, or Weak with justification",
+        "Lists 2-3 specific gaps (Weak verdict)"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Evaluate the reasoning in this ADR:\n\nADR-042: Adopt GraphQL over REST\n\nContext: Our mobile team has reported that they need to make 5-7 API calls to render the home screen. This causes slow load times and poor UX.\n\nDecision: We will migrate all public APIs from REST to GraphQL within Q3.\n\nRationale:\n- GraphQL allows clients to fetch exactly what they need in a single request, which will solve the home screen loading issue.\n- Major tech companies like Facebook and GitHub use GraphQL at scale, proving it is production-ready.\n- Our backend team already has experience with GraphQL from side projects.\n\nConsequences:\n- Home screen load time will improve dramatically.\n- Frontend teams will have more flexibility in data fetching.\n\nPlease stress-test the reasoning and assumptions in this ADR.",
+      "expected_output": "Structured critique challenging causal chain, flagging appeal to authority, surfacing alternatives, Verdict: Weak, with 2-3 specific gaps.",
+      "files": [],
+      "expectations": [
+        "Includes a confidence killer — what specific evidence or scenario would reduce confidence by 50% or more",
+        "Challenges the causal chain with a specific weak link identified",
+        "Flags weak evidence explicitly, including appeal to authority or survivorship bias if present",
+        "Surfaces at least one unconsidered alternative that was dismissed or never mentioned",
+        "Provides a Verdict of Strong, Cautious, or Weak with justification",
+        "Lists 2-3 specific gaps (Weak verdict)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Audit the reasoning in this one-pager being presented to leadership:\n\nProposal: Switch from PostgreSQL to MongoDB\n\nExecutive Summary:\nOur PostgreSQL cluster has caused 3 outages in the last 6 months. MongoDB offers horizontal scaling out of the box and has a 40% lower total cost of ownership according to a 2023 independent benchmark. Companies like Uber and eBay have successfully migrated to document databases, demonstrating this is a proven path. We estimate a 6-month migration timeline with minimal risk.\n\nEvidence:\n- PostgreSQL outages: Jan (replica lag), Mar (connection pool exhaustion), May (vacuum blocking writes)\n- MongoDB TCO benchmark: +40% savings on storage and compute\n- Case studies: Uber (2016), eBay (2017) both migrated from relational to NoSQL\n\nRecommendation: Approve $250K budget for migration tooling and training.\n\nPlease evaluate the strength of this argument and identify any gaps.",
+      "expected_output": "Structured critique distinguishing symptoms from root cause, flagging cherry-picked evidence, surfacing alternatives, Verdict: Weak, with 2-3 specific gaps.",
+      "files": [],
+      "expectations": [
+        "Includes a confidence killer — what specific evidence or scenario would reduce confidence by 50% or more",
+        "Distinguishes symptoms from root cause (e.g., operational issues vs inherent database flaws)",
+        "Flags cherry-picked, outdated, or unverifiable evidence explicitly",
+        "Surfaces at least one unconsidered alternative that was dismissed or never mentioned",
+        "Provides a Verdict of Strong, Cautious, or Weak with justification",
+        "Lists 2-3 specific gaps (Weak verdict)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Evaluate the reasoning in this well-reasoned proposal:\n\nProposal: Adopt connection pooling (PgBouncer) to address database connection exhaustion\n\nContext: Our PostgreSQL primary has experienced connection pool exhaustion during traffic spikes (peak: 1,200 concurrent connections against a max_connections limit of 1,000). The incidents occurred on March 15 and April 2, both during promotional events. Replicas did not experience the same load, suggesting the bottleneck is at the primary's connection limit rather than query latency or resource exhaustion.\n\nDecision: Deploy PgBouncer in transaction-pooling mode between the application layer and PostgreSQL primary.\n\nRationale:\n- PgBouncer is the industry-standard solution for PostgreSQL connection pooling. We evaluated three alternatives:\n  1. Increase max_connections on the primary — rejected because each connection consumes ~10MB RAM; scaling to 2,000 would require 20GB additional memory with diminishing returns on context-switch overhead.\n  2. Read-replica load balancing — already implemented; replicas handle 60% of read traffic. The spikes are write-heavy (inventory reservations), so read-replica splitting does not help.\n  3. Application-level pooling — rejected because our ORM (SQLAlchemy) already has connection pooling, but it pools at the application-server level. With 40 app servers each holding 25 connections, we still exhaust the primary's global limit.\n- PgBouncer transaction pooling multiplexes many application connections onto fewer PostgreSQL backends. At our traffic pattern (short transactions, ~50ms average), we estimate 40 app servers × 25 connections → 200 backend connections, well within our resource envelope.\n- We ran a 48-hour load test on a staging clone with PgBouncer. Peak throughput increased 35% before hitting CPU saturation, and connection exhaustion incidents were eliminated.\n\nRisk and mitigation:\n- PgBouncer adds a new hop in the data path. Mitigation: deploy on the same VPC as the database with <1ms latency.\n- Prepared statements are incompatible with transaction pooling mode. Mitigation: our workload is primarily simple CRUD with no prepared statements; verified via query-log analysis.\n- Single point of failure if PgBouncer goes down. Mitigation: deploy two instances behind a load balancer with health checks.\n\nTimeline: Deploy to staging next sprint; production rollout with feature-flag ramp (10% → 50% → 100%) over two weeks.\n\nBudget: $0 (open-source); 2 engineering days for deployment and monitoring.\n\nPlease evaluate the reasoning quality of this proposal.",
+      "expected_output": "Structured evaluation recognizing strong reasoning, with confidence killer, acknowledged alternatives, Verdict: Strong or Cautious, and 0-2 minor refinements (not 3+ gaps).",
+      "files": [],
+      "expectations": [
+        "Includes a confidence killer — what specific evidence or scenario would reduce confidence by 50% or more",
+        "Acknowledges rejected alternatives and their reasoning (not just listing them as 'missed')",
+        "Evaluates whether evidence actually supports the conclusion (load test, query-log analysis, resource calculations)",
+        "Provides a Verdict of Strong, Cautious, or Weak with justification",
+        "If Verdict is Strong or Cautious, explains what specific element of the argument earns that rating",
+        "Lists 0-2 minor refinements (Strong/Cautious verdict); flagging 3+ gaps is a false positive"
+      ]
+    }
+  ]
+}

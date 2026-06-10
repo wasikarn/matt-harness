@@ -1,0 +1,23 @@
+[
+  {"query": "Build a REST API endpoint that accepts POST requests to create a new user with email and password validation", "should_trigger": true},
+  {"query": "ok so i need to add a new table to the DB for tracking user sessions. it needs session_id, user_id, created_at, expires_at. write the migration and a simple SQLAlchemy model", "should_trigger": true},
+  {"query": "The users table query is getting slow when we have 100k+ rows. I think we need to add indexes but I'm not sure which columns. Can you look at the query patterns and suggest indexes?", "should_trigger": true},
+  {"query": "Write a Python service that processes webhook callbacks from Stripe. It needs to handle payment_intent.succeeded and payment_intent.failed events, update the order status, and retry failed webhooks.", "should_trigger": true},
+  {"query": "Refactor this Flask endpoint into FastAPI. Keep the same behavior but add proper request validation and error handling.", "should_trigger": true},
+  {"query": "Create a background job that syncs inventory levels from our warehouse API to the database every 5 minutes. It should handle rate limiting and partial failures.", "should_trigger": true},
+  {"query": "I need to implement a rate limiter for our API. Something like token bucket or sliding window. Python, Redis backend.", "should_trigger": true},
+  {"query": "The API is returning 500s when the database connection pool is exhausted. How do we add proper connection pooling and circuit breaker?", "should_trigger": true},
+  {"query": "Write a database migration that adds a JSONB column to store user preferences, with a default empty object. Must be reversible.", "should_trigger": true},
+  {"query": "Our current auth middleware is a mess. Can you help me redesign it with JWT tokens, refresh token rotation, and role-based access?", "should_trigger": true},
+
+  {"query": "Make this React component responsive on mobile", "should_trigger": false},
+  {"query": "Write a CSS animation for a loading spinner", "should_trigger": false},
+  {"query": "Audit the login flow for XSS vulnerabilities", "should_trigger": false},
+  {"query": "Research the best vector database for our RAG pipeline", "should_trigger": false},
+  {"query": "Write a bash script to rotate nginx logs", "should_trigger": false},
+  {"query": "Deploy this to Kubernetes using Helm charts", "should_trigger": false},
+  {"query": "The TypeScript types for this API response are wrong. Fix them.", "should_trigger": false},
+  {"query": "Write unit tests for this React hook", "should_trigger": false},
+  {"query": "Can you explain how Python decorators work? I need a tutorial.", "should_trigger": false},
+  {"query": "Review this PR for code style issues", "should_trigger": false}
+]

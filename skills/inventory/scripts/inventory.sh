@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# inventory.sh — dynamic listing of Claude artifacts available HERE.
+#
+# Default: scan ~/.claude (global, what Claude Code actually loads) + the
+# git root's .claude/ (project-local). Zero config — no env var, no arg
+# required.
+#
+# Explicit override: pass a path as $1 to scan ONLY that path
+# (useful for inspecting dotfiles source directly).
+set -uo pipefail
+
+# ── helpers ──────────────────────────────────────────────────────────
+#
+# fm_get / fm_has / fm_in_fm_section / fm_hook_desc / SKIP_SCAFFOLD_GLOB
+# come from claude/skills/_lib/fm.sh (shared with audit.sh and
+# inventory-boundary.sh). Call sites below use fm_get "$f" description for
+# the single-line description value, and fm_hook_desc for hook comments
+# (not YAML frontmatter — different shape, kept separate in the lib).
+
+# Source the shared library. cd -P resolves the ~/.claude/skills/inventory
+# symlink to the dotfiles checkout, mirroring audit.sh's REPO_ROOT pattern.
+# shellcheck source=../../_lib/fm.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
+
+# ── per-section printer ──────────────────────────────────────────────
+
+find_git_root() {
+  local dir="$PWD"
+  while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+    [ -d "$dir/.git" ] && { echo "$dir"; return 0; }
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+# Marker for whether a skill/agent/command/hook dir is a symlink
+# (= user-authored, sourced from somewhere else) or a real dir
+# (= plugin-installed or in-place).
+item_marker() {
+  if [ -L "$1" ]; then echo "→"; else echo "◇"; fi
+}
+
+# ── per-section printer ──────────────────────────────────────────────
+
+print_section() {
+  local heading="$1" path="$2" mode="$3"
+  [ -d "$path" ] || return
+
+  shopt -s nullglob
+  local items=()
+  case "$mode" in
+    skill-dir)  for d in "$path"/[!_]*/; do items+=("${d%/}"); done ;;  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit
+    md-file)    for f in "$path"/*.md; do [ -f "$f" ] && items+=("$f"); done ;;
+    hook-file)  for f in "$path"/*; do [ -f "$f" ] && items+=("$f"); done ;;
+  esac
+  shopt -u nullglob
+
+  [ ${#items[@]} -eq 0 ] && return
+
+  echo ""
+  echo "### $heading (${#items[@]})"
+  for item in "${items[@]}"; do
+    local name desc marker
+    marker=$(item_marker "$item")
+    case "$mode" in
+      skill-dir)  name=$(basename "$item");      desc=$(fm_get "$item/SKILL.md" description) ;;
+      md-file)    name=$(basename "$item" .md);  desc=$(fm_get "$item" description) ;;
+      hook-file)  name=$(basename "$item");      desc=$(fm_hook_desc "$item") ;;
+    esac
+    printf "  %s %-30s %s\n" "$marker" "$name" "${desc:-(no description)}"
+  done
+}
+
+# ── per-source printer ───────────────────────────────────────────────
+
+print_source() {
+  local label="$1" base="$2"
+  [ -d "$base" ] || return
+
+  # Skip if nothing inside any of the 4 standard subdirs
+  local any=0
+  for sub in skills agents commands hooks; do
+    [ -d "$base/$sub" ] && [ -n "$(ls -A "$base/$sub" 2>/dev/null)" ] && any=1
+  done
+  [ $any -eq 0 ] && return
+
+  echo ""
+  echo "## $label"
+  echo "_${base}_"
+  print_section "Skills"   "$base/skills"   "skill-dir"
+  print_section "Commands" "$base/commands" "md-file"
+  print_section "Agents"   "$base/agents"   "md-file"
+  print_section "Hooks"    "$base/hooks"    "hook-file"
+}
+
+# ── main ─────────────────────────────────────────────────────────────
+
+echo "# Inventory"
+echo "_Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_"
+
+# Explicit override mode
+if [ -n "${1:-}" ]; then
+  if [ ! -d "$1" ]; then
+    echo "✗ not a directory: $1" >&2
+    exit 1
+  fi
+  print_source "Source: $1" "$1"
+  exit 0
+fi
+
+# Dynamic mode — scan project-local + global
+GIT_ROOT=$(find_git_root 2>/dev/null || true)
+if [ -n "$GIT_ROOT" ]; then
+  print_source "Project-local — \`$(basename "$GIT_ROOT")/.claude\`" "$GIT_ROOT/.claude"
+fi
+
+print_source "Global — \`~/.claude\` (what Claude Code loads)" "$HOME/.claude"

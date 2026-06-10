@@ -1,0 +1,43 @@
+{
+  "skill_name": "adr",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "framework-choice-positive",
+      "prompt": "We're choosing between Next.js and Remix for our new marketing site. SEO matters, team knows React but not both frameworks. Should we document this decision?",
+      "expected_output": "Runs the full ADR procedure: gate check (3 conditions), gathers context, documents 2-4 alternatives including status quo, states decision with rationale/consequences/mitigations, produces markdown ADR template with Alternatives Considered table.",
+      "files": [],
+      "assertions": [
+        {"name": "gate_check_present", "description": "Response confirms the 3-condition threshold (hard to reverse, surprising without context, result of real trade-off)"},
+        {"name": "alternatives_table_present", "description": "Response includes an Alternatives Considered table with Pros/Cons/Risks columns"},
+        {"name": "status_quo_included", "description": "Status quo is listed as one of the alternatives in the table"},
+        {"name": "adr_template_present", "description": "Response outputs a markdown ADR template with Context, Decision, Consequences, Alternatives, Mitigations, Links sections"},
+        {"name": "chosen_option_in_table", "description": "The chosen option appears in the alternatives table alongside rejected options"}
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "document-existing-negative",
+      "prompt": "Document how our current auth middleware works in the README so new engineers can understand it.",
+      "expected_output": "This is documenting existing code, not a decision. Should decline — redirect to README or inline comment, not produce an ADR.",
+      "files": [],
+      "assertions": [
+        {"name": "no_adr_produced", "description": "Response does NOT produce an ADR template or Alternatives Considered table"},
+        {"name": "redirect_or_decline", "description": "Response declines ADR and recommends README or inline comment instead"},
+        {"name": "no_gate_check", "description": "Response does NOT run the 3-condition gate check"}
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "trivial-choice-negative",
+      "prompt": "Should we name the new config key 'timeoutMs' or 'timeout_ms'?",
+      "expected_output": "Trivial naming choice with no reversal cost or trade-off. Should decline — use inline comment, not ADR.",
+      "files": [],
+      "assertions": [
+        {"name": "no_adr_produced", "description": "Response does NOT produce an ADR template"},
+        {"name": "declines_as_trivial", "description": "Response explicitly states this is a trivial choice not worthy of an ADR"},
+        {"name": "redirect_to_inline", "description": "Response recommends inline comment or team convention doc instead"}
+      ]
+    }
+  ]
+}

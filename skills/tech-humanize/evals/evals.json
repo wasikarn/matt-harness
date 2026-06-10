@@ -1,0 +1,65 @@
+{
+  "skill_name": "tech-humanize",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "internal-standup-report",
+      "prompt": "Humanize this Thai standup draft into dev-register Thai. Keep it concise, internal-team voice (mixed Thai/English, 40-60% English OK). Output the humanized version only.\n\n---\n\nDRAFT:\nนี่คือภาพรวมของหัวข้อนี้ หวังว่าจะเป็นประโยชน์ครับ! \n\nในช่วงสัปดาห์ที่ผ่านมา ทีมได้ดำเนินการปรับปรุงประสิทธิภาพของระบบอย่างครอบคลุม — underscoring our commitment to operational excellence and marking a pivotal moment in our journey toward scalability. Additionally, this effort serves as a testament to the team's dedication. \n\nผมเชื่อว่าการเปลี่ยนแปลงนี้จะส่งผลกระทบอย่างมีนัยสำคัญต่อประสบการณ์ของผู้ใช้ เนื่องจากมันช่วยเพิ่มความเร็วในการโหลดหน้าเว็บได้อย่างมาก ผมมั่นใจเป็นอย่างยิ่งว่านี่คือก้าวสำคัญของเรา \n\nท้ายที่สุด อนาคตของทีมสดใส ก้าวต่อไปจะเป็นการเดินทางสู่ความเป็นเลิศ แจ้งให้ทราบหากต้องการขยายความในส่วนใดส่วนหนึ่ง!",
+      "expected_output": "Internal standup-style Thai: 4 bullets / short paragraphs, mixed Thai-English, mentions what was actually done (no invented specifics), no sycophantic opener, no em dashes, no 'หวังว่าจะเป็นประโยชน์', no 'ก้าวสำคัญ', no closing 'แจ้งให้ทราบ'.",
+      "files": ["fixtures/0-internal-standup.txt"],
+      "expectations": [
+        "Output contains 0 em dashes (—). The character '—' must not appear in the final text.",
+        "Output contains 0 instances of sycophantic openers: 'หวังว่าจะเป็นประโยชน์', 'ดีใจที่ได้ช่วย', 'ขอบคุณคำถามดีๆ'.",
+        "Output contains 0 instances of sycophantic closers: 'แจ้งให้ทราบ', 'หากต้องการขยายความ', 'Let me know if you need more'.",
+        "Output contains 0 instances of significance-puffing Thai: 'ก้าวสำคัญ', 'ถือเป็นการเปลี่ยนแปลงครั้งสำคัญ', 'สะท้อนถึงความสำคัญ'.",
+        "Output contains 0 instances of AI-vocab words: 'comprehensive', 'underscoring', 'pivotal', 'testament', 'Additionally'.",
+        "Output uses dev register: mixes Thai with English technical terms (e.g. 'PR', 'staging', 'merge', or similar — not pure monolingual Thai, not pure monolingual English).",
+        "Output uses 1st person (ผม/ฉัน) or no-person voice — NOT 3rd-person 'ทีม' throughout. A human standup author speaks from their own experience.",
+        "Output has no fabricated specifics: no invented ticket IDs (TP-XXX), no invented PR numbers, no invented dates, no invented version numbers, no invented metrics (latency %, throughput, error rates). Mentions of work should be generic or reference what was in the draft.",
+        "Output is shorter than the original (5 paragraphs of AI-speak → tighter, 2-4 paragraphs of dev-speak). Length sanity: final output < 70% of input chars.",
+        "Output delivers concrete value, not a vague upbeat closer like 'อนาคตสดใส' or 'ก้าวต่อไปจะเป็นการเดินทางสู่ความเป็นเลิศ'.",
+        "Output reports actual blockers / next steps, not generic celebration. A standup with no 'next' or 'blocker' item is suspicious — at least one of {next step, blocker, follow-up} should appear in plain dev-speak."
+      ]
+    },
+    {
+      "id": 1,
+      "eval_name": "user-facing-error-message",
+      "prompt": "Humanize this Thai error message into user-facing Thai UI copy. Use 20-30% English, translate or coin clear Thai terms, avoid calques, no AI-isms. Output the humanized version only.\n\n---\n\nDRAFT:\nขออภัย! การชำระเงินไม่สำเร็จ (Declined) \n\nการทำรายการของคุณไม่สามารถดำเนินการได้ในขณะนี้ เนื่องจากสถานการณ์ที่ไม่คาดคิด ทีมงานกำลังดำเนินการแก้ไขอย่างเร่งด่วน \n\nนอกจากนี้ การดำเนินการนี้ถือเป็นก้าวสำคัญในการปกป้องความปลอดภัยของคุณ เราขอแนะนำให้คุณลองทำรายการใหม่อีกครั้ง หรือติดต่อเจ้าหน้าที่เพื่อขอความช่วยเหลือเพิ่มเติม \n\nอย่างไรก็ตาม เรามุ่งมั่นที่จะมอบประสบการณ์ที่ดีที่สุดให้กับคุณ always! \n\nLet me know if you need further assistance!",
+      "expected_output": "User-facing Thai error message: short (2-4 lines), polite, actionable, no AI-isms, no calques, no English-mixed-title-with-Thai-parenthetical (i.e. no '## การชำระเงินไม่สำเร็จ (Declined)' pattern), no sycophantic opener/closer.",
+      "files": ["fixtures/1-ui-error.txt"],
+      "expectations": [
+        "Output contains 0 em dashes (—).",
+        "Output contains 0 instances of: 'ขออภัย!', 'หวังว่าจะเป็นประโยชน์', 'always!'.",
+        "Output contains 0 instances of: 'Let me know', 'If you need further assistance', 'แจ้งให้ทราบ'.",
+        "Output contains 0 instances of: 'ก้าวสำคัญ', 'มุ่งมั่น', 'ส่งเสริม', 'ประสบการณ์ที่ดีที่สุด'.",
+        "Output is user-facing register: Thai with English only where natural (currency names, brand names, action verbs like 'กดปุ่มลองอีกครั้ง' / 'retry' — but no jargon).",
+        "Output uses 'ถูกปฏิเสธ' or 'ไม่ผ่าน' for declined (NOT the calque 'ถูกปฏิเสธ' as parenthetical English '(Declined)' inline with Thai — translate it).",
+        "Output gives the user an actionable next step (e.g. 'ลองอีกครั้ง', 'เช็คยอดเงิน', 'ติดต่อธนาคาร') — NOT just 'ติดต่อเจ้าหน้าที่' vague handwave.",
+        "Output is significantly shorter than input. UI error copy should be tight (target < 50% of input chars).",
+        "Output has no parenthetical English mixing in section/title form: no '## การชำระเงินไม่สำเร็จ (Declined)' or similar.",
+        "Output does NOT use calques: 'ถือไว้' for HELD, 'ดัน' for push, 'ระบบล้ม' for down. (N/A if these words don't appear, but if any do, they must not be in calque form.)",
+        "Output is free of hedging filler that hides the actual cause: no 'เนื่องจากสถานการณ์ที่ไม่คาดคิด' (vague), no 'ทีมงานกำลังดำเนินการแก้ไขอย่างเร่งด่วน' (misdirected blame-shift). State the concrete reason: card declined, insufficient funds, network error, etc."
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "strategy-blog-prose",
+      "prompt": "Humanize this Thai strategy/essay draft. Target: blog/strategy brief voice, prose Thai with English for concepts that don't have a Thai word, 30-50% English. Add voice/opinion/personal edge. Don't fabricate citations or invented studies. Output the humanized version only.\n\n---\n\nDRAFT:\nAI coding tools นับเป็นก้าวสำคัญในการเปลี่ยนแปลงอุตสาหกรรมซอฟต์แวร์ marking a pivotal moment in the evolution of software development ใน today's rapidly evolving technological landscape\n\nIndustry observers have noted that adoption has accelerated from hobbyist experiments to enterprise-wide rollouts The technology has been featured in The New York Times, Wired, and The Verge Additionally the ability to generate documentation tests and refactors showcases how AI can contribute to better outcomes highlighting the intricate interplay between automation and human judgment\n\nผมเชื่อว่านี่คืออนาคตของการพัฒนาซอฟต์แวร์ ก้าวต่อไปจะเป็นการเดินทางสู่ความเป็นเลิศ แจ้งให้ทราบหากต้องการขยายความในส่วนใดส่วนหนึ่ง!\n\nตัวอย่างเช่น ในการศึกษาของ Google ปี 2024 นักพัฒนาที่ใช้ Codex ทำ simple functions เสร็จเร็วขึ้น 55% เทียบกับ control group แต่เรื่องนี้ยังคงต้องศึกษาเพิ่มเติม",
+      "expected_output": "Prose Thai with personal voice, opinions, mixed register. No AI-isms. No fabricated studies (the Google 2024 / Codex 55% example might be real OR fabricated — flag it as needing verification OR remove it. Do not present fabricated studies as fact).",
+      "files": ["fixtures/2-strategy-blog.txt"],
+      "expectations": [
+        "Output contains 0 em dashes (—).",
+        "Output contains 0 instances of: 'ก้าวสำคัญ', 'ถือเป็น', 'สะท้อนถึงความสำคัญ', 'pivotal moment', 'testament'.",
+        "Output contains 0 instances of: 'Additionally', 'Furthermore', 'Moreover', 'comprehensive', 'intricate'.",
+        "Output contains 0 instances of sycophantic closer: 'แจ้งให้ทราบ', 'Let me know', 'หากต้องการขยายความ'.",
+        "Output contains 0 instances of vague-upbeat closer: 'อนาคตสดใส', 'ก้าวต่อไปจะเป็นการเดินทางสู่ความเป็นเลิศ', 'exciting times lie ahead'.",
+        "Output uses prose register with mixed Thai/English. English used for technical terms (Copilot, Codex, AI assistant, debugging, etc.) and Thai for narrative glue.",
+        "Output has personal voice: at least one 'ผม' / 'ผมเคย' / personal aside / opinion statement, not just neutral reporting.",
+        "Output does NOT present the Google 2024 Codex 55% claim as established fact. Either flag it as needing verification, soften the language ('ผมเคยเจอ claim นี้'), or remove it. NEVER present an unverifiable statistic as if it's true.",
+        "Output varies sentence length: at least one short sentence (< 10 words) and at least one longer sentence (> 25 words) — not uniform mid-length cadence.",
+        "Output has opinions, not just facts: at least one evaluative statement ('ผมไม่แน่ใจ', 'ผมคิดว่า', 'X ก็จริง แต่...', 'ผมเห็นด้วย/ไม่เห็นด้วย').",
+        "Output does NOT name-drop publication credibility ('featured in The New York Times, Wired, and The Verge') as proof of mainstream relevance. Either drop the name-drop, or treat it as one data point among many — not as the argument's foundation."
+      ]
+    }
+  ]
+}
