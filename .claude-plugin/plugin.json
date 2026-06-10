@@ -5,7 +5,7 @@
   "author": { "name": "KOBIG" },
   "license": "MIT",
   "homepage": "https://github.com/wasikarn/kbg-harness",
-  "repository": { "type": "git", "url": "git+ssh://git@github.com/wasikarn/kbg-harness.git" },
-  "bugs": { "url": "https://github.com/wasikarn/kbg-harness/issues" },
+  "repository": "https://github.com/wasikarn/kbg-harness",
+  "defaultEnabled": false,
   "keywords": ["harness", "agents", "skills", "workflow", "governance", "doctrine", "hooks"]
 }
