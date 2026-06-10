@@ -14,3 +14,6 @@ skills/*/workspace/
 *.log
 *.tmp
 *.bak
+
+# Machine-specific caches (never ship a stale local blob)
+.code-review-graph/
