@@ -40,8 +40,8 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # via CLAUDE.md @import chain. Keep aligned with doctrine-edit-gate.
 DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK|HARNESS|ACLI|DBGATE)\.md|settings\.json|\.mcp\.json|mcp-servers\.json'
 
-# Doctrine path: either dotfiles repo claude/ or runtime .claude/
-DOCTRINE_PATH_RE="(/claude/(${DOCTRINE_NAMES})|/\.claude/(${DOCTRINE_NAMES}))"
+# Doctrine path: either dotfiles repo claude/, runtime .claude/, or the extracted kbg-harness/ source root.
+DOCTRINE_PATH_RE="(/claude/(${DOCTRINE_NAMES})|/\.claude/(${DOCTRINE_NAMES})|/kbg-harness/(${DOCTRINE_NAMES}))"
 
 # Write-op tokens (shell-statement-boundaries to reduce false positives).
 SEP='(^|[[:space:];&|()`])'

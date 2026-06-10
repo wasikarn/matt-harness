@@ -40,9 +40,10 @@ esac
 DIR=$(dirname "$FILE_PATH")
 BASE=$(basename "$FILE_PATH")
 
-# Doctrine path: must be under a `claude/` or `.claude/` directory.
+# Doctrine path: must be under a `claude/`, `.claude/`, or the extracted `kbg-harness/`
+# source root directory (post-plugin-extraction, the 4 @import docs are real there).
 case "$DIR" in
-  */claude|*/.claude) ;;
+  */claude|*/.claude|*/kbg-harness) ;;
   *) exit 0 ;;
 esac
 

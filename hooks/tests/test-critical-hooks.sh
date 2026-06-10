@@ -77,13 +77,16 @@ check block-dangerous-git.sh ask  "asks on force push develop" "$(bash_event 'gi
 check block-dangerous-git.sh none "allows force push feature/" "$(bash_event 'git push --force-with-lease origin feature/x')"
 check block-dangerous-git.sh none "allows git status"          "$(bash_event 'git status')"
 
-# --- doctrine-edit-gate: ask on doctrine files under .claude/, allow others ---
+# --- doctrine-edit-gate: ask on doctrine files under .claude/, kbg-harness/, or claude/, allow others ---
 check doctrine-edit-gate.sh ask  "asks on METHODOLOGY.md"   "$(edit_event '/x/.claude/METHODOLOGY.md')"
 check doctrine-edit-gate.sh ask  "asks on settings.json"    "$(edit_event '/x/.claude/settings.json')"
 check doctrine-edit-gate.sh ask  "asks on HARNESS.md"       "$(edit_event '/x/.claude/HARNESS.md')"
 check doctrine-edit-gate.sh ask  "asks on ACLI.md"          "$(edit_event '/x/.claude/ACLI.md')"
 check doctrine-edit-gate.sh ask  "asks on DBGATE.md"        "$(edit_event '/x/.claude/DBGATE.md')"
+check doctrine-edit-gate.sh ask  "asks on kbg-harness ACLI.md" "$(edit_event '/x/kbg-harness/ACLI.md')"
+check doctrine-edit-gate.sh ask  "asks on kbg-harness METHODOLOGY.md" "$(edit_event '/x/kbg-harness/METHODOLOGY.md')"
 check doctrine-edit-gate.sh none "allows non-doctrine file" "$(edit_event '/x/.claude/foo.py')"
+check doctrine-edit-gate.sh none "ignores not-kbg-harness lookalike" "$(edit_event '/x/not-kbg-harness/METHODOLOGY.md')"
 check doctrine-edit-gate.sh none "ignores file outside .claude" "$(edit_event '/x/src/METHODOLOGY.md')"
 
 # --- secret-read-guard: deny secret reads (Read + Bash), allow normal/template ---
@@ -113,11 +116,12 @@ check config-protection.sh ask  "asks on existing .eslintrc"    "$(write_event "
 check config-protection.sh none "allows new .eslintrc (create)" "$(write_event "$FIXTURE/new/.eslintrc" 'x')"
 check config-protection.sh none "ignores non-config file"       "$(write_event "$FIXTURE/foo.txt" 'x')"
 
-# --- block-bash-doctrine-write: deny shell writes to doctrine, allow reads/non-doctrine ---
+# --- block-bash-doctrine-write: deny shell writes to doctrine (all roots), allow reads/non-doctrine ---
 check block-bash-doctrine-write.sh deny "blocks > redirect to CLAUDE.md" "$(bash_event 'echo hacked > /repo/claude/CLAUDE.md')"
 check block-bash-doctrine-write.sh deny "blocks sed -i on settings.json" "$(bash_event 'sed -i s/a/b/ /home/u/.claude/settings.json')"
 check block-bash-doctrine-write.sh deny "blocks tee to ACLI.md"          "$(bash_event 'echo x | tee /repo/claude/ACLI.md')"
 check block-bash-doctrine-write.sh deny "blocks cp to DBGATE.md"         "$(bash_event 'cp /tmp/x /home/u/.claude/DBGATE.md')"
+check block-bash-doctrine-write.sh deny "blocks > to kbg-harness DBGATE.md" "$(bash_event 'echo x > /x/kbg-harness/DBGATE.md')"
 check block-bash-doctrine-write.sh none "allows reading doctrine (cat)"  "$(bash_event 'cat /repo/claude/CLAUDE.md')"
 check block-bash-doctrine-write.sh none "allows write to non-doctrine"   "$(bash_event 'echo x > /tmp/foo.txt')"
 
