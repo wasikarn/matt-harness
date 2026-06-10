@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [Unreleased]
+
+### Changed
+
+- **Delivery model: symlink farm → persistent plugin-enable.** The owner now installs `kbg` via
+  `claude plugin install` + `enabledPlugins["kbg@kobig"]: true` and dogfoods exactly what an
+  external installer gets — **superseding** the 0.1.0 "bare-name symlink farm, plugin disabled
+  locally" model below. `install.sh`'s component-symlink steps are neutered and the in-`~/.claude`
+  symlink farm removed, so the plugin is the single delivery path. (`dotfiles` `962bfce`)
+- **Manifest accuracy** — `marketplace.json` description aligned with `plugin.json` ("governance
+  hooks across 14 lifecycle events"); `.code-review-graph/` gitignored so no stale local SQLite
+  cache ships; `version` retained (omitting it fails `claude plugin validate --strict`). (`c50710b`)
+
+### Fixed
+
+- **Doctrine loads on every session start, not just fresh start.** `doctrine-bootstrap.sh` moved
+  from the `startup` matcher into a no-matcher SessionStart group, so METHODOLOGY/RTK/ACLI/DBGATE
+  inject on **resume** and **clear** too — matching the old `@import` behavior (`CLAUDE.md` was read
+  on every session). Previously a resumed session got no doctrine once the dotfiles `@import` glue
+  was removed. (`cc9bee8`)
+
+### Known issues
+
+- `harness-audit` F1 ("component not symlinked to `~/.claude/`") false-positives under the plugin
+  delivery model — it predates the cutover and still assumes the symlink farm. Pending
+  plugin-awareness rework.
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
