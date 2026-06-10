@@ -227,7 +227,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    `<#>` = target PR number, or current branch's PR (`gh pr view --json number -q .number`). If no PR exists yet, skip (nothing to submit to).
 4. **(Phase II: journal the findings — best-effort, NEVER blocks submit).** Run:
    ```bash
-   python3 "${CLAUDE_PROJECT_DIR:-$PWD}/claude/scripts/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
+   python3 "$HOME/.claude/scripts/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
    ```
    If the script exits **0**, the `findings.jsonl` is now a stable set of `review_finding` + `verification_verdict` pairs in `~/.claude/governance-events.jsonl`, linked by `verdict.subject_id == finding.id`. A `.journaled` marker in the scratch dir prevents re-runs. **If the script exits 2** (malformed JSON, missing `findings.jsonl`), capture the error verbatim in the Phase 7 summary under `Journaler:` as a silent FYI — the submit (step 3) and the worktree cleanup (step 5) are NOT unwound. The user's review is still posted; the journal just isn't. Re-runnable on the next `/review-pr` call (the marker is the only state; nothing in the journal itself blocks re-emit). This step runs AFTER the submit (so a journaler failure cannot prevent the user-visible review) and BEFORE the worktree cleanup (so the scratch dir still exists when the script reads it).
 5. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.

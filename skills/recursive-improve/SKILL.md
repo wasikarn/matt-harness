@@ -45,14 +45,14 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 ### 1. Observe — gather signals (read-only)
 
 - Run the verification-posture reader:
-  `python3 "${CLAUDE_PROJECT_DIR:-$PWD}/claude/scripts/recursive-improve-observe.py"`
+  `python3 "$HOME/.claude/scripts/recursive-improve-observe.py"`
   → latest `verification_summary` per session + sessions whose `gaps > 0` (a feature shipped
   `no-trail` without a named `optout_reason`). This is the metric / drift-guard baseline.
-- Run `harness-audit` (`bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/harness-audit/scripts/audit.sh"`)
+- Run `harness-audit` (`bash "$HOME/.claude/skills/harness-audit/scripts/audit.sh"`)
   → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
   the reader says *that* improvement is warranted, the audit says *what*.
 - Take a witness pre-snapshot:
-  `bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-BEFORE.md`
+  `bash "$HOME/.claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-BEFORE.md`
   → records the fleet/boundary state so Surface can attest exactly what the iteration changed.
 - **Success criterion:** a written list of candidate findings, each anchored to a `file:line`,
   a journal session, or an audit finding id. If both signals are clean → **say so and stop**:
@@ -101,7 +101,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 - **Drift guard:** if no signal improved — `gaps` not down, audit finding count not down, and
   no other named metric moved — the iteration did **not** help. Do **not** report success.
   Surface the flat/negative delta and treat it as the rollback decision (Step 6).
-- Run the relevant deterministic check on any code touched (`bash claude/hooks/tests/test-critical-hooks.sh`,
+- Run the relevant deterministic check on any code touched (`bash hooks/tests/test-critical-hooks.sh`,
   `py_compile`, `bash -n`).
 - **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated, not
   assumed.
@@ -109,7 +109,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 ### 6. Surface — report + attest + capture (rollback lives here)
 
 - Take the witness post-snapshot + diff:
-  `bash "${CLAUDE_PROJECT_DIR:-$PWD}/claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-AFTER.md`
+  `bash "$HOME/.claude/skills/inventory/scripts/inventory-witness.sh" /tmp/ri-AFTER.md`
   then `diff /tmp/ri-BEFORE.md /tmp/ri-AFTER.md` → exactly what fleet state the iteration changed.
 - **Rollback policy — surface + ask, never auto-revert.** A regression is a *signal*, not a silent
   failure (qmd-reindex precedent). If Verify showed flat/negative delta, present the before/after
