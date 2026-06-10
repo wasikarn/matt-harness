@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "kobig",
   "owner": { "name": "KOBIG" },
   "description": "Personal Claude Code harness, packaged as an installable plugin.",
@@ -7,6 +8,9 @@
       "name": "kbg",
       "source": ".",
       "description": "27 senior-specialist agents, 25 workflow skills, 8 commands, 29 governance hooks, always-on doctrine injection, and the TECH-LEAD-THAI output style.",
+      "author": { "name": "KOBIG" },
+      "category": "development",
+      "homepage": "https://github.com/wasikarn/kbg-harness",
       "keywords": ["harness", "agents", "skills", "workflow", "governance"]
     }
   ]

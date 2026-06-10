@@ -18,7 +18,7 @@
           },
           {
             "type": "command",
-            "command": "code-review-graph status",
+            "command": "if command -v code-review-graph >/dev/null 2>&1; then code-review-graph status; fi",
             "timeout": 10
           }
         ]
@@ -72,7 +72,7 @@
           },
           {
             "type": "command",
-            "command": "rtk hook claude"
+            "command": "if command -v rtk >/dev/null 2>&1; then rtk hook claude; fi"
           },
           {
             "type": "command",
@@ -131,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git rev-parse --git-dir > /dev/null 2>&1 && code-review-graph update --skip-flows || true",
+            "command": "if command -v code-review-graph >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then code-review-graph update --skip-flows; fi",
             "timeout": 30
           }
         ]
@@ -168,7 +168,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.py\""
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.py\"; fi"
           }
         ]
       },
@@ -187,7 +187,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/security-diff-review.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/security-diff-review.py\"; fi",
             "async": true
           }
         ]

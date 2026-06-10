@@ -24,11 +24,32 @@ Components are namespaced — invoke as `/kbg:<command>` and `/kbg:<skill>`.
 | `output-styles/` | TECH-LEAD-THAI |
 | `themes/` | catppuccin-mocha |
 
-## External dependencies
+## Requirements
 
-Some hooks shell out to external tools (`rtk`, `qmd`, `memory-lint`, `code-review-graph`). They
-degrade gracefully when those tools are absent — the hook affected is skipped, the session is
-unaffected. No MCP or LSP servers are bundled.
+**Required**
+
+| Need | Why | Without it |
+|---|---|---|
+| Claude Code **≥ v2.1.154** | honors `defaultEnabled: false` (opt-in) | older builds ignore the flag and enable `kbg` by default |
+| `python3` | doctrine injection JSON-escapes via `python3`; two governance hooks use it | doctrine does **not** inject; those hooks no-op |
+| `git` | git-aware skills/hooks (`/kbg:review-pr`, dangerous-git guard, review markers) | git workflows unavailable; other components unaffected |
+
+Standard `bash` / `grep` / `sed` are assumed. `jq` is used for audit journaling and self-guards if missing.
+
+**Optional integrations** — each hook below guards with `command -v` and silently no-ops when the tool
+is absent (no error, no "hook error" notice). Install separately to unlock the feature:
+
+| Tool | Unlocks | Fires on |
+|---|---|---|
+| `rtk` | token-optimized Bash proxy (60–90% savings) | every Bash call |
+| `code-review-graph` | review-context graph (status + incremental update) | SessionStart, post-edit |
+| `qmd` | local markdown-search reindex | Edit / Write |
+| Superset (`$SUPERSET_HOME_DIR`) | agent-activity notifications | env-gated |
+
+These are external tools / MCP servers, **not bundled** and **not required** — the core (agents,
+skills, commands, doctrine, governance hooks) runs without any of them. Audit hooks append logs to
+`~/.claude/*.log` and `~/.claude/governance-events.jsonl` on your machine; `chmod 700 ~/.claude` if
+other local users shouldn't read them.
 
 ## For external installers
 
