@@ -1,5 +1,16 @@
+# OS noise
 .DS_Store
+
+# Python
 __pycache__/
 *.pyc
+
+# Session / skill workspaces
 *-workspace/
 skills/*/workspace/
+
+# Personal scratch + temp artifacts
+.scratch/
+*.log
+*.tmp
+*.bak
