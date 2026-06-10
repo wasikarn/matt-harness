@@ -56,8 +56,11 @@ esac
 # HARNESS.md added 2026-06-10 (harness-recursive-improvement Phase 3) — the
 # applied harness-layer map + verification_tier rubric; load-bearing doctrine
 # edited rarely, same pattern-matching-error risk as the others.
+# ACLI.md and DBGATE.md added 2026-06-10 — Atlassian operation gate and
+# database-write gate respectively, both load-bearing doctrine via CLAUDE.md
+# @import chain; same pattern-matching-error risk as METHODOLOGY/RTK.
 case "$BASE" in
-  CLAUDE.md|METHODOLOGY.md|RTK.md|HARNESS.md|settings.json|.mcp.json|mcp-servers.json)
+  CLAUDE.md|METHODOLOGY.md|RTK.md|HARNESS.md|ACLI.md|DBGATE.md|settings.json|.mcp.json|mcp-servers.json)
     hook_decision ask "Doctrine edit detected: ${FILE_PATH}. These files are load-bearing across every session. Confirm this edit is intentional and verified."
     ;;
 esac

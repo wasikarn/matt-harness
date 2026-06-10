@@ -35,8 +35,10 @@ COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
 STRIPPED=$(hook_strip_quoted "$COMMAND")
 
 # Doctrine basenames (same set as doctrine-edit-gate Edit/Write hook).
-# METHODOLOGY.md added 2026-05-20 (audit H2) — keep aligned with gate.
-DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK)\.md|settings\.json|\.mcp\.json|mcp-servers\.json'
+# METHODOLOGY.md added 2026-05-20 (audit H2); HARNESS.md added 2026-06-10 (Phase 3);
+# ACLI.md and DBGATE.md added 2026-06-10 (gate-coverage closure) — all load-bearing
+# via CLAUDE.md @import chain. Keep aligned with doctrine-edit-gate.
+DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK|HARNESS|ACLI|DBGATE)\.md|settings\.json|\.mcp\.json|mcp-servers\.json'
 
 # Doctrine path: either dotfiles repo claude/ or runtime .claude/
 DOCTRINE_PATH_RE="(/claude/(${DOCTRINE_NAMES})|/\.claude/(${DOCTRINE_NAMES}))"

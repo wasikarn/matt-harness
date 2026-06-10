@@ -81,6 +81,8 @@ check block-dangerous-git.sh none "allows git status"          "$(bash_event 'gi
 check doctrine-edit-gate.sh ask  "asks on METHODOLOGY.md"   "$(edit_event '/x/.claude/METHODOLOGY.md')"
 check doctrine-edit-gate.sh ask  "asks on settings.json"    "$(edit_event '/x/.claude/settings.json')"
 check doctrine-edit-gate.sh ask  "asks on HARNESS.md"       "$(edit_event '/x/.claude/HARNESS.md')"
+check doctrine-edit-gate.sh ask  "asks on ACLI.md"          "$(edit_event '/x/.claude/ACLI.md')"
+check doctrine-edit-gate.sh ask  "asks on DBGATE.md"        "$(edit_event '/x/.claude/DBGATE.md')"
 check doctrine-edit-gate.sh none "allows non-doctrine file" "$(edit_event '/x/.claude/foo.py')"
 check doctrine-edit-gate.sh none "ignores file outside .claude" "$(edit_event '/x/src/METHODOLOGY.md')"
 
@@ -114,6 +116,8 @@ check config-protection.sh none "ignores non-config file"       "$(write_event "
 # --- block-bash-doctrine-write: deny shell writes to doctrine, allow reads/non-doctrine ---
 check block-bash-doctrine-write.sh deny "blocks > redirect to CLAUDE.md" "$(bash_event 'echo hacked > /repo/claude/CLAUDE.md')"
 check block-bash-doctrine-write.sh deny "blocks sed -i on settings.json" "$(bash_event 'sed -i s/a/b/ /home/u/.claude/settings.json')"
+check block-bash-doctrine-write.sh deny "blocks tee to ACLI.md"          "$(bash_event 'echo x | tee /repo/claude/ACLI.md')"
+check block-bash-doctrine-write.sh deny "blocks cp to DBGATE.md"         "$(bash_event 'cp /tmp/x /home/u/.claude/DBGATE.md')"
 check block-bash-doctrine-write.sh none "allows reading doctrine (cat)"  "$(bash_event 'cat /repo/claude/CLAUDE.md')"
 check block-bash-doctrine-write.sh none "allows write to non-doctrine"   "$(bash_event 'echo x > /tmp/foo.txt')"
 
