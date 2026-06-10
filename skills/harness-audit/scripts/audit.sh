@@ -4,10 +4,17 @@
 # Exit code = number of findings (0 = clean).
 set -uo pipefail
 
-# cd -P resolves the ~/.claude/skills/harness-audit symlink to the dotfiles
-# checkout; plain cd would walk '..' up from $HOME and find no claude/ dir.
+# cd -P resolves the ~/.claude/skills/harness-audit symlink to its source
+# checkout; plain cd would walk '..' up from $HOME and find no fleet dir.
 REPO_ROOT="${1:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
-CLAUDE_DIR="$REPO_ROOT/claude"
+# Layout: dotfiles nests the harness under claude/; the extracted kbg-harness
+# plugin repo is flat (agents/, skills/, … at the root). Resolve CLAUDE_DIR to
+# whichever holds the fleet so one audit.sh serves both checkouts.
+if [ -d "$REPO_ROOT/claude" ]; then
+  CLAUDE_DIR="$REPO_ROOT/claude"
+else
+  CLAUDE_DIR="$REPO_ROOT"
+fi
 SETTINGS="$CLAUDE_DIR/settings.json"
 MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|/|_|g')/memory"
 
@@ -18,11 +25,13 @@ MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|
 # shellcheck source=../../_lib/fm.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
 
-# Fail loud (Rule 12): no claude/ under the resolved root means root
-# resolution failed — error out instead of a false-clean "0 artifacts" pass.
-if [ ! -d "$CLAUDE_DIR" ]; then
-  echo "FATAL: no 'claude/' directory under repo root: $REPO_ROOT" >&2
-  echo "Pass the dotfiles checkout explicitly: bash audit.sh <repo-root>" >&2
+# Fail loud (Rule 12): if the resolved root holds none of the fleet dirs, root
+# resolution failed — error out instead of a false-clean "0 artifacts" pass. A
+# post-extraction dotfiles root legitimately has only hooks/; that still counts.
+if [ ! -d "$CLAUDE_DIR/agents" ] && [ ! -d "$CLAUDE_DIR/skills" ] && \
+   [ ! -d "$CLAUDE_DIR/commands" ] && [ ! -d "$CLAUDE_DIR/hooks" ]; then
+  echo "FATAL: no harness fleet (agents/skills/commands/hooks) under: $CLAUDE_DIR" >&2
+  echo "Pass the repo root explicitly: bash audit.sh <repo-root>" >&2
   exit 1
 fi
 
