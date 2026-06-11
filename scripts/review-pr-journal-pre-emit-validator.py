@@ -185,8 +185,8 @@ def main():
 
     if n_miss_findings:
         print(
-            f"{HOOK_ID}: BLOCK: {len(n_miss_findings)} finding(s) failed "
-            f"enum validation; journaler MUST NOT run until cleared:",
+            f"{HOOK_ID}: ASK-GATE: {len(n_miss_findings)} finding(s) failed "
+            f"enum validation; AskUserQuestion will surface the choice (proceed/pause/cancel):",
             file=sys.stderr,
         )
         for local_id, misses in n_miss_findings:
