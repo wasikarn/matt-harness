@@ -205,6 +205,77 @@ category (Added / Changed / Fixed) within each phase.
   Green bar: 150/0 tests pass (was 146/0; +4 new), audit 0C/0W/1I exit 0, `claude plugin
   validate --strict` ✔.
 
+### Phase 5 — Round-2 audit fixes (F1–F6 + reconcile)
+
+Round-2 fresh-context audit (2026-06-11, 5-agent pipeline: 4 parallel corpus readers + 1
+reconcile) re-surveyed the harness against the full `raw/ai-agents/harness-engineering/`
+corpus (now 16 files / 221 concepts, up from 14/221 at round-1). Verdict: **harness is
+healthy; round-1 conclusions hold across production / self-repair / loop-engineering
+sub-corpuses**. The autonomy invariant and Q3=a remain intact. 6 deduplicated findings
+shipped in 7 commits; the user accepted all 6 (`do_now` / `file_issue` / `reject` → enrich).
+
+#### Changed
+
+- **Validator stderr wording** (`69a4f84`, F1) — `scripts/review-pr-journal-pre-emit-validator.py:188-189`
+  renames `"BLOCK: … journaler MUST NOT run until cleared:"` → `"ASK-GATE: … AskUserQuestion
+  will surface the choice (proceed/pause/cancel):"`. Behavior unchanged (Layer 2 ask-gate
+  per Q3=a; the `AskUserQuestion` in `/review-pr` SKILL.md:233 preserves the human's
+  choice). The old wording leaked deny-gate framing into an ask-gate surface; the new
+  wording names the mechanism correctly. The autonomy invariant (CONTEXT.md §Invariants)
+  is load-bearing; the validator's text now matches its actual mechanism. 2 test grep
+  assertions in `test-critical-hooks.sh` updated (the brief estimated 10; the actual
+  count was 2 — the other 8 were test-local variable names that the brief said to leave
+  alone).
+- **Comprehension debt / cognitive surrender as autonomy-invariant corollaries**
+  (`ab3508e`, F5) — `METHODOLOGY.md §4` gains a 2-sentence corollary: a working loop whose
+  human has not personally read is **comprehension debt at compound interest**; the pull
+  to accept the loop's output without forming an opinion is **cognitive surrender**. The
+  autonomy invariant protects against both by ensuring every loop terminates at a human
+  gate. Doctrine only — no behavior change, no mechanism added.
+- **Irreversible-action class section** (`83b866b`, F6) — `docs/harness-decay-cadence.md`
+  gains a new "Irreversible-action class (gates the harness already has)" section that
+  (a) names the class, (b) maps each of the 4 existing class-shaped gates (DB writes,
+  secret reads, config edits, doctrine edits — verified against `hooks/hooks.json` line
+  numbers), and (c) records the precedent so a future `deploy-gate` / `external-api-gate`
+  can find the right pattern. No mechanism added; this is a map of existing territory.
+- **`model_limitation:` optional frontmatter field** (`f940729`, F3) — `docs/skill-template/SKILL.md`
+  frontmatter gains an optional `model_limitation:` field authors can opt into, plus a
+  "Model Limitation Assumption" body section with a worked example. Template-only — no
+  actual skills/agents/hooks received the field (the Q3-a 2026-09 quarterly sweep will
+  surface opt-ins for the human to re-verify). Per the autonomy invariant, no automation
+  walks the field; the human does.
+
+#### Added
+
+- **`exit_reason` field on `verification_summary` journal event** (`1079cc4`, F4) —
+  `hooks/verification-gate.sh` adds a 2-case `exit_reason` derivation to the journaled
+  JSON (`gaps > 0` → `"degrading"`; otherwise → `"complete"`); `hooks/JOURNAL-SCHEMA.md`
+  documents the new field and the 5-value enum vocabulary (complete / blocked / stalled
+  / degrading / timeout — `blocked` and `timeout` are deferred; they require per-trail
+  status markers and wall-clock correlation out of scope for this fix; the journal
+  consumer can add them later without breaking the contract); `scripts/governance-summary.py`
+  prints a `Counter` breakdown of sessions by `exit_reason`. 2 new test cases (cases 10,
+  11) in `test-critical-hooks.sh` use the existing `VGROOT` fixture (gaps) + a new
+  `vgroot5-clean` fixture (clean). Q3=a preserved: the journaler remains best-effort,
+  this adds a field; it does not block.
+- **Audit check #31 — schema-rot detector** (`89ad9c3` + `953523f` reconcile, F2) — `skills/harness-audit/scripts/audit.sh`
+  gains check #31 with 4 sub-checks: (1) skill `SKILL.md` canonical sections (## Input
+  Contract, ## Output Format, ## Failure Modes) — info, one per skill; (2) `plugin.json`
+  / `marketplace.json` `version` validity + 30-day cadence with `last_reviewed_reason:`
+  justification — info when stale, crit when missing/unparseable; (3) `docs/harness-decay-cadence.md`
+  `last_permission_review:` marker — info when missing/stale/malformed; (4) `hooks.json`
+  shape — **crit** (structural) on non-string matcher, missing `type`, empty `command`,
+  top-level shape. 2 new test cases in `test-critical-hooks.sh` (MM clean fixture, NN
+  violating fixture with integer matcher + missing-type entry). 1 OO regression guard
+  test (added at reconcile) verifies the empty-matcher refinement. Implementation
+  notes: the original F2 spec said "matcher must be non-empty" but the real `hooks/hooks.json:415`
+  uses empty matcher intentionally per `hooks/config-change-log.sh` header — refined at
+  reconcile to require only that the value be a string. The check surfaces 26 advisory
+  I1 on the current state: 24 skills missing canonical sections (pre-existing doc drift),
+  1 PERM_BOOKMARK_MISSING in `docs/harness-decay-cadence.md` (pre-existing), 1
+  plugin-cache (by-design). All advisory; not blocking; the 24 SKILL_MISSING findings
+  are flagged for a separate sweep.
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
