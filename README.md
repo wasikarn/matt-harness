@@ -63,7 +63,7 @@ If the conventions don't fit you:
 - **Disable it** — `"kbg@kobig": false` in `settings.json`, or `/plugin disable kbg`.
 - **Fork and adapt** — remove `doctrine-bootstrap.sh` from `hooks/hooks.json`, swap the output style.
 
-No support SLA; best-effort, pre-`1.0.0`. See `docs/ARCHITECTURE.md` for the delivery model and
+No support SLA; best-effort, pre-`1.0.0`. See `CONTEXT.md` for the delivery model and
 `CHANGELOG.md` for release notes.
 
 ## License

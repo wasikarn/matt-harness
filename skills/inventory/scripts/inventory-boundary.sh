@@ -123,14 +123,17 @@ echo "_Schema version: v3 (adds Output styles table; Mutates column reflects Edi
 # resolved through a symlink: bash's `cd` follows the symlink, so `..` math
 # lands in the wrong place. `git rev-parse --show-toplevel` is symlink-safe.
 GIT_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
-REPO_CLAUDE="${GIT_ROOT:-$(cd "$SCRIPT_DIR/../../../.." && pwd)}/claude"
+_repo_root="${GIT_ROOT:-$(cd "$SCRIPT_DIR/../../../.." && pwd)}"
+# Post-cutover the fleet lives at the repo root, not under claude/ (mirrors
+# harness-audit's CLAUDE_DIR resolution at audit.sh:24-26). Use claude/ only when it exists.
+if [ -d "$_repo_root/claude" ]; then REPO_CLAUDE="$_repo_root/claude"; else REPO_CLAUDE="$_repo_root"; fi
 
 if [ "${1:-}" = "--repo-only" ]; then
   # Repo-scoped: only THIS repo's claude/ artifacts. Excludes plugins and
   # other globally-installed skills/agents under ~/.claude — this is the
   # committed canonical map the audit (#16) diffs the live source against.
   bash "$SCRIPT_DIR/inventory.sh" "$REPO_CLAUDE"
-  print_boundary "Repo (claude/)" "$REPO_CLAUDE"
+  print_boundary "Repo" "$REPO_CLAUDE"
 elif [ -n "${1:-}" ]; then
   print_boundary "Source: $1" "$1"
 else
