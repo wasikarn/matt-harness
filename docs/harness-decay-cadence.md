@@ -66,6 +66,8 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
+**See [ADR 0002](0002-autonomy-invariant.md) for the rationale** — the autonomy invariant is irreversible, the "never auto-prune" guard is its concrete expression in decay reasoning, and the 5-iteration soft cap in `recursive-improve/SKILL.md:127` is a context-exhaustion backstop (not the primary gate).
+
 ## Irreversible-action class (gates the harness already has)
 
 The corpus converges on a class-name: **irreversible actions** (writes to

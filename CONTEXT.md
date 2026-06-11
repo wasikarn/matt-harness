@@ -55,6 +55,8 @@ the steady state going forward.
   the difference. This is the canonical home for the invariant that
   `recursive-improve` cites.
 
+  **See [ADR 0002](docs/adr/0002-autonomy-invariant.md) for the irreversible decision record** (rejected alternatives, 5 implementation surfaces, 3 verification pillars, and the "will not be reopened on a capability argument" clause).
+
 ## Components
 
 | Directory | Owner + External install as |
