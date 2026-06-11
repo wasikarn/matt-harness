@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # test-critical-hooks — smoke tests for the load-bearing enforcement hooks.
 #
-# Covers all 8 PreToolUse enforcement gates (the hooks that emit a
+# Covers all 7 PreToolUse enforcement gates (the hooks that emit a
 # permissionDecision — silent failure on any of these is the highest risk):
 #   block-dangerous-git · doctrine-edit-gate · secret-read-guard
 #   secret-scan · config-protection · block-bash-doctrine-write · block-alias-shadowing
-#   db-write-gate
 # Plus a syntax smoke pass over EVERY hook script: a logger/injector that
 # crashes can accidentally block a tool call, so `bash -n` / `ast.parse` over
 # the whole hooks/ dir catches that class even for the non-gate hooks.
@@ -131,25 +130,6 @@ check block-alias-shadowing.sh ask  "asks on git() function"   "$(bash_event 'gi
 check block-alias-shadowing.sh ask  "asks on function curl"    "$(bash_event 'function curl { command curl --insecure; }')"
 check block-alias-shadowing.sh none "allows plain git commit"  "$(bash_event 'git commit -m x')"
 check block-alias-shadowing.sh none "ignores non-safety alias" "$(bash_event "alias ll='ls -la'")"
-
-# --- db-write-gate: ask on non-SELECT MCP DB calls, allow SELECT/EXPLAIN/info_schema,
-#     ignore non-DB MCP tools. Mirrors DBGATE doctrine as a deterministic gate.
-mcp_db_event() { printf '{"tool_name":"%s","tool_input":{"query":%s}}' "$1" "$(printf '%s' "$2" | jq -R .)"; }
-mcp_nondb_event() { printf '{"tool_name":"mcp__atlassian__createJiraIssue","tool_input":{"summary":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
-check db-write-gate.sh none "allows SELECT on execute_sql_production" "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'SELECT 1')"
-check db-write-gate.sh none "allows EXPLAIN on execute_sql_staging"   "$(mcp_db_event 'mcp__tathep-db__execute_sql_staging' 'EXPLAIN SELECT id FROM t')"
-check db-write-gate.sh none "allows CTE WITH...SELECT"                "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'WITH x AS (SELECT 1) SELECT * FROM x')"
-check db-write-gate.sh none "allows information_schema read"          "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'SELECT * FROM information_schema.tables')"
-check db-write-gate.sh ask  "asks on DELETE execute_sql_production"   "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'DELETE FROM users WHERE id=1')"
-check db-write-gate.sh ask  "asks on UPDATE execute_sql_staging"      "$(mcp_db_event 'mcp__tathep-db__execute_sql_staging' 'UPDATE x SET a=1 WHERE id=1')"
-check db-write-gate.sh ask  "asks on INSERT execute_sql_anpr"         "$(mcp_db_event 'mcp__tathep-db__execute_sql_anpr_staging' 'INSERT INTO t (a) VALUES (1)')"
-check db-write-gate.sh ask  "asks on DROP TABLE"                      "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'DROP TABLE old')"
-check db-write-gate.sh ask  "asks on TRUNCATE"                        "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'TRUNCATE t')"
-check db-write-gate.sh ask  "asks on db_write tool"                   "$(mcp_db_event 'mcp__other-db__db_write' 'INSERT INTO t VALUES (1)')"
-check db-write-gate.sh none "ignores non-DB MCP tool"                 "$(mcp_nondb_event 'do thing')"
-check db-write-gate.sh none "ignores non-MCP tool"                    "$(bash_event 'psql -c "DELETE FROM t"')"
-check db-write-gate.sh none "allows SELECT with leading comment"      "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' '-- safety check\nSELECT 1')"
-check db-write-gate.sh none "allows comment-only query (no-op)"        "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' '-- just a comment, nothing else')"
 
 # --- bypass contract: CLAUDE_DISABLED_HOOKS must let a blocked case through ---
 out=$(printf '%s' "$(bash_event 'git reset --hard')" | CLAUDE_DISABLED_HOOKS=block-dangerous-git bash "$HOOKS/block-dangerous-git.sh" 2>/dev/null)

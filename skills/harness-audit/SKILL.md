@@ -42,7 +42,6 @@ Produces exit code = count of findings. Zero = clean.
 | **Hook context length** | Static `additionalContext` ≤ 10000 chars |
 | **Name format** | Skill/agent `name` is lowercase/digits/hyphens, ≤ 64 chars |
 | **Tool-grant tokens** | Each agent `tools:` token is a real Claude Code tool (typo guard) |
-| **Eval-target freshness** | Every `**/evals.json` / baseline-eval driver carries a `last_reviewed:` (or `last_reviewed_reason:` to defer); older than 180d emits info (#30) |
 | **Skill-ref resolution** | Each agent `skills:` ref resolves to a repo or installed skill |
 | **Test-honesty / tautology** | Test files (`*.test.*`, `test_*.py`, `*_test.py`) lack greppable anti-patterns: tautological `assert True/False`, identity/repr assertions, `test_<placeholder>` names, `pass`/`,` skeletons (Rule 9) |
 
