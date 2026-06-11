@@ -25,6 +25,32 @@ breaking changes.
   push and PR to `main` and `develop`. Catches schema / manifest drift before publish; pairs
   with the existing pre-commit harness-audit + critical-hooks gates. (`9f704f0`)
 
+### Patched (2026-06-11, post-release)
+
+Three commits landed after `0.1.2` was tagged. They are non-functional (no runtime change, no
+manifest drift, no version bump) — included here for archaeology and so a future reader of
+`orchestrate` / `critical-eval` / `article-mine` / `acli` can trace why the descriptions differ
+from the pattern in earlier versions. The auto-trigger re-measure (window 2026-05-25→now,
+scope `kobig`) confirmed **no regression**: custom auto-rate flat at 38% (76/199), all-skills
+auto-rate flat at 46% (131/286).
+
+- **Description trim cycle (4 skills).** All 26/26 kbg-harness skills now under the 700-char
+  UI truncation threshold. Body content byte-identical; only `description:` lines touched.
+  - `orchestrate`: 978 → 685 chars (`38c1c40`)
+  - `critical-eval`: 802 → 686 chars (`38c1c40`)
+  - `article-mine`: 713 → 642 chars (`3d03444`)
+  - `acli`: 703 → 628 chars (`3d03444`)
+  - All sibling cross-refs + all quoted trigger phrases + all negative-scope examples
+    preserved verbatim. Watch-out: `acli`'s "ALWAYS trigger" + "ANY" are load-bearing safety
+    signals for bulk-mutation — do not strip in any future trim.
+
+- **measure-autotrigger: opt-in plugin-cache fallback.** Post-cutover (commit `962bfce`),
+  `kbg-harness/skills` and `kbg-harness/commands` no longer live under a `claude/` subdir,
+  so the `--repo-root` lookup misses. Added `--use-plugin-cache-fallback` flag (default off,
+  explicit opt-in to avoid silent data drift for unrelated repos) that walks
+  `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
+  Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
+
 ## [Unreleased]
 
 ### Fixed
