@@ -13,8 +13,9 @@
 
 set -uo pipefail
 
-HOOK_AUTO=/Users/kobig/Codes/Personals/dotfiles/claude/hooks/auto-review-nudge.sh
-HOOK_SKILL=/Users/kobig/Codes/Personals/dotfiles/claude/hooks/skill-nudge.sh
+HOOKS="$(cd "$(dirname "$0")/.." && pwd)"
+HOOK_AUTO="$HOOKS/auto-review-nudge.sh"
+HOOK_SKILL="$HOOKS/skill-nudge.sh"
 
 emit() {
   local prompt="$1"

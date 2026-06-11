@@ -62,14 +62,14 @@ fi
 
 # Plugin delivery (kbg-cutover 2026-06-11). The kbg@kobig plugin installs
 # agents/skills/commands/hooks/output-styles into the user-scope plugin cache
-# (default ~/.claude/plugins/cache/kobig/kbg/0.1.0/) and Claude Code loads
+# (default ~/.claude/plugins/cache/kobig/kbg/<version>/) and Claude Code loads
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on kbg-harness).
 # --plugin-cache <path> overrides the default for testing (see tests/fixtures/).
 # Resolve to the latest installed version of the kbg plugin in the cache,
-# so a version bump (e.g. 0.1.0 -> 0.1.1) doesn't silently disable F1
-# plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
+# so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable
+# F1 plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
 if [ -z "$PLUGIN_CACHE_ARG" ]; then
   _KBG_CACHE_DIR="$HOME/.claude/plugins/cache/kobig/kbg"
   if [ -d "$_KBG_CACHE_DIR" ]; then
@@ -437,7 +437,7 @@ if [ -f "$BOUNDARY" ] && [ -f "$BOUNDARY_GEN" ]; then
     # Ignore the volatile "_Generated:" timestamp line when comparing.
     if ! diff <(grep -v '^_Generated:' "$BOUNDARY") \
               <(grep -v '^_Generated:' "$_tmp_boundary") >/dev/null 2>&1; then
-      warn "BOUNDARY.md stale vs repo fleet — regenerate: bash claude/skills/inventory/scripts/inventory-boundary.sh --repo-only > claude/BOUNDARY.md"
+      warn "BOUNDARY.md stale vs repo fleet — regenerate: bash /Users/kobig/Codes/Personals/kbg-harness/skills/inventory/scripts/inventory-boundary.sh --repo-only > /Users/kobig/Codes/Personals/dotfiles/claude/BOUNDARY.md"
     fi
   else
     warn "could not regenerate boundary map to check drift (inventory-boundary.sh failed)"
@@ -760,6 +760,86 @@ for f in "$CLAUDE_DIR/hooks"/*.sh; do
     crit "hook '$name' calls BOTH journal_append and hook_decision — gate hooks decide, audit hooks journal; separate them (JOURNAL-SCHEMA.md)"
   fi
 done
+
+# 30. Eval-target freshness — every `**/evals.json` and the baseline-eval
+# driver carries a `last_reviewed:` (ISO date) field. If the date is older
+# than KBG_EVAL_MAX_AGE_DAYS (default 180) AND there's no sibling
+# `last_reviewed_reason:` justifying the staleness, emit info. This catches
+# the "evals were great 6 months ago, has the skill drifted?" case the
+# per-fix gate-rot check can't see — gate-rot is per-fix, this is per-target.
+# Default of 180d matches decay-cadence quarter; tune via env var.
+# 2026-06-11: added in response to the Harness-Loop-Engineer audit FIX-2.
+KBG_EVAL_MAX_AGE_DAYS="${KBG_EVAL_MAX_AGE_DAYS:-180}"
+if command -v python3 >/dev/null 2>&1; then
+  # Collect candidate files. We pass paths via NUL delimiters so a path with
+  # spaces (rare in this repo, but cheap to handle) doesn't get mangled.
+  EVAL_TARGETS=()
+  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$CLAUDE_DIR/skills" -type f -name 'evals.json' -print0 2>/dev/null)
+  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/scripts" -maxdepth 2 -type f -name 'run-baseline-eval.py' -print0 2>/dev/null)
+  if [ "${#EVAL_TARGETS[@]}" -gt 0 ]; then
+    while IFS=$'\t' read -r eval_path age_days has_reason reason_text; do
+      [ -n "$eval_path" ] || continue
+      rel="${eval_path#"$REPO_ROOT"/}"
+      if [ "$age_days" = "missing" ]; then
+        # No last_reviewed field at all — flag it. The whole point of this
+        # check is to surface files that haven't been touched.
+        info "eval-target freshness: $rel missing 'last_reviewed:' field — add one (YYYY-MM-DD)"
+      elif [ "$age_days" -gt "$KBG_EVAL_MAX_AGE_DAYS" ] 2>/dev/null && [ "$has_reason" != "1" ]; then
+        info "eval-target freshness: $rel last reviewed $age_days days ago — revisit (or add last_reviewed_reason: to defer)"
+      fi
+    done < <(KBG_EVAL_MAX_AGE_DAYS="$KBG_EVAL_MAX_AGE_DAYS" python3 - "${EVAL_TARGETS[@]}" <<'PY' 2>/dev/null
+import datetime as dt, json, os, re, sys
+targets = sys.argv[1:]
+max_age = int(os.environ.get("KBG_EVAL_MAX_AGE_DAYS", "180"))
+today = dt.date.today()
+# .py header: scan first 50 lines for a `last_reviewed: YYYY-MM-DD` line.
+# evals.json: scan the first ~3KB for the same field (kept loose since
+# people put it in different positions — sibling `last_reviewed_reason:`
+# counts as a documented justification for staleness).
+LINE_RE = re.compile(r"^[\s#/*-]*last_reviewed:\s*(\d{4}-\d{2}-\d{2})", re.MULTILINE)
+REASON_RE = re.compile(r"^[\s#/*-]*last_reviewed_reason:\s*\S+", re.MULTILINE)
+for path in targets:
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read(8192)
+    except OSError:
+        continue
+    m = LINE_RE.search(text)
+    if not m:
+        # Try JSON parse to catch "last_reviewed" as a key (camelCase OK).
+        try:
+            data = json.loads(open(path, encoding="utf-8", errors="replace").read())
+            if isinstance(data, dict):
+                v = data.get("last_reviewed") or data.get("lastReviewed")
+                if v:
+                    try: dt.date.fromisoformat(str(v))
+                    except ValueError: pass
+                    else:
+                        # JSON path: look for reason at the same level
+                        reason = data.get("last_reviewed_reason") or data.get("lastReviewedReason")
+                        if reason:
+                            print(f"{path}\t{(today - dt.date.fromisoformat(str(v))).days}\t1\t{reason}")
+                            continue
+                        print(f"{path}\t{(today - dt.date.fromisoformat(str(v))).days}\t0\t")
+                        continue
+        except (OSError, ValueError):
+            pass
+        print(f"{path}\tmissing\t0\t")
+        continue
+    try:
+        d = dt.date.fromisoformat(m.group(1))
+    except ValueError:
+        print(f"{path}\tmissing\t0\t")
+        continue
+    has_reason = "1" if REASON_RE.search(text) else "0"
+    age = (today - d).days
+    reason_text = REASON_RE.search(text).group(0) if has_reason == "1" else ""
+    print(f"{path}\t{age}\t{has_reason}\t{reason_text}")
+PY
+)
+  fi
+else
+  warn "eval-target freshness check skipped — python3 unavailable"
+fi
 
 # ── summary ──────────────────────────────────────────────────────────
 

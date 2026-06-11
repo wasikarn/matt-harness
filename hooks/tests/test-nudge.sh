@@ -1,5 +1,6 @@
 #!/bin/bash
-HOOK=/Users/kobig/Codes/Personals/dotfiles/claude/hooks/orchestrator-nudge.sh
+HOOKS="$(cd "$(dirname "$0")/.." && pwd)"
+HOOK="$HOOKS/orchestrator-nudge.sh"
 test_prompt() {
   local label="$1" prompt="$2" expect="$3"
   local out

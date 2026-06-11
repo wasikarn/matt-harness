@@ -115,7 +115,7 @@ print_boundary() {
 # ── main ─────────────────────────────────────────────────────────────
 
 echo "# Boundary Map"
-echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash claude/skills/inventory/scripts/inventory-boundary.sh --repo-only > claude/BOUNDARY.md\`._"
+echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash /Users/kobig/Codes/Personals/kbg-harness/skills/inventory/scripts/inventory-boundary.sh --repo-only > /Users/kobig/Codes/Personals/dotfiles/claude/BOUNDARY.md\` (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
 echo "_Schema version: v3 (adds Output styles table; Mutates column reflects Edit/Write/Bash grant)._"
 
 # Resolve repo root via git (robust to symlink paths like ~/.claude/skills/).

@@ -54,7 +54,7 @@ real-but-undocumented — flagged for a human, not failed (Rule 1 / Rule 12).
 
 ```
 === Skill Audit Report ===
-Fleet: 27 agents, 24 skills, 8 commands, 23 hooks
+Fleet: 27 agents, 26 skills, 8 commands, 32 hooks
 
 CRITICAL:
   F1: probe skill not symlinked to ~/.claude/skills/
@@ -72,7 +72,7 @@ Exit: 2
 ## Plugin delivery (F1 is plugin-aware)
 
 When `kbg@kobig` is enabled and its plugin cache is populated
-(`~/.claude/plugins/cache/kobig/kbg/0.1.0/{agents,skills,commands,hooks,output-styles}/`),
+(`~/.claude/plugins/cache/kobig/kbg/<version>/{agents,skills,commands,hooks,output-styles}/`),
 F1 ("not symlinked to `~/.claude/…`") treats plugin-delivered components as
 loadable and does **not** fire — Claude Code resolves them via
 `${CLAUDE_PLUGIN_ROOT}` at runtime, not via a symlink. The audit emits an
@@ -80,7 +80,8 @@ loadable and does **not** fire — Claude Code resolves them via
 symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
 The cache path can be overridden with `--plugin-cache <path>` (used by the
 test fixtures in `tests/fixtures/`, which point at fake caches so the F1
-check is exercised without a live install).
+check is exercised without a live install). The live cache version is
+auto-detected via `ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1` — do not hardcode.
 
 ## Integration
 
