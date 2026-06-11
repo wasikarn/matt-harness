@@ -294,6 +294,80 @@ polish.
   `ACCEPTANCE.md` at phase start in `.scratch/phase-N-.../`. 5 open questions logged
   at the bottom of the spec for owner review before Phase 1 starts.
 
+### Phase 1 — T1 safety fixes (F1 + F2 + F4 + F11 + F12 + D5, 2026-06-12, 1 commit)
+
+Closes the 4 T1-safety items from `.scratch/audit-2026-06-12/SPEC.md` Phase 1 plus
+2 revalidation extensions from the 16-article parallel re-read (`.scratch/article-
+revalidation-2026-06-12/delta-vs-REPORT-v2.md` — F11, F12, D5). 6 fixes, 247
+insertions, 7 files.
+
+#### Added
+
+- **`hooks/validator-bash-guard.sh` (F1)** — new PreToolUse Bash hook that gates
+  the 7 validator-class agents (`code-reviewer`, `code-explorer`, `code-architect`,
+  `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`)
+  against 11 mutation patterns (`git push|reset --hard|clean -fd`, `rm`, `sed -i`,
+  `>file`, `mv → /`, `chmod`, `chown`, fork-bomb, `curl -X POST|PUT|DELETE|PATCH`,
+  `npm publish|uninstall`, `pip uninstall`). Reads `agent_type` from stdin JSON per
+  vendor spec (code.claude.com/docs/en/hooks); fail-open for non-validators and
+  main-thread (no `agent_type`). 7 allow-prefixes preserve read-only inspection
+  (`git diff|log|show|status`, `ls|cat|head|tail|wc|grep|rg|find|jq`, `node -p`,
+  `python3 -c`, `npm test`, `pytest`, `cargo test`, `go test`).
+- **`## Validation chain (TaskCreate + addBlockedBy)` in `skills/orchestrate/SKILL.md`
+  (F2)** — worked example for the builder → validator → fix → re-validator DAG
+  with `TaskUpdate(addBlockedBy=[...])` wiring between Procedure and Fast Path Gate.
+- **`### Consolidation (4-step merge)` (F11)** — Reports → Conflict Resolution →
+  Priority Ranking → Action Plan subsection in the F2 chain section, closing the
+  post-parallel-fan-in reconciliation gap.
+- **`## Anti-patterns (distribution mistakes)` in `skills/orchestrate/reference.md`
+  (F12)** — 4-mistake taxonomy (over-fragmentation, under-specification, resource
+  conflicts, context duplication) sourced from 4 articles + 6 named anti-patterns
+  (over-parallelizing, under-parallelizing, output-format-mismatch, overlapping-
+  roles, F2-chain-without-merge, anti-pattern-in-this-list).
+- **`## Nest-down pattern` in `agents/code-explorer.md` (F4)** — push noisy tool
+  calls down to layer-2/3 agents, return only verdicts. Per nested-subagents
+  article (vendor v2.1.172, 2026-06-09). Hard cap depth=5; build in 1 layer of
+  margin.
+- **`## Nest-down pattern` in `agents/researcher.md` (D5)** — same pattern with
+  research-specific guidance (claim verification, WebSearch-cluster delegation,
+  depth=3 absolute budget due to high-token WebSearch calls).
+- **17 new test cases in `hooks/tests/test-critical-hooks.sh`** — 6 AC cases for
+  F1 + 8 extra robustness (curl, chmod, mv, npm publish, read-only allow, main-
+  thread fail-open) + 3 fork-bomb variants (caught a regex regression in the
+  adversarial verify pass — no AC test covered the fork-bomb case; locked in
+  with these tests).
+
+#### Changed
+
+- **`hooks/hooks.json`** — `validator-bash-guard.sh` appended to the PreToolUse
+  Bash matcher (after `block-alias-shadowing`; preserves existing matcher order).
+- **`skills/orchestrate/SKILL.md`** — Validation chain + Consolidation sections
+  between "Procedure" and "Fast Path Gate".
+- **`skills/orchestrate/reference.md`** — L4 cross-reference to SKILL.md's
+  Validation chain; new Anti-patterns section at end.
+
+#### Green bar
+
+- `bash hooks/tests/test-critical-hooks.sh` → 176 passed, 0 failed (was 172)
+- `bash skills/harness-audit/scripts/audit.sh` → 0 Critical (was 1), 1 Warning
+  (pre-existing), 26 Info (baseline)
+- `claude plugin validate --strict .` → passed
+
+#### Verification
+
+- 6 fresh-context adversarial verifiers (1 per fix + 1 spec-consistency). 5 PASS;
+  1 F1 verifier FAIL caught a fork-bomb regex regression — fixed and locked in
+  with 3 new fork-bomb test cases.
+
+#### Out of scope (deferred to Phase 2 / 3 / 4)
+
+- F3, F7, D1, D2 (Phase 2 capability) — separate phase
+- F5, F6, D3 (Phase 3 polish) — separate phase
+- D6, D9 (Phase 4 deferred) — `usage-monitor/` skill + personality-injection
+  commands not in this epic
+- D4, D8, D10 (Phase 2 doc adds) — ship with Phase 2 spec
+- 5 open questions from SPEC.md — owner review pending
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit
