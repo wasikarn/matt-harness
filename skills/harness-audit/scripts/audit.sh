@@ -1063,10 +1063,16 @@ if hooks_path is not None:
                     if not isinstance(group, dict):
                         print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}]: not an object")
                         continue
-                    # matcher is OPTIONAL in the spec; if present, must be a non-empty string
+                    # matcher is OPTIONAL in the spec. If present, must be a string
+                    # (empty string is valid per vendor convention — empty matcher =
+                    # "match all known sources", used for events with multi-source
+                    # semantics like ConfigChange. See hooks/config-change-log.sh
+                    # header for the rationale.) Refined after round-2 reconcile
+                    # (2026-06-12): F2 check #31's "must be non-empty" was too
+                    # strict and flagged the legitimate ConfigChange empty matcher.
                     matcher = group.get("matcher")
-                    if matcher is not None and (not isinstance(matcher, str) or not matcher.strip()):
-                        print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].matcher: not a non-empty string")
+                    if matcher is not None and not isinstance(matcher, str):
+                        print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].matcher: not a string")
                     inner = group.get("hooks")
                     if not isinstance(inner, list) or not inner:
                         print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks: missing or empty")

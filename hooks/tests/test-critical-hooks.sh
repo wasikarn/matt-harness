@@ -1582,14 +1582,17 @@ cat > "$SREP_V/.claude-plugin/plugin.json" <<'PJ'
   "name": "test-plugin-no-version"
 }
 PJ
-# hooks.json: empty matcher (the spec-violation case the check guards)
-# + a missing `type` field on one entry (defense in depth)
+# hooks.json: non-string matcher (integer — the genuine schema violation
+# the check guards) + a missing `type` field on one entry (defense in
+# depth). Empty matcher is NOT a violation (vendor convention for
+# multi-source events like ConfigChange — see
+# hooks/config-change-log.sh header).
 cat > "$SREP_V/claude/hooks/hooks.json" <<'HJ'
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "",
+        "matcher": 42,
         "hooks": [
           { "type": "command", "command": "echo bad" }
         ]
@@ -1636,6 +1639,72 @@ if [ "$SREP_V_HAS_SKILL_INFO" -ge 1 ] && [ "$SREP_V_HAS_PLUGIN_CRIT" -ge 1 ] \
   PASS=$((PASS+1)); printf '  ✅ %-26s violating fixture: 4 sub-checks all fire (skill info, plugin crit, hooks crit, perm info); rc>=2 (got %s)\n' "harness-audit #31" "$SREP_V_RC"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s skill=%s plugin=%s hooks=%s perm=%s rc=%s (want >=1/1/1/1/2):\n%s\n' "harness-audit #31" "$SREP_V_HAS_SKILL_INFO" "$SREP_V_HAS_PLUGIN_CRIT" "$SREP_V_HAS_HOOKS_CRIT" "$SREP_V_HAS_PERM_INFO" "$SREP_V_RC" "$SREP_V_OUT"
+fi
+
+# (OO) regression guard — empty matcher must NOT fire HOOKS_SHAPE_FAIL.
+# This mirrors the real kbg-harness pattern: hooks/hooks.json:415 has
+# `"matcher": ""` for the ConfigChange event, which is a legal vendor
+# convention (empty matcher = match all known multi-source events; see
+# hooks/config-change-log.sh header). The check #31 was refined on
+# 2026-06-12 after the round-2 reconcile found the "must be non-empty"
+# spec was too strict. This test guards the refinement: a fixture
+# that uses empty matchers (and otherwise satisfies the check) must
+# produce zero HOOKS_SHAPE_FAIL findings.
+SREP_O="$FIXTURE/srep-empty-matcher"; rm -rf "$SREP_O"; mkdir -p "$SREP_O/claude/skills/ok-skill" "$SREP_O/claude/hooks" "$SREP_O/claude/agents" "$SREP_O/claude/commands" "$SREP_O/claude/docs" "$SREP_O/.claude-plugin"
+cat > "$SREP_O/claude/skills/ok-skill/SKILL.md" <<'SK'
+---
+name: ok-skill
+description: 'Test fixture for audit #31 OO — empty matcher regression.'
+---
+# OK Skill
+
+## Input Contract
+- **Input 1**: ...
+
+## Output Format
+- **Output 1**: ...
+
+## Failure Modes to Avoid
+- **Failure mode 1**: ...
+SK
+cat > "$SREP_O/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "test-empty-matcher", "version": "0.0.1" }
+PJ
+# hooks.json: empty matcher is the SUBJECT of this test — must pass
+# silently. All other fields valid. ConfigChange event registration
+# with empty matcher is the real-world precedent this guards.
+cat > "$SREP_O/claude/hooks/hooks.json" <<'HJ'
+{
+  "hooks": {
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "echo config-change" }
+        ]
+      }
+    ]
+  }
+}
+HJ
+cat > "$SREP_O/claude/docs/harness-decay-cadence.md" <<'DC'
+# Decay cadence
+
+last_permission_review: $TODAY_ISO abc123
+DC
+set +e
+SREP_O_OUT=$(bash "$AUDIT" "$SREP_O" 2>&1)
+SREP_O_RC=$?
+set -e
+# Assertions: zero HOOKS_SHAPE_FAIL findings, zero CRITs on the hooks.json
+# shape. The test is about the hooks sub-check only — SKILL_MISSING and
+# perm-bookmark are NOT the subject and can vary.
+SREP_O_HAS_HOOKS_CRIT=$(printf '%s' "$SREP_O_OUT" | grep -c "HOOKS_SHAPE_FAIL" || true)
+SREP_O_HAS_MATCHER_CRIT=$(printf '%s' "$SREP_O_OUT" | grep -c "matcher: not a string" || true)
+if [ "$SREP_O_HAS_HOOKS_CRIT" = 0 ] && [ "$SREP_O_HAS_MATCHER_CRIT" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s empty matcher regression: 0 HOOKS_SHAPE_FAIL (legal vendor pattern accepted)\n' "harness-audit #31"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s empty matcher regression fired hooks-crit=%s matcher-crit=%s (want 0/0):\n%s\n' "harness-audit #31" "$SREP_O_HAS_HOOKS_CRIT" "$SREP_O_HAS_MATCHER_CRIT" "$SREP_O_OUT"
 fi
 
 echo
