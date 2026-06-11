@@ -1,5 +1,6 @@
 {
   "skill_name": "incident",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -8,12 +9,30 @@
       "expected_output": "Runs full incident procedure: Detect/Acknowledge, Assess (severity S1/S2, blast radius), Mitigate (rollback first, then kill-switch, etc.), Communicate (initial status + 5-min updates), Fix Forward (hand off to /hotfix if needed), Resolve/Monitor, Post-Mortem scheduling.",
       "files": [],
       "assertions": [
-        {"name": "severity_classified", "description": "Response classifies severity (S1-S4) with justification"},
-        {"name": "mitigation_ordered", "description": "Response lists mitigation options in speed order: rollback → kill-switch → circuit breaker → scale → hotfix"},
-        {"name": "rollback_first", "description": "Response checks rollback as the first mitigation option"},
-        {"name": "communication_plan", "description": "Response includes communication plan with timing (initial within 5 min, updates every 5 min)"},
-        {"name": "evidence_preservation", "description": "Response mentions preserving evidence before fixing"},
-        {"name": "post_mortem_scheduled", "description": "Response schedules or reminds about /post-mortem for S1/S2"}
+        {
+          "name": "severity_classified",
+          "description": "Response classifies severity (S1-S4) with justification"
+        },
+        {
+          "name": "mitigation_ordered",
+          "description": "Response lists mitigation options in speed order: rollback \u2192 kill-switch \u2192 circuit breaker \u2192 scale \u2192 hotfix"
+        },
+        {
+          "name": "rollback_first",
+          "description": "Response checks rollback as the first mitigation option"
+        },
+        {
+          "name": "communication_plan",
+          "description": "Response includes communication plan with timing (initial within 5 min, updates every 5 min)"
+        },
+        {
+          "name": "evidence_preservation",
+          "description": "Response mentions preserving evidence before fixing"
+        },
+        {
+          "name": "post_mortem_scheduled",
+          "description": "Response schedules or reminds about /post-mortem for S1/S2"
+        }
       ]
     },
     {
@@ -23,10 +42,22 @@
       "expected_output": "Security breach = redirect to security-reviewer FIRST. Do NOT classify severity or run normal incident procedure. Once security-reviewer clears forensic steps, return to incident for infrastructure recovery.",
       "files": [],
       "assertions": [
-        {"name": "redirect_to_security_reviewer", "description": "Response redirects to security-reviewer immediately, before any incident severity classification"},
-        {"name": "no_s1_classification", "description": "Response does NOT classify this as S1 through the normal incident severity table"},
-        {"name": "no_mitigation_procedure", "description": "Response does NOT run the 7-step incident mitigation procedure before security clearance"},
-        {"name": "forensic_first", "description": "Response mentions forensic steps / security investigation as the first priority"}
+        {
+          "name": "redirect_to_security_reviewer",
+          "description": "Response redirects to security-reviewer immediately, before any incident severity classification"
+        },
+        {
+          "name": "no_s1_classification",
+          "description": "Response does NOT classify this as S1 through the normal incident severity table"
+        },
+        {
+          "name": "no_mitigation_procedure",
+          "description": "Response does NOT run the 7-step incident mitigation procedure before security clearance"
+        },
+        {
+          "name": "forensic_first",
+          "description": "Response mentions forensic steps / security investigation as the first priority"
+        }
       ]
     },
     {
@@ -36,10 +67,22 @@
       "expected_output": "Non-production issue. Should decline and redirect to /fix-bug or /diagnose.",
       "files": [],
       "assertions": [
-        {"name": "declines_incident", "description": "Response explicitly declines incident response"},
-        {"name": "non_production_reason", "description": "Response states this is not a production incident"},
-        {"name": "redirect_to_fix_bug", "description": "Response redirects to /fix-bug or /diagnose"},
-        {"name": "no_severity_table", "description": "Response does NOT apply S1-S4 severity classification"}
+        {
+          "name": "declines_incident",
+          "description": "Response explicitly declines incident response"
+        },
+        {
+          "name": "non_production_reason",
+          "description": "Response states this is not a production incident"
+        },
+        {
+          "name": "redirect_to_fix_bug",
+          "description": "Response redirects to /fix-bug or /diagnose"
+        },
+        {
+          "name": "no_severity_table",
+          "description": "Response does NOT apply S1-S4 severity classification"
+        }
       ]
     }
   ]

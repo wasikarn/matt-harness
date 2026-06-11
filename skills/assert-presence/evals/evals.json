@@ -1,5 +1,6 @@
 {
   "skill_name": "assert-presence",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -8,21 +9,39 @@
       "expected_output": "Run witness.sh sign --namespace=assert-presence <slug>, author a PRESENT_MARKER assertion anchored on the unique fix-id comment (src/auth.ts :: // FIX-auth-null), producing an ed25519-signed manifest at .witness/assert-presence-<slug>.{txt,sig}; verify once locally, commit both files, and wire witness.sh verify --namespace=assert-presence into pre-commit/CI so it exits 2 with ASSERTION REGRESSION if the marker disappears.",
       "files": [],
       "assertions": [
-        {"name": "uses_sign_script", "description": "Response runs scripts/witness.sh sign --namespace=assert-presence <slug> (the bundled ed25519 signer), not a hand-rolled checksum or generic git approach"},
-        {"name": "present_marker_grammar", "description": "Response uses a PRESENT_MARKER: <path> :: <substring> assertion anchored on the unique fix-id comment (// FIX-auth-null), not PRESENT_FILE alone"},
-        {"name": "witness_manifest_path_and_sig", "description": "Response stores the manifest at .witness/assert-presence-<slug>.txt with an ed25519 .sig and commits both — not .scratch/ or an arbitrary path"},
-        {"name": "verify_gate_wired", "description": "Response wires witness.sh verify --namespace=assert-presence into pre-commit/CI and notes it exits 2 / prints ASSERTION REGRESSION when the asserted marker is missing"}
+        {
+          "name": "uses_sign_script",
+          "description": "Response runs scripts/witness.sh sign --namespace=assert-presence <slug> (the bundled ed25519 signer), not a hand-rolled checksum or generic git approach"
+        },
+        {
+          "name": "present_marker_grammar",
+          "description": "Response uses a PRESENT_MARKER: <path> :: <substring> assertion anchored on the unique fix-id comment (// FIX-auth-null), not PRESENT_FILE alone"
+        },
+        {
+          "name": "witness_manifest_path_and_sig",
+          "description": "Response stores the manifest at .witness/assert-presence-<slug>.txt with an ed25519 .sig and commits both \u2014 not .scratch/ or an arbitrary path"
+        },
+        {
+          "name": "verify_gate_wired",
+          "description": "Response wires witness.sh verify --namespace=assert-presence into pre-commit/CI and notes it exits 2 / prints ASSERTION REGRESSION when the asserted marker is missing"
+        }
       ]
     },
     {
       "id": 1,
       "eval_name": "marker-not-whole-file-hash",
       "prompt": "To pin that an agent's fix is still there, should I just sha256 the whole file so any change to it trips the check?",
-      "expected_output": "No — a full-file sha256 is brittle: an unrelated refactor (renaming a variable) breaks the assertion even though the fix is intact. Use a PRESENT_MARKER substring anchored on a unique fix-id comment instead; it survives refactors and only trips when the actual fix is gone.",
+      "expected_output": "No \u2014 a full-file sha256 is brittle: an unrelated refactor (renaming a variable) breaks the assertion even though the fix is intact. Use a PRESENT_MARKER substring anchored on a unique fix-id comment instead; it survives refactors and only trips when the actual fix is gone.",
       "files": [],
       "assertions": [
-        {"name": "rejects_whole_file_hash", "description": "Response rejects full-file sha256 as brittle — an unrelated refactor would break it — and does NOT endorse hashing the whole file"},
-        {"name": "recommends_present_marker", "description": "Response recommends a PRESENT_MARKER substring anchored on a unique fix-id comment as the resilient alternative (skill-documented anti-pattern)"}
+        {
+          "name": "rejects_whole_file_hash",
+          "description": "Response rejects full-file sha256 as brittle \u2014 an unrelated refactor would break it \u2014 and does NOT endorse hashing the whole file"
+        },
+        {
+          "name": "recommends_present_marker",
+          "description": "Response recommends a PRESENT_MARKER substring anchored on a unique fix-id comment as the resilient alternative (skill-documented anti-pattern)"
+        }
       ]
     }
   ]

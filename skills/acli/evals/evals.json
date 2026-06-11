@@ -1,5 +1,6 @@
 {
   "skill_name": "acli",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -8,10 +9,22 @@
       "expected_output": "A set of acli commands that checks auth, previews the JQL set, then transitions matching work items to Done with confirmation safety.",
       "files": [],
       "assertions": [
-        {"name": "auth_gate_present", "description": "Response mentions acli jira auth status before mutation"},
-        {"name": "jql_preview_present", "description": "Response previews the JQL set with search --count before transition"},
-        {"name": "transition_command_present", "description": "Response includes acli jira workitem transition command"},
-        {"name": "confirmation_safety_present", "description": "Response warns about --yes or confirms the preview matches intent"}
+        {
+          "name": "auth_gate_present",
+          "description": "Response mentions acli jira auth status before mutation"
+        },
+        {
+          "name": "jql_preview_present",
+          "description": "Response previews the JQL set with search --count before transition"
+        },
+        {
+          "name": "transition_command_present",
+          "description": "Response includes acli jira workitem transition command"
+        },
+        {
+          "name": "confirmation_safety_present",
+          "description": "Response warns about --yes or confirms the preview matches intent"
+        }
       ]
     },
     {
@@ -21,10 +34,22 @@
       "expected_output": "Acli search command with JQL targeting open bugs, outputting CSV with the requested fields.",
       "files": [],
       "assertions": [
-        {"name": "auth_gate_present", "description": "Response mentions acli jira auth status"},
-        {"name": "search_command_present", "description": "Response includes acli jira workitem search"},
-        {"name": "csv_flag_present", "description": "Response includes --csv flag"},
-        {"name": "correct_fields_present", "description": "Response includes key,summary,status,assignee,labels fields"}
+        {
+          "name": "auth_gate_present",
+          "description": "Response mentions acli jira auth status"
+        },
+        {
+          "name": "search_command_present",
+          "description": "Response includes acli jira workitem search"
+        },
+        {
+          "name": "csv_flag_present",
+          "description": "Response includes --csv flag"
+        },
+        {
+          "name": "correct_fields_present",
+          "description": "Response includes key,summary,status,assignee,labels fields"
+        }
       ]
     },
     {
@@ -34,10 +59,22 @@
       "expected_output": "Acli commands that search for labeled issues, then clone them with overridden fields, using JQL preview and bulk confirmation safety.",
       "files": [],
       "assertions": [
-        {"name": "auth_gate_present", "description": "Response mentions acli jira auth status"},
-        {"name": "jql_preview_present", "description": "Response previews the JQL set before clone"},
-        {"name": "clone_command_present", "description": "Response includes acli jira workitem clone"},
-        {"name": "override_fields_present", "description": "Response shows how to set type=Task or assignee=@me after clone"}
+        {
+          "name": "auth_gate_present",
+          "description": "Response mentions acli jira auth status"
+        },
+        {
+          "name": "jql_preview_present",
+          "description": "Response previews the JQL set before clone"
+        },
+        {
+          "name": "clone_command_present",
+          "description": "Response includes acli jira workitem clone"
+        },
+        {
+          "name": "override_fields_present",
+          "description": "Response shows how to set type=Task or assignee=@me after clone"
+        }
       ]
     },
     {
@@ -47,9 +84,18 @@
       "expected_output": "Checks `acli jira auth status` before any view command, then shows how to view TP-123 with readable output (e.g., `--json | python3 scripts/adf2md.py`).",
       "files": [],
       "assertions": [
-        {"name": "auth_gate_present", "description": "Response checks acli jira auth status before view"},
-        {"name": "view_command_present", "description": "Response includes acli jira workitem view"},
-        {"name": "adf2md_present", "description": "Response mentions adf2md.py or readable output for description"}
+        {
+          "name": "auth_gate_present",
+          "description": "Response checks acli jira auth status before view"
+        },
+        {
+          "name": "view_command_present",
+          "description": "Response includes acli jira workitem view"
+        },
+        {
+          "name": "adf2md_present",
+          "description": "Response mentions adf2md.py or readable output for description"
+        }
       ]
     },
     {
@@ -59,8 +105,14 @@
       "expected_output": "Recommends `bash scripts/acli-new.sh` with story-template.json structure, or shows how to build a create payload with User Story / Context / Acceptance Criteria / Technical Notes / Dependencies / References.",
       "files": [],
       "assertions": [
-        {"name": "acli_new_sh_present", "description": "Response mentions acli-new.sh helper script"},
-        {"name": "exact_template_path_present", "description": "Response references examples/story-template.json"}
+        {
+          "name": "acli_new_sh_present",
+          "description": "Response mentions acli-new.sh helper script"
+        },
+        {
+          "name": "exact_template_path_present",
+          "description": "Response references examples/story-template.json"
+        }
       ]
     },
     {
@@ -70,9 +122,18 @@
       "expected_output": "Recommends `acli jira workitem create --from-json examples/epic-template.json` or shows how to build a create payload with Goal / Scope / Out of scope / Success Criteria / Key Deliverables / Dependencies & Risks / Child Work Items / References.",
       "files": [],
       "assertions": [
-        {"name": "template_reference_present", "description": "Response references epic-template.json or epic template structure"},
-        {"name": "create_from_json_present", "description": "Response includes --from-json"},
-        {"name": "epic_sections_present", "description": "Response mentions Goal/Scope/Success Criteria/Key Deliverables sections"}
+        {
+          "name": "template_reference_present",
+          "description": "Response references epic-template.json or epic template structure"
+        },
+        {
+          "name": "create_from_json_present",
+          "description": "Response includes --from-json"
+        },
+        {
+          "name": "epic_sections_present",
+          "description": "Response mentions Goal/Scope/Success Criteria/Key Deliverables sections"
+        }
       ]
     },
     {
@@ -82,9 +143,18 @@
       "expected_output": "Warns that nested lists flatten in md2adf (sub-items become top-level). Recommends rewriting with H3 sub-headings + flat bullets instead for scannable grouping that does not lose hierarchy intent.",
       "files": [],
       "assertions": [
-        {"name": "nested_list_warning_present", "description": "Response warns that nested lists flatten in md2adf"},
-        {"name": "h3_recommendation_present", "description": "Response recommends H3 sub-headings + flat bullets"},
-        {"name": "md2adf_reference_present", "description": "Response mentions md2adf.py"}
+        {
+          "name": "nested_list_warning_present",
+          "description": "Response warns that nested lists flatten in md2adf"
+        },
+        {
+          "name": "h3_recommendation_present",
+          "description": "Response recommends H3 sub-headings + flat bullets"
+        },
+        {
+          "name": "md2adf_reference_present",
+          "description": "Response mentions md2adf.py"
+        }
       ]
     },
     {
@@ -94,8 +164,14 @@
       "expected_output": "Warns that `edit --description` REPLACES the whole description. Recommends `bash scripts/acli-edit.sh TP-456 notes.md` for safe append, or explains the read-modify-write ADF approach.",
       "files": [],
       "assertions": [
-        {"name": "acli_edit_sh_present", "description": "Response mentions acli-edit.sh helper script"},
-        {"name": "dry_run_present", "description": "Response mentions --dry-run flag"}
+        {
+          "name": "acli_edit_sh_present",
+          "description": "Response mentions acli-edit.sh helper script"
+        },
+        {
+          "name": "dry_run_present",
+          "description": "Response mentions --dry-run flag"
+        }
       ]
     },
     {
@@ -105,9 +181,18 @@
       "expected_output": "Warns that Confluence body is storage-format XHTML, not Jira ADF. Provides the correct `acli confluence blog create` command with `--body` containing `<p>` / `<h2>` / `<ul><li>` tags, or recommends writing the content and converting it to XHTML first.",
       "files": [],
       "assertions": [
-        {"name": "format_warning_present", "description": "Response warns that Confluence body is XHTML not ADF/Markdown"},
-        {"name": "xhtml_conversion_present", "description": "Response converts Markdown to <p>/<h1>/<ul><li> tags"},
-        {"name": "blog_create_command_present", "description": "Response includes acli confluence blog create"}
+        {
+          "name": "format_warning_present",
+          "description": "Response warns that Confluence body is XHTML not ADF/Markdown"
+        },
+        {
+          "name": "xhtml_conversion_present",
+          "description": "Response converts Markdown to <p>/<h1>/<ul><li> tags"
+        },
+        {
+          "name": "blog_create_command_present",
+          "description": "Response includes acli confluence blog create"
+        }
       ]
     }
   ]

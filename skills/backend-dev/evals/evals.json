@@ -1,5 +1,6 @@
 {
   "skill_name": "backend-dev",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": "api-hello",
@@ -7,11 +8,26 @@
       "expected_output": "A FastAPI app with /health endpoint and a passing pytest test",
       "files": [],
       "assertions": [
-        {"name": "fastapi_app_exists", "description": "A Python file containing FastAPI app creation exists"},
-        {"name": "test_file_exists", "description": "A pytest test file exists"},
-        {"name": "tests_pass", "description": "pytest output shows at least one passing test"},
-        {"name": "health_endpoint_returns_ok", "description": "The /health endpoint returns JSON with status 'ok'"},
-        {"name": "uses_tdd", "description": "Test file was created before or alongside the implementation file"}
+        {
+          "name": "fastapi_app_exists",
+          "description": "A Python file containing FastAPI app creation exists"
+        },
+        {
+          "name": "test_file_exists",
+          "description": "A pytest test file exists"
+        },
+        {
+          "name": "tests_pass",
+          "description": "pytest output shows at least one passing test"
+        },
+        {
+          "name": "health_endpoint_returns_ok",
+          "description": "The /health endpoint returns JSON with status 'ok'"
+        },
+        {
+          "name": "uses_tdd",
+          "description": "Test file was created before or alongside the implementation file"
+        }
       ]
     },
     {
@@ -20,11 +36,26 @@
       "expected_output": "A Python migration script with upgrade and downgrade functions using raw SQL",
       "files": [],
       "assertions": [
-        {"name": "migration_file_exists", "description": "A Python migration file exists"},
-        {"name": "has_upgrade", "description": "Migration contains an upgrade function or method"},
-        {"name": "has_downgrade", "description": "Migration contains a downgrade function or method"},
-        {"name": "uses_raw_sql", "description": "Migration uses raw SQL strings, not ORM abstractions"},
-        {"name": "idempotent_check", "description": "Migration includes IF NOT EXISTS or similar idempotency guard"}
+        {
+          "name": "migration_file_exists",
+          "description": "A Python migration file exists"
+        },
+        {
+          "name": "has_upgrade",
+          "description": "Migration contains an upgrade function or method"
+        },
+        {
+          "name": "has_downgrade",
+          "description": "Migration contains a downgrade function or method"
+        },
+        {
+          "name": "uses_raw_sql",
+          "description": "Migration uses raw SQL strings, not ORM abstractions"
+        },
+        {
+          "name": "idempotent_check",
+          "description": "Migration includes IF NOT EXISTS or similar idempotency guard"
+        }
       ]
     }
   ]

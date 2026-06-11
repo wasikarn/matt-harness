@@ -1,5 +1,6 @@
 {
   "skill_name": "orchestrate",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -12,7 +13,7 @@
       "id": 1,
       "eval_name": "incident-plus-maintenance-mix",
       "prompt": "Production /orders is returning 500s with a NullPointerException in the payment gateway. Meanwhile I also need to refactor auth for readability (it's a 400-line mess), my teammate wants a CSV of last month's signups, and someone asked if we should adopt Turborepo. There are 5 open issues in the sprint: fix the flaky test in auth.spec.js, upgrade lodash because of a security alert, implement dark mode toggle, add rate limiting to the API, and write an ADR for the caching layer. Help me figure out what to do.",
-      "expected_output": "Prioritization should recognize the production incident as urgent+important, security as precedence-requiring, trivial tasks as inline or dropped, and architecture questions as research-first. Should use Eisenhower or Value×Risk matrix appropriately. Should include a verify step before combining outputs.",
+      "expected_output": "Prioritization should recognize the production incident as urgent+important, security as precedence-requiring, trivial tasks as inline or dropped, and architecture questions as research-first. Should use Eisenhower or Value\u00d7Risk matrix appropriately. Should include a verify step before combining outputs.",
       "files": []
     },
     {

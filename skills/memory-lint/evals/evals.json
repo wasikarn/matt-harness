@@ -1,5 +1,6 @@
 {
   "skill_name": "memory-lint",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -8,12 +9,30 @@
       "expected_output": "Runs deterministic checks: dangling links, orphans, index drift, load budget. Reports findings with exit-code semantics.",
       "files": [],
       "assertions": [
-        {"name": "dangling_links_check", "description": "Response mentions checking dangling [[links]] or cross-links"},
-        {"name": "orphans_check", "description": "Response mentions checking orphaned facts or disconnected memories"},
-        {"name": "index_drift_check", "description": "Response mentions checking MEMORY.md index drift or unindexed files"},
-        {"name": "load_budget_check", "description": "Response mentions load budget, line count, or KB cap for MEMORY.md"},
-        {"name": "deterministic_bookkeeping", "description": "Response frames checks as deterministic/scriptable, not subjective LLM review"},
-        {"name": "no_write_memory", "description": "Response does NOT write or edit memory files — lint is read-only"}
+        {
+          "name": "dangling_links_check",
+          "description": "Response mentions checking dangling [[links]] or cross-links"
+        },
+        {
+          "name": "orphans_check",
+          "description": "Response mentions checking orphaned facts or disconnected memories"
+        },
+        {
+          "name": "index_drift_check",
+          "description": "Response mentions checking MEMORY.md index drift or unindexed files"
+        },
+        {
+          "name": "load_budget_check",
+          "description": "Response mentions load budget, line count, or KB cap for MEMORY.md"
+        },
+        {
+          "name": "deterministic_bookkeeping",
+          "description": "Response frames checks as deterministic/scriptable, not subjective LLM review"
+        },
+        {
+          "name": "no_write_memory",
+          "description": "Response does NOT write or edit memory files \u2014 lint is read-only"
+        }
       ]
     },
     {
@@ -23,9 +42,18 @@
       "expected_output": "Runs all 4 checks. If the new link dangles or the file is unindexed, reports it. If clean, reports zero findings.",
       "files": [],
       "assertions": [
-        {"name": "all_four_checks_run", "description": "Response runs or mentions all four check categories (links, orphans, index, budget)"},
-        {"name": "exit_code_semantics", "description": "Response mentions exit code, finding count, or clean/dirty status"},
-        {"name": "post_edit_context", "description": "Response acknowledges the recent edit context (not generic lint)"}
+        {
+          "name": "all_four_checks_run",
+          "description": "Response runs or mentions all four check categories (links, orphans, index, budget)"
+        },
+        {
+          "name": "exit_code_semantics",
+          "description": "Response mentions exit code, finding count, or clean/dirty status"
+        },
+        {
+          "name": "post_edit_context",
+          "description": "Response acknowledges the recent edit context (not generic lint)"
+        }
       ]
     }
   ]

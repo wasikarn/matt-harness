@@ -1,18 +1,19 @@
 {
   "skill_name": "clarify-first",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 1,
       "eval_name": "ambiguous-feature-request",
       "prompt": "The user says: 'I want to add a notification system to the app.' Nothing else. You are about to start /feature-dev Phase 1. Run the clarify-first gate before proceeding.",
-      "expected_output": "Claude should: (1) Analyze what 'notification system' could mean (in-app, email, push, SMS), (2) Recommend a narrow interpretation with reason, (3) Ask a specific clarifying question — preferably via AskUserQuestion or well-structured prose with analysis and recommendation stated first. Should NOT jump straight to architecture or ask 'what do you mean' without analysis.",
+      "expected_output": "Claude should: (1) Analyze what 'notification system' could mean (in-app, email, push, SMS), (2) Recommend a narrow interpretation with reason, (3) Ask a specific clarifying question \u2014 preferably via AskUserQuestion or well-structured prose with analysis and recommendation stated first. Should NOT jump straight to architecture or ask 'what do you mean' without analysis.",
       "files": []
     },
     {
       "id": 2,
       "eval_name": "debugging-no-repro",
       "prompt": "The user says: 'The API is returning 500 errors sometimes.' You are in /fix-bug Phase 1. Run the clarify-first gate before trying to reproduce.",
-      "expected_output": "Claude should: (1) Analyze what info is missing for deterministic repro (endpoint, request body, frequency, environment), (2) Recommend the most likely missing piece, (3) Ask a specific question to get that piece. Should use blameless 5-Whys framing — no 'why did you deploy bad code' tone. Should NOT start guessing at causes or grep-ing random files.",
+      "expected_output": "Claude should: (1) Analyze what info is missing for deterministic repro (endpoint, request body, frequency, environment), (2) Recommend the most likely missing piece, (3) Ask a specific question to get that piece. Should use blameless 5-Whys framing \u2014 no 'why did you deploy bad code' tone. Should NOT start guessing at causes or grep-ing random files.",
       "files": []
     },
     {

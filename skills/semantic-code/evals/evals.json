@@ -1,5 +1,6 @@
 {
   "skill_name": "semantic-code",
+  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 1,
@@ -16,7 +17,7 @@
     {
       "id": 3,
       "prompt": "Show me the raw line-level diff patch for commit a43b59f.",
-      "expected_output": "Uses plain `git show a43b59f` or `git diff a43b59f^ a43b59f` — does NOT use `sem diff` because the user explicitly asked for raw line-level diff.",
+      "expected_output": "Uses plain `git show a43b59f` or `git diff a43b59f^ a43b59f` \u2014 does NOT use `sem diff` because the user explicitly asked for raw line-level diff.",
       "files": []
     }
   ]
