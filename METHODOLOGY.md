@@ -13,7 +13,7 @@ Before implementing:
 - If multiple interpretations exist, present them and recommend the narrowest with a reason, then confirm - don't pick silently, and don't just ask open-ended.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
-- **During iterative Q&A loops** (grill-me, grill-with-docs, /to-prd handoffs, multi-round clarification): the same gate applies between rounds. Reject high-fidelity questions (UI feel, layout) and hand off to /prototype. Decompose scope before crossing the ~120K-token dumb zone. Preserve the design-decision artifact (`/to-prd`) before context-clearing. See `~/.claude/skills/grill-me` + aihero.dev 2026-05-25 "9 things people get wrong".
+- **Iterative Q&A loops** (grill-me, /to-prd handoffs, multi-round clarification): same gate between rounds. Reject high-fidelity Qs (UI feel, layout) → /prototype. Preserve the design-decision artifact (`/to-prd`) before context-clearing.
 
 ## 2. Simplicity First
 
@@ -133,63 +133,46 @@ Before adding code:
 
 **Decompose. Separate. Verify. Combine.**
 
-Four verbs, one loop. Each has a concrete meaning:
-
-- **Decompose** — Break the task into independently verifiable pieces. If you can't name the boundary between pieces, you haven't decomposed enough.
-- **Separate** — Route each piece to the cheapest correct executor (inline, agent, script, or drop). Never route by habit.
-- **Verify** — Check each result against its success criterion before integrating. Reject garbage; don't patch forward.
-- **Combine** — Own the integration yourself. Don't let sub-agents edit the same file in parallel without a merge step.
+- **Decompose** — independently verifiable pieces. If you can't name the boundary, you haven't decomposed enough.
+- **Separate** — route each piece to the cheapest correct executor (inline, agent, script, or drop). Never by habit.
+- **Verify** — check each result against its success criterion. Reject garbage; don't patch forward.
+- **Combine** — own the integration. No parallel sub-agent edits to the same file without a merge step.
 
 Behavior:
-- Don't do everything serially. Drops overview and bottlenecks throughput.
-- Default: decompose → distribute pieces → verify results → combine into whole.
-- Same senior specialist ≠ singleton — fan out N instances of one type (e.g. `backend-engineer` A + B) when the work splits cleanly. Each instance owns a *disjoint* slice with a named boundary (per Decompose); no overlapping files or concerns. Mutating in parallel → isolate each (`isolation: worktree`) or serialize the merge (per Combine). Name them so they're addressable.
-- Inline only when sequential or unreviewable.
-- **Inline subagent = senior specialist, every time.** Never spawn a generic-purpose inline subagent when a senior-specialist persona owns the work domain. Generic-purpose is the *default* fleet-view fallback for work with no clear persona match — it is not a substitute for routing to `security-reviewer` / `backend-engineer` / `frontend-engineer` / `devops-engineer` / `test-engineer` / `code-reviewer` / `code-architect` / `code-explorer` / etc. when the domain matches. The Routing index below IS the cheap-correct executor lookup; if you find yourself reaching for `general-purpose` for a piece, you have skipped the routing step. Exception: work that genuinely crosses all persona boundaries (e.g. a multi-context audit) — but in that case the work belongs in `orchestrate` (multi-agent workflow), not in a single inline subagent.
-- Retries: cap at 1 per piece. On a second failure, stop and escalate to the user with the logged reason — don't let an agent invent recovery strategies.
-- Applies to code, research, analysis, writing, and any multi-step work.
+- Default: decompose → distribute → verify → combine. Serial-only drops overview and bottlenecks throughput.
+- Same specialist ≠ singleton — fan out N disjoint instances (e.g. `backend-engineer` A + B) when work splits cleanly; parallel mutations need `isolation: worktree` or serialized merge.
+- **Inline subagent = senior specialist, every time.** Generic-purpose is fallback for no-persona-match work — not a substitute for `security-reviewer` / `backend-engineer` / `frontend-engineer` / `devops-engineer` / `test-engineer` / `code-reviewer` / `code-architect` / `code-explorer` when the domain matches. Multi-context audits belong in `orchestrate`, not a single inline subagent.
+- Retries: cap at 1 per piece. On second failure, escalate to the user — don't let an agent invent recovery.
+- Applies to code, research, analysis, writing, multi-step work.
 
-**Routing index** — every agent in the fleet is a senior specialist / domain expert; when a piece's domain matches one, that agent is the cheapest *correct* executor: consult it (or route the piece to it) before defaulting to solo. Inline stays valid per the rule above (sequential or unreviewable). This table is a fast lookup *into* the agents' own `description` fields — which carry the full triggers and "defer to X" boundaries — not a replacement for them. The trigger phrase in each row is the verbatim pattern the agent's own `description:` field uses to advertise its scope; if the work's keywords match the phrase, the agent is the correct route.
+**Routing index** — the trigger phrases below are a fast lookup *into* the agents' own `description:` fields (always preloaded, carry the full triggers and "defer to X" boundaries). When work's keywords match, route to that agent. When they don't, **ask, don't silently solo** (see Routing Confidence).
 
-| Trigger phrase (from agent `description:`) | Route to |
+| Trigger phrase | Route to |
 |---|---|
 | auth, secrets, external input, OWASP, supply-chain | `security-reviewer` |
-| backend API design, data integrity, schema, migration, server-side perf | `backend-engineer` |
-| UI component, accessibility, client-side state, design integration | `frontend-engineer` |
-| CI/CD, deploy, infra-as-code, observability, rollback signals | `devops-engineer` |
-| test strategy, coverage design, contract testing, integration boundaries | `test-engineer` |
-| bug + convention review before commit/PR (non-security, non-coverage, non-error-handling) | `code-reviewer` |
-| OpenAPI specs, SDK references, developer-portal, endpoint naming | `api-doc-specialist` |
-| multi-approach architecture blueprint, file:line-anchored design | `code-architect` |
-| end-to-end trace of an existing feature, abstraction mapping, dep graph | `code-explorer` |
+| backend API, data integrity, schema, migration, server-side perf | `backend-engineer` |
+| UI, accessibility, client-side state, design integration | `frontend-engineer` |
+| CI/CD, deploy, infra-as-code, observability, rollback | `devops-engineer` |
+| test strategy, coverage design, contract testing | `test-engineer` |
+| bug + convention review (non-security, non-coverage, non-error-handling) | `code-reviewer` |
+| multi-approach architecture blueprint | `code-architect` |
+| end-to-end trace, dep graph, abstraction mapping | `code-explorer` |
 | post-impl cleanup, behavior-preserving simplification | `code-simplifier` |
-| docstring / inline-comment accuracy audit | `comment-analyzer` |
-| GDPR / SOC2 / HIPAA, control mapping, audit-readiness | `compliance-engineer` |
-| ETL pipelines, warehouse schema, streaming, analytics (not OLTP) | `data-engineer` |
-| cloud cost spike, rightsizing, reserved-instance planning, spend governance | `finops-engineer` |
-| multi-locale support, translation pipeline, RTL, locale formatting | `i18n-specialist` |
+| refactor, deprecation, framework upgrade, tech-debt | `maintenance-engineer` |
 | active prod incident, post-mortem, error-budget breach | `incident-commander` |
-| refactor, deprecation, framework upgrade, tech-debt reduction (not new feature) | `maintenance-engineer` |
-| model serving, feature store, MLOps, inference infra (not training) | `ml-engineer` |
-| iOS / Android / React Native, app store, mobile perf (battery/startup/bundle) | `mobile-engineer` |
-| microservices, service mesh, API gateway, gRPC, event-driven | `platform-engineer` |
-| untested critical paths in PR (behavioral criticality 1-10, not coverage %) | `pr-test-analyzer` |
-| vague idea → engineering specs, user-story decomposition, acceptance criteria | `product-analyst` |
-| library comparison, external docs research, codebase onboarding | `researcher` |
-| error-handling audit: swallowed errors, broad catch, hidden fallbacks | `silent-failure-hunter` |
-| README, ADR, runbook, changelog prose, onboarding guide | `technical-writer` |
-| type/interface/DTO/schema design across module boundary (encapsulation, invariants) | `type-design-analyzer` |
-| UI/UX audit, user journey, cognitive load, WCAG 2.1 AA | `ux-reviewer` |
+| error-handling audit, swallowed errors, hidden fallbacks | `silent-failure-hunter` |
+| README, ADR, runbook, changelog prose, onboarding | `technical-writer` |
+| library comparison, external docs, codebase onboarding | `researcher` |
 
-**Routing Confidence** — the table is a fast lookup, not a license for silent routing. When the work's keywords don't clearly match a trigger phrase, the routing decision is a judgment call that must be surfaced, not hidden:
+(For the full 24-persona table, see the agents' own `description:` fields — always preloaded.)
 
-- **High confidence** — work's keywords match a trigger phrase verbatim. Route to that agent inline; no confirmation needed.
-- **Medium confidence** — work touches 2+ domains (e.g. "new API endpoint that triggers a deploy"). Either decompose and route each piece, or escalate to `orchestrate` for cross-domain coordination. Do NOT pick one persona and silently solo the other domain.
-- **Low confidence** — no trigger matches and the work is non-trivial (multi-file, schema change, or >30 min estimated). Surface the choice with `AskUserQuestion`: "No persona is a clear match — confirm: route to `<best-guess>` vs solo inline vs decompose first." Never silently default to solo when the persona match is unclear.
+**Routing Confidence** — judgment calls must be surfaced, not hidden:
 
-The cost of routing wrong: work gets re-done, expertise gets bypassed, review surface shrinks. The cost of asking: 5 seconds. Default to asking when the match is not a phrase hit.
+- **High** — keywords match a trigger phrase verbatim. Route inline.
+- **Medium** — touches 2+ domains. Decompose + route each piece, or escalate to `orchestrate`. Never solo one domain silently.
+- **Low** — no match, non-trivial work. Use `AskUserQuestion`: "no persona is a clear match — confirm: route to `<best-guess>` vs solo vs decompose first."
 
-**When no row in the routing table matches: ask, don't silently solo.** Surface the choice with `AskUserQuestion` rather than defaulting.
+Cost of asking: 5 seconds. Cost of routing wrong: re-done work, bypassed expertise, shrunken review surface. Default to asking when the match is not a phrase hit.
 
 ---
 
