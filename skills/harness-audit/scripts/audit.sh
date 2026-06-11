@@ -781,9 +781,16 @@ if command -v python3 >/dev/null 2>&1; then
       [ -n "$eval_path" ] || continue
       rel="${eval_path#"$REPO_ROOT"/}"
       if [ "$age_days" = "missing" ]; then
-        # No last_reviewed field at all — flag it. The whole point of this
-        # check is to surface files that haven't been touched.
-        info "eval-target freshness: $rel missing 'last_reviewed:' field — add one (YYYY-MM-DD)"
+        # No last_reviewed field at all. The whole point of this check is
+        # to surface files that haven't been touched — but a documented
+        # `last_reviewed_reason:` (per the convention introduced in
+        # 2026-06-11 to defer until a human gets to a real review) IS
+        # a touch: the file was opened, the deferral was a deliberate
+        # decision, and the quarterly cadence owns the rotation. Honor it
+        # the same way the stale branch does.
+        if [ "$has_reason" != "1" ]; then
+          info "eval-target freshness: $rel missing 'last_reviewed:' field — add one (YYYY-MM-DD)"
+        fi
       elif [ "$age_days" -gt "$KBG_EVAL_MAX_AGE_DAYS" ] 2>/dev/null && [ "$has_reason" != "1" ]; then
         info "eval-target freshness: $rel last reviewed $age_days days ago — revisit (or add last_reviewed_reason: to defer)"
       fi
@@ -821,6 +828,17 @@ for path in targets:
                             continue
                         print(f"{path}\t{(today - dt.date.fromisoformat(str(v))).days}\t0\t")
                         continue
+                # No `last_reviewed` AND no `last_reviewed:` line — but the
+                # file may still carry a `last_reviewed_reason:` in the JSON
+                # (the convention introduced to defer stamping until a
+                # human gets to a real review). The same justification that
+                # suppresses the stale branch should suppress the missing
+                # branch, so we don't surface noise for deliberately-deferred
+                # targets.
+                reason_only = data.get("last_reviewed_reason") or data.get("lastReviewedReason")
+                if reason_only:
+                    print(f"{path}\tmissing\t1\t{reason_only}")
+                    continue
         except (OSError, ValueError):
             pass
         print(f"{path}\tmissing\t0\t")
@@ -828,7 +846,14 @@ for path in targets:
     try:
         d = dt.date.fromisoformat(m.group(1))
     except ValueError:
-        print(f"{path}\tmissing\t0\t")
+        # Line matched `last_reviewed:` but the date was unparseable.
+        # Treat as missing — and check for a `last_reviewed_reason:`
+        # justification before flagging (same convention as the JSON branch).
+        if REASON_RE.search(text):
+            reason_text = REASON_RE.search(text).group(0)
+            print(f"{path}\tmissing\t1\t{reason_text}")
+        else:
+            print(f"{path}\tmissing\t0\t")
         continue
     has_reason = "1" if REASON_RE.search(text) else "0"
     age = (today - d).days
