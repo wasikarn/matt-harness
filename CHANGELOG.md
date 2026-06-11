@@ -53,7 +53,34 @@ auto-rate flat at 46% (131/286).
 
 ## [Unreleased]
 
-### Changed
+Entries are listed in chronological order (oldest commit first within each subsection), so a
+reader can trace the audit + fix chain end-to-end without re-sorting. Grouped by Keep-a-Changelog
+category (Added / Changed / Fixed) within each phase.
+
+### Phase 1 — Post-0.1.2 patches (pre-Loop-Engineering)
+
+#### Changed
+
+- **Delivery model: symlink farm → persistent plugin-enable.** The owner now installs `kbg` via
+  `claude plugin install` + `enabledPlugins["kbg@kobig"]: true` and dogfoods exactly what an
+  external installer gets — **superseding** the 0.1.0 "bare-name symlink farm, plugin disabled
+  locally" model below. `install.sh`'s component-symlink steps are neutered and the in-`~/.claude`
+  symlink farm removed, so the plugin is the single delivery path. (`dotfiles` `962bfce`)
+- **Manifest accuracy** — `marketplace.json` description aligned with `plugin.json` ("governance
+  hooks across 14 lifecycle events"); `.code-review-graph/` gitignored so no stale local SQLite
+  cache ships; `version` retained (omitting it fails `claude plugin validate --strict`). (`c50710b`)
+
+#### Fixed
+
+- **Doctrine loads on every session start, not just fresh start.** `doctrine-bootstrap.sh` moved
+  from the `startup` matcher into a no-matcher SessionStart group, so METHODOLOGY/RTK/ACLI/DBGATE
+  inject on **resume** and **clear** too — matching the old `@import` behavior (`CLAUDE.md` was read
+  on every session). Previously a resumed session got no doctrine once the dotfiles `@import` glue
+  was removed. (`cc9bee8`)
+
+### Phase 2 — Loop Engineering adoption (PRs #11–#14)
+
+#### Changed
 
 - **Loop Engineering adoption — stop-signals, anti-cheat, and the autonomy invariant's canonical
   home** (`c58e02d`, PR #11). Surgical doc-edits adopting the harness-engineering corpus, each
@@ -72,43 +99,111 @@ auto-rate flat at 46% (131/286).
     halts), `address-review` (per-cluster cap + reclassify + author-aware dedup), `ship-merge`
     (zero-Critical / acceptance-gap checklist), `/accept-task` wiring into `feature-dev`/`fix-bug`,
     and a weakened-to-pass gap class in `pr-test-analyzer`.
+- **Post-cutover doctrine rewrite** (`e8a1c95`) — `CONTEXT.md` + `docs/adr/0001-plugin-as-delivery.md`
+  rewritten to describe the persistent-plugin-enable state. Inverts the no-double-fire invariant:
+  the load-bearing guard is the `install.sh` neutering of the 6 `install_claude_*` symlink-farm
+  calls (the symlink farm no longer exists; `doctrine-edit-gate.sh` is belt-and-braces, not primary).
+  Adds `docs/adr/README.md` index. Documents the `.scratch/<slug>/` convention in `issue-tracker.md`.
+- **Inventory labels dehardcoded** (`b03a556`) — `inventory-boundary.sh` no longer hardcodes
+  `/Users/kobig/...` in `print_source` and `print_boundary` (mirrors the `audit.sh` repo-root-aware
+  pattern from G15). `BOUNDARY.md` regenerated; host-portable labels (`Personals/kbg-harness`,
+  not absolute path). **Activates harness-audit check #16 (fleet-drift detection, advisory)** —
+  deactivating by deleting `BOUNDARY.md` reverts to the W1 state.
+- **4 pre-existing defects flagged by the epic audit** (`d9a1b2e`, PR #14) — `ARCHITECTURE.md`
+  ref-repoint (README→`CONTEXT.md`, CHANGELOG→ADR 0001), created `docs/adr/README.md` index,
+  documented `.scratch/<slug>/` convention in `issue-tracker.md`, fixed `inventory-boundary.sh`
+  (hardcoded `GIT_ROOT/claude` → repo-root-aware post-cutover map) + committed a real
+  `BOUNDARY.md` so check #16 (fleet-drift) can fire. Repo at **0C / 0W / 22I exit 0** after the
+  regeneration.
 
-### Added
+#### Added
 
-- **`docs/harness-decay-cadence.md`** — names the human-run build-to-delete review cadence (record
-  each component's model-limitation assumption; disable-and-measure on model upgrades; delete via a
-  `decommission` witness; never auto-delete maker≠checker). (`bcc594f`, PR #12)
-- **`docs/agents/verification-trail.md`** — documents the `.scratch/<feature>/verification-trail.md`
-  schema that `verification-gate.sh` referenced but that never existed. (`bcc594f`, PR #12)
+- **`docs/harness-decay-cadence.md`** (`bcc594f`, PR #12) — names the human-run build-to-delete
+  review cadence (record each component's model-limitation assumption; disable-and-measure on model
+  upgrades; delete via a `decommission` witness; never auto-delete maker≠checker). The
+  `## Permission re-audit` section (added later in `34cd064` / `61e335b`, see Phase 3) covers
+  per-agent `tools:` frontmatter grants + `dotfiles/claude/settings.json` allowlist, with a
+  copy-pasteable `git diff` snippet and quarterly cadence.
+- **`docs/agents/verification-trail.md`** (`bcc594f`, PR #12) — documents the
+  `.scratch/<feature>/verification-trail.md` schema that `verification-gate.sh` referenced but
+  that never existed.
 
-### Fixed
+#### Fixed
 
-- manifest: bump skill count 25 → 26 (memory-trim added)
+- manifest: bump skill count 25 → 26 (memory-trim added) — (`9f0723f`, pre-0.1.2; surfaced here
+  for cross-reference)
 
-### Changed
+### Phase 3 — Loop-Engineer audit (3 med gaps closed; Q3=a surfaced as #15)
 
-- **Delivery model: symlink farm → persistent plugin-enable.** The owner now installs `kbg` via
-  `claude plugin install` + `enabledPlugins["kbg@kobig"]: true` and dogfoods exactly what an
-  external installer gets — **superseding** the 0.1.0 "bare-name symlink farm, plugin disabled
-  locally" model below. `install.sh`'s component-symlink steps are neutered and the in-`~/.claude`
-  symlink farm removed, so the plugin is the single delivery path. (`dotfiles` `962bfce`)
-- **Manifest accuracy** — `marketplace.json` description aligned with `plugin.json` ("governance
-  hooks across 14 lifecycle events"); `.code-review-graph/` gitignored so no stale local SQLite
-  cache ships; `version` retained (omitting it fails `claude plugin validate --strict`). (`c50710b`)
+#### Added
 
-### Fixed
+- **`hooks/db-write-gate.sh`** (`34cd064` → `5ecdac8` → `61e335b`, PR #16 closed-superseded) —
+  deterministic PreToolUse gate for `mcp__*__execute_sql_*` (and `mcp__*__db_write|db_query`).
+  Closes the enforcement asymmetry: `rm` and doctrine-file edits already had gates, but a
+  non-SELECT `execute_sql_production` had none. Allow-through: `SELECT`/`EXPLAIN`/`WITH…SELECT`/
+  `information_schema`/comment-only. Ask: `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`ALTER`/`DROP`/
+  `CREATE`. Bypass: `CLAUDE_DISABLED_HOOKS=db-write-gate`. jq-missing → fail loud. **14 new test
+  cases** in `hooks/tests/test-critical-hooks.sh`. The revert chain (`5ecdac8`) was transient —
+  the fix landed on develop as `61e335b` "Reapply" the same content. PR #16 was then closed-
+  superseded (work is on develop; the PR was a workaround for an earlier GitHub "no commits"
+  rejection).
+- **Audit check #30 — eval-target freshness** (`34cd064` / `61e335b`) — scans `**/evals.json` and
+  `scripts/run-baseline-eval.py` for a `last_reviewed:` ISO date. Older than
+  `KBG_EVAL_MAX_AGE_DAYS` (default 180) without a `last_reviewed_reason:` → emit `info`. The 2
+  targets this PR owns (`skills/harness-audit/evals/evals.json` + `scripts/run-baseline-eval.py`)
+  are stamped `last_reviewed: 2026-06-11`; the other 21 `evals.json` files surface as advisory
+  info findings.
 
-- **Doctrine loads on every session start, not just fresh start.** `doctrine-bootstrap.sh` moved
-  from the `startup` matcher into a no-matcher SessionStart group, so METHODOLOGY/RTK/ACLI/DBGATE
-  inject on **resume** and **clear** too — matching the old `@import` behavior (`CLAUDE.md` was read
-  on every session). Previously a resumed session got no doctrine once the dotfiles `@import` glue
-  was removed. (`cc9bee8`)
+#### Fixed
 
-### Known issues
+- **Check #30 honor `last_reviewed_reason:` on the missing branch** (`57f6041`) — the original
+  check #30 only suppressed the freshness info on the path where the JSON was parsed but the
+  `last_reviewed:` key was missing. The branch where the JSON itself was missing (e.g. a
+  partial-write) silently re-fired. Both paths now consult `last_reviewed_reason:` and skip
+  the advisory when present. Audit dropped from 22 I1s to 0 with the `582bef7` deferral.
+- **Inventory linter fix** (`9700242`) — sibling drift with `b03a556`: `print_source` + `print_boundary`
+  labels in `inventory-boundary.sh` were using a hardcoded host path; dehardcoded to relative
+  `Personals/kbg-harness` form (matches the `audit.sh` repo-root pattern).
 
-- `harness-audit` F1 ("component not symlinked to `~/.claude/`") false-positives under the plugin
-  delivery model — it predates the cutover and still assumes the symlink farm. Pending
-  plugin-awareness rework.
+#### Changed
+
+- **Permission re-audit section in `docs/harness-decay-cadence.md`** (`34cd064` / `61e335b`) —
+  appended after the build-to-delete cadence. Covers per-agent `tools:` frontmatter grants +
+  `dotfiles/claude/settings.json` allowlist, with cadence (quarterly / on model upgrade / on agent
+  merge) and a copy-pasteable `git diff` snippet that surfaces newly-added tool grants since the
+  last review. `last_reviewed: 2026-06-11` stamp at the section top.
+- **BOUNDARY.md regen post-linter** (`f30cec9`) — `inventory-boundary.sh` after the `9700242` label
+  fix produced a fresh `BOUNDARY.md` with host-portable labels; closes the W1 audit warning.
+
+### Phase 4 — Quarterly cadence + Layer 2 ask-gate (Q3=a resolution)
+
+#### Changed
+
+- **Bulk deferral of 21 `evals.json` to the 2026-09 quarterly cadence** (`582bef7`) — adds
+  `last_reviewed_reason: "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in
+  docs/harness-decay-cadence.md (first sweep 2026-09)"` to 21 skills (acli, adr, assert-presence,
+  backend-dev, clarify-first, critical-eval, decommission, hotfix, incident, inventory,
+  memory-lint, migrate, orchestrate, perf, probe, research-brief, review-pr, security-auditor,
+  semantic-code, ship-change, tech-humanize). Audit **0C / 0W / 1I exit 0** (1 = plugin cache,
+  by-design). Per `docs/harness-decay-cadence.md`, the first sweep is 2026-09; this commit makes
+  the suppression honest (the prior state would have been 22 stale-I1s that the check
+  #30 fix in `57f6041` could not have helped with).
+- **Pre-emit validator (Layer 2 ask-gate, additive)** (`39587ac`) — `scripts/review-pr-journal-
+  pre-emit-validator.py` (new, 215 lines) is a CLI preflight that `/review-pr` SKILL.md step 4
+  calls BEFORE the journaler. It re-imports the journaler's enum regexes
+  (`TIER_OK` / `DISPOSITION_OK` / `DECISION_OK`) via `importlib` — **lockstep contract**, do not
+  redeclare the enums in the validator. Reads `findings.jsonl`, skips `local_id`s in the
+  `.journaled` manifest (same dedup as the journaler), surfaces enum-misses on stderr with
+  per-finding detail (`local_id=X: tier='CRITICAL_TYPO'`). Exit 0 clean / exit 2 on miss / exit
+  2 on missing-or-corrupt input. **Read-only — never writes the journal or the manifest.** On
+  exit 2, `/review-pr` surfaces the validator's summary via `AskUserQuestion` (proceed / pause
+  / cancel). The validator is an **ask gate, not a deny gate** — preserves the autonomy
+  invariant. Q3=a is preserved verbatim: the journaler still WARNINGs and emits, the validator
+  is the new ask-gate. Closes issue #15 (Option C, the split-concerns resolution). 4 new test
+  cases (CC / DD / EE / FF) in `test-critical-hooks.sh`. `hooks/JOURNAL-SCHEMA.md` gains a
+  "Two-layer design" section documenting both layers and the autonomy-invariant alignment.
+  Green bar: 150/0 tests pass (was 146/0; +4 new), audit 0C/0W/1I exit 0, `claude plugin
+  validate --strict` ✔.
 
 ## [0.1.0] — 2026-06-10
 
