@@ -1214,6 +1214,28 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s rc=%s out=%q journal=%s\n' "verification-gate.sh" "$VG4_RC" "$VG4_OUT" "$(cat "$VGJ4")"
 fi
 
+# (10) F4: gaps>0 → exit_reason="degrading" in the journaled verification_summary.
+#     Reuses the VGROOT fixture (feat-a tdd-provenance, feat-b no-trail w/ blank reason → 1 gap).
+if jq -se 'any(.[]; .event=="verification_summary" and .session=="vg-test" and .fields.exit_reason=="degrading" and .fields.gaps==1)' "$VGJOURNAL" >/dev/null 2>&1; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s exit_reason="degrading" when gaps>0 (F4)\n' "verification-gate.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit_reason wrong on gap session: %s\n' "verification-gate.sh" "$(cat "$VGJOURNAL")"
+fi
+
+# (11) F4: clean session (no gaps) → exit_reason="complete". Builds a fresh fixture:
+#     one feature with a real trail, one with a no-trail+reasoned optout → 0 gaps.
+VG5="$FIXTURE/vgroot5-clean"
+mkdir -p "$VG5/.scratch/feat-good" "$VG5/.scratch/feat-reasoned"
+printf '# t\n- verification_tier: tdd-provenance\n' > "$VG5/.scratch/feat-good/verification-trail.md"
+printf '# t\n- verification_tier: no-trail\n- optout_reason: docs-only, no behavior to assert\n' > "$VG5/.scratch/feat-reasoned/verification-trail.md"
+VGJ5="$FIXTURE/vg-journal5.jsonl"; : > "$VGJ5"
+( cd "$VG5" >/dev/null; printf '%s' "$VGEVENT" | CLAUDE_PROJECT_DIR="$VG5" CLAUDE_JOURNAL_PATH="$VGJ5" bash "$HOOKS/verification-gate.sh" >/dev/null 2>&1 ) || true
+if jq -se 'any(.[]; .event=="verification_summary" and .session=="vg-test" and .fields.exit_reason=="complete" and .fields.gaps==0 and .fields.features==2)' "$VGJ5" >/dev/null 2>&1; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s exit_reason="complete" on clean session (F4)\n' "verification-gate.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit_reason wrong on clean session: %s\n' "verification-gate.sh" "$(cat "$VGJ5")"
+fi
+
 # --- verification-tier-audit.py: retro-grader (declared trail authoritative; fallback no-trail) ---
 echo
 echo "--- verification-tier-audit: retro-grader ---"
@@ -1285,9 +1307,9 @@ FIXTURE_EOF
 EXIT_CODE=0
 STDERR=$(python3 "$SCRIPTS/review-pr-journal-pre-emit-validator.py" "$VDIR2" 2>&1 >/dev/null) || EXIT_CODE=$?
 # Expect 3 named findings (DD1 bad tier, DD2 bad disp, DD3 bad dec) and
-# DD4 silently passing. The exit-2 message must say BLOCK + count, and
+# DD4 silently passing. The exit-2 message must say ASK-GATE + count, and
 # every offending finding's local_id + bad field must appear on stderr.
-N_BLOCK=$(printf '%s\n' "$STDERR" | grep -c "BLOCK: 3 finding(s) failed" || true)
+N_BLOCK=$(printf '%s\n' "$STDERR" | grep -c "ASK-GATE: 3 finding(s) failed" || true)
 HAS_DD1=$(printf '%s' "$STDERR" | grep -c "local_id=DD1: tier='whoops'" || true)
 HAS_DD2=$(printf '%s' "$STDERR" | grep -c "local_id=DD2: disposition='unknown'" || true)
 HAS_DD3=$(printf '%s' "$STDERR" | grep -c "local_id=DD3: decision='eventually'" || true)

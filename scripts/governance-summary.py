@@ -263,6 +263,13 @@ def main():
         kinds = Counter(e.get("event", "?") for e in evts)
         suffix = f"  +{n_corrupt} corrupt" if n_corrupt else ""
         print(f"{name:26} {len(evts):>6} events  ({', '.join(f'{k}×{c}' for k, c in kinds.most_common())}){suffix}")
+        # verification_summary carries exit_reason (F4 — Five Honest Exit Reasons).
+        # Surface the session-posture breakdown so the digest tells you not just
+        # *how many* summaries fired, but *how the sessions ended*.
+        vs_evts = [e for e in evts if e.get("event") == "verification_summary"]
+        if vs_evts:
+            exit_counts = Counter((e.get("fields") or {}).get("exit_reason", "?") for e in vs_evts)
+            print(f"{'':28}verification_summary exit_reason: {', '.join(f'{v}×{k}' for k, v in exit_counts.most_common())}")
         unknown = sorted({e.get("event", "?") for e in evts} - KNOWN_EVENTS)
         if unknown:
             print(f"{'':28}⚠️ unknown event(s) not in registry: {', '.join(unknown)}")

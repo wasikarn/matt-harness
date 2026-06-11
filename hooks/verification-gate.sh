@@ -71,13 +71,30 @@ fi
 printf '[%s] Advisory only — hook hint, not a directive (METHODOLOGY Rule 5). Bypass: CLAUDE_DISABLED_HOOKS=%s\n' \
   "$HOOK_ID" "$HOOK_ID"
 
+# Derive the session's posture — ONE of the "Five Honest Exit Reasons"
+# (Production Pipeline corpus: complete / blocked / stalled / degrading / timeout).
+# Priority order, first match wins:
+#   - gaps > 0     → "degrading"  (no-trail without a reason, or undeclared tier)
+#   - features > 0 → "complete"   (trails exist; the gaps branch above already caught the bad case)
+#   - features == 0 → unreachable here (we exit 0 above when features==0)
+# `blocked` (per-trail status marker) and `timeout` (wall-clock correlation) are
+# intentionally deferred — they require out-of-scope trail/status work. The 2-case
+# derivation (degrading | complete) covers the most common sessions without
+# breaking the contract (the field is additive; the consumer can add the others
+# later without a schema break).
+if [ "$gaps" -gt 0 ]; then
+  exit_reason="degrading"
+else
+  exit_reason="complete"
+fi
+
 # Journal the summary as the Phase-4 ground-truth feed. Run in a subshell so a
 # journal_append failure (it exits 2 fail-loud on missing jq / bad mint) cannot
 # terminate this SessionEnd hook — its stderr still surfaces, but the gate must
 # never block session end. stdout (the minted id) is discarded; this hook's
 # stdout is the human-facing advisory above.
-fields=$(printf '{"features":%d,"tdd_provenance":%d,"analyzer_pass":%d,"no_trail":%d,"gaps":%d}' \
-  "$features" "$tdd" "$analyzer" "$notrail" "$gaps")
+fields=$(printf '{"features":%d,"tdd_provenance":%d,"analyzer_pass":%d,"no_trail":%d,"gaps":%d,"exit_reason":"%s"}' \
+  "$features" "$tdd" "$analyzer" "$notrail" "$gaps" "$exit_reason")
 ( journal_append "$HOOK_ID" "verification_summary" "$fields" >/dev/null ) || true
 
 exit 0

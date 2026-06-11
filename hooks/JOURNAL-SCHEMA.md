@@ -47,7 +47,7 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `bypass_audit` | `bypass-audit-log.sh` (future JSONL) | `tool`, `profile`, `disabled_hooks` |
 | `review_finding` | `/review-pr` (Phase II) | `file`, `line`, `tier`, `agent`, `summary` |
 | `verification_verdict` | `/review-pr` (Phase II) | `subject_id`, `disposition`, `tier`, `decision`, `rejected_reason` |
-| `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps` |
+| `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
 
 `review_finding` + `verification_verdict` are the Phase-II ground-truth pair: the
 former is the per-finding evidence (file/line/tier/agent/summary), the latter is
@@ -64,6 +64,18 @@ severity `tier` above) plus `gaps` (no-trail without a named reason). It carries
 the real session id (SessionEnd `hook_init` sets `$SID`), so it is the one
 session-scopable verification feed for Phase 4 — unlike `verification_verdict`,
 whose journaler emits under its own hook id.
+
+`exit_reason` carries the session's posture as ONE of the "Five Honest Exit
+Reasons" (Production Pipeline corpus): `complete | blocked | stalled |
+degrading | timeout`. Derivation (first match wins, in `verification-gate.sh`):
+- `gaps > 0` → `"degrading"` (no-trail without a reason, or undeclared tier)
+- `features > 0` → `"complete"` (trails exist; gaps branch already caught the bad case)
+- `features == 0` is unreachable (the gate exits 0 silently when there are no trails)
+
+`blocked`, `stalled`, and `timeout` are intentionally deferred — they require
+per-trail `verification_status` markers and wall-clock correlation that are out
+of scope for the F4 fix. The field is additive; the consumer can introduce the
+other enum values later without a schema break.
 
 `findings.jsonl` (the on-disk per-line shape `/review-pr` writes, sibling of
 `rejected.md` / `ledger.md` in `.scratch/review-pr-<ts>/`) is the source of these
