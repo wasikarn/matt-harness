@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run baseline eval for a skill: with_skill vs without_skill comparison.
 
+# last_reviewed: 2026-06-11  (eval-target freshness check #30 in harness-audit)
+
 Usage:
     python3 run-baseline-eval.py <skill-path> [--iterations N] [--model MODEL]
 
