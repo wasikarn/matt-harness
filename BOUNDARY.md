@@ -1,11 +1,11 @@
 # Boundary Map
-_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash claude/skills/inventory/scripts/inventory-boundary.sh --repo-only > claude/BOUNDARY.md`._
+_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md` where `<kbg-harness>` is the kbg-harness repo root and `<dotfiles>` is the target repo root (or from the plugin cache: `bash ~/.claude/plugins/cache/kobig/kbg/$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only`)._
 _Schema version: v3 (adds Output styles table; Mutates column reflects Edit/Write/Bash grant)._
 # Inventory
 _Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_
 
-## Source: /Users/kobig/Codes/Personals/kbg-harness
-_/Users/kobig/Codes/Personals/kbg-harness_
+## Source: Personals/kbg-harness
+_Personals/kbg-harness_
 
 ### Skills (26)
   ◇ accept-task                    'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that /review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
@@ -74,7 +74,7 @@ _/Users/kobig/Codes/Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design and data-modeling reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, schemas, or data structures — especially when new types cross module boundaries or are exposed in public APIs. Grades encapsulation and invariants on a 1–10 scale. Don't use for: general code-quality review (defer to code-reviewer), security-specific concerns (defer to security-reviewer), performance analysis (defer to perf skill), or runtime behavior verification (defer to test-engineer). Owns type-system correctness and data-integrity boundaries.\n\n<commentary>\nThis agent triggers because type design is a distinct boundary from general code review, security, and performance. Poor encapsulation and broken invariants are root causes of many bugs that only surface at runtime; catching them during design review prevents downstream issues. The 1–10 grading forces explicit judgment rather than vague 'looks fine' approvals.\n</commentary>
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating a UI/UX implementation, reviewing a feature from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer for component-level polish, or clarify scope with user), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer for API latency, frontend-engineer for render performance). Owns the user experience layer between design and code.
 
-### Hooks (35)
+### Hooks (36)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
@@ -86,6 +86,7 @@ _/Users/kobig/Codes/Personals/kbg-harness_
   ◇ cleanup-bak-ttl.sh             cleanup-bak-ttl — SessionStart TTL gate for stale *.bak residue in ~/.claude/.
   ◇ config-change-log.sh           ConfigChange logger — append-only audit trail when external processes
   ◇ config-protection.sh           Config-protection gate — escalate Edit/Write/MultiEdit on an EXISTING linter/
+  ◇ db-write-gate.sh               db-write-gate — ask on non-SELECT MCP database calls.
   ◇ doctrine-bootstrap.sh          doctrine-bootstrap.sh — SessionStart hook (plugin mode only)
   ◇ doctrine-edit-gate.sh          Pre-edit doctrine gate — escalate Edit/Write/MultiEdit on doctrine docs
   ◇ evidence-trail-log.sh          Log every WebFetch URL to a per-session audit trail. Supports
@@ -186,6 +187,7 @@ _/Users/kobig/Codes/Personals/kbg-harness_
 | cleanup-bak-ttl.sh | cleanup-bak-ttl — SessionStart TTL gate for stale *.bak residue in ~/.claude/. |
 | config-change-log.sh | ConfigChange logger — append-only audit trail when external processes |
 | config-protection.sh | Config-protection gate — escalate Edit/Write/MultiEdit on an EXISTING linter/ |
+| db-write-gate.sh | db-write-gate — ask on non-SELECT MCP database calls. |
 | doctrine-bootstrap.sh | doctrine-bootstrap.sh — SessionStart hook (plugin mode only) |
 | doctrine-edit-gate.sh | Pre-edit doctrine gate — escalate Edit/Write/MultiEdit on doctrine docs |
 | evidence-trail-log.sh | Log every WebFetch URL to a per-session audit trail. Supports |
@@ -217,4 +219,4 @@ _/Users/kobig/Codes/Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-11T11:56:19Z_
+_Generated: 2026-06-11T14:40:15Z_
