@@ -65,3 +65,65 @@ Both the **measure** and the **delete** decision stay human-gated. There is no
 auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
+
+## Permission re-audit
+
+*last_reviewed: 2026-06-11 (initial section, written as part of the
+2026-06-11 Harness-Loop-Engineer audit response; revisit quarterly
+or on model upgrade).*
+
+The decay lens above asks "does this component still earn its place?". A
+sibling question: **has this component accrued tool access it no longer needs?**
+That second question is the permission re-audit, and it lives here because the
+same human-gated cadence applies. Two surfaces carry tool grants:
+
+- **Per-agent `tools:` frontmatter** under `agents/*.md` (each token is an
+  explicit allowlist the agent's prompt then inherits as a real tool);
+- **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
+  second, broader allowlist applied to every session in this harness).
+
+A tool grant is a *permission expansion surface* — it widens what the model
+can do without a human gate. When the model improves or a feature gets
+removed, a previously-needed grant becomes decay-eligible in exactly the same
+sense a hook does. The fix is the same: human-gated measure-then-delete
+through the `decommission` flow with an `ABSENT_*` witness.
+
+### Cadence
+
+- **Quarterly** — pair with the build-to-delete sweep above so a single
+  human pass clears both "stale" and "over-permissioned" candidates in one
+  sitting.
+- **On model upgrade** — Claude 4.x → 5.x, Sonnet → Opus, etc. New tiers
+  shift the implicit trust surface; re-walk every grant against the new
+  capability profile.
+- **On agent merge** — the new agent's `tools:` line is reviewed at merge
+  time, but the *cumulative* surface (this agent + everything else) deserves
+  a fresh look at the same milestone.
+
+### Surface check (copy-pasteable)
+
+From the repo root, this one-liner lists every tool-grant delta since the
+last permission review:
+
+```bash
+git diff <last-review-sha>..HEAD -- agents/ dotfiles/claude/settings.json \
+  | grep -E '^\+.*tools:|^\+.*"allow"'
+```
+
+Walk the output line-by-line: for each added token, ask (a) is the agent /
+session actually using it, and (b) does the human-gate posture survive if
+the model uses it without checking? If both yes, keep. If either no, file
+a `decommission` ticket and revoke via the same `ABSENT_*` witness
+machinery.
+
+### Why this is here, not in `harness-audit`
+
+`harness-audit` is a deterministic, machine-checkable surface — the
+*enforcement* layer. The permission re-audit is a *judgment* call: "is this
+grant still earned?" is a question only a human can answer well, and the
+answer depends on model-version state and recent work patterns that
+don't reduce to a regex. The audit's role is to keep the *envelope*
+honest (no duplicate `tools:` tokens, every token a real Claude Code
+tool — see `harness-audit/scripts/audit.sh` checks #6 / #22); the
+re-audit's role is to keep the *contents* honest on the human cadence
+above. They are complements, not substitutes.

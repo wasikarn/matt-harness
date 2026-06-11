@@ -131,6 +131,15 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/evidence-trail-log.sh\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/db-write-gate.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
