@@ -139,7 +139,7 @@ standalone, self-contained Claude Code plugin (`.claude-plugin/{plugin,marketpla
   truth, shipped as a plugin artifact. The owner installs it via a bare-name symlink farm
   (`install.sh`), **not** via plugin-install; the plugin is disabled locally
   (`settings.json: "kbg@kobig": false`) so its hooks never double-fire against the symlinked copy.
-  See `docs/ARCHITECTURE.md`.
+  See `docs/adr/0001-personal-harness-as-plugin.md`.
 - **Doctrine is mandatory, not opt-in.** A stranger who installs and enables `kbg` inherits the
   owner's METHODOLOGY/RTK/ACLI/DBGATE conventions as-is. This is intentional for a personal harness;
   see `README.md` → "For external installers" for how to disable or adapt.
