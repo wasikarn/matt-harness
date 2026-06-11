@@ -9,8 +9,9 @@ one `verification_tier`:
 
     tdd-provenance | analyzer-pass | no-trail
 
-`tdd-provenance` is assigned ONLY from an explicit trail `red_green` / declared
-tier — it is never inferred from git (retro-detecting a red→green sequence is
+`tdd-provenance` is assigned ONLY from an explicit declared `verification_tier`
+line in the trail (the `red_green` shas are human-readable evidence, not a parsed
+field) — it is never inferred from git (retro-detecting a red→green sequence is
 unreliable, and a false "tdd-provenance" is worse than an honest "analyzer-pass").
 
 Read-only. Exit 0 always (a grading report, not a gate). The journal is read via
