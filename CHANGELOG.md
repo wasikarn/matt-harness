@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.1.2] — 2026-06-11
+
+Patch release — surfaces two post-`0.1.1` fixes as a clean release line. No new features, no
+breaking changes.
+
+### Fixed
+
+- **G15 (P0): harness-audit cache-version hardcode.** `audit.sh:70` hardcoded `0.1.0` as the
+  default plugin-cache path. When the cache bumped to `0.1.1/` (or any future `0.x.y/`), the
+  hardcoded default pointed at a missing directory, silently setting `PLUGIN_ACTIVE=0` and
+  disabling the F1 plugin-aware bypass — surfacing **61 false-positive CRITs** on `audit.sh`
+  (the very thing the F1 rework in `0.1.1` was meant to fix). Now resolves the cache version
+  dynamically via `ls | sort -V | tail -1`. (`846452a`)
+
+### Added
+
+- **CI: `.github/workflows/validate.yml`** — runs `claude plugin validate --strict .` on every
+  push and PR to `main` and `develop`. Catches schema / manifest drift before publish; pairs
+  with the existing pre-commit harness-audit + critical-hooks gates. (`9f704f0`)
+
 ## [Unreleased]
 
 ### Fixed
