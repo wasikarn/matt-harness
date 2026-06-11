@@ -84,9 +84,19 @@ print_source() {
   done
   [ $any -eq 0 ] && return
 
+  # Host-portable display: shorten the absolute $base to `<parent_bn>/<base_bn>`
+  # so the artifact doesn't leak the host install dir. The scan still uses $base.
+  local display="$base"
+  local _parent_bn _base_bn
+  _parent_bn="$(basename "$(dirname "$base")")"
+  _base_bn="$(basename "$base")"
+  if [ -n "$_parent_bn" ] && [ "$_parent_bn" != "." ] && [ "$_parent_bn" != "/" ]; then
+    display="${_parent_bn}/${_base_bn}"
+  fi
+
   echo ""
   echo "## $label"
-  echo "_${base}_"
+  echo "_${display}_"
   print_section "Skills"   "$base/skills"   "skill-dir"
   print_section "Commands" "$base/commands" "md-file"
   print_section "Agents"   "$base/agents"   "md-file"
@@ -104,7 +114,12 @@ if [ -n "${1:-}" ]; then
     echo "✗ not a directory: $1" >&2
     exit 1
   fi
-  print_source "Source: $1" "$1"
+  # Host-portable: render the label as `Source: <parent_bn>/<basename>` so
+  # the artifact doesn't leak the host install dir. print_source still
+  # scans the absolute $1 path; only the human-readable label is shortened.
+  _parent_bn="$(basename "$(dirname "$1")")"
+  _label="Source: ${_parent_bn}/$(basename "$1")"
+  print_source "$_label" "$1"
   exit 0
 fi
 

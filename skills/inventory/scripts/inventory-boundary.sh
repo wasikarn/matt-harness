@@ -139,7 +139,10 @@ if [ "${1:-}" = "--repo-only" ]; then
   bash "$SCRIPT_DIR/inventory.sh" "$REPO_CLAUDE"
   print_boundary "Repo" "$REPO_CLAUDE"
 elif [ -n "${1:-}" ]; then
-  print_boundary "Source: $1" "$1"
+  # Host-portable label: use repo-relative tail so the artifact doesn't leak
+  # the host install dir. The scan still uses the absolute $1.
+  _label_bn="$(basename "$(dirname "$1")")/$(basename "$1")"
+  print_boundary "Source: $_label_bn" "$1"
 else
   # Live-merged view: structural overview + project-local + global ~/.claude
   bash "$SCRIPT_DIR/inventory.sh"
