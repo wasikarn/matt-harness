@@ -1237,6 +1237,126 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s baretask not graded no-trail: %q\n' "verification-tier-audit.py" "$VTA_OUT"
 fi
 
+# --- review-pr-journal-pre-emit-validator.py: Layer 2 (ask-gate, additive) ---
+# Companion to review-pr-journal.py (Layer 1, best-effort, see tests M/N/N2/P).
+# The validator is a pre-emit CLI that /review-pr SKILL.md step 4 calls BEFORE
+# the journaler. It re-uses the journaler's enum regexes (lockstep via Python
+# import — do NOT redeclare the enums) and exits 2 on miss so the human can
+# AskUserQuestion before the journal gets polluted. Q3=a is preserved (the
+# journaler still WARNINGs but emits; the validator is the ask-gate, not a
+# deny-gate). These tests prove the four surface contracts the SKILL.md
+# depends on: (CC) all-clean exit 0; (DD) miss → exit 2 + named stderr;
+# (EE) manifest dedup short-circuits (already-journaled findings don't
+# re-block); (FF) the validator is read-only (it never writes the journal
+# or the .journaled manifest, even on a miss).
+
+# (CC) all-clean findings → exit 0, stderr names the count.
+VDIR1="$FIXTURE/rj-vdir1"; rm -rf "$VDIR1"; mkdir -p "$VDIR1"
+cat > "$VDIR1/findings.jsonl" << 'FIXTURE_EOF'
+{"local_id":"CC1","tier":"Critical","disposition":"survived","decision":"fix-now","pair_id":"P1"}
+{"local_id":"CC2","tier":"Important","disposition":"rejected","decision":"proceed","pair_id":"P2"}
+{"local_id":"CC3","tier":"Minor","disposition":"survived","decision":"fix-later","pair_id":"P3"}
+FIXTURE_EOF
+EXIT_CODE=0
+STDERR=$(python3 "$SCRIPTS/review-pr-journal-pre-emit-validator.py" "$VDIR1" 2>&1 >/dev/null) || EXIT_CODE=$?
+N_PASS=$(printf '%s\n' "$STDERR" | grep -c "OK: 3 finding(s) passed" || true)
+# The validator must NOT have created a .journaled manifest — that is the
+# journaler's job (Layer 1). A Layer-2 write here would double-track state.
+HAS_MANIFEST=$([ -e "$VDIR1/.journaled" ] && echo yes || echo no)
+if [ "$EXIT_CODE" = 0 ] && [ "$N_PASS" = 1 ] && [ "$HAS_MANIFEST" = no ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s all-clean: exit 0, stderr OK-count, no manifest write (Layer 2 read-only)\n' "review-pr-journal-pre-emit-validator"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit=%s (want 0) n_pass=%s (want 1) has_manifest=%s (want no)\n' "review-pr-journal-pre-emit-validator" "$EXIT_CODE" "$N_PASS" "$HAS_MANIFEST"
+fi
+
+# (DD) enum-miss → exit 2, stderr names EVERY offending finding + field, NO
+# manifest write. This is the core ask-gate contract: the human must see
+# which findings are bad and which field on each, before deciding to
+# proceed. A test that only checks exit-2 (without naming) would miss a
+# regression where the validator printed "validation failed" without
+# per-finding detail.
+VDIR2="$FIXTURE/rj-vdir2"; rm -rf "$VDIR2"; mkdir -p "$VDIR2"
+cat > "$VDIR2/findings.jsonl" << 'FIXTURE_EOF'
+{"local_id":"DD1","tier":"whoops","disposition":"survived","decision":"proceed","pair_id":"P1"}
+{"local_id":"DD2","tier":"Minor","disposition":"unknown","decision":"proceed","pair_id":"P2"}
+{"local_id":"DD3","tier":"Minor","disposition":"rejected","decision":"eventually","pair_id":"P3"}
+{"local_id":"DD4","tier":"Critical","disposition":"survived","decision":"fix-now","pair_id":"P4"}
+FIXTURE_EOF
+EXIT_CODE=0
+STDERR=$(python3 "$SCRIPTS/review-pr-journal-pre-emit-validator.py" "$VDIR2" 2>&1 >/dev/null) || EXIT_CODE=$?
+# Expect 3 named findings (DD1 bad tier, DD2 bad disp, DD3 bad dec) and
+# DD4 silently passing. The exit-2 message must say BLOCK + count, and
+# every offending finding's local_id + bad field must appear on stderr.
+N_BLOCK=$(printf '%s\n' "$STDERR" | grep -c "BLOCK: 3 finding(s) failed" || true)
+HAS_DD1=$(printf '%s' "$STDERR" | grep -c "local_id=DD1: tier='whoops'" || true)
+HAS_DD2=$(printf '%s' "$STDERR" | grep -c "local_id=DD2: disposition='unknown'" || true)
+HAS_DD3=$(printf '%s' "$STDERR" | grep -c "local_id=DD3: decision='eventually'" || true)
+NO_DD4=$(printf '%s' "$STDERR" | grep -c "local_id=DD4" || true)
+HAS_MANIFEST=$([ -e "$VDIR2/.journaled" ] && echo yes || echo no)
+if [ "$EXIT_CODE" = 2 ] && [ "$N_BLOCK" = 1 ] \
+   && [ "$HAS_DD1" = 1 ] && [ "$HAS_DD2" = 1 ] && [ "$HAS_DD3" = 1 ] \
+   && [ "$NO_DD4" = 0 ] && [ "$HAS_MANIFEST" = no ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s enum-miss: exit 2, all 3 bad findings named on stderr, clean finding silent, no manifest write\n' "review-pr-journal-pre-emit-validator"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit=%s n_block=%s dd1=%s dd2=%s dd3=%s no_dd4=%s has_manifest=%s\n' "review-pr-journal-pre-emit-validator" "$EXIT_CODE" "$N_BLOCK" "$HAS_DD1" "$HAS_DD2" "$HAS_DD3" "$NO_DD4" "$HAS_MANIFEST"
+fi
+
+# (EE) manifest dedup short-circuits the validator: a finding with a bad
+# enum that is ALREADY in the manifest must NOT block (the manifest
+# proves it passed the gate previously, so re-validation is a no-op).
+# This is the same dedup-on-load the journaler does (test N/N2) — the
+# validator must honor the same manifest or it would block findings the
+# journaler would happily re-skip. The finding must still be in the
+# output count as "already in manifest", not "passed enum validation",
+# which is the proof the dedup branch fired (not the enum-clean branch).
+VDIR3="$FIXTURE/rj-vdir3"; rm -rf "$VDIR3"; mkdir -p "$VDIR3"
+cat > "$VDIR3/findings.jsonl" << 'FIXTURE_EOF'
+{"local_id":"EE1","tier":"CRITICAL_TYPO","disposition":"survived","decision":"fix-now","pair_id":"P1"}
+{"local_id":"EE2","tier":"BAD_TIER","disposition":"survived","decision":"proceed","pair_id":"P2"}
+FIXTURE_EOF
+# Pre-seed manifest as if EE1 was journaled in a prior run.
+printf '%s\n' '{"local_id":"EE1","finding_id":"fake-fid","verdict_id":"fake-vid"}' > "$VDIR3/.journaled"
+EXIT_CODE=0
+STDERR=$(python3 "$SCRIPTS/review-pr-journal-pre-emit-validator.py" "$VDIR3" 2>&1 >/dev/null) || EXIT_CODE=$?
+# Expect: exit 2 (EE2 still bad), stderr says 1 already in manifest + 1
+# blocked, EE1 NOT named as a blocker.
+N_ALREADY=$(printf '%s\n' "$STDERR" | grep -c "1 already in manifest" || true)
+N_BLOCK=$(printf '%s\n' "$STDERR" | grep -c "1 finding(s) failed" || true)
+HAS_EE1_AS_BLOCKER=$(printf '%s' "$STDERR" | grep -c "local_id=EE1:" || true)
+HAS_EE2_AS_BLOCKER=$(printf '%s' "$STDERR" | grep -c "local_id=EE2: tier='BAD_TIER'" || true)
+if [ "$EXIT_CODE" = 2 ] && [ "$N_ALREADY" = 1 ] && [ "$N_BLOCK" = 1 ] \
+   && [ "$HAS_EE1_AS_BLOCKER" = 0 ] && [ "$HAS_EE2_AS_BLOCKER" = 1 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s manifest dedup: already-journaled finding skipped, only the new bad one blocks\n' "review-pr-journal-pre-emit-validator"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit=%s n_already=%s n_block=%s ee1_blocker=%s (want 0) ee2_blocker=%s\n' "review-pr-journal-pre-emit-validator" "$EXIT_CODE" "$N_ALREADY" "$N_BLOCK" "$HAS_EE1_AS_BLOCKER" "$HAS_EE2_AS_BLOCKER"
+fi
+
+# (FF) the validator is fail-loud on a malformed .journaled manifest
+# (analog to journaler test R). A non-JSON line in the manifest means a
+# prior run died in a way that left garbage; the validator must NOT
+# silently treat the manifest as empty and pass-through — that would
+# re-validate findings the journaler would also re-validate, and any
+# gate-truth divergence between the two layers would surface as silent
+# drift. Lockstep: the validator's manifest parser is byte-identical in
+# intent to the journaler's (the test R precedent). Exit 2, stderr
+# names the file, no event/journal write — note: the validator does not
+# write ANY journal artifacts in any case, so the "no journal write"
+# check here is layered on top of "no manifest write".
+VDIR4="$FIXTURE/rj-vdir4"; rm -rf "$VDIR4"; mkdir -p "$VDIR4"
+cat > "$VDIR4/findings.jsonl" << 'FIXTURE_EOF'
+{"local_id":"FF1","tier":"Critical","disposition":"survived","decision":"fix-now","pair_id":"P1"}
+FIXTURE_EOF
+printf 'not-json-at-all\ngarbage line 2\n' > "$VDIR4/.journaled"
+EXIT_CODE=0
+STDERR=$(python3 "$SCRIPTS/review-pr-journal-pre-emit-validator.py" "$VDIR4" 2>&1 >/dev/null) || EXIT_CODE=$?
+HAS_REFUSING=$(printf '%s' "$STDERR" | grep -c "refusing to validate" || true)
+HAS_PATH=$(printf '%s' "$STDERR" | grep -c "\.journaled" || true)
+if [ "$EXIT_CODE" = 2 ] && [ "$HAS_REFUSING" = 1 ] && [ "$HAS_PATH" = 1 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s malformed manifest: exit 2, stderr refuses + names file (lockstep with journaler R)\n' "review-pr-journal-pre-emit-validator"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s exit=%s (want 2) refusing=%s path=%s\n' "review-pr-journal-pre-emit-validator" "$EXIT_CODE" "$HAS_REFUSING" "$HAS_PATH"
+fi
+
 # --- recursive-improve-observe.py: reads verification_summary, surfaces gaps as triggers ---
 # Phase-4 observe reader: groups verification_summary events by session, keeps the
 # LATEST per session, flags sessions with gaps>0 as improvement triggers. Read-only,

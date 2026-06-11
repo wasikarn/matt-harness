@@ -77,6 +77,36 @@ enums above and surfaces a `WARNING` on stderr for a miss — but does NOT block
 the emit (Q3=a "silent FYI, never unwinds" — the journaler is best-effort, not
 a submit gate).
 
+### Two-layer design: validator (Layer 2, ask-gate) + journaler (Layer 1, best-effort)
+
+The journaler's WARNING-only behavior is deliberate (Q3=a), but a fresh-context
+audit on 2026-06-11 (FLAG-4) found that an enum-miss verdict silently landing
+in the governance stream gets aggregated downstream as if it were a strict-tier
+verdict — polluting the digest. **The fix is additive, not contract-changing:**
+
+- **Layer 2 — `scripts/review-pr-journal-pre-emit-validator.py` (pre-emit ask-gate).** CLI
+  preflight that `/review-pr` SKILL.md step 4 calls BEFORE the journaler.
+  - Re-imports the journaler's enum regexes (`TIER_OK`, `DISPOSITION_OK`, `DECISION_OK`)
+    so a schema change there propagates here — DO NOT redeclare the enums.
+  - Reads `findings.jsonl` from the scratch dir, skips `local_id`s already in
+    `.journaled` (the manifest proves they passed the gate previously), and
+    surfaces enum-misses for new findings on stderr (e.g. `local_id=b: tier='CRITICAL_TYPO'`).
+  - Exits **0** if all findings pass (or are already in the manifest), **2** if
+    any new finding has an enum-miss (or a missing/non-string `local_id`).
+  - **The validator is an ASK gate, not a deny gate.** On exit 2, `/review-pr`
+    surfaces the validator's named summary via `AskUserQuestion` and the human
+    chooses: *proceed anyway (downgrade to journaler WARNING)* / *pause to fix
+    the finding* / *cancel the journal step*. The autonomy invariant
+    (`recursive-improve stays disable-model-invocation:true` — no autonomous
+    multi-iteration loop) is preserved: the validator hands the choice back to
+    the human, never decides for them.
+- **Layer 1 — `scripts/review-pr-journal.py` (best-effort, never unwinds).** Unchanged.
+  WARNINGs on enum-miss but emits anyway. The two-layer design is the answer
+  to "the journaler should warn but not block" (Q3=a) AND "we should still
+  catch the drift before it pollutes the stream" (audit FLAG-4) — Layer 2
+  surfaces the drift to the human (ask), Layer 1 documents the
+  best-effort/never-unwinds contract (warn-and-emit).
+
 ## Invariants
 
 - **Atomicity** — a single `>>` append of one envelope line is atomic at these
