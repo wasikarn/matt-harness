@@ -866,6 +866,32 @@ else
   warn "eval-target freshness check skipped — python3 unavailable"
 fi
 
+# 32. Autonomy invariant guardrail — round-2 drill-down (2026-06-12)
+# found that the load-bearing autonomy invariant (CONTEXT.md §Invariants:
+# "no autonomous or unattended self-repair loop, and no multi-iteration
+# loop that runs without a human gate between iterations") had no
+# deterministic check. The invariant is enforced socially (in code
+# review + CHANGELOG notes) via the `disable-model-invocation: true`
+# frontmatter on skills/recursive-improve/SKILL.md. This check makes
+# the guardrail deterministic. If this check ever fires on a real
+# repo, the invariant has regressed and the harness is one
+# model-version away from self-rewriting — emit CRIT, not WARN.
+#
+# Implementation note: we read only the first 20 lines (frontmatter
+# region) of recursive-improve/SKILL.md. The check is exact-match on
+# "disable-model-invocation: true" — a regression guard against typos
+# (e.g. "True", "yes", "1") that would silently disable the gate.
+# The check is hermetic (single file read, no JSON parse, no
+# transitive dependencies). If the skill is renamed or removed, the
+# check silently passes (no file = no invariant to guard); this is
+# intentional — the invariant is about THIS skill being self-binding,
+# not about a future skill needing the same property.
+if [ -f "$CLAUDE_DIR/skills/recursive-improve/SKILL.md" ]; then
+  if ! head -20 "$CLAUDE_DIR/skills/recursive-improve/SKILL.md" | grep -qF "disable-model-invocation: true"; then
+    crit "skills/recursive-improve/SKILL.md: missing 'disable-model-invocation: true' in frontmatter (autonomy invariant regressed — see CONTEXT.md §Invariants + ADR 0002)"
+  fi
+fi
+
 # 31. Schema-rot detector — round-2 (2026-06-11) found that the pre-emit
 # validator at scripts/review-pr-journal-pre-emit-validator.py is scoped
 # to the review-pr journaler's enum regexes only. No general detector

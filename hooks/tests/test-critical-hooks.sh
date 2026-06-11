@@ -1707,6 +1707,102 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s empty matcher regression fired hooks-crit=%s matcher-crit=%s (want 0/0):\n%s\n' "harness-audit #31" "$SREP_O_HAS_HOOKS_CRIT" "$SREP_O_HAS_MATCHER_CRIT" "$SREP_O_OUT"
 fi
 
+# --- harness-audit check #32 — autonomy invariant guardrail ---
+# Round-2 drill-down (2026-06-12) found that the load-bearing autonomy
+# invariant (CONTEXT.md §Invariants) had no deterministic check. This
+# trio (PP/QQ/RR) is the regression guard for that check. The invariant
+# is enforced via the `disable-model-invocation: true` frontmatter on
+# skills/recursive-improve/SKILL.md. If the field regresses to `: false`,
+# `: True` (Python truthy), or is removed, the harness loses its
+# self-binding and the model can self-start the recursive-improve skill
+# — a one-model-version-away self-rewriter. The check emits CRIT, not
+# WARN, because the invariant is irreversible (per ADR 0002).
+#
+# Mirrors the (MM)/(NN)/(OO) trio pattern: hermetic temp-dir fixture
+# for the violation paths, real-repo path for the positive control.
+# The (PP) test runs against the real kbg-harness repo to verify the
+# check is silent when the field is present (the contract is that the
+# audit green bar is preserved for the actual harness state).
+AUDIT="$HOOKS/../skills/harness-audit/scripts/audit.sh"
+
+# (PP) positive control — real repo, recursive-improve has the field.
+# The audit should produce zero INVARIANT_FAIL findings. This is the
+# test that runs in CI on every push; it would fail if a future
+# commit removed the field from the real skill.
+set +e
+PP_OUT=$(bash "$AUDIT" . 2>&1)
+PP_RC=$?
+set -e
+PP_HAS_INVARIANT=$(printf '%s' "$PP_OUT" | grep -c "INVARIANT\|autonomy invariant regressed" || true)
+if [ "$PP_HAS_INVARIANT" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s real repo: 0 INVARIANT_FAIL (recursive-improve has disable-model-invocation: true)\n' "harness-audit #32"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s real repo emitted %s INVARIANT_FAIL findings (want 0), rc=%s:\n%s\n' "harness-audit #32" "$PP_HAS_INVARIANT" "$PP_RC" "$PP_OUT"
+fi
+
+# (QQ) violation fixture — temp recursive-improve skill with the field
+# set to `false` (the would-be regression). The check should emit
+# exactly 1 CRIT. Build a fresh fixture; do NOT mutate the real
+# recursive-improve/SKILL.md (the (RR) test below would also be
+# affected if the real file were touched).
+QQ_F="$FIXTURE/qq-ri-bad"; rm -rf "$QQ_F"; mkdir -p "$QQ_F/claude/skills/recursive-improve" "$QQ_F/claude/agents" "$QQ_F/claude/commands" "$QQ_F/claude/hooks" "$QQ_F/claude/docs" "$QQ_F/.claude-plugin"
+cat > "$QQ_F/claude/skills/recursive-improve/SKILL.md" <<'SK'
+---
+name: recursive-improve
+description: "fixture — field flipped to false"
+disable-model-invocation: false
+---
+# fixture
+SK
+cat > "$QQ_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "qq-fixture", "version": "0.0.1" }
+PJ
+set +e
+QQ_OUT=$(bash "$AUDIT" "$QQ_F" 2>&1)
+QQ_RC=$?
+set -e
+QQ_HAS_CRIT=$(printf '%s' "$QQ_OUT" | grep -c "missing 'disable-model-invocation: true'" || true)
+# Expect exactly 1 CRIT — one for the recursive-improve regression.
+# The audit's overall rc is dominated by the always-firing F1 symlink
+# CRIT + 2 description WARNs on a fresh fixture, so we don't assert
+# rc=0 here — only that check #32's own CRIT fires (the contract of
+# this test).
+if [ "$QQ_HAS_CRIT" -ge 1 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s violation fixture: 1+ CRIT fires (disable-model-invocation flipped to false)\n' "harness-audit #32"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s violation fixture: 0 CRIT (want 1+), rc=%s:\n%s\n' "harness-audit #32" "$QQ_RC" "$QQ_OUT"
+fi
+
+# (RR) regression guard — field value-typo must NOT pass silently.
+# Mirrors the (OO) empty-matcher regression: the check must look for
+# the EXACT string `disable-model-invocation: true` (lowercase,
+# colon-space, lowercase), not just any truthy value. A regression to
+# "True" / "yes" / "1" / "on" would silently disable the gate. The
+# check is grep -qF (fixed string) which is exact-match — verified
+# here by feeding it `: True` (Python truthy) and asserting 1+ CRIT.
+RR_F="$FIXTURE/rr-ri-truthy"; rm -rf "$RR_F"; mkdir -p "$RR_F/claude/skills/recursive-improve" "$RR_F/claude/agents" "$RR_F/claude/commands" "$RR_F/claude/hooks" "$RR_F/claude/docs" "$RR_F/.claude-plugin"
+cat > "$RR_F/claude/skills/recursive-improve/SKILL.md" <<'SK'
+---
+name: recursive-improve
+description: "fixture — field is Python truthy `True` (capital T)"
+disable-model-invocation: True
+---
+# fixture
+SK
+cat > "$RR_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "rr-fixture", "version": "0.0.1" }
+PJ
+set +e
+RR_OUT=$(bash "$AUDIT" "$RR_F" 2>&1)
+RR_RC=$?
+set -e
+RR_HAS_CRIT=$(printf '%s' "$RR_OUT" | grep -c "missing 'disable-model-invocation: true'" || true)
+if [ "$RR_HAS_CRIT" -ge 1 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s truthy-typo regression: CRIT fires (check is exact-match on `: true`, not truthy)\n' "harness-audit #32"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s truthy-typo regression: 0 CRIT (want 1+) — check would silently pass `: True` — rc=%s:\n%s\n' "harness-audit #32" "$RR_RC" "$RR_OUT"
+fi
+
 echo
 echo "=== $PASS passed, $FAIL failed ==="
 [ "$FAIL" = 0 ] || { echo "FAIL: $FAIL test(s) failed" >&2; exit 1; }
