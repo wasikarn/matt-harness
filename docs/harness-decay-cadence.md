@@ -77,8 +77,12 @@ human gate. kbg-harness already has 4 class-shaped gates:
 - **DB writes** — `hooks/db-write-gate.sh` (gates `mcp__*__execute_sql_*`
   non-SELECT writes; SELECT/EXPLAIN/information_schema pass through)
 - **Secret reads** — `hooks/secret-read-guard` (in `hooks/hooks.json`)
-- **Config edits** — `hooks/config-change-log` + `hooks/config-protection`
-  (gates Edit/Write on config files)
+- **Config edits** — `hooks/config-protection.sh` (PreToolUse gate,
+  `hook_decision ask` on existing linter/formatter configs; blocks
+  the model from editing established config without human approval).
+  `hooks/config-change-log.sh` is a separate append-only audit trail
+  for external `ConfigChange` events (logger, not a gate — fires
+  after the fact, no `permissionDecision`, no enforcement).
 - **Doctrine edits** — `hooks/doctrine-edit-gate` +
   `hooks/block-bash-doctrine-write` (gates Edit/Write on METHODOLOGY/CONTEXT/
   RTK/ACLI/DBGATE)
@@ -93,6 +97,12 @@ The pattern lives in the existing decay cadence because the gates
 themselves live in `hooks/`; this section is the map of which class each
 existing gate covers, so a future contributor can find the right
 precedent before adding a new one.
+
+`ask` is the default for human-supervised irreversible mutations; `deny`
+is reserved for actions the model should never be trusted to do even
+with human in-the-loop confirmation (e.g. secret-reads,
+doctrine-via-Bash). See `secret-read-guard.sh:36-41` and
+`block-bash-doctrine-write.sh:3-4` for the rationale pattern.
 
 ## Permission re-audit
 

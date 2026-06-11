@@ -919,12 +919,13 @@ fi
 # specific failure mode that breaks the cache-resolver at audit.sh:73.
 # Sub-check 31.3 — settings.json permission re-audit bookmark: per
 # decay-cadence §Permission re-audit, the kbg-harness equivalent is
-# `last_permission_review_sha` in plugin.json OR a `## Permission
-# re-audit` section in `docs/harness-decay-cadence.md`. Emit info if
+# a `## Permission re-audit` section with a `last_permission_review:
+# YYYY-MM-DD` marker in `docs/harness-decay-cadence.md`. Emit info if
 # the marker is older than KBG_PERM_REAUDIT_MAX_AGE_DAYS (default 90,
-# quarterly cadence). If neither file is present, emit info naming
-# both candidates — the check does not pretend to know where the
-# user's local config lives.
+# quarterly cadence). (The plugin.json `last_permission_review_sha`
+# equivalent was named in the original doc-comment but never
+# implemented — doc trimmed in round-2 audit reconcile 2026-06-12
+# to match the actual check below; lines ~1008-1039.)
 # Sub-check 31.4 — hooks.json schema: STRUCTURAL. Every `matcher` in the
 # JSON must be a non-empty string, every `hooks[]` entry must have a
 # `type` field, every `command` value must be non-empty. Emit crit on
