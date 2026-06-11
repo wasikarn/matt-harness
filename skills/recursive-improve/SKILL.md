@@ -172,7 +172,8 @@ recursive-improve — iteration <N> report
   verify → combine, inline).
 - **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit` (the
   candidate-detail signal) · `recursive-improve-observe.py` (the verification metric) · the witness
-  scripts under `inventory/` (pre/post attestation) · `/feature-dev` (escrow for over-scope candidates).
+  scripts under `inventory/` (pre/post attestation) · `/feature-dev` (escrow for over-scope candidates) ·
+  the harness-decay cadence (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop).
 - **Reads, never writes, the journal.** The reader is read-only; this skill does not emit a journal
   event. Iteration evidence is the witness BOUNDARY diff + a memory entry, not a new journal stream
   (kept minimal per Rule 2 — revisit only if a durable per-iteration history is actually needed).
