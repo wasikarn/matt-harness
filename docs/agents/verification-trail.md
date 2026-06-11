@@ -13,8 +13,10 @@ loop: `verification-gate.sh` → the `verification_summary` journal event (see
 
 ## Format
 
-A markdown file. Exactly two fields are **parsed by the consumer scripts**
-(order-independent; surrounding prose is ignored):
+A markdown file. Two fields are **parsed** — both by `verification-gate.sh` (the SessionEnd
+counter). `verification-tier-audit.py` reads only `verification_tier`, and
+`recursive-improve-observe.py` reads neither (it consumes the journal, not the trail — see
+Consumers below). Parsing is order-independent; surrounding prose is ignored:
 
 | Field | Required | Values | Meaning |
 |---|---|---|---|
@@ -61,8 +63,9 @@ validated and may be omitted:
 
 ## Consumers
 
-- `hooks/verification-gate.sh` (SessionEnd) — counts the session's trails by
-  tier, emits the `verification_summary` event, and prints a gap advisory.
+- `hooks/verification-gate.sh` (SessionEnd) — counts every trail present in `.scratch`
+  at session end (trails are not session-tagged; `.scratch` is conventionally per-session), emits
+  the `verification_summary` event, and prints a gap advisory.
   **Advisory only** — it journals but never blocks session end.
 - `scripts/verification-tier-audit.py` — retro-grades a feature from its trail
   (and other evidence) against this rubric.

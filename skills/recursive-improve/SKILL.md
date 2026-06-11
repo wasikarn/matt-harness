@@ -15,9 +15,9 @@ harness eyes (nudge telemetry, the review-pr marker, the verification journal); 
 the hand — but a hand the human always holds.
 
 **The autonomy invariant (load-bearing — do not soften):** there is **no** autonomous,
-multi-iteration, unattended mode. The autonomy invariant — canonically homed in `CONTEXT.md`
-§Invariants — deliberately rejects an autonomous repair loop in this repo ("config repo, no app
-substrate … all risk, no target"). This skill
+multi-iteration, unattended mode. It is canonically homed in `CONTEXT.md` §Invariants, which
+deliberately rejects an autonomous repair loop in this repo ("config repo, no app substrate …
+all risk, no target"). This skill
 honors that: every iteration stops at an `AskUserQuestion` gate before any mutation, and the
 skill is `disable-model-invocation: true` so the model cannot self-start it. The human is the
 loop's real stop condition; the iteration cap is only a context-exhaustion backstop.

@@ -26,7 +26,7 @@ hold. That is the trigger to re-measure.
 ## Cadence
 
 1. **Surface candidates** — run the audits that already exist; add no new tool:
-   - `harness-audit` (`skills/harness-audit/scripts/audit.sh <root>`) for fleet
+   - `harness-audit` (`bash skills/harness-audit/scripts/audit.sh [<root>]`) for fleet
      health and dead / unloadable components;
    - `inventory` (`skills/inventory`) + a `BOUNDARY.md` drift snapshot it can
      emit and you commit — to catch a component that silently appeared or vanished;
@@ -35,8 +35,10 @@ hold. That is the trigger to re-measure.
    - `workspace-surface-audit` (the owner's global capability-audit skill) as the
      **inverse lens**: it answers "what can the workspace/platform do *now*," and
      when the platform gains a capability a component used to polyfill, that
-     component becomes decay-eligible. (Its own job is setup/capability auditing,
-     not decay detection — use its output as context, not as a decay detector.)
+     component becomes decay-eligible. (Owner-only — it lives in `~/.claude`, not
+     bundled with the plugin, so skip this lens on an external install. Its own job
+     is setup/capability auditing, not decay detection — use its output as context,
+     not as a decay detector.)
 2. **Disable-and-measure** — disable a candidate (hook profile off, or remove
    the always-on block) and run the work it was meant to catch. If quality holds
    without it, the limitation it compensated for is gone.

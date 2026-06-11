@@ -53,6 +53,34 @@ auto-rate flat at 46% (131/286).
 
 ## [Unreleased]
 
+### Changed
+
+- **Loop Engineering adoption — stop-signals, anti-cheat, and the autonomy invariant's canonical
+  home** (`c58e02d`, PR #11). Surgical doc-edits adopting the harness-engineering corpus, each
+  terminating at an existing human gate (no new agents/hooks/state):
+  - `METHODOLOGY.md` Rule 4 gains one sentence — a verification stop-signal must reduce to an
+    objective check (test / exit code / fresh-context adversarial pass), and a verifying agent must
+    get fresh context, not the implementer's transcript; scoped so it does not loosen the human
+    approval gates.
+  - `CONTEXT.md` §Invariants now **canonically homes the autonomy invariant** (+ judgment-
+    preservation rationale), repointed from a phantom `HARNESS.md` citation that git confirms never
+    existed — also removed from `doctrine-edit-gate.sh`, `block-bash-doctrine-write.sh`,
+    `verification-gate.sh`, `hooks/tests/test-critical-hooks.sh`, `scripts/verification-tier-audit.py`,
+    and `recursive-improve`. The stale "no plugin validation CI" non-goal corrected.
+  - Stop-signal / anti-cheat edits to four workflows + two surfaces: `recursive-improve` (candidate
+    executor escalates on repeated failure — Rule 13, no counter), `fix-bug` (Phase-3 no-progress
+    halts), `address-review` (per-cluster cap + reclassify + author-aware dedup), `ship-merge`
+    (zero-Critical / acceptance-gap checklist), `/accept-task` wiring into `feature-dev`/`fix-bug`,
+    and a weakened-to-pass gap class in `pr-test-analyzer`.
+
+### Added
+
+- **`docs/harness-decay-cadence.md`** — names the human-run build-to-delete review cadence (record
+  each component's model-limitation assumption; disable-and-measure on model upgrades; delete via a
+  `decommission` witness; never auto-delete maker≠checker). (`bcc594f`, PR #12)
+- **`docs/agents/verification-trail.md`** — documents the `.scratch/<feature>/verification-trail.md`
+  schema that `verification-gate.sh` referenced but that never existed. (`bcc594f`, PR #12)
+
 ### Fixed
 
 - manifest: bump skill count 25 → 26 (memory-trim added)

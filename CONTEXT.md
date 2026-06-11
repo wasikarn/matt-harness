@@ -29,8 +29,9 @@ plugin-install it. It is not published to a public marketplace. See
   configure for. (METHODOLOGY Rule 2: no speculative configurability.)
 - **No bundled MCP/LSP servers.** Hooks that depend on `rtk` / `qmd` / `memory-lint` /
   `code-review-graph` must degrade gracefully when those tools are absent.
-- **Autonomy is human-gated (the autonomy invariant).** No autonomous, unattended, or
-  multi-iteration self-repair loop. Every self-improvement iteration stops at a human
+- **Autonomy is human-gated (the autonomy invariant).** No autonomous or unattended self-repair
+  loop, and no multi-iteration loop that runs without a human gate between iterations. Every
+  self-improvement iteration stops at a human
   `AskUserQuestion` gate before any mutation, and `recursive-improve` stays
   `disable-model-invocation: true` so the model cannot self-start it ("config repo, no app
   substrate … all risk, no target"). The gate is a deliberate **judgment-preservation** choice —
