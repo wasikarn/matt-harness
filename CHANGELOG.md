@@ -276,6 +276,107 @@ shipped in 7 commits; the user accepted all 6 (`do_now` / `file_issue` / `reject
   plugin-cache (by-design). All advisory; not blocking; the 24 SKILL_MISSING findings
   are flagged for a separate sweep.
 
+### Audit + Spec (2026-06-12, post-Phase-1-patches)
+
+One-off audit of 27 agents, 27 skills, 8 commands, 33 hook scripts, 8 hook event types
+against 16 claudefa.st articles (`.scratch/audit-2026-06-12/REPORT.md` v2, 644 lines).
+6 v1 factual errors corrected during the audit — root cause was the `grep` shell alias
+mapping to `rtk grep` (compact output unsuitable for stat queries); workaround documented
+in project memory. Top finding re-ranked: **F1 — validator `Bash` constraint** is the
+only safety gap (REPORT.md § 7 correction #6: validators are convention-only read-only,
+gated only by `orchestrate`'s `AskUserQuestion`); all other findings are capability or
+polish.
+
+#### Added
+
+- **Spec for closing the 7 audit findings + 3 drift items** (`.scratch/audit-2026-06-12/SPEC.md`)
+  — 3 phases (T1 safety / T2 capability / T3 polish), ~17-28 hours total, per-phase
+  `ACCEPTANCE.md` at phase start in `.scratch/phase-N-.../`. 5 open questions logged
+  at the bottom of the spec for owner review before Phase 1 starts.
+
+### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
+
+Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit
+reasons, schema-rot detector, irreversible-action class, two-layer observability) found
+the load-bearing concepts were 4/5 FULL and 1/5 PARTIAL — no enforcement gaps, but
+**2 process gaps** in the autonomy invariant surface (no deterministic audit check, no
+ADR) and **4 documentary drifts** that mislabel or hide harness semantics. This phase
+closes all 6 with 3 commits (1 per concern), preserving the autonomy invariant's
+5-surface shape while adding the missing deterministic guard + canonical record +
+honest docs.
+
+#### Added
+
+- **Deterministic guardrail for the autonomy invariant** (`1d60b00`,
+  `skills/harness-audit/scripts/audit.sh` check #32 + `hooks/tests/test-critical-hooks.sh`
+  tests PP/QQ/RR) — `crit`-severity check that fails any audit run on a repo where
+  `skills/recursive-improve/SKILL.md` is missing `disable-model-invocation: true` in
+  frontmatter. Exact-match (regression-guarded against truthy typos like `: True`).
+  Hermetic (single file read, no transitive dependencies). Pairs with the existing
+  5 surfaces as the 6th — the deterministic pillar of the invariant's 3-pillar
+  verification. `recursive-improve` stays the only harness-internal loop primitive
+  and the only place the invariant's guard lives; the check does not pretend
+  future skills need the same property.
+
+- **ADR 0002 — Autonomy invariant** (`dd38247`, `docs/adr/0002-autonomy-invariant.md`,
+  251 lines) — the canonical record of the irreversible decision. Mirrors ADR 0001's
+  5-H2 structure (Context / Decision / Consequences / Rejected alternatives /
+  Verification). Status: Accepted, **irreversible on the capability-bounding
+  argument** ("a model that can verify its own work still cannot vouch for the
+  operator's intent"). 5 implementation surfaces named (canonical home in
+  CONTEXT.md, doctrinal reinforcement in METHODOLOGY, skill self-binding, decay
+  hard guard, deterministic audit). 6 rejected alternatives catalogued
+  (L3/L4 architectures, Evo meta-loop, Opik Ollie flywheel, Ralph Wiggum cadence,
+  "lifting the invariant when models improve"). Cross-referenced from
+  CONTEXT.md:46-56, `docs/harness-decay-cadence.md:54-67`, and the ADR index.
+
+#### Fixed
+
+- **4 documentary drifts from round-2 audit** (`957d597`, 3 files, +20 net lines) —
+  honest-fixable doc-only changes that don't alter behavior:
+  - L5 vocabulary cross-reference at `skills/orchestrate/reference.md:76` —
+    first CONTEXT.md cross-ref in that file, names the autonomy invariant
+    (CONTEXT.md §Invariants + ADR 0002) and clarifies L5 vendor primitives
+    (`/schedule`, `/loop`, `CronCreate`) are for user-external tasks only.
+  - config-change-log mislabel at `docs/harness-decay-cadence.md:80` —
+    previously said "config-change-log + config-protection (gates Edit/Write
+    on config files)", conflating a gate (`config-protection.sh`,
+    `hook_decision ask`) with a logger (`config-change-log.sh`, append-only
+    audit trail, no `permissionDecision`). Now names the actual role of
+    each hook.
+  - ask-vs-deny split acknowledgment at `docs/harness-decay-cadence.md:95` —
+    `ask` is the default for human-supervised irreversible mutations;
+    `deny` is reserved for actions the model should never be trusted to
+    do even with human in-the-loop confirmation (secret-reads,
+    doctrine-via-Bash). Cites the precedent files
+    (`secret-read-guard.sh:36-41`, `block-bash-doctrine-write.sh:3-4`).
+  - audit.sh 31.3 doc-code drift at `skills/harness-audit/scripts/audit.sh:920` —
+    doc-comment claimed the check looks for `last_permission_review_sha`
+    in plugin.json OR a `## Permission re-audit` section in
+    harness-decay-cadence.md; the actual implementation (lines ~1008-1039)
+    only checks harness-decay-cadence.md. Trimmed to match what the code
+    does; names plugin.json equivalent as "not yet implemented" — honest
+    over aspirational.
+
+#### Out of scope (deferred to 2026-09 quarterly sweep per owner pick)
+
+6 items flagged in the plan for future work, **not committed in this batch** —
+matches the 2026-09 quarterly cadence for deferred items already in
+`ACCEPTANCE.md`:
+
+1. `next_id` subshell bug in `audit.sh:115-122` (every finding label is `I1`/`F1`/`W1`).
+2. Unknown-`exit_reason` warning in `scripts/governance-summary.py:271`.
+3. "schedule" disambiguation late in `orchestrate/reference.md:12` vs `:40`.
+4. 24 SKILL_MISSING skills lacking the 3 canonical sections
+   (`## Input Contract` / `## Output Format` / `## Failure Modes`).
+5. 3/5 honest exit reasons (`blocked` / `stalled` / `timeout`) still
+   un-emitted in `verification-gate.sh:74-89`.
+6. Issue #15 WARNING→block trade-off (closed at `39587ac` with Q3=a
+   = validator=ask-gate, journaler=best-effort).
+
+Green bar after this batch: 158/0 tests, audit `0C/0W/26I exit 0` (no new
+findings, no new check firing), `claude plugin validate --strict .` ✔.
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
