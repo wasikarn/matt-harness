@@ -66,6 +66,32 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
+## Irreversible-action class (gates the harness already has)
+
+The corpus converges on a class-name: **irreversible actions** (writes to
+external state, reads of secrets, edits of config or doctrine) deserve a
+human gate. kbg-harness already has 4 class-shaped gates:
+
+- **DB writes** — `hooks/db-write-gate.sh` (gates `mcp__*__execute_sql_*`
+  non-SELECT writes; SELECT/EXPLAIN/information_schema pass through)
+- **Secret reads** — `hooks/secret-read-guard` (in `hooks/hooks.json`)
+- **Config edits** — `hooks/config-change-log` + `hooks/config-protection`
+  (gates Edit/Write on config files)
+- **Doctrine edits** — `hooks/doctrine-edit-gate` +
+  `hooks/block-bash-doctrine-write` (gates Edit/Write on METHODOLOGY/CONTEXT/
+  RTK/ACLI/DBGATE)
+
+**Pattern for future gates**: any new gate should be keyed on the
+**class** of mutation, not on a specific tool. `db-write-gate` matches
+`mcp__*__execute_sql_*` across servers (class: database mutation) — the
+analog for a future `deploy-gate` would match `Bash` invocations of
+`kubectl apply`, `terraform apply`, etc. (class: infrastructure mutation).
+
+The pattern lives in the existing decay cadence because the gates
+themselves live in `hooks/`; this section is the map of which class each
+existing gate covers, so a future contributor can find the right
+precedent before adding a new one.
+
 ## Permission re-audit
 
 *last_reviewed: 2026-06-11 (initial section, written as part of the
