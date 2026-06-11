@@ -211,6 +211,62 @@ human gate at Step 3 is the load-bearing single point of enforcement.
   of model capability and will not be reopened on a "the model got
   better" argument.
 
+## Mapping to Harness-Engineering Corpus Prescriptions
+
+The 16 articles in `llm-wiki/raw/ai-agents/harness-engineering/` prescribe
+production harness + loop-engineering capabilities. Many of those
+prescriptions assume **L3/L4 autonomy** as the natural evolution. This
+section maps each article's key prescription to the harness's chosen
+alternative (the L2-equivalent) and records the divergence explicitly
+so future readers do not mistake a principled rejection for a
+backlog gap.
+
+### Loop-Engineering Articles (10)
+
+| # | Article | Prescription | Harness Alternative | Divergence Rationale |
+|---|---------|-----------|---------------------|----------------------|
+| 1 | **Agent Loops Clearly Explained** | Remove the human from the middle; model self-feeds results in a closed loop. | **L2 hooked loop** — every iteration stops at a human `AskUserQuestion` gate before mutation. | Judgment preservation: the operator, not the model, fills the gap between "spec feels complete" and "spec actually is." |
+| 2 | **Agentic Loops From ReAct to Loop Engineering** | Trigger + verifiable goal; autonomy tiers (L1→L10); multi-agent orchestration. | **Trigger + verifiable goal convention** (`ACCEPTANCE.md`) + **multi-agent orchestration via `orchestrate` skill** with human gate. | Autonomy tiers exist in vocabulary (L1–L5 in `orchestrate/reference.md`) but harness-internal loops are locked at L2. Multi-agent orchestration is present but gated. |
+| 3 | **AI is eating the AI Engineering Loop** | Continuous eval loop: traces → dataset → eval → ship. Full automation possible but warned against (agent slop). | **`run-baseline-eval.py`** for A/B probes + **human-gated `recursive-improve`** for harness changes. | The article itself warns that full automation = agent slop. The harness takes the warning seriously and stops at L2. |
+| 4 | **How to Build a Self-Improving Loop** | Done = verified; write → run checks → fix → repeat up to 5 times (Ralph Wiggum cadence). | **`recursive-improve` 6-step cycle** with 5-iteration cap as context-exhaustion backstop, NOT primary gate. | The Ralph cadence treats the scorer as the gate; the harness treats the operator as the gate. The 5-iteration cap is a backstop, not a completion signal. |
+| 5 | **Loop Engineering Isn't What You Think** | Comprehension debt, cognitive surrender; read what the loop ships. | **Autonomy invariant** (`CONTEXT.md:46-56`, `METHODOLOGY.md:67`) — every change is human-reviewed before it ships, preventing comprehension debt by construction. | The article warns that loops make comprehension debt grow faster; the harness prevents it by forbidding unattended shipping. |
+| 6 | **Loop engineering the 14-step roadmap** | Replace yourself as prompter; 4-condition test before building. | **Operator remains the prompter** via `recursive-improve`'s mandatory Step 3 gate; 4-condition test not mechanized but operator judgment serves the same filter. | The harness does not seek to replace the operator; it amplifies the operator. The 4-condition test (cost, frequency, verifiability, reversibility) is advisory doctrine. |
+| 7 | **Loop Engineering (Addy)** | 5 pieces + memory: automations (heartbeat), worktrees, skills, plugins, sub-agents. | **Automations delegated to host** (`/loop`, `/schedule`, `CronCreate` documented in `orchestrate/reference.md` L5); **worktrees, skills, sub-agents** are present and load-bearing. | The heartbeat is host-provided; the plugin documents routing but does not wire harness-internal loops to it. |
+| 8 | **Loops What Every AI Engineer Needs to Know** | Loop = program prompting model; model as subroutine; token-cost awareness. | **Model-as-subroutine is foreclosed** (L3/L4 rejection). **Token-cost awareness** is doctrine (`METHODOLOGY` Rule 6, `orchestrate/reference.md`) but not enforced. | The model is not a subroutine in this harness; it is a co-worker that stops for human approval. |
+| 9 | **Self-Evolving Autoresearch** | Evo meta-loop rewriting the optimize loop; self-evolving workflow. | **Explicitly rejected** — a meta-loop rewriting its own gating logic is the highest-autonomy architecture and violates judgment preservation. | See §Rejected alternatives — Evo-style meta loop. |
+| 10 | **WTF Is a Loop?** | Boris: "I have loops running"; continuous orchestration overseeing threads/agents. | **`orchestrate` skill** provides the orchestration vocabulary, but every multi-agent workflow routes through human gates. | The harness implements the orchestration pattern without the unattended execution. |
+
+### Production Harness Articles (5)
+
+| # | Article | Prescription | Harness Alternative | Divergence Rationale |
+|---|---------|-----------|---------------------|----------------------|
+| 11 | **AI Agent Best Practices** | Provider-neutral harness: model proposes, harness executes with schema/permissions/budget/safety checks. | **`PreToolUse` hooks** (`block-dangerous-git.sh`, `secret-read-guard.sh`) + **`harness-audit` CRIT checks** enforce schema/safety, but **budget checks are doctrinal only** (not code-enforced). | The harness has strong safety enforcement but weak budget enforcement. |
+| 12 | **Building a Production Agent Harness** | 3 responsibilities: investigate, fix, self-improve; memory outlives session; react to external events; recover from failures. | **Investigate/fix** via skills/commands; **memory** via `.scratch/`, `journals/`, `memory/`; **external-event reaction** via hooks (session-bound); **recovery** is human-triggered. | Self-improve is L2 (human-gated). Recovery is manual, not auto-repair. Memory is present but not checkpointed. |
+| 13 | **Harness Engineering 2026 (1)** | Agent = Model + Harness; thin harness philosophy (build to delete). | **Thick harness** (27 skills, 27 agents, 8 commands, 14 hooks) with explicit justification: judgment preservation requires documentation thickness. | The harness does not subscribe to the "thin harness" camp; it is deliberately thick because the operator is the bound, not the budget. |
+| 14 | **Harness Engineering 2026 (2)** | Managed agents: brain/hands/session decoupled; sprint contracts; self-evaluation. | **Sub-agent specialization** (27 agents) approximates managed agents but without the decoupled session layer. **Sprint contracts** approximated by `accept-task` + `ACCEPTANCE.md`. | The harness does not decouple the session layer (no durable event log replay). Self-evaluation is separated into maker≠checker roles. |
+| 15 | **The Anatomy of an Agent Harness** | 12 components: orchestration loop, tools, memory, context, state, error handling, guardrails, feedback, verification, safety, lifecycle. | **Guardrails, sub-agents, memory, context engineering** are strong. **Orchestration loop, state recovery, error handling (circuit breakers), verification automation** are weak or absent. | The harness is strong on governance/documentation, weak on production runtime hardening. See gap-closure spec for remediation plan. |
+
+### Self-Repair Article (1)
+
+| # | Article | Prescription | Harness Alternative | Divergence Rationale |
+|---|---------|-----------|---------------------|----------------------|
+| 16 | **Your Agent Harness Should Repair Itself** | Close the loop: trace → diagnose → fix → verify → regression-lock (Opik Ollie flywheel). | **`verification-gate.sh` as read-only sensor** + **`recursive-improve` human-gated proposals**. No automatic fix, no regression-lock without operator review. | The self-repair surface is advisory; the fix decision is human-gated. A flywheel that traces, fixes, and locks regressions would be a Layer-1 actuator, foreclosed by the invariant. |
+
+### Summary of Divergence Pattern
+
+The harness diverges from the corpus on **one axis only**: **autonomy level**.
+On every other axis (sub-agent specialization, verifiable goals, maker≠checker
+separation, context engineering, documentation, guardrails), the harness
+implements or strongly approximates the prescription. The divergence is not
+"we didn't get to it"; it is **"we chose not to, and here is why."**
+
+The gap-closure spec (`.scratch/harness-loop-audit-2026-06-12/GAP-CLOSURE-SPEC.md`)
+distinguishes between:
+- **Blocked by ADR 0002** — items that require L3/L4 autonomy; these are
+  acknowledged divergences, not backlog.
+- **Eligible for closure** — items that can be promoted from partial/absent to
+  present without violating the autonomy invariant.
+
 ## Verification
 
 The invariant is enforced by 3 pillars:

@@ -368,6 +368,140 @@ insertions, 7 files.
 - D4, D8, D10 (Phase 2 doc adds) — ship with Phase 2 spec
 - 5 open questions from SPEC.md — owner review pending
 
+### Phase 2 — T2 capability fixes (F3 + F7 + F8 + F9 + F10 + D1 + D2 + D4 + D8 + D10, 2026-06-12, 1 commit)
+
+Closes the 7 T2-capability + 3 doc items from `.scratch/audit-2026-06-12/SPEC.md` Phase 2
+scope (one big phase per 2026-06-12 owner resolution; 22-30h estimated). Folds F8/F10/
+D8/D10 into the F3 command files rather than shipping them as separate skills (per
+the spec's "compactness rule"). Acceptance contract at
+`.scratch/phase-2-capability-2026-06-12/ACCEPTANCE.md`.
+
+#### Added
+
+- **`commands/team-plan.md` (F3 step 1-3)** — first half of the agent-teams workflow.
+  Walks user through `## Brain dump` → `## Q&A log` (≥ 10 answered questions, hard
+  requirement, refuse if < 10) → `## Structured plan` with `## Team Members` (3-5
+  members, F8 sweet spot, refuse if outside range), `## Step by Step Tasks` table
+  with `Depends On` / `Assigned To` / `Files` / `Criteria` / `Constraints` columns,
+  `## Acceptance Criteria` (machine-checkable), `## Validation Commands`. Emits the
+  plan file at `.claude/tasks/<slug>.md` — the **D10 plan-file interface** (session-
+  resettable, lead-handoffable decoupling; a fresh session, a different lead, or a
+  partial resumption all work from this single artifact). Adds `INT-N` integration
+  validator task with `addBlockedBy=[all-builders]` for the **D8 cross-component
+  seam check**. `disable-model-invocation: true` (per the autonomy invariant —
+  humans invoke, not models).
+- **`commands/team-build.md` (F3 step 4-7)** — second half. Step 4 = soft-warn
+  fresh-session gate (AskUserQuestion with 2 options; if denied in non-interactive
+  mode, **refuse to dispatch** and log the refusal — no silent fall-through). Step 5
+  = **F10 plan approval filter** (pre-execution gate; rejects plans that violate
+  schema-without-migration / auth-without-security-reviewer / external-service-
+  without-fallback / overlapping-file-ownership / no-integration-validator). Step 6
+  = wave execution with the **F9 spawn-prompt template** injected into every
+  spawn (What/Where/Focus/Deliverable/FILES YOU OWN/UPSTREAM CONTRACTS/Files+Criteria
+  +Constraints/Done-when). **F8 model split**: `model: "sonnet"` for teammates by
+  default; lead stays on Opus. Step 7 = per-criterion validation, integration
+  validator verdict, leftover risks surfaced (rule 12 fail-loud).
+- **F9 spawn-prompt template in `skills/orchestrate/SKILL.md`** — 4-slot prompt
+  (What/Where/Focus/Deliverable) + FILES YOU OWN + UPSTREAM CONTRACTS + Files+
+  Criteria+Constraints + Done-when, plus 4 anti-patterns ("Implement feature X"
+  with no slots, topic as deliverable, implicit file ownership, missing upstream
+  contracts in Wave 2+). The template is the rendering format; the plan file is
+  the data source. Gates F3 step 6.
+- **F8 lead-coordinator doctrine in `skills/orchestrate/SKILL.md`** — 4 rules:
+  (1) Shift+Tab delegate mode is the default for the lead (the lead does not write
+  code); (2) Opus-lead + Sonnet-teammate cost split (largest token-cost lever in
+  agent-team mode); (3) plan-mode lifetime is fixed by the plan, not the session;
+  (4) 3-5 teammates is the empirical sweet spot. Doctrine, not preference — each
+  rule exists because the failure mode (silent conflict, cost cliff, chain break,
+  coordination-drown) is real and observable.
+- **F7 TaskCompleted test-claim gate in `hooks/task-lifecycle.sh`** — new branch
+  blocks a teammate from completing if the event payload contains a test-claim
+  keyword (`tests pass`, `pytest`, `npm test`, `cargo test`, `go test`, `tsc
+  --noEmit`, `pnpm test`, `yarn test`, `jest`) without a `validation_command:`
+  field. **Critical convention distinction**: TaskCompleted uses **exit 2 + stderr
+  feedback** per vendor spec at `code.claude.com/docs/en/hooks` § TaskCompleted
+  — NOT exit 0 + JSON `permissionDecision` like PreToolUse gates. Exit 2 sends
+  stderr as feedback to the teammate; exit 1 is non-blocking. False-positive
+  guards: bare keywords (`pytest`, `jest`, `tsc`) are anchored at non-word
+  boundaries via the `[^a-zA-Z0-9_]` character class, with `CLAIM_TEXT` pre-padded
+  with spaces so the boundary matches at the start/end of subject/description
+  strings (BSD `grep -E` has no `\b` word-boundary; the pad + non-word class is
+  the portable equivalent). **F7 is the post-execution half of the quality
+  pipeline; F10 is the pre-execution half.** 2 distinct layers, 1 goal.
+- **F7 test coverage (+9 cases) in `hooks/tests/test-critical-hooks.sh`** — F7a
+  positive (test-claim + validation_command → exit 0), F7b block (test-claim
+  without validation_command → exit 2 with stderr feedback), F7c multi-word
+  patterns (`pytest -v`, `npm test --coverage`), F7d edge case (uppercase
+  `PYTEST` / mixed `Npm Test`), F7e no-claim (subject/description clean → exit 0),
+  F7f claim with non-test context (`tests we wrote` + validation_command present
+  → exit 0), F7g false-positive regression guards (`majestic`, `jesting`,
+  `jestful`, `pitsc`, `sppytest` — must NOT block), F7h positive boundary-class
+  regression guards (standalone `jest`, `jest green`, standalone `tsc`, `pytest
+  as a word` — must block). Uses a new `check_task` helper that asserts on exit
+  code + stderr substring (NOT stdout JSON — TaskCompleted convention is
+  different from PreToolUse).
+
+#### Fixed
+
+- **Plugin manifest drift (D1 + D2)** — `.claude-plugin/plugin.json` description
+  updated from "26 workflow skills" to "27 workflow skills" and from "8 commands"
+  to "10 commands" (D2 drift), plus adds mention of `/team-plan` + `/team-build`
+  and Agent Teams opt-in flag (D1, since the `agentTeams` field is not in the
+  vendor schema — surfaced via the `keywords` array extension instead, adding
+  `"agent-teams"`, `"team-plan"`, `"team-build"`). The 27-skills count
+  (`accept-task`, `acli`, `adr`, `article-mine`, `assert-presence`, `backend-dev`,
+  `clarify-first`, `critical-eval`, `decommission`, `harness-audit`, `hotfix`,
+  `incident`, `inventory`, `memory-lint`, `memory-trim`, `migrate`, `orchestrate`,
+  `perf`, `probe`, `research-brief`, `review-pr`, `security-auditor`,
+  `semantic-code`, `ship-change`, `tech-humanize`, plus the 2 added in this
+  phase) reconciles against `ls -d skills/*/`. The 10-commands count
+  reconciles against `ls -d commands/*.md`. **The BOUNDARY.md regenerator
+  outputs `Skills (26)` due to a pre-existing multi-line-description parse bug
+  on `tech-humanize` (uses `description: |` block scalar)** — accepted as
+  out-of-scope for this phase; tracked for a separate regenerator-fix follow-up.
+- **`skills/orchestrate/SKILL.md` back-reference (F3-2)** — F9 template cross-
+  reference corrected from "Step 3" to "Step 6" (the F9 injection happens at
+  team-build Step 6, not Step 3).
+- **`commands/team-build.md` + `commands/team-plan.md` heading de-dup
+  (F3-3)** — second `## Step 7` heading renamed to `## Step 7 done-when (final)`;
+  same fix for `## Step 3` in team-plan.md. Prevents auto-linker / TOC
+  collisions.
+- **`docs/adr/0002-autonomy-invariant.md` "Mapping to Harness-Engineering
+  Corpus Prescriptions" section** — 16-article corpus map (10 loop-engineering
+  + 5 production-harness + 1 self-repair) with explicit "Harness Alternative"
+  and "Divergence Rationale" columns for each L3/L4 prescription. Records the
+  principled rejection of L3/L4 autonomy as a **deliberate divergence**, not a
+  backlog gap. Gap-closure spec distinguishes "Blocked by ADR 0002" (L3/L4
+  items, not backlog) from "Eligible for closure" (items that can be promoted
+  without violating the invariant). This makes the autonomy invariant's
+  reach explicit so future readers do not mistake a rejection for an oversight.
+
+#### Out of scope (deferred to Phase 3 / 4 / 5)
+
+- F5, F6, D3 (Phase 3 polish) — separate phase
+- D6, D9 (Phase 4 deferred) — `usage-monitor/` skill + personality-injection
+  commands not in this epic
+- BOUNDARY.md regenerator `description: |` multi-line parse bug — pre-existing,
+  surfaces as `Skills (26)` instead of `27`; tracked for a regenerator-fix
+  follow-up phase
+
+#### Verification
+
+- 6 fresh-context adversarial verifiers + 1 spec-consistency verifier. 5 PASS;
+  1 verifier FAIL caught the F7 false-positive regression (`jest` matching
+  inside `majestic`) — fixed in 3 iterations and locked in with 9 new test
+  cases (F7g negative, F7h positive boundary-class). Final state: 201/0 tests
+  pass (was 192/0; +9 new). `audit.sh` green bar: `0C/0W/26I exit 0` (matches
+  the 26-I1 baseline from ADR 0002 §Verification).
+- 5 of 6 open SPEC.md questions resolved (sweet spot, 5-vs-3 teammates,
+  model split, plan-file location, fresh-session gate handling); 1
+  deferred (INT-N pre-task lock — answered with "validate after all builders
+  complete" per the article).
+- Plugin cache sync: 2 new commands copied to
+  `~/.claude/plugins/cache/kobig/kbg/0.1.2/commands/`. Audit re-run on cache:
+  `0C/0W/49I exit 0` (49 vs 26 because the cache lacks `docs/`, surfacing
+  the by-design PERM_BOOKMARK info).
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit

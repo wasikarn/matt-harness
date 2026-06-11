@@ -77,6 +77,79 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 - **Don't use `addBlockedBy` for ordering that should be inline in one prompt.** If agent A's output feeds agent B *as a string*, that's one prompt with two paragraphs, not a chain.
 - **Don't skip the merge step on parallel fan-out.** Two parallel validators finishing at the same time produce two parallel action plans with no reconciliation protocol — the orchestrator owns the merge, not the validators.
 
+## Spawn-prompt template (gates F3)
+
+**The single most common sub-agent failure is the under-specified spawn prompt.** Four articles (`agent-teams-best-practices`, `agent-teams-setup-usage-2026`, `agent-teams-workflow-plan-to-production`, `team-orchestration-builder-validator`) converge on the same template. When `/team-build` dispatches a teammate, every spawn prompt MUST use this shape — without it, teammates guess, hallucinate ownership, and conflict on shared files.
+
+**Use this template verbatim for every team-mode dispatch. Inline the values; do not summarize.**
+
+```
+# Task: <short verb-phrase, ≤8 words>
+
+## What
+<one sentence: the concrete artifact to produce>
+
+## Where
+<directory or file paths, scope boundary>
+
+## Focus
+<the single quality dimension this task optimizes for — "correctness over speed", "minimal blast radius", "API stability", etc.>
+
+## Deliverable
+<observable output: a file at <path>, a commit at <sha>, a verdict at <location>. Not a topic — a thing a reviewer can grep for.>
+
+## FILES YOU OWN
+- <absolute path 1>
+- <absolute path 2>
+(Only files in this list. Anything else is out of scope — defer to the orchestrator.)
+
+## UPSTREAM CONTRACTS
+- From task <id>: <file:line or schema field> — <what you may rely on>
+- From task <id>: <file:line or schema field> — <what you may rely on>
+(Empty list if no upstream.)
+
+## Files + Criteria + Constraints
+| File                  | Criterion                                     | Constraint                |
+|-----------------------|-----------------------------------------------|---------------------------|
+| <path>                | <observable check: e.g. "exports `parseF()`"> | <e.g. "no new deps">      |
+| <path>                | <criterion>                                   | <constraint>              |
+
+## Done-when
+- [ ] <observable: test passes / file exists / API returns expected shape>
+- [ ] <observable: validator <name> runs clean>
+- [ ] <observable: no edit to FILES YOU OWN violations>
+```
+
+**Why this shape works:**
+
+- **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the teammate guesses (usually wrong).
+- **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the teammate) arbitrates cross-boundary edits.
+- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the teammate either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
+- **Files + Criteria + Constraints** — the testable contract. "Make the code work" is not a criterion. "`POST /health` returns `{"status":"ok","db":"ping","uptime_s":N}` with HTTP 200" is.
+- **Done-when** — three observable checks. Passes the orchestrator's verify gate without re-asking the teammate.
+
+**Anti-patterns (spawn-prompt quality):**
+
+- **"Implement feature X" as the entire prompt** — no What, no Where, no Focus. Teammate picks all four, usually wrong.
+- **Topic as deliverable** — "research the options" (not a thing to grep). Use "Brief at `.scratch/<slug>/brief.md` with 3 options, each with file:line citations."
+- **Implicit file ownership** — "we'll all edit SKILL.md" → merge conflict. One teammate owns each file; orchestrator resolves cross-cutting edits.
+- **Missing upstream contracts in Wave 2+** — teammate re-derives or assumes. Inject from the plan file's `Depends On` field.
+
+**Cross-references:** this template is enforced by `/team-build` (see `commands/team-build.md` Step 6 — "Inject the F9 template into every spawn prompt"). Validation chain (`addBlockedBy`) gates ordering; this template gates the per-task contract.
+
+## Lead-coordinator doctrine (F8)
+
+**The lead is special.** Articles `agent-teams-best-practices`, `agent-teams-controls-delegate-mode-hooks`, and `sub-agents-parallel-vs-sequential` converge on four doctrines that distinguish a working agent team from a noisy one:
+
+1. **Shift+Tab delegate mode is the default for the lead.** The lead receives user intent, drafts a plan, dispatches teammates — and **does not write code itself**. Manual override is allowed when the lead is the only one with context (single-agent task) or the lead is debugging a teammate's stuck state. The default makes "lead silently edited `SKILL.md` while teammates were working on it" impossible.
+2. **Opus-lead + Sonnet-teammate cost split.** Opus is expensive; it's good at synthesis + judgment, not at routine implementation. Sonnet handles execution. The lead dispatches with `model: "sonnet"` for teammates by default; the lead itself stays on Opus. This is the **largest token-cost lever** in agent-team mode — running the whole team on Opus is the failure mode the article explicitly warns about.
+3. **Plan-mode lifetime is fixed by the plan, not by the session.** Once `/team-build` dispatches Wave 1, the lead is in plan-mode for the rest of the plan's lifetime — even mid-`/team-build`, even across `AskUserQuestion` answers, even when teammates fail. The plan is the lead's teaching document; revise the plan, not the mode. The lead exits plan-mode only when the entire plan is complete or aborted.
+4. **3-5 teammates is the sweet spot.** Below 3: under-parallelized, lead does too much. Above 5: coordination overhead dominates; merge step (4-step recipe above) starts drowning the lead. Article explicitly calls out "3-5 teammates" as the empirical sweet spot. Plans outside this range should be **revised at `/team-plan` time**, not patched at `/team-build` time.
+
+**Why these are doctrine, not preference:** the alternative is the lead editing `SKILL.md` while a teammate is also editing it (silent conflict), the lead burning Opus tokens on routine implementation (cost cliff), or the lead dropping plan-mode mid-`/team-build` because a teammate's question felt "faster to answer inline" (chain breaks). Each rule exists because the failure mode is real and observable.
+
+**Cross-references:** this doctrine is the runtime contract that `/team-build` (commands/team-build.md) assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
+
 ## Fast Path Gate
 
 If ALL of these hold, **execute inline immediately** and skip all orchestration logic:

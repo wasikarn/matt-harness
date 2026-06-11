@@ -35,7 +35,7 @@ _Personals/kbg-harness_
   ◇ ship-change                    Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, /review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent).
   ◇ tech-humanize                  |
 
-### Commands (8)
+### Commands (10)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify each (action / clarify / wontfix / out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing the commit sha that addressed it, re-request review. Use when a PR has open review threads needing response, after review-pr or external review returns findings, or when user says 'address the review', 'apply review feedback', 'respond to PR comments'. Don't use for: doing the review yourself (use review-pr), pre-PR cleanup before requesting feedback, or merging post-approval (use /ship-merge).
   ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when the user says 'research this', 'deep dive on X', 'how does Y work in this codebase', 'compare Z approaches', or any open-ended exploration spanning files, docs, and external sources. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (use probe skill).
   ◇ feature-dev                    Guided 7-phase feature development workflow (discover → explore codebase → ask clarifying questions → design architecture → implement → review → summarize). Use when starting a non-trivial new feature where deep codebase understanding and architectural choices matter. Don't use for: bug fixes (use /fix-bug), refactors (spawn `maintenance-engineer` agent), one-line changes (just do it), or quick prototypes (just do it inline).
@@ -44,6 +44,8 @@ _Personals/kbg-harness_
   ◇ ship-merge                     Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use `hotfix` skill).
   ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use `hotfix` skill), or when there is no release branch / tag strategy defined.
   ◇ status-update                  Rewrite engineer-to-engineer content for engineering-org leadership (VPs, directors, PMs, release managers, execs in an engineering-savvy company) and shape it for the channel it's going to — JIRA comment, Slack post, async standup line, email, or meeting talking-points. Trigger when the user asks to write/rewrite for management / exec / VP / director / PM / release manager, asks for an 'executive summary / leadership update / status update', says 'make this less technical / less jargony', or asks for a slack / email / standup / meeting version of work originally written engineer-to-engineer.
+  ◇ team-build                     Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), derive the contract chain, spawn agents in waves using the F9 spawn-prompt template, then run post-build validation against acceptance criteria. Use after /team-plan completes, when the user says 'team build: <slug>', 'execute the plan', 'ship the team plan'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev).
+  ◇ team-plan                      Phase 1 of the agent-teams workflow: brain-dump the feature, research the codebase, ask at least 10 clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Use when starting a non-trivial feature that will be implemented by multiple agents in parallel, or when the user says 'team plan: X', 'plan this for the team', 'multi-agent plan'. Don't use for: single-file changes (use /feature-dev), trivial features (do inline), or research-only tasks (use /deep-dive).
 
 ### Agents (27)
   ◇ api-doc-specialist             Senior API documentation specialist for OpenAPI specs, SDK references, and developer-portal content. Spawn when generating or updating API contract documentation, designing endpoint naming conventions, or building developer-facing integration guides. Don't use for: user-facing product documentation (defer to technical-writer), frontend component docs (defer to frontend-engineer), or internal runbooks (defer to technical-writer). Owns the contract between your API and its consumers.
@@ -74,7 +76,7 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design and data-modeling reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, schemas, or data structures — especially when new types cross module boundaries or are exposed in public APIs. Grades encapsulation and invariants on a 1–10 scale. Don't use for: general code-quality review (defer to code-reviewer), security-specific concerns (defer to security-reviewer), performance analysis (defer to perf skill), or runtime behavior verification (defer to test-engineer). Owns type-system correctness and data-integrity boundaries.\n\n<commentary>\nThis agent triggers because type design is a distinct boundary from general code review, security, and performance. Poor encapsulation and broken invariants are root causes of many bugs that only surface at runtime; catching them during design review prevents downstream issues. The 1–10 grading forces explicit judgment rather than vague 'looks fine' approvals.\n</commentary>
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating a UI/UX implementation, reviewing a feature from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer for component-level polish, or clarify scope with user), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer for API latency, frontend-engineer for render performance). Owns the user experience layer between design and code.
 
-### Hooks (36)
+### Hooks (37)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
@@ -110,6 +112,7 @@ _Personals/kbg-harness_
   ◇ skill-nudge.sh                 UserPromptSubmit: skill-nudge — deterministic command-route miss-detector.
   ◇ superset-notify-wrapper.sh     Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag
   ◇ task-lifecycle.sh              task-lifecycle.sh — observability for agent-team lifecycle events.
+  ◇ validator-bash-guard.sh        Block mutation Bash commands issued by validator-class agents.
   ◇ verification-gate.sh           verification-gate — SessionEnd verification-doctrine sensor (advisory).
 
 ## Agents — Repo
@@ -211,6 +214,7 @@ _Personals/kbg-harness_
 | skill-nudge.sh | UserPromptSubmit: skill-nudge — deterministic command-route miss-detector. |
 | superset-notify-wrapper.sh | Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag |
 | task-lifecycle.sh | task-lifecycle.sh — observability for agent-team lifecycle events. |
+| validator-bash-guard.sh | Block mutation Bash commands issued by validator-class agents. |
 | verification-gate.sh | verification-gate — SessionEnd verification-doctrine sensor (advisory). |
 
 ## Output styles — Repo
@@ -219,4 +223,4 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-11T14:40:15Z_
+_Generated: 2026-06-11T20:59:59Z_
