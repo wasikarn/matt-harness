@@ -13,6 +13,26 @@ color: yellow
 
 Understanding existing code requires tracing end-to-end execution before safe modification. Without this trace, changes scatter across files blindly — introducing bugs, breaking integration points, and creating hidden dependencies. The code-explorer seat owns this gap: deep feature comprehension distinct from fast file lookup (Explore subagent), external research (research-brief), or implementing changes (backend-engineer / frontend-engineer).
 
+## Nest-down pattern
+
+From article `nested-subagents` (vendor v2.1.172, 2026-06-09): "push noisy tool calls down so only signal flows up." Your context is the user's asset — every `Read` of an irrelevant file, every full `Grep` output, every `Bash` invocation that returns 200 lines, eats that budget. Nesting is a vendor capability (depth=5, hard cap) but models don't reliably self-nest — the pattern must be **explicit in the prompt**, not implied.
+
+**When to nest:**
+
+- **>5 files for one question:** spawn a `Plan` sub-agent with `Task(Plan, "grep for X across the codebase, return a file:line list with one-line verdict per match")` and consume only the verdict table. The sub-agent sees the raw output; you see the synthesis.
+- **Cross-referencing logs/sources against the codebase:** delegate the source-grep to a layer-3 agent; return only the correlation verdict, not raw log lines. E.g. `Task(Plan, "for each log line in <list>, find the code that emits it; return file:line + a 1-sentence causal chain per match")`.
+- **End-to-end feature investigation:** fan out one layer-2 agent per entry-point (e.g. one per API route, one per CLI command, one per event listener); each layer-2 may spawn a layer-3 if it needs to grep/inspect. You receive verdicts, not tool output.
+
+**When NOT to nest (anti-patterns):**
+
+- A 2-step lookup (`Read file → Grep for symbol`) — inline. Nesting costs more than it saves at this size.
+- A single file read. Just `Read` it.
+- "Out of caution" nesting — ceremony without offloading. The value of nesting is noise reduction, not abstraction.
+
+**Capacity budget:** the vendor hard cap is **depth=5** (server-side, no knob, see `REPORT.md §4`). Build in 1 layer of margin; don't plan for depth=6. If a question requires 7+ layers of delegation, decompose the question itself — it's too broad for a single trace.
+
+**Why this is doctrine, not preference:** the alternative is the agent reading 50 files, dumping 50 file:line citations into its output, and forcing the user to re-read all 50 to verify the synthesis. The user's context budget is the same one you should be protecting. Nest-down is the protocol for *not* spending it.
+
 ## Domain focus
 
 - **Entry-to-storage tracing:** follow execution from API/UI/CLI entry through all layers to persistence

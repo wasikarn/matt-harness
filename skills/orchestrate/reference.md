@@ -47,6 +47,8 @@ Domain specialists (dispatch when the task matches the domain — `backend-engin
 
 For urgent, not-important, bounded compound work — decompose then execute via bash scripts rather than interactive conversation. Same trust boundary. Same tools. Different orchestration style.
 
+The chain pattern (builder → validator → fix → re-validator) lives in [SKILL.md § Validation chain (TaskCreate + addBlockedBy)](SKILL.md#validation-chain-taskcreate--addblockedby). Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
+
 ### Decompose
 
 Decomposition is LLM-driven; see SKILL.md.
@@ -138,3 +140,23 @@ The CC Workflow tool composes from 6 named patterns (trq212, "A harness for ever
 ## Dispatch lifecycle — context freezes at spawn
 
 A dispatched agent's context is initialized **at spawn time** and frozen there. Editing `CLAUDE.md`, `METHODOLOGY.md`, or any doctrine mid-session does **not** change an agent already in flight — and mid-session `export` of hook/env vars silently fails (`feedback_doctrine_gate_session_bound`). To change agent behavior: edit the source, then **re-dispatch** (or start a fresh session). Don't assume a running fleet picked up your edit.
+
+## Anti-patterns (distribution mistakes)
+
+From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agents-split-tasks`, `task-management-distribute-work`. A teachable anti-pattern frame — these mistakes compound at scale, and naming them turns a vague "don't do that" into a checkable rule.
+
+### 4-mistake taxonomy
+
+1. **Over-fragmentation** — slicing work into so many agents that the merge cost exceeds the dispatch savings. Symptom: 12 agents for 4 files. Fix: cap at 3-5 teammates per the agent-teams sweet-spot rule; one agent owns one file or one tightly-coupled cluster.
+2. **Under-specification** — vague prompts ("review this code") that the model interprets broadly. Symptom: 5 different validators return 5 different slices of the same codebase, none complete. Fix: file:line scope + explicit done-when + output format (per F2 validation chain).
+3. **Resource conflicts** — parallel agents writing to the same file. Symptom: one agent's output overwrites another's; merge conflicts in code; corrupted state. Fix: serialize writes to the same file (`addBlockedBy` chain); parallelize only when files are disjoint.
+4. **Context duplication** — `CLAUDE.md` × N agents = N×context-cost at spawn time. Symptom: 8 agents holding the same doctrine each pay 30K of front-loaded tokens. Fix: layer — one orchestrator reads CLAUDE.md, sub-agents receive only the slice they need; the file:line reference goes in the spawn prompt, not the full doc.
+
+### Named anti-patterns (orthogonal to the 4-mistake taxonomy)
+
+- **Over-parallelizing** — 2-file task split across 5 agents. The dispatch latency + context transfer > the work. Fix: inline 2-file tasks.
+- **Under-parallelizing** — 5-file task done by 1 agent serially when the files are independent. Fix: fan out, but cap at 3-5.
+- **Output-format-mismatch** — validator returns free-form prose; builder expects JSON. The merge step has to re-parse. Fix: assert the output format in the spawn prompt (`Return a JSON array of {file, line, severity, fix}.`).
+- **Overlapping-roles** — two agents with overlapping domain (e.g. `security-reviewer` and `silent-failure-hunter` both auditing error handling). Symptom: redundant findings, double-counted P0s. Fix: assign by primary lens, not by file ownership.
+- **F2 chain without the merge** — using `addBlockedBy` for ordering but skipping the 4-step merge after parallel fan-in. The chain is enforced; the reconciliation isn't.
+- **Anti-pattern in this anti-pattern list:** the 4-mistake taxonomy is a *checkable* list, not a *checklist*. Don't run all 4 against every dispatch — the value is naming, not scoring. Cite the mistake that fits the observed symptom, fix that one, move on.

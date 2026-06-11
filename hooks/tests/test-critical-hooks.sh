@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # test-critical-hooks — smoke tests for the load-bearing enforcement hooks.
 #
-# Covers all 8 PreToolUse enforcement gates (the hooks that emit a
+# Covers all 9 PreToolUse enforcement gates (the hooks that emit a
 # permissionDecision — silent failure on any of these is the highest risk):
 #   block-dangerous-git · doctrine-edit-gate · secret-read-guard
 #   secret-scan · config-protection · block-bash-doctrine-write · block-alias-shadowing
-#   db-write-gate
+#   db-write-gate · validator-bash-guard
 # Plus a syntax smoke pass over EVERY hook script: a logger/injector that
 # crashes can accidentally block a tool call, so `bash -n` / `ast.parse` over
 # the whole hooks/ dir catches that class even for the non-gate hooks.
@@ -57,6 +57,13 @@ check() {
 bash_event() { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
 read_event() { printf '{"tool_name":"Read","tool_input":{"file_path":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
 edit_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
+# Bash event with agent_type — used by validator-bash-guard (gates the 7
+# validator-class agents: code-reviewer, code-explorer, code-architect,
+# comment-analyzer, pr-test-analyzer, silent-failure-hunter, security-reviewer).
+# agent_type is omitted by Claude Code for the main thread (no field) — so
+# the "no agent_type" event is the "fail open" case.
+validator_bash_event()    { printf '{"tool_name":"Bash","agent_type":%s,"tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
+main_thread_bash_event()  { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
 # Write/Edit with content payload (for secret-scan, which scans the written text).
 write_event()    { printf '{"tool_name":"Write","tool_input":{"file_path":%s,"content":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
 edit_new_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s,"new_string":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
@@ -131,6 +138,32 @@ check block-alias-shadowing.sh ask  "asks on git() function"   "$(bash_event 'gi
 check block-alias-shadowing.sh ask  "asks on function curl"    "$(bash_event 'function curl { command curl --insecure; }')"
 check block-alias-shadowing.sh none "allows plain git commit"  "$(bash_event 'git commit -m x')"
 check block-alias-shadowing.sh none "ignores non-safety alias" "$(bash_event "alias ll='ls -la'")"
+
+# --- validator-bash-guard: deny mutation Bash from validator-class agents,
+#     allow read-only commands + non-validator agents + main-thread (no agent_type) ---
+# 6 acceptance cases from .scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md FIX-F1.
+check validator-bash-guard.sh none "code-reviewer + git diff HEAD (read-only)"        "$(validator_bash_event 'code-reviewer' 'git diff HEAD')"
+check validator-bash-guard.sh deny "code-reviewer + git push origin main (mutation)"  "$(validator_bash_event 'code-reviewer' 'git push origin main')"
+check validator-bash-guard.sh deny "code-reviewer + rm -rf /tmp/foo (mutation)"        "$(validator_bash_event 'code-reviewer' 'rm -rf /tmp/foo')"
+check validator-bash-guard.sh none "backend-engineer + git push (writer not gated)"   "$(validator_bash_event 'backend-engineer' 'git push origin feature')"
+check validator-bash-guard.sh none "code-reviewer + npm test (read-only test run)"    "$(validator_bash_event 'code-reviewer' 'npm test')"
+check validator-bash-guard.sh deny "code-reviewer + sed -i 's/x/y/' (mutation)"        "$(validator_bash_event 'code-reviewer' "sed -i 's/x/y/' file")"
+# Extra coverage beyond the 6 (anti-pattern robustness, not in AC):
+check validator-bash-guard.sh deny "code-explorer + curl -X POST"                       "$(validator_bash_event 'code-explorer' 'curl -X POST https://api.example.com/x')"
+check validator-bash-guard.sh deny "security-reviewer + chmod 777"                      "$(validator_bash_event 'security-reviewer' 'chmod 777 x')"
+check validator-bash-guard.sh deny "silent-failure-hunter + mv /tmp/x /"               "$(validator_bash_event 'silent-failure-hunter' 'mv /tmp/x /')"
+check validator-bash-guard.sh deny "code-architect + npm publish"                      "$(validator_bash_event 'code-architect' 'npm publish')"
+check validator-bash-guard.sh none "comment-analyzer + cat file.py (read-only)"         "$(validator_bash_event 'comment-analyzer' 'cat file.py')"
+check validator-bash-guard.sh none "pr-test-analyzer + pytest (read-only test run)"    "$(validator_bash_event 'pr-test-analyzer' 'pytest -q')"
+check validator-bash-guard.sh none "main-thread + git push (no agent_type, fail-open)" "$(main_thread_bash_event 'git push origin main')"
+check validator-bash-guard.sh none "main-thread + rm -rf (no agent_type, fail-open)"  "$(main_thread_bash_event 'rm -rf /tmp/foo')"
+# Fork-bomb variants — AC F1 deny pattern 8. Canonical signature is
+# `:(){ :|:& };:`; variants use different whitespace + terminators. A
+# regression here is silent because no AC test covers fork-bombs — the
+# F1 adversarial verifier caught this on the first pass.
+check validator-bash-guard.sh deny "code-reviewer + canonical fork-bomb"       "$(validator_bash_event 'code-reviewer' ':(){ :|:& };:')"
+check validator-bash-guard.sh deny "code-reviewer + spaces-in-body fork-bomb"  "$(validator_bash_event 'code-reviewer' ':() { :|: & };:')"
+check validator-bash-guard.sh deny "code-reviewer + no-space fork-bomb"        "$(validator_bash_event 'code-reviewer' ':(){:|:&};:')"
 
 # --- db-write-gate: ask on non-SELECT MCP DB calls, allow SELECT/EXPLAIN/info_schema,
 #     ignore non-DB MCP tools. Mirrors DBGATE doctrine as a deterministic gate.

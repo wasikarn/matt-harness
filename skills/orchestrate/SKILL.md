@@ -29,6 +29,54 @@ Turn a pile of work into a prioritized plan, then route each item to the cheapes
    - Combine verified outputs into a single coherent artifact or commit. Own the integration.
    - **Report** the final allocation: delegated to whom, inline with the user, scheduled, dropped — and why.
 
+## Validation chain (TaskCreate + addBlockedBy)
+
+The load-bearing quality pattern for "builder → validator → fix → re-validator" handoffs. From articles `task-distribution`, `team-orchestration`, and `agent-teams-workflow`: every non-trivial write should be a chain, not a single dispatch. The protocol is **deterministic in the runtime, not in the model** — `TaskUpdate(addBlockedBy=[...])` makes the ordering enforceable, not advisory. Two independent validators + a fix step + a re-validator is the minimum defensible shape for anything blast-radius ≥ medium.
+
+### Worked example
+
+```text
+1. Builder task — actually mutates
+   TaskCreate(subject="Implement F1 hook", status="in_progress", activeForm="Implementing F1 hook")
+   → returns id "B" (builder)
+
+2. First-pass validator — gates the builder
+   TaskCreate(subject="Validate F1 hook (lint + test)", status="pending", activeForm="Validating F1 hook")
+   → returns id "V1"
+   TaskUpdate(taskId="V1", addBlockedBy=["B"])     # V1 cannot start until B completes
+
+3. Fix task — closes V1's findings (only created if V1 found issues)
+   TaskCreate(subject="Apply V1 fixes", status="pending", activeForm="Applying V1 fixes")
+   → returns id "F"
+   TaskUpdate(taskId="F", addBlockedBy=["V1"])     # F cannot start until V1 completes
+
+4. Re-validator — gates the fix
+   TaskCreate(subject="Re-validate F1 hook (regression)", status="pending", activeForm="Re-validating F1 hook")
+   → returns id "V2"
+   TaskUpdate(taskId="V2", addBlockedBy=["F"])     # V2 cannot start until F completes
+```
+
+The chain is a DAG: `B → V1 → F → V2`. Each edge is `addBlockedBy` (the next node waits for the previous to complete). The whole chain is in the user's TaskList; nothing is "running in the model's head."
+
+### Consolidation (4-step merge after parallel fan-in)
+
+When the chain above fans out into **multiple parallel validators** (e.g. V1 and V1' run side-by-side — one for security, one for tests), the chain is no longer a single linear DAG. You need an explicit merge step after fan-in so two parallel validators don't produce two parallel action plans with no reconciliation protocol. From articles `agent-teams-use-cases` and `sub-agents-split-tasks`:
+
+1. **Reports** — collect each validator's structured output (verdict, file:line, severity). The model must emit machine-parseable Reports, not free-form prose.
+2. **Conflict Resolution** — surface disagreements with file:line citations. "Validator A flags `SKILL.md:42` overstates nesting depth; Validator B flags same line. Confirm both → de-dup." Two validators contradicting each other is a signal to escalate to the user, not pick one.
+3. **Priority Ranking** — order the merged findings by blast-radius, not by the validator that surfaced them. P0 = load-bearing doctrine (`.claude/`, `*_GATE.md`); P1 = public API; P2 = internal-only.
+4. **Action Plan** — concrete file:line edits, with the agent that owns each edit (the builder for code, the technical-writer for prose, etc.). The plan is what gets dispatched, not the union of the Reports.
+
+Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Validator B flags same line. Conflict Resolution: confirm both → de-dup → Priority Ranking: P0 (load-bearing doctrine) → Action Plan: edit + test."
+
+**Why both layers matter:** `addBlockedBy` enforces the chain order; the 4-step merge enforces the cross-validator reconciliation. Either alone is incomplete — chain-only means parallel validators never reconcile, merge-only means the chain has no enforcement.
+
+### Anti-patterns (also see [reference.md § Anti-patterns](reference.md#anti-patterns-distribution-mistakes))
+
+- **Don't use `TaskCreate` for trivial single-task dispatch (Rule 2).** A 1-file, 1-behavior change goes inline; the chain is overhead.
+- **Don't use `addBlockedBy` for ordering that should be inline in one prompt.** If agent A's output feeds agent B *as a string*, that's one prompt with two paragraphs, not a chain.
+- **Don't skip the merge step on parallel fan-out.** Two parallel validators finishing at the same time produce two parallel action plans with no reconciliation protocol — the orchestrator owns the merge, not the validators.
+
 ## Fast Path Gate
 
 If ALL of these hold, **execute inline immediately** and skip all orchestration logic:
