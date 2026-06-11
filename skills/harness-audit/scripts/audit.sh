@@ -67,7 +67,25 @@ fi
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on kbg-harness).
 # --plugin-cache <path> overrides the default for testing (see tests/fixtures/).
-PLUGIN_CACHE="${PLUGIN_CACHE_ARG:-$HOME/.claude/plugins/cache/kobig/kbg/0.1.0}"
+# Resolve to the latest installed version of the kbg plugin in the cache,
+# so a version bump (e.g. 0.1.0 -> 0.1.1) doesn't silently disable F1
+# plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
+if [ -z "$PLUGIN_CACHE_ARG" ]; then
+  _KBG_CACHE_DIR="$HOME/.claude/plugins/cache/kobig/kbg"
+  if [ -d "$_KBG_CACHE_DIR" ]; then
+    _LATEST=$(ls -1 "$_KBG_CACHE_DIR" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+    if [ -n "$_LATEST" ]; then
+      PLUGIN_CACHE="$_KBG_CACHE_DIR/$_LATEST"
+    else
+      PLUGIN_CACHE="${_KBG_CACHE_DIR}/0.1.0"  # fallback for empty/missing cache
+    fi
+  else
+    PLUGIN_CACHE="${_KBG_CACHE_DIR}/0.1.0"  # fallback when no cache dir
+  fi
+else
+  PLUGIN_CACHE="$PLUGIN_CACHE_ARG"
+fi
+unset _KBG_CACHE_DIR _LATEST
 PLUGIN_ACTIVE=0
 if [ -d "$PLUGIN_CACHE/agents" ] || [ -d "$PLUGIN_CACHE/skills" ] || \
    [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ] || \
