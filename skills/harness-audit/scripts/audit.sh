@@ -866,6 +866,225 @@ else
   warn "eval-target freshness check skipped — python3 unavailable"
 fi
 
+# 31. Schema-rot detector — round-2 (2026-06-11) found that the pre-emit
+# validator at scripts/review-pr-journal-pre-emit-validator.py is scoped
+# to the review-pr journaler's enum regexes only. No general detector
+# existed for: skill I/O contract drift, plugin.json version drift,
+# settings.json permission drift, or hooks.json schema drift. The
+# decay-cadence is the unifying ritual but lives in
+# docs/harness-decay-cadence.md as a doc, not as a check. This check
+# runs 4 sub-checks; only the hooks.json sub-check is STRUCTURAL (crit);
+# the rest are ADVISORY (info). The check surfaces drift; the human acts.
+#
+# Sub-check 31.1 — Skill SKILL.md section presence: emit a SINGLE info per
+# skill listing every missing canonical section. This keeps noise at
+# 1-per-skill (not N-per-skill) and still catches drift: a skill that
+# USED to have the sections but no longer does will show up in audit
+# output as a stable, actionable bullet. Sections are: ## Input
+# Contract, ## Output Format, ## Failure Modes. The check is hermetic —
+# it only inspects the file itself, not the references the contract
+# might name (URLs / external sources can't be checked from here).
+# Sub-check 31.2 — plugin.json / marketplace.json: emit info if the
+# `version` field is older than KBG_PLUGIN_VERSION_MAX_AGE_DAYS
+# (default 30) AND has no sibling `last_reviewed:` / `last_reviewed_reason:`
+# justification. Emit crit if the file does not parse as JSON or
+# `version` is missing. Defense in depth: claude plugin validate
+# already enforces the JSON shape, but a missing `version` is the
+# specific failure mode that breaks the cache-resolver at audit.sh:73.
+# Sub-check 31.3 — settings.json permission re-audit bookmark: per
+# decay-cadence §Permission re-audit, the kbg-harness equivalent is
+# `last_permission_review_sha` in plugin.json OR a `## Permission
+# re-audit` section in `docs/harness-decay-cadence.md`. Emit info if
+# the marker is older than KBG_PERM_REAUDIT_MAX_AGE_DAYS (default 90,
+# quarterly cadence). If neither file is present, emit info naming
+# both candidates — the check does not pretend to know where the
+# user's local config lives.
+# Sub-check 31.4 — hooks.json schema: STRUCTURAL. Every `matcher` in the
+# JSON must be a non-empty string, every `hooks[]` entry must have a
+# `type` field, every `command` value must be non-empty. Emit crit on
+# violation. A malformed hooks.json will cause Claude Code to fail to
+# load hooks at runtime — a silent config-drift failure mode the rest
+# of the audit cannot see.
+if command -v python3 >/dev/null 2>&1; then
+  # Run all 4 sub-checks in a single python invocation and dispatch each
+  # TSV line to info / warn / crit. We use a here-doc via process
+  # substitution so the bash helpers can keep their counters (subshells
+  # would lose the increments).
+  while IFS=$'\t' read -r kind payload extra; do
+    [ -n "$kind" ] || continue
+    case "$kind" in
+      SKILL_MISSING)         info "schema-rot: skill '$payload' is missing canonical sections ($extra) — possible I/O contract drift" ;;
+      PLUGIN_PARSE_FAIL)     crit "schema-rot: $(basename "$payload" 2>/dev/null || echo "$payload") failed to parse as JSON" ;;
+      PLUGIN_NO_VERSION)     crit "schema-rot: $(basename "$payload" 2>/dev/null || echo "$payload") has no 'version' field (cache-resolver will break)" ;;
+      PLUGIN_STALE)          info "schema-rot: $payload — consider a version bump (30d cadence per decay-cadence)" ;;
+      PERM_BOOKMARK_MISSING) info "schema-rot: $payload — add a 'last_permission_review:' marker (quarterly cadence per decay-cadence)" ;;
+      PERM_BOOKMARK_BAD)     warn "schema-rot: permission re-audit marker date is unparseable: $payload" ;;
+      PERM_BOOKMARK_STALE)   info "schema-rot: permission re-audit $payload" ;;
+      HOOKS_PARSE_FAIL)      crit "schema-rot: hooks.json failed to parse: $payload" ;;
+      HOOKS_SHAPE_FAIL)      crit "schema-rot: hooks.json — $payload" ;;
+    esac
+  done < <(python3 - "$CLAUDE_DIR" "$REPO_ROOT" <<'PY' 2>/dev/null
+import datetime as dt, json, os, re, sys
+claude_dir, repo_root = sys.argv[1], sys.argv[2]
+today = dt.date.today()
+
+# 31.1: Skill SKILL.md section presence (info, single bullet per skill)
+skills_dir = os.path.join(claude_dir, "skills")
+REQUIRED = ["## Input Contract", "## Output Format", "## Failure Modes"]
+if os.path.isdir(skills_dir):
+    for name in sorted(os.listdir(skills_dir)):
+        # skip _-prefixed scaffolds (not real fleet, may have placeholders)
+        if name.startswith("_"):
+            continue
+        path = os.path.join(skills_dir, name, "SKILL.md")
+        if not os.path.isfile(path):
+            continue
+        try:
+            text = open(path, encoding="utf-8", errors="replace").read(65536)
+        except OSError:
+            continue
+        missing = [s for s in REQUIRED if s not in text]
+        if missing:
+            print(f"SKILL_MISSING\t{name}\t{', '.join(missing)}")
+
+# 31.2: plugin.json / marketplace.json version validity + cadence
+# For plugin.json the top-level `version` is canonical. For
+# marketplace.json the version lives in `plugins[].version` (the
+# marketplace is a list of plugins, not a single plugin manifest).
+PLUGIN_DIR = os.path.join(repo_root, ".claude-plugin")
+def _check_plugin_version(p, version_value, reason):
+    if not isinstance(version_value, str) or not version_value.strip():
+        print(f"PLUGIN_NO_VERSION\t{os.path.basename(p)}")
+        return
+    try:
+        mtime = dt.date.fromtimestamp(os.path.getmtime(p))
+    except OSError:
+        return
+    age = (today - mtime).days
+    if age > 30 and not reason:
+        print(f"PLUGIN_STALE\t{os.path.basename(p)}\tversion={version_value}\tage_days={age}")
+p_plugin = os.path.join(PLUGIN_DIR, "plugin.json")
+if os.path.isfile(p_plugin):
+    try:
+        data = json.loads(open(p_plugin, encoding="utf-8", errors="replace").read())
+    except (OSError, ValueError):
+        print(f"PLUGIN_PARSE_FAIL\tplugin.json")
+    else:
+        if not isinstance(data, dict):
+            print(f"PLUGIN_PARSE_FAIL\tplugin.json\t(not an object)")
+        else:
+            _check_plugin_version(
+                p_plugin,
+                data.get("version"),
+                data.get("last_reviewed_reason") or "",
+            )
+p_market = os.path.join(PLUGIN_DIR, "marketplace.json")
+if os.path.isfile(p_market):
+    try:
+        data = json.loads(open(p_market, encoding="utf-8", errors="replace").read())
+    except (OSError, ValueError):
+        print(f"PLUGIN_PARSE_FAIL\tmarketplace.json")
+    else:
+        if not isinstance(data, dict):
+            print(f"PLUGIN_PARSE_FAIL\tmarketplace.json\t(not an object)")
+        else:
+            # marketplace.json: per the claude-code-marketplace.json
+            # schema, `plugins[].version` is OPTIONAL — the actual
+            # version lives in plugin.json. We only STALE-check the
+            # marketplace file itself (its mtime is the real signal
+            # that the marketplace hasn't been touched in 30d); we
+            # do NOT crit-fire on missing version (that would be a
+            # false positive on every marketplace that doesn't
+            # duplicate the version field).
+            try:
+                mtime = dt.date.fromtimestamp(os.path.getmtime(p_market))
+            except OSError:
+                pass
+            else:
+                age = (today - mtime).days
+                if age > 30:
+                    print(f"PLUGIN_STALE\tmarketplace.json\ttop-level\tage_days={age}")
+
+# 31.3: settings.json / decay-cadence permission re-audit bookmark
+# decay-cadence lives at docs/harness-decay-cadence.md. Look in both
+# possible locations (extracted kbg-harness vs. dotfiles checkout).
+cadence_candidates = [
+    os.path.join(repo_root, "docs", "harness-decay-cadence.md"),
+    os.path.join(claude_dir, "docs", "harness-decay-cadence.md"),
+]
+cadence_path = next((p for p in cadence_candidates if os.path.isfile(p)), None)
+PERM_MAX_AGE = 90
+if cadence_path is None:
+    print("PERM_BOOKMARK_MISSING\tdocs/harness-decay-cadence.md not found")
+else:
+    try:
+        text = open(cadence_path, encoding="utf-8", errors="replace").read(65536)
+    except OSError:
+        text = ""
+    # Marker shape: a `last_permission_review_sha: YYYY-MM-DD ...` line
+    # (the `_sha` suffix is optional in the regex so older markers
+    # without a SHA still get picked up).
+    m = re.search(r"^[\s#/*-]*last_permission_review(?:_sha)?:\s*(\d{4}-\d{2}-\d{2})",
+                  text, re.MULTILINE)
+    if not m:
+        print(f"PERM_BOOKMARK_MISSING\treview-marker not found in {os.path.relpath(cadence_path, repo_root)}")
+    else:
+        try:
+            d = dt.date.fromisoformat(m.group(1))
+        except ValueError:
+            print(f"PERM_BOOKMARK_BAD\t{m.group(1)}")
+        else:
+            age = (today - d).days
+            if age > PERM_MAX_AGE:
+                print(f"PERM_BOOKMARK_STALE\treviewed {age} days ago (cadence: {PERM_MAX_AGE}d)")
+
+# 31.4: hooks.json schema (STRUCTURAL, crit)
+hooks_json_candidates = [
+    os.path.join(repo_root, "hooks", "hooks.json"),
+    os.path.join(claude_dir, "hooks", "hooks.json"),
+]
+hooks_path = next((p for p in hooks_json_candidates if os.path.isfile(p)), None)
+if hooks_path is not None:
+    try:
+        data = json.loads(open(hooks_path, encoding="utf-8", errors="replace").read())
+    except (OSError, ValueError) as e:
+        print(f"HOOKS_PARSE_FAIL\t{e}")
+    else:
+        # Top-level shape: {"hooks": {"EventName": [{"matcher": "x", "hooks": [...]}, ...]}}
+        hooks_root = data.get("hooks") if isinstance(data, dict) else None
+        if not isinstance(hooks_root, dict):
+            print("HOOKS_SHAPE_FAIL\tmissing top-level 'hooks' object")
+        else:
+            for event_name, groups in hooks_root.items():
+                if not isinstance(groups, list):
+                    print(f"HOOKS_SHAPE_FAIL\t{event_name}: not a list")
+                    continue
+                for gi, group in enumerate(groups):
+                    if not isinstance(group, dict):
+                        print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}]: not an object")
+                        continue
+                    # matcher is OPTIONAL in the spec; if present, must be a non-empty string
+                    matcher = group.get("matcher")
+                    if matcher is not None and (not isinstance(matcher, str) or not matcher.strip()):
+                        print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].matcher: not a non-empty string")
+                    inner = group.get("hooks")
+                    if not isinstance(inner, list) or not inner:
+                        print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks: missing or empty")
+                        continue
+                    for hi, h in enumerate(inner):
+                        if not isinstance(h, dict):
+                            print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}]: not an object")
+                            continue
+                        if not isinstance(h.get("type"), str) or not h["type"].strip():
+                            print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].type: missing/empty")
+                        if not isinstance(h.get("command"), str) or not h["command"].strip():
+                            print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].command: missing/empty")
+PY
+)
+else
+  warn "schema-rot check skipped — python3 unavailable"
+fi
+
 # ── summary ──────────────────────────────────────────────────────────
 
 echo ""
