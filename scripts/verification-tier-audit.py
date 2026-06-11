@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """verification-tier-audit — retro-grade shipped features against the
-verification_tier rubric (claude/HARNESS.md Layer 6).
+verification_tier rubric.
 
 For each feature it gathers evidence — a `.scratch/<feature>/verification-trail.md`
 (authoritative if present), an `ACCEPTANCE.md`, eval files under a matching

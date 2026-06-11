@@ -80,7 +80,6 @@ check block-dangerous-git.sh none "allows git status"          "$(bash_event 'gi
 # --- doctrine-edit-gate: ask on doctrine files under .claude/, kbg-harness/, or claude/, allow others ---
 check doctrine-edit-gate.sh ask  "asks on METHODOLOGY.md"   "$(edit_event '/x/.claude/METHODOLOGY.md')"
 check doctrine-edit-gate.sh ask  "asks on settings.json"    "$(edit_event '/x/.claude/settings.json')"
-check doctrine-edit-gate.sh ask  "asks on HARNESS.md"       "$(edit_event '/x/.claude/HARNESS.md')"
 check doctrine-edit-gate.sh ask  "asks on ACLI.md"          "$(edit_event '/x/.claude/ACLI.md')"
 check doctrine-edit-gate.sh ask  "asks on DBGATE.md"        "$(edit_event '/x/.claude/DBGATE.md')"
 check doctrine-edit-gate.sh ask  "asks on kbg-harness ACLI.md" "$(edit_event '/x/kbg-harness/ACLI.md')"

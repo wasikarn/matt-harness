@@ -63,6 +63,9 @@ For multi-step tasks, state a brief plan:
 ```
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+When a loop *verifies*, its stop-signal must reduce to an objective check — a test result, an exit code, a fresh-context adversarial pass, never the implementer agreeing with its own work — and the verifying agent must be given fresh context, not the implementer's transcript (this scopes only the *verification* signal; it does not loosen the human approval gates the harness relies on).
+
 ## 5. Use the Model Only for Judgment Calls
 
 **If code can answer, code answers. Model for judgment, not execution.**

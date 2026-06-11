@@ -72,6 +72,10 @@ Initial report: $ARGUMENTS
 2. For each, state: what would have to be true for this to be the cause, and what evidence would distinguish it from the others.
 3. Rank by likelihood × cheapness-to-test. Pick the top one.
 4. **Confirm via instrumentation if not already proven by Phase 1's repro**: add logging / asserts / breakpoints → re-run the minimised repro → observe whether the expected evidence appears. If it doesn't, fall back to the next-ranked hypothesis and repeat. Don't write the fix on an unconfirmed hypothesis.
+   - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow Rule 13's "cap"/"retry" words, this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
+     - **Stall** — two instrumentation rounds return the *same missing-evidence result for the same failure signal* → stop re-ranking and go to the gate. ("Same error twice in a row: you're guessing, not fixing.")
+     - **Degrading** — confidence/progress goes *backwards* (each round contradicts the last), not just standing still → stop and go to the gate.
+     - **Reachable-source skip** — don't exit "blocked" on an inference when a real source/log was reachable but unread; read it, or route the block to the gate. "Blocked" must mean a real wall, not an unchecked assumption.
 5. **Ledger entry**: `YYYY-MM-DD HH:MM | Phase 3 | H1 tested | <instrumentation> | <evidence: found/missing> | fallback to H2? <yes/no>`.
 6. **Analyze**: instrumentation evidence strength (did expected signal appear?), falsifiability (would evidence look different if hypothesis were wrong?), fallback count (how many times have we fallen back already?). **Recommend** proceed when evidence is strong and reproducible; recommend reject when evidence is weak or contradicted.
 7. **AskUserQuestion** single-select: "Phase 3 confirmed: hypothesis '[H1 description]' is supported by [evidence summary]. Approve this hypothesis and proceed to fix strategy?"
@@ -90,7 +94,7 @@ Initial report: $ARGUMENTS
 **Actions**:
 1. Two shapes:
    - **Surgical (default)** — minimal change exactly where the bug is. No nearby cleanup, no opportunistic refactor.
-   - **Structural** — only if the bug is a symptom of a missing seam or wrong abstraction, AND the user agrees the refactor is in scope. For structural fixes, spawn `maintenance-engineer` agent instead of doing it inline.
+   - **Structural** — only if the bug is a symptom of a missing seam or wrong abstraction, AND the user agrees the refactor is in scope. For structural fixes, spawn `maintenance-engineer` agent instead of doing it inline. **Optional:** for a multi-file or structural fix, consider invoking `/accept-task` to lock `.scratch/<slug>/ACCEPTANCE.md` before choosing the strategy — the review's acceptance-gap check verifies against it later. Skip it for a surgical single-function fix; its Phase 6 regression gate is already the locked criterion.
 2. Present chosen strategy to the user — surgical change at <file:line> doing X, OR structural change with refactor scope Y.
 3. **Analyze**: scope of buggy code (single function vs cross-module), presence of missing seam/abstraction, regression-test feasibility. **Recommend** the shape with lowest blast radius that still fixes the root cause.
 4. **AskUserQuestion** single-select: "Phase 4: the buggy code is at [file:line] — [scope description]. Which fix shape do you prefer?"

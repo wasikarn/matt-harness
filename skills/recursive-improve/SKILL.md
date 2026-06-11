@@ -15,8 +15,9 @@ harness eyes (nudge telemetry, the review-pr marker, the verification journal); 
 the hand — but a hand the human always holds.
 
 **The autonomy invariant (load-bearing — do not soften):** there is **no** autonomous,
-multi-iteration, unattended mode. `HARNESS.md §Correction` deliberately rejects an autonomous
-repair loop in this repo ("config repo, no app substrate … all risk, no target"). This skill
+multi-iteration, unattended mode. The autonomy invariant — canonically homed in `CONTEXT.md`
+§Invariants — deliberately rejects an autonomous repair loop in this repo ("config repo, no app
+substrate … all risk, no target"). This skill
 honors that: every iteration stops at an `AskUserQuestion` gate before any mutation, and the
 skill is `disable-model-invocation: true` so the model cannot self-start it. The human is the
 loop's real stop condition; the iteration cap is only a context-exhaustion backstop.
@@ -91,6 +92,12 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 - Route each approved candidate to the cheapest correct executor (inline for trivial; the
   matching senior agent for specialized work — gated per `orchestrate`). Give each a **done-when**:
   an observable output, not a topic.
+- **Repeated failure escalates, it does not retry (Rule 13).** A candidate's executor caps itself
+  at one retry; on hitting the same failure it does **not** re-attempt — it records the candidate
+  not-done with the verbatim failure signal (Rule 12) and surfaces it at Step 6. There is no
+  failure counter, because Step 4 runs each candidate **once**: a "count to N" would presume a
+  retry budget that does not exist and would normalize N silent unattended iterations. Escalate to
+  the human gate instead of counting-then-retrying.
 - Apply changes one candidate at a time so Verify can attribute the metric delta.
 - **Success criterion:** each candidate's done-when is met, or it is recorded as not-done with a
   reason (no silent drop — Rule 12).
@@ -147,7 +154,8 @@ recursive-improve — iteration <N> report
 - **Treating the gate as a formality.** "We can fix this" is not authorization. The Step 3
   `AskUserQuestion` is mandatory; denial is not approval; never fail open into execution.
 - **Reintroducing autonomy.** Any wording or behavior that runs multiple iterations unattended
-  violates §Correction. The cap is a backstop, not a license to batch-run without gates.
+  violates the autonomy invariant (`CONTEXT.md` §Invariants). The cap is a backstop, not a license
+  to batch-run without gates.
 - **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"
   is a hypothesis until the reader/audit confirms it. Flat delta = did not help.
 - **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask

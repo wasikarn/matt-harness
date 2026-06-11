@@ -27,6 +27,10 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 3. Check approvals: `gh pr view <n> --json reviews`. At least one approval, no CHANGES_REQUESTED from a required reviewer.
 4. Check mergeable state: no conflicts, no "merge requirements not met" flags.
 5. Check branch protection rules: is squash required? Is linear history required?
+6. **Review / acceptance check** (prose, at this gate — not a programmatic ledger read; the review ledger is ephemeral, with no resolved/unresolved field):
+   - If a review ran on this PR (`/review-pr` or `/address-review`) → confirm **zero unresolved Critical findings** (mirrors `/ship-release`'s "Zero Critical findings" gate) and surface any open acceptance-gap from the task's `ACCEPTANCE.md`.
+   - If no review ran → say so plainly and pass; **never fabricate a clean result.** The agent's self-report is not ground truth — re-check against the PR, not memory.
+   - This is an acceptance **check**, not a new gate, and carries no numeric score.
 
 **Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.
 
@@ -81,7 +85,7 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 **Actions**:
 1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. If failures appear post-merge, be ready to revert or invoke `hotfix` skill.
-3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status.
+3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. (For a user-facing merge/release note, route the prose through the `tech-humanize` skill to strip AI-flavor tells.)
 
 **Done.**
 
