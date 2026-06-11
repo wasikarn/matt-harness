@@ -115,7 +115,11 @@ print_boundary() {
 # ── main ─────────────────────────────────────────────────────────────
 
 echo "# Boundary Map"
-echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash /Users/kobig/Codes/Personals/kbg-harness/skills/inventory/scripts/inventory-boundary.sh --repo-only > /Users/kobig/Codes/Personals/dotfiles/claude/BOUNDARY.md\` (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
+# Host-agnostic regenerator (absolute paths removed 2026-06-11): the script's
+# own location is the only path needed; output dir is whatever the caller wants.
+# Cache path stays literal because it IS host-relative (under $HOME) — that's
+# the only stable form across machines for that one command.
+echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<kbg-harness>\` is the kbg-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
 echo "_Schema version: v3 (adds Output styles table; Mutates column reflects Edit/Write/Bash grant)._"
 
 # Resolve repo root via git (robust to symlink paths like ~/.claude/skills/).

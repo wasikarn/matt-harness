@@ -437,7 +437,7 @@ if [ -f "$BOUNDARY" ] && [ -f "$BOUNDARY_GEN" ]; then
     # Ignore the volatile "_Generated:" timestamp line when comparing.
     if ! diff <(grep -v '^_Generated:' "$BOUNDARY") \
               <(grep -v '^_Generated:' "$_tmp_boundary") >/dev/null 2>&1; then
-      warn "BOUNDARY.md stale vs repo fleet — regenerate: bash /Users/kobig/Codes/Personals/kbg-harness/skills/inventory/scripts/inventory-boundary.sh --repo-only > /Users/kobig/Codes/Personals/dotfiles/claude/BOUNDARY.md"
+      warn "BOUNDARY.md stale vs repo fleet — regenerate: bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md  (substitute your kbg-harness and dotfiles repo roots)"
     fi
   else
     warn "could not regenerate boundary map to check drift (inventory-boundary.sh failed)"
