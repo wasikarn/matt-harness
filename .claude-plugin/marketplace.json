@@ -7,7 +7,7 @@
     {
       "name": "kbg",
       "source": ".",
-      "description": "27 senior-specialist agents, 25 workflow skills, 8 commands, governance hooks across 14 lifecycle events, always-on doctrine injection, and the TECH-LEAD-THAI output style.",
+      "description": "27 senior-specialist agents, 26 workflow skills, 8 commands, governance hooks across 14 lifecycle events, always-on doctrine injection, and the TECH-LEAD-THAI output style.",
       "author": { "name": "KOBIG" },
       "category": "development",
       "homepage": "https://github.com/wasikarn/kbg-harness",

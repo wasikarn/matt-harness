@@ -7,6 +7,10 @@ Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
 ## [Unreleased]
 
+### Fixed
+
+- manifest: bump skill count 25 → 26 (memory-trim added)
+
 ### Changed
 
 - **Delivery model: symlink farm → persistent plugin-enable.** The owner now installs `kbg` via
@@ -43,9 +47,9 @@ standalone, self-contained Claude Code plugin (`.claude-plugin/{plugin,marketpla
 - **27 senior-specialist agents** — `code-architect`, `backend-engineer`, `frontend-engineer`,
   `security-reviewer`, `devops-engineer`, `test-engineer`, `code-reviewer`, `code-explorer`,
   `silent-failure-hunter`, `type-design-analyzer`, and others (full list: `claude plugin details kbg`).
-- **25 workflow skills** — `orchestrate`, `clarify-first`, `harness-audit`, `recursive-improve`,
-  `article-mine`, `decommission`, `migrate`, `research-brief`, `tech-humanize`, … (`skills/_lib/`
-  holds shared shell helpers and is not a skill).
+- **25 workflow skills** (now 26 in `0.1.1`; `memory-trim` added) — `orchestrate`, `clarify-first`,
+  `harness-audit`, `recursive-improve`, `article-mine`, `decommission`, `migrate`, `research-brief`,
+  `tech-humanize`, `memory-trim`, … (`skills/_lib/` holds shared shell helpers and is not a skill).
 - **8 slash commands** — `address-review`, `deep-dive`, `feature-dev`, `fix-bug`, `post-mortem`,
   `ship-merge`, `ship-release`, `status-update`.
 - **Governance hooks across 14 lifecycle events** — SessionStart, PreToolUse, PostToolUse,

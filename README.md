@@ -18,7 +18,7 @@ Components are namespaced — invoke as `/kbg:<command>` and `/kbg:<skill>`.
 | Dir | What |
 |---|---|
 | `agents/` | 27 senior-specialist subagents |
-| `skills/` | 25 workflow skills (`_lib/` holds shared shell helpers, not a skill) |
+| `skills/` | 26 workflow skills (`_lib/` holds shared shell helpers, not a skill) |
 | `commands/` | 8 slash commands |
 | `hooks/` | governance hooks + always-on doctrine injection |
 | `output-styles/` | TECH-LEAD-THAI |
