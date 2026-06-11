@@ -1,8 +1,12 @@
 # kbg — Claude Code harness (plugin)
 
-`kbg` packages a personal Claude Code harness as an installable plugin: senior-specialist
-subagents, workflow skills, slash commands, governance hooks, always-on doctrine injection
-(METHODOLOGY / RTK / ACLI / DBGATE), and the TECH-LEAD-THAI output style.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![validate-plugin](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
+
+Personal Claude Code harness delivered as a Claude Code plugin — 27 senior-specialist
+subagents, 26 workflow skills, 8 slash commands, governance hooks, and always-on doctrine
+injection. See [`CONTEXT.md`](CONTEXT.md) for the bounded-context model and the autonomy
+invariant.
 
 ## Install
 
@@ -11,18 +15,26 @@ subagents, workflow skills, slash commands, governance hooks, always-on doctrine
 /plugin install kbg@kobig
 ```
 
-Components are namespaced — invoke as `/kbg:<command>` and `/kbg:<skill>`.
+**Verify** with `/plugin list` (look for `kbg@kobig`), then run any slash command
+(e.g. `/kbg:review-pr --help`) to confirm components load.
 
-## Components
+The plugin is **opt-in** (`defaultEnabled: false`) — nothing injects until you enable it
+in `settings.json`. Components are namespaced as `/kbg:<command>` and `/kbg:<skill>`
+once enabled.
+
+**Uninstall** with `/plugin uninstall kbg`. To keep installed but disable:
+`"kbg@kobig": false` in `settings.json`, or `/plugin disable kbg`.
+
+## What you get
 
 | Dir | What |
 |---|---|
-| `agents/` | 27 senior-specialist subagents |
+| `agents/` | 27 senior-specialist subagents (engineer, reviewer, security, …) |
 | `skills/` | 26 workflow skills (`_lib/` holds shared shell helpers, not a skill) |
-| `commands/` | 8 slash commands |
-| `hooks/` | governance hooks + always-on doctrine injection |
-| `output-styles/` | TECH-LEAD-THAI |
-| `themes/` | catppuccin-mocha |
+| `commands/` | 8 slash commands (`feature-dev`, `fix-bug`, `ship-merge`, …) |
+| `hooks/` | governance hooks across 14 lifecycle events + always-on doctrine injection |
+| `output-styles/` | `TECH-LEAD-THAI` (Thai-code-switched register, see `output-styles/TECH-LEAD-THAI.md`) |
+| `themes/` | `catppuccin-mocha` |
 
 ## Requirements
 
@@ -60,12 +72,29 @@ If the conventions don't fit you:
 
 - **Use components without enabling the plugin** — install the marketplace and invoke individual
   `/kbg:<command>` / `/kbg:<skill>` / agents without enabling `kbg` (no doctrine injection fires).
-- **Disable it** — `"kbg@kobig": false` in `settings.json`, or `/plugin disable kbg`.
-- **Fork and adapt** — remove `doctrine-bootstrap.sh` from `hooks/hooks.json`, swap the output style.
+- **Fork and adapt** — remove `doctrine-bootstrap.sh` from `hooks/hooks.json`, swap the output style,
+  edit the doctrine files in place.
 
-No support SLA; best-effort, pre-`1.0.0`. See `CONTEXT.md` for the delivery model and
-`CHANGELOG.md` for release notes.
+No support SLA; best-effort, pre-`1.0.0`. The full delivery rationale lives in
+[`docs/adr/0001-personal-harness-as-plugin.md`](docs/adr/0001-personal-harness-as-plugin.md).
+
+## Documentation
+
+Supporting docs (start with [`CONTEXT.md`](CONTEXT.md) for the bounded-context model):
+
+- [`CONTEXT.md`](CONTEXT.md) — domain language, autonomy invariant, delivery model
+- [`METHODOLOGY.md`](METHODOLOGY.md) — 13-rule behavioral doctrine
+- [`CHANGELOG.md`](CHANGELOG.md) — release notes (Keep-a-Changelog, SemVer)
+- [`AGENTS.md`](AGENTS.md) — issue-tracker / triage-label conventions
+- [`docs/adr/0001-personal-harness-as-plugin.md`](docs/adr/0001-personal-harness-as-plugin.md) — why "personal harness as plugin"
+- [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) — build-to-delete / permission re-audit cadence
+- [`docs/agents/verification-trail.md`](docs/agents/verification-trail.md) — verification-trail schema
+- [`docs/agents/domain.md`](docs/agents/domain.md) — bounded-context dispatch
+- [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md) — `.scratch/<slug>/` working dir
+- [`RTK.md`](RTK.md), [`ACLI.md`](ACLI.md), [`DBGATE.md`](DBGATE.md) — always-on doctrine
+- [`BOUNDARY.md`](BOUNDARY.md) — auto-regenerated cross-context inventory
+- [`hooks/JOURNAL-SCHEMA.md`](hooks/JOURNAL-SCHEMA.md) — governance evidence journal schema
 
 ## License
 
-MIT — see `LICENSE`.
+MIT — see [`LICENSE`](LICENSE).
