@@ -185,7 +185,7 @@ def _has_dmi(path: Path) -> bool:
     return bool(re.search(r"disable-model-invocation:\s*true", fm))
 
 
-def load_custom_names(repo_root: Path):
+def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     """Custom skills and commands from the repo, with disable-model-invocation flags.
 
     Excludes scaffolds (leading underscore). Returns:
@@ -193,18 +193,43 @@ def load_custom_names(repo_root: Path):
       commands: {name: dmi_bool}  — user-authored commands (all dmi=True in practice)
     Skills with dmi=True (assert-presence, decommission) and every command can only
     be invoked manually, so they are excluded from the auto-rate denominator.
+
+    Plugin-cache fallback (opt-in via use_plugin_cache_fallback=True): the kbg
+    plugin's cache lives at ~/.claude/plugins/cache/kobig/kbg/<version>/. If
+    --repo-root is the kbg-harness repo (no claude/skills/ inside it, since the
+    symlink-farm delivery model was retired 2026-06-11), walk the cache for the
+    latest version. Avoids the /tmp symlink workaround.
     """
     skills, commands = {}, {}
     sdir = repo_root / "claude" / "skills"
+    cdir = repo_root / "claude" / "commands"
+    used_fallback = False
+
+    if (not sdir.is_dir() or not cdir.is_dir()) and use_plugin_cache_fallback:
+        cache_dir = Path.home() / ".claude" / "plugins" / "cache" / "kobig" / "kbg"
+        if cache_dir.is_dir():
+            versions = sorted(
+                [d for d in cache_dir.iterdir()
+                 if d.is_dir() and re.match(r"^\d+\.\d+\.\d+", d.name)],
+                key=lambda d: tuple(int(x) for x in d.name.split(".")[:3]),
+            )
+            if versions:
+                latest = versions[-1]
+                sdir = latest / "skills"
+                cdir = latest / "commands"
+                used_fallback = True
+
     if sdir.is_dir():
         for d in sdir.iterdir():
             if d.is_dir() and not d.name.startswith("_") and (d / "SKILL.md").exists():
                 skills[d.name.lower()] = _has_dmi(d / "SKILL.md")
-    cdir = repo_root / "claude" / "commands"
     if cdir.is_dir():
         for f in cdir.glob("*.md"):
             if not f.name.startswith("_"):
                 commands[f.stem.lower()] = _has_dmi(f)
+
+    if used_fallback and (skills or commands):
+        print(f"# Loaded {len(skills)} skills + {len(commands)} commands from plugin cache fallback ({sdir.parent.name})", file=sys.stderr)
     return skills, commands
 
 
@@ -263,7 +288,8 @@ def expansion_slash_skill(turn_start: dict, by_uuid: dict):
 def analyze(args):
     since = datetime.fromisoformat(args.since).replace(tzinfo=timezone.utc) if args.since else None
     until = datetime.fromisoformat(args.until).replace(tzinfo=timezone.utc) if args.until else None
-    custom_skills, custom_commands = load_custom_names(args.repo_root)
+    custom_skills, custom_commands = load_custom_names(
+        args.repo_root, use_plugin_cache_fallback=args.use_plugin_cache_fallback)
 
     files = []
     for d in iter_project_dirs(args.scope, args.projects):
@@ -559,6 +585,10 @@ def main():
     p.add_argument("--repo-root", type=Path,
                    default=Path(__file__).resolve().parents[2],
                    help="dotfiles repo root for custom skill/command enumeration")
+    p.add_argument("--use-plugin-cache-fallback", action="store_true",
+                   help="if --repo-root has no claude/{skills,commands}/ (post-cutover "
+                        "kbg-harness layout), walk ~/.claude/plugins/cache/kobig/kbg/ "
+                        "for the latest version. Avoids the /tmp symlink workaround.")
     p.add_argument("--out", type=Path, help="write report dir (md + json) here")
     p.add_argument("--json", action="store_true", help="print raw json to stdout")
     args = p.parse_args()
