@@ -2,8 +2,8 @@
 # verification-gate — SessionEnd verification-doctrine sensor (advisory).
 #
 # Reports the session's `verification_tier` posture from the per-feature trails
-# at <project>/.scratch/*/verification-trail.md (schema: docs/agents/verification-trail.md;
-# rubric: claude/HARNESS.md Layer 6), and journals a `verification_summary` event
+# at <project>/.scratch/*/verification-trail.md (schema: docs/agents/verification-trail.md),
+# and journals a `verification_summary` event
 # (JOURNAL-SCHEMA.md) so Phase 4 has a session-tagged ground-truth feed.
 #
 # Pure SENSOR: it journals but NEVER emits a permissionDecision — that keeps it on

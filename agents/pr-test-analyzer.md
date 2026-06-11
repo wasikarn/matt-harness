@@ -57,6 +57,7 @@ Only suggest tests for paths rated 5+. Rate each gap explicitly so the team can 
    - Uncovered critical business logic branches
    - Absent negative test cases for validation logic
    - Missing tests for concurrent or async behavior where relevant
+   - **Weakened-to-pass / gate-gaming tests** — the suite made green without fixing the code: assertions deleted, assertions loosened, errors wrapped in try/catch to silence them, or tests marked skipped/xfail. Inspect the diff of touched **test** files even when the suite is green (the cheat hides in test edits, not source), and watch for the **gate-rot** variant — a test that still *passes* but no longer *catches* the failure mode it was written for. Typically 7-9 criticality; rate it 1-10 and cite `file:line` like every other gap — this class does not bypass the rating ritual.
 
 3. **Evaluate Test Quality**: Assess whether tests:
    - Test behavior and contracts rather than implementation details

@@ -91,11 +91,12 @@ Initial input: $ARGUMENTS
 1. **Pre-implement verification** (per cluster, before editing — external reviewers including LLM-based ones often lack codebase context):
    - **Verify the claim against THIS codebase**: read the code the reviewer is commenting on. Check whether their suggested fix is technically correct for the current context (existing patterns, constraints, dependencies). If the suggestion is wrong or context-blind, re-classify the cluster (move to `clarify` with a pushback question, or `wontfix` with a technical rationale) — don't blindly implement.
    - **YAGNI check on "do it properly" suggestions**: if the reviewer says "implement properly" / "expand this" / "refactor to support X", grep the codebase for actual usage of the affected code path first. Unused endpoints/functions should be deleted, not expanded. Surface DELETE as an alternate proposal to the user before implementing any expansion.
+   - **Author-aware dedup**: skip re-firing a fix on a thread your own commit already addressed *more recently* than the reviewer's comment (compare the thread's `original_commit_id` / `created_at` from Phase 1 against your commits). Re-acting on an already-handled thread is how an uncapped fix loop churns no-op commits.
 2. For each verified actionable cluster (in Phase 3 order):
    - **Bug-shaped** → invoke `/fix-bug` with the reviewer's concern as the bug report. `/fix-bug` returns with its own commit sha. Capture it.
    - **Inline edit** → apply the fix directly, commit with a focused message (reference the thread: `fix(auth): null-check user_id (review #thread-1)`). Capture the sha.
    - **Wontfix / clarify / out-of-scope** → skip code; will be handled in Phase 5 reply only.
-3. After each cluster commits, run any tests relevant to the changed code. If they fail, fix before continuing to the next cluster.
+3. **Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (per Rule 13)**; if they still fail, **stop that cluster** — don't keep patching. Re-classify its thread as `clarify` or `wontfix` with a note explaining the failed fix, and surface it in Phase 5. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
 4. Maintain a running mapping: `{sha: [thread-id, ...]}`. This is the input to Phase 5.
 5. Conditional agent routing **launched in parallel** for inline-edit clusters only (bug-shaped clusters get this routing from `/fix-bug`'s own Phase 7 — don't double-route):
    - Reviewer flagged error handling → `silent-failure-hunter` agent on the fix
