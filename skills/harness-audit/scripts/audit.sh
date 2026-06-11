@@ -70,7 +70,8 @@ fi
 PLUGIN_CACHE="${PLUGIN_CACHE_ARG:-$HOME/.claude/plugins/cache/kobig/kbg/0.1.0}"
 PLUGIN_ACTIVE=0
 if [ -d "$PLUGIN_CACHE/agents" ] || [ -d "$PLUGIN_CACHE/skills" ] || \
-   [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ]; then
+   [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ] || \
+   [ -d "$PLUGIN_CACHE/output-styles" ]; then
   PLUGIN_ACTIVE=1
 fi
 # is_plugin_delivered <kind> <name> — returns 0 if a component named <name>
@@ -120,7 +121,7 @@ COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
 HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh "$CLAUDE_DIR/hooks"/*.py 2>/dev/null | wc -l | tr -d ' ')
 echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
 if [ "$PLUGIN_ACTIVE" -eq 1 ]; then
-  info "Plugin: kbg@kobig cache detected at $PLUGIN_CACHE — F1 treats plugin-delivered components as loadable"
+  info "Plugin cache detected at $PLUGIN_CACHE — F1 treats plugin-delivered components as loadable"
 fi
 echo ""
 
@@ -348,7 +349,9 @@ if [ -f "$SETTINGS" ]; then
     # hook scripts can `source "$(dirname "$0")/_lib.sh"` at runtime.
     # *.md = co-located docs (JOURNAL-SCHEMA.md) — not hooks, never in settings.
     # *.json = plugin hook registry (hooks/hooks.json), not a hook script.
-    case "$hook_name" in _*.sh|_*.py|*.md|*.json) continue;; esac
+    # *.bak = editor/backup residue (e.g. hooks.json.test.bak from a hook-test
+    # session), not a real hook — matches the F1 skip pattern in #3.
+    case "$hook_name" in _*.sh|_*.py|*.bak|*.md|*.json) continue;; esac
     # Wired = settings.json (symlink mode) OR hooks/hooks.json (plugin mode).
     if ! grep -q "$hook_name" "$SETTINGS" \
        && ! grep -q "$hook_name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null; then

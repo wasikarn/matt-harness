@@ -38,8 +38,8 @@ fi
 
 # Sanity: the INFO line about plugin-mode should fire (proves the cache was
 # detected, not just that the F1 count is 0 for some other reason).
-if ! printf '%s\n' "$out" | grep -q "INFO.*Plugin.*kbg@kobig"; then
-  echo "FAIL: expected 'Plugin: kbg@kobig cache detected' INFO line" >&2
+if ! printf '%s\n' "$out" | grep -q "INFO.*Plugin.*cache detected"; then
+  echo "FAIL: expected 'Plugin cache detected' INFO line" >&2
   exit 1
 fi
 

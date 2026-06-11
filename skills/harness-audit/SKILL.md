@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Automated audit of the custom Claude Code skills/agents/commands/hooks ecosystem. Runs consistency checks, boundary drift detection, symlink verification, frontmatter validation, and routing table coverage. Use when user says 'audit my skills', 'check ecosystem health', 'find drift in claude config', or after adding/removing/modifying any agent, skill, command, or hook. Don't use for: writing new skills (use skill-creator), implementation work (use /feature-dev or /backend-dev), or security audits (use /security-auditor)."
+description: "Automated audit of the custom Claude Code skills/agents/commands/hooks ecosystem — symlink, frontmatter, plugin-cache loadability. Use when harness-audit reports CRITICAL, after editing agents/skills/commands/hooks, or when F1 fires on plugin-delivered components. Don't use for: writing new skills (use skill-creator), implementation work (use /feature-dev or /backend-dev), or security audits (use /security-auditor)."
 ---
 
 # Skill Audit
