@@ -51,7 +51,18 @@ auto-rate flat at 46% (131/286).
   `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
   Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
 
-## [Unreleased]
+## [0.1.4] — 2026-06-12
+
+Minor release — closes the 2026-06-12 loop-engineering closure epic: 10
+SYNTHESIS items promoted Partial → Present, 1 defer-documentation pattern
+shipped, autonomy invariant (ADR 0002) preserved throughout. No breaking
+changes; old components keep their contracts; new ones are additive.
+
+This is the first release that ships the formal eval harness, the
+recurring-cadence (decay/audit) tooling, and the autonomy-invariant
+defer-documentation pattern as stable plugins. See the **Audit summary
+(2026-06-12 closure epic)** table near the bottom of this entry for the
+per-phase commit log.
 
 Entries are listed in chronological order (oldest commit first within each subsection), so a
 reader can trace the audit + fix chain end-to-end without re-sorting. Grouped by Keep-a-Changelog
