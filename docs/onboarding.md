@@ -50,3 +50,17 @@ unattended loop, the answer is "out of scope by design," not "amend ADR."
 Read this file's first three sections. If you have 5 more minutes, skim
 [`METHODOLOGY.md`](../METHODOLOGY.md). If you have 10 more, read
 [`CONTEXT.md`](../CONTEXT.md) §"Autonomy invariant" + ADR 0002 rejected-alternatives table.
+
+## What we've shipped recently (2026-06-12)
+
+The 2026-06-12 closure work lifted 10 capabilities Partial → Present
+(SYNTHESIS audit). For *why*, see [`CHANGELOG.md`](../CHANGELOG.md) §
+Unreleased → Phase 1.1–2.5.
+
+- **`scripts/auth-health-check.py`** — gh/MCP/plugins health probe (3-state).
+- **`scripts/orchestrate-dispatch.py` + 3 specs** — coordination-as-code.
+- **`hooks/db-write-gate.sh` + `KBG_ENFORCE_TASK_COMPLETED`** — opt-OUT task gate.
+- **`recursive-improve` skill** — stall detection + debt ceiling.
+- **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
+- **`scripts/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
+- **[ADR 0002 addendum](adr/0002-addendum-deferred-items.md)** — 10 deferred items + L2 alternatives.

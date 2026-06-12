@@ -90,6 +90,7 @@ Supporting docs:
 - [`CHANGELOG.md`](CHANGELOG.md) — release notes (Keep-a-Changelog, SemVer)
 - [`AGENTS.md`](AGENTS.md) — issue-tracker / triage-label conventions
 - [`docs/adr/0001-personal-harness-as-plugin.md`](docs/adr/0001-personal-harness-as-plugin.md) — why "personal harness as plugin"
+- [`docs/adr/0002-addendum-deferred-items.md`](docs/adr/0002-addendum-deferred-items.md) — 10 SYNTHESIS items deferred per ADR 0002, with L2 alternatives shipped
 - [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) — build-to-delete / permission re-audit cadence
 - [`docs/agents/verification-trail.md`](docs/agents/verification-trail.md) — verification-trail schema
 - [`docs/agents/domain.md`](docs/agents/domain.md) — bounded-context dispatch

@@ -1065,6 +1065,130 @@ spends tokens discovering the failure mid-task.
   block session start. The CALLER (a hook, `/pre-ship-verify`, or
   the operator) decides what to do with the verdict.
 
+### Phase 3 — Defer documentation + ADR 0002 addendum (2026-06-12, 2 commits)
+
+Captures the **why** behind the 10 SYNTHESIS items that will never ship
+as their own components (L3/L4 territory, vendor primitives, or
+ADR 0002 collisions), and what the L2 alternative is for each. The
+addendum is the **one-stop reference** for "why is X absent?" so the
+next audit doesn't waste cycles re-debating decided-closed decisions.
+
+#### Added
+
+- `docs/adr/0002-addendum-deferred-items.md` — new ADR addendum mapping
+  10 SYNTHESIS rows to their shipped L2 alternatives:
+  - **#5** `goal-primitive-stop-condition` → `ACCEPTANCE.md` stop-condition contract
+  - **#21** `machine-readable-feature-list` → `docs/agents/verification-trail.md` schema
+  - **#32** `worktree-isolation-parallel-agents` → F8.5 bounded-fan-out in `commands/team-build.md` + per-wave contract chain in `skills/orchestrate/SKILL.md`
+  - **#34** `typed-tool-registry` → agent `tools:` frontmatter allowlists
+  - **#35** `mcp-connectors-act-in-real-tools` → `hooks/db-write-gate.sh` for the one plugin-owned path
+  - **#40** `loop-edits-own-shape-as-data` → `recursive-improve` skill (human-gated single-cycle)
+  - **#44** `minimize-tool-surface` → agent `tools:` allowlists (host can't shrink at plugin layer)
+  - **#45** `build-to-delete-thin-harness` → `docs/harness-decay-cadence.md` quarterly review
+  - **#47** `durable-checkpointed-state-recovery` → `.scratch/<slug>/` journaled events (session-scoped by design)
+  - **#50** `self-improving-harness-via-prs` → `recursive-improve` skill (proposal-then-ASK-then-act)
+
+  Rationale for the addendum (vs a section in ADR 0002): ADR 0002 is
+  the canonical invariant record (don't dilute the "judgment preservation"
+  thesis); the addendum is the derived mapping (changes over time);
+  cross-link is unidirectional (ADR 0002 → addendum).
+
+- `.scratch/harness-loop-audit-2026-06-12/GAP-CLOSURE-SPEC.md` — added
+  inline `> AUTONOMY-DEFER` / `> VENDOR-DEFER` callouts at the 3 spec
+  sections where the defer items land (#5, #32, #46), pointing to the
+  addendum. Inline callouts survive the spec becoming the source of
+  truth in a future round.
+
+- `docs/adr/README.md` — added index row for the addendum (Accepted
+  status, 2026-06-12 date).
+
+### Phase 5 — Onboarding integration + closure milestone (2026-06-12, 1 commit)
+
+Closes the 2026-06-12 loop-engineering closure work. P4 (SYNTHESIS
+re-baseline) is intentionally a local-only update: `.scratch/`
+is gitignored per `.gitignore:13`, so the audit artifact is
+operator-local; the shipped state is reflected in the docs
+(addendum + onboarding + this entry), not in the audit table on
+the remote.
+
+#### Added
+
+- `docs/onboarding.md` — new section **"What we've shipped recently
+  (2026-06-12)"** with a 7-line quick map of the closure work (the
+  components most likely to be the answer to "where do I find X?").
+  File size: 442 words ≈ 580 tokens (was 380 words ≈ 500 tokens; the
+  new section adds ~60 words, well under the 1-commit budget).
+
+- `README.md` — Documentation index gets 1 new entry:
+  `docs/adr/0002-addendum-deferred-items.md`. The 2-entry delta in
+  the P5 plan became a 1-entry delta because `docs/onboarding.md`
+  was already indexed in P1.3 (line 87).
+
+#### Verification (closure milestone, 2026-06-12)
+
+- **`harness-audit`** (formal plugin audit, the closest thing to a
+  pre-ship gate when there's no task-scoped `ACCEPTANCE.md`):
+  `0C / 1W / 26I exit 1`. The 1 warning is the pre-existing
+  BOUNDARY.md-stale regen signal (operator state, not a code defect).
+  The 26 info entries are pre-existing schema-rot notices
+  (skills missing the `## Input Contract` / `## Output Format` /
+  `## Failure Modes` canonical sections; doctrine drift tracked in
+  the decay-cadence doc, not a regression).
+
+- **`eval/run-eval.py`** (full suite, default datasets + 15 regression
+  fixtures = 24 evals):
+  `16 passed / 5 failed / 3 warning / 0 regressions / 3 skipped-summary`.
+  The 5 failed and 3 warning are unchanged from P2.5 (pre-existing
+  gaps: `harness-audit-eval-freshness`, `review-pr-acceptance-cross-check`,
+  `ship-change-acceptance-exists`, `ship-change-no-contract`,
+  `loop-overshoot-workflow-cap`, plus the 3 route-by-aspect/tier/blocks
+  warnings). The 2 new `auth-health-*` regression evals pass.
+
+- **SYNTHESIS audit (re-baselined, 50 items)**:
+  `17 Present / 18 Partial / 3 Deferred / 10 Absent / 2 Vendor-only`
+  (was `7 / 29 / 0 / 11 / 2` on 2026-06-11). Honest assessment: ~34%
+  present, ~36% partial, ~20% absent, ~4% vendor-only, plus 3 deferred
+  per the addendum. The 3-deferred status is new (was folded into
+  Partial before); the 10 promotions (Partial → Present) are
+  #11, #13, #15, #22, #24, #33, #38, #39, #41, #49.
+
+- **ADR 0002 addendum conformance**: `claude plugin validate --strict .`
+  passes (doc-only change, not manifest-affecting).
+
+- **Autonomy invariant (ADR 0002) preserved throughout**:
+  - P2.3 `KBG_ENFORCE_TASK_COMPLETED` is opt-OUT (default ON, breaks
+    nothing), not opt-IN (would require amendment).
+  - P2.5 `auth-health-check.py` is a sensor; it does not auto-block
+    session start. The CALLER decides.
+  - P3 defer documentation is descriptive, not enforcement; the
+    enforcement is the invariant itself + audit check #32
+    (recursive-improve `disable-model-invocation`).
+
+### Audit summary (2026-06-12 closure epic)
+
+| Phase | Work | Commit count | Status |
+|---|---|---|---|
+| P0 | SYNTHESIS re-baseline (#33, #42 already-shipped reclass) | (audit-only) | done |
+| P1.1 | #15 anti-cheat: split `run-acceptance.py` exit codes | 1 | done |
+| P1.2 | #22 learning memory: `audit-to-memory.py` + `memory-lint` | 1 | done |
+| P1.3 | #24 onboarding: `docs/onboarding.md` (10-min cold-start) | 1 | done |
+| P1.4 | #33 lift to PRESENT: METHODOLOGY Rule 7 cite usage-monitor | 1 | done |
+| P1.5 | #39 regression lock: 2nd + 3rd regression fixtures | 1 | done |
+| P2.1 | #11 stall detection: loop-status → observe step | 1 | done |
+| P2.2 | #41 comprehension-debt ceiling: debt-count ledger | 1 | done |
+| P2.3 | #13 `KBG_ENFORCE_TASK_COMPLETED` opt-OUT escape hatch | 1 | done |
+| P2.4 | #49 coordination-as-code: `orchestrate-dispatch.py` + 3 specs | 1 | done |
+| P2.5 | #38 auth/MCP/plugin health probe (`auth-health-check.py` + 2 evals) | 1 | done |
+| P3 | Defer docs: 3 spec callouts + ADR 0002 addendum | 1 | done |
+| P4 | SYNTHESIS re-baseline (local, `.scratch/` gitignored) | (local-only) | done |
+| P5 | Onboarding integration + closure milestone (this entry) | 1 | done |
+| **Total** | **13 commits + 1 local-only audit update** | **14** | **done** |
+
+The 13-commit delta is small for the surface area covered because most
+work is config + doc + script (no large refactors; no new agents or
+skills added in P2.x — they re-use the existing `recursive-improve`
+and `orchestrate` skills as the seam for new discipline).
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
