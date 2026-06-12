@@ -1,6 +1,6 @@
 ---
 description: "Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use `hotfix` skill), or when there is no release branch / tag strategy defined."
-argument-hint: "[version-bump-type: major / minor / patch / specific-version]"
+argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 ---
 

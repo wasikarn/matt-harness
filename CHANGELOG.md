@@ -651,6 +651,30 @@ A), accepting the late-warning tradeoff to preserve the L2 invariant
 **Phase 4 complete** (D6 in commit `f0d59a7`, D9 in this commit).
 **Audit epic fully closed** — F1-F12, D1-D10 all shipped.
 
+### Audit epic polish (2026-06-12, 1 commit)
+
+Closes the 2 follow-on items the audit epic itself flagged but
+deferred: F3-1 (Phase 2 doc-nit, cosmetic bracket-drift in
+`argument-hint:`) and the `last_permission_review:` marker gap
+(missing from `docs/harness-decay-cadence.md` since 2026-06-11).
+
+- 5 `commands/*.md` normalized: `argument-hint:` rewritten from
+  literal-bracket form (`"[topic or question]"`) to plain English
+  (`Optional topic or question`) to match the convention used by
+  4 other commands. Affected: `deep-dive`, `post-mortem`,
+  `ship-merge`, `ship-release`, `status-update`.
+- 1 `docs/harness-decay-cadence.md` edit: added
+  `last_permission_review: 2026-06-12` marker (machine-checkable
+  per `skills/harness-audit/scripts/audit.sh` check #31.3) with
+  a one-line summary of what the re-audit covered. Marker is at
+  start of a clean line (no backtick prefix — the audit's regex
+  `^[\s#/*-]*` doesn't allow backticks).
+- 0 hook / settings.json / agent / skill changes.
+- Verification: `harness-audit` I-count 27 → 26 (the marker-info
+  fired before the fix, the per-skill schema-rot count is back to
+  the pre-D9 baseline of 26). Hook tests 202/0 unchanged, plugin
+  validate ✔.
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit

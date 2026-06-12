@@ -110,6 +110,8 @@ doctrine-via-Bash). See `secret-read-guard.sh:36-41` and
 2026-06-11 Harness-Loop-Engineer audit response; revisit quarterly
 or on model upgrade).*
 
+last_permission_review: 2026-06-12 — re-audited against the close of the 2026-06-12 audit epic (F1-F12, D1-D10 all shipped; 5 commits `2d3c743`, `a20200b`, `4d2ad91`, `f0d59a7`, `7194037`). No `tools:` lines added or modified during the epic; F1 added a hook, not frontmatter; F3/D1 added 2 commands; F5 added voice blocks (frontmatter `description` only). The `usage-monitor` skill + capture hook shipped in D9 (Phase 4b) inherit the read-only `KBG_USAGE_MONITOR=1` opt-in posture; no new tool grants.
+
 The decay lens above asks "does this component still earn its place?". A
 sibling question: **has this component accrued tool access it no longer needs?**
 That second question is the permission re-audit, and it lives here because the
