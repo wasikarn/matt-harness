@@ -580,6 +580,36 @@ requested; ship in bulk"). Acceptance contract at
 - `claude plugin validate --strict .` ✔.
 - `bash hooks/tests/test-critical-hooks.sh` → 201/0 (no regression).
 
+### Phase 4 (D6) — Personality-injection commands folded into F5 extension (2026-06-12, 1 commit)
+
+D6 from `.scratch/audit-2026-06-12/SPEC.md` considered shipping 3
+personality-injection slash commands (`/debug`, `/architect`,
+`/perspectives`) as a new command category. F5 voice blocks shipped
+in Phase 3 (commit `4d2ad91`) made those commands thin wrappers over
+existing `agents/*.md` voice blocks — the spec's own caveat
+("not orthogonal to F5; fold into a future F5-extension if it ships")
+now applies. Owner chose to **fold into an F5 extension doc** rather
+than ship commands.
+
+- 1 new file: `docs/agent-voice-extension.md` (146 lines) — covers
+  the personality-wrapper pattern: when NOT to build a personality
+  command (default), when one IS worth shipping (3 cases: ritual,
+  context pre-load, output shape), the recipe for building one
+  right (frontmatter + body contracts + anti-patterns), and worked
+  examples for the 3 spec-named commands mapped to kbg-harness
+  agents/skills.
+- 0 commands shipped — F5 stays the single source of truth for
+  "what does this agent sound like." The 3 worked examples in
+  § 4 are recipes, not deliverables.
+- 0 hook changes, 0 SKILL.md changes, 0 settings.json changes.
+- `.scratch/phase-4-deferred-2026-06-12/ACCEPTANCE.md` locked at
+  start-SHA `4d2ad91`; 3 open questions resolved (D6 → B, D9 → A,
+  scope → 2 commits).
+- Verification: `harness-audit` 0C/0W/26I (no new surface), plugin
+  validate ✔, hook tests 201/0 (no regression).
+- D9 (OTEL/usage-monitor) deferred to the next Phase 4 commit per
+  the locked contract.
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit
