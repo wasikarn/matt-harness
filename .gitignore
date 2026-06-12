@@ -17,3 +17,6 @@ skills/*/workspace/
 
 # Machine-specific caches (never ship a stale local blob)
 .code-review-graph/
+
+# Eval harness generated artifacts
+eval/results/

@@ -1,0 +1,26 @@
+{
+  "dataset_name": "acceptance-pass",
+  "description": "Smoke test: run run-acceptance.py on a known-good acceptance contract and verify it passes.",
+  "evals": [
+    {
+      "id": "acceptance-runner-smoke",
+      "task": "Run run-acceptance.py on phase-1-safety-fixes acceptance contract and verify machine-checkable criteria pass",
+      "skill": "pre-ship-verify",
+      "context": {
+        "slug": "phase-1-safety-fixes-2026-06-12",
+        "expected_min_passed": 2,
+        "expected_max_failed": 0
+      },
+      "success_criteria": [
+        "run-acceptance.py exits 0",
+        "acceptance-results.json exists and is valid JSON",
+        "At least 2 criteria passed",
+        "Zero criteria failed (blocked allowed)"
+      ],
+      "expected_duration_seconds": 30,
+      "expected_tokens": 2000,
+      "tags": ["acceptance", "smoke-test", "infrastructure"],
+      "eval_type": "assertion"
+    }
+  ]
+}

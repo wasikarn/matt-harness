@@ -28,3 +28,26 @@ jobs:
 
       - name: validate plugin manifest (strict)
         run: claude plugin validate --strict .
+
+  eval-harness:
+    name: eval harness --gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: run eval harness
+        run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
+
+      - name: upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: eval/results/*/summary.json

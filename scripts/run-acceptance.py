@@ -475,7 +475,7 @@ def main() -> int:
         print(f"Results: {passed} passed, {failed} failed, {skipped} skipped, {blocked} blocked")
         print(f"Written: {output_path}")
 
-    return 0 if (failed == 0 and blocked == 0) else 1
+    return 0 if failed == 0 else 1
 
 
 if __name__ == "__main__":

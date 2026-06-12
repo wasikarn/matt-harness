@@ -291,7 +291,22 @@ def main():
     parser.add_argument("--model", default=None, help="Claude model to use (e.g., claude-sonnet-4-6)")
     parser.add_argument("--timeout", type=int, default=300, help="Timeout per run in seconds (default: 300)")
     parser.add_argument("--workers", type=int, default=2, help="Parallel workers (default: 2)")
+    parser.add_argument("--dataset", type=str, help="Load tasks from eval/datasets/ directory (dataset mode)")
+    parser.add_argument("--regression", action="store_true", help="Run only regression fixtures")
+    parser.add_argument("--gate", action="store_true", help="Exit non-zero on any eval failure (CI mode)")
     args = parser.parse_args()
+
+    # Delegate to new eval harness for dataset/regression modes
+    if args.dataset or args.regression:
+        import subprocess, sys
+        cmd = [sys.executable, str(Path(__file__).resolve().parent.parent / "eval" / "run-eval.py")]
+        if args.dataset:
+            cmd.extend(["--dataset", args.dataset])
+        if args.regression:
+            cmd.append("--regression")
+        if args.gate:
+            cmd.append("--gate")
+        sys.exit(subprocess.run(cmd).returncode)
 
     skill_path = args.skill_path.resolve()
     evals_file = skill_path / "evals" / "evals.json"
