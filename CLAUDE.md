@@ -88,13 +88,36 @@ python3 eval/run-eval.py --dataset eval/datasets/harness-audit.json
 python3 eval/run-eval.py --regression --tag task-completed
 ```
 
+### After modifying any plugin surface
+
+```bash
+# Update plugin cache (must restart Claude Code after)
+claude plugin update kbg@kobig
+```
+
+### Regenerate BOUNDARY.md
+
+```bash
+bash skills/inventory/scripts/inventory-boundary.sh --repo-only
+```
+
 ### Adding a new component
 
 1. **Agent:** create `agents/<name>.md` with frontmatter (`description`, `tools` allowlist). No registration needed — auto-discovered.
 2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter. Add `## Input Contract`, `## Output Format`, `## Failure Modes` canonical sections (audit check #31.1 flags missing ones). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
 3. **Command:** create `commands/<name>.md` with frontmatter (`name`, `type: command`). Update `plugin.json` + `marketplace.json` description counts.
 4. **Hook:** create `hooks/<name>.sh`, add entry to `hooks/hooks.json`. Add tests to `hooks/tests/test-critical-hooks.sh` if it is a PreToolUse or TaskCompleted gate.
-5. **After any of the above:** bump manifest versions, run the 3 validation commands, commit, push, `claude plugin update kbg@kobig`, restart.
+5. **After any of the above:** bump manifest versions, validate, commit, push, update cache, restart:
+   ```bash
+   # Bump version in BOTH manifests, then:
+   claude plugin validate --strict .                     # 1. validate manifest
+   bash hooks/tests/test-critical-hooks.sh              # 2. hook tests
+   bash skills/harness-audit/scripts/audit.sh .         # 3. self-audit
+   python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate  # 4. eval gate
+   git add -A && git commit -m "feat: ..." && git push origin develop   # 5. commit + push
+   claude plugin update kbg@kobig                        # 6. update cache
+   # 7. restart Claude Code
+   ```
 
 ### Branch model
 
