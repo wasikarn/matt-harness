@@ -27,7 +27,7 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
    - List `.scratch/*/` directories by mtime (newest first).
    - Pick the first directory that contains `ACCEPTANCE.md`.
    - If multiple recent tasks exist, present the top 3 and ask user to confirm.
-3. Verify the file exists. If absent → stop and tell user: "No ACCEPTANCE.md found. Run `/accept-task` to lock a contract before shipping."
+3. Verify the file exists. If absent → stop and tell user: "No ACCEPTANCE.md found. Run `kbg:accept-task` to lock a contract before shipping."
 4. Read the contract metadata (`task`, `accepted`, `start-sha`) and surface them.
 
 **Output**: confirmed slug, path to `ACCEPTANCE.md`, task name, acceptance date.
@@ -104,7 +104,7 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
    ```json
    {"timestamp":"2026-06-12T14:23:00Z","command":"pre-ship-verify","slug":"<slug>","passed":N,"failed":N,"skipped":N,"blocked":N,"result":"green|amber|red"}
    ```
-2. If the task's `ACCEPTANCE.md` was originally written by `/accept-task`, update the task tracker (if any) with the verification result.
+2. If the task's `ACCEPTANCE.md` was originally written by `kbg:accept-task`, update the task tracker (if any) with the verification result.
 
 ---
 
@@ -117,6 +117,6 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
 ## Integration Notes
 
 - **Called from `/ship-merge` Phase 1** (optional): if the PR has an associated `ACCEPTANCE.md`, Phase 1 can suggest `/pre-ship-verify` before the merge gate.
-- **Called from `/review-pr` Phase 6**: the acceptance-contract check can invoke this command to replace prose cross-checking with deterministic execution.
+- **Called from `kbg:review-pr` Phase 6**: the acceptance-contract check can invoke this command to replace prose cross-checking with deterministic execution.
 - **CI integration**: `python3 scripts/run-acceptance.py <slug> --gate` (non-zero exit on any failure) can run in GitHub Actions before merge.
 - **Hook integration**: `verification-gate.sh` (advisory sensor) reads `acceptance-results.json` and logs; it does not block. Blocking is the user's decision via this command or `/ship-merge` gate.

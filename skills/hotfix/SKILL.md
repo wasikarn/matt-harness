@@ -5,7 +5,7 @@ description: "Use this skill for emergency production fixes requiring immediate 
 
 # Hotfix
 
-Ship a critical fix fast. This is a compressed version of `/fix-bug` + `/review-pr` + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.**
+Ship a critical fix fast. This is a compressed version of `/fix-bug` + `kbg:review-pr` + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.**
 
 This skill produces a structured hotfix plan for the main agent to execute inline. It does not dispatch sub-agents — the main agent holds full context and acts with surgical speed.
 

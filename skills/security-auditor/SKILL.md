@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "Comprehensive security audit for code touching auth, secrets, external input, file uploads, or dependencies. ALWAYS use this skill when asked to audit, review, or check code for security flaws, injection risks, XSS, CSRF, SSRF, path traversal, broken access control, secrets leaks, or vulnerable components. Trigger before merging PRs that touch auth flows, API endpoints, admin panels, payment systems, or dependency manifests. Do NOT use for: general code quality reviews (use /review-pr), production incident response (use /hotfix or /incident), or non-code security topics (infrastructure, policy)."
+description: "Comprehensive security audit for code touching auth, secrets, external input, file uploads, or dependencies. ALWAYS use this skill when asked to audit, review, or check code for security flaws, injection risks, XSS, CSRF, SSRF, path traversal, broken access control, secrets leaks, or vulnerable components. Trigger before merging PRs that touch auth flows, API endpoints, admin panels, payment systems, or dependency manifests. Do NOT use for: general code quality reviews (use kbg:review-pr), production incident response (use kbg:hotfix or kbg:incident), or non-code security topics (infrastructure, policy)."
 ---
 
 # Security Auditor
@@ -11,7 +11,7 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 **When NOT to use:** General code review, live incident response, infrastructure/policy topics.
 
-**`security-reviewer` agent vs this skill (canonical):** the `security-reviewer` agent is a *flagging* pass — it rides inside `/review-pr`'s panel and serves as orchestrate's pre-write gate on any auth/secrets change. This skill is the *dedicated, comprehensive* audit (threat model → remediation plan → re-audit). Reach for the skill on high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests) or an explicit "audit" request; for a routine auth/secrets-touching diff, the `security-reviewer` pass inside `/review-pr` is enough — don't run both.
+**`security-reviewer` agent vs this skill (canonical):** the `security-reviewer` agent is a *flagging* pass — it rides inside `kbg:review-pr`'s panel and serves as orchestrate's pre-write gate on any auth/secrets change. This skill is the *dedicated, comprehensive* audit (threat model → remediation plan → re-audit). Reach for the skill on high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests) or an explicit "audit" request; for a routine auth/secrets-touching diff, the `security-reviewer` pass inside `kbg:review-pr` is enough — don't run both.
 
 ---
 
@@ -60,7 +60,7 @@ Done.
 
 ## Related
 
-- `/review-pr` — general code review
+- `kbg:review-pr` — general code review
 - `/fix-bug` — after security bug fix, audit before merge
-- `/hotfix` — production security patch
-- `/incident` — if security incident is live, incident response first
+- `kbg:hotfix` — production security patch
+- `kbg:incident` — if security incident is live, incident response first

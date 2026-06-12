@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', 'get off the old system', or when retiring old systems, upgrading major versions, migrating databases, or extracting modules. Do NOT use for: new features (use /feature-dev), hot bug fixes (use /fix-bug or /hotfix), refactors with no deprecation target (spawn `maintenance-engineer` agent), or when rollback is impossible (use /deep-dive first)."
+description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', 'get off the old system', or when retiring old systems, upgrading major versions, migrating databases, or extracting modules. Do NOT use for: new features (use /feature-dev), hot bug fixes (use /fix-bug or kbg:hotfix), refactors with no deprecation target (spawn `maintenance-engineer` agent), or when rollback is impossible (use /deep-dive first)."
 disable-model-invocation: true
 ---
 
@@ -78,6 +78,6 @@ Move from old to new without breaking production. Migration is risk management f
 
 - `/feature-dev` — greenfield work
 - `/fix-bug` — regression during migration
-- `/hotfix` — if migration causes outage
+- `kbg:hotfix` — if migration causes outage
 - `/deep-dive` — when Phase 0 answers 'unknown'
 - `decommission` skill — for zombie code, not migration targets

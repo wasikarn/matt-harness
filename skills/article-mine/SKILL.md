@@ -1,6 +1,6 @@
 ---
 name: article-mine
-description: "Mine an article / repo / RFC / external doc for transferable doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file path / text and says \"mine this\", \"analyze this article\", \"extract lessons\", \"read this and apply\", \"synthesize this\", or \"what can we take from this\", or for the recurring ritual of dropping external content into Claude Code to harvest doctrine for the dotfiles harness. Do NOT use for: pure Q&A (use /research-brief), reasoning-quality review (use /critical-eval), systems-thinking analysis (use /probe), security audit (use /security-auditor), or PR review (use /review-pr)."
+description: "Mine an article / repo / RFC / external doc for transferable doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file path / text and says \"mine this\", \"analyze this article\", \"extract lessons\", \"read this and apply\", \"synthesize this\", or \"what can we take from this\", or for the recurring ritual of dropping external content into Claude Code to harvest doctrine for the dotfiles harness. Do NOT use for: pure Q&A (use kbg:research-brief), reasoning-quality review (use kbg:critical-eval), systems-thinking analysis (use kbg:probe), security audit (use kbg:security-auditor), or PR review (use kbg:review-pr)."
 disable-model-invocation: true
 ---
 
@@ -12,7 +12,7 @@ This skill writes the ledger row, updates memory, and (if doctrine moved) commit
 
 **When to use:** the user has shared an article / repo / external doc and the goal is **transferable lessons + harness changes**, not "summarize this for me" or "explain this concept." A signal phrase like *"mine this," "what can we take," "apply to harness,"* or the pattern of *"here's the link — go"* confirms the intent.
 
-**When NOT to use:** pure research (no doctrine transfer), reasoning audit (no fan-out), security review of a diff (use `/security-auditor`), or PR review (use `/review-pr`). For a single-doc deep-read with no harness application, `research-brief` is cheaper.
+**When NOT to use:** pure research (no doctrine transfer), reasoning audit (no fan-out), security review of a diff (use `kbg:security-auditor`), or PR review (use `kbg:review-pr`). For a single-doc deep-read with no harness application, `research-brief` is cheaper.
 
 ---
 
@@ -151,11 +151,11 @@ If `unverified` is non-empty, **do not** push — surface the unverified claims 
 
 ### Skills / commands this composes with
 
-- **`/research-brief`** — single-agent deep-read, no doctrine application. Cheaper when the goal is "explain this" not "extract lessons."
-- **`/critical-eval`** — stress-tests an argument. Use when the article makes a strong claim worth probing before mining.
-- **`/probe`** — systems-thinking lens on a design decision. Use when the article *is* a design proposal.
-- **`/security-auditor`** — security review of a code change, not an article. Don't conflate.
-- **`/review-pr`** — PR review flow. Article-mine is for external content, not internal diffs.
+- **`kbg:research-brief`** — single-agent deep-read, no doctrine application. Cheaper when the goal is "explain this" not "extract lessons."
+- **`kbg:critical-eval`** — stress-tests an argument. Use when the article makes a strong claim worth probing before mining.
+- **`kbg:probe`** — systems-thinking lens on a design decision. Use when the article *is* a design proposal.
+- **`kbg:security-auditor`** — security review of a code change, not an article. Don't conflate.
+- **`kbg:review-pr`** — PR review flow. Article-mine is for external content, not internal diffs.
 
 ### Project conventions
 

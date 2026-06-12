@@ -68,4 +68,4 @@ Done.
 
 - `/deep-dive` — research before the decision
 - `/feature-dev` — implementing the accepted ADR
-- `/migrate` — when an ADR leads to deprecation and migration
+- `kbg:migrate` — when an ADR leads to deprecation and migration

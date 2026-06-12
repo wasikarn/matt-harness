@@ -55,7 +55,7 @@ This is Step 1-3 of the article `agent-teams-workflow` 7-step pipeline (Brain Du
    - Observability (logs, metrics, traces)
 5. **Present all questions to the user in a clear, organized list.** Use `AskUserQuestion` for up to 4 at a time; for > 4, batch them across multiple `AskUserQuestion` calls. The total MUST be ≥ 10.
 6. Wait for answers before Step 3.
-7. Lock the acceptance contract. For non-trivial scope, invoke `/accept-task` to write `.scratch/<slug>/ACCEPTANCE.md` (machine-checkable success criteria) — this is the producer that the build's acceptance-criteria check consumes.
+7. Lock the acceptance contract. For non-trivial scope, invoke `kbg:accept-task` to write `.scratch/<slug>/ACCEPTANCE.md` (machine-checkable success criteria) — this is the producer that the build's acceptance-criteria check consumes.
 
 **Anti-patterns:**
 

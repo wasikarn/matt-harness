@@ -1,6 +1,6 @@
 # review-pr Reference
 
-Static lookup tables for `/review-pr` skill. Loaded on-demand when the skill is invoked; not part of the session prefix cache.
+Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is invoked; not part of the session prefix cache.
 
 ---
 
@@ -20,7 +20,7 @@ Static lookup tables for `/review-pr` skill. Loaded on-demand when the skill is 
 
 ## Agent Descriptions
 
-One-line orientation; **see `/inventory` for current frontmatter descriptions and `~/.claude/agents/<name>.md` for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
+One-line orientation; **see kbg:inventory for current frontmatter descriptions and `~/.claude/agents/<name>.md` for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
 
 | Agent | Specialty |
 |---|---|
@@ -39,14 +39,14 @@ One-line orientation; **see `/inventory` for current frontmatter descriptions an
 - **Focus on changes**: Phase 2's pinned window makes this concrete
 - **Address Critical first**: Phase 6's tier prioritization is the gate
 - **Re-run after fixes**: Verify issues are resolved (new HEAD_SHA = fresh window)
-- **Use specific aspects**: Target specific reviewers when you know the concern (e.g., `/review-pr errors` after touching exception handling)
+- **Use specific aspects**: Target specific reviewers when you know the concern (e.g., kbg:review-pr errors after touching exception handling)
 
 ## Workflow Integration
 
 **Before committing:**
 ```
 1. Write code
-2. Run: /review-pr code errors
+2. Run: kbg:review-pr code errors
 3. Fix any Critical issues
 4. Commit
 ```
@@ -54,7 +54,7 @@ One-line orientation; **see `/inventory` for current frontmatter descriptions an
 **Before creating PR:**
 ```
 1. Stage all changes
-2. Run: /review-pr all
+2. Run: kbg:review-pr all
 3. Address all Critical and Important findings
 4. Run specific reviews again to verify (Phase 2 pins new window)
 5. Create PR
@@ -62,7 +62,7 @@ One-line orientation; **see `/inventory` for current frontmatter descriptions an
 
 **After PR feedback:**
 ```
-1. Use /address-review for reviewer threads (not /review-pr — that's for YOUR review of the diff)
+1. Use /address-review for reviewer threads (not kbg:review-pr — that's for YOUR review of the diff)
 2. Make requested changes (delegate bug-shaped to /fix-bug per /address-review Phase 4)
 3. Verify issues are resolved
 4. Push updates

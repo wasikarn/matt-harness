@@ -65,14 +65,14 @@ Match the situation to the right questioning model. Don't mix models — pick on
 
 | Situation | Framework | Key Pattern |
 |---|---|---|
-| Architecture / design trade-off | **Probe** (`/probe`) | Why? → What if? → Shared fate → Contradiction |
+| Architecture / design trade-off | **Probe** (`kbg:probe`) | Why? → What if? → Shared fate → Contradiction |
 | User task is vague or underspecified | **Coaching Habit** | Kickstart ("What's on your mind?") → Focus ("What's the real challenge?") → Strategic ("What are you saying no to?") |
 | Innovation / feature ideation | **Beautiful Question** | Why? (understand) → What If? (explore) → How? (execute) |
 | Bug with unknown root cause | **Blameless 5 Whys** | Symptom → Immediate cause → Systemic cause. Stop at mechanism, not person. |
 | Requirement elicitation | **5W1H** (Kipling) | Who / What / When / Where / Why / How — cover all six before designing. |
 | Clarifying ambiguous scope or intent | **Socratic Clarification** | "What exactly do you mean by X?" — target meaning, not justification. |
 
-**Rule**: `/probe` is read-only analysis — use it when the user asks "should we..." or "what if...". Use `clarify-first` when Claude needs the user to fill a gap.
+**Rule**: `kbg:probe` is read-only analysis — use it when the user asks "should we..." or "what if...". Use `clarify-first` when Claude needs the user to fill a gap.
 
 **Discipline**: Select one framework internally, but **do NOT output the framework name** (e.g. "Framework: Blameless 5 Whys"). The user doesn't care about the label — they care about the analysis. Keep the selection implicit in the content.
 

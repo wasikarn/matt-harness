@@ -1,6 +1,6 @@
 ---
 name: recursive-improve
-description: "Run ONE bounded, human-gated cycle of harness self-improvement: observe verification + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', 'what should we fix in the harness', or after a session whose verification posture shows gaps. Do NOT use for: a single known bug (use /fix-bug), a new feature (use /feature-dev), external-tool/article evaluation (use /article-mine), refactoring a specific module (use maintenance-engineer), or any autonomous/unattended run — this ritual is human-gated by design and has no autonomous mode."
+description: "Run ONE bounded, human-gated cycle of harness self-improvement: observe verification + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', 'what should we fix in the harness', or after a session whose verification posture shows gaps. Do NOT use for: a single known bug (use /fix-bug), a new feature (use /feature-dev), external-tool/article evaluation (use kbg:article-mine), refactoring a specific module (use maintenance-engineer), or any autonomous/unattended run — this ritual is human-gated by design and has no autonomous mode."
 disable-model-invocation: true
 ---
 
@@ -27,7 +27,7 @@ loop's real stop condition; the iteration cap is only a context-exhaustion backs
 deliberate cycle.
 
 **When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/feature-dev`), an
-external tool/article (`/article-mine`), or anything unattended. If you cannot present the
+external tool/article (`kbg:article-mine`), or anything unattended. If you cannot present the
 proposal to a human and wait, **stop** — do not proceed plan-only into execution.
 
 ---
@@ -86,7 +86,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 ### 2. Propose — decompose + rank (model judgment)
 
 - Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — inline, do
-  not delegate to `/orchestrate`). If you cannot name the boundary between two candidates, they
+  not delegate to `kbg:orchestrate`). If you cannot name the boundary between two candidates, they
   are entangled — split further or sequence them.
 - Rank by impact × cost × risk. State, per candidate: what changes, who executes (inline vs
   which agent), blast radius (low / medium / high), dependencies (none / chain).

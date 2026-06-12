@@ -15,7 +15,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
    - `Bug fix (Recommended when repro steps or error symptoms are present and the goal is to correct existing behavior)`
    - `New feature (Recommended when adding new behavior, UI, or capability that didn't exist before)`
    - `Refactor (Recommended when restructuring code without changing external behavior)`
-4. Scope check: if the description spans multiple independent subsystems, STOP and propose decomposition. Each subsystem gets its own `/ship-change` run.
+4. Scope check: if the description spans multiple independent subsystems, STOP and propose decomposition. Each subsystem gets its own `kbg:ship-change` run.
 5. Output: classification + scope confirmation.
 
 **Next**: Phase 2 (Implement).
@@ -43,12 +43,12 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 **Goal**: Review your own diff before opening a PR.
 
 **Actions**:
-1. **Security check first**: For high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests), tell user: "Run `/security-auditor` for a comprehensive audit before `/review-pr`." For a routine auth/secrets-touching diff, the `security-reviewer` pass inside `/review-pr` is enough — don't run both (see `security-auditor` SKILL.md for the canonical agent-vs-skill rule).
-2. Tell user: "Run `/review-pr` to review the changes before opening a PR."
-3. Wait for `/review-pr` to complete.
+1. **Security check first**: For high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests), tell user: "Run `kbg:security-auditor` for a comprehensive audit before `kbg:review-pr`." For a routine auth/secrets-touching diff, the `security-reviewer` pass inside `kbg:review-pr` is enough — don't run both (see `security-auditor` SKILL.md for the canonical agent-vs-skill rule).
+2. Tell user: "Run `kbg:review-pr` to review the changes before opening a PR."
+3. Wait for `kbg:review-pr` to complete.
 4. If Critical findings were raised, fix them before proceeding (return to Phase 2 with a narrowed scope, or fix inline if trivial).
 
-**Precondition gate**: `/review-pr` must return zero Critical findings before proceeding.
+**Precondition gate**: `kbg:review-pr` must return zero Critical findings before proceeding.
 
 **Next**: Phase 4 (Open PR / Address Feedback).
 
@@ -61,7 +61,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 **Actions**:
 1. Tell user: "Open the PR. If external or automated review returns comments, return here and run `/address-review`."
 2. If `/address-review` is run, wait for it to complete.
-3. After `/address-review` finishes, return to Phase 3 (re-run `/review-pr` on the updated diff) before declaring done.
+3. After `/address-review` finishes, return to Phase 3 (re-run `kbg:review-pr` on the updated diff) before declaring done.
 
 **Precondition gate**: all review threads must be addressed (zero open actionable threads).
 
@@ -80,7 +80,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
    - Run deterministic acceptance: `python3 scripts/run-acceptance.py <slug>`. Save `acceptance-results.json` to `.scratch/<slug>/proofs/`.
    - Fresh-context adversarial review: spawn `code-reviewer` or `security-reviewer` with no prior context, capture findings to `.scratch/<slug>/proofs/adversarial-review.md`.
    - **Gate**: if NONE of the above are available → STOP. Tell user: "Proof missing. Run at least one verification step before merge."
-2. **Verify acceptance contract** (if the task locked one via `/accept-task`):
+2. **Verify acceptance contract** (if the task locked one via `kbg:accept-task`):
    - Run `/pre-ship-verify <slug>`.
    - If RED → fix before merge.
    - If AMBER → confirm manual criteria are met.
@@ -95,7 +95,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 
 ## Failure Modes to Avoid
 
-- **Circular handoffs**: never tell the user to re-run `/ship-change` from within a phase. Use the specific phase command instead.
-- **Skipping review**: Phase 3 is non-negotiable. No PR opens without `/review-pr` first.
+- **Circular handoffs**: never tell the user to re-run `kbg:ship-change` from within a phase. Use the specific phase command instead.
+- **Skipping review**: Phase 3 is non-negotiable. No PR opens without `kbg:review-pr` first.
 - **Silent merges**: Phase 5 requires explicit `/ship-merge` invocation — don't imply the user should merge manually.
 - **Bloated orchestrator**: if you find yourself adding implementation detail (e.g., "how to write a test"), that belongs in `/fix-bug` or `/feature-dev`, not here.

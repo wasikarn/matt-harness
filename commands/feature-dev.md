@@ -72,7 +72,7 @@ Initial request: $ARGUMENTS
 2. Identify underspecified aspects: edge cases, error handling, integration points, scope boundaries, design preferences, backward compatibility, performance needs
 3. **Present all questions to the user in a clear, organized list**
 4. **Wait for answers before proceeding to architecture design**
-5. **Lock the acceptance contract before Phase 4.** For non-trivial scope, invoke `/accept-task` to write `.scratch/<slug>/ACCEPTANCE.md` (machine-checkable success criteria) before architecture design begins — it is the producer that the review's acceptance-gap check consumes downstream. `/accept-task` self-gates triviality, so trivial work passes straight through; don't restate the threshold here. Cross-reference (don't duplicate) the informal acceptance criteria from Phase 1 discovery.
+5. **Lock the acceptance contract before Phase 4.** For non-trivial scope, invoke `kbg:accept-task` to write `.scratch/<slug>/ACCEPTANCE.md` (machine-checkable success criteria) before architecture design begins — it is the producer that the review's acceptance-gap check consumes downstream. `kbg:accept-task` self-gates triviality, so trivial work passes straight through; don't restate the threshold here. Cross-reference (don't duplicate) the informal acceptance criteria from Phase 1 discovery.
 
 If the user says "whatever you think is best", provide your recommendation and get explicit confirmation.
 
@@ -177,7 +177,7 @@ If the user says "whatever you think is best", provide your recommendation and g
      - If not yet reviewed → invoke `review-pr` skill
      - If review addressed and approved → `/ship-merge`
      - If status update needed → `/status-update [channel] [summary]`
-     - If this was backend work → `/backend-dev` can preload TDD + architecture skills for the next iteration
+     - If this was backend work → `kbg:backend-dev` can preload TDD + architecture skills for the next iteration
 
 ---
 

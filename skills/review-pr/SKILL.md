@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready for review, after addressing reviewer feedback, or when user says 'review my changes', 'review the PR', or specifies aspects ('/review-pr tests errors'). Don't use for: single-file diffs (just review inline), security-only audits (use /security-auditor), post-merge retrospectives, or calling a single agent directly (use the Agent tool instead)."
+description: "Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready for review, after addressing reviewer feedback, or when user says 'review my changes', 'review the PR', or specifies aspects ('kbg:review-pr tests errors'). Don't use for: single-file diffs (just review inline), security-only audits (use kbg:security-auditor), post-merge retrospectives, or calling a single agent directly (use the Agent tool instead)."
 ---
 
 # Comprehensive PR Review
@@ -71,7 +71,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - `security` aspect (or `all`) AND changes touch auth/secrets/external input → `security-reviewer`
    - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `type-design-analyzer`
    - `ux` aspect (or `all`) AND user-facing UI/components/copy/flows changed → `ux-reviewer`
-2. **Aspect arg overrides Phase 3's defaults.** `/review-pr tests` runs ONLY pr-test-analyzer (even though code-reviewer is "always applicable" under `all`). `/review-pr code tests` runs code-reviewer + pr-test-analyzer.
+2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY pr-test-analyzer (even though code-reviewer is "always applicable" under `all`). `kbg:review-pr code tests` runs code-reviewer + pr-test-analyzer.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
 
 **Note**: `code-simplifier` is **NOT a reviewer** — it's an optional post-review polish step. See Phase 7 step 2 next-step suggestions.
@@ -148,7 +148,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
-   **Acceptance-contract check** (only if the task locked one via `/accept-task`): look for `.scratch/<slug>/ACCEPTANCE.md`. If absent, skip this silently. If present, **run machine-checkable criteria first**, then cross-check findings:
+   **Acceptance-contract check** (only if the task locked one via `kbg:accept-task`): look for `.scratch/<slug>/ACCEPTANCE.md`. If absent, skip this silently. If present, **run machine-checkable criteria first**, then cross-check findings:
    1. **Machine layer:** Run `python3 scripts/run-acceptance.py <slug>` (or invoke `/pre-ship-verify <slug>`). Read `acceptance-results.json`.
       - Any `failed` or `blocked` criteria → treat as **Critical [acceptance-gap]** regardless of review findings. The contract is broken.
       - Skipped criteria (prose/manual) → proceed to human layer below.
@@ -204,9 +204,9 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - Agents dispatched + their tier counts (e.g. "code-reviewer: 2 Critical / 3 Important / 0 Minor")
    - User decision (author flow: fixed-now / deferred / proceeded-as-is; reviewer flow: posted line-level / posted summary / fixed+pushed / skipped)
    - **Suggested next steps** (pick what applies):
-     - Wants clarity polish after fixes → invoke `code-simplifier` agent as follow-up (NOT part of /review-pr itself)
+     - Wants clarity polish after fixes → invoke `code-simplifier` agent as follow-up (NOT part of kbg:review-pr itself)
      - At PR-ready → `/ship-merge` (or push for review)
-     - Review needs another pass after fixes → re-run `/review-pr` (Phase 2 pins a new HEAD_SHA window)
+     - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA window)
      - Reviewer comments came back externally → `/address-review`
      - Reviewer flow (PR #N), review posted → done; ping the author / await their `/address-review`
 3. **Submit the review to GitHub** (gated — never auto-submit; posting a review is outward-facing). Posts findings as **individual line-level review comments** so the author sees each issue in context — not just a single top-level summary.
@@ -241,7 +241,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      ```bash
      python3 "$HOME/.claude/scripts/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
      ```
-     If the script exits **0**, the `findings.jsonl` is now a stable set of `review_finding` + `verification_verdict` pairs in `~/.claude/governance-events.jsonl`, linked by `verdict.subject_id == finding.id`. A `.journaled` marker in the scratch dir prevents re-runs. **If the script exits 2** (malformed JSON, missing `findings.jsonl`), capture the error verbatim in the Phase 7 summary under `Journaler:` as a silent FYI — the submit (step 3) and the worktree cleanup (step 5) are NOT unwound. The user's review is still posted; the journal just isn't. Re-runnable on the next `/review-pr` call (the marker is the only state; nothing in the journal itself blocks re-emit). This step runs AFTER the submit (so a journaler failure cannot prevent the user-visible review) and BEFORE the worktree cleanup (so the scratch dir still exists when the script reads it).
+     If the script exits **0**, the `findings.jsonl` is now a stable set of `review_finding` + `verification_verdict` pairs in `~/.claude/governance-events.jsonl`, linked by `verdict.subject_id == finding.id`. A `.journaled` marker in the scratch dir prevents re-runs. **If the script exits 2** (malformed JSON, missing `findings.jsonl`), capture the error verbatim in the Phase 7 summary under `Journaler:` as a silent FYI — the submit (step 3) and the worktree cleanup (step 5) are NOT unwound. The user's review is still posted; the journal just isn't. Re-runnable on the next `kbg:review-pr` call (the marker is the only state; nothing in the journal itself blocks re-emit). This step runs AFTER the submit (so a journaler failure cannot prevent the user-visible review) and BEFORE the worktree cleanup (so the scratch dir still exists when the script reads it).
 5. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.
 6. **Clear the review-pr-marker** so the PostToolUse:Bash hook stops nudging after the session ends:
    ```bash
@@ -258,7 +258,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - Each agent focuses on its specialty for deep analysis
 - Results are actionable with specific file:line references
 - Agents use models per their frontmatter (`model:` field)
-- Routed agents listed via `/inventory` (your skill that lists everything available) or `claude agents` CLI — **not** `/agents` (that's a UI command for managing definitions, not a listing)
+- Routed agents listed via `kbg:inventory` (your skill that lists everything available) or `claude agents` CLI — **not** `/agents` (that's a UI command for managing definitions, not a listing)
 
 ---
 
@@ -273,7 +273,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: secret-scan runs on all diffs automatically. doctrine-edit-gate protects CLAUDE.md/METHODOLOGY.md from mid-session edits.
 - **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
-- **Review routing reference**: Code that touches auth/secrets → `/security-auditor` for full audit. General code → code-reviewer. Tests → pr-test-analyzer. Comments → comment-analyzer. Error handling → silent-failure-hunter. Polish → code-simplifier (post-review opt-in, **not** part of /review-pr).
-- **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/feature-dev` Phase 6, `/fix-bug` Phase 7, and `/review-pr` Phase 5 — normalized in commit `9e89bf2`.
+- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests → pr-test-analyzer. Comments → comment-analyzer. Error handling → silent-failure-hunter. Polish → code-simplifier (post-review opt-in, **not** part of kbg:review-pr).
+- **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/feature-dev` Phase 6, `/fix-bug` Phase 7, and `kbg:review-pr` Phase 5 — normalized in commit `9e89bf2`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.

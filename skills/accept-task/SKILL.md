@@ -1,14 +1,14 @@
 ---
 name: accept-task
 last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
-description: 'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that /review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
+description: 'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that kbg:review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
 ---
 
 # Accept Task
 
 Agents optimize for what looks done. Without a contract written **before** execution, "acceptance" becomes a post-hoc rationalization of whatever the agent produced — you read the diff and decide it's fine, which is hope, not verification. This skill locks the success criteria at task start, when you still have the clearest view of what "done" means, so a later review checks the work against a fixed target instead of against the work itself.
 
-This is the **Acceptance** stage of the operation flow (`Task → Ritual → Acceptance → Execute → Verify → Evidence → Session → Retro`). It pairs with [[review-pr]]: accept-task writes the contract, `/review-pr` Phase 6 verifies the work met it. The invariant: **every non-trivial task has acceptance, authored before execution.**
+This is the **Acceptance** stage of the operation flow (`Task → Ritual → Acceptance → Execute → Verify → Evidence → Session → Retro`). It pairs with kbg:review-pr: accept-task writes the contract, `kbg:review-pr` Phase 6 verifies the work met it. The invariant: **every non-trivial task has acceptance, authored before execution.**
 
 ## When to use
 
@@ -43,7 +43,7 @@ Write `.scratch/<slug>/ACCEPTANCE.md`. `<slug>` is the feature/fix kebab-case na
 <!-- append-only: if a criterion must change after lock, log "<date> — <what> — <why>" -->
 ```
 
-`.scratch/` is gitignored — this is a **working-tree contract** for the current task, not a permanent audit record. (Permanent rationale belongs in memory; cryptographic presence/absence proof belongs in [[assert-presence]] / [[decommission]].)
+`.scratch/` is gitignored — this is a **working-tree contract** for the current task, not a permanent audit record. (Permanent rationale belongs in memory; cryptographic presence/absence proof belongs in kbg:assert-presence / kbg:decommission.)
 
 ## Workflow
 
@@ -52,7 +52,7 @@ Write `.scratch/<slug>/ACCEPTANCE.md`. `<slug>` is the feature/fix kebab-case na
 3. **Make each criterion machine-checkable** — rewrite vague criteria into falsifiable ones. "Works correctly" → "`npm test` exits 0 and `tests/auth.spec.ts` covers the null-token path". If a criterion can't be made checkable, mark it `(manual)` and say how it's judged.
 4. **Capture the start point** — `git rev-parse HEAD` for `start-sha`, current UTC for `accepted`.
 5. **Write `ACCEPTANCE.md`** — fill the template. Name the executor (which agent[s] will do the work).
-6. **Proceed to execution** — the contract is now the target. At review time, `/review-pr` Phase 6 reads it and flags findings that leave a locked criterion unmet as `[acceptance-gap]` (rework), distinct from beyond-contract improvements.
+6. **Proceed to execution** — the contract is now the target. At review time, `kbg:review-pr` Phase 6 reads it and flags findings that leave a locked criterion unmet as `[acceptance-gap]` (rework), distinct from beyond-contract improvements.
 
 ## Anti-patterns
 

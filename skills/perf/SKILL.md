@@ -1,6 +1,6 @@
 ---
 name: perf
-description: "Investigate and fix performance regressions or bottlenecks. ALWAYS trigger when latency spikes or jumps, throughput drops, memory grows or leaks, CPU saturates, queries slow down, cache hit rate falls, builds or CI slow down, cold starts increase, resolvers time out, ETL pipelines slow, or users report slowness. Do NOT use for: production outages (use /incident or /hotfix), functional bugs with no performance symptom (use /fix-bug or /diagnose), architectural redesigns (use /deep-dive or code-architect), capacity planning, or feature requests that mention speed."
+description: "Investigate and fix performance regressions or bottlenecks. ALWAYS trigger when latency spikes or jumps, throughput drops, memory grows or leaks, CPU saturates, queries slow down, cache hit rate falls, builds or CI slow down, cold starts increase, resolvers time out, ETL pipelines slow, or users report slowness. Do NOT use for: production outages (use kbg:incident or kbg:hotfix), functional bugs with no performance symptom (use /fix-bug or /diagnose), architectural redesigns (use /deep-dive or code-architect), capacity planning, or feature requests that mention speed."
 ---
 
 # Perf
@@ -9,7 +9,7 @@ Performance work is measurement work. If you can't reproduce the numbers, you ca
 
 **When to use:** Latency spikes, throughput drops, memory growth, CPU saturation, user-reported slowness.
 
-**When NOT to use:** Production outages (service is down or severely degraded — use /incident), architectural redesigns, capacity planning. If users report slowness but the service is still up, this is a performance regression, not an incident.
+**When NOT to use:** Production outages (service is down or severely degraded — use kbg:incident), architectural redesigns, capacity planning. If users report slowness but the service is still up, this is a performance regression, not an incident.
 
 ---
 
@@ -58,7 +58,7 @@ Done.
 ## Related
 
 - `/diagnose` — issue might be correctness, not performance
-- `/incident` — live production incident
-- `/hotfix` — fix must ship under incident conditions
+- `kbg:incident` — live production incident
+- `kbg:hotfix` — fix must ship under incident conditions
 - `/fix-bug` — performance issue caused by functional bug
 - `/deep-dive` — bottleneck requires architectural redesign
