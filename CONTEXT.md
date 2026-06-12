@@ -3,6 +3,10 @@
 Domain language for `kbg-harness` — a personal Claude Code harness delivered as a
 Claude Code plugin.
 
+> **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) first
+> (≤500 tokens; 10-minute cold-start). Come back for the bounded-context model
+> once you know what ships where.
+
 ## Bounded context
 
 **Personal-harness-as-plugin (Option A), post-cutover.** The repo is the owner's

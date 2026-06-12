@@ -80,8 +80,11 @@ No support SLA; best-effort, pre-`1.0.0`. The full delivery rationale lives in
 
 ## Documentation
 
-Supporting docs (start with [`CONTEXT.md`](CONTEXT.md) for the bounded-context model):
+**First time here?** Start with [`docs/onboarding.md`](docs/onboarding.md) (10-min cold-start).
 
+Supporting docs:
+
+- [`docs/onboarding.md`](docs/onboarding.md) — 10-minute cold-start (≤500 tokens)
 - [`CONTEXT.md`](CONTEXT.md) — domain language, autonomy invariant, delivery model
 - [`METHODOLOGY.md`](METHODOLOGY.md) — 13-rule behavioral doctrine
 - [`CHANGELOG.md`](CHANGELOG.md) — release notes (Keep-a-Changelog, SemVer)
