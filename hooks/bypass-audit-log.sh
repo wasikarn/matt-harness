@@ -45,16 +45,16 @@ fi
 EXCERPT=""
 case "$TOOL" in
   Bash)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.command // ""' 2>/dev/null | tr '\n' ' ' | cut -c1-100)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // ""' 2>/dev/null | tr '\n' ' ' | cut -c1-100)
     ;;
   Edit|Write|MultiEdit)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.file_path // ""' 2>/dev/null | cut -c1-100)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // ""' 2>/dev/null | cut -c1-100)
     ;;
   WebFetch)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.url // ""' 2>/dev/null | cut -c1-100)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.url // ""' 2>/dev/null | cut -c1-100)
     ;;
   *)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -rc '.' 2>/dev/null | cut -c1-100)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -rc '.' 2>/dev/null | cut -c1-100)
     ;;
 esac
 

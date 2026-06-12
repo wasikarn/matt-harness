@@ -14,15 +14,15 @@ source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
 CWD="${CLAUDE_PROJECT_DIR:-$PWD}"
-SLUG=$(echo "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
+SLUG=$(printf '%s\n' "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
 
 SESSIONS_DIR="${HOME}/.claude/sessions"
 mkdir -p "$SESSIONS_DIR" 2>/dev/null
 SUMMARY_FILE="${SESSIONS_DIR}/${SLUG}.md"
 
-TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
-REASON=$(echo "$INPUT" | jq -r '.reason // empty' 2>/dev/null)
-SESSION_ID_VAL=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+TRANSCRIPT=$(printf '%s\n' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+REASON=$(printf '%s\n' "$INPUT" | jq -r '.reason // empty' 2>/dev/null)
+SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 BRANCH=$(git -C "$CWD" rev-parse --abbrev-ref HEAD 2>/dev/null)
@@ -39,13 +39,13 @@ COMMITS=$(git -C "$CWD" log --oneline -3 2>/dev/null)
   if [ -n "$STATUS" ]; then
     echo "**Working copy:**"
     echo '```'
-    echo "$STATUS"
+    printf '%s\n' "$STATUS"
     echo '```'
   fi
   if [ -n "$COMMITS" ]; then
     echo "**Recent commits:**"
     echo '```'
-    echo "$COMMITS"
+    printf '%s\n' "$COMMITS"
     echo '```'
   fi
   [ -n "$TRANSCRIPT" ] && echo "**Transcript:** \`${TRANSCRIPT}\`"

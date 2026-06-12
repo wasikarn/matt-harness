@@ -18,10 +18,10 @@ input=$(cat)
 # for other events `// false` defaults to false → we proceed to notify normally.
 # If jq is missing the 2>/dev/null swallows the error and the empty result
 # fails the equality check, so we proceed (safe fallback, matches old behavior).
-if [ "$(echo "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ]; then
+if [ "$(printf '%s\n' "$input" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ]; then
   exit 0
 fi
 
 # Forward the original stdin to Superset's notify.sh. `|| true` mirrors the
 # original inline behavior of swallowing notify.sh failures.
-echo "$input" | SUPERSET_AGENT_ID=claude "$SUPERSET_HOME_DIR/hooks/notify.sh" || true
+printf '%s\n' "$input" | SUPERSET_AGENT_ID=claude "$SUPERSET_HOME_DIR/hooks/notify.sh" || true

@@ -27,11 +27,20 @@ FILE=$(printf '%s' "$INPUT" | jq -r '.file_path // .file // "unknown"' 2>/dev/nu
 # changes: skip when the file's hash equals the last one we logged for that path.
 if [ "$FILE" != "unknown" ] && [ -f "$FILE" ]; then
   HASHES="$HOME/.claude/.config-change-hashes"
-  NEWHASH=$(shasum -a 256 "$FILE" 2>/dev/null | cut -d' ' -f1)
+  # P1: sha256sum is GNU; shasum is BSD/macOS. Try both for portability.
+  if command -v sha256sum >/dev/null 2>&1; then
+    NEWHASH=$(sha256sum "$FILE" 2>/dev/null | awk '{print $1}')
+  elif command -v shasum >/dev/null 2>&1; then
+    NEWHASH=$(shasum -a 256 "$FILE" 2>/dev/null | awk '{print $1}')
+  else
+    NEWHASH=""
+  fi
   OLDHASH=$(awk -F'\t' -v p="$FILE" '$2==p{h=$1} END{print h}' "$HASHES" 2>/dev/null || true)
   if [ -n "$NEWHASH" ] && [ "$NEWHASH" = "$OLDHASH" ]; then exit 0; fi
   if [ -n "$NEWHASH" ]; then
-    { awk -F'\t' -v p="$FILE" '$2!=p' "$HASHES" 2>/dev/null || true; printf '%s\t%s\n' "$NEWHASH" "$FILE"; } > "$HASHES.tmp" && mv "$HASHES.tmp" "$HASHES"
+    # P1: use mktemp for atomic update instead of predictable $HASHES.tmp
+    HASH_TMP=$(mktemp "$(dirname "$HASHES")/.config-change-hashes.XXXXXX")
+    { awk -F'\t' -v p="$FILE" '$2!=p' "$HASHES" 2>/dev/null || true; printf '%s\t%s\n' "$NEWHASH" "$FILE"; } > "$HASH_TMP" && mv "$HASH_TMP" "$HASHES"
   fi
 fi
 

@@ -54,7 +54,7 @@ if ! [[ "$AGENT_TYPE" =~ $VALIDATORS ]]; then
   exit 0
 fi
 
-COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
+COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse tool_input.command" >&2
   exit 1
 }
@@ -68,8 +68,8 @@ DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space
 
 # 1. Full-command deny check — catches quoted mutations that
 # hook_strip_quoted would strip away.
-if echo "$COMMAND" | command grep -qE "$DENY_PATTERNS"; then
-  matched=$(echo "$COMMAND" | command grep -oE "$DENY_PATTERNS" | head -1)
+if printf '%s\n' "$COMMAND" | command grep -qE "$DENY_PATTERNS"; then
+  matched=$(printf '%s\n' "$COMMAND" | command grep -oE "$DENY_PATTERNS" | head -1)
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
@@ -86,7 +86,7 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # allow-list because quote-stripping made them bypass vectors (any
 # payload inside quotes was invisible after hook_strip_quoted).
 ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]])'
-if echo "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES"; then
+if printf '%s\n' "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES"; then
   exit 0
 fi
 
@@ -95,15 +95,15 @@ fi
 # defined with no body, calls itself + pipes to itself in background, terminated
 # with `;:`. Some variants use `;}`. Match the structural shape (function
 # definition + self-recursion + background pipe) rather than the exact terminator.
-if echo "$STRIPPED" | command grep -qE ':[[:space:]]*\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\}[[:space:]]*;'; then
+if printf '%s\n' "$STRIPPED" | command grep -qE ':[[:space:]]*\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\}[[:space:]]*;'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted fork-bomb pattern: $COMMAND. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
 # 2. Stripped-command deny check — preserves existing unquoted-mutation
 # detection and catches anything the full-command check missed.
-if echo "$STRIPPED" | command grep -qE "$DENY_PATTERNS"; then
-  matched=$(echo "$STRIPPED" | command grep -oE "$DENY_PATTERNS" | head -1)
+if printf '%s\n' "$STRIPPED" | command grep -qE "$DENY_PATTERNS"; then
+  matched=$(printf '%s\n' "$STRIPPED" | command grep -oE "$DENY_PATTERNS" | head -1)
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi

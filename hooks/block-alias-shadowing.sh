@@ -27,7 +27,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
+COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse tool_input.command" >&2
   exit 1
 }

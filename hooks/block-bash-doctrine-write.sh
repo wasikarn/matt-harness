@@ -24,7 +24,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
+COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse tool_input.command" >&2
   exit 1
 }
@@ -41,7 +41,8 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK|ACLI|DBGATE)\.md|settings\.json|\.mcp\.json|mcp-servers\.json'
 
 # Doctrine path: either dotfiles repo claude/, runtime .claude/, or the extracted kbg-harness/ source root.
-DOCTRINE_PATH_RE="(/claude/(${DOCTRINE_NAMES})|/\.claude/(${DOCTRINE_NAMES})|/kbg-harness/(${DOCTRINE_NAMES}))"
+# Match doctrine files at the root OR nested inside claude/.claude/kbg-harness directories.
+DOCTRINE_PATH_RE="(/claude/.*|/\.claude/.*|/kbg-harness/.*)(${DOCTRINE_NAMES})"
 
 # Write-op tokens (shell-statement-boundaries to reduce false positives).
 SEP='(^|[[:space:];&|()`])'
@@ -49,8 +50,8 @@ WRITE_OPS_RE="${SEP}(>>?[[:space:]]|tee[[:space:]]|sed[[:space:]]+-i|cp[[:space:
 
 # Both conditions must hold: a write-op token AND a doctrine path.
 # Use 'command grep' to resist alias shadowing (matches secret-scan, block-dangerous-git).
-if echo "$STRIPPED" | command grep -qE "$WRITE_OPS_RE" && echo "$STRIPPED" | command grep -qE "$DOCTRINE_PATH_RE"; then
-  matched=$(echo "$STRIPPED" | command grep -oE "$DOCTRINE_PATH_RE" | head -1)
+if printf '%s\n' "$STRIPPED" | command grep -qE "$WRITE_OPS_RE" && printf '%s\n' "$STRIPPED" | command grep -qE "$DOCTRINE_PATH_RE"; then
+  matched=$(printf '%s\n' "$STRIPPED" | command grep -oE "$DOCTRINE_PATH_RE" | head -1)
   hook_decision deny "Bash command writes to doctrine file ($matched). Use Edit/Write tool instead — it routes through doctrine-edit-gate uniformly. Bypass: CLAUDE_DISABLED_HOOKS=block-bash-doctrine-write"
 fi
 

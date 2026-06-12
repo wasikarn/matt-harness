@@ -80,7 +80,7 @@ clean_token() {
 
 case "$TOOL" in
   Read)
-    FP=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty') || {
+    FP=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // empty') || {
       echo "[$HOOK_ID] ERROR: failed to parse Read file_path" >&2
       exit 1
     }
@@ -90,15 +90,15 @@ case "$TOOL" in
     fi
     ;;
   Bash)
-    COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
+    COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
       echo "[$HOOK_ID] ERROR: failed to parse Bash command" >&2
       exit 1
     }
     [ -z "$COMMAND" ] && exit 0
 
-    # Strip comments, then DELETE quote characters but keep their contents, so
-    # a quoted path (cat "$HOME/.ssh/id_rsa") stays inspectable.
-    STRIPPED=$(echo "$COMMAND" | sed -E 's/#.*$//g' | tr -d '"'\''')
+    # Strip comments, then DELETE quote characters AND backslashes so
+    # escaped quotes (\" or \') can't hide a secret path.
+    STRIPPED=$(printf '%s\n' "$COMMAND" | sed -E 's/#.*$//g' | tr -d '"'\''\\')
 
     # Break into command segments on shell operators + command-substitution
     # boundaries, so each segment is a single simple command we can judge by

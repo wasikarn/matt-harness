@@ -30,7 +30,7 @@ hook_init "$HOOK_ID" || exit 0
 
 command -v jq >/dev/null 2>&1 || exit 0
 
-TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+TRANSCRIPT=$(printf '%s\n' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ] && exit 0
 
 # Scope to the current turn: slice from the last *human* prompt to the end.
@@ -57,7 +57,7 @@ SCOPED=$(jq -s '
 ' "$TRANSCRIPT" 2>/dev/null)
 [ -z "$SCOPED" ] && exit 0
 
-PROSE=$(echo "$SCOPED" | jq -r '.prose // empty' 2>/dev/null)
+PROSE=$(printf '%s\n' "$SCOPED" | jq -r '.prose // empty' 2>/dev/null)
 [ -z "$PROSE" ] && exit 0
 
 # Fabrication-verdict phrases (English + Thai). Logger tolerates some noise.
@@ -71,16 +71,16 @@ PROSE=$(echo "$SCOPED" | jq -r '.prose // empty' 2>/dev/null)
 # is inherent and accepted; the detector's value is in non-meta sessions.
 VERDICT_RE='fabricated|does(n.?t| not) exist|no such (thing|field|param|setting|feature|key|option)|not a real|made[ -]up|isn.?t real|is not real|invented (feature|param|rationale|setting)|ไม่มีจริง|กุขึ้น'
 
-echo "$PROSE" | command grep -qiE "$VERDICT_RE" || exit 0
+printf '%s\n' "$PROSE" | command grep -qiE "$VERDICT_RE" || exit 0
 
 # A verdict was emitted this turn. Gather context for review.
-VERDICT=$(echo "$PROSE" | command grep -oiE "$VERDICT_RE" | head -1)
-SNIPPET=$(echo "$PROSE" | command grep -iE "$VERDICT_RE" | head -1 | cut -c1-160 | tr '\t\n' '  ')
+VERDICT=$(printf '%s\n' "$PROSE" | command grep -oiE "$VERDICT_RE" | head -1)
+SNIPPET=$(printf '%s\n' "$PROSE" | command grep -iE "$VERDICT_RE" | head -1 | cut -c1-160 | tr '\t\n' '  ')
 
 # Ground-truth tool calls this turn (external/authoritative sources).
 GT_RE='WebFetch|WebSearch|context7|qmd|^Bash$|^Read$|^Grep$|code-review-graph'
-TOOLS_CSV=$(echo "$SCOPED" | jq -r '.tools | join(",")' 2>/dev/null)
-GT_COUNT=$(echo "$SCOPED" | jq -r --arg re "$GT_RE" '[.tools[] | select(test($re))] | length' 2>/dev/null)
+TOOLS_CSV=$(printf '%s\n' "$SCOPED" | jq -r '.tools | join(",")' 2>/dev/null)
+GT_COUNT=$(printf '%s\n' "$SCOPED" | jq -r --arg re "$GT_RE" '[.tools[] | select(test($re))] | length' 2>/dev/null)
 [ -z "$GT_COUNT" ] && GT_COUNT=0
 
 # Log format is 6 columns: ts, sid, gt_count, tools_csv, verdict, snippet.

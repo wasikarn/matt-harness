@@ -24,7 +24,7 @@ LOG="$HOME/.claude/post-edit-audit.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 
 # Extract file path from Edit/Write tool_input
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null) || exit 0
+FILE=$(printf '%s\n' "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty' 2>/dev/null) || exit 0
 [ -z "$FILE" ] && exit 0
 
 TS=$(date '+%Y-%m-%dT%H:%M:%S')

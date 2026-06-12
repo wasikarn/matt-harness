@@ -21,7 +21,7 @@
     },
     {
       "id": "harness-audit-schema-rot",
-      "task": "Verify that harness-audit detects schema-rot in skills missing canonical sections",
+      "task": "Verify that harness-audit reports no schema-rot after P2 closure sweep",
       "skill": "harness-audit",
       "context": {
         "repo_root": "/Users/kobig/Codes/Personals/kbg-harness",
@@ -29,8 +29,8 @@
       },
       "success_criteria": [
         "Audit script exits 0",
-        "schema-rot",
-        "missing canonical sections"
+        "Critical: 0",
+        "Warnings: 0"
       ],
       "expected_duration_seconds": 20,
       "expected_tokens": 3000,

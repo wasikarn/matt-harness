@@ -1,0 +1,26 @@
+{
+  "skill_name": "task-sizing",
+  "last_reviewed_reason": "generated in 2026-06-12 P2 closure sweep; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "well-formed-plan",
+      "prompt": "Size a task to add OAuth2 login to the app.",
+      "expected_output": "A plan with 3-7 concrete steps, each <30 min, with done-when criteria. Not oversized (vague 'implement auth') and not undersized (1-step crumbs).",
+      "assertions": [
+        {
+          "name": "step_count_reasonable",
+          "description": "Response lists 3-7 concrete steps"
+        },
+        {
+          "name": "done_when_present",
+          "description": "Response includes done-when or acceptance criteria per step"
+        },
+        {
+          "name": "not_vague",
+          "description": "Steps are specific, not 'implement auth' style vague"
+        }
+      ]
+    }
+  ]
+}

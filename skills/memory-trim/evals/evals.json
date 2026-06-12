@@ -1,0 +1,22 @@
+{
+  "skill_name": "memory-trim",
+  "last_reviewed_reason": "generated in 2026-06-12 P2 closure sweep; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "dry-run-first",
+      "prompt": "Trim my memory. MEMORY.md is getting too long.",
+      "expected_output": "Runs memory-trim.sh in plan (dry-run) mode first, then waits for human confirmation before apply.",
+      "assertions": [
+        {
+          "name": "dry_run_mentioned",
+          "description": "Response mentions plan or dry-run mode"
+        },
+        {
+          "name": "a3_rubric_present",
+          "description": "Response references the A3 rubric (<2KB delta, <30 min, reversible)"
+        }
+      ]
+    }
+  ]
+}

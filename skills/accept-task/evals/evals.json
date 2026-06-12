@@ -1,0 +1,22 @@
+{
+  "skill_name": "accept-task",
+  "last_reviewed_reason": "generated in 2026-06-12 P2 closure sweep; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "contract-locked-before-execution",
+      "prompt": "Start a task to refactor the billing module. Lock acceptance.",
+      "expected_output": "Creates .scratch/<slug>/ACCEPTANCE.md with locked criteria, start-SHA, and timestamp before any execution.",
+      "assertions": [
+        {
+          "name": "acceptance_md_present",
+          "description": "Response mentions ACCEPTANCE.md"
+        },
+        {
+          "name": "locked_criteria_present",
+          "description": "Response includes success criteria or done-when conditions"
+        }
+      ]
+    }
+  ]
+}

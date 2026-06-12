@@ -106,3 +106,21 @@ Add new checks to `audit.sh` in the order they appear. Each check emits:
 
 - **Rule 10 (Checkpoint):** every check runs independently; one failure doesn't mask others.
 - **Rule 12 (Fail loud):** exit code = finding count; zero is the only silent success.
+
+## Input Contract
+
+- **Trigger phrases:** See `description` in SKILL.md frontmatter.
+- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
+- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
+
+## Output Format
+
+- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
+- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
+- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
+
+## Failure Modes
+
+- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
+- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
+- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.

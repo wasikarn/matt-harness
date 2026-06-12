@@ -26,7 +26,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty') || {
+FILE_PATH=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse file_path from input" >&2
   exit 1
 }

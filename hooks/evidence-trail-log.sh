@@ -19,7 +19,7 @@ case "$TOOL" in
   *) exit 0 ;;
 esac
 
-URL=$(echo "$TOOL_INPUT" | jq -r '.url // .query // empty' 2>/dev/null)
+URL=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.url // .query // empty' 2>/dev/null)
 [ -z "$URL" ] && exit 0
 
 hook_audit_log evidence-trail "$TOOL" "$URL"

@@ -15,13 +15,18 @@
 #
 # Fails safe: any error exits 0 without output — a SessionStart hook must never
 # brick a session.
-set -euo pipefail
+set -uo pipefail
 
 ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 [ -n "$ROOT" ] || exit 0   # only act when running as an installed plugin
 
 # Coexistence guard — skip if the symlinked CLAUDE.md still imports doctrine.
-if grep -qs '@METHODOLOGY.md' "$HOME/.claude/CLAUDE.md"; then
+# Read once to avoid TOCTOU: the file could change between grep and cat.
+CLAUDE_MD_CONTENT=""
+if [ -r "$HOME/.claude/CLAUDE.md" ]; then
+  CLAUDE_MD_CONTENT=$(cat "$HOME/.claude/CLAUDE.md") || exit 0
+fi
+if printf '%s' "$CLAUDE_MD_CONTENT" | grep -qs '@METHODOLOGY.md'; then
   exit 0
 fi
 

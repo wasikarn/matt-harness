@@ -51,6 +51,83 @@ auto-rate flat at 46% (131/286).
   `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
   Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
 
+## [0.1.9] — 2026-06-12
+
+Patch release — security + reliability sweep (Wave 8). Closes all remaining P0–P2 findings from the 2026-06-12 drill-down audit: echo-injection, TOCTOU race, subdirectory bypass, backslash-quote bypass, sha256sum portability, mktemp atomicity, audit/journal silent drops, and schema-rot closure.
+
+### Fixed
+
+- **Echo flag injection (P0).** 18 hook scripts used `echo "$VAR" |` which is vulnerable to `-n` / `-e` flag injection when `$VAR` starts with a hyphen. Replaced all standalone piped `echo` patterns with `printf '%s\n' "$VAR" |`. (`wave-8`)
+- **Audit / journal silent drops (P0).** `hooks/_lib.sh` `hook_audit_log` and `journal_append` appended to TSV / JSON files without checking exit status. A full disk or permission error would silently lose audit records. Added fail-loud wrappers (`exit 2` + stderr) around both append operations. (`wave-8`)
+- **Doctrine-bootstrap TOCTOU + `set -e` crash (P0).** `doctrine-bootstrap.sh` had a time-of-check-to-time-of-use race (`[ -r file ]` then `grep file`) and `set -e` caused abort on `grep` miss. Removed `set -e`; added atomic `cat` into variable before grep. (`wave-8`)
+- **Doctrine-edit-gate subdirectory bypass (P0).** `case "$DIR" in */claude)` only matched direct children, allowing nested paths like `/tmp/project/claude/foo` to bypass. Added `*/claude/*` and `*/.claude/*` depth patterns. (`wave-8`)
+- **Block-bash-doctrine-write nested-path bypass (P0).** Regex only matched direct `/claude/` children. Changed `DOCTRINE_PATH_RE` to `(/claude/.*|/\\.claude/.*|/kbg-harness/.*)`. (`wave-8`)
+- **Secret-read-guard backslash-quote bypass (P0).** `tr -d '"'\''\\'` removed quotes but not backslashes, allowing `\\"foo.pem\\"` to evade detection. Added `\\\\` to the `tr -d` set. (`wave-8`)
+- **Config-change-log portability + atomicity (P1).** Hash computation used GNU-only `sha256sum`; added `shasum -a 256` fallback chain for BSD / macOS. Atomic update used predictable `$HASHES.tmp`; replaced with `mktemp` to close symlink-race. (`wave-8`)
+- **Usage-monitor-capture silent failures (P1).** `mkdir` and `jq` write failures were unlogged. Added error messages to stderr (still exits 0 to avoid blocking session end). (`wave-8`)
+- **Session-summary echo injection (P1).** Replaced standalone `echo "$STATUS"` and `echo "$COMMITS"` with `printf '%s\n'` equivalents. (`wave-8`)
+
+### Added
+
+- **Schema-rot closure — 29 SKILL.md canonical sections.** Added `## Input Contract`, `## Output Format`, and `## Failure Modes` to 29 skills previously missing them. (`wave-8`)
+- **Schema-rot closure — 10 evals.json fixtures.** Created `evals/evals.json` for 10 skills: `7-agent-pattern`, `accept-task`, `article-mine`, `memory-trim`, `progressive-refine`, `recursive-improve`, `task-sizing`, `triage`, `types-first`, `usage-monitor`. (`wave-8`)
+
+### Changed
+
+- **Harness-audit eval criteria updated.** `eval/datasets/harness-audit.json` now expects clean audit output ("Critical: 0", "Warnings: 0") instead of expecting schema-rot findings. (`wave-8`)
+- **BOUNDARY.md regenerated.** Regenerated via `inventory-boundary.sh` after skill count and path corrections. (`wave-8`)
+
+**Green bar:** audit `0C / 0W / 1I exit 0`; eval `14 passed / 0 failed / 27 skipped / 0 regressions`; critical-hooks `204/0`; `claude plugin validate --strict .` ✔.
+
+## [0.1.8] — 2026-06-12
+
+Patch release — eval fixture expansion + BSD grep portability + hook reliability fixes.
+
+### Added
+
+- **Eval fixtures for 10 skills + commands dataset.** `eval/datasets/` now covers
+  skills previously missing regression coverage: `7-agent-pattern`, `accept-task`,
+  `article-mine`, `memory-trim`, `progressive-refine`, `recursive-improve`,
+  `task-sizing`, `triage`, `types-first`, `usage-monitor`, plus a `commands.json`
+  schema-compliance dataset. (`3a41132`)
+
+### Fixed
+
+- **BSD grep `\b` portability (P0).** Five hooks (`iron-rule-reminder`,
+  `auto-review-nudge`, `skill-nudge`, `orchestrator-nudge`, `db-write-gate`)
+  used GNU-specific `\b` word boundaries in `grep -E` patterns, which silently
+  fail on macOS (BSD grep). Replaced with portable `(^|[^[:alnum:]])` …
+  `([^[:alnum:]]|$)` anchors. (`wave-7`)
+- **Hook `set -e` + `jq` crash (P0).** `task-lifecycle.sh` aborted on malformed
+  JSON stdin because `jq` exits non-zero under `set -e`. Added `|| echo ""`
+  fallback guards to all jq extractions. (`wave-7`)
+- **PreCompact backup crash (P0).** `precompact-backup.sh` used `ls` glob +
+  `pipefail` which aborts when zero backups match. Replaced with `find` +
+  `sort` pipeline. (`wave-7`)
+- **Skill count drift (P1).** README, `plugin.json`, and `marketplace.json`
+  claimed 31 skills; actual count is 32 (including `7-agent-pattern`).
+  Updated all three locations. (`wave-7`)
+- **Skill-nudge stale command name (P1).** `skill-nudge.sh` emitted
+  `/resolve-review` but the actual command is `/address-review`. Updated
+  emission and trigger regex. (`wave-7`)
+
+## [0.1.7] — 2026-06-12
+
+Patch release — real plugin delivery declaration + symlink retirement completion.
+
+### Fixed
+
+- **Symlink retirement (Wave 6).** All `~/.claude/skills/` and
+  `~/.claude/commands/` symlink assumptions removed. Skills docs, evals, and
+  hooks now reference repo-relative paths. Plugin cache (`~/.claude/plugins/cache/`)
+  is the sole delivery path. (`7026717`)
+- **Hook reliability.** `task-lifecycle.sh` F7 test-claim gate hardened:
+  anchored regex, `set -e` safety, `python3` failure propagation, lock timeout
+  warnings, and source/log-dir fail-loud. (`ed55d2b`, `99f7b52`, `3aada87`)
+- **Validator bash guard.** Removed `python3 -c`, `node -p`, `go build` from
+  allow-list; added double deny-list check; broadened `cp`/`mv`/`tee` patterns.
+  (`ed55d2b`)
+
 ## [0.1.6] — 2026-06-12
 
 Patch release — closes the last 25-skill schema-rot INFO gap by extending

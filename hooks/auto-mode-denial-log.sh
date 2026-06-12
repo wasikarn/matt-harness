@@ -40,28 +40,28 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-REASON=$(echo "$INPUT" | jq -r '.reason // "classifier-deny"' 2>/dev/null)
+REASON=$(printf '%s\n' "$INPUT" | jq -r '.reason // "classifier-deny"' 2>/dev/null)
 
 # Excerpt: command for Bash, file_path for Edit/Write/Read, url for WebFetch
 EXCERPT=""
 case "$TOOL" in
   Bash)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.command // ""' 2>/dev/null | tr '\n' ' ' | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // ""' 2>/dev/null | tr '\n' ' ' | cut -c1-120)
     ;;
   Edit|Write|MultiEdit|Read)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.file_path // ""' 2>/dev/null | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // ""' 2>/dev/null | cut -c1-120)
     ;;
   WebFetch|WebSearch)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.url // ""' 2>/dev/null | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.url // ""' 2>/dev/null | cut -c1-120)
     ;;
   Skill)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.skill // ""' 2>/dev/null | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.skill // ""' 2>/dev/null | cut -c1-120)
     ;;
   Agent)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -r '.name // ""' 2>/dev/null | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.name // ""' 2>/dev/null | cut -c1-120)
     ;;
   *)
-    EXCERPT=$(echo "$TOOL_INPUT" | jq -rc '.' 2>/dev/null | cut -c1-120)
+    EXCERPT=$(printf '%s\n' "$TOOL_INPUT" | jq -rc '.' 2>/dev/null | cut -c1-120)
     ;;
 esac
 

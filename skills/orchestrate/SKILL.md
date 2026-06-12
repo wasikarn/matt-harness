@@ -469,3 +469,21 @@ Every agent dispatched here holds Bash or Edit/Write → present the plan, get o
 - **Rule 10 (Checkpoint after every step):** validate before integration.
 - **Rule 12 (Fail loud):** report the full allocation including what was dropped and why; no silent de-scoping.
 - **Rule 13 (Orchestrate, don't solo):** decompose → distribute pieces → verify results → combine into whole.
+
+## Input Contract
+
+- **Trigger phrases:** See `description` in SKILL.md frontmatter.
+- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
+- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
+
+## Output Format
+
+- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
+- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
+- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
+
+## Failure Modes
+
+- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
+- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
+- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.

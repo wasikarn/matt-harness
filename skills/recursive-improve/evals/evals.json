@@ -1,0 +1,26 @@
+{
+  "skill_name": "recursive-improve",
+  "last_reviewed_reason": "generated in 2026-06-12 P2 closure sweep; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "human-gate-present",
+      "prompt": "Set up recursive improvement for the auth module.",
+      "expected_output": "Defines clean signals (tests pass, types check, no new lint), a human gate (manual review before next iteration), and stall/debt gates.",
+      "assertions": [
+        {
+          "name": "clean_signals_present",
+          "description": "Response mentions clean signals (tests/types/lint)"
+        },
+        {
+          "name": "human_gate_present",
+          "description": "Response includes a human approval gate"
+        },
+        {
+          "name": "stall_gate_present",
+          "description": "Response mentions stall or debt gate"
+        }
+      ]
+    }
+  ]
+}

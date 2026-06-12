@@ -1,0 +1,22 @@
+{
+  "skill_name": "triage",
+  "last_reviewed_reason": "generated in 2026-06-12 P2 closure sweep; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "priority-labels-correct",
+      "prompt": "Triage these issues: (1) production database is down, (2) add dark mode toggle, (3) refactor internal naming.",
+      "expected_output": "P0 for production outage, P1 for feature request, P2 for refactor. With rationale tracing to impact and urgency.",
+      "assertions": [
+        {
+          "name": "p0_production",
+          "description": "Production outage labeled P0"
+        },
+        {
+          "name": "rationale_present",
+          "description": "Each priority includes impact/urgency rationale"
+        }
+      ]
+    }
+  ]
+}

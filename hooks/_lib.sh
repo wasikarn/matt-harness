@@ -104,10 +104,16 @@ hook_audit_log() {
       echo "[${HOOK_ID:-hook}] ERROR: cannot create audit log directory" >&2
       return 2
   }
-  printf '%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SID:-no-sid}" >> "$log"
-  local col
-  for col in "$@"; do printf '\t%s' "$col" >> "$log"; done
-  printf '\n' >> "$log"
+  # P1: fail loud on append failure — silent drop loses audit rows
+  {
+    printf '%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SID:-no-sid}"
+    local col
+    for col in "$@"; do printf '\t%s' "$col"; done
+    printf '\n'
+  } >> "$log" || {
+    echo "[${HOOK_ID:-hook}] ERROR: failed to append to audit log $log" >&2
+    return 2
+  }
 }
 
 # _now_ms — millisecond epoch timestamp. BSD `date` (macOS) has no %N, so
@@ -173,7 +179,8 @@ journal_append() {
     exit 2
   fi
 
-  jq -nc \
+  # P1: fail loud on journal append failure — silent drop loses governance events
+  if ! jq -nc \
     --arg id "${ms}-${hook_id}-${rand}" \
     --arg ts "$iso" \
     --arg session "${SID:-no-sid}" \
@@ -181,7 +188,10 @@ journal_append() {
     --arg event "$event" \
     --argjson fields "$redacted" \
     '{id: $id, ts: $ts, session: $session, hook: $hook, event: $event, source: "journal_append", fields: $fields}' \
-    >> "$journal"
+    >> "$journal"; then
+    echo "[${hook_id}] ERROR: failed to append to journal $journal" >&2
+    exit 2
+  fi
   # Phase II (C1 Evidence Journal): echo the minted id on stdout so callers
   # that link events (e.g. the review-pr journaler in `claude/scripts/`) can
   # capture the finding id and reference it as a later verdict's `subject_id`.
@@ -267,7 +277,7 @@ _journal_append_py() {
     _py_stderr="[${hook_id}] ERROR: python journaler exited rc=${_py_rc} without F5 prefix — ${_py_stderr}"
   fi
   if [ -n "$_py_stderr" ]; then
-    echo "$_py_stderr" >&2
+    printf '%s\n' "$_py_stderr" >&2
   fi
   return $_py_rc
 }

@@ -15,7 +15,7 @@ source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
 CWD="${CLAUDE_PROJECT_DIR:-$PWD}"
-SLUG=$(echo "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
+SLUG=$(printf '%s\n' "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
 
 SUMMARY_FILE="${HOME}/.claude/sessions/${SLUG}.md"
 

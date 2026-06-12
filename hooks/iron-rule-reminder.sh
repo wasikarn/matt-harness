@@ -23,7 +23,7 @@ hook_init "$HOOK_ID" || exit 0
 hook_require_prompt
 [ -z "$PROMPT" ] && exit 0
 
-LOWERED=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]')
+LOWERED=$(printf '%s\n' "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
 # Risk triggers via regex word boundaries — `\b` matches both ends symmetrically,
 # fixing the prior asymmetric whitespace anchors ("remove " caught "remove the"

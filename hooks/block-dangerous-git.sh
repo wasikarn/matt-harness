@@ -19,7 +19,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
+COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse tool_input.command" >&2
   exit 1
 }
@@ -71,37 +71,37 @@ DANGEROUS_PATTERNS=(
 
 # Check force push to main/master first (BLOCK via canonical permissionDecision=deny)
 for pattern in "$FORCE_MAIN_PATTERN" "$FORCE_MASTER_PATTERN" "$FORCE_LEASE_MAIN_PATTERN" "$FORCE_LEASE_MASTER_PATTERN" "$REF_MAIN_PATTERN" "$REF_MASTER_PATTERN"; do
-  if echo "$STRIPPED" | $_GREP -qE "$pattern"; then
-    matched=$(echo "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+  if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
+    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
     hook_decision deny "force push to main/master: '$matched'. User policy prevents this command."
   fi
 done
 
 # Check force push to develop (escalate to user via permissionDecision=ask)
 for pattern in "$FORCE_DEVELOP_PATTERN" "$REF_DEVELOP_PATTERN"; do
-  if echo "$STRIPPED" | $_GREP -qE "$pattern"; then
-    matched=$(echo "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+  if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
+    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
     hook_decision ask "force push to develop: '$matched'. Confirm before proceeding."
   fi
 done
 
 # Check force push to allowed prefixes (ALLOW) — skip blocking
 for pattern in "$FORCE_FIX_PATTERN" "$REF_FIX_PATTERN"; do
-  if echo "$STRIPPED" | $_GREP -qE "$pattern"; then
+  if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
     exit 0
   fi
 done
 
 # Check general force push (BLOCK)
-if echo "$STRIPPED" | $_GREP -qE "$FORCE_ANY_PATTERN"; then
-  matched=$(echo "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+if printf '%s\n' "$STRIPPED" | $_GREP -qE "$FORCE_ANY_PATTERN"; then
+  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
   hook_decision deny "force push: '$matched'. User policy prevents this command."
 fi
 
 # Check other dangerous patterns
 for pattern in "${DANGEROUS_PATTERNS[@]}"; do
-  if echo "$STRIPPED" | $_GREP -qE "$pattern"; then
-    matched=$(echo "$STRIPPED" | $_GREP -oE "$pattern" | head -1 | xargs)
+  if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
+    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "$pattern" | head -1 | xargs)
     hook_decision deny "dangerous git command: '$matched'. User policy prevents this command."
   fi
 done
@@ -111,8 +111,8 @@ done
 # exfiltrates repo. Legitimate uses exist (upstream tracking, repo migration),
 # so ASK rather than BLOCK.
 REMOTE_MUTATION_PATTERN="${SEP}git[[:space:]]+remote[[:space:]]+(add|set-url)"
-if echo "$STRIPPED" | $_GREP -qE "$REMOTE_MUTATION_PATTERN"; then
-  matched=$(echo "$STRIPPED" | $_GREP -oE "git[[:space:]]+remote[[:space:]]+(add|set-url)[^#]*" | head -1 | xargs)
+if printf '%s\n' "$STRIPPED" | $_GREP -qE "$REMOTE_MUTATION_PATTERN"; then
+  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+remote[[:space:]]+(add|set-url)[^#]*" | head -1 | xargs)
   hook_decision ask "git remote mutation: '$matched'. Adding/changing a remote redirects future pushes — confirm origin URL is intended."
 fi
 

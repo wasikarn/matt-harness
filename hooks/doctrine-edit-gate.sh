@@ -25,7 +25,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.file_path // empty') || {
+FILE_PATH=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse file_path from input" >&2
   exit 1
 }
@@ -43,7 +43,7 @@ BASE=$(basename "$FILE_PATH")
 # Doctrine path: must be under a `claude/`, `.claude/`, or the extracted `kbg-harness/`
 # source root directory (post-plugin-extraction, the 4 @import docs are real there).
 case "$DIR" in
-  */claude|*/.claude|*/kbg-harness) ;;
+  */claude|*/claude/*|*/.claude|*/.claude/*|*/kbg-harness|*/kbg-harness/*) ;;
   *) exit 0 ;;
 esac
 

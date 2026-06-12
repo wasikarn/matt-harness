@@ -28,9 +28,9 @@ fi
 
 # Read session metadata from the hook input (same pattern as session-summary.sh:14-16).
 CWD="${CLAUDE_PROJECT_DIR:-$PWD}"
-TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
-SESSION_ID_VAL=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
-REASON=$(echo "$INPUT" | jq -r '.reason // empty' 2>/dev/null)
+TRANSCRIPT=$(printf '%s\n' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+REASON=$(printf '%s\n' "$INPUT" | jq -r '.reason // empty' 2>/dev/null)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # If there's no transcript, there's nothing to capture. Don't log — this is
@@ -66,17 +66,22 @@ if [ -z "$SPANS" ] || [ "$SPANS" = "[]" ] || [ "$SPANS" = "null" ]; then
 fi
 
 # Project-slug: same scheme as session-summary.sh:11.
-SLUG=$(echo "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
+SLUG=$(printf '%s\n' "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
 USAGE_DIR="${HOME}/.claude/usage"
 USAGE_FILE="${USAGE_DIR}/${SLUG}.jsonl"
 
-mkdir -p "$USAGE_DIR" 2>/dev/null || exit 0
+# P1: fail loud on mkdir failure instead of silently dropping usage data.
+if ! mkdir -p "$USAGE_DIR" 2>/dev/null; then
+  echo "[$HOOK_ID] ERROR: cannot create usage directory $USAGE_DIR" >&2
+  exit 0  # still best-effort — never block session end
+fi
 
 # Aggregate the spans into one JSONL line per session.
 # Schema (one line per session):
 #   { "session_id": "...", "ts": "...", "reason": "...",
 #     "cwd": "...", "spans": [ {agent_id, parent_agent_id, ...} ] }
-jq -nc \
+# P1: fail loud on jq write failure instead of silently dropping usage data.
+if ! jq -nc \
   --arg session_id "$SESSION_ID_VAL" \
   --arg ts "$TIMESTAMP" \
   --arg reason "$REASON" \
@@ -88,7 +93,9 @@ jq -nc \
     reason:     $reason,
     cwd:        $cwd,
     spans:      $spans
-  }' >> "$USAGE_FILE" 2>/dev/null
+  }' >> "$USAGE_FILE" 2>/dev/null; then
+  echo "[$HOOK_ID] ERROR: failed to write usage data to $USAGE_FILE" >&2
+fi
 
 # Always exit 0 — capture failures never block session end.
 exit 0

@@ -60,3 +60,21 @@ Write `.scratch/<slug>/ACCEPTANCE.md`. `<slug>` is the feature/fix kebab-case na
 - **Writing it after the work** — the whole point is *before*. A contract authored post-hoc just describes what happened. Sign at task start.
 - **Editing criteria to match the result** — if the work fell short, that's an acceptance-gap, not a reason to soften the contract. Real scope changes go in the append-only `## Scope changes` log with a reason.
 - **Locking trivia** — don't write a contract for a typo fix or a read-only investigation. Reserve it for tasks where "done" is genuinely debatable.
+
+## Input Contract
+
+- **Trigger phrases:** See `description` in SKILL.md frontmatter.
+- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
+- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
+
+## Output Format
+
+- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
+- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
+- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
+
+## Failure Modes
+
+- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
+- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
+- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.

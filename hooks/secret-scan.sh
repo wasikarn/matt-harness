@@ -28,19 +28,19 @@ fi
 
 case "$TOOL" in
   Write)
-    CONTENT=$(echo "$TOOL_INPUT" | jq -r '.content // empty') || {
+    CONTENT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.content // empty') || {
       echo "[$HOOK_ID] ERROR: failed to parse Write content" >&2
       exit 1
     }
     ;;
   Edit)
-    CONTENT=$(echo "$TOOL_INPUT" | jq -r '.new_string // empty') || {
+    CONTENT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.new_string // empty') || {
       echo "[$HOOK_ID] ERROR: failed to parse Edit new_string" >&2
       exit 1
     }
     ;;
   MultiEdit)
-    CONTENT=$(echo "$TOOL_INPUT" | jq -r '[.edits[]?.new_string] | join("\n")') || {
+    CONTENT=$(printf '%s\n' "$TOOL_INPUT" | jq -r '[.edits[]?.new_string] | join("\n")') || {
       echo "[$HOOK_ID] ERROR: failed to parse MultiEdit edits" >&2
       exit 1
     }
@@ -98,10 +98,10 @@ PATTERNS=(
 for i in "${!PATTERNS[@]}"; do
   pat="${PATTERNS[$i]}"
   label="${LABELS[$i]}"
-  if echo "$CONTENT" | $_GREP -qE -e "$pat"; then
-    matched=$(echo "$CONTENT" | $_GREP -oE -e "$pat" | head -1)
+  if printf '%s\n' "$CONTENT" | $_GREP -qE -e "$pat"; then
+    matched=$(printf '%s\n' "$CONTENT" | $_GREP -oE -e "$pat" | head -1)
     # Truncate displayed match to first 20 chars to avoid logging full secret
-    preview=$(echo "$matched" | cut -c1-20)
+    preview=$(printf '%s\n' "$matched" | cut -c1-20)
     hook_decision deny "${label} token detected in ${TOOL}: '${preview}...'. Use env var or secret manager. Bypass: CLAUDE_DISABLED_HOOKS=secret-scan"
   fi
 done

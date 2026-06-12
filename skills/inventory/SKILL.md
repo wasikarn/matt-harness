@@ -69,3 +69,21 @@ Reference: [description extraction, boundary map, witness details](reference.md)
 - Verify that custom skills authored in dotfiles actually showed up in `~/.claude/` (look for `→` markers)
 - Post-audit — confirm agent tool-grant fixes landed everywhere (use boundary map)
 - Drift detection — committed `BOUNDARY.md` snapshot catches silent fleet changes
+
+## Input Contract
+
+- **Trigger phrases:** See `description` in SKILL.md frontmatter.
+- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
+- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
+
+## Output Format
+
+- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
+- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
+- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
+
+## Failure Modes
+
+- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
+- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
+- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.
