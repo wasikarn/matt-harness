@@ -85,7 +85,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "<เงื่อนไขเสร็จ — ตอบ yes/no ได้>"
+                    "text": "<happy path — yes/no ได้ ใช้คำที่เข้าใจง่าย ไม่ใช้ชื่อ field/enum/API>"
                   }
                 ]
               }
@@ -99,7 +99,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "<เงื่อนไขถัดไป>"
+                    "text": "<error หรือ boundary ถ้าเกี่ยวข้อง — ลบได้ถ้าไม่มี>"
                   }
                 ]
               }

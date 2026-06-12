@@ -163,6 +163,44 @@ def render_card(payload):
     return "\n\n".join(p for p in parts if p and p.strip())
 
 
+def render_create_card(data):
+    """Render a flat acli create-payload (`--from-json` shape) as a preview card.
+
+    A create-payload uses flat top-level keys (summary/projectKey/type/labels/
+    description/parentIssueId/[priority/assignee]) with NO `fields` wrapper, so
+    render_card's header would print a blank `# ? ·` and silently drop the
+    project/type/priority — exactly the metadata most worth eyeballing before an
+    outward-facing create. This surfaces it so a create preview is trustworthy.
+    """
+    itype = data.get("type", "")
+    head = ("# (new) " + itype).rstrip()
+
+    meta = []
+    proj = data.get("projectKey")
+    if proj:
+        meta.append(f"**Project:** {proj}")
+    pr = data.get("priority")
+    if pr:
+        meta.append(f"**Priority:** {pr.get('name') if isinstance(pr, dict) else pr}")
+    parent = data.get("parentIssueId")
+    if parent:
+        meta.append(f"**Parent:** {parent}")
+    assignee = data.get("assignee")
+    if assignee:
+        meta.append(f"**Assignee:** {assignee.get('name') if isinstance(assignee, dict) else assignee}")
+    labels = data.get("labels")
+    if labels:
+        meta.append(f"**Labels:** {', '.join(labels)}")
+
+    parts = [head, data.get("summary", "")]
+    if meta:
+        parts.append("  ".join(meta))
+    desc = data.get("description")
+    if isinstance(desc, dict):
+        parts.append("## Description\n\n" + render_doc(desc))
+    return "\n\n".join(p for p in parts if p and p.strip())
+
+
 def main():
     ap = argparse.ArgumentParser(description="Render ADF / acli view payload as Markdown")
     ap.add_argument("file", nargs="?", default="-", help="JSON file, or '-'/omitted for stdin")
@@ -187,7 +225,7 @@ def _one(data):
     if isinstance(data, dict) and "fields" in data:
         return render_card(data)
     if isinstance(data, dict) and "description" in data and isinstance(data["description"], dict):
-        return render_card({"fields": data})  # bare create-payload shape
+        return render_create_card(data)  # bare create-payload shape (flat keys, no `fields` wrapper)
     sys.exit("FATAL: unrecognized input — expected an ADF doc or an acli view payload")
 
 

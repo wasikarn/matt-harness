@@ -129,7 +129,7 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "<เงื่อนไขเสร็จ — ตอบ yes/no ได้ 1 ข้อ>"
+                    "text": "<happy path — yes/no ได้ ใช้คำที่ PO/QA เข้าใจ ไม่ใช้ชื่อ field/enum/API>"
                   }
                 ]
               }
@@ -143,7 +143,21 @@
                 "content": [
                   {
                     "type": "text",
-                    "text": "<เงื่อนไขถัดไป>"
+                    "text": "<error / edge หรือ permission case>"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "listItem",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<boundary หรือ regression ถ้าเกี่ยวข้อง — ลบได้ถ้าไม่มี>"
                   }
                 ]
               }
