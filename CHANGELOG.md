@@ -987,6 +987,84 @@ invariant forbids.
   audit/scripts/audit.sh .` exits 0 (0C / 0W / 26I, no new findings
   from the dispatcher or examples).
 
+### Phase 2.5 — Auth / MCP / Plugin Health Probe (SYNTHESIS #38)
+
+Closes the "expired tokens surface as 'the agent is stupid today'" gap
+(SYNTHESIS row #38 / P2.5 / spec §4.2). The script gives the operator
+a single command that probes the auth/MCP/plugin surface and returns
+a structured verdict with concrete remediation, BEFORE the session
+spends tokens discovering the failure mid-task.
+
+#### Added
+
+- `scripts/auth-health-check.py` — new (~470 LOC). Probes 3 surfaces and
+  aggregates a 3-state verdict:
+  1. **GitHub CLI auth** (`gh auth status`) — healthy when `gh` returns
+     0; degraded when rc≠0 BUT a `GITHUB_TOKEN`/`GH_TOKEN` env var is
+     set (keyring may be stale, recoverable); broken when rc≠0 AND no
+     env token (operator must `gh auth login` before any gh work).
+     Includes explicit `FileNotFoundError` and `TimeoutExpired` handling
+     for the "gh hangs on a network call" failure mode.
+  2. **MCP server reachability** (stdio + HTTP/SSE). Reads
+     `~/.claude/settings.json` (global) and `.mcp.json` (project-local),
+     probes each: stdio servers get `<command> <args> --help` with a
+     timeout (binary-exists-and-runs is the reachability signal, exit
+     code is ignored); HTTP/SSE servers get a raw `socket.connect()`
+     probe. `not_applicable` is reported when NO MCP servers are
+     configured (distinct from `healthy` — the absence of MCP config
+     is a fact, not a positive health signal).
+  3. **Plugin cache validity**. Walks `~/.claude/plugins/installed_plugins.json`
+     (version-2 shape: `{"plugins": {"<plugin>@<marketplace>": [...]}}`),
+     verifies each `installPath/.claude-plugin/plugin.json` exists,
+     parses, and matches the version + name from the manifest. Healthy
+     when all match; degraded when a manifest is missing/empty
+     (recoverable via `claude plugin update`); broken when installPath
+     doesn't exist or the manifest is malformed.
+
+  3-state exit contract: `0=healthy`, `1=degraded` (remediation
+  optional, work can continue), `2=broken` (remediation required,
+  work should pause). Distinct from `run-acceptance.py`'s 5-code
+  contract (acceptance runs test-shaped code, auth-health runs
+  state-shaped probes). Supports `--json` for hook consumption,
+  `--no-{gh,mcp,plugins}` for partial runs, custom `--mcp-timeout`
+  and `--gh-timeout`. The script's docstring covers the wiring
+  pattern for a SessionStart hook (`session-load.sh` enhancement or
+  a new `hooks/auth-bootstrap.sh`) but does NOT modify the hook
+  layer — that's P3 (defer documentation) territory.
+
+- `eval/regressions/auth-health.json` — new 2-eval regression fixture:
+  1. `auth-health-script-pycompiles` — `py_compile` + `ls` smoke test.
+  2. `auth-health-exit-code-2-on-broken-plugin` — sets `HOME` to an
+     isolated temp dir with a fake plugin manifest pointing at a
+     non-existent install path, runs the script with `--no-gh --no-mcp
+     --json`, asserts `rc=2` AND `contains_path_error=True` (the
+     specific "install path does not exist" message surfaces).
+
+#### Verification
+
+- Script runs cleanly against the current repo: `gh_auth=healthy`,
+  `mcp_servers=not_applicable` (no MCP configured), `plugin_cache=
+  degraded` (12 installed plugins; 2 healthy, 10 degraded — most of
+  the degraded entries are real-but-cosmetic: the `claude-plugins-
+  official` marketplace ships with `version: "unknown"` and the
+  `qmd` plugin's manifest is one level deeper than the default
+  location; this is operator state, not a script bug).
+- 2/2 new regression evals pass.
+- The full eval suite: 24 total, 15 passed, 6 failed, 3 skipped.
+  The 6 pre-existing failures (`harness-audit-missing-symlink`,
+  `harness-audit-eval-freshness`, `review-pr-acceptance-cross-check`,
+  `ship-change-acceptance-exists`, `ship-change-no-contract`,
+  `loop-overshoot-workflow-cap`) are unchanged from P2.4.
+- Pyright diagnostic that flagged `socket` as possibly-unbound (the
+  previous in-function `import socket` pattern) is fixed by moving
+  the import to module level alongside the other stdlib imports.
+- BOUNDARY.md unchanged (script additions don't change routable
+  surfaces: still 27 skills / 11 commands / 27 agents / 38 hooks).
+- Autonomy invariant (ADR 0002) preserved: the script is a SENSOR
+  that returns a verdict; it does not auto-fix, auto-mutate, or
+  block session start. The CALLER (a hook, `/pre-ship-verify`, or
+  the operator) decides what to do with the verdict.
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
