@@ -228,10 +228,49 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-12T05:33:31Z_
+_Generated: 2026-06-12T05:57:03Z_
 
 ---
 
 ## Cross-references
 
 - **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
+
+---
+
+## Team-ready blocks
+
+When spawning a teammate (via `/team-build` or any agent-team dispatch), inject these shared conventions so teammates load the same module map + verification recipe.
+
+### Module Boundaries
+- `agents/` — 27 senior-specialist agents
+- `skills/` — 27 workflow skills
+- `commands/` — 11 slash commands
+- `hooks/` — 38 hook scripts
+- `output-styles/` — 1 TECH-LEAD-THAI
+- `eval/` — dataset + regression + CI gate (Phase 1)
+
+### Quick Context
+- **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (plugin.json v0.1.3)
+- **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
+- **Tests:** `bash hooks/tests/test-critical-hooks.sh` (201/0 expected)
+- **DB:** none (read-only data via inventory scripts)
+- **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
+
+### Verification
+- `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (26 I = schema-rot INFO, non-blocking)
+- `claude plugin validate --strict .` — exit 0
+- `bash hooks/tests/test-critical-hooks.sh` — 201/0 expected
+- `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` — exit 0
+
+---
+
+## Agent Teams
+
+Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable experimental features.
+
+**What it unlocks:**
+- `/team-plan <feature>` — Steps 1-3: brain dump + research + ≥10 Q&A → `.claude/tasks/<slug>.md`
+- `/team-build <plan-file>` — Steps 4-7: contract chain + wave execution + post-build validation
+- TaskCompleted test-claim gate (`hooks/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
+- F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
