@@ -265,13 +265,24 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
         stdin_obj = context["stdin"]
         expected = context.get("expected_decision", "")
         must_contain = context.get("must_contain", [])
+        # TaskCompleted-style gating (vendor convention: exit 2 + stderr, NOT
+        # exit 0 + JSON permissionDecision). Added for P2.3 — the
+        # KBG_ENFORCE_TASK_COMPLETED escape hatch. P2.3 also needs `env` to
+        # inject the toggle. See eval/regressions/task-completed-enforcement.json.
+        expected_exit = context.get("expected_exit_code")
+        expected_stderr_list = context.get("expected_stderr", [])
+        env_overrides = context.get("env", {})
         try:
+            run_env = os.environ.copy()
+            run_env.update(env_overrides)
             result = subprocess.run(
                 ["bash", str(hook_path)],
                 input=json.dumps(stdin_obj),
                 capture_output=True, text=True, timeout=10,
+                env=run_env,
             )
             stdout = result.stdout
+            stderr = result.stderr
             # Try to parse the JSON decision (if any)
             decision = ""
             try:
@@ -281,6 +292,30 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                 pass
             for crit in criteria:
                 crit_lower = crit.lower()
+                # ---- TaskCompleted-style checks (exit code + stderr) ----
+                # Run BEFORE permissionDecision checks so per-criterion routing
+                # is unambiguous when a fixture mixes both shapes (currently no
+                # fixture does — but the order prevents future ambiguity).
+                if expected_exit is not None and f"exits {expected_exit}" in crit_lower:
+                    if result.returncode == expected_exit:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"got rc={result.returncode}"}); continue
+                # Negation: "stderr does not contain X" (asserts the hook stayed
+                # silent on a specific signal — used to prove an escape hatch
+                # actually turned off the gate's feedback). MUST run BEFORE the
+                # positive "stderr contains X" check, because the substring
+                # "contains" appears inside "does not contain" and would
+                # otherwise route the wrong branch.
+                if expected_stderr_list and "stderr" in crit_lower and "does not contain" in crit_lower:
+                    hit = next((s for s in expected_stderr_list if s in stderr), None)
+                    if hit is None:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"found {hit!r} in stderr but expected absence"}); continue
+                if expected_stderr_list and "stderr" in crit_lower and "contains" in crit_lower:
+                    hit = next((s for s in expected_stderr_list if s in stderr), None)
+                    if hit is not None:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"missing one of {expected_stderr_list} in stderr={stderr!r}"}); continue
                 # Decision checks
                 if expected and f"permissiondecision equal to {expected}" in crit_lower:
                     if decision == expected:

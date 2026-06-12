@@ -89,7 +89,24 @@ fi
 #   - event is not TaskCompleted (TeammateIdle / TaskCreated stay log-only)
 #   - no test-claim keyword present
 #   - test-claim keyword present AND validation_command: field is present
-if [ "$EVENT" = "TaskCompleted" ]; then
+#
+# Phase 2.3 escape hatch (P2.3, 2026-06-12): the operator can opt OUT of
+# enforcement on a per-session basis by setting KBG_ENFORCE_TASK_COMPLETED=0.
+# Default is ON (preserves F7's always-on posture + the 12 tests in
+# test-critical-hooks.sh that depend on it). Use case: an operator wants
+# pure L2 advisory mode (log + journal only, no block) for a session where
+# they trust the teammate chain to surface test-claim gaps another way.
+# Setting KBG_ENFORCE_TASK_COMPLETED=0 downgrades F7 to log-only for that
+# session — the event is still journaled so Phase 4 observe.py still sees
+# the gap, but the gate does NOT exit 2. Any other value (unset, "", "1",
+# "false", etc.) keeps enforcement ON. ADR 0002 L2/L3 — L2 is the default;
+# this env var is the L3 escape hatch.
+ENFORCE_TASK_COMPLETED=1
+if [ "${KBG_ENFORCE_TASK_COMPLETED:-1}" = "0" ]; then
+  ENFORCE_TASK_COMPLETED=0
+fi
+
+if [ "$EVENT" = "TaskCompleted" ] && [ "$ENFORCE_TASK_COMPLETED" = 1 ]; then
   TASK_SUBJECT=$(printf '%s' "$INPUT" | jq -r '.task_subject // ""' 2>/dev/null)
   TASK_DESC=$(printf '%s' "$INPUT" | jq -r '.task_description // ""' 2>/dev/null)
   CLAIM_TEXT=" ${TASK_SUBJECT} ${TASK_DESC} "

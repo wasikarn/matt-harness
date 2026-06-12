@@ -1,0 +1,63 @@
+{
+  "dataset_name": "task-completed-enforcement",
+  "description": "Guard against the failure mode in SYNTHESIS row #13: operators lack a documented way to opt out of task-lifecycle.sh F7 enforcement. The F7 gate is a load-bearing safety check (blocks TaskCompleted events that claim test execution without a validation_command field), but power users may want pure L2 advisory mode in sessions where they trust the teammate chain to surface test-claim gaps another way. The escape hatch is KBG_ENFORCE_TASK_COMPLETED=0 — when set, the hook downgrades to log-only (event still journaled, no exit 2). Default is ON (preserves the 12 F7 tests in hooks/tests/test-critical-hooks.sh). If this toggle disappears or the default flips, the operator's escape hatch is gone (the override silently fails to override) — or the default-revert regresses the existing always-on F7 contract. Both directions are guarded: (1) env=0 must turn enforcement off, (2) env unset must keep enforcement on.",
+  "evals": [
+    {
+      "id": "task-completed-enforcement-default-on-blocks-test-claim",
+      "task": "Run task-lifecycle.sh with NO env var set and a TaskCompleted event that claims 'pytest' but provides no validation_command. The hook must exit 2 and emit the TASK-GATE feedback on stderr. This is the default F7 contract; the escape hatch must not silently turn it off.",
+      "skill": "hook-script",
+      "context": {
+        "hook_path": "hooks/task-lifecycle.sh",
+        "stdin": {
+          "hook_event_name": "TaskCompleted",
+          "task_id": "1",
+          "task_subject": "Run pytest suite",
+          "task_description": "Wrote tests for X"
+        },
+        "expected_exit_code": 2,
+        "expected_stderr": ["TASK-GATE"]
+      },
+      "success_criteria": [
+        "Hook exits 2 (default F7 enforcement blocks the claim-without-validation)",
+        "Stderr contains the TASK-GATE feedback marker"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 500,
+      "tags": ["task-completed", "p2-3", "f7", "enforcement", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "task-completed-f7-default-flipped-to-off",
+      "fixed_by": "P2.3 (KBG_ENFORCE_TASK_COMPLETED escape hatch, default ON)"
+    },
+    {
+      "id": "task-completed-escape-hatch-logs-without-blocking",
+      "task": "Run task-lifecycle.sh with KBG_ENFORCE_TASK_COMPLETED=0 and the same TaskCompleted event that would otherwise be blocked. The hook must exit 0 (no block) — pure L2 advisory mode. The event is still journaled (the L2 sensor side stays intact), but no exit 2 is sent. This is the documented escape hatch for operators who want to opt out per-session.",
+      "skill": "hook-script",
+      "context": {
+        "hook_path": "hooks/task-lifecycle.sh",
+        "stdin": {
+          "hook_event_name": "TaskCompleted",
+          "task_id": "2",
+          "task_subject": "All tests pass",
+          "task_description": "Implemented feature X"
+        },
+        "env": {
+          "KBG_ENFORCE_TASK_COMPLETED": "0"
+        },
+        "expected_exit_code": 0,
+        "expected_stderr": ["TASK-GATE"]
+      },
+      "success_criteria": [
+        "Hook exits 0 (escape hatch downgrades F7 to log-only)",
+        "Stderr does not contain the TASK-GATE feedback (no block feedback when enforcement is off)"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 500,
+      "tags": ["task-completed", "p2-3", "escape-hatch", "l2-advisory", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "task-completed-escape-hatch-silently-ignored",
+      "fixed_by": "P2.3 (KBG_ENFORCE_TASK_COMPLETED=0 downgrades F7 to log-only)"
+    }
+  ]
+}

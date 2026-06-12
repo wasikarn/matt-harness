@@ -81,6 +81,24 @@ queue is drained. Codifies "what stays manual" into a quantified, machine-checka
 signal so the operator iterates on top of *reviewed* state, not stacked-up unread
 findings. (SYNTHESIS #41, spec §4.4.)
 
+**Sub-rule: TaskCompleted enforcement is opt-OUT, not opt-IN.** The F7
+test-claim gate in `hooks/task-lifecycle.sh` is always ON by default — it
+blocks a TaskCompleted event that claims test execution ("pytest" / "npm test" /
+etc.) without a `validation_command:` field. The gate preserves the
+"test-claim-without-evidence" anti-pattern from sneaking through teammate
+chains (12 tests in `hooks/tests/test-critical-hooks.sh` lock this behavior).
+Operators may opt **out** of L3 enforcement on a per-session basis via
+`KBG_ENFORCE_TASK_COMPLETED=0` — this downgrades F7 to log-only for that
+session (the event is still journaled, but no exit 2 is sent). Use case:
+an operator who trusts the teammate chain to surface test-claim gaps another
+way and wants pure L2 advisory mode for one session. Any other value
+(unset, "", "1") keeps enforcement ON. This is an *opt-OUT* escape hatch —
+the default is L3-enforced; setting the env var to "0" is the only way to
+get L2 advisory. The naming asymmetry vs. the "ceiling" sub-rule above is
+intentional: a ceiling is a hard upper bound, an enforcement toggle is a
+default-on safety check. (SYNTHESIS #13, P2.3, eval fixture:
+`eval/regressions/task-completed-enforcement.json`.)
+
 ## 5. Use the Model Only for Judgment Calls
 
 **If code can answer, code answers. Model for judgment, not execution.**

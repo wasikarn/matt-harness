@@ -862,6 +862,50 @@ matches the 2026-09 quarterly cadence for deferred items already in
 Green bar after this batch: 158/0 tests, audit `0C/0W/26I exit 0` (no new
 findings, no new check firing), `claude plugin validate --strict .` ✔.
 
+### Phase 2.3 — TaskCompleted opt-OUT escape hatch (SYNTHESIS #13, 1 commit)
+
+Closes the opt-IN/OUT contract gap surfaced by SYNTHESIS row #13 (`stop/PostToolUse
+enforcement option`). Operators may opt **out** of the F7 TaskCompleted test-claim
+gate on a per-session basis by setting `KBG_ENFORCE_TASK_COMPLETED=0` — the
+default is ON (preserves the 12 F7 tests in `hooks/tests/test-critical-hooks.sh`).
+This is **opt-OUT, not opt-IN**: the gate is a load-bearing safety check that
+blocks test-claim-without-validation; the escape hatch is a documented way to
+downgrade F7 to log-only for sessions where the operator trusts the teammate
+chain to surface test-claim gaps another way. ADR 0002 L2/L3 boundary
+preserved — the L2 default is the safety-checked one; the L3 mode is the
+opt-out.
+
+- `hooks/task-lifecycle.sh` — `ENFORCE_TASK_COMPLETED=1` default; flipped to
+  `0` only when `KBG_ENFORCE_TASK_COMPLETED=0` is set. The TaskCompleted
+  enforcement branch is now guarded by `[ "$ENFORCE_TASK_COMPLETED" = 1 ]`.
+  Any other value (unset, "", "1", "false") keeps enforcement ON. Pure additive
+  change — no behavior delta for sessions that don't set the env var.
+- `eval/run-eval.py` — `hook-script` grader gains 3 fields:
+  - `expected_exit_code` (int) — asserts on `result.returncode`
+  - `expected_stderr` (list of substrings) — used for both positive
+    ("stderr contains X") and negative ("stderr does not contain X") checks;
+    the negation check runs first to avoid `contains` substring-routing
+    ambiguity
+  - `env` (dict) — env vars merged over `os.environ` for the hook invocation
+- `eval/regressions/task-completed-enforcement.json` — new 2-eval regression
+  fixture. Eval #1 verifies default-ON behavior (claim-without-validation →
+  exit 2 + TASK-GATE stderr). Eval #2 verifies the escape hatch
+  (`KBG_ENFORCE_TASK_COMPLETED=0` → exit 0, no TASK-GATE stderr). Both must
+  pass; the pair guards both directions of the toggle.
+- `METHODOLOGY.md:84-100` — Rule 4 "Goal-Driven Execution" gains a
+  "TaskCompleted enforcement is opt-OUT, not opt-IN" sub-rule parallel to
+  the existing "Comprehension debt ceiling" sub-rule. Names the asymmetry
+  (ceiling = hard upper bound; enforcement toggle = default-on safety check)
+  so future readers do not treat the two as the same shape.
+- Verification: 202/0 critical-hooks tests pass (12 F7 tests + 190 others;
+  no regression), `python3 eval/run-eval.py --regression --tag task-completed`
+  2/2 pass, `python3 -c "import ast; ast.parse(...)"` on the modified
+  `run-eval.py` clean, `claude plugin validate --strict .` not re-run
+  (no plugin.json/marketplace.json/hooks.json deltas).
+- **0 hook.json / settings.json / agent / skill changes** — escape hatch is
+  pure env-var; no new surface to audit, no new selector wiring, no new
+  schema-rot risk.
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a
