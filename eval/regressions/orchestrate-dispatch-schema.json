@@ -1,0 +1,87 @@
+{
+  "dataset_name": "orchestrate-dispatch-schema",
+  "description": "Guard against regressions in scripts/orchestrate-dispatch.py (SYNTHESIS row #49, P2.4 — coordination as code). The dispatcher is the deterministic coordinator-as-code contract: it resolves workflow specs (JSON or YAML) into wave-by-wave execution plans, validates the schema (no cycles, no bad refs, no missing fields), flags F8.5 fan-out overflow, and (in --execute mode) runs command-typed stages. Agent-typed stages are spec-rendered only — the lead (or /team-build) dispatches them, preserving ADR 0002's autonomy invariant (no covert L4 loops). The contract: (a) the script exists and py_compiles, (b) a valid YAML spec resolves to a plan with the expected wave structure, (c) a cycle is detected with exit 4 (the schema-error code, distinct from rc=1 command-FAIL and rc=2 INVOCATION), (d) the F8.5 fan-out warning surfaces on over-cap parallel sub-stages. If any of these regress (script deleted, validation broken, warnings silently dropped), the coordination-as-code foundation is gone and the orchestrator falls back to model-memory — exactly the failure mode the spec was written to prevent.",
+  "evals": [
+    {
+      "id": "orchestrate-dispatch-script-pycompiles",
+      "task": "Verify that scripts/orchestrate-dispatch.py exists and py_compiles cleanly. A missing or syntactically-broken dispatcher breaks every spec that uses it. py_compile is the cheapest, fastest contract test we have for a Python script — no fixtures, no I/O, just byte-code generation. If this fails, the script is structurally broken before any logic runs.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 -m py_compile scripts/orchestrate-dispatch.py && echo 'pycompile=ok' && ls -1 scripts/orchestrate-dispatch.py && echo 'exists=ok'",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains pycompile=ok",
+        "stdout contains exists=ok"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 150,
+      "tags": ["orchestrate-dispatch", "p2-4", "coordination-as-code", "regression", "pycompile"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "orchestrate-dispatch-deleted-or-syntax-broken",
+      "fixed_by": "P2.4 (scripts/orchestrate-dispatch.py ship)"
+    },
+    {
+      "id": "orchestrate-dispatch-validates-ship-merge-spec",
+      "task": "Verify that scripts/orchestrate-dispatch.py resolves the shipped ship-merge example spec to a 4-wave, 4-stage plan. The spec has 4 top-level stages (build → validate → test → merge-agent) with a parallel sub-fan-out inside `validate`. The expected structure: 4 waves, 4 top-level stages, plan emits cleanly. The --emit-plan JSON path is the machine-readable contract a future /team-build --spec flag would consume.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml --emit-plan | python3 -c 'import json,sys; p=json.load(sys.stdin); print(\"wave_count=\"+str(p[\"wave_count\"])); print(\"stage_count=\"+str(p[\"stage_count\"])); print(\"name=\"+p[\"name\"]); assert p[\"wave_count\"]==4, p; assert p[\"stage_count\"]==4, p; print(\"all_good=1\")'",
+        "timeout": 15
+      },
+      "success_criteria": [
+        "stdout contains wave_count=4",
+        "stdout contains stage_count=4",
+        "stdout contains name=ship-merge",
+        "stdout contains all_good=1"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "p2-4", "schema-validation", "wave-resolution", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "dispatcher-wave-resolution-broken",
+      "fixed_by": "P2.4 (scripts/orchestrate-dispatch.py + skills/orchestrate/examples/ship-merge.yml)"
+    },
+    {
+      "id": "orchestrate-dispatch-rejects-cycle-with-exit-4",
+      "task": "Verify that scripts/orchestrate-dispatch.py exits 4 (the SCHEMA error code, distinct from rc=1 command-FAIL and rc=2 INVOCATION) when given a 2-stage cycle. Cycle detection is load-bearing: without it, the dispatcher would silently loop on a malformed spec and the lead would never know. The 5 exit codes are: 0=PASS/PLAN, 1=command-stage FAIL, 2=bad invocation, 3=parse error, 4=schema error (cycle/bad ref/missing field). The fixture writes the cycle spec to /tmp, runs the dispatcher, asserts the rc.",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: cycle-test\\nstages:\\n  - {id: a, type: command, command: \"echo a\", depends_on: [b]}\\n  - {id: b, type: command, command: \"echo b\", depends_on: [a]}\\n' > /tmp/cycle-test.yml && python3 scripts/orchestrate-dispatch.py /tmp/cycle-test.yml 2>&1; echo \"rc=$?\"",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains rc=4"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 250,
+      "tags": ["orchestrate-dispatch", "p2-4", "cycle-detection", "exit-codes", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "cycle-detection-silently-passed",
+      "fixed_by": "P2.4 (validate_spec uses Kahn's algorithm for cycle detection)"
+    },
+    {
+      "id": "orchestrate-dispatch-flags-f8-5-overflow",
+      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.5 fan-out warning when a parallel stage has more sub-stages than the cap (default 16). The warning is critical: the lead must split over-cap parallels into chunks of 16 BEFORE dispatch, otherwise the audit goes wrong (the original 2026-06-12 failure was a soft-cap prompt that overshot to 44 agents). The warning goes on the human plan (stdout) AND on the --emit-plan JSON output. The fixture writes a 17-sub-stage parallel, runs the dispatcher with --max-per-wave 16, asserts the warning text is in the output.",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: overflow-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/overflow-test.yml && for i in $(seq -w 1 17); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/overflow-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/overflow-test.yml --max-per-wave 16 2>&1 | grep -E 'F8.5 OVERFLOW|has 17 sub-stages' | head -3",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains F8.5 OVERFLOW",
+        "stdout contains has 17 sub-stages"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "p2-4", "f8-5", "fan-out-cap", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "f8-5-warning-silently-dropped",
+      "fixed_by": "P2.4 (build_plan emits f8_5_overflow_warnings list)"
+    }
+  ]
+}

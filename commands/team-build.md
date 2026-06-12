@@ -63,6 +63,8 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 4. **If rejected:** explain why, list the specific issues, refuse to build. The user can revise the plan (edit `.claude/tasks/<slug>.md`) and re-invoke `/team-build`.
 5. **If approved:** derive the wave structure (tasks with `Depends On == "-"` are Wave 1; tasks whose `Depends On` are all in the same wave become Wave 2; etc.). List the waves in order.
 
+**Optional `--spec` shortcut (P2.4):** the plan file's `## Step by Step Tasks` table is hand-written today, but a future spec-file shape is wired through `scripts/orchestrate-dispatch.py` (P2.4 / SYNTHESIS #49). If the user passes `--spec path/to/ship-merge.yml` as the first argument, `/team-build` can ask the dispatcher to render the wave plan JSON via `--emit-plan` and use it as the starting point for wave execution. v1 of `/team-build` still expects the hand-written plan file; the `--spec` flag is a future enhancement. The dispatcher does NOT auto-spawn agents — it renders the plan, the lead dispatches.
+
 **This is distinct from F7's post-execution gate (in `hooks/task-lifecycle.sh`).** F10 catches bad plans BEFORE work; F7 catches bad completions AFTER work. Two different layers of the same quality pipeline.
 
 ---

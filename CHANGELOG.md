@@ -906,6 +906,87 @@ opt-out.
   pure env-var; no new surface to audit, no new selector wiring, no new
   schema-rot risk.
 
+### Phase 2.4 — Coordination-as-Code: orchestrate-dispatch.py (SYNTHESIS #49, 1 commit)
+
+Closes the "orchestration logic lives in markdown/context, not in
+executable code" gap (SYNTHESIS row #49 / P2.4 / spec §4.5). The
+dispatcher is the **deterministic rendering** half of the coordination
+contract; the lead (`/team-build`, this skill) is the **judgment** half.
+Without the dispatcher, the wave structure lives in the lead's model
+memory — a context-clearing session restart loses the plan, a different
+lead picks it up cold, and a 30-stage fan-out overshoots because the LLM
+forgot the F8.5 cap mid-spawn. With the dispatcher, the spec is on disk,
+the wave plan is machine-rendered, and a fresh session can resume from
+the same plan file. **The model does judgment; the code does
+coordination.** ADR 0002 boundary preserved: the dispatcher does NOT
+spawn LLM agents; agent-typed stages are emitted as "would-spawn" lines
+that the lead dispatches per the F9 template. Putting LLM dispatch
+inside the dispatcher would be a covert L4 loop, which the autonomy
+invariant forbids.
+
+- `scripts/orchestrate-dispatch.py` — new. Reads a workflow spec
+  (JSON or YAML), validates the schema (no cycles / no bad refs / no
+  missing fields / no unknown stage types), resolves the DAG into
+  waves, flags F8.5 fan-out overflow on top-level waves + parallel
+  sub-fan-outs + loop body, and emits a plan. 5 exit codes: 0=PASS/PLAN,
+  1=command-stage FAIL, 2=bad invocation, 3=parse error, 4=schema
+  error (cycle/bad ref/missing field) — distinct so "schema broken"
+  doesn't masquerade as "build broken" in CI. 4 stage types:
+  `command` (subprocess.run, default), `agent` (would-spawn only),
+  `parallel` (inline sub-stages), `loop` (loop_until + body). Three
+  modes: default (human-readable plan), `--emit-plan` (machine-readable
+  JSON for future `/team-build --spec`), `--execute` (runs `command`
+  stages in wave order; agent stages reported only).
+- `skills/orchestrate/examples/ship-merge.yml` — minimal "build → fan-out
+  lint+typecheck → test → ship" workflow. 4 stages, 4 waves, exercises
+  all 4 stage types. Use as the "hello world" example.
+- `skills/orchestrate/examples/review-pr.yml` — multi-lens PR review
+  pipeline. 3 stages, 3 waves; demonstrates the fan-in (4 parallel
+  validators → merge-reports command) + fix-loop pattern from METHODOLOGY
+  Rule 13's "judge panel" composition.
+- `skills/orchestrate/examples/harness-audit.yml` — the harness's
+  self-audit pipeline. 3 stages, 3 waves; uses the harness's own tools
+  (`audit.sh` + `eval/run-eval.py`) so the spec itself is a smoke test
+  for the dispatcher.
+- `eval/run-eval.py` — new `script-cli` grader (~80 LOC, general-purpose
+  "does this CLI behave correctly?" checker). Reads `command` /
+  `expected_exit_code` / `timeout` from context; per-criterion routes
+  on `rc=N` (anchored to avoid false-matching `rc=4` inside
+  `stdout contains rc=4` literals) + `exits N` / `exit code N` /
+  `returns N` + `stdout contains <literal>` + `stderr contains
+  <literal>`. Anchored `^rc=` regex replaces the prior over-greedy
+  `rc=|exits?` alternation, which would false-match the `rc=4` substring
+  inside a contains-check criterion.
+- `eval/regressions/orchestrate-dispatch-schema.json` — new 4-eval
+  regression fixture. #1 `pycompile` + exists check; #2 ship-merge spec
+  resolves to 4 waves / 4 stages / name=ship-merge; #3 cycle detection
+  returns `rc=4` (NOT 0 or 1); #4 F8.5 warning surfaces on a 17-sub-
+  stage parallel with `--max-per-wave 16`.
+- `skills/orchestrate/SKILL.md` — new "Coordination-as-code" section
+  (~30 lines) under the existing rule structure. Names the model/ code
+  split explicitly, links the 3 example specs, and states the
+  "dispatcher does NOT spawn agents" boundary (ADR 0002). The plan
+  acceptance criteria said "≥3 example workflow specs in
+  `skills/orchestrate/examples/`" + "SKILL.md references the dispatcher"
+  — both delivered.
+- `commands/team-build.md` — Step 5 gains an "Optional `--spec`
+  shortcut" note pointing to the dispatcher's `--emit-plan` as the
+  future consumer path. v1 of `/team-build` still expects the
+  hand-written plan file; the note is the future-work wiring without
+  a hidden dependency.
+- Verification: 4/4 new regression evals pass, all 3 example specs
+  render cleanly (4/3/3 wave counts as designed), 5/5 error paths
+  return the right exit codes (missing/empty → 2, cycle → 4, unknown
+  ref → 4, unknown type → 4, missing command → 4), F8.5 cap surfaces
+  warnings on a 30-parallel spec (default 16) and on a 17-parallel
+  with `--max-per-wave 5`. Pre-existing failures (harness-audit-missing-
+  symlink, harness-audit-eval-freshness, review-pr-acceptance-cross-check,
+  ship-change-acceptance-exists, ship-change-no-contract) unchanged
+  (verified by `git stash` + re-run: 10 fails before, 6 fails after my
+  changes — 4 new passing tests, 0 new failures). `bash skills/harness-
+  audit/scripts/audit.sh .` exits 0 (0C / 0W / 26I, no new findings
+  from the dispatcher or examples).
+
 ## [0.1.0] — 2026-06-10
 
 Initial packaged release. `kbg` was extracted from the owner's `dotfiles` harness into a

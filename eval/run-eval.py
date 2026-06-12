@@ -403,6 +403,86 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                     passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                 failed += 1; details.append({"criterion": crit, "status": "failed", "note": "no contract available"})
 
+    # Strategy: for script-cli evals, run an arbitrary shell command and
+    # assert on stdout/exit code. General-purpose "does this script
+    # behave correctly?" grader — used by orchestrate-dispatch-schema.json
+    # and any future script-contract regression where the existing
+    # harness-audit / hook-script / observe-script graders don't fit.
+    #
+    # Fixture context shape:
+    #   "command": "<shell command to run, relative to REPO_ROOT>"
+    #   "expected_exit_code": <int> (optional, default 0)
+    #   "timeout": <int seconds> (optional, default 30)
+    #
+    # Per-criterion routing (substring, run in order):
+    #   - "rc=<N>" or "exits <N>" → matches if returncode == N
+    #   - "stdout contains <literal>" → matches if literal in stdout
+    #   - "stderr contains <literal>" → matches if literal in stderr
+    #   - "exit code 0" → matches if returncode == 0
+    #
+    # Why this skill exists: hook-script is hardcoded to stdin JSON →
+    # hook; observe-script is hardcoded to recursive-improve-observe.py;
+    # harness-audit runs audit.sh. None fit a one-off CLI contract test.
+    # script-cli is the catch-all, intentionally minimal — extend only
+    # when a real fixture needs a new assertion shape.
+    elif skill == "script-cli" and "command" in context:
+        cmd_str = context["command"]
+        expected_rc = context.get("expected_exit_code")
+        timeout_s = context.get("timeout", 30)
+        try:
+            r = subprocess.run(
+                cmd_str, shell=True, capture_output=True, text=True,
+                timeout=timeout_s, cwd=str(REPO_ROOT),
+            )
+            stdout = r.stdout
+            stderr = r.stderr
+            for crit in criteria:
+                crit_lower = crit.lower()
+                # Exit-code assertions: crit starts with "rc=N" (anchored)
+                # OR contains "exits N" / "exit code N" / "returns N".
+                # Anchor on rc= to avoid false-matching "rc=4" inside a
+                # "stdout contains rc=4" assertion (the literal "rc=" is
+                # the ASSET, not the exit code).
+                m = re.match(r"^rc\s*=\s*(\d+)\b", crit_lower)
+                if m:
+                    want = int(m.group(1))
+                    if r.returncode == want:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"want rc={want} got {r.returncode}"}); continue
+                m = re.search(r"\b(?:exits?|exit code|returns?)\s+(\d+)\b", crit_lower)
+                if m:
+                    want = int(m.group(1))
+                    if r.returncode == want:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"want rc={want} got {r.returncode}"}); continue
+                # "stdout contains <literal>" — extract the literal after "contains"
+                m = re.search(r"stdout\s+contains\s+(.+)", crit_lower)
+                if m:
+                    literal = crit[len(crit) - len(m.group(1)):]  # preserve original case
+                    if literal in stdout:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"missing {literal!r} in stdout (last 200 chars): {stdout[-200:]!r}"}); continue
+                # "stderr contains <literal>"
+                m = re.search(r"stderr\s+contains\s+(.+)", crit_lower)
+                if m:
+                    literal = crit[len(crit) - len(m.group(1)):]
+                    if literal in stderr:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"missing {literal!r} in stderr"}); continue
+                # "exit code 0" / "exits 0" / "returns 0" — bare 0 assertion
+                if r.returncode == 0 and ("0" in crit_lower and ("exit" in crit_lower or "return" in crit_lower)):
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                # Heuristic substring fallback against stdout
+                if crit_lower in stdout.lower():
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"rc={r.returncode} stdout_tail={stdout[-200:]!r}"})
+        except subprocess.TimeoutExpired:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": f"timeout after {timeout_s}s"} for c in criteria]
+        except Exception as e:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
     # Default: heuristic pass (mark as skipped if we can't verify)
     else:
         for crit in criteria:
