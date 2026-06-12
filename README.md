@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![validate-plugin](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-Personal Claude Code harness delivered as a Claude Code plugin — 27 senior-specialist
-subagents, 26 workflow skills, 8 slash commands, governance hooks, and always-on doctrine
-injection. See [`CONTEXT.md`](CONTEXT.md) for the bounded-context model and the autonomy
+Personal Claude Code harness delivered as an **official installable plugin** (`kbg@kobig`) via the Claude Code plugin system — 27 senior-specialist
+subagents, 31 workflow skills, 16 slash commands, governance hooks across 14 lifecycle events, and always-on doctrine
+injection. No symlink farm, no manual copy — components auto-discover from the plugin cache after `/plugin install`. See [`CONTEXT.md`](CONTEXT.md) for the bounded-context model and the autonomy
 invariant.
 
 ## Install
@@ -25,14 +25,16 @@ once enabled.
 **Uninstall** with `/plugin uninstall kbg`. To keep installed but disable:
 `"kbg@kobig": false` in `settings.json`, or `/plugin disable kbg`.
 
-## What you get
+## What you get (auto-discovered from plugin cache)
+
+After `/plugin install kbg@kobig`, Claude Code loads all components from the plugin cache (`~/.claude/plugins/cache/kobig/kbg/<version>/`). No symlink, no manual wiring.
 
 | Dir | What |
 |---|---|
-| `agents/` | 27 senior-specialist subagents (engineer, reviewer, security, …) |
-| `skills/` | 26 workflow skills (`_lib/` holds shared shell helpers, not a skill) |
-| `commands/` | 8 slash commands (`feature-dev`, `fix-bug`, `ship-merge`, …) |
-| `hooks/` | governance hooks across 14 lifecycle events + always-on doctrine injection |
+| `agents/` | 27 senior-specialist subagents (engineer, reviewer, security, …) — spawn via `kbg:<agent>` |
+| `skills/` | 31 workflow skills (`_lib/` holds shared shell helpers, not a skill) — invoke via `/kbg:<skill>` |
+| `commands/` | 16 slash commands (`feature-dev`, `fix-bug`, `ship-merge`, `team-build`, `wave-status`, …) — invoke via `/kbg:<command>` |
+| `hooks/` | governance hooks across 14 lifecycle events + always-on doctrine injection — wired via `hooks/hooks.json` |
 | `output-styles/` | `TECH-LEAD-THAI` (Thai-code-switched register, see `output-styles/TECH-LEAD-THAI.md`) |
 | `themes/` | `catppuccin-mocha` |
 
