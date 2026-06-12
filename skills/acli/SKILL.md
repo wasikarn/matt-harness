@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "ALWAYS trigger this skill when the user wants ANY bulk / set-based Jira work-item operation: move all tickets to Done, transition every issue in a sprint, label every bug, clone to another project, delete old tickets, bulk-edit priority/assignee/labels/status, assign a batch, comment on multiple, archive resolved, or export JQL to CSV/Excel. Also trigger for ANY Confluence space / page / blog create / manage, or whenever \"acli\" appears in the prompt. Use for ops selected by JQL, sprint name, or issue-key list. Do NOT use for JQL syntax help, installing / configuring acli, GitHub/GitLab ops, or non-Atlassian trackers."
+description: "ALWAYS trigger for bulk / set-based Jira work-item operations and for creating or managing Confluence spaces, pages, or blogs — run from the terminal. Bulk Jira: move / transition / label / assign / comment / clone / delete / archive many issues at once, bulk-edit priority/assignee/labels/status, or export a JQL result to CSV/Excel — selected by JQL, sprint name, or issue-key list (e.g. \"move every ticket in Sprint 42 to Done\", \"export all open bugs to CSV\"; Thai phrasings too). Also trigger when the user asks to RUN an acli command for such an operation. Do NOT trigger for: reading or checking a single ticket (just run acli view), writing JQL / JQL-syntax help, installing / configuring / authenticating acli or asking for an acli cheat-sheet, GitHub / GitLab, or other non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI
