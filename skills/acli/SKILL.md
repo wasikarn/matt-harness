@@ -7,9 +7,9 @@ description: "ALWAYS trigger this skill when the user wants ANY bulk / set-based
 
 Drive Jira, Confluence, org admin, and Rovo Dev from the terminal. Auth-first, JQL-driven, confirmation-gated.
 
-**When to use:** terminal-native Jira/Confluence work — search, create, bulk-edit, transition, comment, page/space ops.
+**When to use:** the **default** path for ALL Jira/Confluence work — single ops included, not just bulk (user directive 2026-06-12). Reach for acli first: search, view, create, edit, transition, comment, link, page/space ops.
 
-**When NOT to use:** the `mcp__claude_ai_Atlassian_Rovo__*` MCP tools (richer for one-off reads inside a chat; this skill is for scriptable bulk/terminal ops), git/gh, or non-Atlassian trackers.
+**Atlassian MCP is the fallback, not the default** — use it only for the few things acli genuinely can't do (see [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp)). Not for git/gh or non-Atlassian trackers.
 
 ---
 
@@ -46,6 +46,7 @@ acli jira workitem create --summary "X" --project TEAM --type Task --assignee @m
 acli jira workitem create-bulk --from-csv issues.csv       # or --from-json; --generate-json scaffolds input
 
 # 4. MUTATE — target by --key | --jql | --filter (same selectors)
+acli jira workitem transition --key KEY-1 --list   # discover valid statuses FIRST — names must match the workflow exactly
 acli jira workitem transition --jql "project = TEAM AND status = 'To Do'" --status "In Progress" --yes
 acli jira workitem edit --key "KEY-1,KEY-2" --summary "..." --labels a,b
 # ⚠️ edit --description REPLACES the whole description. To add/change without
@@ -54,7 +55,7 @@ acli jira workitem comment create --key KEY-1 --body "..."
 acli jira workitem assign --key KEY-1 --assignee @me       # @me | default | email
 ```
 
-`@me` self-assign, `default` project default. `--generate-json` scaffolds any complex create/edit/link input.
+`@me` self-assign, `default` project default. `--generate-json` scaffolds any complex create/edit/link input. ⚠️ `assign --assignee` resolves `@me`/`default`/**email** only — a raw **accountId silently UNassigns** (acli prints "unassigned" and clears it). For accountId / privacy-hidden emails, see [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp).
 
 **Description format:** Jira `description`/comment `body` is ADF. Flags (`--description`/`--body`) accept plain text (auto-wrapped); `--from-json` needs a full ADF object. Confluence body is storage-format XHTML instead. Don't hand-write ADF — write Markdown and run `python3 scripts/md2adf.py desc.md`; read it back with `scripts/adf2md.py` (inverse). Rules + GOOD/BAD → [REFERENCE.md](REFERENCE.md) "Description & body formats" + [examples/](examples/). **Acceptance Criteria are the crown jewel** — keep them plain (no field/enum/API names) and cover error + boundary + regression, not just the happy path: rubric + worked GOOD/BAD → [examples/README.md](examples/README.md).
 
@@ -64,14 +65,14 @@ Mutating bulk ops (`edit`, `transition`, `assign`, `delete`, `clone`, `link crea
 
 1. **Preview the set first** — run `search` with the *exact same* `--jql` and `--count` before any `--yes` mutation. The JQL selects what you'll change; verify it.
 2. `--yes` skips the interactive confirm — only after the preview matches intent.
-3. `--ignore-errors` continues past per-item failures. Default OFF — read the result summary; a partial failure must be loud, not swallowed.
+3. `--ignore-errors` continues past per-item failures. Default OFF — read the result summary; a partial failure must be loud, not swallowed. Sub-tasks can't be archived/deleted on their own (✗ "Issue is a subtask"), so a key-list `archive`/`delete` batch reports partial failures — archive/transition the parent or the sub-tasks separately.
 
 ## Create safety
 
 `create`/`create-bulk` are outward-facing too — but unlike the mutations above they have no JQL set to preview, so preview the **payload itself** before firing.
 
 1. **Render what you're about to send.** For a `--from-json` create, round-trip it first: `python3 scripts/md2adf.py desc.md -s "..." -p TP -t Bug > /tmp/wi.json && python3 scripts/adf2md.py /tmp/wi.json` prints a readable card — `(new) <type>`, project, labels, and the full description. Eyeball it, *then* `acli jira workitem create --from-json /tmp/wi.json`.
-2. **For `create-bulk`**, `--generate-json` first (or render one row) and read it back before the batch — a bad template multiplies across every row.
+2. **For `create-bulk`**, `--generate-json` first (or render one row) and read it back before the batch — a bad template multiplies across every row. ⚠️ `create-bulk --from-json` **rejects rich-markdown descriptions** (headings/code fences/backticks/newlines) → ✗ "request body is missing or invalid". Pattern that works: bulk-create with **short placeholder** bodies, then set the real description per ticket with `bash scripts/acli-set-desc.sh KEY desc.md` (verified TP-558..566).
 3. **Resolve metadata, don't hardcode it.** Project/type/priority/labels/assignee must match the target project; `--generate-json` emits the schema the project actually accepts — scaffold from it when unsure of a type or field. The templates ship `projectKey:"TP"` as a personal default — swap it (or pass `-p`) for any other project. On an unknown project/type/field acli fails: fix it, never strip the field and retry (Rule 12).
 
 ## Confluence / admin / rovodev
@@ -86,6 +87,15 @@ acli rovodev auth login && acli rovodev run                # AI coding agent (be
 
 Full command tree, every flag, and JSON schemas → [REFERENCE.md](REFERENCE.md).
 
+## When acli can't (fall back to the Atlassian MCP)
+
+acli is the default, but four operations genuinely need `mcp__plugin_atlassian_atlassian__editJiraIssue` / `*ConfluencePage` (or the Jira UI). Reach for the MCP **only** here:
+
+- **Set/​change parent on an *existing* issue** — `edit --from-json` has no parent field and rejects a `parent` key; `--parent`/`parentIssueId` work only at *create* time (sub-tasks). → MCP `editJiraIssue fields:{parent:{key:"TP-505"}}`.
+- **Assign by accountId** when the email is privacy-hidden (`--assignee email` can't resolve, and a raw accountId silently UNassigns). → MCP `editJiraIssue fields:{assignee:{accountId:"…"}}`; resolve the id with `lookupJiraAccountId`.
+- **fixVersion / release versions** — acli has no `version create`, `edit --from-json` rejects `fixVersions`, and `search --fields fixVersions` errors (read it via `view --json` + parse). → MCP or the Jira UI.
+- **Create/update a Confluence *page*** — acli `confluence page` is view-only (blog + space have full CRUD). → MCP `createConfluencePage` / `updateConfluencePage`.
+
 ## METHODOLOGY
 
 - **Rule 1 (think before coding):** auth-status + JQL-preview before any bulk mutation — `--yes` on a wrong JQL is silent orthogonal damage at scale.
@@ -94,5 +104,5 @@ Full command tree, every flag, and JSON schemas → [REFERENCE.md](REFERENCE.md)
 
 ## Related
 
-- `mcp__claude_ai_Atlassian_Rovo__*` — MCP path for conversational reads/writes of a single work item
+- Atlassian MCP (`mcp__plugin_atlassian_atlassian__*`) — fallback only, for the acli gaps in [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp); not the default for single ops
 - `triage` skill — local issue-tracker state machine, not Jira-backed

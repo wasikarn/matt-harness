@@ -74,6 +74,54 @@ echo "── adf2md view payload still renders (regression guard) ──"
 view_out="$(printf '%s' '{"key":"TP-1","fields":{"issuetype":{"name":"Bug"},"status":{"name":"Done"},"summary":"hi"}}' | $ADF2MD -)"
 check_contains "view: key+type header"         "$view_out" "# TP-1 · Bug"
 
+# ── md2adf: task lists emit VALID ADF (localId + inline content) ──────────
+# Jira rejects taskItems missing localId or wrapped in a paragraph with
+# INVALID_INPUT (verified TP-636). Guards the G1 fix — revert it (drop localId or
+# re-wrap content in a paragraph) and tl_check prints INVALID, failing both lines.
+echo "── md2adf task list -> valid ADF (G1) ──"
+tl_check="$(printf '## C\n- [ ] a\n- [x] b\n' | python3 "$ACLI/scripts/md2adf.py" - | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+def walk(n):
+    if isinstance(n, dict):
+        if n.get("type") == "taskList": yield n
+        for v in n.values(): yield from walk(v)
+    elif isinstance(n, list):
+        for x in n: yield from walk(x)
+tl = next(walk(d), None)
+ok = bool(tl) and "localId" in tl.get("attrs", {}) \
+     and all("localId" in it.get("attrs", {}) for it in tl["content"]) \
+     and all(it["content"][0]["type"] == "text" for it in tl["content"])
+print("VALID" if ok else "INVALID")
+')"
+check_contains "md2adf task list: localId + inline content" "$tl_check" "VALID"
+check_absent   "md2adf task list: not paragraph-wrapped"    "$tl_check" "INVALID"
+
+# ── acli-ls.py: list-or-dict unwrap + nested-field guards (no acli needed) ─
+# A naive `f['parent']['key']` / `f['assignee']['displayName']` crashes on the
+# unassigned/no-parent row → no output. That these rows render proves the guards.
+echo "── acli-ls.py table (unwrap + guards) ──"
+ls_dict='{"issues":[
+  {"key":"TP-2","fields":{"issuetype":{"name":"Story"},"status":{"name":"Done"},"parent":{"key":"TP-1"},"assignee":{"displayName":"Aoy"},"summary":"child"}},
+  {"key":"TP-3","fields":{"issuetype":{"name":"Task"},"status":{"name":"To Do"},"parent":null,"assignee":null,"summary":"orphan"}}
+]}'
+ls_out="$(printf '%s' "$ls_dict" | python3 "$ACLI/scripts/acli-ls.py")"
+check_contains "ls: dict-shape unwraps (issues key)" "$ls_out" "TP-2"
+check_contains "ls: parent shown as p:KEY"           "$ls_out" "p:TP-1"
+check_contains "ls: null parent/assignee guarded"    "$ls_out" "orphan"
+check_contains "ls: bare-list shape unwraps"         "$(printf '[{"key":"TP-9","fields":{"issuetype":{"name":"Bug"},"status":{"name":"Open"},"summary":"x"}}]' | python3 "$ACLI/scripts/acli-ls.py")" "TP-9"
+check_contains "ls: empty set message"               "$(printf '{"issues":[]}' | python3 "$ACLI/scripts/acli-ls.py")" "(no matches)"
+
+# ── acli-set-desc.sh --dry-run: renders body, sends nothing (no acli needed) ─
+echo "── acli-set-desc.sh --dry-run ──"
+sd_md="$(mktemp -t sd.XXXXXX.md)"
+printf '## Goal\nทำให้เสร็จ\n\n- [ ] task one\n' > "$sd_md"
+sd_out="$(bash "$ACLI/scripts/acli-set-desc.sh" TP-1 "$sd_md" --dry-run)"
+rm -f "$sd_md"
+check_contains "set-desc: REPLACES banner" "$sd_out" "REPLACES the ENTIRE description"
+check_contains "set-desc: renders body"    "$sd_out" "Goal"
+check_contains "set-desc: nothing sent"    "$sd_out" "nothing sent"
+
 # ── summary ──────────────────────────────────────────────────────────────
 echo ""
 echo "Passed: $pass   Failed: $fail"

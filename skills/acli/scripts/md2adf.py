@@ -25,6 +25,7 @@ import argparse
 import json
 import re
 import sys
+import uuid
 
 INLINE_RE = re.compile(
     r'\*\*(?P<bold_text>[^*]+)\*\*'
@@ -137,10 +138,17 @@ def parse(md):
                 if not mm:
                     break
                 state = "DONE" if mm.group(1).lower() == "x" else "TODO"
-                items.append({"type": "taskItem", "attrs": {"state": state},
-                              "content": [{"type": "paragraph", "content": inline(mm.group(2))}]})
+                # Jira requires a localId on every taskItem and the taskList, and
+                # taskItem content must be inline nodes directly — NOT wrapped in a
+                # paragraph. Getting either wrong makes Jira reject the whole payload
+                # with INVALID_INPUT (verified TP-636). uuid4 hex is a valid localId.
+                items.append({"type": "taskItem",
+                              "attrs": {"localId": uuid.uuid4().hex, "state": state},
+                              "content": inline(mm.group(2))})
                 i += 1
-            content.append({"type": "taskList", "content": items})
+            content.append({"type": "taskList",
+                            "attrs": {"localId": uuid.uuid4().hex},
+                            "content": items})
             continue
         # List block (ordered or bullet) — consecutive matching lines
         ol = re.match(r"^\d+\.\s+(.*)$", stripped)

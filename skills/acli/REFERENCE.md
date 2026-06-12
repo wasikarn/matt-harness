@@ -81,6 +81,8 @@ acli jira workitem create-bulk --generate-json
 ```
 Flags: `--from-csv`, `--from-json`, `--generate-json`, `--ignore-errors`, `--yes`.
 
+> ⚠️ **`create-bulk --from-json` rejects rich-markdown descriptions** (headings / code fences / backticks / newlines) → ✗ `The request body is missing or invalid.` Verified workaround (TP-558..566): bulk-create with **short placeholder** descriptions, then set the real ADF body per ticket — `bash scripts/acli-set-desc.sh KEY desc.md` (or loop `edit --from-json {issues:[KEY],description:<md2adf>}`). Never paste long-form Markdown into a bulk create.
+
 ### search
 ```bash
 acli jira workitem search --jql "project = TEAM" --paginate
@@ -105,6 +107,8 @@ acli jira workitem edit --generate-json   # then --from-json
 ```
 Flags: `-k/--key`, `--jql`, `--filter`, `-s/--summary`, `-d/--description`, `--description-file`, `-t/--type`, `-a/--assignee`, `--remove-assignee`, `-l/--labels`, `--remove-labels`, `--from-json`, `--generate-json`, `--ignore-errors`, `-y/--yes`, `--json`.
 
+> ⚠️ **`edit` can't do everything.** It has **no `parent` field** and `--from-json` rejects a `parent` key — re-parenting / setting an Epic parent on an *existing* issue needs the MCP (`editJiraIssue fields:{parent:{key:"…"}}`; `--parent`/`parentIssueId` work only at *create* time for sub-tasks). `--from-json` also rejects `fixVersions` and `update` as `unknown field`. See SKILL.md "When acli can't".
+
 > ⚠️ **`--description` REPLACES the whole description — it does not append.** Verified by create+delete: a naive `edit --description "X"` wipes all existing content (0 original sections survive). To **add**, **change**, or **remove one section** while keeping the rest, you must read-modify-write the ADF (all three verified e2e — append/edit/remove a section, original untouched):
 > ```bash
 > # one-step helpers (preserve original; written for read-modify-write):
@@ -120,10 +124,11 @@ Flags: `-k/--key`, `--jql`, `--filter`, `-s/--summary`, `-d/--description`, `--d
 
 ### transition
 ```bash
+acli jira workitem transition --key TP-1 --list      # discover valid statuses for THIS issue first
 acli jira workitem transition --key "K-1,K-2" --status Done
 acli jira workitem transition --jql "project = TEAM" --status "In Progress"
 ```
-Flags: `-k/--key`, `--jql`, `--filter`, `-s/--status`, `--ignore-errors`, `-y/--yes`, `--json`. Status names must match the workflow exactly.
+Flags: `-k/--key`, `--jql`, `--filter`, `-s/--status`, `--list`, `--ignore-errors`, `-y/--yes`, `--json`. Status names must match the workflow exactly — run `--list` to read the valid transitions before guessing (don't brute-force status strings).
 
 ### assign
 ```bash
@@ -132,6 +137,8 @@ acli jira workitem assign --jql "project = TEAM" --assignee user@x.com
 acli jira workitem assign --from-file issues.txt --remove-assignee --json
 ```
 Flags: `-k/--key`, `--jql`, `--filter`, `-f/--from-file`, `-a/--assignee`, `--remove-assignee`, `--ignore-errors`, `-y/--yes`, `--json`.
+
+> ⚠️ **`--assignee` resolves `@me` | `default` | EMAIL only.** A raw **accountId silently UNassigns** — acli reports "successfully unassigned" and clears the field (verified). Many users hide their email (privacy), so `reporter/assignee.emailAddress` is null and there's no email to pass. Then assign via the Atlassian MCP: `editJiraIssue fields:{assignee:{accountId:"…"}}` (resolve the id with `lookupJiraAccountId`).
 
 ### comment
 ```bash
@@ -279,5 +286,9 @@ Working GOOD/BAD inputs → [examples/](examples/).
 | Append to a description (no loss) | `bash scripts/acli-edit.sh KEY notes.md` |
 | Remove a description section | `bash scripts/acli-edit.sh KEY --remove-section "HEADING"` |
 | Replace a section in place | `bash scripts/acli-edit.sh KEY --replace-section "HEADING" new.md` |
+| **Replace** the whole description from Markdown | `bash scripts/acli-set-desc.sh KEY desc.md [--dry-run]` (overwrites; for the bulk placeholder→body flow) |
+| List a JQL/key set as a table | `bash scripts/acli-ls.sh --jql "project = TP AND statusCategory != Done"` (or `--key TP-1,TP-2`) |
+| Render a set as readable cards | loop `view KEY --json \| python3 scripts/adf2md.py` (adf2md also accepts a JSON array) |
+| Relate N items in one shot | `acli jira workitem link create --from-csv links.csv` (header `out,in,type`) |
 
 ADF = Atlassian Document Format (Jira rich text); storage format = Confluence XHTML. Full rules + GOOD/BAD inputs: see **Description & body formats** above and [examples/](examples/).
