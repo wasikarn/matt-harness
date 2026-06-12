@@ -161,6 +161,84 @@ echo ""
 echo "---"
 echo "_Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)_"
 
+# Task sizing guidance + file ownership boundary table (added with task-sizing skill).
+# Placed here so it survives regeneration via heredoc, just like F6 Cross-references.
+if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
+  cat <<'XREF3'
+
+---
+
+## Task sizing guidance
+
+Derived from `skills/task-sizing/SKILL.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
+
+### The 5-6 rule
+5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
+
+### Size heuristics
+| Dimension | Too small | Too big | Just right |
+|-----------|-----------|---------|------------|
+| Description | < 30 chars, or "just run X" | Vague novel | 1 concrete sentence |
+| Files | No files assigned | > 3 files owned | 1-2 files |
+| Criteria | None listed | > 2 criteria | 1-2 criteria |
+| Dependencies | 0 (island task) | > 2 upstream tasks | 1 max |
+| Estimate | < 15 min | > 4 hours | 2-4 hours |
+
+### Wave balancing
+- **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
+- **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/feature-dev` instead.
+- **F8.5 hard cap:** > 16 tasks in any wave → split or merge. Clamp in code, not prose.
+
+### Splitting oversized tasks
+1. **Interface-first split:** extract API contract / type definition as Wave 1.
+2. **Layer split:** backend → frontend → integration → tests (one task per layer).
+3. **File split:** one task per file when files are independent. Never split a single file across two agents.
+
+### Merging undersized tasks
+1. Same file + same owner → merge.
+2. "Update docs after X" → merge into X's task.
+3. No files + no criteria → drop or merge.
+
+---
+
+## File ownership boundary table
+
+Canonical file patterns per agent. Assign each file to exactly one agent in a `/team-build` plan to prevent silent overwrites.
+
+| Agent | Canonical file patterns | Notes |
+|---|---|---|
+| `api-doc-specialist` | `openapi/`, `docs/api/`, `sdk/`, `swagger/` | |
+| `backend-engineer` | `api/`, `middleware/`, `models/`, `routes/`, `services/`, `tests/` | |
+| `code-architect` | `docs/adr/`, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
+| `code-explorer` | any file | Read-only trace |
+| `code-reviewer` | any file | Read-only review |
+| `code-simplifier` | any file | Post-impl refinement; Edit/Write/Bash |
+| `comment-analyzer` | any file | Read-only comment audit |
+| `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |
+| `data-engineer` | `migrations/`, `etl/`, `analytics/`, `warehouse/`, `dbt/`, `spark/` | Beyond OLTP |
+| `devops-engineer` | `.github/`, `docker/`, `k8s/`, `terraform/`, `helm/`, `ci/` | |
+| `finops-engineer` | `infra/cost/`, `budgets/`, `docs/finops/` | Read-only + Bash for cost queries |
+| `frontend-engineer` | `src/components/`, `src/pages/`, `styles/`, `public/`, `assets/`, `src/hooks/` | |
+| `i18n-specialist` | `locales/`, `translations/`, `i18n/`, `src/i18n/`, `l10n/` | |
+| `incident-commander` | `docs/incidents/`, `runbooks/`, `alerts/`, `oncall/` | Read-only + coordination |
+| `maintenance-engineer` | any file | Refactor / deprecation scope |
+| `ml-engineer` | `ml/`, `models/`, `features/`, `pipelines/`, `serving/`, `inference/` | |
+| `mobile-engineer` | `ios/`, `android/`, `mobile/`, `react-native/`, `flutter/` | |
+| `platform-engineer` | `platform/`, `proto/`, `gateway/`, `mesh/`, `grpc/`, `event-bus/` | |
+| `pr-test-analyzer` | any file | Read-only test-coverage audit |
+| `product-analyst` | `docs/requirements/`, `prd/`, `user-stories/` | Read-only + Bash |
+| `researcher` | any file | Read-only research |
+| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | Read-only audit |
+| `silent-failure-hunter` | any file | Read-only error-handling audit |
+| `technical-writer` | `docs/`, `README*`, `CHANGELOG*`, `*.md`, `guides/`, `runbooks/` | |
+| `test-engineer` | `tests/`, `*.test.*`, `*.spec.*`, `test_*.py`, `e2e/`, `integration/` | |
+| `type-design-analyzer` | any file | Read-only type audit |
+| `ux-reviewer` | `src/components/`, `src/pages/`, `e2e/ux/`, `a11y/` | Read-only UX audit |
+
+XREF3
+fi
+
 # Cross-references to repo-level conventions. Added in Phase 3 (F6).
 # These point at docs/ that don't fit the regenerator's "fleet inventory"
 # model (they're convention references, not loadable artifacts) but are
@@ -193,7 +271,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 
 ### Module Boundaries
 - `agents/` — 27 senior-specialist agents
-- `skills/` — 27 workflow skills
+- `skills/` — 28 workflow skills
 - `commands/` — 11 slash commands
 - `hooks/` — 38 hook scripts
 - `output-styles/` — 1 TECH-LEAD-THAI
@@ -224,4 +302,61 @@ Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable
 - TaskCompleted test-claim gate (`hooks/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
 - F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
 XREF2
+fi
+
+# Trigger phrases for agent-teams use cases (added 2026-06-12).
+# Maps common user requests to the correct command/skill/agent.
+if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
+  cat <<'XREF4'
+
+---
+
+## Trigger phrases
+
+Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
+
+### Planning & execution
+| User says | Dispatch | Why |
+|---|---|---|
+| "plan this for the team", "multi-agent plan", "team plan: X" | `/team-plan` | Steps 1-3: brain dump + Q&A + structured plan |
+| "build the plan", "execute the plan", "ship the team plan" | `/team-build` | Steps 4-7: contract chain + wave execution |
+| "where are we", "status of the build", "is the team done" | `/wave-status` | Reads task board, reports wave progress |
+| "clean up the team", "remove old plans", "stale tasks" | `/team-cleanup` | Reaps locks, heartbeats, archives old boards |
+| "validate this task", "did the teammate do it right" | `/validate-and-fix` | B→V1→F→V2 validation chain on one task |
+| "lint the plan", "is this plan ready" | `/pre-flight-plan-linter` | Structural validation before `/team-build` |
+| "pros and cons", "which is better", "should we use X or Y" | `/debug-debate` | Advocate + Skeptic + Synthesizer debate |
+
+### Single-task workflows
+| User says | Dispatch | Why |
+|---|---|---|
+| "build one feature", "implement X" | `/feature-dev` | Single-agent ceremony |
+| "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
+| "address review feedback" | `/address-review` | PR review response |
+| "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
+| "release now", "cut a release" | `/ship-release` | Release ceremony |
+
+### Research & analysis
+| User says | Dispatch | Why |
+|---|---|---|
+| "research this", "deep dive on X", "how does Y work" | `/deep-dive` | Brain dump + Q&A + plan |
+| "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
+| "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
+| "what should I work on", "prioritize these" | `kbg:orchestrate` skill | Prioritize + route |
+
+### Incident & post-mortem
+| User says | Dispatch | Why |
+|---|---|---|
+| "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
+| "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
+| "status update", "what did we ship" | `/status-update` | Status report |
+
+### Agent-team troubleshooting
+| User says | Dispatch | Why |
+|---|---|---|
+| "agent went idle", "teammate stopped" | `/wave-status` → `/team-build` re-dispatch | Heartbeat check + re-claim |
+| "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
+| "validation failed but it says done" | `/validate-and-fix` | F7 gate + re-validator |
+| "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
+
+XREF4
 fi

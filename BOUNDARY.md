@@ -7,7 +7,8 @@ _Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (27)
+### Skills (31)
+  ◇ 7-agent-pattern                Apply the canonical 7-agent feature pattern: API/middleware → styles → tests → types → hooks → integration → remaining. Use when planning a non-trivial full-stack feature that spans backend, frontend, DB, tests, and docs. Don't use for: single-file changes (use /feature-dev), pure backend or pure frontend work (use 3-4 agents instead), or research-only tasks.
   ◇ accept-task                    'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that kbg:review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
   ◇ acli                           ALWAYS trigger for bulk / set-based Jira work-item operations and for creating or managing Confluence spaces, pages, or blogs — run from the terminal. Bulk Jira: move / transition / label / assign / comment / clone / delete / archive many issues at once, bulk-edit priority/assignee/labels/status, or export a JQL result to CSV/Excel — selected by JQL, sprint name, or issue-key list (e.g. \"move every ticket in Sprint 42 to Done\", \"export all open bugs to CSV\"; Thai phrasings too). Also trigger when the user asks to RUN an acli command for such an operation. Do NOT trigger for: reading or checking a single ticket (just run acli view), writing JQL / JQL-syntax help, installing / configuring / authenticating acli or asking for an acli cheat-sheet, GitHub / GitLab, or other non-Atlassian trackers.
   ◇ adr                            Draft an Architecture Decision Record when a decision is hard to reverse, surprising without context, or the result of a real trade-off. Use when choosing between frameworks, changing data models, introducing dependencies, or retiring patterns. Do NOT use for: trivial choices (use inline comment), documenting what already exists (use README), or decisions with no alternatives considered.
@@ -27,27 +28,35 @@ _Personals/kbg-harness_
   ◇ orchestrate                    Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists multiple competing tasks, asks 'what should I work on' / 'what's the priority' / 'how should I approach this', dumps a batch of issues or tickets, plans a day/week/sprint, feels overwhelmed, or spans several independent sub-tasks / sequential phases (e.g., 'extract then transform then load'). Also trigger on a pile of work, competing deadlines, or a list of items to do, even unprompted. Don't use for: single-issue triage or issue-queue/state (use triage), PR review (use kbg:review-pr), building one feature (use /feature-dev), or single-file coding (inline).
   ◇ perf                           Investigate and fix performance regressions or bottlenecks. ALWAYS trigger when latency spikes or jumps, throughput drops, memory grows or leaks, CPU saturates, queries slow down, cache hit rate falls, builds or CI slow down, cold starts increase, resolvers time out, ETL pipelines slow, or users report slowness. Do NOT use for: production outages (use kbg:incident or kbg:hotfix), functional bugs with no performance symptom (use /fix-bug or /diagnose), architectural redesigns (use /deep-dive or code-architect), capacity planning, or feature requests that mention speed.
   ◇ probe                          Systems-thinking probe for architecture and design decisions. Use when the user asks 'should we...', 'why not...', 'what if...', or when evaluating trade-offs, risks, second-order effects, or the systemic impact of a technical choice. Don't use for: implementation work (use /feature-dev or kbg:backend-dev), prioritization (use kbg:orchestrate), pure research (use kbg:research-brief), or security audits (use kbg:security-auditor).
+  ◇ progressive-refine             Run a multi-pass progressive refinement pipeline: rough draft → review → revise → polish. Use when the output quality matters more than speed (docs, complex algorithms, public APIs, architecture decisions). Don't use for: one-pass sufficient work (use inline or /feature-dev), or when the user explicitly says 'quick and dirty'.
   ◇ recursive-improve              Run ONE bounded, human-gated cycle of harness self-improvement: observe verification + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', 'what should we fix in the harness', or after a session whose verification posture shows gaps. Do NOT use for: a single known bug (use /fix-bug), a new feature (use /feature-dev), external-tool/article evaluation (use kbg:article-mine), refactoring a specific module (use maintenance-engineer), or any autonomous/unattended run — this ritual is human-gated by design and has no autonomous mode.
   ◇ research-brief                 Research brief with search-first + diagnose preloaded. Use when user says 'research this', 'deep dive on X', 'how does Y work in this codebase', 'compare Z approaches', or any open-ended exploration spanning files, docs, and external sources. Don't use for: implementation work (use /feature-dev or kbg:backend-dev), bug fixes (use /fix-bug), or security audits (use kbg:security-auditor).
   ◇ review-pr                      Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready for review, after addressing reviewer feedback, or when user says 'review my changes', 'review the PR', or specifies aspects ('kbg:review-pr tests errors'). Don't use for: single-file diffs (just review inline), security-only audits (use kbg:security-auditor), post-merge retrospectives, or calling a single agent directly (use the Agent tool instead).
   ◇ security-auditor               Comprehensive security audit for code touching auth, secrets, external input, file uploads, or dependencies. ALWAYS use this skill when asked to audit, review, or check code for security flaws, injection risks, XSS, CSRF, SSRF, path traversal, broken access control, secrets leaks, or vulnerable components. Trigger before merging PRs that touch auth flows, API endpoints, admin panels, payment systems, or dependency manifests. Do NOT use for: general code quality reviews (use kbg:review-pr), production incident response (use kbg:hotfix or kbg:incident), or non-code security topics (infrastructure, policy).
   ◇ semantic-code                  Use this skill when the user asks about functions, classes, or methods — not just lines of code. Use for: what functions or classes changed in commits or PRs, history of a specific function or class, cross-file dependency graphs showing callers and callees, whether refactoring or renaming will break things, and token-budgeted context on a specific entity. Do NOT use for: plain git operations like raw diffs, file listings, or simple blame.
   ◇ ship-change                    Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent).
+  ◇ task-sizing                    Size and shape tasks for multi-agent builds: split oversized work, merge undersized crumbs, and balance the 5-6 tasks/person sweet spot. Use when planning a /team-build, when the user asks 'is this plan too big', 'how many tasks per agent', or when a wave has >16 tasks (F8.5 overflow). Don't use for: single-file work (use /feature-dev), or post-build quality checks (use /validate-and-fix).
   ◇ tech-humanize                  |
+  ◇ types-first                    Apply the 'types first' rule to multi-agent plans: define interfaces, contracts, and schemas before fanning out implementation tasks. Use when the plan touches APIs, DB schemas, type systems, or cross-component boundaries. Don't use for: pure frontend UI work with no backend contract, or maintenance tasks that don't change interfaces.
   ◇ usage-monitor                  'Read-only cost + sub-agent usage summary for the current session. Use when the user asks "how much did this session cost", "how many tokens did the sub-agents burn", "show me a cost breakdown by agent", or any time nested-team token burn is suspected (~7x amplification unaddressed in the 2026-06-12 audit). Surfaces stats from the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; no enforcement, no gates, no L3/L4 — strictly L2 read-only. Do NOT use for real-time cost gating (no such gate exists by design), cross-session cost aggregation (out of scope), or OTEL/OTLP export to external backends (not implemented).'
 
-### Commands (11)
+### Commands (16)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify each (action / clarify / wontfix / out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing the commit sha that addressed it, re-request review. Use when a PR has open review threads needing response, after review-pr or external review returns findings, or when user says 'address the review', 'apply review feedback', 'respond to PR comments'. Don't use for: doing the review yourself (use review-pr), pre-PR cleanup before requesting feedback, or merging post-approval (use /ship-merge).
+  ◇ debug-debate                   Resolve a technical disagreement by spawning parallel debate agents: an Advocate, a Skeptic, and a Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks and a recommendation. Use when the user asks 'which is better', 'should we use X or Y', 'pros and cons of Z', or when teammates disagree on architecture. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate).
   ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when the user says 'research this', 'deep dive on X', 'how does Y work in this codebase', 'compare Z approaches', or any open-ended exploration spanning files, docs, and external sources. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (use probe skill).
   ◇ feature-dev                    Guided 7-phase feature development workflow (discover → explore codebase → ask clarifying questions → design architecture → implement → review → summarize). Use when starting a non-trivial new feature where deep codebase understanding and architectural choices matter. Don't use for: bug fixes (use /fix-bug), refactors (spawn `maintenance-engineer` agent), one-line changes (just do it), or quick prototypes (just do it inline).
   ◇ fix-bug                        Guided 7-phase bug-fix workflow with /diagnose and /tdd patterns built in (reproduce+minimise → localize → hypothesize+instrument → fix strategy → TDD-implement → verify regression → review). Use when fixing a non-trivial bug where the root cause is non-obvious, the blast radius is unclear, or the fix should be pinned with a regression test. Don't use for: typos / one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), understand-only diagnostic loops without a fix plan (use /diagnose standalone), greenfield TDD on new features (use /tdd standalone), or refactors not driven by a specific bug (spawn `maintenance-engineer` agent).
   ◇ post-mortem                    Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead).
+  ◇ pre-flight-plan-linter         Validate a /team-plan artifact before /team-build consumes it. Catches structural errors, missing validation commands, cyclic dependencies, overlapping file ownership, and F10 plan-approval risks. Use after /team-plan finishes and before /team-build starts. Don't use for: single-file work (no plan file needed), or plans you already started building (use /wave-status instead).
   ◇ pre-ship-verify                Run machine-checkable acceptance criteria for the current task before shipping. Use when a task has an ACCEPTANCE.md and you want deterministic verification before merge, release, or PR submission. Don't use for: tasks without an acceptance contract (no ground truth to verify), or when the user has already manually verified and explicitly says 'skip checks'.
   ◇ ship-merge                     Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use `hotfix` skill).
   ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use `hotfix` skill), or when there is no release branch / tag strategy defined.
   ◇ status-update                  Rewrite engineer-to-engineer content for engineering-org leadership (VPs, directors, PMs, release managers, execs in an engineering-savvy company) and shape it for the channel it's going to — JIRA comment, Slack post, async standup line, email, or meeting talking-points. Trigger when the user asks to write/rewrite for management / exec / VP / director / PM / release manager, asks for an 'executive summary / leadership update / status update', says 'make this less technical / less jargony', or asks for a slack / email / standup / meeting version of work originally written engineer-to-engineer.
   ◇ team-build                     Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), derive the contract chain, spawn agents in waves using the F9 spawn-prompt template, then run post-build validation against acceptance criteria. Use after /team-plan completes, when the user says 'team build: <slug>', 'execute the plan', 'ship the team plan'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev).
+  ◇ team-cleanup                   Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans, and expired mailbox messages. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', or when disk space in ~/.claude/tasks/ grows. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days).
   ◇ team-plan                      Phase 1 of the agent-teams workflow: brain-dump the feature, research the codebase, ask at least 10 clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Use when starting a non-trivial feature that will be implemented by multiple agents in parallel, or when the user says 'team plan: X', 'plan this for the team', 'multi-agent plan'. Don't use for: single-file changes (use /feature-dev), trivial features (do inline), or research-only tasks (use /deep-dive).
+  ◇ validate-and-fix               Run the builder-validator-fix-revalidator quality chain on a single completed task. Use after a teammate claims a task is done but you want independent validation before merging. Don't use for: pre-execution plan validation (use /team-build's F10 gate), post-build whole-project validation (use /pre-ship-verify), or tasks without a plan file (use /feature-dev for single-file work).
+  ◇ wave-status                    Report real-time status of a multi-agent build: current wave, task progress, stale heartbeats, active locks, and ETA. Use during /team-build execution to check progress, or when the user asks 'where are we', 'status of the build', 'is the team done'. Don't use for: single-file work (use /status-update), or before a plan exists (use /team-plan first).
 
 ### Agents (27)
   ◇ api-doc-specialist             Senior API documentation specialist for OpenAPI specs, SDK references, and developer-portal content. Spawn when generating or updating API contract documentation, designing endpoint naming conventions, or building developer-facing integration guides. Don't use for: user-facing product documentation (defer to technical-writer), frontend component docs (defer to frontend-engineer), or internal runbooks (defer to technical-writer). Owns the contract between your API and its consumers.
@@ -152,6 +161,7 @@ _Personals/kbg-harness_
 ## Skills — Repo
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
+| 7-agent-pattern | Apply the canonical 7-agent feature pattern: API/middleware → styles → tests → types → hooks → integration → remaining. Use when planning a non-trivial full-stack feature that spans backend, frontend, DB, tests, and docs. Don't use for: single-file changes (use /feature-dev), pure backend or pure frontend work (use 3-4 agents instead), or research-only tasks. | inline | auto |
 | accept-task | 'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that kbg:review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.' | inline | auto |
 | acli | ALWAYS trigger for bulk / set-based Jira work-item operations and for creating or managing Confluence spaces, pages, or blogs — run from the terminal. Bulk Jira: move / transition / label / assign / comment / clone / delete / archive many issues at once, bulk-edit priority/assignee/labels/status, or export a JQL result to CSV/Excel — selected by JQL, sprint name, or issue-key list (e.g. \"move every ticket in Sprint 42 to Done\", \"export all open bugs to CSV\"; Thai phrasings too). Also trigger when the user asks to RUN an acli command for such an operation. Do NOT trigger for: reading or checking a single ticket (just run acli view), writing JQL / JQL-syntax help, installing / configuring / authenticating acli or asking for an acli cheat-sheet, GitHub / GitLab, or other non-Atlassian trackers. | inline | auto |
 | adr | Draft an Architecture Decision Record when a decision is hard to reverse, surprising without context, or the result of a real trade-off. Use when choosing between frameworks, changing data models, introducing dependencies, or retiring patterns. Do NOT use for: trivial choices (use inline comment), documenting what already exists (use README), or decisions with no alternatives considered. | inline | manual |
@@ -171,13 +181,16 @@ _Personals/kbg-harness_
 | orchestrate | Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists multiple competing tasks, asks 'what should I work on' / 'what's the priority' / 'how should I approach this', dumps a batch of issues or tickets, plans a day/week/sprint, feels overwhelmed, or spans several independent sub-tasks / sequential phases (e.g., 'extract then transform then load'). Also trigger on a pile of work, competing deadlines, or a list of items to do, even unprompted. Don't use for: single-issue triage or issue-queue/state (use triage), PR review (use kbg:review-pr), building one feature (use /feature-dev), or single-file coding (inline). | inline | auto |
 | perf | Investigate and fix performance regressions or bottlenecks. ALWAYS trigger when latency spikes or jumps, throughput drops, memory grows or leaks, CPU saturates, queries slow down, cache hit rate falls, builds or CI slow down, cold starts increase, resolvers time out, ETL pipelines slow, or users report slowness. Do NOT use for: production outages (use kbg:incident or kbg:hotfix), functional bugs with no performance symptom (use /fix-bug or /diagnose), architectural redesigns (use /deep-dive or code-architect), capacity planning, or feature requests that mention speed. | inline | auto |
 | probe | Systems-thinking probe for architecture and design decisions. Use when the user asks 'should we...', 'why not...', 'what if...', or when evaluating trade-offs, risks, second-order effects, or the systemic impact of a technical choice. Don't use for: implementation work (use /feature-dev or kbg:backend-dev), prioritization (use kbg:orchestrate), pure research (use kbg:research-brief), or security audits (use kbg:security-auditor). | inline | auto |
+| progressive-refine | Run a multi-pass progressive refinement pipeline: rough draft → review → revise → polish. Use when the output quality matters more than speed (docs, complex algorithms, public APIs, architecture decisions). Don't use for: one-pass sufficient work (use inline or /feature-dev), or when the user explicitly says 'quick and dirty'. | inline | auto |
 | recursive-improve | Run ONE bounded, human-gated cycle of harness self-improvement: observe verification + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', 'what should we fix in the harness', or after a session whose verification posture shows gaps. Do NOT use for: a single known bug (use /fix-bug), a new feature (use /feature-dev), external-tool/article evaluation (use kbg:article-mine), refactoring a specific module (use maintenance-engineer), or any autonomous/unattended run — this ritual is human-gated by design and has no autonomous mode. | inline | manual |
 | research-brief | Research brief with search-first + diagnose preloaded. Use when user says 'research this', 'deep dive on X', 'how does Y work in this codebase', 'compare Z approaches', or any open-ended exploration spanning files, docs, and external sources. Don't use for: implementation work (use /feature-dev or kbg:backend-dev), bug fixes (use /fix-bug), or security audits (use kbg:security-auditor). | researcher | auto |
 | review-pr | Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready for review, after addressing reviewer feedback, or when user says 'review my changes', 'review the PR', or specifies aspects ('kbg:review-pr tests errors'). Don't use for: single-file diffs (just review inline), security-only audits (use kbg:security-auditor), post-merge retrospectives, or calling a single agent directly (use the Agent tool instead). | inline | auto |
 | security-auditor | Comprehensive security audit for code touching auth, secrets, external input, file uploads, or dependencies. ALWAYS use this skill when asked to audit, review, or check code for security flaws, injection risks, XSS, CSRF, SSRF, path traversal, broken access control, secrets leaks, or vulnerable components. Trigger before merging PRs that touch auth flows, API endpoints, admin panels, payment systems, or dependency manifests. Do NOT use for: general code quality reviews (use kbg:review-pr), production incident response (use kbg:hotfix or kbg:incident), or non-code security topics (infrastructure, policy). | inline | auto |
 | semantic-code | Use this skill when the user asks about functions, classes, or methods — not just lines of code. Use for: what functions or classes changed in commits or PRs, history of a specific function or class, cross-file dependency graphs showing callers and callees, whether refactoring or renaming will break things, and token-budgeted context on a specific entity. Do NOT use for: plain git operations like raw diffs, file listings, or simple blame. | inline | auto |
 | ship-change | Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent). | inline | manual |
+| task-sizing | Size and shape tasks for multi-agent builds: split oversized work, merge undersized crumbs, and balance the 5-6 tasks/person sweet spot. Use when planning a /team-build, when the user asks 'is this plan too big', 'how many tasks per agent', or when a wave has >16 tasks (F8.5 overflow). Don't use for: single-file work (use /feature-dev), or post-build quality checks (use /validate-and-fix). | inline | auto |
 | tech-humanize | | | inline | auto |
+| types-first | Apply the 'types first' rule to multi-agent plans: define interfaces, contracts, and schemas before fanning out implementation tasks. Use when the plan touches APIs, DB schemas, type systems, or cross-component boundaries. Don't use for: pure frontend UI work with no backend contract, or maintenance tasks that don't change interfaces. | inline | auto |
 | usage-monitor | 'Read-only cost + sub-agent usage summary for the current session. Use when the user asks "how much did this session cost", "how many tokens did the sub-agents burn", "show me a cost breakdown by agent", or any time nested-team token burn is suspected (~7x amplification unaddressed in the 2026-06-12 audit). Surfaces stats from the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; no enforcement, no gates, no L3/L4 — strictly L2 read-only. Do NOT use for real-time cost gating (no such gate exists by design), cross-session cost aggregation (out of scope), or OTEL/OTLP export to external backends (not implemented).' | inline | auto |
 
 ## Hooks — Repo
@@ -228,7 +241,78 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-12T11:54:10Z_
+_Generated: 2026-06-12T13:18:32Z_
+
+---
+
+## Task sizing guidance
+
+Derived from `skills/task-sizing/SKILL.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
+
+### The 5-6 rule
+5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
+
+### Size heuristics
+| Dimension | Too small | Too big | Just right |
+|-----------|-----------|---------|------------|
+| Description | < 30 chars, or "just run X" | Vague novel | 1 concrete sentence |
+| Files | No files assigned | > 3 files owned | 1-2 files |
+| Criteria | None listed | > 2 criteria | 1-2 criteria |
+| Dependencies | 0 (island task) | > 2 upstream tasks | 1 max |
+| Estimate | < 15 min | > 4 hours | 2-4 hours |
+
+### Wave balancing
+- **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
+- **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/feature-dev` instead.
+- **F8.5 hard cap:** > 16 tasks in any wave → split or merge. Clamp in code, not prose.
+
+### Splitting oversized tasks
+1. **Interface-first split:** extract API contract / type definition as Wave 1.
+2. **Layer split:** backend → frontend → integration → tests (one task per layer).
+3. **File split:** one task per file when files are independent. Never split a single file across two agents.
+
+### Merging undersized tasks
+1. Same file + same owner → merge.
+2. "Update docs after X" → merge into X's task.
+3. No files + no criteria → drop or merge.
+
+---
+
+## File ownership boundary table
+
+Canonical file patterns per agent. Assign each file to exactly one agent in a `/team-build` plan to prevent silent overwrites.
+
+| Agent | Canonical file patterns | Notes |
+|---|---|---|
+| `api-doc-specialist` | `openapi/`, `docs/api/`, `sdk/`, `swagger/` | |
+| `backend-engineer` | `api/`, `middleware/`, `models/`, `routes/`, `services/`, `tests/` | |
+| `code-architect` | `docs/adr/`, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
+| `code-explorer` | any file | Read-only trace |
+| `code-reviewer` | any file | Read-only review |
+| `code-simplifier` | any file | Post-impl refinement; Edit/Write/Bash |
+| `comment-analyzer` | any file | Read-only comment audit |
+| `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |
+| `data-engineer` | `migrations/`, `etl/`, `analytics/`, `warehouse/`, `dbt/`, `spark/` | Beyond OLTP |
+| `devops-engineer` | `.github/`, `docker/`, `k8s/`, `terraform/`, `helm/`, `ci/` | |
+| `finops-engineer` | `infra/cost/`, `budgets/`, `docs/finops/` | Read-only + Bash for cost queries |
+| `frontend-engineer` | `src/components/`, `src/pages/`, `styles/`, `public/`, `assets/`, `src/hooks/` | |
+| `i18n-specialist` | `locales/`, `translations/`, `i18n/`, `src/i18n/`, `l10n/` | |
+| `incident-commander` | `docs/incidents/`, `runbooks/`, `alerts/`, `oncall/` | Read-only + coordination |
+| `maintenance-engineer` | any file | Refactor / deprecation scope |
+| `ml-engineer` | `ml/`, `models/`, `features/`, `pipelines/`, `serving/`, `inference/` | |
+| `mobile-engineer` | `ios/`, `android/`, `mobile/`, `react-native/`, `flutter/` | |
+| `platform-engineer` | `platform/`, `proto/`, `gateway/`, `mesh/`, `grpc/`, `event-bus/` | |
+| `pr-test-analyzer` | any file | Read-only test-coverage audit |
+| `product-analyst` | `docs/requirements/`, `prd/`, `user-stories/` | Read-only + Bash |
+| `researcher` | any file | Read-only research |
+| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | Read-only audit |
+| `silent-failure-hunter` | any file | Read-only error-handling audit |
+| `technical-writer` | `docs/`, `README*`, `CHANGELOG*`, `*.md`, `guides/`, `runbooks/` | |
+| `test-engineer` | `tests/`, `*.test.*`, `*.spec.*`, `test_*.py`, `e2e/`, `integration/` | |
+| `type-design-analyzer` | any file | Read-only type audit |
+| `ux-reviewer` | `src/components/`, `src/pages/`, `e2e/ux/`, `a11y/` | Read-only UX audit |
+
 
 ---
 
@@ -244,7 +328,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 
 ### Module Boundaries
 - `agents/` — 27 senior-specialist agents
-- `skills/` — 27 workflow skills
+- `skills/` — 28 workflow skills
 - `commands/` — 11 slash commands
 - `hooks/` — 38 hook scripts
 - `output-styles/` — 1 TECH-LEAD-THAI
@@ -274,3 +358,53 @@ Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable
 - `/team-build <plan-file>` — Steps 4-7: contract chain + wave execution + post-build validation
 - TaskCompleted test-claim gate (`hooks/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
 - F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
+
+---
+
+## Trigger phrases
+
+Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
+
+### Planning & execution
+| User says | Dispatch | Why |
+|---|---|---|
+| "plan this for the team", "multi-agent plan", "team plan: X" | `/team-plan` | Steps 1-3: brain dump + Q&A + structured plan |
+| "build the plan", "execute the plan", "ship the team plan" | `/team-build` | Steps 4-7: contract chain + wave execution |
+| "where are we", "status of the build", "is the team done" | `/wave-status` | Reads task board, reports wave progress |
+| "clean up the team", "remove old plans", "stale tasks" | `/team-cleanup` | Reaps locks, heartbeats, archives old boards |
+| "validate this task", "did the teammate do it right" | `/validate-and-fix` | B→V1→F→V2 validation chain on one task |
+| "lint the plan", "is this plan ready" | `/pre-flight-plan-linter` | Structural validation before `/team-build` |
+| "pros and cons", "which is better", "should we use X or Y" | `/debug-debate` | Advocate + Skeptic + Synthesizer debate |
+
+### Single-task workflows
+| User says | Dispatch | Why |
+|---|---|---|
+| "build one feature", "implement X" | `/feature-dev` | Single-agent ceremony |
+| "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
+| "address review feedback" | `/address-review` | PR review response |
+| "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
+| "release now", "cut a release" | `/ship-release` | Release ceremony |
+
+### Research & analysis
+| User says | Dispatch | Why |
+|---|---|---|
+| "research this", "deep dive on X", "how does Y work" | `/deep-dive` | Brain dump + Q&A + plan |
+| "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
+| "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
+| "what should I work on", "prioritize these" | `kbg:orchestrate` skill | Prioritize + route |
+
+### Incident & post-mortem
+| User says | Dispatch | Why |
+|---|---|---|
+| "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
+| "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
+| "status update", "what did we ship" | `/status-update` | Status report |
+
+### Agent-team troubleshooting
+| User says | Dispatch | Why |
+|---|---|---|
+| "agent went idle", "teammate stopped" | `/wave-status` → `/team-build` re-dispatch | Heartbeat check + re-claim |
+| "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
+| "validation failed but it says done" | `/validate-and-fix` | F7 gate + re-validator |
+| "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
+

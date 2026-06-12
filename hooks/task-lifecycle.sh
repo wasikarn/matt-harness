@@ -34,10 +34,23 @@
 # passing the gate should include it in the task description body
 # (e.g. "validation_command: pytest tests/test_x.py -v").
 #
+# Embedding convention — plan_slug: / task_id:
+# Teammates that opt into task board tracking should include these fields in
+# the task description (same embedding style as validation_command:):
+#   plan_slug: <plan-directory-name>
+#   task_id:   <task-key-in-board.json>
+# Example:
+#   plan_slug: health-endpoint
+#   task_id: API-1
+# The hook extracts these via case-insensitive grep over task_subject +
+# task_description, then sources scripts/task_board_lib.sh to update the
+# runtime board. Missing fields = no board update (backward compatible).
+#
 # Deferred (still log-only, add when pain demonstrates need):
 #   - TaskCreated     block if description < 30 chars (vendor: "Size tasks appropriately" — too small) or
 #                     overlapping file paths across in-progress tasks (vendor: "Avoid file conflicts")
 #   - TeammateIdle    block if pending unblocked tasks remain (vendor: "Wait for teammates" — keep working)
+#                     NOW IMPLEMENTED via heartbeat scan (Phase 3, 2026-06-12)
 #
 # Failure mode: TeammateIdle + TaskCreated remain silent (exit 0, log-only).
 # TaskCompleted enforces test-claim gate (exit 2 + stderr if claim found
@@ -71,6 +84,66 @@ if [ -n "$ENTRY" ]; then
 else
   jq -nc --arg ts "$TS" --arg event "$EVENT" --arg raw "$INPUT" \
     '{ts: $ts, event: $event, payload: {raw: $raw}}' >> "$LOG_FILE" 2>/dev/null
+fi
+
+# [POLYFILL] Task board integration — helpers
+_kbg_extract_field() {
+  local text="$1" field="$2"
+  printf '%s' "$text" | grep -iE "${field}[[:space:]]*:" | head -1 | sed -E "s/.*${field}[[:space:]]*:[[:space:]]*//I; s/[[:space:]]+$//"
+}
+
+_kbg_heartbeat_stale() {
+  local file="$1"
+  local threshold="${2:-300}"
+  python3 -c 'import datetime, json, sys
+try:
+    with open(sys.argv[1]) as f:
+        data = json.load(f)
+    ts = data.get("last_heartbeat", "")
+    if not ts:
+        sys.exit(1)
+    ts = ts.replace("Z", "+00:00")
+    hb = datetime.datetime.fromisoformat(ts)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    diff = (now - hb).total_seconds()
+    sys.exit(0 if diff > int(sys.argv[2]) else 1)
+except Exception:
+    sys.exit(1)
+' "$file" "$threshold" 2>/dev/null
+}
+
+# [POLYFILL] Task board integration — TaskCreated
+if [ "$EVENT" = "TaskCreated" ]; then
+  TASK_SUBJECT=$(printf '%s' "$INPUT" | jq -r '.task_subject // ""' 2>/dev/null)
+  TASK_DESC=$(printf '%s' "$INPUT" | jq -r '.task_description // ""' 2>/dev/null)
+  TASK_TEXT=" ${TASK_SUBJECT} ${TASK_DESC} "
+  PLAN_SLUG=$(_kbg_extract_field "$TASK_TEXT" "plan_slug")
+  TID=$(_kbg_extract_field "$TASK_TEXT" "task_id")
+
+  if [ -n "$PLAN_SLUG" ] && [ -n "$TID" ]; then
+    TASK_BOARD_LIB="$(dirname "$0")/../scripts/task_board_lib.sh"
+    if [ -f "$TASK_BOARD_LIB" ]; then
+      # shellcheck source=../scripts/task_board_lib.sh
+      source "$TASK_BOARD_LIB"
+      PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
+      if [ -f "${PLAN_DIR}/board.json" ]; then
+        if kbg_lock_acquire "$PLAN_DIR" 5; then
+          if BOARD=$(kbg_board_read "$PLAN_DIR") && [ -n "$BOARD" ]; then
+            NEW_BOARD=$(printf '%s' "$BOARD" | jq --arg tid "$TID" --arg now "$TS" '
+              if .tasks[$tid] and .tasks[$tid].status == "pending" then
+                .tasks[$tid].status = "in_progress"
+                | .tasks[$tid].claimed_at = $now
+                | .updated_at = $now
+              else
+                .
+              end
+            ')
+            kbg_board_write "$PLAN_DIR" "$NEW_BOARD"
+          fi
+        fi
+      fi
+    fi
+  fi
 fi
 
 # Phase 2 F7 enforcement — TaskCompleted test-claim gate.
@@ -137,6 +210,115 @@ This gate is Phase 2 F7 (audit 2026-06-12). See .claude/hooks/task-lifecycle.sh 
 EOF
       exit 2
     fi
+  fi
+fi
+
+# [POLYFILL] Task board integration — TaskCompleted
+if [ "$EVENT" = "TaskCompleted" ]; then
+  # Re-use TASK_SUBJECT / TASK_DESC if already parsed in F7 block
+  if [ -z "${TASK_SUBJECT:-}" ] || [ -z "${TASK_DESC:-}" ]; then
+    TASK_SUBJECT=$(printf '%s' "$INPUT" | jq -r '.task_subject // ""' 2>/dev/null)
+    TASK_DESC=$(printf '%s' "$INPUT" | jq -r '.task_description // ""' 2>/dev/null)
+  fi
+  TASK_TEXT=" ${TASK_SUBJECT} ${TASK_DESC} "
+  PLAN_SLUG=$(_kbg_extract_field "$TASK_TEXT" "plan_slug")
+  TID=$(_kbg_extract_field "$TASK_TEXT" "task_id")
+
+  if [ -n "$PLAN_SLUG" ] && [ -n "$TID" ]; then
+    TASK_BOARD_LIB="$(dirname "$0")/../scripts/task_board_lib.sh"
+    if [ -f "$TASK_BOARD_LIB" ]; then
+      # shellcheck source=../scripts/task_board_lib.sh
+      source "$TASK_BOARD_LIB"
+      PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
+      if [ -f "${PLAN_DIR}/board.json" ]; then
+        if kbg_lock_acquire "$PLAN_DIR" 5; then
+          if BOARD=$(kbg_board_read "$PLAN_DIR") && [ -n "$BOARD" ]; then
+            NEW_BOARD=$(printf '%s' "$BOARD" | jq --arg tid "$TID" --arg now "$TS" '
+              if .tasks[$tid] then
+                .tasks[$tid].status = "completed"
+                | .tasks[$tid].completed_at = $now
+                | .updated_at = $now
+              else
+                .
+              end
+            ')
+            kbg_board_write "$PLAN_DIR" "$NEW_BOARD"
+            kbg_recompute_blocked "$PLAN_DIR"
+
+            # Auto-release locks if the task has files
+            HAS_FILES=$(printf '%s' "$BOARD" | jq -r --arg tid "$TID" '(.tasks[$tid].files // []) | length')
+            if [ "$HAS_FILES" -gt 0 ] 2>/dev/null; then
+              LOCK_RELEASE="$(dirname "$0")/../scripts/lock-release.sh"
+              if [ -f "$LOCK_RELEASE" ]; then
+                bash "$LOCK_RELEASE" --plan-dir "$PLAN_DIR" --task-id "$TID" >/dev/null 2>&1 || true
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
+
+# [POLYFILL] Task board integration — TeammateIdle
+if [ "$EVENT" = "TeammateIdle" ]; then
+  TASK_TEXT="$INPUT"
+  PLAN_SLUG=$(_kbg_extract_field "$TASK_TEXT" "plan_slug")
+  CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null)
+
+  IDLE_BLOCKED=0
+  IDLE_PLAN=""
+
+  _kbg_check_plan_idle() {
+    local pdir="$1"
+    local hb_dir="${pdir}/heartbeat"
+    [ -d "$hb_dir" ] || return 1
+    local any_stale=0
+    for hb in "$hb_dir"/*.json; do
+      [ -f "$hb" ] || continue
+      if _kbg_heartbeat_stale "$hb" 300; then
+        any_stale=1
+        break
+      fi
+    done
+    if [ "$any_stale" = 1 ]; then
+      local bfile="${pdir}/board.json"
+      if [ -f "$bfile" ]; then
+        if jq -e '([.tasks[]? | select(.status == "pending")] | length) > 0' "$bfile" >/dev/null 2>&1; then
+          return 0
+        fi
+      fi
+    fi
+    return 1
+  }
+
+  if [ -n "$PLAN_SLUG" ]; then
+    PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
+    if _kbg_check_plan_idle "$PLAN_DIR"; then
+      IDLE_BLOCKED=1
+      IDLE_PLAN="$PLAN_SLUG"
+    fi
+  elif [ -n "$CWD" ]; then
+    TASKS_DIR="${CWD}/.claude/tasks"
+    if [ -d "$TASKS_DIR" ]; then
+      for pdir in "$TASKS_DIR"/*; do
+        [ -d "$pdir" ] || continue
+        local pname
+        pname=$(basename "$pdir")
+        if _kbg_check_plan_idle "$pdir"; then
+          IDLE_BLOCKED=1
+          IDLE_PLAN="$pname"
+          break
+        fi
+      done
+    fi
+  fi
+
+  if [ "$IDLE_BLOCKED" = 1 ]; then
+    cat >&2 <<EOF
+TeammateIdle blocked: stale heartbeat detected for plan '${IDLE_PLAN}' and pending unblocked tasks remain. Resume work or explicitly release your claimed task.
+EOF
+    exit 2
   fi
 fi
 

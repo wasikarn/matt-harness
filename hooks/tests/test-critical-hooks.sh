@@ -248,6 +248,179 @@ check_task task-lifecycle.sh 2  "TASK-GATE"  "F7h 'pytest' still matches as a wo
 check_task task-lifecycle.sh 0  ""          "F7e TeammateIdle still log-only (siblings unaffected)"  "$(teammate_idle_event)"
 check_task task-lifecycle.sh 0  ""          "F7f TaskCreated still log-only" "$(task_created_event '15' 'Implement F7 hook' 'Write the enforcement branch')"
 
+# --- task-lifecycle.sh task board integration (Phase 3, 2026-06-12)
+echo
+echo "--- task-lifecycle.sh: task board integration ---"
+
+# Build a temp board fixture for plan "test-plan"
+BOARD_FIXTURE="$FIXTURE/board-fixture"
+mkdir -p "$BOARD_FIXTURE/.claude/tasks/test-plan"
+cat > "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" <<'BEOF'
+{
+  "schema_version": 1,
+  "plan_slug": "test-plan",
+  "created_at": "2026-06-12T10:00:00Z",
+  "updated_at": "2026-06-12T10:00:00Z",
+  "status": "in_progress",
+  "tasks": {
+    "T-1": {
+      "id": "T-1",
+      "description": "Test task",
+      "status": "pending",
+      "assigned_role": "backend-engineer",
+      "claimed_by": null,
+      "claimed_at": null,
+      "completed_at": null,
+      "depends_on": [],
+      "blocked_by": [],
+      "files": [],
+      "wave": 1,
+      "notes": ""
+    },
+    "T-2": {
+      "id": "T-2",
+      "description": "Blocked task",
+      "status": "blocked",
+      "assigned_role": "backend-engineer",
+      "claimed_by": null,
+      "claimed_at": null,
+      "completed_at": null,
+      "depends_on": ["T-1"],
+      "blocked_by": ["T-1"],
+      "files": [],
+      "wave": 2,
+      "notes": ""
+    }
+  },
+  "waves": { "1": ["T-1"], "2": ["T-2"] },
+  "agents": {}
+}
+BEOF
+
+task_board_created_event() { printf '%s' '{"hook_event_name":"TaskCreated","task_id":"T-1","task_subject":"Implement feature","task_description":"Do the thing\nplan_slug: test-plan\ntask_id: T-1"}'; }
+task_board_completed_event() { printf '%s' '{"hook_event_name":"TaskCompleted","task_id":"T-1","task_subject":"Feature done","task_description":"Completed\nplan_slug: test-plan\ntask_id: T-1"}'; }
+teammate_idle_with_cwd_event() { printf '{"hook_event_name":"TeammateIdle","cwd":"%s"}' "$BOARD_FIXTURE"; }
+
+# (TB1) TaskCreated with plan_slug + task_id sets task status to in_progress
+( export HOME="$BOARD_FIXTURE"; printf '%s' "$(task_board_created_event)" | bash "$HOOKS/task-lifecycle.sh" ) >/dev/null 2>&1
+TB1_STATUS=$(jq -r '.tasks["T-1"].status' "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" 2>/dev/null)
+if [ "$TB1_STATUS" = "in_progress" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TaskCreated sets board task to in_progress\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TaskCreated board status=%s (want in_progress)\n' "task-lifecycle.sh" "$TB1_STATUS"
+fi
+
+# Reset board for next test
+cat > "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" <<'BEOF'
+{
+  "schema_version": 1,
+  "plan_slug": "test-plan",
+  "created_at": "2026-06-12T10:00:00Z",
+  "updated_at": "2026-06-12T10:00:00Z",
+  "status": "in_progress",
+  "tasks": {
+    "T-1": {
+      "id": "T-1",
+      "description": "Test task",
+      "status": "pending",
+      "assigned_role": "backend-engineer",
+      "claimed_by": null,
+      "claimed_at": null,
+      "completed_at": null,
+      "depends_on": [],
+      "blocked_by": [],
+      "files": [],
+      "wave": 1,
+      "notes": ""
+    },
+    "T-2": {
+      "id": "T-2",
+      "description": "Blocked task",
+      "status": "blocked",
+      "assigned_role": "backend-engineer",
+      "claimed_by": null,
+      "claimed_at": null,
+      "completed_at": null,
+      "depends_on": ["T-1"],
+      "blocked_by": ["T-1"],
+      "files": [],
+      "wave": 2,
+      "notes": ""
+    }
+  },
+  "waves": { "1": ["T-1"], "2": ["T-2"] },
+  "agents": {}
+}
+BEOF
+
+# (TB2) TaskCompleted with plan_slug + task_id sets task status to completed and unblocks dependents
+( export HOME="$BOARD_FIXTURE"; printf '%s' "$(task_board_completed_event)" | bash "$HOOKS/task-lifecycle.sh" ) >/dev/null 2>&1
+TB2_STATUS=$(jq -r '.tasks["T-1"].status' "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" 2>/dev/null)
+TB2_COMP=$(jq -r '.tasks["T-1"].completed_at' "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" 2>/dev/null)
+TB2_T2_STATUS=$(jq -r '.tasks["T-2"].status' "$BOARD_FIXTURE/.claude/tasks/test-plan/board.json" 2>/dev/null)
+if [ "$TB2_STATUS" = "completed" ] && [ -n "$TB2_COMP" ] && [ "$TB2_COMP" != "null" ] && [ "$TB2_T2_STATUS" = "pending" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TaskCompleted sets board task to completed, unblocks dependent\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TaskCompleted board status=%s completed_at=%s T-2_status=%s\n' "task-lifecycle.sh" "$TB2_STATUS" "$TB2_COMP" "$TB2_T2_STATUS"
+fi
+
+# (TB3) TeammateIdle with stale heartbeat + pending tasks + cwd → exit 2
+mkdir -p "$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat"
+cat > "$BOARD_FIXTURE/.claude/tasks/idle-plan/board.json" <<'BEOF'
+{
+  "schema_version": 1,
+  "plan_slug": "idle-plan",
+  "tasks": {
+    "I-1": {
+      "id": "I-1",
+      "status": "pending",
+      "depends_on": [],
+      "blocked_by": [],
+      "files": []
+    }
+  }
+}
+BEOF
+python3 -c "
+import json, datetime
+ts = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=6)).isoformat().replace('+00:00', 'Z')
+with open('$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat/agent-stale.json', 'w') as f:
+    json.dump({'agent_id':'agent-stale','last_heartbeat':ts}, f)
+"
+TB3_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB3_RC=$?
+if [ "$TB3_RC" = 2 ] && printf '%s' "$TB3_STDERR" | grep -qi 'stale'; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle stale heartbeat + pending tasks → exit 2\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TeammateIdle stale: rc=%s (want 2) stderr=%s\n' "task-lifecycle.sh" "$TB3_RC" "$TB3_STDERR"
+fi
+
+# (TB4) TeammateIdle with fresh heartbeat + pending tasks + cwd → exit 0
+# Remove the stale heartbeat and write a fresh one.
+rm -f "$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat/agent-stale.json"
+python3 -c "
+import json, datetime
+ts = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1)).isoformat().replace('+00:00', 'Z')
+with open('$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat/agent-fresh.json', 'w') as f:
+    json.dump({'agent_id':'agent-fresh','last_heartbeat':ts}, f)
+"
+TB4_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB4_RC=$?
+if [ "$TB4_RC" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle fresh heartbeat → exit 0\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TeammateIdle fresh: rc=%s (want 0) stderr=%s\n' "task-lifecycle.sh" "$TB4_RC" "$TB4_STDERR"
+fi
+
+# (TB5) TeammateIdle with no plan_slug and no cwd → exit 0 (no false-positive)
+TB5_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '{"hook_event_name":"TeammateIdle"}' | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB5_RC=$?
+if [ "$TB5_RC" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle no plan_slug/cwd → exit 0 (no false-positive)\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TeammateIdle no-context: rc=%s (want 0) stderr=%s\n' "task-lifecycle.sh" "$TB5_RC" "$TB5_STDERR"
+fi
+
 # --- db-write-gate: ask on non-SELECT MCP DB calls, allow SELECT/EXPLAIN/info_schema,
 #     ignore non-DB MCP tools. Mirrors DBGATE doctrine as a deterministic gate.
 mcp_db_event() { printf '{"tool_name":"%s","tool_input":{"query":%s}}' "$1" "$(printf '%s' "$2" | jq -R .)"; }

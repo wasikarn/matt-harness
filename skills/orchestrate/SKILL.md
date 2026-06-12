@@ -182,6 +182,235 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 **Cross-references:** this doctrine is the runtime contract that `/team-build` (commands/team-build.md) assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
 
+## Validation chain (builder → validator → fix → re-validator)
+
+The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch. The board makes the ordering observable and resumable across sessions.
+
+This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol earlier in this skill. `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
+
+### Concept
+
+1. **Step A — Builder implements.** A write-capable agent (e.g. `backend-engineer`) produces the artifact.
+2. **Step B — Validator reviews.** A read-only agent (e.g. `code-reviewer`) checks quality; `security-reviewer` checks OWASP.
+3. **Step C — Fixer repairs (conditional).** If the validator rejects, the builder or `code-simplifier` addresses the findings.
+4. **Step D — Re-validator confirms.** The same or a different validator verifies the fix.
+
+The chain is a DAG in the board: `A → B → F → D`. Each edge is `depends_on` + `recompute_blocked()`.
+
+### Task board integration
+
+Use `scripts/task_board_lib.sh` for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
+
+- **Spawn Step A:** create the task with `status = "pending"` and `depends_on = []`. After claiming, set `task.status = "in_progress"` and write the board.
+- **Spawn Step B:** create the task with `depends_on = ["A-task-id"]`. `kbg_recompute_blocked` will set `status = "blocked"` and `blocked_by = ["A-task-id"]` until A completes. Once A is marked `completed`, recompute unblocks B to `pending`; the lead then sets `status = "in_progress"` when spawning the validator.
+- **Step B rejects:** create a fix task with `depends_on = ["B-task-id"]` and `status = "pending"`. Run `kbg_recompute_blocked` to derive `blocked_by`.
+- **Step D passes:** mark D `completed`. A, B, and F are already `completed` by this point; the lead verifies the whole chain is `completed` and updates the plan-level `status`.
+
+**Shell pattern for state transitions:**
+
+```bash
+# After builder finishes
+updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T1"].status = "completed"')
+kbg_board_write "$PLAN_DIR" "$updated"
+kbg_recompute_blocked "$PLAN_DIR"
+
+# Check if validator is now unblocked
+kbg_board_read "$PLAN_DIR" | jq '.tasks["T2"].status'  # should be "pending"
+```
+
+### Worked example: health check endpoint
+
+Concrete 4-task chain for implementing `GET /health`.
+
+**Task 1 — Builder: implement endpoint**
+
+```
+# Task: Implement GET /health
+
+## What
+Add a health check endpoint that returns 200 with JSON body.
+
+## Where
+`src/api/routes/health.py`
+
+## Focus
+Minimal blast radius — no new dependencies.
+
+## Deliverable
+`src/api/routes/health.py` exists and `GET /health` returns `{"status":"ok"}`.
+
+## FILES YOU OWN
+- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+
+## UPSTREAM CONTRACTS
+(Empty list — first task in chain.)
+
+## Files + Criteria + Constraints
+| File | Criterion | Constraint |
+|------|-----------|------------|
+| src/api/routes/health.py | exports `GET /health` handler | no new deps |
+
+## Done-when
+- [ ] `GET /health` returns HTTP 200 + `{"status":"ok"}`
+- [ ] `bash -n src/api/routes/health.py` exits 0
+- [ ] No edit to files outside FILES YOU OWN
+```
+
+Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
+
+**Task 2 — Validator: review PR**
+
+```
+# Task: Review health endpoint PR
+
+## What
+Review `src/api/routes/health.py` for correctness, style, and test coverage.
+
+## Where
+`src/api/routes/health.py` and any tests that cover it.
+
+## Focus
+Correctness over speed.
+
+## Deliverable
+A verdict file at `.scratch/health-review/verdict.md` with pass/fail and file:line citations.
+
+## FILES YOU OWN
+(Validator is read-only — no owned files.)
+
+## UPSTREAM CONTRACTS
+- From task T1: `src/api/routes/health.py` — read from `tasks["T1"].files` in the board.
+
+## Files + Criteria + Constraints
+| File | Criterion | Constraint |
+|------|-----------|------------|
+| src/api/routes/health.py | passes `bash -n`, has tests, no secrets | read-only |
+
+## Done-when
+- [ ] Verdict file exists at `.scratch/health-review/verdict.md`
+- [ ] Every finding cites file:line
+- [ ] No edit to any file (read-only validation)
+```
+
+Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/block-dangerous-bash-from-validators.sh` hook prevents mutation even if the prompt drifts.
+
+**Task 3 — Fixer: address review findings (conditional)**
+
+Only spawned if Task 2's verdict is `fail`.
+
+```
+# Task: Fix health endpoint review findings
+
+## What
+Address every finding from T2 verbatim.
+
+## Where
+`src/api/routes/health.py` and related tests.
+
+## Focus
+Precision over creativity — apply the fix exactly as described.
+
+## Deliverable
+`src/api/routes/health.py` passes all T2 findings.
+
+## FILES YOU OWN
+- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+
+## UPSTREAM CONTRACTS
+- From task T2: verbatim findings from `.scratch/health-review/verdict.md` — reproduce each in the fix commit message.
+
+## Files + Criteria + Constraints
+| File | Criterion | Constraint |
+|------|-----------|------------|
+| src/api/routes/health.py | T2 findings resolved | no regression |
+
+## Done-when
+- [ ] Every T2 finding is either fixed or explicitly rejected with reason
+- [ ] `bash -n src/api/routes/health.py` exits 0
+- [ ] No new files outside FILES YOU OWN
+```
+
+Spawn with `AskUserQuestion` (gated — fixer holds Edit/Write/Bash).
+
+**Task 4 — Re-validator: OWASP scan**
+
+```
+# Task: OWASP scan on final health endpoint
+
+## What
+Run security scan on the final `src/api/routes/health.py`.
+
+## Where
+`src/api/routes/health.py`
+
+## Focus
+Security correctness — no injection, no secret leakage.
+
+## Deliverable
+Security verdict at `.scratch/health-review/security-verdict.md`.
+
+## FILES YOU OWN
+(Validator is read-only.)
+
+## UPSTREAM CONTRACTS
+- From task T3: final diff — the lead runs `git diff` after Task 3 and pastes it here.
+- From task T1: `src/api/routes/health.py` — verify the final code does not re-introduce old patterns.
+
+## Files + Criteria + Constraints
+| File | Criterion | Constraint |
+|------|-----------|------------|
+| src/api/routes/health.py | no OWASP Top 10 patterns | read-only |
+
+## Done-when
+- [ ] Security verdict exists and is `pass`
+- [ ] No edit to any file
+```
+
+Spawn **ungated** — re-validators are read-only.
+
+**Lead check between waves**
+
+After spawning Task 1, the lead polls the board:
+
+```bash
+kbg_board_read "$PLAN_DIR" | jq '.tasks["T1"].status'
+# → "completed" ? proceed to T2
+```
+
+After Task 2 completes, the lead reads the verdict:
+
+```bash
+verdict=$(head -1 .scratch/health-review/verdict.md)
+if [[ "$verdict" == *"fail"* ]]; then
+  updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T3"].status = "pending"')
+else
+  updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T3"].status = "completed"')
+fi
+kbg_board_write "$PLAN_DIR" "$updated"
+kbg_recompute_blocked "$PLAN_DIR"
+```
+
+### Gating rules
+
+| Role | Gated? | Why |
+|------|--------|-----|
+| Builder (A) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
+| Validator (B) | **No** | Read-only; no AskUserQuestion |
+| Fixer (C) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
+| Re-validator (D) | **No** | Read-only; no AskUserQuestion |
+
+**Validator safety:** Even though validators are ungated, `hooks/block-dangerous-bash-from-validators.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
+
+### Upstream contract propagation
+
+1. **Task 2's prompt** must include the exact files Task 1 modified. Read them from the board: `tasks["T1"].files` (populated at plan init from the `Files` column).
+2. **Task 3's prompt** must include the validator's findings verbatim. The lead copies the verdict file contents into the `UPSTREAM CONTRACTS` block.
+3. **Task 4's prompt** must include the final diff. The lead runs `git diff` after Task 3 and pastes the diff into the `UPSTREAM CONTRACTS` block.
+
+Without these injections, each agent re-derives or assumes, which produces latent bugs and wasted work.
+
+**Cross-references:** this pattern uses the F9 spawn-prompt template above and the task board schema in `.scratch/task-board-architecture.md`. The `scripts/orchestrate-dispatch.py` dispatcher can render a YAML spec that encodes this exact 4-task chain.
+
 ## Bounded fan-out — hard cap (F8.5)
 
 **The fan-out cap is CODE-ENFORCED, not advisory.** A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.

@@ -76,7 +76,7 @@ fi
 # Deny list — 11 mutation patterns from SPEC F1. Each anchored on a
 # word/operator boundary to reduce false positives (e.g. `grep` must
 # not match `rm`'s token-boundary pattern).
-DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space:]]+(push|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|mv[[:space:]]+.*[[:space:]]+/|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall)'
+DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|\| tee[[:space:]]|mv[[:space:]]+.*[[:space:]]+/|cp[[:space:]]+.*[[:space:]]+/|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
 
 # Fork-bomb pattern is a special case (no whitespace tokenizer works cleanly
 # for `:(){ :|:& };:`). The canonical signature is `:(){ :|:& };:` — function
