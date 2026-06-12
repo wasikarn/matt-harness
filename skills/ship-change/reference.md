@@ -69,14 +69,25 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 
 ---
 
-## Phase 5: Merge (Full Procedure)
+## Phase 5: Verify + Merge (Full Procedure)
 
-**Goal**: Land the change.
+**Goal**: Collect independent proof, verify the acceptance contract, then land the change.
 
 **Actions**:
-1. Tell user: "Run `/ship-merge` when CI is green and approvals are in."
-2. Wait for `/ship-merge` to complete.
-3. Summarize: what changed, files touched, key decisions, and any follow-up items.
+1. **Collect proof artifacts** (at least one required per METHODOLOGY Rule 4 sub-rule):
+   - Run tests and capture output: `npm test`, `pytest`, `go test`, etc. Save output to `.scratch/<slug>/proofs/test-output.txt`.
+   - Run type-checker / linter: `tsc --noEmit`, `flake8`, `cargo check`. Save output to `.scratch/<slug>/proofs/typecheck.txt`.
+   - Run deterministic acceptance: `python3 scripts/run-acceptance.py <slug>`. Save `acceptance-results.json` to `.scratch/<slug>/proofs/`.
+   - Fresh-context adversarial review: spawn `code-reviewer` or `security-reviewer` with no prior context, capture findings to `.scratch/<slug>/proofs/adversarial-review.md`.
+   - **Gate**: if NONE of the above are available → STOP. Tell user: "Proof missing. Run at least one verification step before merge."
+2. **Verify acceptance contract** (if the task locked one via `/accept-task`):
+   - Run `/pre-ship-verify <slug>`.
+   - If RED → fix before merge.
+   - If AMBER → confirm manual criteria are met.
+   - If GREEN → proceed.
+3. Tell user: "Run `/ship-merge` when CI is green and approvals are in."
+4. Wait for `/ship-merge` to complete.
+5. Summarize: what changed, files touched, key decisions, proof artifacts collected, and any follow-up items.
 
 **Done.**
 

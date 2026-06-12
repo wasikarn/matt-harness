@@ -158,6 +158,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
    Surface a one-line count above the decision: `Acceptance: 4/5 criteria met · 1 gap (must-fix) · machine-check: 3/3 passed`. The machine-check count comes from the runner; it is independent of the review findings.
 
+   **Proof-verification check** (METHODOLOGY Rule 4 sub-rule): look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
+
 2. **Branch on review target (from Phase 1):**
 
    **A. Reviewing the current branch (your own working tree)** — fixes land directly, so go straight to the fix decision:
