@@ -1,6 +1,6 @@
 {
   "name": "kbg",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Personal Claude Code harness: 27 senior-specialist agents, 27 workflow skills, 11 commands (incl. /team-plan + /team-build for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, and /pre-ship-verify for deterministic acceptance gating), governance hooks across 14 lifecycle events, always-on doctrine injection (METHODOLOGY/RTK/ACLI/DBGATE), and the TECH-LEAD-THAI output style. Components auto-discover from the default agents/, skills/, commands/, hooks/, output-styles/, and themes/ directories.",
   "author": { "name": "KOBIG" },
   "license": "MIT",

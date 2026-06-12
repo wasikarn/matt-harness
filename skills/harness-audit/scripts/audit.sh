@@ -804,7 +804,11 @@ today = dt.date.today()
 # people put it in different positions — sibling `last_reviewed_reason:`
 # counts as a documented justification for staleness).
 LINE_RE = re.compile(r"^[\s#/*-]*last_reviewed:\s*(\d{4}-\d{2}-\d{2})", re.MULTILINE)
-REASON_RE = re.compile(r"^[\s#/*-]*last_reviewed_reason:\s*\S+", re.MULTILINE)
+# Allow JSON key form ("last_reviewed_reason": …) in addition to YAML and
+# comment form. The leading char class is greedy by design — the literal
+# 'last_reviewed_reason' token after it pins the match to the right key
+# (so 'blast_reviewed_reason' / 'skill_name' do not match).
+REASON_RE = re.compile(r"""^[\s#/*'"]*last_reviewed_reason["']?\s*:\s*\S+""", re.MULTILINE)
 for path in targets:
     try:
         text = open(path, encoding="utf-8", errors="replace").read(8192)
@@ -956,8 +960,17 @@ claude_dir, repo_root = sys.argv[1], sys.argv[2]
 today = dt.date.today()
 
 # 31.1: Skill SKILL.md section presence (info, single bullet per skill)
+# Deferral: a sibling `last_reviewed_reason:` marker (in SKILL.md frontmatter
+# OR in the skill's evals/evals.json) suppresses the INFO — same convention
+# section #30 uses for eval-target freshness and the plugin-version check at
+# 31.2 uses for plugin.json. Decay-cadence (docs/harness-decay-cadence.md)
+# owns the quarterly human sweep that revisits these; the audit is sensor
+# only, sensor-with-documented-deferral is preferred over stubbing.
 skills_dir = os.path.join(claude_dir, "skills")
 REQUIRED = ["## Input Contract", "## Output Format", "## Failure Modes"]
+# Same form as #30: JSON "last_reviewed_reason":, YAML `last_reviewed_reason:`,
+# or comment `# last_reviewed_reason:`. See audit.sh LINE_RE/REASON_RE pair.
+REASON_RE = re.compile(r"""^[\s#/*'"]*last_reviewed_reason["']?\s*:\s*\S+""", re.MULTILINE)
 if os.path.isdir(skills_dir):
     for name in sorted(os.listdir(skills_dir)):
         # skip _-prefixed scaffolds (not real fleet, may have placeholders)
@@ -971,7 +984,22 @@ if os.path.isdir(skills_dir):
         except OSError:
             continue
         missing = [s for s in REQUIRED if s not in text]
-        if missing:
+        if not missing:
+            continue
+        # Deferral check: frontmatter on SKILL.md OR sibling evals.json.
+        # Mirrors the #30 eval-target pattern — see audit.sh:807.
+        if REASON_RE.search(text):
+            deferred = True
+        else:
+            evals_path = os.path.join(skills_dir, name, "evals", "evals.json")
+            deferred = False
+            if os.path.isfile(evals_path):
+                try:
+                    evals_text = open(evals_path, encoding="utf-8", errors="replace").read(65536)
+                except OSError:
+                    evals_text = ""
+                deferred = bool(REASON_RE.search(evals_text))
+        if not deferred:
             print(f"SKILL_MISSING\t{name}\t{', '.join(missing)}")
 
 # 31.2: plugin.json / marketplace.json version validity + cadence

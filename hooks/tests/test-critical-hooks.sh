@@ -1757,6 +1757,78 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s skill=%s plugin=%s hooks=%s perm=%s rc=%s (want >=1/1/1/1/2):\n%s\n' "harness-audit #31" "$SREP_V_HAS_SKILL_INFO" "$SREP_V_HAS_PLUGIN_CRIT" "$SREP_V_HAS_HOOKS_CRIT" "$SREP_V_HAS_PERM_INFO" "$SREP_V_RC" "$SREP_V_OUT"
 fi
 
+# (NN2) deferral — a skill missing canonical sections BUT carrying a
+# `last_reviewed_reason:` marker in either its SKILL.md frontmatter OR
+# its evals/evals.json must NOT fire SKILL_MISSING. Mirrors the existing
+# `last_reviewed_reason:` convention at audit.sh #30 (eval-target
+# freshness) and the plugin-version check at #31.2. Decay-cadence
+# (docs/harness-decay-cadence.md) owns the quarterly human sweep that
+# revisits these; the audit is sensor only, sensor-with-documented-
+# deferral is preferred over stubbing. This is the regression guard
+# for the 2026-06-12 closure of the 25-skill schema-rot gap.
+SREP_D1="$FIXTURE/srep-defer-fm"; rm -rf "$SREP_D1"; mkdir -p "$SREP_D1/claude/skills/deferred-skill" "$SREP_D1/claude/hooks" "$SREP_D1/claude/agents" "$SREP_D1/claude/commands" "$SREP_D1/claude/docs" "$SREP_D1/.claude-plugin"
+cat > "$SREP_D1/claude/skills/deferred-skill/SKILL.md" <<'SK'
+---
+name: deferred-skill
+last_reviewed_reason: 'deferred to quarterly cadence per docs/harness-decay-cadence.md'
+description: 'Test fixture for audit #31 deferral — frontmatter marker.'
+---
+# Deferred Skill
+SK
+cat > "$SREP_D1/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "d1-fixture", "version": "0.0.1" }
+PJ
+cat > "$SREP_D1/claude/docs/harness-decay-cadence.md" <<DC
+# Decay cadence
+last_permission_review: $TODAY_ISO abc123
+DC
+set +e
+SREP_D1_OUT=$(bash "$AUDIT" "$SREP_D1" 2>&1)
+SREP_D1_RC=$?
+set -e
+SREP_D1_HAS_SKILL_INFO=$(printf '%s' "$SREP_D1_OUT" | grep -c "schema-rot: skill 'deferred-skill'" || true)
+if [ "$SREP_D1_HAS_SKILL_INFO" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s deferral (frontmatter): SKILL_MISSING suppressed by last_reviewed_reason: marker\n' "harness-audit #31.1"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s deferral (frontmatter): SKILL_MISSING fired %s times (want 0):\n%s\n' "harness-audit #31.1" "$SREP_D1_HAS_SKILL_INFO" "$SREP_D1_OUT"
+fi
+
+# (NN3) deferral via evals/evals.json — same suppression, marker
+# lives in the sibling evals file instead of SKILL.md frontmatter.
+# This is the path the 20 stamped skills (acli/adr/decommission/etc.)
+# actually use, so guarding it is the load-bearing test.
+SREP_D2="$FIXTURE/srep-defer-evals"; rm -rf "$SREP_D2"; mkdir -p "$SREP_D2/claude/skills/deferred-via-evals" "$SREP_D2/claude/skills/deferred-via-evals/evals" "$SREP_D2/claude/hooks" "$SREP_D2/claude/agents" "$SREP_D2/claude/commands" "$SREP_D2/claude/docs" "$SREP_D2/.claude-plugin"
+cat > "$SREP_D2/claude/skills/deferred-via-evals/SKILL.md" <<'SK'
+---
+name: deferred-via-evals
+description: 'Test fixture for audit #31 deferral — evals.json marker.'
+---
+# Deferred via evals
+SK
+cat > "$SREP_D2/claude/skills/deferred-via-evals/evals/evals.json" <<'EJ'
+{
+  "skill_name": "deferred-via-evals",
+  "last_reviewed_reason": "deferred to quarterly cadence per docs/harness-decay-cadence.md"
+}
+EJ
+cat > "$SREP_D2/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "d2-fixture", "version": "0.0.1" }
+PJ
+cat > "$SREP_D2/claude/docs/harness-decay-cadence.md" <<DC
+# Decay cadence
+last_permission_review: $TODAY_ISO abc123
+DC
+set +e
+SREP_D2_OUT=$(bash "$AUDIT" "$SREP_D2" 2>&1)
+SREP_D2_RC=$?
+set -e
+SREP_D2_HAS_SKILL_INFO=$(printf '%s' "$SREP_D2_OUT" | grep -c "schema-rot: skill 'deferred-via-evals'" || true)
+if [ "$SREP_D2_HAS_SKILL_INFO" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s deferral (evals.json): SKILL_MISSING suppressed — JSON key form matched\n' "harness-audit #31.1"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s deferral (evals.json): SKILL_MISSING fired %s times (want 0) — JSON form regex broken:\n%s\n' "harness-audit #31.1" "$SREP_D2_HAS_SKILL_INFO" "$SREP_D2_OUT"
+fi
+
 # (OO) regression guard — empty matcher must NOT fire HOOKS_SHAPE_FAIL.
 # This mirrors the real kbg-harness pattern: hooks/hooks.json:415 has
 # `"matcher": ""` for the ConfigChange event, which is a legal vendor
