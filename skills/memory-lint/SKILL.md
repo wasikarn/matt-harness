@@ -46,6 +46,29 @@ Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the p
 
 For the wrapper skill (`plan` / `apply` / `status` subcommands + before/after size deltas), see [[memory-trim]].
 
+## Consuming audit drafts (companion to lint)
+
+The `scripts/audit-to-memory.py` script (in this repo's `scripts/`) generates
+a `draft-audit-findings.md` in this memory store after every audit. Treat it
+as a **separation-of-duties buffer** between "the audit ran" and "the lesson
+is in memory":
+
+1. **Lint first** (above) to surface what already exists.
+2. **Open the draft** — `~/.claude/projects/<enc>/memory/draft-audit-findings.md`.
+3. For each item, decide:
+   - **Promote** — write a dedicated `<slug>.md` with proper frontmatter + add a
+     1-line pointer to `MEMORY.md`. Reword the "Why" / "How to apply" sections;
+     the draft captures what the audit *said*, not what you should *remember*.
+   - **Discard** — the item was noise, rediscovery, or already captured.
+   - **Defer** — write a one-liner to `deferred-<date>.md` for a future audit
+     to revisit (e.g., items blocked by ADR 0002).
+4. **Re-lint** to confirm the new entries are linked and the index is in sync.
+
+The script **never** writes to `MEMORY.md` directly (preserves the autonomy
+invariant: the human reviews, the model does not auto-promote). If a draft
+sits unread, the next audit run will overwrite it — treat drafts as
+**time-limited inputs**, not durable artifacts.
+
 ## Checks
 
 | Check | Catches |
