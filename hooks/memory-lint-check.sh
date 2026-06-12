@@ -34,8 +34,10 @@ ENC=$(printf '%s' "$ROOT" | sed 's|/|-|g')
 MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR" ] || exit 0          # project has no memory store → nothing to lint
 
-LINT="$HOME/.claude/skills/memory-lint/scripts/memory-lint.py"
-[ -f "$LINT" ] || exit 0            # memory-lint skill not installed → skip
+# Resolve from repo root (hook lives at <repo>/hooks/memory-lint-check.sh)
+REPO_ROOT=$(cd -P "$(dirname "$0")/.." && pwd)
+LINT="$REPO_ROOT/skills/memory-lint/scripts/memory-lint.py"
+[ -f "$LINT" ] || exit 0            # skill not present in repo → skip
 command -v python3 >/dev/null 2>&1 || exit 0
 
 OUT=$(python3 "$LINT" "$MEMDIR" 2>/dev/null) || true

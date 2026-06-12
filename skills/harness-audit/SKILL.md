@@ -10,7 +10,7 @@ Run a deterministic health check across the custom Claude Code ecosystem. Detect
 ## Quick start
 
 ```bash
-bash ~/.claude/skills/harness-audit/scripts/audit.sh
+bash skills/harness-audit/scripts/audit.sh
 ```
 
 Produces exit code = count of findings. Zero = clean.
@@ -20,12 +20,12 @@ Produces exit code = count of findings. Zero = clean.
 | Check | Finding type |
 |---|---|
 | **Fleet count** | Count agents, skills, commands, hooks |
-| **Symlink integrity** | Every repo artifact symlinked to `~/.claude/` |
+| **Loadability** | Every repo artifact is loadable by Claude Code (plugin cache or symlink) |
 | **Frontmatter completeness** | `name`, `description`, `tools` (agents), `disable-model-invocation` (commands) |
 | **Name/filename consistency** | Frontmatter `name` matches directory/file name |
 | **Tool-grant scoping** | Agents have explicit `tools:` (no inherit-all) |
 | **Orphaned hooks** | Hook files in repo but not wired in `settings.json` |
-| **Orphaned skills** | Skills in repo but not symlinked to `~/.claude/skills/` |
+| **Orphaned skills** | Skills in repo but not loadable by Claude Code |
 | **Routing table coverage** | All agents referenced in `orchestrate` routing table |
 | **Memory index drift** | All `.md` references in `MEMORY.md` exist |
 | **Boundary drift** | `BOUNDARY.md` matches the live fleet (regenerate if stale) |
@@ -58,7 +58,7 @@ real-but-undocumented â€” flagged for a human, not failed (Rule 1 / Rule 12).
 Fleet: 27 agents, 26 skills, 8 commands, 32 hooks
 
 CRITICAL:
-  F1: probe skill not symlinked to ~/.claude/skills/
+  F1: probe skill not loadable by Claude Code
   F2: qmd-reindex.py exists in hooks/ but not wired in settings.json
 
 WARNINGS:
@@ -89,7 +89,7 @@ auto-detected via `ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1` â€
 Run in CI, pre-commit, or after any fleet change:
 
 ```bash
-bash ~/.claude/skills/harness-audit/scripts/audit.sh || echo "Audit failed"
+bash skills/harness-audit/scripts/audit.sh || echo "Audit failed"
 ```
 
 Wire into a post-fleet-change hook for continuous enforcement.

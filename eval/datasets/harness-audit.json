@@ -3,25 +3,6 @@
   "description": "Verify that harness-audit skill detects critical issues in plugin structure.",
   "evals": [
     {
-      "id": "harness-audit-missing-symlink",
-      "task": "Detect a command file that is not symlinked to ~/.claude/commands/",
-      "skill": "harness-audit",
-      "context": {
-        "target_file": "commands/pre-ship-verify.md",
-        "expected_crit": "not symlinked to ~/.claude/commands/"
-      },
-      "success_criteria": [
-        "Audit script exits non-zero",
-        "At least one CRIT finding references the missing symlink",
-        "Finding includes the command name 'pre-ship-verify'"
-      ],
-      "expected_duration_seconds": 15,
-      "expected_tokens": 2000,
-      "tags": ["harness-audit", "symlink", "guardrails", "manual"],
-      "manual_reason": "Audit's F1 plugin-aware bypass treats plugin-delivered commands (cache 0.1.3) as symlink-equivalent, so the test setup cannot trigger a CRIT in the current runtime. Behavior is exercised by the symlink-integrity check at audit.sh:204-211 + human review. See .scratch/eval-fidelity-triage-2026-06-12.md F2-class heuristic-miss.",
-      "eval_type": "assertion"
-    },
-    {
       "id": "harness-audit-passing-plugin",
       "task": "Run harness-audit on a well-formed plugin and confirm zero critical issues",
       "skill": "harness-audit",

@@ -17,8 +17,7 @@ set -uo pipefail
 # the single-line description value, and fm_hook_desc for hook comments
 # (not YAML frontmatter — different shape, kept separate in the lib).
 
-# Source the shared library. cd -P resolves the ~/.claude/skills/inventory
-# symlink to the dotfiles checkout, mirroring audit.sh's REPO_ROOT pattern.
+# Source the shared frontmatter library.
 # shellcheck source=../../_lib/fm.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
 
@@ -33,11 +32,10 @@ find_git_root() {
   return 1
 }
 
-# Marker for whether a skill/agent/command/hook dir is a symlink
-# (= user-authored, sourced from somewhere else) or a real dir
-# (= plugin-installed or in-place).
 item_marker() {
-  if [ -L "$1" ]; then echo "→"; else echo "◇"; fi
+  # P0: retired symlink-farm model (2026-06-11). All components are now
+  # plugin-delivered; marker is cosmetic only.
+  echo "◇"
 }
 
 # ── per-section printer ──────────────────────────────────────────────
@@ -106,7 +104,7 @@ print_source() {
 # ── main ─────────────────────────────────────────────────────────────
 
 echo "# Inventory"
-echo "_Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_"
+echo "_Legend: ◇ plugin-delivered / project-local_"
 
 # Explicit override mode
 if [ -n "${1:-}" ]; then

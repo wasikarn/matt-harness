@@ -23,10 +23,10 @@
       "id": 1,
       "eval_name": "ecosystem-health-after-change",
       "prompt": "I just added a new agent. Check ecosystem health to make sure everything is consistent.",
-      "expected_output": "Checks symlink integrity, frontmatter completeness, name consistency, tool-grant scoping, routing table coverage, and boundary drift. Reports any issues introduced by the new agent.",
+      "expected_output": "Checks loadability (plugin cache or symlink), frontmatter completeness, name consistency, tool-grant scoping, routing table coverage, and boundary drift. Reports any issues introduced by the new agent.",
       "files": [],
       "assertions": [
-        {"name": "symlink_check", "description": "Response mentions symlink verification or repo→~/.claude/ link integrity"},
+        {"name": "symlink_check", "description": "Response mentions loadability verification or repo→plugin-cache integrity"},
         {"name": "frontmatter_check", "description": "Response mentions frontmatter validation (name, description, tools)"},
         {"name": "tool_grant_scoping", "description": "Response mentions tool-grant scoping or inherit-all detection"},
         {"name": "boundary_drift_check", "description": "Response mentions BOUNDARY.md drift or routing table coverage"},

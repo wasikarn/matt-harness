@@ -11,7 +11,7 @@
       "assertions": [
         {
           "name": "legend_mentioned",
-          "description": "Response mentions the \u2192 and \u25c7 symbols or explains symlinked vs in-place distinction"
+          "description": "Response mentions the \u25c7 symbol or explains plugin-delivered vs project-local distinction"
         },
         {
           "name": "global_layer_named",
@@ -69,7 +69,7 @@
         },
         {
           "name": "legend_present",
-          "description": "Response includes \u2192/\u25c7 legend or equivalent symlinked vs in-place markers"
+          "description": "Response includes \u25c7 legend or equivalent plugin-delivered vs project-local markers"
         },
         {
           "name": "no_install_recommendation",

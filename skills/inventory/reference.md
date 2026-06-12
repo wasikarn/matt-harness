@@ -15,7 +15,7 @@ Items without a description show `(no description)` — flag for the user to add
 Add the `--boundary` view when you need a routing + security reference, not just a listing:
 
 ```bash
-bash ~/.claude/skills/inventory/scripts/inventory-boundary.sh
+bash skills/inventory/scripts/inventory-boundary.sh
 ```
 
 This produces a markdown table with:
@@ -33,14 +33,14 @@ Use this to verify `orchestrate` routing table accuracy, detect tool-grant drift
 Generate a committed snapshot of the boundary map so CI or pre-commit hooks can detect unauthorized fleet changes:
 
 ```bash
-bash ~/.claude/skills/inventory/scripts/inventory-witness.sh
+bash skills/inventory/scripts/inventory-witness.sh
 # commits claude/BOUNDARY.md (customise path with $1)
 ```
 
 Verify later:
 
 ```bash
-bash ~/.claude/skills/inventory/scripts/inventory-witness.sh /tmp/BOUNDARY_NEW.md
+bash skills/inventory/scripts/inventory-witness.sh /tmp/BOUNDARY_NEW.md
 diff claude/BOUNDARY.md /tmp/BOUNDARY_NEW.md
 ```
 

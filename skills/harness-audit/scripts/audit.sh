@@ -159,7 +159,7 @@ for d in "$CLAUDE_DIR/skills"/*/; do
     [ "$name" = "$locked" ] && continue 2
   done
   if [ ! -L "$HOME/.claude/skills/$name" ] && ! is_plugin_delivered skills "$name"; then
-    crit "skill '$name' not symlinked to ~/.claude/skills/"
+    crit "skill '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 
@@ -187,7 +187,7 @@ for f in "$CLAUDE_DIR/hooks"/*; do
      && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
   if is_plugin_delivered hooks "$name"; then continue; fi
   if [ ! -L "$HOME/.claude/hooks/$name" ]; then
-    crit "hook '$name' not symlinked to ~/.claude/hooks/"
+    crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 
@@ -199,14 +199,14 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
   if [ ! -L "$HOME/.claude/agents/$name" ] && ! is_plugin_delivered agents "${name%.md}"; then
-    crit "agent '$name' not symlinked to ~/.claude/agents/ (not loadable by Claude Code)"
+    crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 for f in "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
   if [ ! -L "$HOME/.claude/commands/$name" ] && ! is_plugin_delivered commands "${name%.md}"; then
-    crit "command '$name' not symlinked to ~/.claude/commands/ (not loadable by Claude Code)"
+    crit "command '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 
@@ -218,7 +218,7 @@ for f in "$CLAUDE_DIR/output-styles"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
   if [ ! -L "$HOME/.claude/output-styles/$name" ] && ! is_plugin_delivered output-styles "${name%.md}"; then
-    crit "output-style '$name' not symlinked to ~/.claude/output-styles/ (not loadable by Claude Code)"
+    crit "output-style '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 
@@ -416,13 +416,13 @@ fi
 # 15. settings.json has commands/agents/skills arrays (not just hooks)
 if [ -f "$SETTINGS" ]; then
   if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'commands' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'commands' array — commands loaded from ~/.claude/commands/ directly"
+    info "settings.json missing 'commands' array — commands loaded via plugin or ~/.claude/commands/ directly"
   fi
   if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'agents' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'agents' array — agents loaded from ~/.claude/agents/ directly"
+    info "settings.json missing 'agents' array — agents loaded via plugin or ~/.claude/agents/ directly"
   fi
   if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'skills' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'skills' array — skills loaded from ~/.claude/skills/ directly"
+    info "settings.json missing 'skills' array — skills loaded via plugin or ~/.claude/skills/ directly"
   fi
 fi
 

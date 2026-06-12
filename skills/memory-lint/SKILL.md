@@ -17,13 +17,13 @@ Karpathy's llm-wiki **Lint** operation for the memory store: catch the bookkeepi
 
 ```bash
 # Detector mode (default — read-only, exit code = finding count)
-python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py
+python3 skills/memory-lint/scripts/memory-lint.py
 # or point at a specific store:
-python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py /path/to/memory
+python3 skills/memory-lint/scripts/memory-lint.py /path/to/memory
 
 # Action mode (apply the A3 trim rubric — dry-run by default)
-python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py --auto-archive --dry-run
-python3 ~/.claude/skills/memory-lint/scripts/memory-lint.py --auto-archive --yes
+python3 skills/memory-lint/scripts/memory-lint.py --auto-archive --dry-run
+python3 skills/memory-lint/scripts/memory-lint.py --auto-archive --yes
 ```
 
 Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean.

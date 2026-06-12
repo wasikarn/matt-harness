@@ -121,8 +121,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                 # Partial matches for common patterns
                 # Smart keyword matching for prose criteria
                 key_phrases = [p for p in re.findall(r"[a-z0-9_\-]+", crit_lower) if len(p) > 3]
-                # Special case: "missing symlink" can match "not symlinked"
-                synonyms = {"missing": ["not"], "symlink": ["symlinked"], "finding": ["crit", "warn"]}
+                synonyms = {"missing": ["not"], "finding": ["crit", "warn"]}
                 matched = 0
                 for p in key_phrases:
                     if p in stdout.lower():

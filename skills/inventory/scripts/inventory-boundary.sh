@@ -95,7 +95,7 @@ print_boundary() {
   fi
 
   # Output styles — registered via /output-style <name>; same frontmatter
-  # contract as agents (name + description). Symlink integrity checked by
+  # contract as agents (name + description). Loadability checked by
   # harness-audit §3c; this is the routing/selection reference.
   if [ -d "$base/output-styles" ] && [ -n "$(ls -A "$base/output-styles" 2>/dev/null)" ]; then
     echo ""
@@ -122,10 +122,8 @@ echo "# Boundary Map"
 echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<kbg-harness>\` is the kbg-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
 echo "_Schema version: v3 (adds Output styles table; Mutates column reflects Edit/Write/Bash grant)._"
 
-# Resolve repo root via git (robust to symlink paths like ~/.claude/skills/).
-# Hardcoding `cd $SCRIPT_DIR/../../../..` breaks when SCRIPT_DIR itself is
-# resolved through a symlink: bash's `cd` follows the symlink, so `..` math
-# lands in the wrong place. `git rev-parse --show-toplevel` is symlink-safe.
+# Resolve repo root via git (works regardless of where the script is invoked from).
+# `git rev-parse --show-toplevel` is path-safe for any working tree layout.
 GIT_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
 _repo_root="${GIT_ROOT:-$(cd "$SCRIPT_DIR/../../../.." && pwd)}"
 # Post-cutover the fleet lives at the repo root, not under claude/ (mirrors

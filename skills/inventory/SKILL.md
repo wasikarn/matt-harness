@@ -5,12 +5,12 @@ description: List the Claude artifacts loadable here — skills, agents, command
 
 # Inventory
 
-Single command, zero config. Shows what's actually loadable from where you are right now — both the project-local layer (if the repo has a `.claude/`) and the global layer (`~/.claude/`, which includes plugin-installed skills and your symlinked custom ones).
+Single command, zero config. Shows what's actually loadable from where you are right now — both the project-local layer (if the repo has a `.claude/`) and the global layer (`~/.claude/`, which includes plugin-delivered and legacy symlinked skills).
 
 ## Quick start
 
 ```bash
-bash ~/.claude/skills/inventory/scripts/inventory.sh
+bash skills/inventory/scripts/inventory.sh
 ```
 
 That's it. No env var, no path argument, no setup. From inside a git repo you get two sections (Project-local + Global). From outside one, you get Global only.
@@ -18,14 +18,14 @@ That's it. No env var, no path argument, no setup. From inside a git repo you ge
 For a specific dir (e.g. inspecting dotfiles source where the originals live):
 
 ```bash
-bash ~/.claude/skills/inventory/scripts/inventory.sh /path/to/some/claude
+bash skills/inventory/scripts/inventory.sh /path/to/some/claude
 ```
 
 ## Output
 
 ```
 # Inventory
-_Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_
+_Legend: ◇ plugin-delivered / project-local_
 
 ## Project-local — `<repo>/.claude`
 _~/projects/example/.claude_
@@ -50,13 +50,12 @@ _~/.claude_
 
 | Symbol | Meaning |
 |---|---|
-| `→` | symlinked — user-authored, sourced from somewhere else (typically dotfiles) |
-| `◇` | in-place — plugin-installed, project-local, or otherwise not a symlink |
+| `◇` | plugin-delivered or project-local |
 
 ### Sources, in order
 
 1. **Project-local**: `<git-root>/.claude/{skills,agents,commands,hooks}` if the repo has one (walks up from cwd to find `.git`).
-2. **Global**: `~/.claude/{skills,agents,commands,hooks}` — what Claude Code actually surfaces in the skill list (plugin-installed + your symlinks).
+2. **Global**: `~/.claude/{skills,agents,commands,hooks}` — what Claude Code surfaces (plugin-delivered + legacy symlinks).
 
 Empty subdirs are skipped silently. No artifacts → no section.
 

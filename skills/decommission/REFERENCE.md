@@ -87,7 +87,7 @@ The skill ships scripts only — wiring the verify gate is per-repo. Recommended
 ```bash
 #!/usr/bin/env bash
 if [ -d .witness ]; then
-  bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission || exit 1
+  bash skills/decommission/scripts/witness.sh verify --namespace=decommission || exit 1
 fi
 ```
 
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           if [ -d .witness ]; then
-            bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission
+            bash skills/decommission/scripts/witness.sh verify --namespace=decommission
           fi
 ```
 
@@ -118,7 +118,7 @@ Caveats: `ABSENT_LAUNCHD` will always pass on Linux CI (no `launchctl`), `ABSENT
 For `ABSENT_LAUNCHD` and `ABSENT_PROCESS_MATCH`, only the host running the daemon can see the orphan. Run periodically via cron or launchd itself:
 
 ```cron
-0 9 * * 1  cd ~/repo && bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission | logger -t decommission-verify
+0 9 * * 1  cd ~/repo && bash skills/decommission/scripts/witness.sh verify --namespace=decommission | logger -t decommission-verify
 ```
 
 Weekly Monday-morning catch with output to syslog. Don't try to make this block anything — just surface drift.

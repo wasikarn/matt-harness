@@ -20,7 +20,7 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 
 ## Agent Descriptions
 
-One-line orientation; **see kbg:inventory for current frontmatter descriptions and `~/.claude/agents/<name>.md` for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
+One-line orientation; **see kbg:inventory for current frontmatter descriptions and the agent file (plugin-delivered or project-local) for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
 
 | Agent | Specialty |
 |---|---|

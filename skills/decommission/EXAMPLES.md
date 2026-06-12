@@ -28,7 +28,7 @@ Aftermath:
 ### Decommission with witness
 
 ```bash
-bash ~/.claude/skills/decommission/scripts/witness.sh sign --namespace=decommission indexer-worker
+bash skills/decommission/scripts/witness.sh sign --namespace=decommission indexer-worker
 ```
 
 Editor opens — fill in:
@@ -58,7 +58,7 @@ Save, exit. Script runs `ssh-keygen -Y sign` → produces `.witness/indexer-work
 Then:
 
 ```bash
-bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission
+bash skills/decommission/scripts/witness.sh verify --namespace=decommission
 ```
 
 **On day 0** (decommission day): verify fails immediately because launchd is still loaded and the symlinks still exist. Forces you to actually clean up all three layers:
