@@ -71,6 +71,8 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 
 **Goal:** spawn teammates in waves, inject upstream contracts from previous waves, gate each task with `addBlockedBy`.
 
+**⚠️ F8.5 — Clamp fan-out to 16 before spawning.** This is the enforcement point for the [[bounded-agent-spawning]] contract. A wave with >16 tasks MUST be split: spawn 16, queue the rest in `deferred-<date>.md`, dispatch the next wave after the first finishes. The clamp is on TOTAL spawned agents across the plan lifetime (worklist + audit + verify), not on the work-list size — see `skills/orchestrate/SKILL.md` § Bounded fan-out (F8.5).
+
 **For each wave, in order:**
 
 1. **Build the spawn prompt for each task in the wave using the F9 template** (in `skills/orchestrate/SKILL.md` § Spawn-prompt template):

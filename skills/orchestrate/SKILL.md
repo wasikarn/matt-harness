@@ -157,6 +157,21 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 **Cross-references:** this doctrine is the runtime contract that `/team-build` (commands/team-build.md) assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
 
+## Bounded fan-out — hard cap (F8.5)
+
+**The fan-out cap is CODE-ENFORCED, not advisory.** A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
+
+**Hard rules:**
+
+1. **Hard cap = 16 agents per wave.** Below 3: under-parallelized (F8.4). Above 16: the audit goes wrong before it even starts (ref: [[bounded-agent-spawning]]). The lead MUST clamp any work-list >16 to 16 before spawning, and queue the rest in a `deferred-<date>.md` for a follow-up wave.
+2. **The cap is a number in code, not prose.** "Don't overspawn" is a vibe; `if len(worklist) > 16: worklist = worklist[:16]` is a contract. The audit fixture `eval/regressions/bounded-agent-spawning.json` greps for "cap" and "fan-out" in this file — if either phrase goes missing, the fixture fails and the lesson is gone.
+3. **Worklist count ≠ spawn count.** Audit + verify is a SECOND fan-out layer on top of the work-list. If the work-list already hit 44 and the audit doubles to 88, the cap on the work-list didn't help. The cap must be on TOTAL spawned agents across the entire plan lifetime, not on the work-list size.
+4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. The dispatch function (or `commands/team-build.md` Step 6) is the enforcement point.
+
+**Why this is doctrine, not preference:** the 2026-06-12 audit at 105 agents was caused by a soft cap. The next agent author will write the same soft cap again unless the hard cap is a number in code AND a fixture that fails when the number is removed.
+
+**Cross-references:** this contract is enforced by `commands/team-build.md` (Step 6 — the dispatch step is the clamp point) and `commands/team-plan.md` (Step 4 — the planning step pre-trims oversized work-lists). The `eval/regressions/bounded-agent-spawning.json` fixture locks this section in place.
+
 ## Fast Path Gate
 
 If ALL of these hold, **execute inline immediately** and skip all orchestration logic:

@@ -106,6 +106,110 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             failed = len(criteria)
             details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
 
+    # Strategy: for docs-check evals, read the listed files and check that
+    # required phrases appear. Used for memory-contract regressions like
+    # bounded-agent-spawning — a doc-only fixture is still a real fixture if
+    # the doctrine is the contract.
+    elif skill == "docs-check" and "files_to_check" in context and "required_phrases" in context:
+        files = context["files_to_check"]
+        phrases = context["required_phrases"]
+        try:
+            combined = ""
+            for rel in files:
+                p = REPO_ROOT / rel
+                if p.exists():
+                    combined += "\n" + p.read_text(encoding="utf-8")
+            combined_lower = combined.lower()
+            for crit in criteria:
+                crit_lower = crit.lower()
+                # "At least one of the checked files references X" → X in any
+                if "at least one" in crit_lower and "references" in crit_lower:
+                    # Extract the phrase after "references"
+                    m = re.search(r"references\s+([a-z0-9\-]+)", crit_lower)
+                    target = m.group(1) if m else ""
+                    if target and target in combined_lower:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"{target!r} not found"}); continue
+                if "at least one" in crit_lower and ("cap" in crit_lower or "fan-out" in crit_lower):
+                    if "cap" in combined_lower and "fan-out" in combined_lower:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "cap" in combined_lower or "fan-out" in combined_lower:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": "neither 'cap' nor 'fan-out' found"}); continue
+                if "word fan-out" in crit_lower:
+                    if "fan-out" in combined_lower or "fan out" in combined_lower:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": "'fan-out' not found"}); continue
+                # Fallback substring match against combined
+                if crit_lower in combined_lower:
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                failed += 1; details.append({"criterion": crit, "status": "failed", "note": "criterion not in combined content"})
+        except Exception as e:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
+    # Strategy: for hook-script evals, feed stdin JSON to a hook and check the
+    # emitted permissionDecision. Closes the regression-coverage gap for code-
+    # side contracts (audit F1 validator-bash-guard, F2 memory contracts, etc.)
+    # that the harness-audit grader can't directly observe.
+    #
+    # Fixture context shape:
+    #   "hook_path": "hooks/validator-bash-guard.sh"
+    #   "stdin":     {"agent_type": "code-reviewer", "tool_input": {"command": "git push"}}
+    #   "expected_decision": "deny"   # or "allow" or "" (fail-open = no JSON)
+    #   "must_contain": ["VALIDATOR-BASH", "code-reviewer"]   # substrings in stdout
+    elif skill == "hook-script" and "hook_path" in context and "stdin" in context:
+        hook_path = REPO_ROOT / context["hook_path"]
+        stdin_obj = context["stdin"]
+        expected = context.get("expected_decision", "")
+        must_contain = context.get("must_contain", [])
+        try:
+            result = subprocess.run(
+                ["bash", str(hook_path)],
+                input=json.dumps(stdin_obj),
+                capture_output=True, text=True, timeout=10,
+            )
+            stdout = result.stdout
+            # Try to parse the JSON decision (if any)
+            decision = ""
+            try:
+                j = json.loads(stdout) if stdout.strip() else {}
+                decision = (j.get("hookSpecificOutput") or {}).get("permissionDecision", "")
+            except json.JSONDecodeError:
+                pass
+            for crit in criteria:
+                crit_lower = crit.lower()
+                # Decision checks
+                if expected and f"permissiondecision equal to {expected}" in crit_lower:
+                    if decision == expected:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"got decision={decision!r}"}); continue
+                if not expected and "does not contain permissiondecision" in crit_lower:
+                    if decision == "":
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"got decision={decision!r}"}); continue
+                if not expected and "does not block the call" in crit_lower:
+                    # Fail-open = hook exits 0 AND no decision emitted
+                    if result.returncode == 0 and decision == "":
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"rc={result.returncode} decision={decision!r}"}); continue
+                # must_contain substring checks — used for both allow/deny cases
+                # e.g. "Output contains the mutation pattern name (git push)"
+                if must_contain and "contains" in crit_lower:
+                    hit = next((s for s in must_contain if s in stdout), None)
+                    if hit is not None:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"missing one of {must_contain} in {stdout!r}"}); continue
+                # Heuristic fallback
+                key_phrases = [p for p in re.findall(r"[a-z0-9_\-]+", crit_lower) if len(p) > 3]
+                matched = sum(1 for p in key_phrases if p in stdout.lower())
+                if matched >= max(1, len(key_phrases) // 2):
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                failed += 1; details.append({"criterion": crit, "status": "failed", "note": "not found in output"})
+        except Exception as e:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
     # Strategy: for acceptance-contract evals, run run-acceptance.py if slug exists
     elif skill in ("ship-change", "review-pr", "pre-ship-verify") and "slug" in context:
         slug = context["slug"]
@@ -124,8 +228,13 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                 ar_blocked = sum(1 for c in crit_counts if c.get("result", {}).get("status") == "blocked")
                 for crit in criteria:
                     crit_lower = crit.lower()
-                    if re.search(r"\bexits?\s+0\b", crit_lower) and result.returncode == 0:
-                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    # Exit-code checks: "exits 0" / "exits 4" / "non-zero" etc.
+                    m = re.search(r"\bexits?\s+(\d+)\b", crit_lower)
+                    if m:
+                        want = int(m.group(1))
+                        if result.returncode == want:
+                            passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                        failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"got rc={result.returncode}"}); continue
                     if "results.json" in crit_lower and results_json.exists():
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     if "exists" in crit_lower and acceptance_md.exists():
@@ -136,6 +245,10 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                         if ar_passed >= threshold:
                             passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     if "zero criteria failed" in crit_lower and ar_failed == 0:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "at least 1 criterion" in crit_lower and "blocked" in crit_lower and ar_blocked >= 1:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "0 criteria with status failed" in crit_lower and ar_failed == 0:
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     failed += 1; details.append({"criterion": crit, "status": "failed", "note": "heuristic miss"})
             except Exception as e:

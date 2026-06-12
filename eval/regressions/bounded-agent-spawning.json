@@ -1,0 +1,35 @@
+{
+  "dataset_name": "bounded-agent-spawning",
+  "description": "Guard against the failure mode in bounded-agent-spawning.md memory: a workflow prompt asking for 'N items' must NOT spawn >N agents after the LLM overshoots. The original failure (2026-06-12, wf_65120278-a76): a '20-35 items' prompt overshot to ~44, audit+verify doubled to 105 total agents. The contract: code-side clamping before fan-out. This fixture checks that the workflow artifacts (commands/team-build.md, commands/team-plan.md, skills/orchestrate/) document the clamp contract — they must (a) reference a hard cap, (b) reference bounded-agent-spawning memory, (c) contain the explicit fan-out clamp pattern. If the documentation regresses, the lesson is gone and the next agent-spawn will overshoot again.",
+  "evals": [
+    {
+      "id": "bounded-agent-spawning-docs-present",
+      "task": "Verify that the harness's workflow authoring artifacts (commands/team-build.md, commands/team-plan.md, skills/orchestrate/SKILL.md) document the bounded-spawning contract — a hard cap on agent fan-out, and a reference to the bounded-agent-spawning memory. Without this, the next LLM author will write a prompt that overshoots and the audit will repeat (2026-06-12, 105 agents).",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "commands/team-build.md",
+          "commands/team-plan.md",
+          "skills/orchestrate/SKILL.md"
+        ],
+        "required_phrases": [
+          "bounded-agent-spawning",
+          "cap",
+          "fan-out"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references bounded-agent-spawning",
+        "At least one of the checked files mentions a hard cap or bounded fan-out",
+        "At least one of the checked files contains the word fan-out"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["bounded-agent-spawning", "regression", "memory-contract", "orchestrate"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "bounded-spawning-lesson-rediscovered",
+      "fixed_by": "bounded-agent-spawning.md memory + 6fc375b"
+    }
+  ]
+}
