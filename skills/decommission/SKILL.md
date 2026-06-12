@@ -13,17 +13,19 @@ Most "deletions" are partial. Code path goes away but the cron still fires, the 
 
 ## Install (one-time)
 
-Symlink the skill directory into `~/.claude/skills/` so it's discoverable from any project cwd. Substitute the source path for wherever you cloned this skill (a dotfiles repo, a standalone clone, etc.):
+This skill is delivered via the `kbg@kobig` plugin. No manual symlink needed.
 
 ```bash
-# from your dotfiles repo root:
-ln -sf "$(pwd)/claude/skills/decommission" "$HOME/.claude/skills/decommission"
-
-# or with an explicit path:
-ln -sf "/absolute/path/to/decommission" "$HOME/.claude/skills/decommission"
+/plugin install kbg@kobig
 ```
 
-If your dotfiles install script already symlinks the `claude/skills/` directory wholesale, no separate step is needed — re-running it picks up `decommission/` automatically.
+If you need the standalone script outside a Claude Code session, run from the repo clone:
+
+```bash
+# from repo root:
+bash skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
+bash skills/decommission/scripts/witness.sh verify --namespace=decommission
+```
 
 Three states with distinct lifetimes:
 
@@ -35,14 +37,12 @@ Three states with distinct lifetimes:
 
 ## Quick start
 
-From inside any project's repo root — no setup step required, sign auto-inits the keypair + `.witness/allowed_signers` on first use:
+From inside any project's repo root — no setup step required, sign auto-inits the keypair + `.witness/allowed_signers` on first use.
 
+**Standalone** (from repo root):
 ```bash
-# when decommissioning a component named <slug>:
-bash ~/.claude/skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
-
-# verify (run in CI, pre-commit, or scheduled cron):
-bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=decommission
+bash skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
+bash skills/decommission/scripts/witness.sh verify --namespace=decommission
 ```
 
 `witness.sh sign` opens `$EDITOR` on `.witness/<slug>.txt`. Fill in assertions, save, exit — script signs and writes `.witness/<slug>.txt.sig`. Commit both files.

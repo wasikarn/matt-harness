@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 """Run baseline eval for a skill: with_skill vs without_skill comparison.
 
-# last_reviewed: 2026-06-11  (eval-target freshness check #30 in harness-audit)
+# last_reviewed: 2026-06-12  (eval-target freshness check #30 in harness-audit)
 
 Usage:
     python3 run-baseline-eval.py <skill-path> [--iterations N] [--model MODEL]
 
 Example:
-    python3 run-baseline-eval.py ~/dotfiles/claude/skills/clarify-first --iterations 1
+    python3 run-baseline-eval.py skills/clarify-first --iterations 1
 
 Prerequisites:
     - The skill must have evals/evals.json with at least one eval case.
     - claude CLI must be available and authenticated.
-    - Skill must be discoverable via ~/.claude/skills/ symlink (handled by install.sh).
+    - Skill must be present in the plugin cache (~/.claude/plugins/cache/kobig/kbg/).
+      Run `claude plugin update kbg@kobig` if the cache is stale.
 
 What it does:
     1. Reads evals/evals.json from the skill directory.
-    2. For each eval, spawns TWO claude -p runs in parallel:
-       a) with_skill  — skill discoverable normally
-       b) without_skill — skill temporarily unlinked from ~/.claude/skills/
-    3. Saves raw outputs to <skill-name>-baseline-workspace/iteration-1/eval-<id>/
-    4. Generates benchmark.json and benchmark.md with timing + token comparison.
-    5. Restores skill symlink.
+    2. Locates the skill in the plugin cache.
+    3. For each eval, spawns TWO claude -p runs:
+       a) with_skill    — skill discoverable via plugin cache (normal)
+       b) without_skill — skill temporarily renamed in plugin cache so claude -p
+                          cannot discover it
+    4. Saves raw outputs to <skill-name>-baseline-workspace/iteration-1/eval-<id>/
+    5. Generates benchmark.json and benchmark.md with timing + token comparison.
+    6. Restores the skill directory in the plugin cache.
 
 Caveats:
     - This measures trigger + output, not assertion grading. Add assertions
@@ -42,11 +45,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
-def find_skill_symlink(skill_name: str) -> Path | None:
-    """Find the skill symlink in ~/.claude/skills/."""
-    link = Path.home() / ".claude" / "skills" / skill_name
-    if link.exists() or link.is_symlink():
-        return link
+def find_skill_in_plugin_cache(skill_name: str) -> Path | None:
+    """Find the skill directory in the plugin cache."""
+    cache_base = Path.home() / ".claude" / "plugins" / "cache" / "kobig" / "kbg"
+    if not cache_base.exists():
+        return None
+    # Scan version directories (e.g., 0.1.5, 0.1.6)
+    for version_dir in sorted(cache_base.iterdir(), reverse=True):
+        if not version_dir.is_dir():
+            continue
+        skill_dir = version_dir / "skills" / skill_name
+        if skill_dir.exists() and skill_dir.is_dir():
+            return skill_dir
     return None
 
 
@@ -118,8 +128,8 @@ def run_single_eval(
     # Save eval metadata
     (eval_dir / "eval_metadata.json").write_text(json.dumps(eval_item, indent=2))
 
-    # Find skill symlink
-    skill_link = find_skill_symlink(skill_name)
+    # Find skill in plugin cache
+    skill_cache_dir = find_skill_in_plugin_cache(skill_name)
     skill_backup = None
 
     results = {}
@@ -135,11 +145,13 @@ def run_single_eval(
     results["with_skill"] = with_result
 
     # --- without_skill run ---
-    # Temporarily remove skill symlink so claude -p cannot discover it
-    if skill_link:
-        skill_backup = skill_link.with_suffix(f".backup-{uuid.uuid4().hex[:8]}")
-        skill_link.rename(skill_backup)
-        print(f"  [{eval_name}] Temporarily unlinked skill for baseline run", file=sys.stderr)
+    # Temporarily rename skill in plugin cache so claude -p cannot discover it
+    if skill_cache_dir:
+        skill_backup = skill_cache_dir.parent / f".disabled-{skill_cache_dir.name}-{uuid.uuid4().hex[:8]}"
+        skill_cache_dir.rename(skill_backup)
+        print(f"  [{eval_name}] Temporarily disabled skill in plugin cache for baseline run", file=sys.stderr)
+    else:
+        print(f"  [{eval_name}] WARN: skill not found in plugin cache; without_skill run may still trigger it", file=sys.stderr)
 
     print(f"  [{eval_name}] Running WITHOUT skill...", file=sys.stderr)
     without_result = run_claude_prompt(prompt, project_root, model, timeout)
@@ -150,10 +162,10 @@ def run_single_eval(
     }, indent=2))
     results["without_skill"] = without_result
 
-    # Restore symlink
+    # Restore skill in plugin cache
     if skill_backup and skill_backup.exists():
-        skill_backup.rename(skill_link)
-        print(f"  [{eval_name}] Restored skill symlink", file=sys.stderr)
+        skill_backup.rename(skill_cache_dir)
+        print(f"  [{eval_name}] Restored skill in plugin cache", file=sys.stderr)
 
     return {
         "eval_id": eval_id,

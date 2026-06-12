@@ -17,11 +17,18 @@ Shared keypair (`~/.ssh/witness_ed25519`), separate ssh-keygen namespace (`asser
 
 ## Install (one-time)
 
-Symlink the skill into `~/.claude/skills/` so it's discoverable from any project cwd:
+This skill is delivered via the `kbg@kobig` plugin. No manual symlink needed.
 
 ```bash
-# from your dotfiles repo root:
-ln -sf "$(pwd)/claude/skills/assert-presence" "$HOME/.claude/skills/assert-presence"
+/plugin install kbg@kobig
+```
+
+If you need the standalone script outside a Claude Code session, run from the repo clone:
+
+```bash
+# from repo root:
+bash skills/decommission/scripts/witness.sh sign --namespace=assert-presence <slug>
+bash skills/decommission/scripts/witness.sh verify --namespace=assert-presence
 ```
 
 ## Quick start
@@ -30,10 +37,10 @@ From inside any project's repo root — no setup step required, sign auto-inits 
 
 ```bash
 # when an agent reports a concrete change worth pinning:
-bash ~/.claude/skills/decommission/scripts/witness.sh sign --namespace=assert-presence <slug>
+bash skills/decommission/scripts/witness.sh sign --namespace=assert-presence <slug>
 
 # verify (run in CI, pre-commit, or scheduled cron):
-bash ~/.claude/skills/decommission/scripts/witness.sh verify --namespace=assert-presence
+bash skills/decommission/scripts/witness.sh verify --namespace=assert-presence
 ```
 
 `witness.sh sign` opens `$EDITOR` on `.witness/assert-presence-<slug>.txt`. Fill in assertions, save, exit — script signs and writes `.sig`.

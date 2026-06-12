@@ -159,7 +159,7 @@ If `unverified` is non-empty, **do not** push — surface the unverified claims 
 
 ### Project conventions
 
-- Skill lives in `claude/skills/article-mine/SKILL.md`; symlinked to `~/.claude/skills/article-mine/` via `install.sh` (per `feedback_install_sh_symlink_drift`).
+- Skill lives in `skills/article-mine/SKILL.md`; delivered via the `kbg@kobig` plugin (no symlink needed).
 - This is a **manual-invocation** skill — `disable-model-invocation: true`. The `description` line is for human scanning in `/skills`, not for auto-trigger.
 - The ledger row format is set by `project_external_evals_ledger.md` — match the column shape (Subject | Date | Verdict | Why) when adding a row.
 - Commit prefix: `feat(article-mine):` for the first commit, then `docs(article-mine):` / `fix(article-mine):` for follow-ups, per the dotfiles commit convention.
