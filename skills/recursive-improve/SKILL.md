@@ -47,8 +47,18 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 
 - Run the verification-posture reader:
   `python3 "$HOME/.claude/scripts/recursive-improve-observe.py"`
-  → latest `verification_summary` per session + sessions whose `gaps > 0` (a feature shipped
-  `no-trail` without a named `optout_reason`). This is the metric / drift-guard baseline.
+  → prints a `loop posture` section FIRST (wedged-Bash / stale-ScheduleWakeup from
+  `loop-status.py`) and THEN the verification posture (latest `verification_summary`
+  per session + sessions whose `gaps > 0`, a feature shipped `no-trail` without a
+  named `optout_reason`). The two are the metric / drift-guard baseline.
+- **Stall gate (SYNTHESIS #11 / P2.1):** if the `loop posture` section flags
+  `STALLED` with an oldest signal ≥ the threshold (default 10m), **pause and
+  surface to the operator** before proceeding. A wedged session corrupts the
+  verification signal (the metric for THIS session may itself be stale), so the
+  gaps table below is not trustworthy. The script does NOT auto-pause
+  (`recursive-improve-observe.py:check_stall` returns a posture dict, never
+  raises — ADR 0002 forbids autonomous action). Suggested action strings are
+  advisory; the operator decides.
 - Run `harness-audit` (`bash "$HOME/.claude/skills/harness-audit/scripts/audit.sh"`)
   → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
   the reader says *that* improvement is warranted, the audit says *what*.

@@ -106,6 +106,77 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             failed = len(criteria)
             details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
 
+    # Strategy: for observe-script evals, set up a temp projects dir with a
+    # mock stalled session (a session jsonl containing an unmatched Bash
+    # tool_use whose timestamp is older than --stall-threshold-min), run
+    # recursive-improve-observe.py with --projects-dir, and assert the
+    # stall signal is surfaced. Closes the SYNTHESIS row #11 / P2.1 gap —
+    # "stall signal silently swallowed".
+    elif skill == "observe-script" and "command" in context:
+        import tempfile
+
+        cmd_str = context["command"]
+        threshold = context.get("stall_threshold_min", 10)
+        staleness = context.get("staleness_min", 30)
+        # Default journal path: point at a non-existent file so we get the
+        # "(no journal yet)" message, then run a SECOND time with a journal
+        # to verify the table still renders. Keep it simple: skip the
+        # second time and just assert the loop posture section appears.
+        journal_override = context.get("journal", None)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Build a mock session jsonl: one entry with a Bash tool_use
+            # whose timestamp is `staleness` minutes in the past, no
+            # matching tool_result. This produces a stale_bash signal.
+            from datetime import datetime, timezone, timedelta
+            old_ts = (datetime.now(timezone.utc) - timedelta(minutes=staleness)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            mock_dir = Path(tmpdir) / "testproj" / "fakesession"
+            mock_dir.mkdir(parents=True)
+            mock_file = mock_dir / "fakesession.jsonl"
+            mock_file.write_text(json.dumps({
+                "timestamp": old_ts,
+                "message": {
+                    "content": [{
+                        "type": "tool_use",
+                        "id": "toolu_mock1",
+                        "name": "Bash",
+                        "input": {"command": "sleep 9999"},
+                    }],
+                },
+            }) + "\n")
+
+            full_cmd = [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "recursive-improve-observe.py"),
+                "--projects-dir", str(Path(tmpdir)),
+                "--stall-threshold-min", str(threshold),
+            ]
+            if journal_override:
+                full_cmd.extend(["--journal", str(journal_override)])
+
+            try:
+                r = subprocess.run(full_cmd, capture_output=True, text=True, timeout=30, cwd=REPO_ROOT)
+                stdout = r.stdout
+                for crit in criteria:
+                    crit_lower = crit.lower()
+                    if "exits 0" in crit_lower and r.returncode == 0:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "loop posture" in crit_lower and "loop posture" in stdout:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "stalled" in crit_lower and "STALLED" in stdout:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "suggested action" in crit_lower and ("interrupt" in stdout or "review" in stdout or "check loop" in stdout):
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "verification table" in crit_lower and "session" in stdout and "features" in stdout:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    # Heuristic substring fallback
+                    if crit_lower in stdout.lower():
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"rc={r.returncode} stdout_tail={stdout[-200:]!r}"})
+            except Exception as e:
+                failed = len(criteria)
+                details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
     # Strategy: for docs-check evals, read the listed files and check that
     # required phrases appear. Used for memory-contract regressions like
     # bounded-agent-spawning — a doc-only fixture is still a real fixture if

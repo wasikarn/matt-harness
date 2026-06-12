@@ -13,11 +13,15 @@ detection only; the upstream --watch / --write-dir snapshot machinery is
 intentionally omitted (re-run on demand instead).
 
 Usage:
-  loop-status.py [--bash-timeout-seconds N] [--json] [--all]
+  loop-status.py [--bash-timeout-seconds N] [--json] [--all] [--projects-dir DIR]
     --bash-timeout-seconds N  age before a pending tool is "stale" (default 1800 = 30m)
     --json                    machine-readable output
     --all                     scan every session (default: only sessions whose
                               transcript was modified in the last 24h)
+    --projects-dir DIR        override the projects root (default: ~/.claude/projects).
+                              Used by recursive-improve-observe.py to scope the scan
+                              to a fixture or staging dir, and by tests to mock
+                              without touching the real transcript tree.
 
 Exit: 0 = nothing stale, 1 = at least one stale signal found.
 """
@@ -28,7 +32,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-PROJECTS = os.path.expanduser("~/.claude/projects")
+DEFAULT_PROJECTS = os.path.expanduser("~/.claude/projects")
 
 
 def parse_ts(s):
@@ -104,11 +108,14 @@ def main():
     ap.add_argument("--bash-timeout-seconds", type=int, default=1800)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--projects-dir", default=DEFAULT_PROJECTS,
+                    help=f"override the projects root (default: {DEFAULT_PROJECTS})")
     args = ap.parse_args()
 
     now = datetime.now(timezone.utc)
+    projects = os.path.expanduser(args.projects_dir)
     files = sorted(
-        glob.glob(os.path.join(PROJECTS, "**", "*.jsonl"), recursive=True),
+        glob.glob(os.path.join(projects, "**", "*.jsonl"), recursive=True),
         key=os.path.getmtime,
         reverse=True,
     )

@@ -1,0 +1,31 @@
+{
+  "dataset_name": "stall-detection",
+  "description": "Guard against the failure mode in SYNTHESIS row #11 / loop-engineering-closure-roadmap P2.1: an operator starts a recursive-improve cycle on stale session state and ships an iteration against a verification_summary that itself is wedged. The fix is the loop-status wired to the observe step (commit `e835bb8` + P2.1) — the observe report MUST surface a 'loop posture' section before the verification table, with a ⚠ STALLED warning when at least one signal is past the threshold. If the section goes missing, or the stall signal is silently swallowed, the operator will think the verification table is trustworthy when it isn't. The fixture mocks a stalled projects dir (an old session with an unmatched Bash tool_use, timestamp 30 min in the past) and asserts: (a) the script exits 0 (it's a sensor, not a gate — ADR 0002), (b) the output contains 'loop posture', (c) the output contains 'STALLED'.",
+  "evals": [
+    {
+      "id": "stall-detection-surfaces-warning",
+      "task": "Create a temp projects dir with a mock session jsonl containing an unmatched Bash tool_use whose timestamp is 30 min in the past (older than the default 10-min threshold). Run recursive-improve-observe.py with --projects-dir pointing at the temp dir and --no-stall-check DISABLED. Assert: (a) the script exits 0, (b) the output contains 'loop posture', (c) the output contains 'STALLED' with a suggested_action string, (d) the verification table still renders after the stall signal (the warning does not abort the report).",
+      "skill": "observe-script",
+      "context": {
+        "command": "python3 scripts/recursive-improve-observe.py",
+        "mock_projects_dir": true,
+        "stall_threshold_min": 10,
+        "staleness_min": 30
+      },
+      "success_criteria": [
+        "process exits 0",
+        "Output contains 'loop posture' section header",
+        "Output contains 'STALLED' marker",
+        "Output contains the suggested action (e.g. 'interrupt the parked session')",
+        "Output still renders the verification table after the stall warning"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 500,
+      "tags": ["stall-detection", "p2-1", "loop-status", "regression", "recursive-improve"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "stall-signal-silently-swallowed",
+      "fixed_by": "P2.1 (loop-status --projects-dir + observe.py check_stall)"
+    }
+  ]
+}

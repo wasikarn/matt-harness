@@ -21,11 +21,19 @@ Usage:
 """
 import argparse
 import importlib.util
+import json
 import os
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 JOURNAL_DEFAULT = os.path.join(os.path.expanduser("~"), ".claude", "governance-events.jsonl")
+LOOP_STATUS = Path(__file__).resolve().parent / "loop-status.py"
+# Stalled if the most recent activity is older than this AND the scan flagged
+# any signal. 10m matches the plan's threshold_min=10 default; tune via
+# --stall-threshold-min for tighter/looser operator posture.
+DEFAULT_STALL_THRESHOLD_MIN = 10
 
 # verification_summary integer fields, in display order.
 FIELDS = ["features", "tdd_provenance", "analyzer_pass", "no_trail", "gaps"]
@@ -78,15 +86,145 @@ def _ints(fields):
     return out
 
 
+def check_stall(projects_dir=None, threshold_min=DEFAULT_STALL_THRESHOLD_MIN):
+    """Return a stall posture dict for the observe step.
+
+    Wraps scripts/loop-status.py (the wedged-Bash / stale-ScheduleWakeup detector
+    ported from affaan-m/ECC, 2026-05-30) and reduces its output to a single
+    operator-facing signal. Always returns a dict; never raises. `stalled` is True
+    only when loop-status flagged AT LEAST ONE signal AND its oldest flag is past
+    the threshold — a parked tool with low age is "pending", not "stalled".
+
+    Contract (per SYNTHESIS row #11 / loop-engineering-closure-roadmap P2.1):
+        - Pure read-only — never mutates journal, transcript, or session state.
+        - Never blocks, never auto-pauses. Surfaces a suggested_action string for
+          the operator to act on. ADR 0002 autonomy invariant: human-gated only.
+        - Projects dir is overridable (loop-status.py's --projects-dir) so
+          regression fixtures can mock against a temp dir without touching
+          ~/.claude/projects. The default still points at the real transcript
+          tree in production.
+    """
+    cmd = [sys.executable, str(LOOP_STATUS), "--json", "--all"]
+    if projects_dir:
+        cmd.extend(["--projects-dir", str(projects_dir)])
+
+    posture = {
+        "stalled": False,
+        "scanned": 0,
+        "flagged": 0,
+        "oldest_signal_age_min": 0,
+        "signal_types": [],
+        "suggested_action": "no action — loop posture is clean",
+        "error": None,
+    }
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        posture["error"] = f"{type(e).__name__}: {e}"
+        return posture
+
+    if r.returncode not in (0, 1):
+        # loop-status signals "1 stale" as rc=1; anything else is a real error.
+        posture["error"] = f"loop-status rc={r.returncode}: {r.stderr.strip()[:200]}"
+        return posture
+
+    try:
+        j = json.loads(r.stdout) if r.stdout.strip() else {}
+    except json.JSONDecodeError as e:
+        posture["error"] = f"loop-status JSON parse: {e}"
+        return posture
+
+    flagged = j.get("flagged") or []
+    posture["scanned"] = j.get("scanned", 0)
+    posture["flagged"] = len(flagged)
+    if not flagged:
+        return posture
+
+    # Find the oldest signal across all flagged sessions, in minutes.
+    oldest_age_s = 0
+    sig_types = set()
+    for sess in flagged:
+        last = sess.get("last_activity")
+        last_ts = None
+        if last:
+            try:
+                last_ts = datetime.fromisoformat(last.replace("Z", "+00:00"))
+            except ValueError:
+                pass
+        sess_max_age = 0
+        for s in sess.get("signals") or []:
+            sig_types.add(s.get("type", "?"))
+            age = s.get("age_seconds") or 0
+            if age > sess_max_age:
+                sess_max_age = age
+        # If we can anchor to last_activity, the signal age is bounded by the
+        # recency of the session itself; otherwise fall back to the signal's
+        # reported age_seconds.
+        anchored = sess_max_age
+        if last_ts:
+            anchored = max(sess_max_age, int((datetime.now(timezone.utc) - last_ts).total_seconds()))
+        if anchored > oldest_age_s:
+            oldest_age_s = anchored
+
+    posture["oldest_signal_age_min"] = oldest_age_s // 60
+    posture["signal_types"] = sorted(sig_types)
+    if posture["oldest_signal_age_min"] >= threshold_min:
+        posture["stalled"] = True
+        if "stale_bash" in sig_types:
+            posture["suggested_action"] = (
+                f"wedged Bash call ≥{posture['oldest_signal_age_min']}m old — "
+                "interrupt the parked session or inspect the transcript before continuing"
+            )
+        elif "stale_wakeup" in sig_types:
+            posture["suggested_action"] = (
+                f"ScheduleWakeup did not fire for {posture['oldest_signal_age_min']}m — "
+                "check loop context (cache window / wake-prompt) before continuing"
+            )
+        else:
+            posture["suggested_action"] = (
+                f"{len(flagged)} session(s) flagged, oldest signal "
+                f"{posture['oldest_signal_age_min']}m — review before continuing"
+            )
+    return posture
+
+
 def main():
     ap = argparse.ArgumentParser(description="surface verification_summary gaps for the improvement ritual")
     ap.add_argument("--journal", default=JOURNAL_DEFAULT, help="governance journal path")
+    ap.add_argument("--stall-threshold-min", type=int, default=DEFAULT_STALL_THRESHOLD_MIN,
+                    help="minutes of staleness that flips a flagged session to 'stalled' (default 10)")
+    ap.add_argument("--projects-dir", default=None,
+                    help="override the projects root for the stall scan (passed to loop-status.py --projects-dir)")
+    ap.add_argument("--no-stall-check", action="store_true",
+                    help="skip the loop-status stall scan (for fixtures / quick runs)")
     args = ap.parse_args()
+
+    print(f"=== recursive-improve: verification posture (journal: {args.journal}) ===\n")
+
+    # Loop posture — surfaces wedged Bash / stale ScheduleWakeup before the
+    # verification summary. A parked session corrupts the verification signal
+    # (the metric for this session may itself be stale), so the operator sees
+    # the stall FIRST and can decide whether the gaps table below is
+    # trustworthy. NEVER auto-pauses (ADR 0002).
+    if not args.no_stall_check:
+        posture = check_stall(projects_dir=args.projects_dir, threshold_min=args.stall_threshold_min)
+        if posture["error"]:
+            print(f"loop posture: ERROR — {posture['error']} (continuing)\n")
+        else:
+            print("loop posture:")
+            print(f"  scanned:  {posture['scanned']} session(s)")
+            print(f"  flagged:  {posture['flagged']} (oldest signal: {posture['oldest_signal_age_min']}m)")
+            if posture["signal_types"]:
+                print(f"  types:    {', '.join(posture['signal_types'])}")
+            if posture["stalled"]:
+                print(f"  ⚠ STALLED  ({posture['suggested_action']})")
+            else:
+                print(f"  ok:       {posture['suggested_action']}")
+            print()
 
     load_jsonl = _load_governance_reader()
     evts, n_corrupt, existed = load_jsonl(args.journal)
 
-    print(f"=== recursive-improve: verification posture (journal: {args.journal}) ===\n")
     if not existed:
         print("(no journal yet — nothing to observe)")
         sys.exit(0)
