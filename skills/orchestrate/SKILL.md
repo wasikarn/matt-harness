@@ -5,6 +5,12 @@ description: "Prioritize competing tasks, then route each to inline / batch-para
 
 # Orchestrate
 
+> **Subagent self-check:** If you were dispatched as a sub-agent for a specific task, **do not
+> re-orchestrate.** Return your scoped output (a `done-when` artifact, a `Report:` block, or
+> your done-criterion evidence) to the parent. The parent owns the prioritization + dispatch
+> loop; you own one well-bounded deliverable. This preamble mirrors obra/superpowers'
+> `<SUBAGENT-STOP>` convention (MINE-1 from 2026-06-12 ledger row).
+
 Turn a pile of work into a prioritized plan, then route each item to the cheapest correct executor. The main agent allocates; sub-agents do the heavy lifting. Prioritizing produces a **plan** — executing it, especially via write-capable agents, needs the user's go-ahead.
 
 ## Procedure
