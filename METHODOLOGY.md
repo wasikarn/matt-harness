@@ -70,7 +70,7 @@ When a loop *verifies*, its stop-signal must reduce to an objective check — a 
 - Test output showing red→green (exit code + diff).
 - Type-checker / linter output showing zero new errors.
 - Fresh-context adversarial review by a sub-agent (`code-reviewer`, `security-reviewer`, or `silent-failure-hunter`) with no access to the implementer's reasoning.
-- Deterministic acceptance-runner results (`scripts/run-acceptance.py`) against a locked `ACCEPTANCE.md` contract.
+- Deterministic acceptance-runner results (`scripts/run-acceptance.py`) against a locked `ACCEPTANCE.md` contract. The runner returns **distinct exit codes for PASS(0) / FAIL(1) / INVOCATION(2) / PARSE(3) / BLOCK(4)** — a BLOCKed criterion is not a PASSed one (fix for the scoreboard-collapse anti-cheat gap, SYNTHESIS row #15).
 Store proof artifacts in `.scratch/<slug>/proofs/` so reviewers can inspect them without re-running the full session.
 
 ## 5. Use the Model Only for Judgment Calls

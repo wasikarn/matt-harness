@@ -12,9 +12,13 @@ Usage:
 
 Exit codes:
     0 — all executable criteria passed (or no executable criteria found)
-    1 — one or more executable criteria failed
-    2 — bad invocation (missing slug, no ACCEPTANCE.md)
+    1 — one or more executable criteria FAILED (the code under test is broken)
+    2 — bad invocation (missing slug, no ACCEPTANCE.md, --cwd does not exist)
     3 — parse error (malformed ACCEPTANCE.md)
+    4 — at least one criterion was BLOCKED by the safety deny list and none
+        failed. The runner refused to run it; the operator must explicitly
+        acknowledge the BLOCK before ship. Distinct from exit 1 (FAIL) so
+        that "all blocked" doesn't masquerade as "all passed" in CI.
 
 The script does NOT emit permissionDecision — it is a deterministic runner,
 not a gate. Blocking decisions belong in PreToolUse hooks or human gates.
@@ -22,7 +26,6 @@ not a gate. Blocking decisions belong in PreToolUse hooks or human gates.
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -475,7 +478,18 @@ def main() -> int:
         print(f"Results: {passed} passed, {failed} failed, {skipped} skipped, {blocked} blocked")
         print(f"Written: {output_path}")
 
-    return 0 if failed == 0 else 1
+    # Exit codes are the scoreboard that the operator (or pre-ship-verify)
+    # reads — keep them distinguishable so BLOCK ≠ FAIL ≠ PASS. The previous
+    # binary `0 if failed == 0 else 1` collapsed all three into a single
+    # "did anything fail?" verdict, which is exactly the anti-cheat failure
+    # mode (SYNTHESIS row #15) — operators who ignored BLOCKs were seeing
+    # them as PASSes. New contract uses exit 4 for the all-blocked-but-
+    # none-failed case (see top-of-file docstring).
+    if blocked > 0 and failed == 0:
+        return 4
+    if failed > 0:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
