@@ -7,7 +7,7 @@ _Legend: → symlinked (user-authored)  ◇ in-place (plugin / project-local)_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (26)
+### Skills (27)
   ◇ accept-task                    'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that /review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
   ◇ acli                           ALWAYS trigger this skill when the user wants ANY bulk / set-based Jira work-item operation: move all tickets to Done, transition every issue in a sprint, label every bug, clone to another project, delete old tickets, bulk-edit priority/assignee/labels/status, assign a batch, comment on multiple, archive resolved, or export JQL to CSV/Excel. Also trigger for ANY Confluence space / page / blog create / manage, or whenever \"acli\" appears in the prompt. Use for ops selected by JQL, sprint name, or issue-key list. Do NOT use for JQL syntax help, installing / configuring acli, GitHub/GitLab ops, or non-Atlassian trackers.
   ◇ adr                            Draft an Architecture Decision Record when a decision is hard to reverse, surprising without context, or the result of a real trade-off. Use when choosing between frameworks, changing data models, introducing dependencies, or retiring patterns. Do NOT use for: trivial choices (use inline comment), documenting what already exists (use README), or decisions with no alternatives considered.
@@ -34,6 +34,7 @@ _Personals/kbg-harness_
   ◇ semantic-code                  Use this skill when the user asks about functions, classes, or methods — not just lines of code. Use for: what functions or classes changed in commits or PRs, history of a specific function or class, cross-file dependency graphs showing callers and callees, whether refactoring or renaming will break things, and token-budgeted context on a specific entity. Do NOT use for: plain git operations like raw diffs, file listings, or simple blame.
   ◇ ship-change                    Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, /review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent).
   ◇ tech-humanize                  |
+  ◇ usage-monitor                  'Read-only cost + sub-agent usage summary for the current session. Use when the user asks "how much did this session cost", "how many tokens did the sub-agents burn", "show me a cost breakdown by agent", or any time nested-team token burn is suspected (~7x amplification unaddressed in the 2026-06-12 audit). Surfaces stats from the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; no enforcement, no gates, no L3/L4 — strictly L2 read-only. Do NOT use for real-time cost gating (no such gate exists by design), cross-session cost aggregation (out of scope), or OTEL/OTLP export to external backends (not implemented).'
 
 ### Commands (10)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify each (action / clarify / wontfix / out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing the commit sha that addressed it, re-request review. Use when a PR has open review threads needing response, after review-pr or external review returns findings, or when user says 'address the review', 'apply review feedback', 'respond to PR comments'. Don't use for: doing the review yourself (use review-pr), pre-PR cleanup before requesting feedback, or merging post-approval (use /ship-merge).
@@ -76,7 +77,7 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design and data-modeling reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, schemas, or data structures — especially when new types cross module boundaries or are exposed in public APIs. Grades encapsulation and invariants on a 1–10 scale. Don't use for: general code-quality review (defer to code-reviewer), security-specific concerns (defer to security-reviewer), performance analysis (defer to perf skill), or runtime behavior verification (defer to test-engineer). Owns type-system correctness and data-integrity boundaries.\n\n<commentary>\nThis agent triggers because type design is a distinct boundary from general code review, security, and performance. Poor encapsulation and broken invariants are root causes of many bugs that only surface at runtime; catching them during design review prevents downstream issues. The 1–10 grading forces explicit judgment rather than vague 'looks fine' approvals.\n</commentary>
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating a UI/UX implementation, reviewing a feature from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer for component-level polish, or clarify scope with user), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer for API latency, frontend-engineer for render performance). Owns the user experience layer between design and code.
 
-### Hooks (37)
+### Hooks (38)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
@@ -112,6 +113,7 @@ _Personals/kbg-harness_
   ◇ skill-nudge.sh                 UserPromptSubmit: skill-nudge — deterministic command-route miss-detector.
   ◇ superset-notify-wrapper.sh     Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag
   ◇ task-lifecycle.sh              task-lifecycle.sh — observability for agent-team lifecycle events.
+  ◇ usage-monitor-capture.sh       usage-monitor-capture.sh — SessionEnd capture for nested-team token cost.
   ◇ validator-bash-guard.sh        Block mutation Bash commands issued by validator-class agents.
   ◇ verification-gate.sh           verification-gate — SessionEnd verification-doctrine sensor (advisory).
 
@@ -175,6 +177,7 @@ _Personals/kbg-harness_
 | semantic-code | Use this skill when the user asks about functions, classes, or methods — not just lines of code. Use for: what functions or classes changed in commits or PRs, history of a specific function or class, cross-file dependency graphs showing callers and callees, whether refactoring or renaming will break things, and token-budgeted context on a specific entity. Do NOT use for: plain git operations like raw diffs, file listings, or simple blame. | inline | auto |
 | ship-change | Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, /review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent). | inline | manual |
 | tech-humanize | | | inline | auto |
+| usage-monitor | 'Read-only cost + sub-agent usage summary for the current session. Use when the user asks "how much did this session cost", "how many tokens did the sub-agents burn", "show me a cost breakdown by agent", or any time nested-team token burn is suspected (~7x amplification unaddressed in the 2026-06-12 audit). Surfaces stats from the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; no enforcement, no gates, no L3/L4 — strictly L2 read-only. Do NOT use for real-time cost gating (no such gate exists by design), cross-session cost aggregation (out of scope), or OTEL/OTLP export to external backends (not implemented).' | inline | auto |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -214,6 +217,7 @@ _Personals/kbg-harness_
 | skill-nudge.sh | UserPromptSubmit: skill-nudge — deterministic command-route miss-detector. |
 | superset-notify-wrapper.sh | Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag |
 | task-lifecycle.sh | task-lifecycle.sh — observability for agent-team lifecycle events. |
+| usage-monitor-capture.sh | usage-monitor-capture.sh — SessionEnd capture for nested-team token cost. |
 | validator-bash-guard.sh | Block mutation Bash commands issued by validator-class agents. |
 | verification-gate.sh | verification-gate — SessionEnd verification-doctrine sensor (advisory). |
 
@@ -223,7 +227,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-12T02:20:27Z_
+_Generated: 2026-06-12T03:11:48Z_
 
 ---
 

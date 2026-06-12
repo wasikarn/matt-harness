@@ -610,6 +610,47 @@ than ship commands.
 - D9 (OTEL/usage-monitor) deferred to the next Phase 4 commit per
   the locked contract.
 
+### Phase 4b — D9 OTEL/usage-monitor for nested teams (2026-06-12, 1 commit)
+
+D9 from `.scratch/audit-2026-06-12/SPEC.md` flagged "~7x token cost
+warning unaddressed" — vendor v2.1.139/145 emits `claude_code.llm_request`
+and `claude_code.tool` OTEL spans with `agent_id` / `parent_agent_id`
+attributes, but kbg-harness had zero OTEL config and zero cost-monitoring
+skill. Owner resolved 2026-06-12 to ship **passive monitor only** (option
+A), accepting the late-warning tradeoff to preserve the L2 invariant
+(ADR 0002).
+
+- 1 new skill: `skills/usage-monitor/` (SKILL.md 6.0K, scripts/usage-summarize.sh
+  4.0K) — read-only cost + sub-agent usage summary, opt-in via `KBG_USAGE_MONITOR=1`.
+  Surfaces stats from `~/.claude/usage/<slug>.jsonl`; no enforcement, no
+  threshold gates, no L3/L4 actions.
+- 1 new hook: `hooks/usage-monitor-capture.sh` (3.5K) — SessionEnd capture
+  that reads the session transcript, extracts `agent_id` / `parent_agent_id`
+  + token counts, appends one JSONL line per session. Best-effort, always
+  exit 0, mirrors `session-summary.sh` posture.
+- `hooks/hooks.json`: added the new hook to the SessionEnd list (between
+  `verification-gate.sh` and `superset-notify-wrapper.sh`).
+- 1 symlink: `~/.claude/skills/usage-monitor` → repo (for harness-audit
+  F1 satisfaction and Claude Code loadability).
+- 0 changes to `settings.local.json` — capture is fully opt-in via env var.
+- 0 changes to doctrine, ADRs, or any gate hooks. ADR 0002 (L2 only)
+  honored strictly.
+- CHANGELOG: this subsection.
+- SPEC.md (gitignored): D9 marked `RESOLVED 2026-06-12 (passive monitor
+  shipped; no enforcement per ADR 0002)`.
+- BOUNDARY.md regenerated: Skills count 26 → 27; the pre-existing
+  regenerator `description: \|` parse bug resolved by the new skill's
+  single-quoted `description: '...'` YAML.
+- Verification: `harness-audit` 0C/0W/27I exit 0 (+1 I for new skill's
+  canonical-sections schema-rot, same as 26 pre-existing siblings),
+  hook tests 202/0 (+1 new critical-hook test), `claude plugin
+  validate --strict` ✔.
+- 3 smoke tests pass on `usage-monitor-capture.sh` (opt-out exit 0,
+  opt-in no-input exit 0, bad-transcript exit 0).
+
+**Phase 4 complete** (D6 in commit `f0d59a7`, D9 in this commit).
+**Audit epic fully closed** — F1-F12, D1-D10 all shipped.
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit
