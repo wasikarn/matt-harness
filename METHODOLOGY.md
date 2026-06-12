@@ -89,6 +89,7 @@ Store proof artifacts in `.scratch/<slug>/proofs/` so reviewers can inspect them
 - 30,000 tokens per session.
 - Summarize and restart on approach.
 - Surface the breach. Do not silently overrun.
+- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the [`subagent-token-cost-awareness`](../.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md) audit row to Present — see commit `7194037`.)
 
 ## 7. Surface Conflicts, Don't Average Them
 

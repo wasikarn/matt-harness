@@ -368,6 +368,58 @@ insertions, 7 files.
 - D4, D8, D10 (Phase 2 doc adds) — ship with Phase 2 spec
 - 5 open questions from SPEC.md — owner review pending
 
+### Phase 1.2 — formal eval harness (D6 from loop-audit, 2026-06-12, 1 commit `35ead10`)
+
+Closes `dataset-eval-before-ship` (SYNTHESIS row #42) from
+`.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md`. Promotes the
+row from `Partial` to `Present` — held-out dataset + regression
+fixture + CI gate shipped.
+
+- 1 new directory: `eval/` with 4 subdirs — `datasets/` (3 JSON:
+  `harness-audit`, `ship-change`, `review-pr`), `regressions/`
+  (1 fixture: `loop-overshoot`), `fixtures/` (1 acceptance fixture),
+  and the runner.
+- 1 new script: `eval/run-eval.py` (342 lines) — entry point with
+  `--dataset`, `--regression`, and `--gate` flags. Schema-validates
+  input, computes pass/fail per item, emits machine-readable JSON.
+- 1 CI gate: `.github/workflows/validate.yml:32-46` (`eval-harness`
+  job) — runs `eval/run-eval.py --gate` on every PR. Fails the
+  build on regression.
+- Verification: `python eval/run-eval.py` green; CI workflow
+  valid; no existing test broken.
+- Promotes SYNTHESIS row #42 from `Partial` → `Present` (audit
+  re-baselined in `.scratch/harness-loop-audit-2026-06-12/SYNTHESIS-REAUDIT.md`).
+
+### Phase 1.3 — done-means-verified-with-proof (2026-06-12, 1 commit `b7054b6`)
+
+Closes `done-means-verified-with-proof` (SYNTHESIS row #14, **Core
+weight**) from `.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md`.
+Promotes the row from `Partial` to `Present` — "Done" now means
+"verified with proof from this session, not merely 'written'."
+
+- `METHODOLOGY.md:69-75` — Rule 4 "Goal-Driven Execution" gets an
+  explicit "Independent proof" sub-rule: a task is not done until
+  it carries its own verification artifact (test result, exit
+  code, fresh-context adversarial pass). Never the implementer
+  agreeing with their own work.
+- `skills/ship-change/reference.md:69-93` — Phase 5 "Verify + Merge"
+  promoted proof collection to a **blocking gate** (was previously
+  optional). The runner collects proof artifacts, asserts they
+  exist, and refuses to advance the task to "merged" without them.
+- `skills/review-pr/SKILL.md:160-162` — `[verification-gap]` tag
+  enforcement: PRs claiming completion without a proof artifact
+  get a `must-fix` flag in the review output.
+- `commands/pre-ship-verify.md` (122 lines) — deterministic runner
+  that materializes the proof requirement: runs the `ACCEPTANCE.md`
+  contract + eval-harness gate, emits a single PASS/FAIL signal.
+  Wired into `/review-pr` Phase 6 and `/ship-merge` Phase 1.
+- Verification: `pre-ship-verify` exercises a known-good and a
+  known-bad acceptance contract; `[verification-gap]` triggers on
+  the bad one.
+- Promotes SYNTHESIS row #14 from `Partial` → `Present` (Core
+  weight — highest-leverage of the 3 reclassifications in the
+  re-audit; audit re-baselined in `SYNTHESIS-REAUDIT.md`).
+
 ### Phase 2 — T2 capability fixes (F3 + F7 + F8 + F9 + F10 + D1 + D2 + D4 + D8 + D10, 2026-06-12, 1 commit)
 
 Closes the 7 T2-capability + 3 doc items from `.scratch/audit-2026-06-12/SPEC.md` Phase 2
