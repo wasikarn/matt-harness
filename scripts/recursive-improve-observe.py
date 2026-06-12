@@ -34,6 +34,22 @@ LOOP_STATUS = Path(__file__).resolve().parent / "loop-status.py"
 # any signal. 10m matches the plan's threshold_min=10 default; tune via
 # --stall-threshold-min for tighter/looser operator posture.
 DEFAULT_STALL_THRESHOLD_MIN = 10
+# Comprehension debt ceiling: pause the loop when debt_count exceeds this.
+# Default 5 (per spec §4.4 example). Override via KBG_DEBT_CEILING env var
+# (production) or --debt-ceiling flag (ad-hoc + tests).
+DEFAULT_DEBT_CEILING = 5
+# Comprehension debt ledger: where each component comes from.
+# - unverified_changes: derived from the journal's `verification_summary.gaps`
+#   summed across latest per-session (what the script already aggregates).
+# - unreviewed_audit_findings: SECURITY + REVIEW findings in the journal
+#   emitted within the last `DEBT_REVIEW_WINDOW_DAYS` (default 30) that have
+#   no matching `verification_verdict` referencing the same `subject_id`.
+# - open_prs: NOT in the journal (no pr_opened event). Sourced from the
+#   `KBG_DEBT_OPEN_PRS` env var so the operator (or fixture) sets it manually.
+#   The honest reflection is that PR count is the operator's local knowledge;
+#   wiring gh CLI here would couple observe.py to a host primitive it doesn't
+#   own (per bounded-context-dispatch: read DOMAINS.md, don't inline).
+DEBT_REVIEW_WINDOW_DAYS = 30
 
 # verification_summary integer fields, in display order.
 FIELDS = ["features", "tdd_provenance", "analyzer_pass", "no_trail", "gaps"]
@@ -188,6 +204,77 @@ def check_stall(projects_dir=None, threshold_min=DEFAULT_STALL_THRESHOLD_MIN):
     return posture
 
 
+def compute_debt_ledger(evts, now=None, open_prs=None):
+    """Count comprehension debt items per spec §4.4 / SYNTHESIS #41.
+
+    debt_count = open_prs + unverified_changes + unreviewed_audit_findings
+
+    Each component is sourced honestly:
+      - open_prs: env var `KBG_DEBT_OPEN_PRS` (int) or the `open_prs` arg
+        (used by the CLI to forward the env var). We do NOT shell out to
+        `gh` — the journal has no pr_opened event, and the operator's local
+        PR count is the truthful source.
+      - unverified_changes: sum of `gaps` across the latest verification_summary
+        per session (same `_latest_per_session` reduction used in main()).
+      - unreviewed_audit_findings: security_finding + review_finding events
+        in the last DEBT_REVIEW_WINDOW_DAYS that have no matching
+        verification_verdict referencing them as `subject_id`.
+
+    Returns a dict with all three components, the total, and a `within_window`
+    int (count of audit findings actually scanned — for transparency).
+
+    Read-only over `evts`; never mutates, never raises. Bad input coerces
+    to 0 + stderr warning (same policy as `_ints`).
+    """
+    from datetime import timedelta
+    if now is None:
+        now = datetime.now(timezone.utc)
+    # ---- open_prs (env / arg) ----
+    if open_prs is None:
+        env_val = os.environ.get("KBG_DEBT_OPEN_PRS", "0").strip()
+        try:
+            open_prs = int(env_val or "0")
+        except ValueError:
+            print(f"warning: KBG_DEBT_OPEN_PRS={env_val!r} unparseable — treating as 0", file=sys.stderr)
+            open_prs = 0
+
+    # ---- unverified_changes (from verification_summary) ----
+    summaries = [e for e in evts if e.get("event") == "verification_summary"]
+    latest = _latest_per_session(summaries)
+    unverified_changes = 0
+    for e in latest.values():
+        f = e.get("fields") or {}
+        raw = f.get("gaps", 0)
+        try:
+            unverified_changes += int(raw or 0)
+        except (TypeError, ValueError):
+            print(f"warning: gaps={raw!r} unparseable — treating as 0", file=sys.stderr)
+
+    # ---- unreviewed_audit_findings (findings without verdicts, in window) ----
+    cutoff_ts = (now - timedelta(days=DEBT_REVIEW_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    verdict_subjects = set()
+    for e in evts:
+        if e.get("event") == "verification_verdict":
+            sid = (e.get("fields") or {}).get("subject_id")
+            if sid:
+                verdict_subjects.add(sid)
+    findings = [
+        e for e in evts
+        if e.get("event") in ("security_finding", "review_finding")
+        and (e.get("ts") or "") >= cutoff_ts
+    ]
+    within_window = len(findings)
+    unreviewed = sum(1 for f in findings if f.get("id") not in verdict_subjects)
+
+    return {
+        "open_prs": open_prs,
+        "unverified_changes": unverified_changes,
+        "unreviewed_audit_findings": unreviewed,
+        "within_window_findings": within_window,
+        "debt_count": open_prs + unverified_changes + unreviewed,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser(description="surface verification_summary gaps for the improvement ritual")
     ap.add_argument("--journal", default=JOURNAL_DEFAULT, help="governance journal path")
@@ -197,6 +284,14 @@ def main():
                     help="override the projects root for the stall scan (passed to loop-status.py --projects-dir)")
     ap.add_argument("--no-stall-check", action="store_true",
                     help="skip the loop-status stall scan (for fixtures / quick runs)")
+    ap.add_argument("--debt-ceiling", type=int,
+                    default=int(os.environ.get("KBG_DEBT_CEILING", str(DEFAULT_DEBT_CEILING))),
+                    help="comprehension-debt ceiling (env: KBG_DEBT_CEILING, default 5). "
+                         "Pause the loop and surface a warning when debt_count exceeds this.")
+    ap.add_argument("--debt-open-prs", type=int, default=None,
+                    help="override KBG_DEBT_OPEN_PRS for this run (test/fixture escape hatch)")
+    ap.add_argument("--no-debt-check", action="store_true",
+                    help="skip the comprehension-debt ledger (for fixtures / quick runs)")
     args = ap.parse_args()
 
     print(f"=== recursive-improve: verification posture (journal: {args.journal}) ===\n")
@@ -221,6 +316,32 @@ def main():
             else:
                 print(f"  ok:       {posture['suggested_action']}")
             print()
+
+    # Comprehension debt ledger (SYNTHESIS #41 / spec §4.4). Counts three
+    # sources of "what stays manual" — the operator's loop can only act on
+    # what they've actually reviewed. When debt_count exceeds the ceiling,
+    # surface a PAUSE warning. NEVER auto-blocks (ADR 0002) — the operator
+    # decides whether to drain the queue or accept the breach.
+    if not args.no_debt_check:
+        # Read the journal here (load_jsonl is pure; safe to call once).
+        _load_jsonl = _load_governance_reader()
+        _evts, _, _existed = _load_jsonl(args.journal)
+        debt = compute_debt_ledger(_evts, open_prs=args.debt_open_prs)
+        print("comprehension debt ledger:")
+        print(f"  open_prs:                  {debt['open_prs']}  (KBG_DEBT_OPEN_PRS or --debt-open-prs)")
+        print(f"  unverified_changes:        {debt['unverified_changes']}  (sum of latest verification_summary.gaps)")
+        print(f"  unreviewed_audit_findings: {debt['unreviewed_audit_findings']}  "
+              f"(of {debt['within_window_findings']} findings in last {DEBT_REVIEW_WINDOW_DAYS}d, "
+              "no verification_verdict.subject_id match)")
+        print(f"  debt_count:                {debt['debt_count']} / ceiling {args.debt_ceiling}")
+        if debt["debt_count"] > args.debt_ceiling:
+            print(f"  ⚠ DEBT-CEILING BREACHED  ({debt['debt_count']} > {args.debt_ceiling} — "
+                  "PAUSE new proposals and drain the queue before iterating)")
+        else:
+            print(f"  ok:    within ceiling (headroom = {args.debt_ceiling - debt['debt_count']})")
+        print()
+        # Surface the breach but DO NOT sys.exit(1) — observe is a sensor.
+        # The SKILL.md Step 1 callout is the operator-facing pause signal.
 
     load_jsonl = _load_governance_reader()
     evts, n_corrupt, existed = load_jsonl(args.journal)

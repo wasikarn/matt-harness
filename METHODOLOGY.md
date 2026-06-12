@@ -73,6 +73,14 @@ When a loop *verifies*, its stop-signal must reduce to an objective check — a 
 - Deterministic acceptance-runner results (`scripts/run-acceptance.py`) against a locked `ACCEPTANCE.md` contract. The runner returns **distinct exit codes for PASS(0) / FAIL(1) / INVOCATION(2) / PARSE(3) / BLOCK(4)** — a BLOCKed criterion is not a PASSed one (fix for the scoreboard-collapse anti-cheat gap, SYNTHESIS row #15).
 Store proof artifacts in `.scratch/<slug>/proofs/` so reviewers can inspect them without re-running the full session.
 
+**Sub-rule: Comprehension debt ceiling.** Before proposing new candidates, check
+the comprehension-debt ledger (`recursive-improve-observe.py:compute_debt_ledger`).
+The ledger sums `open_prs + unverified_changes + unreviewed_audit_findings`; if
+the total exceeds `KBG_DEBT_CEILING` (default 5), the loop pauses until the
+queue is drained. Codifies "what stays manual" into a quantified, machine-checkable
+signal so the operator iterates on top of *reviewed* state, not stacked-up unread
+findings. (SYNTHESIS #41, spec §4.4.)
+
 ## 5. Use the Model Only for Judgment Calls
 
 **If code can answer, code answers. Model for judgment, not execution.**

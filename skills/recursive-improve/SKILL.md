@@ -47,10 +47,11 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 
 - Run the verification-posture reader:
   `python3 "$HOME/.claude/scripts/recursive-improve-observe.py"`
-  → prints a `loop posture` section FIRST (wedged-Bash / stale-ScheduleWakeup from
-  `loop-status.py`) and THEN the verification posture (latest `verification_summary`
-  per session + sessions whose `gaps > 0`, a feature shipped `no-trail` without a
-  named `optout_reason`). The two are the metric / drift-guard baseline.
+  → prints three sections, in this order:
+    1. **loop posture** (wedged-Bash / stale-ScheduleWakeup from `loop-status.py`)
+    2. **comprehension debt ledger** (open_prs + unverified_changes + unreviewed_audit_findings)
+    3. **verification posture** (latest `verification_summary` per session + sessions whose `gaps > 0`)
+  The three are the metric / drift-guard baseline.
 - **Stall gate (SYNTHESIS #11 / P2.1):** if the `loop posture` section flags
   `STALLED` with an oldest signal ≥ the threshold (default 10m), **pause and
   surface to the operator** before proceeding. A wedged session corrupts the
@@ -59,6 +60,19 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
   (`recursive-improve-observe.py:check_stall` returns a posture dict, never
   raises — ADR 0002 forbids autonomous action). Suggested action strings are
   advisory; the operator decides.
+- **Debt-ceiling gate (SYNTHESIS #41 / spec §4.4):** if the `comprehension debt
+  ledger` section reports `DEBT-CEILING BREACHED` (debt_count > `KBG_DEBT_CEILING`,
+  default 5), **pause and drain the queue before proposing new candidates**.
+  The ledger sums three sources of "what stays manual":
+    - `open_prs` (env var `KBG_DEBT_OPEN_PRS` — the journal has no `pr_opened`
+      event, so this is operator-supplied; honest reflection of local PR count).
+    - `unverified_changes` (sum of `gaps` across the latest `verification_summary`
+      per session — features shipped `no-trail` without a named `optout_reason`).
+    - `unreviewed_audit_findings` (`security_finding` + `review_finding` events
+      in the last 30d that have no matching `verification_verdict.subject_id`).
+  Same autonomy invariant: the script does NOT block. The `BREACHED` warning is
+  the operator-facing pause signal; the threshold is configurable via
+  `KBG_DEBT_CEILING` env var (or `--debt-ceiling` flag).
 - Run `harness-audit` (`bash "$HOME/.claude/skills/harness-audit/scripts/audit.sh"`)
   → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
   the reader says *that* improvement is warranted, the audit says *what*.

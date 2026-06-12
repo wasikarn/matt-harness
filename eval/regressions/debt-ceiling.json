@@ -1,0 +1,42 @@
+{
+  "dataset_name": "debt-ceiling",
+  "description": "Guard against the failure mode in SYNTHESIS row #41 / spec §4.4: an operator starts a recursive-improve cycle while N=6 unreviewed audit findings are sitting in the journal. The debt ledger MUST surface a 'DEBT-CEILING BREACHED' warning when debt_count > ceiling (default 5), and the warning MUST NOT block the report (the script is a sensor, not a gate — ADR 0002 forbids auto-pause). If the ledger section goes missing, or the breach is silently swallowed, the operator will iterate on top of unread findings and the comprehension debt compounds. The fixture mocks 6 security_finding events (no matching verification_verdict), runs observe with --debt-ceiling=5 and --debt-open-prs=0, and asserts: (a) exit 0, (b) 'comprehension debt ledger' section header, (c) 'DEBT-CEILING BREACHED' marker, (d) debt_count=6 in the output, (e) the rest of the report still renders.",
+  "evals": [
+    {
+      "id": "debt-ceiling-breach-surfaces-warning",
+      "task": "Create a mock journal with 6 security_finding events (each with a unique id, no matching verification_verdict) and 0 verification_summary events. Run recursive-improve-observe.py with --debt-ceiling=5 --debt-open-prs=0 and a mock journal containing those 6 events. Assert: (a) script exits 0, (b) output contains 'comprehension debt ledger' section header, (c) output contains 'DEBT-CEILING BREACHED' marker, (d) output shows debt_count: 6, (e) the verification table area still prints (the breach does not abort the report).",
+      "skill": "observe-script",
+      "context": {
+        "command": "python3 scripts/recursive-improve-observe.py",
+        "debt_ceiling": 5,
+        "debt_open_prs": 0,
+        "expected_breach": true,
+        "stall_threshold_min": 10,
+        "staleness_min": 30,
+        "mock_journal": [
+          {"id": "mock-v1", "ts": "2026-06-11T09:55:00.000Z", "session": "fakesession", "hook": "test", "event": "verification_summary", "fields": {"features": 0, "tdd_provenance": 0, "analyzer_pass": 0, "no_trail": 0, "gaps": 0}},
+          {"id": "mock-finding-1", "ts": "2026-06-11T10:00:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}},
+          {"id": "mock-finding-2", "ts": "2026-06-11T10:01:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}},
+          {"id": "mock-finding-3", "ts": "2026-06-11T10:02:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}},
+          {"id": "mock-finding-4", "ts": "2026-06-11T10:03:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}},
+          {"id": "mock-finding-5", "ts": "2026-06-11T10:04:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}},
+          {"id": "mock-finding-6", "ts": "2026-06-11T10:05:00.000Z", "session": "fake", "hook": "test", "event": "security_finding", "fields": {"file": "/x", "category": "TEST", "severity": "low"}}
+        ]
+      },
+      "success_criteria": [
+        "process exits 0",
+        "Output contains 'comprehension debt ledger' section header",
+        "Output contains 'DEBT-CEILING BREACHED' marker",
+        "Output reports debt_count 6 in the ledger",
+        "The breach warning does not abort the report (the verification table still renders after the breach)"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 500,
+      "tags": ["debt-ceiling", "p2-2", "comprehension-debt", "regression", "recursive-improve"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "debt-ceiling-breach-silently-swallowed",
+      "fixed_by": "P2.2 (compute_debt_ledger + ledger section in observe.py)"
+    }
+  ]
+}
