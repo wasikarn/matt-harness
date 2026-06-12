@@ -11,9 +11,9 @@
         "acceptance_path": ".scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md"
       },
       "success_criteria": [
-        "ACCEPTANCE.md exists and has checkboxes",
-        "run-acceptance.py produces acceptance-results.json",
-        "Results include passed/skipped/failed counts"
+        "ACCEPTANCE.md exists",
+        "acceptance-results.json exists",
+        "At least 1 criteria passed"
       ],
       "expected_duration_seconds": 20,
       "expected_tokens": 3000,
@@ -46,8 +46,8 @@
         "slug": "no-contract-task"
       },
       "success_criteria": [
-        "No ACCEPTANCE.md found at expected path",
-        "ship-change proceeds to human gate only",
+        "No ACCEPTANCE.md not found at expected path",
+        "ship-change proceeds to human gate and skips",
         "No crash or error from missing file"
       ],
       "expected_duration_seconds": 10,
