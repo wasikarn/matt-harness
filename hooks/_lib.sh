@@ -99,7 +99,11 @@ hook_decision() {
 # Append ts \t session \t <caller cols...> as TSV to ~/.claude/<basename>.log.
 hook_audit_log() {
   local log="$HOME/.claude/${1}.log"; shift
-  mkdir -p "$(dirname "$log")" 2>/dev/null || true
+  # P0: fail loud on unwritable audit dir — silent drop loses audit rows
+  mkdir -p "$(dirname "$log")" || {
+      echo "[${HOOK_ID:-hook}] ERROR: cannot create audit log directory" >&2
+      return 2
+  }
   printf '%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SID:-no-sid}" >> "$log"
   local col
   for col in "$@"; do printf '\t%s' "$col" >> "$log"; done
@@ -128,7 +132,11 @@ journal_append() {
     exit 2
   }
   local journal="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
-  mkdir -p "$(dirname "$journal")" 2>/dev/null || true
+  # P0: fail loud on unwritable journal dir — silent drop loses governance events
+  mkdir -p "$(dirname "$journal")" || {
+      echo "[${hook_id}] ERROR: cannot create journal directory" >&2
+      return 2
+  }
 
   local ms iso rand
   ms=$(_now_ms)

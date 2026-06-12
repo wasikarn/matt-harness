@@ -16,9 +16,10 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -157,12 +158,55 @@ def lock_acquire(plan_dir: str, timeout: int = 10) -> bool:
     """
     lock_dir = Path(plan_dir) / LOCK_DIRNAME
     waited = 0
+    retries = 0
+    max_retries = 3
+    stale_grace_seconds = 30
+    lock_ttl_seconds = 60
     # Each iteration sleeps 0.1s, so timeout*10 iterations ~= timeout seconds
     while True:
         try:
             lock_dir.mkdir(parents=False, exist_ok=False)
+            expires_at = (datetime.now(timezone.utc) + timedelta(seconds=lock_ttl_seconds)).isoformat()
+            (lock_dir / "lock.json").write_text(
+                json.dumps({"expires_at": expires_at}),
+                encoding="utf-8",
+            )
             return True
         except FileExistsError:
+            if retries >= max_retries:
+                return False
+            now = datetime.now(timezone.utc)
+            stale = False
+            lock_json = lock_dir / "lock.json"
+            if lock_json.exists():
+                try:
+                    data = json.loads(lock_json.read_text(encoding="utf-8"))
+                    expires_at_str = data.get("expires_at")
+                    if expires_at_str:
+                        expires_at = datetime.fromisoformat(expires_at_str)
+                        if now > expires_at:
+                            stale = True
+                    else:
+                        stale = True
+                except (json.JSONDecodeError, ValueError, OSError):
+                    stale = True
+            else:
+                # No lock.json — treat as stale after grace period based on mtime
+                try:
+                    mtime = datetime.fromtimestamp(lock_dir.stat().st_mtime, tz=timezone.utc)
+                    if (now - mtime).total_seconds() > stale_grace_seconds:
+                        stale = True
+                except OSError:
+                    stale = True
+
+            if stale:
+                try:
+                    shutil.rmtree(lock_dir)
+                    retries += 1
+                    continue
+                except OSError:
+                    pass
+
             time.sleep(0.1)
             waited += 1
             if waited >= timeout * 10:
@@ -225,15 +269,12 @@ def recompute_blocked(board: dict) -> dict:
                 task["status"] = "pending"
 
     # Derive plan-level status
-    all_statuses = {t.get("status") for t in tasks.values()}
-    if all_statuses == {"completed"}:
-        board["status"] = "completed"
-    elif "in_progress" in all_statuses:
+    if any(t.get("status") == "in_progress" for t in tasks.values()):
         board["status"] = "in_progress"
-    elif "blocked" in all_statuses or "pending" in all_statuses:
-        board["status"] = "pending" if "pending" in all_statuses else "in_progress"
+    elif any(t.get("status") in ("pending", "blocked") for t in tasks.values()):
+        board["status"] = "pending"
     else:
-        board["status"] = "in_progress"
+        board["status"] = "completed"
 
     # Derive current_wave from unblocked / in-progress tasks
     current_wave = None
@@ -404,12 +445,12 @@ def _parse_plan_table(content: str) -> tuple[dict, dict]:
             continue
         if in_section and line.strip().startswith("## "):
             break
-        if in_section and "|" in line and "Task ID" in line:
-            header_line_idx = i
+        if in_section and line.strip().startswith("|") and "Task ID" in line:
+            if i + 1 < len(lines) and "|---" in lines[i + 1]:
+                header_line_idx = i
+                separator_idx = i + 1
+                break
             continue
-        if in_section and header_line_idx is not None and separator_idx is None and "|---" in line:
-            separator_idx = i
-            break
 
     if header_line_idx is None or separator_idx is None:
         raise ValueError("Could not find Step by Step Tasks table in plan file")
@@ -461,6 +502,8 @@ def _parse_plan_table(content: str) -> tuple[dict, dict]:
         if constraints in ("", "(none)", "-"):
             constraints = None
 
+        if task_id in tasks:
+            raise ValueError(f"Duplicate task ID in plan: {task_id}")
         tasks[task_id] = {
             "id": task_id,
             "description": desc,

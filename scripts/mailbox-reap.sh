@@ -92,7 +92,8 @@ if [ -d "$TEAM_DIR/inbox" ]; then
         continue
       fi
       ts_epoch=$(iso_to_epoch "$ts")
-      if [ "$ts_epoch" -lt "$unread_cutoff" ]; then
+      # P0: guard against empty ts_epoch to avoid bash arithmetic crash
+      if [ -n "$ts_epoch" ] && [ "$ts_epoch" -lt "$unread_cutoff" ]; then
         msg_id=$(basename "$f" .md)
         rm -f "$f"
         journal_append "mailbox-reap" "reaped_unread" "{\"team\":\"$TEAM\",\"msg_id\":\"$msg_id\",\"ts\":\"$ts\",\"reason\":\"unread_age\",\"days_threshold\":$UNREAD_DAYS}" >/dev/null || true
@@ -113,7 +114,8 @@ if [ -d "$TEAM_DIR/inbox" ]; then
         continue
       fi
       ts_epoch=$(iso_to_epoch "$ts")
-      if [ "$ts_epoch" -lt "$archive_cutoff" ]; then
+      # P0: guard against empty ts_epoch to avoid bash arithmetic crash
+      if [ -n "$ts_epoch" ] && [ "$ts_epoch" -lt "$archive_cutoff" ]; then
         msg_id=$(basename "$f" .md)
         rm -f "$f"
         journal_append "mailbox-reap" "reaped_archive" "{\"team\":\"$TEAM\",\"msg_id\":\"$msg_id\",\"ts\":\"$ts\",\"reason\":\"archive_age\",\"days_threshold\":$ARCHIVE_DAYS}" >/dev/null || true

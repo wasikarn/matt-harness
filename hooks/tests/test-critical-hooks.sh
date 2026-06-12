@@ -103,9 +103,9 @@ edit_new_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s,"new
 # exit 0 + JSON `permissionDecision` pattern that PreToolUse uses. So
 # `check()` (which asserts on stdout JSON) does not fit; use `check_task`
 # below which asserts on exit code + stderr.
-task_event() { printf '{"hook_event_name":"TaskCompleted","task_id":%s,"task_subject":%s,"task_description":%s}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)" "$(printf '%s' "$3" | jq -R .)"; }
-teammate_idle_event() { printf '{"hook_event_name":"TeammateIdle"}'; }
-task_created_event() { printf '{"hook_event_name":"TaskCreated","task_id":%s,"task_subject":%s,"task_description":%s}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)" "$(printf '%s' "$3" | jq -R .)"; }
+task_event() { jq -n --arg id "$1" --arg subj "$2" --arg desc "$3" '{hook_event_name:"TaskCompleted",task_id:$id,task_subject:$subj,task_description:$desc}'; }
+teammate_idle_event() { jq -n '{hook_event_name:"TeammateIdle"}'; }
+task_created_event() { jq -n --arg id "$1" --arg subj "$2" --arg desc "$3" '{hook_event_name:"TaskCreated",task_id:$id,task_subject:$subj,task_description:$desc}'; }
 
 # Temp fixture for gates that check real on-disk existence (config-protection
 # only gates EDITS of a pre-existing config). Our own mktemp dir — cleaned on exit.
@@ -387,7 +387,7 @@ ts = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=
 with open('$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat/agent-stale.json', 'w') as f:
     json.dump({'agent_id':'agent-stale','last_heartbeat':ts}, f)
 "
-TB3_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB3_STDERR=$( ( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
 TB3_RC=$?
 if [ "$TB3_RC" = 2 ] && printf '%s' "$TB3_STDERR" | grep -qi 'stale'; then
   PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle stale heartbeat + pending tasks → exit 2\n' "task-lifecycle.sh"
@@ -404,7 +404,7 @@ ts = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=
 with open('$BOARD_FIXTURE/.claude/tasks/idle-plan/heartbeat/agent-fresh.json', 'w') as f:
     json.dump({'agent_id':'agent-fresh','last_heartbeat':ts}, f)
 "
-TB4_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB4_STDERR=$( ( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
 TB4_RC=$?
 if [ "$TB4_RC" = 0 ]; then
   PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle fresh heartbeat → exit 0\n' "task-lifecycle.sh"
@@ -413,7 +413,7 @@ else
 fi
 
 # (TB5) TeammateIdle with no plan_slug and no cwd → exit 0 (no false-positive)
-TB5_STDERR=$(( export HOME="$BOARD_FIXTURE"; printf '{"hook_event_name":"TeammateIdle"}' | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB5_STDERR=$( ( export HOME="$BOARD_FIXTURE"; printf '{"hook_event_name":"TeammateIdle"}' | bash "$HOOKS/task-lifecycle.sh" ) 2>&1 >/dev/null)
 TB5_RC=$?
 if [ "$TB5_RC" = 0 ]; then
   PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle no plan_slug/cwd → exit 0 (no false-positive)\n' "task-lifecycle.sh"

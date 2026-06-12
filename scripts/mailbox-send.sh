@@ -75,19 +75,19 @@ ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 tmpfile="$TMP_DIR/${msg_id}.md"
 
-# Write message via echo (bash persist, not Write tool)
-cat > "$tmpfile" <<EOF
----
-msg_id: "$msg_id"
-ts: "$ts"
-from: "$FROM"
-to: "$TO"
-type: "$TYPE"
-subject: "$SUBJECT"
-reply_to: ""
----
-$BODY
-EOF
+# P0: construct file with printf to prevent command injection via --body='$(cmd)'
+{
+  printf '%s\n' '---'
+  printf 'msg_id: "%s"\n' "$msg_id"
+  printf 'ts: "%s"\n' "$ts"
+  printf 'from: "%s"\n' "$FROM"
+  printf 'to: "%s"\n' "$TO"
+  printf 'type: "%s"\n' "$TYPE"
+  printf 'subject: "%s"\n' "$SUBJECT"
+  printf 'reply_to: ""\n'
+  printf '%s\n' '---'
+  printf '%s\n' "$BODY"
+} > "$tmpfile"
 
 # Determine destination based on type
 case "$TYPE" in

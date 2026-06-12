@@ -60,7 +60,12 @@
 set -u
 
 HOOK_ID="task-lifecycle"
-source "$(dirname "$0")/_lib.sh"
+# P0: fail loud if _lib.sh missing — undefined functions would silently exit 0
+source "$(dirname "$0")/_lib.sh" || {
+    echo "[task-lifecycle] ERROR: cannot source _lib.sh" >&2
+    exit 1
+}
+set -e
 hook_init "$HOOK_ID" || exit 0
 
 # Extract event name from stdin JSON (vendor canonical: hook_event_name field).
@@ -71,7 +76,11 @@ EVENT="${EVENT:-unknown}"
 
 LOG_DIR="${HOME}/.claude/team-events"
 LOG_FILE="${LOG_DIR}/$(date -u +%Y-%m-%d).jsonl"
-mkdir -p "$LOG_DIR" 2>/dev/null || exit 0
+# P0: fail loud on unwritable log dir — silent exit 0 drops events
+mkdir -p "$LOG_DIR" || {
+    echo "[task-lifecycle] ERROR: cannot create log dir $LOG_DIR" >&2
+    exit 1
+}
 
 TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -89,7 +98,8 @@ fi
 # [POLYFILL] Task board integration — helpers
 _kbg_extract_field() {
   local text="$1" field="$2"
-  printf '%s' "$text" | grep -iE "${field}[[:space:]]*:" | head -1 | sed -E "s/.*${field}[[:space:]]*:[[:space:]]*//I; s/[[:space:]]+$//"
+  # P0: anchor with word boundary so "some_plan_slug:" doesn't match field "plan_slug"
+  printf '%s' "$text" | grep -iE "(^|[[:space:]])${field}[[:space:]]*:" | head -1 | sed -E "s/.*(^|[[:space:]])${field}[[:space:]]*:[[:space:]]*//I; s/[[:space:]]+$//"
 }
 
 _kbg_heartbeat_stale() {
@@ -109,7 +119,8 @@ try:
     sys.exit(0 if diff > int(sys.argv[2]) else 1)
 except Exception:
     sys.exit(1)
-' "$file" "$threshold" 2>/dev/null
+  # P0: removed stderr suppression — python3 failures must propagate as errors
+' "$file" "$threshold"
 }
 
 # [POLYFILL] Task board integration — TaskCreated
@@ -127,7 +138,8 @@ if [ "$EVENT" = "TaskCreated" ]; then
       source "$TASK_BOARD_LIB"
       PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
       if [ -f "${PLAN_DIR}/board.json" ]; then
-        if kbg_lock_acquire "$PLAN_DIR" 5; then
+        # P0: timeout 10s (was 5s) to match Python default and avoid flaky timeouts under load
+        if kbg_lock_acquire "$PLAN_DIR" 10; then
           if BOARD=$(kbg_board_read "$PLAN_DIR") && [ -n "$BOARD" ]; then
             NEW_BOARD=$(printf '%s' "$BOARD" | jq --arg tid "$TID" --arg now "$TS" '
               if .tasks[$tid] and .tasks[$tid].status == "pending" then
@@ -140,6 +152,11 @@ if [ "$EVENT" = "TaskCreated" ]; then
             ')
             kbg_board_write "$PLAN_DIR" "$NEW_BOARD"
           fi
+          # P0: explicit release before else path; EXIT trap is backstop, not primary
+          kbg_lock_release "$PLAN_DIR"
+        else
+          # P0: lock timeout was silently skipping board update
+          echo "[task-lifecycle] WARN: lock timeout for $PLAN_DIR; skipping board update for $TID" >&2
         fi
       fi
     fi
@@ -231,7 +248,8 @@ if [ "$EVENT" = "TaskCompleted" ]; then
       source "$TASK_BOARD_LIB"
       PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
       if [ -f "${PLAN_DIR}/board.json" ]; then
-        if kbg_lock_acquire "$PLAN_DIR" 5; then
+        # P0: timeout 10s (was 5s) to match Python default and avoid flaky timeouts under load
+        if kbg_lock_acquire "$PLAN_DIR" 10; then
           if BOARD=$(kbg_board_read "$PLAN_DIR") && [ -n "$BOARD" ]; then
             NEW_BOARD=$(printf '%s' "$BOARD" | jq --arg tid "$TID" --arg now "$TS" '
               if .tasks[$tid] then
@@ -244,16 +262,12 @@ if [ "$EVENT" = "TaskCompleted" ]; then
             ')
             kbg_board_write "$PLAN_DIR" "$NEW_BOARD"
             kbg_recompute_blocked "$PLAN_DIR"
-
-            # Auto-release locks if the task has files
-            HAS_FILES=$(printf '%s' "$BOARD" | jq -r --arg tid "$TID" '(.tasks[$tid].files // []) | length')
-            if [ "$HAS_FILES" -gt 0 ] 2>/dev/null; then
-              LOCK_RELEASE="$(dirname "$0")/../scripts/lock-release.sh"
-              if [ -f "$LOCK_RELEASE" ]; then
-                bash "$LOCK_RELEASE" --plan-dir "$PLAN_DIR" --task-id "$TID" >/dev/null 2>&1 || true
-              fi
-            fi
           fi
+          # P0: explicit release before else path; EXIT trap is backstop, not primary
+          kbg_lock_release "$PLAN_DIR"
+        else
+          # P0: lock timeout was silently skipping board update
+          echo "[task-lifecycle] WARN: lock timeout for $PLAN_DIR; skipping board update for $TID" >&2
         fi
       fi
     fi
@@ -303,7 +317,7 @@ if [ "$EVENT" = "TeammateIdle" ]; then
     if [ -d "$TASKS_DIR" ]; then
       for pdir in "$TASKS_DIR"/*; do
         [ -d "$pdir" ] || continue
-        local pname
+        # SC2168: 'local' is only valid in functions; use plain assignment here
         pname=$(basename "$pdir")
         if _kbg_check_plan_idle "$pdir"; then
           IDLE_BLOCKED=1

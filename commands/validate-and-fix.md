@@ -20,8 +20,13 @@ The command takes a task ID and an optional plan slug. If the plan slug is omitt
 1. **Resolve `plan_dir`:**
    - If `plan-slug` provided: `plan_dir = .claude/tasks/<plan-slug>/`
    - Else: scan `.claude/tasks/*/board.json` for `tasks[<task-id>]`. If exactly one board contains the task, use its directory. Otherwise refuse: `"Task <task-id> found in N plans; pass plan-slug to disambiguate."`
-2. **Acquire lock:** `scripts/task_board_lib.py lock_acquire <plan_dir>` (timeout 10s). If lock fails, refuse — another process is mutating the board.
-3. **Read board:** `board = scripts/task_board_lib.py board_read <plan_dir>`
+2. **Acquire lock:**
+   ```python
+   from scripts.task_board_lib import lock_acquire, board_read
+   lock_acquire(plan_dir, timeout=10)
+   ```
+   If lock fails, refuse — another process is mutating the board.
+3. **Read board:** `board = board_read(plan_dir)`
 4. **Verify task exists:** `task = board["tasks"].get(<task-id>)`. If missing, release lock and refuse.
 5. **Verify task status** is `completed` or `in_progress`. If `pending` or `blocked`, release lock and refuse: `"Task <task-id> is <status>; validation requires completed or in_progress."`
    - If status is `in_progress`, warn: `"Task is still in_progress; validating incomplete work may yield false rejects."` but continue.

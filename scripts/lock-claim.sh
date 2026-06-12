@@ -60,7 +60,8 @@ fi
 LOCK_BASE="${HOME}/.claude/locks/${TEAM}"
 LOCK_DIR="${LOCK_BASE}/${DIR_NAME}"
 LOCK_FILE="${LOCK_DIR}/lock.json"
-TMP_FILE="${LOCK_DIR}/lock.json.tmp.$$"
+# P0: temp file outside LOCK_DIR so mkdir success + mv failure doesn't leave zombie dir
+TMP_FILE="${LOCK_BASE}/${DIR_NAME}.tmp.$$"
 
 _now_epoch() {
   date -u +%s
@@ -79,6 +80,8 @@ acquire_lock() {
   mkdir -p "$LOCK_BASE" 2>/dev/null || true
 
   if mkdir "$LOCK_DIR" 2>/dev/null; then
+    # P0: ERR trap removes zombie dir if mkdir succeeds but mv fails
+    trap 'rm -rf "$LOCK_DIR"' ERR
     status="claimed"
   else
     if [ -f "$LOCK_FILE" ]; then
@@ -92,9 +95,9 @@ acquire_lock() {
         exp_epoch=$(_epoch_from_iso "$expires_at")
         now_epoch=$(_now_epoch)
         if [ "$now_epoch" -gt "$exp_epoch" ]; then
-          journal_append "lock-claim" "stale_lock_stolen" "{\"team\":\"$TEAM\",\"resource\":\"$RESOURCE\",\"old_owner\":\"$owner_str\"}" >/dev/null 2>&1 || true
           rm -rf "$LOCK_DIR"
           if mkdir "$LOCK_DIR" 2>/dev/null; then
+            trap 'rm -rf "$LOCK_DIR"' ERR
             status="claimed-stale"
           else
             echo "conflict: owner=$owner_str reason=$reason_str"
@@ -107,6 +110,7 @@ acquire_lock() {
       else
         rm -rf "$LOCK_DIR"
         if mkdir "$LOCK_DIR" 2>/dev/null; then
+          trap 'rm -rf "$LOCK_DIR"' ERR
           status="claimed-stolen"
         else
           echo "conflict: owner=$owner_str reason=$reason_str"
@@ -126,19 +130,34 @@ acquire_lock() {
   expires_at=$(python3 -c 'import datetime, sys; d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=int(sys.argv[1])); print(d.strftime("%Y-%m-%dT%H:%M:%SZ"))' "$TTL")
   agent_session="${CLAUDE_SESSION_ID:-no-sid}"
 
-  cat > "$TMP_FILE" <<EOF
-{
-  "owner": "$OWNER",
-  "agent_session": "$agent_session",
-  "acquired_at": "$acquired_at",
-  "expires_at": "$expires_at",
-  "lock_type": "$TYPE",
-  "resource_id": "$RESOURCE",
-  "reason": "$REASON"
-}
-EOF
+  # P0: build JSON with jq to prevent command injection via --owner/--reason
+  jq -n \
+    --arg owner "$OWNER" \
+    --arg agent_session "$agent_session" \
+    --arg acquired_at "$acquired_at" \
+    --arg expires_at "$expires_at" \
+    --arg lock_type "$TYPE" \
+    --arg resource_id "$RESOURCE" \
+    --arg reason "$REASON" \
+    '{
+      owner: $owner,
+      agent_session: $agent_session,
+      acquired_at: $acquired_at,
+      expires_at: $expires_at,
+      lock_type: $lock_type,
+      resource_id: $resource_id,
+      reason: $reason
+    }' > "$TMP_FILE"
 
   mv "$TMP_FILE" "$LOCK_FILE"
+  trap - ERR
+
+  # P0: log only after successful mv to avoid inconsistent journal state on crash
+  if [ "$status" = "claimed-stale" ]; then
+    journal_append "lock-claim" "stale_lock_stolen" "{\"team\":\"$TEAM\",\"resource\":\"$RESOURCE\",\"old_owner\":\"$owner_str\"}" >/dev/null 2>&1 || true
+  elif [ "$status" = "claimed-stolen" ]; then
+    journal_append "lock-claim" "lock_stolen" "{\"team\":\"$TEAM\",\"resource\":\"$RESOURCE\",\"old_owner\":\"$owner_str\"}" >/dev/null 2>&1 || true
+  fi
   journal_append "lock-claim" "lock_acquired" "{\"team\":\"$TEAM\",\"resource\":\"$RESOURCE\",\"owner\":\"$OWNER\",\"lock_type\":\"$TYPE\"}" >/dev/null 2>&1 || true
   echo "$status"
 }

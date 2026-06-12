@@ -292,7 +292,7 @@ A verdict file at `.scratch/health-review/verdict.md` with pass/fail and file:li
 - [ ] No edit to any file (read-only validation)
 ```
 
-Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/block-dangerous-bash-from-validators.sh` hook prevents mutation even if the prompt drifts.
+Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/validator-bash-guard.sh` hook prevents mutation even if the prompt drifts.
 
 **Task 3 — Fixer: address review findings (conditional)**
 
@@ -399,7 +399,7 @@ kbg_recompute_blocked "$PLAN_DIR"
 | Fixer (C) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
 | Re-validator (D) | **No** | Read-only; no AskUserQuestion |
 
-**Validator safety:** Even though validators are ungated, `hooks/block-dangerous-bash-from-validators.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
+**Validator safety:** Even though validators are ungated, `hooks/validator-bash-guard.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
 
 ### Upstream contract propagation
 

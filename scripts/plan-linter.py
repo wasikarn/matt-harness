@@ -111,9 +111,16 @@ def parse_markdown_table(text: str) -> list[dict[str, str]] | None:
             if header_idx is not None and i == header_idx + 1:
                 sep_idx = i
                 break
+            # Separator without a matching header candidate — reset
+            header_idx = None
         elif stripped.startswith("|") and header_idx is None:
             # Tentative header — must be followed by separator
             header_idx = i
+            if i + 1 < len(lines) and lines[i + 1].strip().startswith("|") and "---" in lines[i + 1]:
+                sep_idx = i + 1
+                break
+            # Next line is not a separator — not a real table header
+            header_idx = None
 
     if header_idx is None or sep_idx is None:
         return None

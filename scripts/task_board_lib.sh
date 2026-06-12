@@ -8,6 +8,9 @@
 #   kbg_lock_acquire <plan_dir> [timeout] → mkdir-based lock with auto-release
 #   kbg_recompute_blocked <plan_dir>   → recompute blocked_by from depends_on
 
+# P0: fail fast on errors and unset variables
+set -euo pipefail
+
 # Read board.json. Returns 1 if missing or invalid JSON.
 kbg_board_read() {
   local plan_dir="$1"
@@ -29,6 +32,11 @@ kbg_board_write() {
   local payload="$2"
   local board_file="${plan_dir}/board.json"
   local tmp_file="${board_file}.tmp.$$"
+  # P0: refuse to write empty payload to avoid accidental board wipe
+  if [ -z "$payload" ]; then
+    echo "[task-board] ERROR: refuse to write empty payload to $board_file" >&2
+    return 1
+  fi
   printf '%s\n' "$payload" > "$tmp_file"
   mv "$tmp_file" "$board_file"
 }
@@ -40,6 +48,11 @@ kbg_lock_acquire() {
   local lock_dir="${plan_dir}/.lock"
   local waited=0
   while ! mkdir "$lock_dir" 2>/dev/null; do
+    # P0: distinguish permission errors from EEXIST contention
+    if [ ! -e "$lock_dir" ]; then
+      echo "[task-board] ERROR: mkdir $lock_dir failed (permissions?)" >&2
+      return 1
+    fi
     sleep 0.1
     waited=$((waited + 1))
     if [ "$waited" -ge "$((timeout * 10))" ]; then
@@ -64,6 +77,7 @@ kbg_recompute_blocked() {
   now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
   local new_board
+  # P0: fail loudly if jq pipeline errors to prevent empty board overwrite
   new_board=$(printf '%s' "$board" | jq --arg now "$now" '
     [ .tasks | to_entries[] | select(.value.status == "completed") | .key ] as $completed_set |
     .tasks |= map_values(
@@ -82,7 +96,7 @@ kbg_recompute_blocked() {
       end
     ) |
     .updated_at = $now
-  ')
+  ') || return 1
 
   kbg_board_write "$plan_dir" "$new_board"
 }

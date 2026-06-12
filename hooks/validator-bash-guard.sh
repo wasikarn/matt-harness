@@ -60,6 +60,20 @@ COMMAND=$(echo "$TOOL_INPUT" | jq -r '.command // empty') || {
 }
 [ -z "$COMMAND" ] && exit 0
 
+# P0: security fix — Deny list checked TWICE: first against the FULL
+# unstripped command (catches mutations hidden inside quotes, e.g.
+# bash -c 'git push origin main'), then against the stripped command.
+# The full-command check must come BEFORE hook_strip_quoted.
+DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
+
+# 1. Full-command deny check — catches quoted mutations that
+# hook_strip_quoted would strip away.
+if echo "$COMMAND" | command grep -qE "$DENY_PATTERNS"; then
+  matched=$(echo "$COMMAND" | command grep -oE "$DENY_PATTERNS" | head -1)
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
+
 # Strip quoted strings and comments so we match shell intent, not the
 # literal contents of strings (mirrors block-bash-doctrine-write pattern).
 STRIPPED=$(hook_strip_quoted "$COMMAND")
@@ -68,15 +82,13 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # loosely — these are anchored on the first token, so a subshell
 # wrapper like `(git push ...)` still matches `^git`. Use 'command grep'
 # to resist alias shadowing (matches the other PreToolUse bash guards).
-ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|node[[:space:]]+-p[[:space:]]|python3[[:space:]]+-c[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|go[[:space:]]+build[[:space:]]+|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]])'
+# P0: security fix — removed python3 -c, node -p, go build from the
+# allow-list because quote-stripping made them bypass vectors (any
+# payload inside quotes was invisible after hook_strip_quoted).
+ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]])'
 if echo "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES"; then
   exit 0
 fi
-
-# Deny list — 11 mutation patterns from SPEC F1. Each anchored on a
-# word/operator boundary to reduce false positives (e.g. `grep` must
-# not match `rm`'s token-boundary pattern).
-DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|\| tee[[:space:]]|mv[[:space:]]+.*[[:space:]]+/|cp[[:space:]]+.*[[:space:]]+/|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
 
 # Fork-bomb pattern is a special case (no whitespace tokenizer works cleanly
 # for `:(){ :|:& };:`). The canonical signature is `:(){ :|:& };:` — function
@@ -85,11 +97,15 @@ DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space
 # definition + self-recursion + background pipe) rather than the exact terminator.
 if echo "$STRIPPED" | command grep -qE ':[[:space:]]*\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\}[[:space:]]*;'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted fork-bomb pattern: $COMMAND. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
 fi
 
+# 2. Stripped-command deny check — preserves existing unquoted-mutation
+# detection and catches anything the full-command check missed.
 if echo "$STRIPPED" | command grep -qE "$DENY_PATTERNS"; then
   matched=$(echo "$STRIPPED" | command grep -oE "$DENY_PATTERNS" | head -1)
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
 fi
 
 exit 0
