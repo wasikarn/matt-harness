@@ -8,3 +8,4 @@ with the [`adr`](../../skills/adr) skill (its "Maintain" step keeps this index c
 |---|---|---|---|
 | [0001](0001-personal-harness-as-plugin.md) | Personal-harness-as-plugin (Option A) | Accepted | 2026-06-10 |
 | [0002](0002-autonomy-invariant.md) | Autonomy invariant — no autonomous or unattended self-repair loop (judgment-preservation choice) | Accepted | 2026-06-12 |
+| [0002-addendum](0002-addendum-deferred-items.md) | Deferred items mapping (10 SYNTHESIS rows where L2 alternative is shipped) | Accepted | 2026-06-12 |
