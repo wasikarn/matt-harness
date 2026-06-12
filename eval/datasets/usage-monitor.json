@@ -1,0 +1,61 @@
+{
+  "dataset_name": "usage-monitor",
+  "description": "Verify that usage-monitor script gracefully handles missing capture files and produces the expected markdown table format.",
+  "evals": [
+    {
+      "id": "usage-monitor-no-capture",
+      "task": "Run usage-summarize with no capture file and verify graceful no-data output",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/usage-monitor/scripts/usage-summarize.sh",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains Usage summary",
+        "stdout contains No capture file"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["usage-monitor", "no-capture", "script-cli"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "usage-monitor-help",
+      "task": "Run usage-summarize --help and verify usage message",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/usage-monitor/scripts/usage-summarize.sh --help",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains usage-summarize.sh",
+        "stdout contains --last",
+        "stdout contains --all"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["usage-monitor", "help", "script-cli"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "usage-monitor-all-mode",
+      "task": "Run usage-summarize --all with no capture file and verify graceful output",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/usage-monitor/scripts/usage-summarize.sh --all",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains Usage summary",
+        "stdout contains No capture file"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["usage-monitor", "all-mode", "script-cli"],
+      "eval_type": "assertion"
+    }
+  ]
+}

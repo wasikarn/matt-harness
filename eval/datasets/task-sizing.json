@@ -1,0 +1,61 @@
+{
+  "dataset_name": "task-sizing",
+  "description": "Verify that task-sizing skill flags oversized plans, merges undersized crumbs, and validates wave bounds.",
+  "evals": [
+    {
+      "id": "task-sizing-oversized-plan",
+      "task": "Prompt with an oversized plan and verify F8.5 overflow flags",
+      "skill": "task-sizing",
+      "context": {
+        "prompt": "Size this plan: 2 agents, 22 tasks, Wave 1 has 18 tasks with descriptions like 'Implement auth system' and 'Fix everything'."
+      },
+      "success_criteria": [
+        "Response flags F8.5 overflow (>16 tasks per wave)",
+        "Response recommends splitting into more waves or adding agents",
+        "Response flags descriptions that are too vague or too long"
+      ],
+      "expected_duration_seconds": 30,
+      "expected_tokens": 3500,
+      "tags": ["task-sizing", "overflow", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify sizing analysis and flag generation"
+    },
+    {
+      "id": "task-sizing-undersized-crumbs",
+      "task": "Prompt with undersized crumbs and verify merge/drop recommendations",
+      "skill": "task-sizing",
+      "context": {
+        "prompt": "Is this plan too small? 4 agents, 9 tasks total. Tasks include 'Run linter', 'Update docs after API work', and 'Tell API agent to start' with no files or criteria assigned."
+      },
+      "success_criteria": [
+        "Response flags under-utilization (<3 tasks per agent)",
+        "Response recommends merging 'Update docs after API work' into API task",
+        "Response recommends dropping no-files/no-criteria coordination task",
+        "Response suggests /feature-dev for this scope"
+      ],
+      "expected_duration_seconds": 25,
+      "expected_tokens": 3000,
+      "tags": ["task-sizing", "crumbs", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify anti-pattern detection and recommendations"
+    },
+    {
+      "id": "task-sizing-well-formed",
+      "task": "Prompt with a balanced plan and verify minimal flags",
+      "skill": "task-sizing",
+      "context": {
+        "prompt": "Size this plan: 4 agents, 24 tasks (6 each), Wave 1 = 4 contract/schema tasks, Waves 2-3 = 3 implementation tasks each, Final wave = 2 integration validators. All tasks have 1-2 files and 1-2 machine-checkable criteria."
+      },
+      "success_criteria": [
+        "Response returns minimal or zero flags",
+        "Response confirms 5-6 tasks per agent sweet spot is met",
+        "Response validates wave counts (3-5 total, Wave 1 = 3-5, Waves 2+ = 2-4)"
+      ],
+      "expected_duration_seconds": 20,
+      "expected_tokens": 2500,
+      "tags": ["task-sizing", "balanced", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify positive sizing validation"
+    }
+  ]
+}

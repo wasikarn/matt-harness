@@ -1,0 +1,59 @@
+{
+  "dataset_name": "memory-trim",
+  "description": "Verify that memory-trim script reports status, plans dry-run, and respects --yes safety.",
+  "evals": [
+    {
+      "id": "memory-trim-status",
+      "task": "Run memory-trim status and verify output format",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/memory-trim/scripts/memory-trim.sh status",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains memory-trim status",
+        "stdout contains MEMORY.md",
+        "stdout contains lint findings"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 1000,
+      "tags": ["memory-trim", "status", "script-cli"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "memory-trim-plan",
+      "task": "Run memory-trim plan and verify dry-run output",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/memory-trim/scripts/memory-trim.sh plan",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains memory-trim plan",
+        "stdout contains auto-archive"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 1000,
+      "tags": ["memory-trim", "plan", "script-cli"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "memory-trim-help-fallback",
+      "task": "Run memory-trim with invalid subcommand and verify usage message",
+      "skill": "script-cli",
+      "context": {
+        "command": "bash skills/memory-trim/scripts/memory-trim.sh help || true",
+        "expected_exit_code": 0
+      },
+      "success_criteria": [
+        "stderr contains usage:"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["memory-trim", "help", "script-cli"],
+      "eval_type": "assertion"
+    }
+  ]
+}

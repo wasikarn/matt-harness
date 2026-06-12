@@ -20,21 +20,21 @@
       "eval_type": "assertion"
     },
     {
-      "id": "harness-audit-eval-freshness",
-      "task": "Verify that eval-target freshness check detects stale eval files",
+      "id": "harness-audit-schema-rot",
+      "task": "Verify that harness-audit detects schema-rot in skills missing canonical sections",
       "skill": "harness-audit",
       "context": {
-        "stale_file": "scripts/run-baseline-eval.py",
-        "marker": "last_reviewed:",
+        "repo_root": "/Users/kobig/Codes/Personals/kbg-harness",
         "kbg_eval_max_age_days": 0
       },
       "success_criteria": [
-        "eval-target freshness",
-        "last reviewed"
+        "Audit script exits 0",
+        "schema-rot",
+        "missing canonical sections"
       ],
       "expected_duration_seconds": 20,
       "expected_tokens": 3000,
-      "tags": ["harness-audit", "freshness", "eval"],
+      "tags": ["harness-audit", "schema-rot", "eval"],
       "eval_type": "assertion"
     }
   ]

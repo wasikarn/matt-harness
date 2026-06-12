@@ -1,0 +1,93 @@
+{
+  "dataset_name": "commands",
+  "description": "Verify that all plugin commands have valid frontmatter, descriptions, and usage sections.",
+  "evals": [
+    {
+      "id": "commands-frontmatter",
+      "task": "Verify every command .md file has YAML frontmatter delimiters",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "commands/address-review.md",
+          "commands/debug-debate.md",
+          "commands/deep-dive.md",
+          "commands/feature-dev.md",
+          "commands/fix-bug.md",
+          "commands/post-mortem.md",
+          "commands/pre-flight-plan-linter.md",
+          "commands/pre-ship-verify.md",
+          "commands/ship-merge.md",
+          "commands/ship-release.md",
+          "commands/status-update.md",
+          "commands/team-build.md",
+          "commands/team-cleanup.md",
+          "commands/team-plan.md",
+          "commands/validate-and-fix.md",
+          "commands/wave-status.md"
+        ],
+        "required_phrases": ["---", "description:"]
+      },
+      "success_criteria": [
+        "At least one of the checked files references description",
+        "At least one of the checked files references frontmatter"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["commands", "frontmatter", "docs-check"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "commands-usage-section",
+      "task": "Verify every command .md file has a usage or header section",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "commands/address-review.md",
+          "commands/debug-debate.md",
+          "commands/deep-dive.md",
+          "commands/feature-dev.md",
+          "commands/fix-bug.md",
+          "commands/post-mortem.md",
+          "commands/pre-flight-plan-linter.md",
+          "commands/pre-ship-verify.md",
+          "commands/ship-merge.md",
+          "commands/ship-release.md",
+          "commands/status-update.md",
+          "commands/team-build.md",
+          "commands/team-cleanup.md",
+          "commands/team-plan.md",
+          "commands/validate-and-fix.md",
+          "commands/wave-status.md"
+        ],
+        "required_phrases": ["# /"]
+      },
+      "success_criteria": [
+        "At least one of the checked files references a command invocation prefix # /"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["commands", "usage", "docs-check"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "commands-disable-model-invocation",
+      "task": "Verify at least one command declares disable-model-invocation when appropriate",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "commands/team-build.md",
+          "commands/team-plan.md",
+          "commands/ship-release.md"
+        ],
+        "required_phrases": ["disable-model-invocation"]
+      },
+      "success_criteria": [
+        "At least one of the checked files references disable-model-invocation"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["commands", "safety", "docs-check"],
+      "eval_type": "assertion"
+    }
+  ]
+}

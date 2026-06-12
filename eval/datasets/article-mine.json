@@ -1,0 +1,63 @@
+{
+  "dataset_name": "article-mine",
+  "description": "Verify that article-mine skill performs 5-lens fan-out, verifies claims, and produces the canonical verdict block.",
+  "evals": [
+    {
+      "id": "article-mine-verdict-block",
+      "task": "Prompt to mine an article and verify canonical verdict block structure",
+      "skill": "article-mine",
+      "context": {
+        "prompt": "Mine this: https://blog.example.com/monorepo-ci and apply lessons to our harness."
+      },
+      "success_criteria": [
+        "Output contains verbatim article-mine verdict block with all 9 fields",
+        "Verdict is exactly SKIP, MINE N, or INSTALL",
+        "Ledger row is present and non-duplicate",
+        "Apply lens file:line claims are verified by Read tool calls"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 8000,
+      "tags": ["article-mine", "verdict", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation and external URL access; disable-model-invocation: true means only user can trigger"
+    },
+    {
+      "id": "article-mine-skip-duplicate",
+      "task": "Verify skill skips when ledger already contains an identical subject",
+      "skill": "article-mine",
+      "context": {
+        "prompt": "Mine this article about standard commit conventions (already in ledger and memory covers the content)."
+      },
+      "success_criteria": [
+        "Verdict is SKIP",
+        "Memory is no change",
+        "Commit field shows no commit (nothing moved)",
+        "No duplicate ledger row is added"
+      ],
+      "expected_duration_seconds": 30,
+      "expected_tokens": 4000,
+      "tags": ["article-mine", "dedup", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify dedup logic and ledger checks"
+    },
+    {
+      "id": "article-mine-auth-wall-halt",
+      "task": "Verify skill HALTs before fan-out when source is unreadable",
+      "skill": "article-mine",
+      "context": {
+        "prompt": "Mine this: https://paywalled-site.com/article"
+      },
+      "success_criteria": [
+        "Skill HALTs before spawning any agents",
+        "User is told the source cannot be read end-to-end",
+        "No ledger row is written",
+        "No memory update, no git commit, no git push"
+      ],
+      "expected_duration_seconds": 15,
+      "expected_tokens": 2000,
+      "tags": ["article-mine", "halt", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify early halt behavior on unreadable sources"
+    }
+  ]
+}

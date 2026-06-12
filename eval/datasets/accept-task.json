@@ -1,0 +1,61 @@
+{
+  "dataset_name": "accept-task",
+  "description": "Verify that accept-task skill locks machine-checkable acceptance contracts with correct frontmatter and scope-guard behavior.",
+  "evals": [
+    {
+      "id": "accept-task-locks-contract",
+      "task": "Prompt for a non-trivial feature and verify ACCEPTANCE.md creation",
+      "skill": "accept-task",
+      "context": {
+        "prompt": "I need to add a new user authentication module. Lock acceptance for this task."
+      },
+      "success_criteria": [
+        "Agent creates a file matching .scratch/[^/]+/ACCEPTANCE.md",
+        "File contains task, accepted, start-sha, and executor fields",
+        "Criteria are machine-checkable (falsifiable assertions, not vague prose)",
+        "Includes ## Out of scope section"
+      ],
+      "expected_duration_seconds": 30,
+      "expected_tokens": 4000,
+      "tags": ["accept-task", "contract", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify file creation and content quality"
+    },
+    {
+      "id": "accept-task-criteria-quality",
+      "task": "Verify criteria are concrete and tied to verifiable outcomes",
+      "skill": "accept-task",
+      "context": {
+        "prompt": "Set success criteria for fixing the pagination bug in the API."
+      },
+      "success_criteria": [
+        "Criteria include concrete assertions (e.g., GET /items?page=0 returns 200 with empty list)",
+        "No vague criteria like code is clean or looks good",
+        "Each criterion is tied to a test, command exit code, or file:line state"
+      ],
+      "expected_duration_seconds": 25,
+      "expected_tokens": 3000,
+      "tags": ["accept-task", "criteria", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify criteria quality and checkability"
+    },
+    {
+      "id": "accept-task-trivial-refusal",
+      "task": "Verify skill refuses to write contract for trivial single-file edits",
+      "skill": "accept-task",
+      "context": {
+        "prompt": "Fix this typo in the README and define acceptance criteria."
+      },
+      "success_criteria": [
+        "Response refuses to write an ACCEPTANCE.md or states this is trivial",
+        "Response cites Rule 2 — no ceremony for trivial single-file edits",
+        "Response suggests proceeding directly without a contract"
+      ],
+      "expected_duration_seconds": 15,
+      "expected_tokens": 2000,
+      "tags": ["accept-task", "scope-guard", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify correct refusal for trivial tasks"
+    }
+  ]
+}

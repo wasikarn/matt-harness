@@ -1,0 +1,61 @@
+{
+  "dataset_name": "7-agent-pattern",
+  "description": "Verify that 7-agent-pattern skill correctly structures multi-agent full-stack plans with types-first ordering and bounded fan-out.",
+  "evals": [
+    {
+      "id": "7-agent-pattern-full-stack",
+      "task": "Prompt for a full-stack feature and verify Seat-4-runs-first invariant",
+      "skill": "7-agent-pattern",
+      "context": {
+        "prompt": "Plan a new user registration feature with a React form, a REST API endpoint, database migration, integration tests, and API documentation."
+      },
+      "success_criteria": [
+        "Plan mentions at least 5 of the 7 canonical seats (API, Styles, Tests, Types, Hooks, Integration, Docs)",
+        "Seat 4 (type-design-analyzer) is scheduled before Seats 2, 3, and 5",
+        "Plan uses Depends On to express dependencies",
+        "Contract injection is mentioned (upstream output inline, not by reference)"
+      ],
+      "expected_duration_seconds": 45,
+      "expected_tokens": 5000,
+      "tags": ["7-agent-pattern", "planning", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify plan structure and agent ordering"
+    },
+    {
+      "id": "7-agent-pattern-scope-too-small",
+      "task": "Prompt for a small backend-only change and verify deviation guidance",
+      "skill": "7-agent-pattern",
+      "context": {
+        "prompt": "Plan a new pure backend API endpoint that adds a GET /status route with no frontend or database changes."
+      },
+      "success_criteria": [
+        "Response does not invoke the 7-agent pattern",
+        "Response recommends 3-4 agents or /feature-dev instead",
+        "Response references deviation guidance for small scope"
+      ],
+      "expected_duration_seconds": 20,
+      "expected_tokens": 2500,
+      "tags": ["7-agent-pattern", "deviation", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify correct refusal/re-routing"
+    },
+    {
+      "id": "7-agent-pattern-bounded-fan-out",
+      "task": "Verify bounded fan-out hard cap is enforced in the skill contract",
+      "skill": "7-agent-pattern",
+      "context": {
+        "prompt": "A user asks for a plan with 20 parallel tasks in Wave 2. What should happen?"
+      },
+      "success_criteria": [
+        "Response explicitly cites the hard cap of 16 agents per wave",
+        "Response recommends splitting into sub-waves or reducing scope",
+        "Response references bounded fan-out (F8.5)"
+      ],
+      "expected_duration_seconds": 20,
+      "expected_tokens": 2500,
+      "tags": ["7-agent-pattern", "safety", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify safety invariant enforcement"
+    }
+  ]
+}

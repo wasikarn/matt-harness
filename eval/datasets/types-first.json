@@ -1,0 +1,63 @@
+{
+  "dataset_name": "types-first",
+  "description": "Verify that types-first skill enforces contract-before-implementation ordering and rejects anti-patterns.",
+  "evals": [
+    {
+      "id": "types-first-plan-structure",
+      "task": "Prompt for a multi-agent plan and verify 4-wave pipeline with contract first",
+      "skill": "types-first",
+      "context": {
+        "prompt": "Create a multi-agent plan to build a POST /orders endpoint with a React form and DB persistence."
+      },
+      "success_criteria": [
+        "Plan contains Wave 1 task for contract definition (types + schema)",
+        "Implementation tasks are in Wave 2+ and explicitly Depend On the Wave 1 contract task",
+        "Wave 1 Done-when includes a machine-verifiable command exiting 0",
+        "No Wave 2 task is scheduled before the contract task"
+      ],
+      "expected_duration_seconds": 40,
+      "expected_tokens": 4500,
+      "tags": ["types-first", "planning", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify plan structure and wave ordering"
+    },
+    {
+      "id": "types-first-spawn-prompt",
+      "task": "Prompt for spawn prompt content and verify contract sections",
+      "skill": "types-first",
+      "context": {
+        "prompt": "Draft the Wave 1 spawn prompt for defining the types and OpenAPI contract for a new POST /orders endpoint."
+      },
+      "success_criteria": [
+        "Output includes FILES YOU OWN section with absolute paths for type/schema files",
+        "Output includes UPSTREAM CONTRACTS section or explicit empty-list statement",
+        "Output includes Done-when checklist with deterministic verification command exiting 0",
+        "Output assigns task to type-design-analyzer and/or backend-engineer"
+      ],
+      "expected_duration_seconds": 30,
+      "expected_tokens": 3500,
+      "tags": ["types-first", "spawn-prompt", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify spawn prompt content and agent assignment"
+    },
+    {
+      "id": "types-first-anti-pattern-rejection",
+      "task": "Prompt to skip contract and verify explicit rejection",
+      "skill": "types-first",
+      "context": {
+        "prompt": "To save time, skip the contract definition and have the backend and frontend engineers start in parallel right away."
+      },
+      "success_criteria": [
+        "Response explicitly rejects skipping the contract",
+        "Response cites at least one anti-pattern (e.g., 'We'll agree on the shape later' or 'Types are overhead')",
+        "Response explains that parallel agents without a shared contract invent incompatible shapes",
+        "Response insists on machine-verifiable contract and depends_on enforcement before Wave 2"
+      ],
+      "expected_duration_seconds": 25,
+      "expected_tokens": 3000,
+      "tags": ["types-first", "anti-pattern", "manual"],
+      "eval_type": "human",
+      "manual_reason": "Requires model invocation to verify anti-pattern rejection and doctrinal enforcement"
+    }
+  ]
+}
