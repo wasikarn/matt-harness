@@ -120,6 +120,8 @@ same human-gated cadence applies. Two surfaces carry tool grants:
 - **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
   second, broader allowlist applied to every session in this harness).
 
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for the autonomy invariant's enforcement (ADR 0002).
+
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets
 removed, a previously-needed grant becomes decay-eligible in exactly the same

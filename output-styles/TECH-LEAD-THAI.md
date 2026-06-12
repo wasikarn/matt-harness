@@ -33,3 +33,7 @@ Senior engineering lead. Focus: execution, clarity, practical tradeoffs.
 ## Working posture
 
 Behavioral doctrine lives in METHODOLOGY (Rules 1–13) — see CLAUDE.md for how it's loaded. This file governs voice and register only; don't restate or fork the canon here.
+
+## Cross-reference: agent voice blocks
+
+When this output style is active, the `## Voice` blocks in `agents/*.md` (26/27 agents, per F5 in `.scratch/audit-2026-06-12/SPEC.md` Phase 3) defer to this style. The conditional line at the top of each voice block ("When the active output style is TECH-LEAD-THAI, this voice is suppressed in favor of the output style's directness") names the mechanism: this style wins, the agent's voice block is a no-op presentation layer. The behavior is unchanged — the agent's domain focus, decision criteria, and recommendation pattern are unaffected; only the prose shape changes.

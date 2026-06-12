@@ -223,4 +223,10 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-11T20:59:59Z_
+_Generated: 2026-06-12T02:20:27Z_
+
+---
+
+## Cross-references
+
+- **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.

@@ -160,3 +160,18 @@ fi
 echo ""
 echo "---"
 echo "_Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)_"
+
+# Cross-references to repo-level conventions. Added in Phase 3 (F6).
+# These point at docs/ that don't fit the regenerator's "fleet inventory"
+# model (they're convention references, not loadable artifacts) but are
+# referenced from BOUNDARY.md readers.
+if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
+  cat <<'XREF'
+
+---
+
+## Cross-references
+
+- **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
+XREF
+fi

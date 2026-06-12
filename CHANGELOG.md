@@ -502,6 +502,84 @@ the spec's "compactness rule"). Acceptance contract at
   `0C/0W/49I exit 0` (49 vs 26 because the cache lacks `docs/`, surfacing
   the by-design PERM_BOOKMARK info).
 
+### Phase 3 — T3 polish fixes (F5 + F6 + D3 + D7, 2026-06-12, 1 commit)
+
+Closes the 3 T3-polish items from `.scratch/audit-2026-06-12/SPEC.md` Phase 3 plus
+D7 (TECH-LEAD-THAI × F5 conflict, surfaced by the 16-article parallel re-read
+at `.scratch/article-revalidation-2026-06-12/delta-vs-REPORT-v2.md`).
+F5 sample-review question #5 was resolved in Phase 1 ("no 3-agent sample
+requested; ship in bulk"). Acceptance contract at
+`.scratch/phase-3-polish-2026-06-12/ACCEPTANCE.md`.
+
+#### Added
+
+- **`## Voice` blocks in 26/27 agents (F5)** — per `human-like-agents` article
+  (`claudefa.st` corpus) + REPORT.md § 2.15. Each voice block is 4-6 lines,
+  inserted between `## Why this role exists` and `## Domain focus`, with the
+  4 spec patterns: (1) uncertainty acknowledgment, (2) tradeoff naming,
+  (3) reasoning out loud, (4) pattern recognition with a domain-specific
+  example. Customized per role — `backend-engineer`'s pattern-recognition
+  example is "I've seen this race condition in Postgres before — the fix is
+  SELECT FOR UPDATE on the parent row"; `security-reviewer`'s is "I've seen
+  this 'internal-only' assumption lead to a real breach before — the fix is
+  a threat model." `code-reviewer` skipped (already has Two-Axis Triage at
+  line 41). `<commentary>` blocks (meta-trigger) NOT touched — kept as-is
+  per the spec's anti-pattern. Implementation: Python script
+  (`.scratch/phase-3-polish-2026-06-12/inject_voice_blocks.py`) with a JSON
+  lookup table (`.scratch/phase-3-polish-2026-06-12/voice-blocks.json`) and
+  atomic temp-file-then-rename writes. Idempotent: re-running is a no-op.
+- **`docs/agent-tool-patterns.md` (F6)** — 80-120 line convention reference
+  for `tools:` (allowlist, the kbg-harness default — 27/27 agents) vs
+  `disallowedTools:` (denylist, vendor alternative — used when the
+  allowlist would exceed 6-7 tools or the team explicitly opts into
+  implicit-inheritance). 5 sections: (1) allowlist pattern + what it
+  excludes, (2) denylist pattern + when to consider it, (3) our convention
+  (default allowlist; reserve denylist; review on Permission re-audit
+  cadence), (4) examples from this harness (4 agents, with `tools:` line
+  + rationale), (5) cross-references to ADR 0002, harness-decay-cadence
+  Permission re-audit, F1 Bash-gate pattern, BOUNDARY.md Mutates column.
+- **3 cross-references to `docs/agent-tool-patterns.md` (F6)** — `BOUNDARY.md`
+  gains a 1-paragraph "Cross-references" section linking to the new doc;
+  `skills/orchestrate/SKILL.md` Step 3 (dispatch decision) gains a 1-line
+  note that "agent holds Bash" is reading the `tools:` line, not the
+  runtime default; `docs/harness-decay-cadence.md` Permission re-audit
+  section gains a 1-line convention reminder.
+
+#### Fixed
+
+- **TECH-LEAD-THAI × F5 voice block conflict (D7)** — D7 was a 16-article
+  revalidation finding (delta-vs-REPORT-v2.md). Resolution: voice blocks
+  open with a conditional line — "When the active output style is
+  TECH-LEAD-THAI, this voice is suppressed in favor of the output style's
+  directness." When the active style is `TECH-LEAD-THAI` (or any other
+  no-narration style), the voice defers; otherwise the voice is in full
+  effect. The autonomy invariant is preserved (no L3/L4 autonomy added;
+  the conditional is a presentation switch, not a behavior change). The
+  conditional line is the first content line of all 26 voice blocks;
+  `output-styles/TECH-LEAD-THAI.md` retains its "no narration" rule as
+  the active style when the conditional fires.
+
+#### Out of scope (deferred)
+
+- D6 (personality-injection command category) — Phase 4
+- D9 (OTEL/usage-monitor for nested agent teams) — Phase 4
+- BOUNDARY.md regenerator `description: |` multi-line parse bug
+  (pre-existing, surfaces as `Skills (26)` instead of `27`) — regenerator-
+  fix follow-up
+- F3-1 (argument-hint bracket drift) — cosmetic, future commit
+
+#### Verification
+
+- All 26 target agents visually sample-checked (3 spot-checks: `backend-
+  engineer`, `security-reviewer`, `ux-reviewer`) — voice is in-character,
+  not boilerplate, customized to the domain.
+- D7 conditional line appears as the first content line of all 26 voice
+  blocks. `code-reviewer` skipped (no D7 line; Two-Axis Triage stands).
+- `harness-audit` green bar: `0C/0W/26I exit 0` (no schema-rot regression
+  from the new `## Voice` section).
+- `claude plugin validate --strict .` ✔.
+- `bash hooks/tests/test-critical-hooks.sh` → 201/0 (no regression).
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit

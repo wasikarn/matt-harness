@@ -19,6 +19,7 @@ Turn a pile of work into a prioritized plan, then route each item to the cheapes
      - `Revise — remove or add items (Recommended when dependencies are misordered or scope is off)`
      - `Reject — keep as plan only (Recommended when user only asked for prioritization, not execution)`
    - **If `AskUserQuestion` is denied** (session in `dontAsk` mode, or headless `-p` — the tool is *not* permission-exempt, the runtime can refuse it): fall back to the **same** question + three options rendered as numbered prose, and wait for an explicit reply. Denial is **not** approval — never fail open. If no user can answer (background / headless run), **stop at plan-only**; do not dispatch any write-capable agent.
+   - **Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:` (denylist), for agent tool grants. See [`docs/agent-tool-patterns.md`](../docs/agent-tool-patterns.md) for the convention. The "agent holds Bash" classification above is reading the `tools:` line, not the runtime default.
    - Gate on each agent's **actual `tools:` grant, not this name list** — if the fleet changes, a hardcoded list silently drifts and fails open; re-check the grant before dispatch.
    - Give each agent a **done-when**: "`<observable output>` in `<location>`, or confirmed via `<command>`" (Rule 4) — not a topic. Parallel when independent, sequential when one feeds the next.
 5. **Verify results, then combine into whole.** Before integrating any sub-agent output:
