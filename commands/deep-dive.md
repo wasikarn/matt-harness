@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Deep Dive
 
-Research a topic thoroughly across the codebase, documentation, and web if needed. Produce a concise, actionable brief with sources.
+User-invoked wrapper around the **`research-brief`** skill. Invokes the skill with `$ARGUMENTS` as the research question, then walks the user through the brief.
 
 ## Core Principles
 
@@ -101,6 +101,12 @@ Research a topic thoroughly across the codebase, documentation, and web if neede
 **Done.**
 
 ---
+
+## Implementation Note
+
+This command is a **thin user-invoked wrapper**. The actual research work is done by the `research-brief` skill (`skills/research-brief/SKILL.md`), which has `context: fork` + `agent: researcher` and the search-first + diagnose preloaded. This command preserves the 5-phase UX (Scope → Local → External → Synthesize → Archive) as a structured ritual for the user; the skill is what the model forks into.
+
+Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, `skills/adr/SKILL.md`, and `commands/team-plan.md` all point at `/deep-dive` as the user-invoked entry point. They remain valid because this command still ships and still produces a brief.
 
 ## Handoff Reference
 

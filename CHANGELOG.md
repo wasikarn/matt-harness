@@ -675,6 +675,58 @@ deferred: F3-1 (Phase 2 doc-nit, cosmetic bracket-drift in
   the pre-D9 baseline of 26). Hook tests 202/0 unchanged, plugin
   validate ✔.
 
+### Decay sweep + follow-on fixes (2026-06-12, 1 commit)
+
+First quarterly decay-cadence survey (per `docs/harness-decay-cadence.md`),
+read-only — followed by 2 owner-approved fixes (survey → decide → act).
+
+**Survey** (3-agent workflow `wf_4b766bde-637`, 1096s, 138K tokens):
+
+- F5 spot-check: 5-agent sample flagged `code-reviewer.md` as
+  missing the `## Voice` + D7 TECH-LEAD-THAI conditional that
+  Phase 3 commit `4d2ad91` was meant to introduce. Root cause:
+  the Phase 3 spec skipped code-reviewer ("already has Two-Axis
+  Triage at line 41") but the skip was over-broad — the D7
+  conditional was meant to be added regardless, not skipped.
+- F5 fleet-wide sweep (post-fix): 27/27 agents now have both
+  `## Voice` block and TECH-LEAD-THAI conditional. F5 closed in
+  spirit, not just in commit.
+- Permission re-audit: `git diff 2d3c743..HEAD` for `tools:` or
+  `"allow"` deltas → **0 matches**. All 26 agent `tools:`
+  frontmatter lines byte-identical pre-/post-epic. Hook
+  → agent tool alignment verified for F1 (7 validators
+  correctly hold `Bash`+`Read`+`Grep`+`Glob`) and D9
+  (SessionEnd, no agent grant needed). `last_permission_review:
+  2026-06-12` marker is honest.
+- Decay candidate sweep: 10 candidates surfaced, 1
+  decomm-ready (DECAY-001: `commands/deep-dive.md` ↔
+  `skills/research-brief` overlap), 9 keep-with-record for
+  2026-06-25 recheck (14-day fair window). Hard guard
+  preserved (no verifier candidate).
+
+**Owner-approved fixes (this commit):**
+
+- `agents/code-reviewer.md`: added `## Voice` block (defer-to-
+  Two-Axis-Triage pattern) + D7 conditional at the same line
+  offset as the other 26 agents. Post-fix fleet-wide grep
+  confirms 27/27 compliance.
+- `commands/deep-dive.md`: rewritten as a **thin user-invoked
+  wrapper** around `skills/research-brief` (which has
+  `context: fork` + `agent: researcher`). Same 5-phase UX
+  (Scope → Local → External → Synthesize → Archive) preserved;
+  body now documents the skill delegation explicitly. All 7
+  cross-references from `skills/perf/SKILL.md`,
+  `skills/migrate/SKILL.md`, `skills/adr/SKILL.md`,
+  `commands/team-plan.md`, `hooks/orchestrator-nudge.sh`,
+  `hooks/session-load.sh` remain valid.
+
+**0 hook / settings.json / new-skill / new-agent changes.**
+
+- Verification: `harness-audit` 0C/0W/26I exit 0 (baseline
+  matched), 27/27 agents have Voice + D7 (grep-verified),
+  hook tests 202/0 unchanged, `claude plugin validate --strict`
+  ✔.
+
 ### Phase 6 — Round-2 drill-down + gap-closure (3 commits, 2026-06-12)
 
 Round-2's fresh-context drill-down (5-agent pipeline: autonomy invariant, 5 honest exit
