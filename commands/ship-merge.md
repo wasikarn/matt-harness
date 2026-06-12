@@ -27,10 +27,11 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 3. Check approvals: `gh pr view <n> --json reviews`. At least one approval, no CHANGES_REQUESTED from a required reviewer.
 4. Check mergeable state: no conflicts, no "merge requirements not met" flags.
 5. Check branch protection rules: is squash required? Is linear history required?
-6. **Review / acceptance check** (prose, at this gate — not a programmatic ledger read; the review ledger is ephemeral, with no resolved/unresolved field):
-   - If a review ran on this PR (`/review-pr` or `/address-review`) → confirm **zero unresolved Critical findings** (mirrors `/ship-release`'s "Zero Critical findings" gate) and surface any open acceptance-gap from the task's `ACCEPTANCE.md`.
+6. **Review / acceptance check** (two layers — machine first, human second):
+   - **Machine layer (deterministic):** If the PR's task has an `ACCEPTANCE.md` in `.scratch/<slug>/`, run `/pre-ship-verify <slug>` (or auto-detect) to get machine-checkable results. If the result is **RED** (any failed/blocked criteria) → STOP. Do not merge until criteria pass.
+   - **Human layer (judgment):** If no `ACCEPTANCE.md` exists, or if machine results are GREEN/AMBER, check whether a review ran on this PR (`/review-pr` or `/address-review`). If yes → confirm **zero unresolved Critical findings** (mirrors `/ship-release`'s "Zero Critical findings" gate) and surface any open acceptance-gap.
    - If no review ran → say so plainly and pass; **never fabricate a clean result.** The agent's self-report is not ground truth — re-check against the PR, not memory.
-   - This is an acceptance **check**, not a new gate, and carries no numeric score.
+   - The machine layer is **authoritative for criteria it can check**; the human layer handles prose criteria and findings beyond the contract.
 
 **Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.
 
