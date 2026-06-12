@@ -61,6 +61,27 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
     skill = eval_item.get("skill", "unknown")
     criteria = eval_item.get("success_criteria", [])
     context = eval_item.get("context", {})
+    tags = eval_item.get("tags", [])
+
+    # Manual evals: behavior is exercised by human review + sibling regression
+    # tests, but no automated grader exists. Mark them with `tags: [..., "manual"]`
+    # AND a `manual_reason:` field, and the runner skips them with a clear
+    # note in the per-eval detail. The eval still appears in the result list
+    # so an operator can see it was considered (not silently dropped). Tagged
+    # as `skipped` (not `failed`) so it doesn't pollute the failure count.
+    # See .scratch/eval-fidelity-triage-2026-06-12.md F5 for the rationale.
+    if "manual" in tags:
+        reason = eval_item.get("manual_reason", "no automated grader exists; behavior tested via sibling regressions + human review")
+        return {
+            "id": ev_id,
+            "skill": skill,
+            "result": "skipped",
+            "passed": 0,
+            "failed": 0,
+            "total": len(criteria),
+            "skipped": True,
+            "details": [{"criterion": c, "status": "skipped", "note": reason} for c in criteria],
+        }
 
     passed = 0
     failed = 0
@@ -69,10 +90,22 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
     # Strategy: for harness-audit evals, run the actual audit script
     if skill == "harness-audit":
         repo = context.get("repo_root", str(REPO_ROOT))
+        # Allow evals to override the freshness threshold (default 180d in
+        # audit.sh) so the freshness check is testable in a known state:
+        # context.kbg_eval_max_age_days=0 forces the audit to flag every
+        # `last_reviewed:` marker as stale, surfacing the "eval-target
+        # freshness" finding on stdout for the runner's content-check.
+        # See harness-audit-eval-freshness eval.
+        env = None
+        max_age = context.get("kbg_eval_max_age_days")
+        if max_age is not None:
+            env = os.environ.copy()
+            env["KBG_EVAL_MAX_AGE_DAYS"] = str(max_age)
         try:
             result = subprocess.run(
                 ["bash", str(REPO_ROOT / "skills" / "harness-audit" / "scripts" / "audit.sh"), repo],
                 capture_output=True, text=True, timeout=60,
+                env=env,
             )
             stdout = result.stdout + result.stderr
             for crit in criteria:
@@ -510,6 +543,12 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
 def run_regression_eval(eval_item: dict, verbose: bool) -> dict:
     """Run a regression fixture and verify the expected failure state."""
     base_result = run_assertion_eval(eval_item, verbose)
+    # Pass through skipped evals (manual / no automated grader) without
+    # re-classifying them as pass or fail. See run_assertion_eval's
+    # `tags: [..., "manual"]` branch and
+    # .scratch/eval-fidelity-triage-2026-06-12.md F5.
+    if base_result.get("result") == "skipped":
+        return base_result
     expected_failure = eval_item.get("expected_failure", False)
 
     # Regression logic:

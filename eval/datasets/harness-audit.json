@@ -43,11 +43,12 @@
       "skill": "harness-audit",
       "context": {
         "stale_file": "scripts/run-baseline-eval.py",
-        "marker": "last_reviewed:"
+        "marker": "last_reviewed:",
+        "kbg_eval_max_age_days": 0
       },
       "success_criteria": [
-        "Audit detects the 'last_reviewed' marker",
-        "Warns if marker is older than 90 days"
+        "eval-target freshness",
+        "last reviewed"
       ],
       "expected_duration_seconds": 20,
       "expected_tokens": 3000,
