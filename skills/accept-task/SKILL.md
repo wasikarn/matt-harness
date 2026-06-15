@@ -1,7 +1,7 @@
 ---
 name: accept-task
 last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
-description: 'Lock a machine-checkable acceptance contract BEFORE executing a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, a >30-min task, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (locked criteria + start-SHA + timestamp) that kbg:review-pr Phase 6 later verifies against. Triggers: "lock acceptance", "define acceptance criteria", "what does done look like", "set success criteria", starting a feature/fix with real scope. Do NOT use for trivial single-file edits, read-only analysis or research, or a task that already has an ACCEPTANCE.md.'
+description: "Lock a machine-checkable acceptance contract BEFORE a non-trivial task. Use when starting a task with real scope — a multi-file change, a schema/migration, or before dispatching write-capable agents — to write `.scratch/<slug>/ACCEPTANCE.md` (criteria + SHA + timestamp) that kbg:review-pr Phase 6 checks. Triggers: \"lock acceptance\", \"define acceptance criteria\", \"what does done look like\". Don't use for trivial single-file edits, read-only analysis, or a task that has one."
 ---
 
 # Accept Task

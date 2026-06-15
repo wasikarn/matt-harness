@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready for review, after addressing reviewer feedback, or when user says 'review my changes', 'review the PR', or specifies aspects ('kbg:review-pr tests errors'). Don't use for: single-file diffs (just review inline), security-only audits (use kbg:security-auditor), post-merge retrospectives, or calling a single agent directly (use the Agent tool instead)."
+description: "Run a multi-agent PR review covering code quality, tests, comments, error handling, security, type design, accessibility/UX, and simplification. Use when finishing changes before a PR, when a PR is ready, after addressing feedback, or when the user says 'review my changes', 'review the PR', or names aspects. Don't use for: single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or calling a single agent (use Agent tool)."
 ---
 
 # Comprehensive PR Review

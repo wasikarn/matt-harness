@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists multiple competing tasks, asks 'what should I work on' / 'what's the priority' / 'how should I approach this', dumps a batch of issues or tickets, plans a day/week/sprint, feels overwhelmed, or spans several independent sub-tasks / sequential phases (e.g., 'extract then transform then load'). Also trigger on a pile of work, competing deadlines, or a list of items to do, even unprompted. Don't use for: single-issue triage or issue-queue/state (use triage), PR review (use kbg:review-pr), building one feature (use /feature-dev), or single-file coding (inline)."
+description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, or spans independent sub-tasks or sequential phases. Also a pile of work or competing deadlines. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/feature-dev), or single-file coding (inline)."
 ---
 
 # Orchestrate

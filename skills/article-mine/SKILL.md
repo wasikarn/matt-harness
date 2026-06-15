@@ -1,6 +1,6 @@
 ---
 name: article-mine
-description: "Mine an article / repo / RFC / external doc for transferable doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file path / text and says \"mine this\", \"analyze this article\", \"extract lessons\", \"read this and apply\", \"synthesize this\", or \"what can we take from this\", or for the recurring ritual of dropping external content into Claude Code to harvest doctrine for the dotfiles harness. Do NOT use for: pure Q&A (use kbg:research-brief), reasoning-quality review (use kbg:critical-eval), systems-thinking analysis (use kbg:probe), security audit (use kbg:security-auditor), or PR review (use kbg:review-pr)."
+description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), systems-thinking (kbg:probe), security (kbg:security-auditor), or PR review (kbg:review-pr)."
 disable-model-invocation: true
 ---
 
