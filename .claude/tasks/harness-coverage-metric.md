@@ -2,7 +2,14 @@
 slug: harness-coverage-metric
 priority: P3 (long-horizon research)
 source: .scratch/research/harness-engineering-2026-04.md §"Actionable changes" #6
-status: planned (research, not build)
+status: shipped (v0.2.4)
+shipped_commits:
+  - a56f936 feat(harness): wave 3 gap closure — doctrine, advisory hooks, harness-coverage (v0.2.4)
+  - 9b936e5 fix(eval): handle harness-coverage fixture shape in flatten_evals
+tag_only_eval: true
+follow_up_plans:
+  - .claude/tasks/inferential-structural-judge-live-eval.md
+  - .claude/tasks/inferential-structural-judge-escalation-mirror.md
 target: kbg-harness 0.3.x or later
 created: 2026-06-15
 related: ADR 0002, decay-cadence.md, inferential-structural-test.md, sensor-fire-notification.md
@@ -56,15 +63,15 @@ The metric is **blocked by** the other two sibling plans: it consumes the regist
 
 ## Acceptance Criteria
 
-- [ ] DOC-1: design doc resolves all 12 Q&A items validation_command: grep -c '^12\.' docs/research/harness-coverage-metric-design.md
-- [ ] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/harness-coverage.py > /dev/null
-- [ ] SKILL-1: skill has all 3 canonical sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [ ] FIX-1: regression fixture is hand-curated (no agent-generated text); 30 sessions, expected grid present validation_command: jq '.sessions | length' eval/regressions/harness-coverage.json
-- [ ] FIX-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag harness-coverage --gate
-- [ ] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [ ] DECAY-1: decay-cadence has a new section naming `kbg:harness-coverage` as a quarterly-lens surface validation_command: grep -c 'kbg:harness-coverage' docs/harness-decay-cadence.md
-- [ ] The metric's "intentional gap" annotation is a *first-class* concept in the output (not a footnote) validation_command: grep -c 'intentional_gap\|intentional-gap\|intentional gap' docs/research/harness-coverage-metric-design.md
-- [ ] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/harness-coverage.py skills/harness-coverage/SKILL.md
+- [x] DOC-1: design doc resolves all 12 Q&A items validation_command: grep -c '^12\.' docs/research/harness-coverage-metric-design.md
+- [x] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/harness-coverage.py > /dev/null
+- [x] SKILL-1: skill has all 3 canonical sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] FIX-1: regression fixture is hand-curated (no agent-generated text); 30 sessions, expected grid present validation_command: jq '.sessions | length' eval/regressions/harness-coverage.json
+- [x] FIX-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag harness-coverage --gate
+- [x] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] DECAY-1: decay-cadence has a new section naming `kbg:harness-coverage` as a quarterly-lens surface validation_command: grep -c 'kbg:harness-coverage' docs/harness-decay-cadence.md
+- [x] The metric's "intentional gap" annotation is a *first-class* concept in the output (not a footnote) validation_command: grep -c 'intentional_gap\|intentional-gap\|intentional gap' docs/research/harness-coverage-metric-design.md
+- [x] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/harness-coverage.py skills/harness-coverage/SKILL.md
 
 ## Validation Commands
 
