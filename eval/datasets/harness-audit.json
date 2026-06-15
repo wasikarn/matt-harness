@@ -7,7 +7,7 @@
       "task": "Run harness-audit on a well-formed plugin and confirm zero critical issues",
       "skill": "harness-audit",
       "context": {
-        "repo_root": "/Users/kobig/Codes/Personals/kbg-harness"
+        "repo_root": "."
       },
       "success_criteria": [
         "Audit script exits 0",
@@ -24,7 +24,7 @@
       "task": "Verify that harness-audit reports no schema-rot after P2 closure sweep",
       "skill": "harness-audit",
       "context": {
-        "repo_root": "/Users/kobig/Codes/Personals/kbg-harness",
+        "repo_root": ".",
         "kbg_eval_max_age_days": 0
       },
       "success_criteria": [
