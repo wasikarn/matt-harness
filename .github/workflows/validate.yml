@@ -42,6 +42,53 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: install claude code
+        run: npm install -g @anthropic-ai/claude-code@2.1.173
+
+      - name: install python dependencies
+        run: |
+          pip install pyyaml
+
+      - name: setup plugin cache stub for audit
+        run: |
+          # audit.sh checks ~/.claude/plugins/cache/kobig/kbg/<version>/
+          # so the F1 check passes for plugin-delivered skills on CI
+          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17"
+          ln -s "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17/repo"
+
+      - name: seed memory store for memory-trim evals
+        run: |
+          # memory-trim.sh auto-derives the store from git repo root
+          enc="-home-runner-work-kbg-harness-kbg-harness"
+          store="$HOME/.claude/projects/${enc}/memory"
+          mkdir -p "$store"
+          cat > "$store/MEMORY.md" <>'EOF'
+          # Memory index
+
+          - [test-topic](test-topic.md) — test memory entry
+          EOF
+          cat > "$store/test-topic.md" <>'EOF'
+          ---
+          name: test-topic
+          description: test memory topic
+          ---
+
+          Test content.
+          EOF
+
+      - name: seed acceptance fixture for evals
+        run: |
+          # .scratch is gitignored; evals need the phase-1 acceptance contract
+          mkdir -p ".scratch/phase-1-safety-fixes-2026-06-12"
+          cp "eval/fixtures/phase-1-safety-fixes-2026-06-12-ACCEPTANCE.md" \
+             ".scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md"
+          python3 scripts/run-acceptance.py phase-1-safety-fixes-2026-06-12
+
       - name: run eval harness
         run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 
