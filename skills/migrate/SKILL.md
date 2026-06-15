@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', 'get off the old system', or when retiring old systems, upgrading major versions, or migrating databases. Don't use for: new features (/feature-dev), hot bug fixes (/fix-bug or kbg:hotfix), refactors with no deprecation target (maintenance-engineer agent), or when rollback is impossible (/deep-dive first)."
+description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', or when retiring systems, upgrading major versions, or migrating databases. Don't use for: new features (/feature-dev), hot bug fixes (/fix-bug, kbg:hotfix), refactors without a deprecation target, or when rollback is impossible."
 disable-model-invocation: true
 ---
 

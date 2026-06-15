@@ -1,6 +1,6 @@
 ---
 name: backend-dev
-description: "Use when the user asks for backend implementation — API endpoints, DB migrations, webhook handlers, background jobs, rate limiters, error-handling middleware, or schema design. Runs a TDD + terminal-ops + architecture + diagnose workflow. Always for FastAPI/Flask/Django endpoints, SQL migrations, or Redis services. Don't use for: frontend UI/CSS, security-only audits (kbg:security-auditor), research (kbg:research-brief), infra deployment (/devops-engineer), or frontend tests."
+description: "Backend implementation skill for API endpoints, DB migrations, webhooks, background jobs, rate limiters, error middleware, and schema design. Runs TDD + terminal-ops + architecture + diagnose. Use when the user asks for FastAPI/Flask/Django endpoints, SQL migrations, or Redis services. Don't use for: frontend UI/CSS, security-only audits (kbg:security-auditor), research (kbg:research-brief), infra deployment (devops-engineer), or frontend tests."
 context: fork
 agent: backend-engineer
 ---

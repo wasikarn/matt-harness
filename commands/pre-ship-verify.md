@@ -2,7 +2,7 @@
 name: pre-ship-verify
 type: command
 description: "Run machine-checkable acceptance criteria for the current task before shipping. Use when a task has an ACCEPTANCE.md and you want deterministic verification before merge, release, or PR submission. Don't use for: tasks without an acceptance contract (no ground truth to verify), or when the user has already manually verified and explicitly says 'skip checks'."
-argument-hint: Optional slug (directory name under .scratch/) or auto-detect from latest .scratch entry
+argument-hint: "Optional slug (directory name under .scratch/) or auto-detect from latest .scratch entry"
 disable-model-invocation: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: tech-humanize
 version: 3.0.0
-description: "Humanize dev/tech writing in English and/or Thai — sound natural, not AI-generated. Use when writing, editing, or reviewing: standup reports, PR descriptions, commit messages, ADRs, UI copy (labels, errors), or 'fix this to read less AI'. Covers English, Thai, and Thai↔English code-switching. Triggers on humanize, แก้ให้เป็นธรรมชาติ, เขียนให้ฟังดูเป็นคน, ปรับ tone, or a draft to sound less like ChatGPT. Don't use for translation, detection-only analysis, or code identifiers."
+description: "Humanize dev/tech writing in English and/or Thai to sound natural, not AI-generated. Use when editing standup reports, PR descriptions, commit messages, ADRs, UI copy, or 'fix this to read less AI'. Covers English, Thai, and Thai↔English code-switching. Use when user says humanize, แก้ให้เป็นธรรมชาติ, เขียนให้ฟังดูเป็นคน, ปรับ tone, or 'less like ChatGPT'. Don't use for translation, detection-only analysis, or code identifiers."
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:

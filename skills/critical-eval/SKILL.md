@@ -1,6 +1,6 @@
 ---
 name: critical-eval
-description: "Stress-test reasoning in arguments, decisions, PRs, ADRs, RFCs, incidents, business cases. Use when asked to 'critique', 'evaluate reasoning', 'check assumptions', 'stress-test this argument', 'review this logic', 'does this hold up', or 'something feels off'. Also on overconfident plans ('definitely safe', 'zero downtime'). Don't use for: system dynamics (kbg:probe), code review (kbg:review-pr), security audits (kbg:security-auditor), or research (kbg:research-brief)."
+description: "Stress-test reasoning in arguments, decisions, PRs, ADRs, RFCs, incidents, business cases. Use when asked to 'critique', 'evaluate reasoning', 'check assumptions', 'stress-test this argument', 'review this logic', 'does this hold up', or 'something feels off'. Also on overconfident plans ('definitely safe', 'zero downtime'). Don't use for: system dynamics or architecture trade-offs (use kbg:backend-dev/code-architect), code review (kbg:review-pr), security audits (kbg:security-auditor), or research (kbg:research-brief)."
 ---
 
 # Critical Eval

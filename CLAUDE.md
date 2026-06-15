@@ -103,9 +103,9 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only
 
 ### Adding a new component
 
-1. **Agent:** create `agents/<name>.md` with frontmatter (`description`, `tools` allowlist). No registration needed — auto-discovered.
-2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter. Add `## Input Contract`, `## Output Format`, `## Failure Modes` canonical sections (audit check #31.1 flags missing ones). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
-3. **Command:** create `commands/<name>.md` with frontmatter (`name`, `type: command`). Update `plugin.json` + `marketplace.json` description counts.
+1. **Agent:** create `agents/<name>.md` with frontmatter (`name`, `description`, `tools` allowlist). No registration needed — auto-discovered.
+2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter (`name`, `description`). Add `## Input Contract`, `## Output Format`, `## Failure Modes` canonical sections (audit check #31.1 flags missing ones). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
+3. **Command:** create `commands/<name>.md` with frontmatter (`name`, `description`). Use `disable-model-invocation: true` for manual slash commands. Update `plugin.json` + `marketplace.json` description counts.
 4. **Hook:** create `hooks/<name>.sh`, add entry to `hooks/hooks.json`. Add tests to `hooks/tests/test-critical-hooks.sh` if it is a PreToolUse or TaskCompleted gate.
 5. **After any of the above:** bump manifest versions, validate, commit, push, update cache, restart:
    ```bash

@@ -1,6 +1,6 @@
 ---
 name: TECH-LEAD-THAI
-description: Senior engineering lead execution style — direct, opinionated, Thai code-switched register
+description: "Senior engineering lead execution style — direct, opinionated, Thai code-switched register"
 keep-coding-instructions: true
 ---
 
