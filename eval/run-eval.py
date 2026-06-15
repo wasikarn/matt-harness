@@ -66,6 +66,21 @@ def flatten_evals(datasets: list[dict]) -> list[dict]:
         for ev in ds.get("evals", []):
             ev["_dataset_name"] = ds.get("dataset_name", ds.get("_source_file", "unknown"))
             flat.append(ev)
+        # The harness-coverage fixture uses a different shape
+        # (`sessions[]/expected_grid[]/cases[]` per the Wave 4 FIX-1
+        # contract). When a regression fixture has no `evals` key but
+        # has `expected_grid` + `sessions`, pass the fixture through
+        # as a single eval item. This keeps the canonical dataset
+        # path unchanged while letting the new shape dispatch.
+        if "evals" not in ds and "expected_grid" in ds and "sessions" in ds:
+            ev = {**ds, "_dataset_name": ds.get("_source_file", "unknown")}
+            # Promote _meta.tags to top level so filter_by_tag (which reads
+            # ev.get("tags", [])) can find them. The new-shape fixture
+            # stores tags inside _meta; canonical evals[] fixtures have
+            # them at top level. This keeps the contract uniform.
+            if "tags" not in ev and isinstance(ev.get("_meta"), dict):
+                ev["tags"] = ev["_meta"].get("tags", [])
+            flat.append(ev)
     return flat
 
 
@@ -902,7 +917,7 @@ def main() -> int:
         bucket_inputs: list[dict] = []  # populated only in tag-only mode
         for ev in reg_evals:
             if args.verbose:
-                print(f"  [{ev['id']}] running regression...", file=sys.stderr)
+                print(f"  [{ev.get('id', 'harness-coverage')}] running regression...", file=sys.stderr)
             # Dispatch on fixture shape: harness-coverage fixtures use
             # the new `sessions[]/expected_grid[]/cases[]` shape (per
             # the Wave 4 FIX-1 contract) instead of the canonical
