@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "kbg",
-      "version": "0.1.14",
+      "version": "0.1.15",
       "source": ".",
       "description": "27 senior-specialist agents, 32 workflow skills, 16 commands (incl. /team-plan + /team-build + /wave-status + /team-cleanup + /validate-and-fix + /pre-flight-plan-linter + /debug-debate for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, and /pre-ship-verify for deterministic acceptance gating), governance hooks across 14 lifecycle events, always-on doctrine injection, and the TECH-LEAD-THAI output style.",
       "author": { "name": "KOBIG" },

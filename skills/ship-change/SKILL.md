@@ -1,6 +1,6 @@
 ---
 name: ship-change
-description: "Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting any non-trivial change where you want guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge without losing context between phases. Don't use for: one-line fixes (just fix it), changes already mid-flight (jump to the relevant phase command directly), or pure research/exploration (use code-explorer agent or Plan agent)."
+description: "Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting non-trivial changes needing guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Don't use for: one-line fixes, changes already mid-flight, or pure research/exploration."
 disable-model-invocation: true
 ---
 

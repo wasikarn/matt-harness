@@ -1,6 +1,6 @@
 ---
 name: perf
-description: "Investigate and fix performance regressions or bottlenecks. ALWAYS trigger when latency spikes, throughput drops, memory grows/leaks, CPU saturates, queries slow, cache hits fall, builds/CI slow, cold starts increase, resolvers time out, ETL slows, or users report slowness. Don't use for: production outages (kbg:incident/kbg:hotfix), functional bugs with no perf symptom (/fix-bug), architectural redesigns (/deep-dive or code-architect), or capacity planning."
+description: "Performance regressions and bottlenecks. Trigger on latency spikes, throughput drops, memory leaks/growth, CPU saturation, slow queries, cache misses/CI, cold starts, resolver/ETL timeouts, or reported slowness. Don't use for: production outages (kbg:incident/kbg:hotfix), functional bugs without perf symptoms (/fix-bug), architectural redesigns (/deep-dive, code-architect), or capacity planning."
 ---
 
 # Perf

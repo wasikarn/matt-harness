@@ -1,6 +1,6 @@
 ---
 name: clarify-first
-description: "ALWAYS run this gate before asking the user anything when the request is vague, ambiguous, or underspecified. Trigger on: 'fix the bug', 'refactor X', 'make it faster', 'add a Y system', 'help with frontend', 'database is slow', 'update the page', 'API errors', or any task lacking concrete scope. Also before dispatching write-capable agents or choosing sequential vs parallel execution. Don't use for: parameter collection, rhetorical questions, or unambiguous file reads."
+description: "ALWAYS run this gate on vague, ambiguous, or underspecified requests. Trigger on \"fix the bug\", \"refactor X\", \"make it faster\", \"add a Y system\", \"database is slow\", \"update the page\", \"API errors\", or any vague task. Also before dispatching write-capable agents or choosing parallel/sequential execution. Don't use for: parameter collection, rhetorical questions, or unambiguous file reads."
 ---
 
 # Clarify-First

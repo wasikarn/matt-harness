@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "ALWAYS trigger for bulk / set-based Jira work-item ops, and for creating/managing Confluence spaces/pages/blogs — from the terminal. Bulk Jira: move/transition/label/assign/comment/clone/delete/archive many issues, bulk-edit fields, export JQL results to CSV/Excel — by JQL, sprint, or key list (Thai too); or RUN an acli command. Do NOT trigger for: reading one ticket (acli view), JQL-syntax help, install/config/auth, a cheat-sheet, GitHub/GitLab, or non-Atlassian trackers."
+description: "ALWAYS trigger for bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. Do NOT trigger for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI

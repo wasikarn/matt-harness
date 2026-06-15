@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "Security audit for code touching auth, secrets, external input, file uploads, or dependencies. ALWAYS use when asked to audit/review code for security flaws, injection, XSS, CSRF, SSRF, path traversal, broken access control, secrets leaks, or vulnerable components. Trigger before PRs touching auth, APIs, admin panels, payments, or dep manifests. Don't use for: general code quality (kbg:review-pr), incidents (kbg:hotfix/kbg:incident), or non-code security (infra, policy)."
+description: "ALWAYS audit/review security flaws in auth, secrets, external input, file uploads, dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. Don't use for: code review (kbg:review-pr), incidents (kbg:hotfix/kbg:incident), or non-code security (infra, policy)."
 ---
 
 # Security Auditor
