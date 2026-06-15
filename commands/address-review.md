@@ -1,7 +1,7 @@
 ---
 name: address-review
 type: command
-description: "Triage and respond to existing PR review comments — fetch threads via gh, classify each (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or when user says 'address the review', 'apply review feedback'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge)."
+description: "Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge)."
 argument-hint: "Optional PR number"
 disable-model-invocation: true
 ---

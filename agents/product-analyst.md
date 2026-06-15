@@ -1,6 +1,6 @@
 ---
 name: product-analyst
-description: "Senior product analyst for requirements elicitation, user-story decomposition, scope definition, and acceptance-criteria design. Spawn when translating vague ideas into actionable engineering specs, or when a feature's user value is unclear. Don't use for: technical implementation (defer to backend-engineer/frontend-engineer), architecture blueprints (defer to code-architect), or code-level tracing (defer to code-explorer). Owns the bridge between user need and engineering ticket."
+description: "Senior product analyst for requirements elicitation, user-story decomposition, scope definition, and acceptance-criteria design. Spawn when translating vague ideas into engineering specs or user value is unclear. Don't use for: technical implementation (defer to backend/frontend-engineer), architecture blueprints (defer to code-architect), or code-level tracing (defer to code-explorer)."
 model: sonnet
 effort: medium
 color: purple

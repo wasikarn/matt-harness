@@ -1,6 +1,6 @@
 ---
 name: frontend-engineer
-description: "Senior frontend engineer for UI components, accessibility, state management, and design integration. Spawn when implementing or reviewing frontend code, design implementations, or client-side state. Don't use for: backend API design (defer to backend-engineer), threat-model review (defer to security-reviewer), deploy/build changes (defer to devops-engineer), or mobile apps (defer to mobile-engineer). Owns auth-flow UI + component-level security; defers threat modeling to security-reviewer."
+description: "Senior frontend engineer for UI components, accessibility, state management, and design integration. Spawn when implementing or reviewing frontend code, design implementations, or client-side state. Don't use for: backend API design (defer to backend-engineer), threat-model review (defer to security-reviewer), deploy/build changes (defer to devops-engineer), or mobile apps (defer to mobile-engineer)."
 model: opus
 effort: xhigh
 color: cyan

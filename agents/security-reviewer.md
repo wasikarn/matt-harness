@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "Senior cross-cutting security reviewer for auth, secrets, input validation, OWASP Top 10, and supply chain. Spawn for security audits before merge, or proactively when changes touch auth/secrets/external input. Flags findings with severity + OWASP category; defers fixes to backend-engineer/frontend-engineer/devops-engineer. Exception: may fix directly when critical and immediate (e.g. active credential leak). Don't use for: general code-quality review (defer to code-reviewer) or non-security implementation (defer to backend-engineer/frontend-engineer)."
+description: "Senior cross-cutting security reviewer for auth, secrets, input validation, OWASP Top 10, and supply chain. Spawn before merge on changes touching auth/secrets/external input, or on active credential leaks. Flags with severity + OWASP; defers fixes to backend/frontend/devops-engineer. Don't use for: general code-quality review (defer to code-reviewer) or non-security implementation (defer to backend/frontend-engineer)."
 model: opus
 effort: xhigh
 color: red

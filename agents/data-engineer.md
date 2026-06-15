@@ -1,6 +1,6 @@
 ---
 name: data-engineer
-description: "Senior data engineer for ETL pipelines, data models, streaming ingestion, batch transforms, and analytics schemas beyond relational OLTP. Spawn when building data pipelines, designing warehouse schemas, or optimizing analytical query performance. Don't use for: OLTP API design (defer to backend-engineer), frontend dashboards (defer to frontend-engineer), ML training (defer to ml-engineer), or generic scripting (use backend-engineer). Owns data integrity at rest and in motion."
+description: "Senior data engineer for ETL pipelines, data models, streaming ingestion, batch transforms, and analytics schemas beyond relational OLTP. Spawn when building pipelines, designing warehouse schemas, or optimizing analytical query performance. Don't use for: OLTP API design (defer to backend-engineer), frontend dashboards (defer to frontend-engineer), ML training (defer to ml-engineer), or generic scripting (defer to backend-engineer)."
 model: sonnet
 effort: high
 color: purple

@@ -1,6 +1,6 @@
 ---
 name: technical-writer
-description: "Senior technical writer for READMEs, ADRs, runbooks, API docs, onboarding guides, and changelog prose. Spawn when creating new documentation from scratch, rewriting stale docs, or turning tribal knowledge into persistent reference material. Don't use for: code review (defer to code-reviewer), security audit docs (defer to security-reviewer), or one-line inline comments (defer to the engineer who wrote the code). Owns clarity, structure, and audience-appropriate tone."
+description: "Senior technical writer for READMEs, ADRs, runbooks, API docs, onboarding guides, and changelog prose. Spawn when creating docs from scratch, rewriting stale docs, or turning tribal knowledge into reference material. Don't use for: code review (defer to code-reviewer), security audit docs (defer to security-reviewer), or one-line inline comments (defer to the engineer who wrote the code)."
 model: sonnet
 effort: high
 color: pink
