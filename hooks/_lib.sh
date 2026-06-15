@@ -200,6 +200,21 @@ journal_append() {
   printf '%s\n' "${ms}-${hook_id}-${rand}"
 }
 
+# _sensor_heartbeat — write one "sensor_evaluated" event per hook per session.
+# Called from comp-ff hooks (PreToolUse gates) so harness-coverage can see them
+# as active on clean sessions (no deny/ask fired). Dedup via a temp file keyed
+# on hook_id + session_id; non-blocking (subshell + || true).
+_sensor_heartbeat() {
+  local hook_id="${HOOK_ID:-hook}"
+  local sid="${SID:-nosid}"
+  local safe_id; safe_id=$(printf '%s' "${hook_id}_${sid}" | tr -c 'a-zA-Z0-9_' '_')
+  local flag="/tmp/kbg_hb_${safe_id}"
+  [ -f "$flag" ] && return 0
+  touch "$flag" 2>/dev/null || true
+  ( journal_append "$hook_id" "sensor_evaluated" '{"trigger":"heartbeat"}' \
+      >/dev/null 2>&1 ) || true
+}
+
 # Python shim over _lib.py:journal_append. Form A (python3 -c) — no
 # `if __name__ == "__main__"` block in _lib.py per Delta 2 (single emission
 # point; CLI dispatch lives in the caller). Routes config-change-log.sh

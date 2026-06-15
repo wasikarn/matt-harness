@@ -17,6 +17,7 @@ set -uo pipefail
 HOOK_ID="block-bash-doctrine-write"
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # jq is mandatory for the command parse below; if missing, fail loud.
 if ! command -v jq >/dev/null 2>&1; then

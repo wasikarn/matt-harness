@@ -36,6 +36,7 @@ set -uo pipefail
 HOOK_ID="db-write-gate"
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # jq is mandatory for the query parse below; if missing, fail loud
 # (matches block-bash-doctrine-write.sh / doctrine-edit-gate.sh).
