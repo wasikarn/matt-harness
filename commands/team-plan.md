@@ -1,4 +1,6 @@
 ---
+name: team-plan
+type: command
 description: "Phase 1 of the agent-teams workflow: brain-dump the feature, research codebase, ask clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Use when starting non-trivial features for multi-agent parallel implementation, or when user says 'team plan: X'. Don't use for: single-file changes (use /feature-dev), trivial features (do inline), or research-only tasks (use /deep-dive)."
 argument-hint: Feature description
 disable-model-invocation: true

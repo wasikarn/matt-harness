@@ -1,5 +1,7 @@
 ---
-description: "Rewrite engineer-to-engineer content for engineering leadership (VPs, directors, PMs, release managers) and shape for the target channel — JIRA comment, Slack post, standup line, email, or meeting talking-points. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update / status update', says 'make this less technical', or wants a channel-specific version of engineer-to-engineer work."
+name: status-update
+type: command
+description: "Rewrite engineer-to-engineer content for engineering leadership (VPs, directors, PMs, release managers) and shape for the target channel — JIRA comment, Slack post, standup line, email, or meeting talking-points. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update / status update', says 'make this less technical', or wants a channel-specific version of engineer-to-engineer work. Don't use for: technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes."
 argument-hint: Optional channel and source material
 disable-model-invocation: true
 ---

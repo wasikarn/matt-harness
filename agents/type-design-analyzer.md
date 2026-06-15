@@ -1,6 +1,6 @@
 ---
 name: type-design-analyzer
-description: "Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to perf), or runtime verification (defer to test-engineer)."
+description: "Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer)."
 model: sonnet
 effort: high
 color: purple

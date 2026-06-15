@@ -1,6 +1,6 @@
 ---
 name: code-explorer
-description: "Senior codebase tracer for end-to-end feature understanding. Spawn before modifying or extending existing features — follows execution paths, maps abstraction layers, identifies dependencies. Don't use for: finding files by name (spawn Explore subagent), researching external packages (use research-brief), or designing new architecture (use code-architect). Returns file:line references + essential files to read."
+description: "Senior codebase tracer for end-to-end feature understanding. Spawn before modifying or extending existing features — follows execution paths, maps abstraction layers, identifies dependencies. Don't use for: finding files by name (spawn Explore subagent), researching external packages (use kbg:research-brief), or designing new architecture (use code-architect). Returns file:line references + essential files to read."
 skills:
   - research-brief
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash

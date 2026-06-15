@@ -1,4 +1,6 @@
 ---
+name: wave-status
+type: command
 description: "Report real-time status of a multi-agent build: current wave, task progress, stale heartbeats, active locks, and ETA. Use during /team-build execution to check progress, or when the user asks 'where are we', 'status of the build', 'is the team done'. Don't use for: single-file work (use /status-update), or before a plan exists (use /team-plan first)."
 argument-hint: Plan slug (e.g. health-endpoint) or path to board.json
 disable-model-invocation: true

@@ -311,6 +311,12 @@ for f in "$CLAUDE_DIR/commands"/*.md; do
   if [ -z "$(fm_get "$f" "description" --block)" ]; then
     crit "command '$name' missing description: in frontmatter"
   fi
+  if [ -z "$(fm_get "$f" "name" --block)" ]; then
+    crit "command '$name' missing name: in frontmatter"
+  fi
+  if ! grep -q '^type: command' "$f"; then
+    crit "command '$name' missing type: command in frontmatter"
+  fi
 done
 
 # 7. Name/filename consistency — agents
