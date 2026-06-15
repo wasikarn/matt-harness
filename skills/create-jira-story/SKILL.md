@@ -1,12 +1,12 @@
 ---
 name: create-jira-story
-description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Use when the user says 'create story', 'new Jira story', 'write a story', or wants a structured Thai Story with business reason, scope, and Given/When/Then AC. Don't use for: bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
+description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create story', 'new Jira story', 'write a story', or wants a structured Thai Story with business reason, scope, and Given/When/Then AC. Don't use for: bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
 disable-model-invocation: true
 ---
 
 # Create Jira Story
 
-Create a Jira **Story** following the team's Thai format. Defaults to the **TP board** when the user doesn't name a project, but works on any project / Atlassian site. Uses the Atlassian MCP directly for single structured creation; for everything else (bulk, edit, transition, Confluence) use `kbg:acli`.
+Create a Jira **Story** following the team's Thai format. Defaults to the **TP board** when the user doesn't name a project, but works on any project / Atlassian site. **Backend: acli-first with Atlassian MCP fallback** — aligns with `kbg:acli` doctrine. For everything else (bulk, edit, transition, Confluence) use `kbg:acli`.
 
 ## When to use this skill vs acli
 
@@ -83,6 +83,7 @@ Write the description in **Thai** using this structure:
 - Use baht amounts/day counts ("500 บาท", "หมดอายุ 30 วัน")
 - ❌ column names, enum values, API paths, DB references
 - Minimum 3 ACs: happy path, error/edge case, regression/permission
+- Full GOOD/BAD examples and register guidance: `skills/acli/examples/README.md` § Acceptance Criteria.
 
 **AC coverage rules:**
 - **Regression AC** for every out-of-scope item that touches the same flow.
@@ -96,8 +97,8 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 | Field | Resolution |
 |---|---|
-| **Cloud ID / site** | `mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources`. Ask if several. |
-| **Project key** | User request; default `TP`. Validate via `mcp__plugin_atlassian_atlassian__getVisibleJiraProjects`. |
+| **Site** | Check `acli jira auth status` to find the authed site. For MCP fallback, use `mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources`. Ask if several. |
+| **Project key** | User request; default `TP`. Validate via `mcp__plugin_atlassian_atlassian__getVisibleJiraProjects` before create. |
 | **Issue type** | `Story` (or Task if user asks). Confirm via `mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata` if create rejects. |
 | **Priority** | `Medium` unless user specifies otherwise. |
 | **Labels** | 1-2 domain tags (billing, refund, credit, player). Do NOT auto-add PO/QA labels. |
@@ -105,11 +106,37 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 ## Step 4 — Preview and confirm
 
-Show resolved metadata + Thai title + rendered description. Ask for explicit confirmation before creating. Creating a Jira issue is outward-facing — never call create without a "yes".
+Show resolved metadata + Thai title + rendered description + chosen backend path. Ask for explicit confirmation before creating. Creating a Jira issue is outward-facing — never call create without a "yes".
 
 ## Step 5 — Create the issue
 
-Call `mcp__plugin_atlassian_atlassian__createJiraIssue`:
+Default to `acli`. Fall back to the Atlassian MCP only when `acli` is unavailable, unauthenticated, or cannot set a required field.
+
+### 5a — acli path (default)
+
+Check auth first:
+```bash
+acli jira auth status
+```
+
+If authed, build the create payload from the Thai Markdown description:
+```bash
+python3 skills/acli/scripts/md2adf.py /tmp/story.md \
+  -s "<Thai summary>" -p <projectKey> -t Story -l "<domain>" > /tmp/wi.json
+```
+
+Then create:
+```bash
+acli jira workitem create --from-json /tmp/wi.json --json
+```
+
+Capture the returned key and reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/browse/PROJ-XXX)`
+
+> acli sets summary, description, project, type, and labels. If the user also needs `priority` or `assignee` set at create time and acli cannot satisfy one of them, switch to the MCP fallback for that field.
+
+### 5b — MCP fallback
+
+Use when acli is not available, not authed, or cannot set a field. Call `mcp__plugin_atlassian_atlassian__createJiraIssue`:
 
 ```
 cloudId:       <resolved>
@@ -122,6 +149,7 @@ additional_fields: {
   "priority": { "name": "Medium" },
   "labels": [<domain tags>]   // omit key entirely if none
 }
+# assignee_account_id: OMIT by default. Include ONLY if user named an assignee.
 ```
 
 After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/browse/PROJ-XXX)`
@@ -130,16 +158,16 @@ After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/brows
 
 - **Required:** Thai feature summary, business reason, desired behavior, in/out scope, acceptance criteria.
 - **Optional:** PO decision points, explicit project key (defaults to `TP`), explicit assignee.
-- **Tooling:** requires active Atlassian MCP connection; skill defers to `kbg:acli` if MCP is unavailable.
+- **Tooling:** prefers `acli` when installed and authed; falls back to Atlassian MCP. If neither is available, ask the user to run `acli jira auth login` or enable the Atlassian MCP.
 
 ## Output Format
 
-- **Preview:** site, project, issue type, priority, labels, assignee (if any), Thai title, rendered description.
+- **Preview:** site, project, issue type, priority, labels, assignee (if any), Thai title, rendered description, chosen backend.
 - **Result:** issue key + URL.
 
 ## Failure Modes
 
-- MCP / Atlassian site unreachable.
+- `acli` not installed or not authed; prompt to auth or fall back to MCP.
 - Project key or issue type does not exist on the resolved site.
 - Assignee email cannot be resolved; leave unassigned.
 - User does not confirm at preview gate — creation is skipped.
@@ -147,4 +175,4 @@ After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/brows
 ## Related
 
 - `kbg:create-jira-bug` — structured Thai Bug creation.
-- `kbg:acli` — search, edit, transition, bulk ops, Confluence.
+- `kbg:acli` — search, edit, transition, bulk ops, Confluence; also owns the canonical AC wording rules at `skills/acli/examples/README.md`.

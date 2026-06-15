@@ -1,3 +1,5 @@
+> **Single Thai Bug/Story creation:** prefer `kbg:create-jira-bug` and `kbg:create-jira-story` for conversational, guided PO/QA-readable tickets with human confirmation. This directory remains the reference for terminal, ADF, bulk, and automation workflows.
+
 # acli examples — description & body formats
 
 GOOD/BAD reference for the #1 acli pitfall: **Jira uses ADF, Confluence uses storage XHTML, and `--from-json` is stricter than the flags.** Each pair shows WHY, not just WHAT.
