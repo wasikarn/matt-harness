@@ -1,6 +1,6 @@
 ---
 name: clarify-first
-description: "ALWAYS run this gate on vague, ambiguous, or underspecified requests. Trigger on \"fix the bug\", \"refactor X\", \"make it faster\", \"add a Y system\", \"database is slow\", \"update the page\", \"API errors\", or any vague task. Also before dispatching write-capable agents or choosing parallel/sequential execution. Don't use for: parameter collection, rhetorical questions, or unambiguous file reads."
+description: "Ask the structured 3-step question (Analyze → Recommend → Ask) BEFORE dispatching write-capable agents or starting multi-file changes where a wrong assumption means doing the work twice. Trigger when: task is named but scope is unstated — 'fix the bug', 'refactor X', 'add Y', 'make it faster' with no file/metric/layer; request spans multiple subsystems without a clear boundary; parallel vs sequential execution depends on unstated constraints. Do NOT use for: explicit file paths given, single-value parameter changes, read-only requests, or rhetorical questions."
 ---
 
 # Clarify-First
