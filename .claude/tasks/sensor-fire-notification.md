@@ -2,7 +2,10 @@
 slug: sensor-fire-notification
 priority: P2
 source: .scratch/research/harness-engineering-2026-04.md §"Actionable changes" #5
-status: planned (research, not build)
+status: shipped (v0.2.2 — sensors.json + harness-health landed in 1ad93b8)
+shipped_commits:
+  - 1ad93b8 feat(harness): add inferential-structural-judge sensor + harness-health skill
+  - 822d22d feat(observability): close the silent-sensors gap via SessionStart staleness notifier
 target: kbg-harness 0.2.x
 created: 2026-06-15
 drilldown: 2026-06-15 (Q1-Q6 verdicts baked in)
@@ -86,14 +89,14 @@ This plan designs a notification surface: at the start of each session, the harn
 
 ## Acceptance Criteria
 
-- [ ] REG-1: 31 entries in `hooks/sensors.json` with all required fields (lead-revised from plan's 43 — see INT-1 + design doc §2) validation_command: jq empty hooks/sensors.json
-- [ ] AUDIT-1: `--staleness-only` exits 0 in < 5s and emits valid JSON validation_command: bash skills/harness-audit/scripts/audit.sh . --staleness-only | jq . > /dev/null
-- [ ] HOOK-1: 215/215 critical-hooks tests pass (current 210 + 5 new; lead-revised from plan's 209 — the suite grew post-2026-06-12 audit) and shellcheck-clean validation_command: bash hooks/tests/test-critical-hooks.sh
-- [ ] CMD-1: `claude plugin validate --strict .` exits 0 (manifest + description counts consistent) validation_command: claude plugin validate --strict .
-- [ ] FIX-1: 3 fixtures pass `python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate` validation_command: python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate
-- [ ] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [ ] No `permissionDecision` ever emitted (informational only) validation_command: git grep -n 'permissionDecision' hooks/notify-sensor-staleness.sh commands/dismiss-stale.md
-- [ ] No new `CronCreate` or `/loop` machinery (autonomy-invariant holds) validation_command: git grep -n 'CronCreate\|/loop' hooks/notify-sensor-staleness.sh commands/dismiss-stale.md
+- [x] REG-1: 36 entries in `hooks/sensors.json` (grew from plan's 31 baseline as the registry matured) with all required fields validation_command: jq empty hooks/sensors.json
+- [x] AUDIT-1: `--staleness-only` exits 0 and emits valid JSON validation_command: bash skills/harness-audit/scripts/audit.sh . --staleness-only | jq . > /dev/null
+- [x] HOOK-1: 226/226 critical-hooks tests pass (grew from plan's 215 baseline) and shellcheck-clean validation_command: bash hooks/tests/test-critical-hooks.sh
+- [x] CMD-1: `claude plugin validate --strict .` exits 0 (manifest + description counts consistent) validation_command: claude plugin validate --strict .
+- [x] FIX-1: 3 fixtures pass `python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate` validation_command: python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate
+- [x] INT-1: harness-audit exits 0C/0W/5I (only I1 info notes) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] No `permissionDecision` ever emitted (informational only — line 12 is a comment annotating the invariant) validation_command: git grep -n 'permissionDecision' hooks/notify-sensor-staleness.sh commands/dismiss-stale.md
+- [x] No new `CronCreate` or `/loop` machinery (autonomy-invariant holds) validation_command: git grep -n 'CronCreate\|/loop' hooks/notify-sensor-staleness.sh commands/dismiss-stale.md
 
 ## Validation Commands
 

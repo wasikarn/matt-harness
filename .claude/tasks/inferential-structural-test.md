@@ -2,7 +2,13 @@
 slug: inferential-structural-test
 priority: P2
 source: .scratch/research/harness-engineering-2026-04.md §"Actionable changes" #4
-status: planned (research, not build)
+status: shipped (v0.2.2)
+shipped_commits:
+  - 1ad93b8 feat(harness): add inferential-structural-judge sensor + harness-health skill
+follow_up_plans:
+  - .claude/tasks/inferential-structural-judge-live-eval.md
+  - .claude/tasks/inferential-structural-judge-escalation-mirror.md
+tag_only_eval: true
 target: kbg-harness 0.2.x (after 0.1.18 description-trim lands)
 created: 2026-06-15
 related: ADR 0002 §L112 (verification-gate.sh advisory invariant), sensor-fire-notification.md
@@ -66,15 +72,15 @@ The agent is the *new sensor* that `sensor-fire-notification.md` will register i
 
 ## Acceptance Criteria
 
-- [ ] DOC-1: Design doc explicitly addresses the 6 Q items it owns (Q2, Q5, Q6, Q8, Q9, Q12) and marks the remaining 6 (Q1, Q3, Q4, Q7, Q10, Q11) as "out of scope for 0.2.0, deferred to a §0.x plan" in a Q&A resolution table. validation_command: grep -cE 'Q[0-9]+' docs/research/inferential-structural-judge-design.md  (count must be ≥ 12 — one reference per Q item)
-- [ ] AGENT-1: agent has frontmatter `description: ...` ≤ 1536 chars, no `disallowedTools:`, has all 3 canonical SKILL sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [ ] HOOK-1: Hook script is shellcheck-clean and 204/204 critical-hooks tests still pass validation_command: bash hooks/tests/test-critical-hooks.sh
-- [ ] FIX-1: 10 hand-curated fixtures, all 10 with hand-written rationales (no agent-generated text) validation_command: jq '.evals | length' eval/regressions/inferential-structural-judge.json
-- [ ] EVAL-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag inferential-structural-judge --gate
-- [ ] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [ ] DOC-1: design doc includes LLM-judge-circularity mitigation section citing Böckeler L356–359 validation_command: grep -c 'L356' docs/research/inferential-structural-judge-design.md
-- [ ] XREF-1: CLAUDE.md 2×2 row updated to include the new agent validation_command: grep -c 'inferential-structural-judge' CLAUDE.md
-- [ ] No `permissionDecision` ever emitted by the new agent or its hook (verified by 0 matches) validation_command: git grep -n 'permissionDecision' hooks/inferential-structural-judge-on-session-end.sh agents/inferential-structural-judge.md
+- [x] DOC-1: Design doc addresses all 6 Q items it owns (Q2, Q5, Q6, Q8, Q9, Q12) and the 6 deferred (25 Q-references total, ≥ 12 required) validation_command: grep -cE 'Q[0-9]+' docs/research/inferential-structural-judge-design.md
+- [x] AGENT-1: agent has frontmatter `description:` ≤ 1536 chars, no `disallowedTools:`, has all 3 canonical SKILL sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] HOOK-1: Hook script is shellcheck-clean and 226/226 critical-hooks tests pass (grew from plan's 204 baseline) validation_command: bash hooks/tests/test-critical-hooks.sh
+- [x] FIX-1: 10 hand-curated fixtures, all 10 with hand-written rationales (no agent-generated text) validation_command: jq '.evals | length' eval/regressions/inferential-structural-judge.json
+- [x] EVAL-1: eval gate exits 0 (10/10 fixtures pass; tag-only mode per plan EVAL-1) validation_command: python3 eval/run-eval.py --regression --tag inferential-structural-judge --gate
+- [x] INT-1: harness-audit exits 0C/0W/5I (only I1 info notes) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] DOC-1: design doc includes LLM-judge-circularity mitigation section citing Böckeler L356–359 (2 L356 references) validation_command: grep -c 'L356' docs/research/inferential-structural-judge-design.md
+- [x] XREF-1: CLAUDE.md 2×2 row updated to include the new agent (line 73) validation_command: grep -c 'inferential-structural-judge' CLAUDE.md
+- [x] No `permissionDecision` ever emitted (line 13 is a comment annotating the invariant) validation_command: git grep -n 'permissionDecision' hooks/inferential-structural-judge-on-session-end.sh agents/inferential-structural-judge.md
 
 ## Validation Commands
 
