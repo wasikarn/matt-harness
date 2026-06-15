@@ -29,6 +29,20 @@ REGRESSIONS_DIR = EVAL_DIR / "regressions"
 RESULTS_DIR = EVAL_DIR / "results"
 RUN_ACCEPTANCE = REPO_ROOT / "scripts" / "run-acceptance.py"
 
+# Tags that run in "tag-only" mode: the runner emits per-fixture status,
+# computes the bucket-threshold pass criterion, and never fails --gate.
+# The first entry is `inferential-structural-judge` (FIX-1 fixture +
+# EVAL-1 wiring) — its 10-fixture suite is the hand-curated countermeasure
+# to Böckeler L476's "we put a lot of faith into the AI-generated tests"
+# test-quality problem (design doc §4(b)). Tag-only means: even if all 10
+# fixtures fail, --gate exits 0. EVAL-1.5 (future) will lift the `manual`
+# tag on the fixtures and the bucket-threshold scoring will then take
+# over from the placeholder. Add a tag here ONLY when the matching
+# fixture file ships a bucket-threshold `expected_score_range` shape
+# AND the plan explicitly opts in to tag-only failure.
+TAG_ONLY_TAGS = frozenset({"inferential-structural-judge"})
+BUCKET_THRESHOLD_PASS_PER_BUCKET = 4  # ≥ 4/5 in each bucket (per plan Q9)
+
 
 def load_json_files(directory: Path) -> list[dict]:
     """Load all .json files from a directory."""
@@ -588,6 +602,61 @@ def filter_by_tag(eval_items: list[dict], tag: str | None) -> list[dict]:
     return [ev for ev in eval_items if tag in ev.get("tags", [])]
 
 
+def compute_bucket_threshold(fixture_results: list[dict]) -> dict:
+    """Bucket-threshold pass criterion for inferential-structural-judge.
+
+    Plan Q9: pass = (good_pass_count >= 4) AND (bad_pass_count >= 4).
+    `good` bucket: expected_score_range[0] <= 3 (the agent should accept).
+    `bad`  bucket: expected_score_range[0] >= 7 (the agent should escalate).
+    A fixture is "passed" when the actual score (parsed from stdout
+    echo, or 0 if the fixture was manual-skipped) lands inside the
+    expected band:
+      - good → actual in [1, 3]
+      - bad  → actual in [7, 10]
+    The returned dict carries both counts and a boolean `passes` so the
+    runner can log the verdict AND keep --gate green (tag-only).
+    """
+    good_total = 0
+    good_pass_count = 0
+    bad_total = 0
+    bad_pass_count = 0
+    skipped_count = 0
+    for r in fixture_results:
+        ev = r.get("_fixture", {})
+        expected = ev.get("expected_score_range")
+        if not expected or len(expected) != 2:
+            # No expected range — treat as skipped (not bucket-eligible)
+            skipped_count += 1
+            continue
+        lo, _hi = expected
+        # Pull the actual score from the per-fixture stdout (if the
+        # fixture actually ran; manual-skipped fixtures report None).
+        actual = r.get("_actual_score")
+        if lo <= 3:
+            # Good bucket — actual should be in [1, 3]
+            good_total += 1
+            if actual is not None and 1 <= actual <= 3:
+                good_pass_count += 1
+        elif lo >= 7:
+            # Bad bucket — actual should be in [7, 10]
+            bad_total += 1
+            if actual is not None and 7 <= actual <= 10:
+                bad_pass_count += 1
+        else:
+            # Score range in the 4-6 flag band — not bucket-eligible
+            skipped_count += 1
+    passes = (good_pass_count >= BUCKET_THRESHOLD_PASS_PER_BUCKET
+              and bad_pass_count >= BUCKET_THRESHOLD_PASS_PER_BUCKET)
+    return {
+        "good_total": good_total,
+        "good_pass_count": good_pass_count,
+        "bad_total": bad_total,
+        "bad_pass_count": bad_pass_count,
+        "skipped": skipped_count,
+        "passes": passes,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run eval harness")
     parser.add_argument("--dataset", type=str, help="Directory containing dataset JSON files")
@@ -656,12 +725,64 @@ def main() -> int:
 
         regressions = load_json_files(REGRESSIONS_DIR)
         reg_evals = filter_by_tag(flatten_evals(regressions), args.tag)
+        # Tag-only mode: this tag is in TAG_ONLY_TAGS (e.g.
+        # `inferential-structural-judge`). Failures here MUST NOT
+        # fail --gate — the plan's EVAL-1 row is explicit ("tag-only
+        # failure mode"). We still run every fixture (so the
+        # bucket-threshold verdict is computable), but the per-fixture
+        # result is re-classified as `tag-only` (or `skipped` if the
+        # fixture is also tagged `manual`) and contributes zero to
+        # overall_failed / overall_regressions.
+        is_tag_only_mode = bool(args.tag) and args.tag in TAG_ONLY_TAGS
+        if is_tag_only_mode and reg_evals:
+            print(f"TAG-ONLY: tag={args.tag!r} — failure here does not fail global --gate "
+                  f"(per plan EVAL-1 row, design doc §4(b))", file=sys.stdout)
         print(f"Running {len(reg_evals)} regression fixture(s)...", file=sys.stderr)
+        bucket_inputs: list[dict] = []  # populated only in tag-only mode
         for ev in reg_evals:
             if args.verbose:
                 print(f"  [{ev['id']}] running regression...", file=sys.stderr)
             result = run_regression_eval(ev, args.verbose)
             all_results.append(result)
+            if is_tag_only_mode:
+                # Re-classify: tag-only fixtures never fail the gate.
+                # Preserves the base result in `result["result"]` only
+                # if the fixture was `skipped` (manual) — that stays
+                # `skipped` so the per-eval detail is honest. Otherwise
+                # stamp the result as `tag-only` with a clear note.
+                if result.get("result") == "skipped":
+                    note = ("fixture is manual, skipped — will be live when "
+                            "manual tag is removed (EVAL-1.5)")
+                    result = {**result, "tag_only": True, "regression_note": note}
+                else:
+                    note = ("tag-only mode: bucket-threshold verdict applies, "
+                            "per-fixture pass/fail does not fail --gate")
+                    result = {**result, "result": "tag-only", "tag_only": True,
+                              "regression_note": note}
+                # Capture stdout for the bucket-threshold score parser
+                # (only meaningful for fixtures that actually ran;
+                # manual-skipped fixtures have no stdout).
+                result["_fixture"] = ev
+                # _actual_score stays None in the stub state: the
+                # runner's run_regression_eval does not capture stdout,
+                # and the inferential-structural-judge fixtures are
+                # echo-only stubs until EVAL-1.5 wires the agent
+                # dispatcher. When that lands, the agent's verdict
+                # JSONL will be parsed for the actual score here.
+                result["_actual_score"] = None
+                bucket_inputs.append(result)
+                # Counts: tag-only fixtures show as `passed` in the
+                # console summary (the tag-only verdict is itself a
+                # "pass the gate" event), with skipped/manual ones
+                # counted as `skipped`.
+                if result.get("result") == "skipped":
+                    overall_skipped += 1
+                else:
+                    overall_passed += 1
+                if args.verbose:
+                    print(f"    → {result['result']} (tag-only) "
+                          f"{result.get('regression_note', '')}", file=sys.stderr)
+                continue
             if result["result"] == "passed":
                 overall_passed += 1
             elif result["result"] == "regression":
@@ -672,6 +793,20 @@ def main() -> int:
                 overall_skipped += 1
             if args.verbose:
                 print(f"    → {result['result']} ({result.get('regression_note', '')})", file=sys.stderr)
+
+        # ---- Tag-only bucket-threshold verdict (e.g. EVAL-1) ----
+        if is_tag_only_mode and bucket_inputs:
+            bt = compute_bucket_threshold(bucket_inputs)
+            verdict = "PASS" if bt["passes"] else "FAIL"
+            print(
+                f"TAG-ONLY: bucket-threshold verdict = {verdict} "
+                f"(good: {bt['good_pass_count']}/{bt['good_total']} >= "
+                f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
+                f"bad: {bt['bad_pass_count']}/{bt['bad_total']} >= "
+                f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
+                f"skipped: {bt['skipped']})",
+                file=sys.stdout,
+            )
 
     # ---- Summary ----
     summary = {

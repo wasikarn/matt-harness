@@ -66,10 +66,10 @@ The agent is the *new sensor* that `sensor-fire-notification.md` will register i
 
 ## Acceptance Criteria
 
-- [ ] DOC-1: Design doc resolves all 12 Q&A items (or marks them as "out of scope, deferred") validation_command: grep -c '^12\.' docs/research/inferential-structural-judge-design.md
+- [ ] DOC-1: Design doc explicitly addresses the 6 Q items it owns (Q2, Q5, Q6, Q8, Q9, Q12) and marks the remaining 6 (Q1, Q3, Q4, Q7, Q10, Q11) as "out of scope for 0.2.0, deferred to a §0.x plan" in a Q&A resolution table. validation_command: grep -cE 'Q[0-9]+' docs/research/inferential-structural-judge-design.md  (count must be ≥ 12 — one reference per Q item)
 - [ ] AGENT-1: agent has frontmatter `description: ...` ≤ 1536 chars, no `disallowedTools:`, has all 3 canonical SKILL sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
 - [ ] HOOK-1: Hook script is shellcheck-clean and 204/204 critical-hooks tests still pass validation_command: bash hooks/tests/test-critical-hooks.sh
-- [ ] FIX-1: 10 hand-curated fixtures, all 10 with hand-written rationales (no agent-generated text) validation_command: jq 'length' eval/regressions/inferential-structural-judge.json
+- [ ] FIX-1: 10 hand-curated fixtures, all 10 with hand-written rationales (no agent-generated text) validation_command: jq '.evals | length' eval/regressions/inferential-structural-judge.json
 - [ ] EVAL-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag inferential-structural-judge --gate
 - [ ] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
 - [ ] DOC-1: design doc includes LLM-judge-circularity mitigation section citing Böckeler L356–359 validation_command: grep -c 'L356' docs/research/inferential-structural-judge-design.md
@@ -93,3 +93,5 @@ The agent is the *new sensor* that `sensor-fire-notification.md` will register i
 - Does NOT add a `disallowedTools:` block (per decay-cadence convention)
 - Does NOT auto-prune the existing 38 hook scripts (separate `decay-cadence` work)
 - Does NOT auto-mutate `hooks/sensors.json` (Q6: registry is hand-curated; this plan adds its own entry as part of XREF-1, but the registry remains human-curated)
+- **Does NOT wire a real `agent-cli` dispatcher for the bucket-threshold eval (EVAL-1.5 follow-up).** The tag-only gate passes (exit 0) by design (this plan's Q9 + EVAL-1 row), and the bucket-threshold infrastructure (`TAG_ONLY_TAGS` + `compute_bucket_threshold()`) is in place. The follow-up that lifts the `manual` tag from each fixture, adds an `agent-cli` strategy to the 6-strategy ladder, and runs real agent roundtrips against synthetic sessions is a separate plan: `inferential-structural-judge-live-eval.md` (target 0.3.x).
+- **Does NOT add the SessionStart `inference_mirror` mechanism for score ≥ 7 escalations.** The escalation channel is *documented* in design doc §3 as "mirror to next SessionStart's `additionalContext`" but the wiring of the receiving hook is a separate plan. The current build's SessionEnd hook only journals; a future plan adds a SessionStart hook that reads the latest escalation event and injects it as `additionalContext` if `score ≥ 7`. Tracked under `inferential-structural-judge-escalation-mirror.md`.

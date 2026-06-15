@@ -2164,6 +2164,180 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s truthy-typo regression: 0 CRIT (want 1+) — check would silently pass `: True` — rc=%s:\n%s\n' "harness-audit #32" "$RR_RC" "$RR_OUT"
 fi
 
+# ── HOOK-1.5: inferential-structural-judge-on-session-end.sh (matcher-less SessionEnd) ──
+# Inferential-FB sensor that journals a verdict to ~/.claude/governance-events.jsonl.
+# It is journal-only and never emits a permissionDecision (autonomy invariant,
+# ADR 0002 §L112). Tests cover the deterministic shell logic; the agent
+# invocation (`claude -p --agent ...`) is exercised separately via the
+# EVAL-1 fixture runner (the agent runtime is not always present in the
+# shell-only test env, and exercising it here would couple the test to
+# the agent's verdict quality, which is the fixture's job).
+#
+# Test setup convention (matches HOO1 below): hermetic $TEMP tree, journal
+# redirected via CLAUDE_JOURNAL_PATH, HOME redirected so the dismissal file
+# lives at $HOME/.claude/state/... The agent itself is not invoked (we test
+# paths that short-circuit BEFORE the `claude -p` call — empty diff,
+# missing transcript, missing claude binary).
+
+HOOK1_5_HOOK_SRC="$HOOKS/inferential-structural-judge-on-session-end.sh"
+[ -f "$HOOK1_5_HOOK_SRC" ] || { echo "FATAL: $HOOK1_5_HOOK_SRC missing" >&2; exit 1; }
+
+# Helper: run the SessionEnd hook with a controlled envelope + journal path.
+# Args:
+#   $1 = JSON envelope (transcript_path, session_id)
+#   $2 = CLAUDE_JOURNAL_PATH to redirect journal writes
+#   $3 = HOME override (for dismissal file at $HOME/.claude/state/...)
+#   $4 = PATH override (to test the "claude absent" path)
+# Echoes the hook's stdout; returns the hook's exit code via $?.
+hoo15_run() {
+  local env_json="$1" journal_path="$2" home_override="$3" path_override="$4"
+  local T="$FIXTURE/hook15-$$-$RANDOM"
+  mkdir -p "$T"
+  # Copy BOTH the hook AND _lib.sh — the hook's L28 `source $(dirname $0)/_lib.sh`
+  # is a path-relative source that requires _lib.sh to sit alongside it (the
+  # production layout puts both in $HOOKS/). A bare `cp hook.sh` would leave
+  # the hook with an unset hook_init, exit 0 silently, and journal nothing —
+  # turning every HOO15 test into a no-op. (This was the silent defect that
+  # made the 5 new HOO15 tests appear absent from the test output before the
+  # fix — the script reached T1, sourced nothing, exited 0, and `set -e`
+  # propagated the empty-journal condition into a `FAIL` counter mismatch.)
+  cp "$HOOK1_5_HOOK_SRC" "$T/inferential-structural-judge-on-session-end.sh"
+  cp "$HOOKS/_lib.sh" "$T/_lib.sh"
+  # Run with bash pointed at the worktree path (no `cd` + `\` line-continuation
+  # followed by indented env-var assignments — that pattern silently fails with
+  # "cd: too many arguments" because bash parses the env-var lines as `cd` args
+  # when the `\` continuation lands before the indented assignment. Putting
+  # env vars BEFORE bash, with a single `&&` between, is the load-bearing
+  # bash-3.2-safe equivalent of the original `cd ... \` block.)
+  CLAUDE_JOURNAL_PATH="$journal_path" \
+    HOME="$home_override" \
+    PATH="$path_override" \
+    CLAUDE_SESSION_ID="test-session-$$" \
+    bash "$T/inferential-structural-judge-on-session-end.sh" <<< "$env_json" 2>/dev/null
+}
+
+# Build a hermetic PATH that has coreutils + jq + python3 (so the hook
+# can do its work) but NOT claude (so the `command -v claude` check at
+# hook L35-41 falls into failure-mode 1: agent_absent → journal a
+# skipped event and exit 0). Real production PATH: we strip the dir
+# containing the `claude` binary. On the dev box (kobig), `claude` lives
+# at /Users/kobig/.superset/bin/claude, so we omit that dir; the system
+# dirs (/opt/homebrew/bin, /usr/bin, etc.) stay.
+# shellcheck disable=SC2155  # the two-step find/skip is intentional
+CLAUDE_BIN=$(command -v claude 2>/dev/null || true)
+CLAUDE_DIR=""
+if [ -n "$CLAUDE_BIN" ]; then CLAUDE_DIR=$(dirname "$CLAUDE_BIN"); fi
+# Build the test path: system bins, but skip the dir containing claude
+SYSTEM_PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+EMPTY_PATH=""
+IFS=':' read -r -a path_parts <<< "$SYSTEM_PATH"
+for p in "${path_parts[@]}"; do
+  if [ -n "$p" ] && [ "$p" != "$CLAUDE_DIR" ]; then EMPTY_PATH="${EMPTY_PATH:+${EMPTY_PATH}:}$p"; fi
+done
+[ -n "$EMPTY_PATH" ] || EMPTY_PATH="/usr/bin:/bin"
+
+# Test 1: agent_absent path (no claude in PATH) → journal skipped:agent_absent
+# and exit 0 with no stdout. This is failure-mode 1 from the design doc §6.
+HOO15_T1_JOURNAL="$FIXTURE/hook15-t1-journal.jsonl"
+HOO15_T1_HOME="$FIXTURE/hook15-t1-home"; mkdir -p "$HOO15_T1_HOME"
+HOO15_T1_ENVELOPE='{"transcript_path":"/nonexistent/transcript.jsonl","session_id":"test-sess-1"}'
+HOO15_T1_OUT=$(hoo15_run "$HOO15_T1_ENVELOPE" "$HOO15_T1_JOURNAL" "$HOO15_T1_HOME" "$EMPTY_PATH")
+HOO15_T1_RC=$?
+HOO15_T1_LAST=$(tail -1 "$HOO15_T1_JOURNAL" 2>/dev/null)
+if [ "$HOO15_T1_RC" = "0" ] \
+   && [ -z "$HOO15_T1_OUT" ] \
+   && [ -n "$HOO15_T1_LAST" ] \
+   && printf '%s' "$HOO15_T1_LAST" | jq -e '.event == "inferential_structural_verdict_skipped" and .fields.reason == "agent_absent"' >/dev/null 2>&1; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s agent_absent: skipped event with reason=agent_absent, exit 0, no stdout\n' "infer-structural-judge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s agent_absent: rc=%s out=%s last_event=%s\n' "infer-structural-judge" "$HOO15_T1_RC" "$HOO15_T1_OUT" "$HOO15_T1_LAST"
+fi
+
+# Test 2: empty/missing transcript + claude absent → still agent_absent path
+# (the transcript check happens AFTER the claude check). Exit 0, no stdout,
+# no journal write from this test (the agent_absent test 1 already wrote
+# one — but we're using a fresh journal here, so the new entry should be
+# the agent_absent one again).
+HOO15_T2_JOURNAL="$FIXTURE/hook15-t2-journal.jsonl"
+HOO15_T2_HOME="$FIXTURE/hook15-t2-home"; mkdir -p "$HOO15_T2_HOME"
+HOO15_T2_OUT=$(hoo15_run '{}' "$HOO15_T2_JOURNAL" "$HOO15_T2_HOME" "$EMPTY_PATH")
+HOO15_T2_RC=$?
+HOO15_T2_LAST=$(tail -1 "$HOO15_T2_JOURNAL" 2>/dev/null)
+if [ "$HOO15_T2_RC" = "0" ] \
+   && [ -z "$HOO15_T2_OUT" ] \
+   && [ -n "$HOO15_T2_LAST" ] \
+   && printf '%s' "$HOO15_T2_LAST" | jq -e '.fields.reason == "agent_absent"' >/dev/null 2>&1; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s empty envelope: degrades silently to agent_absent, no crash\n' "infer-structural-judge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s empty envelope: rc=%s out=%s last_event=%s\n' "infer-structural-judge" "$HOO15_T2_RC" "$HOO15_T2_OUT" "$HOO15_T2_LAST"
+fi
+
+# Test 3: autonomy-invariant scan (negative test). The hook source must NOT
+# contain the string "permissionDecision" in any CODE line (not a comment).
+# This is the load-bearing guard from ADR 0002 §L112 — a PreToolUse-style
+# `deny` in an inferential-FB sensor is the L4-loop covert failure mode.
+# The scan also covers the agent file (which is the upstream contract).
+# Comments mentioning the invariant are fine; what we forbid is a literal
+# `permissionDecision: "deny"` (or similar) being EMITTED by the hook.
+# Strip bash/Markdown comment lines first, then grep for the string.
+HOOK1_5_STRIPPED=$(grep -vE '^[[:space:]]*#' "$HOOK1_5_HOOK_SRC")
+AGENT_STRIPPED=$(grep -vE '^[[:space:]]*#' "$HOOKS/../agents/inferential-structural-judge.md")
+if ! printf '%s\n' "$HOOK1_5_STRIPPED" | grep -qF 'permissionDecision' \
+   && ! printf '%s\n' "$AGENT_STRIPPED" | grep -qF 'permissionDecision'; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s autonomy invariant: no permissionDecision in hook or agent code (comments OK)\n' "infer-structural-judge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s autonomy invariant: permissionDecision found in hook or agent code\n' "infer-structural-judge"
+fi
+
+# Test 4: bash syntax + shellcheck-clean (the hook is a 248-line bash file
+# with a `claude -p` invocation and a jq-based validator — a syntax error
+# here would silently pass through to a hard-to-diagnose runtime failure).
+HOO15_T4_BASHN=$(bash -n "$HOOK1_5_HOOK_SRC" 2>&1)
+if [ -z "$HOO15_T4_BASHN" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s bash -n clean\n' "infer-structural-judge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s bash -n failed: %s\n' "infer-structural-judge" "$HOO15_T4_BASHN"
+fi
+if command -v shellcheck >/dev/null 2>&1; then
+  HOO15_T4_SC=$(shellcheck -S error "$HOOK1_5_HOOK_SRC" 2>&1 || true)
+  if [ -z "$HOO15_T4_SC" ]; then
+    PASS=$((PASS+1)); printf '  ✅ %-26s shellcheck -S error clean\n' "infer-structural-judge"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-26s shellcheck -S error: %s\n' "infer-structural-judge" "$HOO15_T4_SC"
+  fi
+fi
+
+# Test 5: prior-verdict lookup handles the "old journal entries (no paths
+# field)" case gracefully. Pre-fix-shape entries should be treated as
+# "no prior" (the lookup filters them out via `select((.fields.paths // [])
+# | length > 0)`). This guards against a regression where an old-format
+# journal entry crashes the jq query. Test approach: write a synthetic
+# journal with old-shape entries, run the lookup jq filter, assert no
+# crash and the result is `[]`.
+HOO15_T5_JOURNAL="$FIXTURE/hook15-t5-journal.jsonl"
+cat > "$HOO15_T5_JOURNAL" <<'EOF'
+{"id":"1","ts":"2026-06-15T10:00:00.000Z","session":"old","hook":"inferential-structural-judge","event":"inferential_structural_verdict","source":"journal_append","fields":{"score":5,"dimensions":{"over_engineering":3,"arch_drift":2,"test_pattern":2,"doctrine_conformance":2},"top_finding":"old","recommendation":"flag"}}
+{"id":"2","ts":"2026-06-15T11:00:00.000Z","session":"new","hook":"inferential-structural-judge","event":"inferential_structural_verdict","source":"journal_append","fields":{"score":3,"dimensions":{"over_engineering":2,"arch_drift":1,"test_pattern":1,"doctrine_conformance":1},"top_finding":"new","recommendation":"accept","paths":["agents/foo.md"]}}
+EOF
+HOO15_T5_RESULT=$(jq -s --argjson cur '["agents/foo.md"]' --arg sid "current" '
+  [ .[]?
+      | select(.event=="inferential_structural_verdict")
+      | select(.session != $sid)
+      | select((.fields.paths // []) | length > 0)
+      | { session: .session, ts: .ts, paths: .fields.paths, score: .fields.score } ]
+  | map(select(.paths | .[] as $p | $cur | index($p) != null))
+  | group_by(.paths | tostring) | map(last)
+  | .[0:50]
+' "$HOO15_T5_JOURNAL" 2>/dev/null)
+HOO15_T5_RC=$?
+if [ "$HOO15_T5_RC" = "0" ] \
+   && [ "$(printf '%s' "$HOO15_T5_RESULT" | jq 'length')" = "1" ] \
+   && printf '%s' "$HOO15_T5_RESULT" | jq -e '.[0].paths | index("agents/foo.md") != null' >/dev/null 2>&1; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s prior-verdict lookup: filters old-shape entries, returns new-shape overlap\n' "infer-structural-judge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s prior-verdict lookup: rc=%s result=%s\n' "infer-structural-judge" "$HOO15_T5_RC" "$HOO15_T5_RESULT"
+fi
+
 # ── HOOK-1: notify-sensor-staleness.sh (matcher-less SessionStart) ──
 # Five tests, each builds a hermetic temp tree (copy of the hook + fixture
 # sensors.json + stub audit.sh), runs the hook with HOME=$TEMP (dismissal

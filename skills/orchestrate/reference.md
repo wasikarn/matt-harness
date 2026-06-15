@@ -43,6 +43,12 @@ Agent fleet → domain: `security-reviewer` (auth/secrets/OWASP) · `backend-eng
 
 Domain specialists (dispatch when the task matches the domain — `backend-engineer`/`frontend-engineer` are the generalist fallback): `data-engineer` (ETL/warehouse/streaming pipelines) · `ml-engineer` (model serving/inference/feature stores) · `mobile-engineer` (iOS/Android/React Native) · `platform-engineer` (service mesh/gRPC/inter-service resilience) · `maintenance-engineer` (legacy/deprecation/tech-debt) · `type-design-analyzer` (type/DTO/schema/invariant review) · `ux-reviewer` (UX/a11y/WCAG/interaction flow) · `product-analyst` (requirements/scoping/acceptance criteria) · `technical-writer` (READMEs/runbooks/ADRs) · `api-doc-specialist` (OpenAPI/SDK/contract docs) · `i18n-specialist` (localization/RTL/locale formatting) · `compliance-engineer` (GDPR/SOC2/HIPAA controls) · `finops-engineer` (cloud cost/rightsizing) · `incident-commander` (live-incident coordination).
 
+### Sensors (auto-fired by hooks, NOT user-dispatched)
+
+These agents are invoked by hook scripts, not by the user via `/orchestrate`. They appear in the routing table only so the harness-audit W1 ("not referenced in orchestrate routing table") does not false-flag a sensor. They are **read-only** by design (autonomy invariant, ADR 0002 §L112) — they judge, they do not write. The orchestrator MUST NOT dispatch them; only the matching hook may invoke them.
+
+- `inferential-structural-judge` — SessionEnd sensor for diff-shape judging (over-engineering / arch-drift / test-pattern / doctrine-conformance; 4-dimension schema per `docs/research/inferential-structural-judge-design.md` §3). Invoked by `hooks/inferential-structural-judge-on-session-end.sh`. Advisory only — journals to `~/.claude/governance-events.jsonl`, never emits `permissionDecision`.
+
 ## Scripted Execution Modes (L4)
 
 For urgent, not-important, bounded compound work — decompose then execute via bash scripts rather than interactive conversation. Same trust boundary. Same tools. Different orchestration style.
