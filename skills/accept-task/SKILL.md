@@ -51,7 +51,15 @@ Write `.scratch/<slug>/ACCEPTANCE.md`. `<slug>` is the feature/fix kebab-case na
 2. **Source the criteria** — if `issue.md` has an `## Acceptance Criteria` section, pull from it. Otherwise draft 2–5 criteria with the user.
 3. **Make each criterion machine-checkable** — rewrite vague criteria into falsifiable ones. "Works correctly" → "`npm test` exits 0 and `tests/auth.spec.ts` covers the null-token path". If a criterion can't be made checkable, mark it `(manual)` and say how it's judged.
 4. **Capture the start point** — `git rev-parse HEAD` for `start-sha`, current UTC for `accepted`.
-5. **Write `ACCEPTANCE.md`** — fill the template. Name the executor (which agent[s] will do the work).
+5. **Write `ACCEPTANCE.md`** — fill the template. Name the executor (which agent[s] will do the work). Then write the consequence report:
+   ```bash
+   mkdir -p "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}"
+   printf '{"slug":"%s","path":"%s","criteria_count":%s,"ts":"%s"}\n' \
+     "<slug>" ".scratch/<slug>/ACCEPTANCE.md" "<N>" \
+     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     > "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}/accept-last.json"
+   ```
+   Downstream: `ship-task` Phase 3 reads `accept-last.json` to machine-check that a contract was locked before execution starts.
 6. **Proceed to execution** — the contract is now the target. At review time, `kbg:review-pr` Phase 6 reads it and flags findings that leave a locked criterion unmet as `[acceptance-gap]` (rework), distinct from beyond-contract improvements.
 
 ## Anti-patterns

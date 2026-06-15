@@ -1,7 +1,7 @@
 {
   "name": "kbg",
-  "version": "0.2.1",
-  "description": "Personal Claude Code harness: 27 senior-specialist agents, 34 workflow skills, 18 commands (incl. /ship-task for the full 9-step senior-engineer loop, /team-plan + /team-build + /wave-status + /team-cleanup + /validate-and-fix + /pre-flight-plan-linter + /debug-debate for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, /pre-ship-verify for deterministic acceptance gating, and /dismiss-stale for 7-day hash-gated sensor-staleness dismissal), governance hooks across 14 lifecycle events (incl. post-edit-test async test runner closing the Step-6 gap), always-on doctrine injection (METHODOLOGY/RTK/ACLI/DBGATE), and the TECH-LEAD-THAI output style. Components auto-discover from the default agents/, skills/, commands/, hooks/, output-styles/, and themes/ directories.",
+  "version": "0.2.2",
+  "description": "Personal Claude Code harness: 27 senior-specialist agents, 36 workflow skills (incl. harness-nav L3 escape hatch for capability discovery), 18 commands (incl. /ship-task for the full 9-step senior-engineer loop, /team-plan + /team-build + /wave-status + /team-cleanup + /validate-and-fix + /pre-flight-plan-linter + /debug-debate for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, /pre-ship-verify for deterministic acceptance gating, and /dismiss-stale for 7-day hash-gated sensor-staleness dismissal), governance hooks across 14 lifecycle events (incl. post-edit-test async test runner), always-on doctrine injection (METHODOLOGY/RTK/ACLI/DBGATE), and the TECH-LEAD-THAI output style. Context hierarchy: L1=doctrine/CLAUDE.md, L2=skills on demand, L3=BOUNDARY.md+source via kbg:harness-nav. Components auto-discover from the default agents/, skills/, commands/, hooks/, output-styles/, and themes/ directories.",
   "author": { "name": "KOBIG" },
   "license": "MIT",
   "homepage": "https://github.com/wasikarn/kbg-harness",

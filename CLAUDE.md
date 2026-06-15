@@ -23,6 +23,18 @@ There is **one delivery path**: the plugin cache at `~/.claude/plugins/cache/kob
 
 Skipping step 1 or 2 causes the plugin cache to stale-load the old version, and `harness-audit` (check #31.2) will CRIT-flag the version mismatch.
 
+### Context hierarchy (L1 / L2 / L3)
+
+kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical Agent" L1/L2/L3 cache model:
+
+| Tier | What | When |
+|------|------|------|
+| **L1** (always resident) | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Injected every session by `doctrine-bootstrap.sh`; zero discovery cost |
+| **L2** (on demand) | Individual SKILL.md files, command `.md` files, agent specs | One invocation (`kbg:<skill>`) or skill-nudge keyword match; low discovery cost |
+| **L3** (escape hatch) | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) | Explicit read; use `kbg:harness-nav` for guided mining when L2 misses |
+
+**Navigation rule:** when the right skill is unknown, reach for `kbg:harness-nav` (the L3 mining skill with grep recipes) rather than reading all SKILL.md files blindly. If L3 confirms no coverage, do the task inline.
+
 ### Doctrine injection (mandatory, no opt-in)
 
 `hooks/doctrine-bootstrap.sh` is a **matcher-less SessionStart hook** (registered in `hooks/hooks.json`) that injects `METHODOLOGY.md` / `RTK.md` / `ACLI.md` / `DBGATE.md` as `additionalContext` on **every** SessionStart sub-event (`startup`, `resume`, `clear`, `compact`). No manual `@import` needed. The hook self-suppresses if `~/.claude/CLAUDE.md` still `@import`s doctrine (it does not, post-cutover).

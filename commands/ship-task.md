@@ -60,7 +60,14 @@ No phase is skipped. No autonomous loops — every fix iteration requires explic
 1. Invoke `kbg:accept-task` — it writes `.scratch/<slug>/ACCEPTANCE.md`.
 2. Verify: every criterion must be checkable (a command exit code, a file presence, a test assertion).
 
-**Gate**: ACCEPTANCE.md written and reviewed before Phase 4.
+**Gate**: ACCEPTANCE.md written and `accept-last.json` present before Phase 4.
+Machine check:
+```bash
+cat "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}/accept-last.json"
+```
+- File absent → STOP: "No `kbg:accept-task` run found. Lock the contract first."
+- `slug` matches current task → proceed.
+- `slug` mismatch → WARN: "Contract is for a different task. Re-run `kbg:accept-task`."
 
 ---
 
