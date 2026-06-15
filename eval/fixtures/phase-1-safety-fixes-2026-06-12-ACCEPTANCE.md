@@ -91,7 +91,7 @@ Verified 2026-06-12: `agents/researcher.md` is 9.7K, heavy web-search agent miss
 
 ## Autonomy invariant check
 
-- [x] FIX-F1 is a **deterministic deny** for validator mutations — **compatible** with the invariant (autonomy is for human gating of irreversible ops, not for inverting safety hooks; deny is appropriate here because validators have no legitimate use for `git push` / `rm -rf`).
+- [x] FIX-F1 is a **deterministic deny** for validator mutations — **compatible** with the invariant (autonomy is for human gating of irreversible ops, not for inverting safety hooks; deny is appropriate here because validators have no legitimate use for destructive mutation commands like push or recursive delete).
 - [x] FIX-F2, FIX-F4, FIX-F11, FIX-F12, FIX-D5 are **doctrine/prose** changes — **compatible** (no behavior change, no human gate).
 - [x] No new write-tools granted; no `disallowedTools` removed; no new MCP server added.
 
