@@ -15,7 +15,7 @@
 # Usage: bash hooks/tests/test-cleanup-bak-ttl.sh
 # Exit 0 = all pass; exit 1 = one or more failed.
 
-HOOK="$(cd "$(dirname "$0")/.." && pwd)/cleanup-bak-ttl.sh"
+HOOK="$(cd "$(dirname "$0")/.." && pwd)/maintenance/cleanup-bak-ttl.sh"
 [ -x "$HOOK" ] || { echo "FATAL: $HOOK not executable" >&2; exit 1; }
 
 PASS=0

@@ -14,8 +14,8 @@
 set -uo pipefail
 
 HOOKS="$(cd "$(dirname "$0")/.." && pwd)"
-HOOK_AUTO="$HOOKS/auto-review-nudge.sh"
-HOOK_SKILL="$HOOKS/skill-nudge.sh"
+HOOK_AUTO="$HOOKS/advisory/auto-review-nudge.sh"
+HOOK_SKILL="$HOOKS/advisory/skill-nudge.sh"
 
 emit() {
   local prompt="$1"

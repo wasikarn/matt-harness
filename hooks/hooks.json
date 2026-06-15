@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/doctrine-bootstrap.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/doctrine-bootstrap.sh\""
           }
         ]
       },
@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/notify-sensor-staleness.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/notify-sensor-staleness.sh\""
           }
         ]
       },
@@ -22,11 +22,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-load.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/session-load.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory-lint-check.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/memory-lint-check.sh\""
           },
           {
             "type": "command",
@@ -35,11 +35,11 @@
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/cleanup-bak-ttl.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/cleanup-bak-ttl.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mcp-session-watchdog.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/mcp-session-watchdog.sh\""
           }
         ]
       },
@@ -48,15 +48,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-load.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/session-load.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory-lint-check.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/memory-lint-check.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mcp-session-watchdog.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/mcp-session-watchdog.sh\""
           }
         ]
       },
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/bypass-audit-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/bypass-audit-log.sh\""
           }
         ]
       },
@@ -92,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/secret-read-guard.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-read-guard.sh\""
           },
           {
             "type": "command",
@@ -100,20 +100,20 @@
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-dangerous-git.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/block-dangerous-git.sh\"",
             "if": "Bash(git *)"
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-bash-doctrine-write.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/block-bash-doctrine-write.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/block-alias-shadowing.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/block-alias-shadowing.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/validator-bash-guard.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh\""
           }
         ]
       },
@@ -122,7 +122,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/secret-read-guard.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-read-guard.sh\""
           }
         ]
       },
@@ -131,15 +131,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/secret-scan.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-scan.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/doctrine-edit-gate.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/doctrine-edit-gate.sh\""
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/config-protection.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/config-protection.sh\""
           }
         ]
       },
@@ -148,7 +148,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/evidence-trail-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/evidence-trail-log.sh\""
           }
         ]
       },
@@ -157,7 +157,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/db-write-gate.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/db-write-gate.sh\""
           }
         ]
       }
@@ -178,7 +178,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/pr-style-reminder.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/pr-style-reminder.sh\"",
             "async": true
           }
         ]
@@ -188,7 +188,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/review-pr-marker.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/review-pr-marker.sh\""
           }
         ]
       },
@@ -197,7 +197,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-witness-memory.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/post-witness-memory.sh\""
           }
         ]
       },
@@ -206,7 +206,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -215,7 +215,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/qmd-reindex.py\"; fi"
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/qmd-reindex.py\"; fi"
           }
         ]
       },
@@ -224,7 +224,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit-audit.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/post-edit-audit.sh\"",
             "async": true
           }
         ]
@@ -234,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-edit-test.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/post-edit-test.sh\"",
             "async": true
           }
         ]
@@ -244,7 +244,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/security-diff-review.py\"; fi",
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/security-diff-review.py\"; fi",
             "async": true
           }
         ]
@@ -264,7 +264,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-summary.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/session-summary.sh\""
           }
         ]
       },
@@ -272,7 +272,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/verification-gate.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/verification-gate.sh\""
           }
         ]
       },
@@ -280,7 +280,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/inferential-structural-judge-on-session-end.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/inferential-structural-judge-on-session-end.sh\""
           }
         ]
       },
@@ -288,7 +288,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/usage-monitor-capture.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/usage-monitor-capture.sh\""
           }
         ]
       },
@@ -296,7 +296,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -314,7 +314,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/hypothesis-precommit.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/hypothesis-precommit.sh\""
           }
         ]
       },
@@ -322,7 +322,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/iron-rule-reminder.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/iron-rule-reminder.sh\""
           }
         ]
       },
@@ -330,7 +330,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-nudge.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/skill-nudge.sh\""
           }
         ]
       },
@@ -338,7 +338,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/auto-review-nudge.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/auto-review-nudge.sh\""
           }
         ]
       },
@@ -346,7 +346,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/orchestrator-nudge.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/orchestrator-nudge.sh\""
           }
         ]
       },
@@ -354,7 +354,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -372,7 +372,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/fabrication-verdict-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/fabrication-verdict-log.sh\""
           }
         ]
       },
@@ -380,7 +380,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -399,7 +399,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -419,7 +419,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/superset-notify-wrapper.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
       },
@@ -439,7 +439,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/auto-mode-denial-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/auto-mode-denial-log.sh\""
           }
         ]
       }
@@ -449,7 +449,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/task-lifecycle.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh\""
           }
         ]
       }
@@ -459,7 +459,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/task-lifecycle.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh\""
           }
         ]
       }
@@ -469,7 +469,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/task-lifecycle.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh\""
           }
         ]
       }
@@ -480,7 +480,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/config-change-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/config-change-log.sh\""
           }
         ]
       }
@@ -491,7 +491,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/precompact-backup.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/precompact-backup.sh\"",
             "async": true
           }
         ]

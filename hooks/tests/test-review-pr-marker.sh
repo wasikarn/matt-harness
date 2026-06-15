@@ -22,7 +22,7 @@
 set -uo pipefail
 
 HOOKS="$(cd "$(dirname "$0")/.." && pwd)"
-HOOK="$HOOKS/review-pr-marker.sh"
+HOOK="$HOOKS/post-tool/review-pr-marker.sh"
 TEST_STATE="/tmp/review-pr-marker-test-$$/state"
 mkdir -p "$TEST_STATE"
 
