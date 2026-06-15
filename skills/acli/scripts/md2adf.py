@@ -13,7 +13,7 @@ Usage:
                                                   # (description = ADF) for
                                                   # `acli jira workitem create --from-json`
 
-Supported Markdown: #/##/### headings, ordered/bullet/task (`- [ ]`) lists,
+Supported Markdown: #–###### headings (levels 1–6), ordered/bullet/task (`- [ ]`) lists,
 **bold**, *italic*, `code`, ~~strike~~, [text](url) links, ``` code blocks,
 > blockquotes, --- horizontal rules, blank-line-separated paragraphs.
 Nested lists are flattened — use H3 sub-headings + flat bullets instead.
@@ -27,13 +27,19 @@ import re
 import sys
 import uuid
 
+# Order matters: code first (its `[^*]+` is permissive enough to swallow any `*`),
+# then bold (with a backtick-aware lookahead so `**`code`**` does not collapse into a
+# single bold span — it must split into `**` + `` `code` `` + `**` so the backticks
+# win). Underscore-italic uses lookarounds to refuse identifiers like `price_per_car`
+# — CommonMark rule: `_` only delimits italic when both sides are non-word chars.
+# Revert any of these and the `run-tests.sh` G3/G4 cases fail.
 INLINE_RE = re.compile(
-    r'\*\*(?P<bold_text>[^*]+)\*\*'
+    r'`(?P<code_text>[^`]+)`'
+    r'|\*\*(?P<bold_text>[^*`]+)\*\*'
     r'|\[(?P<link_text>[^\]]+)\]\((?P<link_url>[^)]+)\)'
-    r'|`(?P<code_text>[^`]+)`'
-    r'|\*(?P<italic_text>[^*]+)\*'
-    r'|_(?P<italic2_text>[^_]+)_'
-    r'|~~(?P<strike_text>[^~]+)~~'
+    r'|\*(?P<italic_text>[^*`]+)\*'
+    r'|(?<![\w])_(?P<italic2_text>[^_`]+)_(?![\w])'
+    r'|~~(?P<strike_text>[^~`]+)~~'
 )
 
 
@@ -90,8 +96,8 @@ def parse(md):
             content.append({"type": "rule"})
             i += 1
             continue
-        # Heading
-        m = re.match(r"^(#{1,3})\s+(.*)$", stripped)
+        # Heading (levels 1–6)
+        m = re.match(r"^(#{1,6})\s+(.*)$", stripped)
         if m:
             text = m.group(2).strip()
             if not text:
@@ -174,7 +180,7 @@ def parse(md):
         buf = []
         while i < n and lines[i].strip():
             s = lines[i].strip()
-            if re.match(r"^(#{1,3})\s+|^\d+\.\s+|^[-*]\s+|^>\s*|^```\s*|^(\*{3,}|-{3,}|_{3,})\s*$", s):
+            if re.match(r"^(#{1,6})\s+|^\d+\.\s+|^[-*]\s+|^>\s*|^```\s*|^(\*{3,}|-{3,}|_{3,})\s*$", s):
                 break
             buf.append(s)
             i += 1
