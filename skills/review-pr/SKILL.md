@@ -197,7 +197,17 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Goal**: Record what was reviewed, what was addressed, suggested next step.
 
 **Actions**:
-1. Mark all todos complete.
+1. Mark all todos complete. Write the review-state file so `kbg:ship-change` Phase 5 can gate on it:
+   ```bash
+   mkdir -p "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
+   CLEAN=$([ "${CRITICAL_COUNT:-0}" -eq 0 ] && echo "true" || echo "false")
+   printf '{"clean":%s,"critical_count":%s,"last_sha":"%s","branch":"%s","ts":"%s"}\n' \
+     "$CLEAN" "${CRITICAL_COUNT:-0}" "$HEAD_SHA" \
+     "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')" \
+     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     > "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json"
+   ```
+   `CRITICAL_COUNT` = number of Critical findings from Phase 5. Always write this file; it is the machine-readable merge gate for `kbg:ship-change`. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict.
 2. Summarize:
    - PR # and URL (if applicable)
    - Review window: `BASE_SHA..HEAD_SHA`

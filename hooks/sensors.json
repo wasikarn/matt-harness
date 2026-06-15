@@ -250,6 +250,14 @@
       "enabled": true
     },
     {
+      "name": "post-edit-test",
+      "should_fire_when": "PostToolUse:Edit|Write",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
       "name": "verification-gate",
       "should_fire_when": "SessionEnd:*",
       "max_silent_days": 30,

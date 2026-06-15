@@ -98,4 +98,16 @@ printf '%s' "$LOWERED" | grep -qE '\b(address|respond to|apply|fix) (the |my |th
 printf '%s' "$LOWERED" | grep -qE '\b(write|draft|create|need|do) .{0,20}post[- ]?mortem\b|\bpost[- ]?mortem .{0,20}(for|of|after|about|analysis|draft|writeup|report)\b|\bincident report\b' \
   && command_emit "post-mortem" "canonical post-mortem for a resolved bug: reproducible trigger, known mechanism, identified patch, passing validation."
 
+# /ship-task — 9-step senior-engineer loop from explore → clarify → implement → review → ship.
+# Triggers when user wants to start a task from scratch with full pipeline discipline.
+printf '%s' "$LOWERED" | grep -qE '\b(ready to ship|let.s ship|ship this|ship (the |a |this )?(feature|change|task|fix)|start (a |the )?(new )?task from scratch|full (pipeline|workflow|loop) for)\b' \
+  && command_emit "ship-task" "9-step loop: explore → clarify → accept → implement → auto-test → review → fix-loop → ship."
+
+# Explore-first nudge: task-shaped prompts without a /command already named.
+# When user describes modifying/extending something without routing to a workflow command,
+# nudge toward /feature-dev or /fix-bug (both have built-in explore phases).
+printf '%s' "$LOWERED" | grep -qE '\b(i need to|we need to|i want to|we want to|can you|please) (implement|change|modify|extend|add|refactor|update) \b' \
+  && ! printf '%s' "$LOWERED" | grep -qE '\b/(feature-dev|fix-bug|ship-task|ship-change|review-pr)\b' \
+  && command_emit "feature-dev" "starts with explore (read-only recon via code-explorer) before any edits — builds in the senior-engineer explore-first discipline."
+
 exit 0

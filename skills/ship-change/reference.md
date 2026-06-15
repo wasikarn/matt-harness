@@ -74,6 +74,14 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 **Goal**: Collect independent proof, verify the acceptance contract, then land the change.
 
 **Actions**:
+0. **Review-state gate** (read before merge — machine-enforceable precondition):
+   ```bash
+   REVIEW_STATE="${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json"
+   ```
+   - **File absent** → STOP. "No `kbg:review-pr` run found. Run it now before merging."
+   - **`clean: false`** → STOP. "Last review returned Critical findings. Re-run `kbg:review-pr` after fixes."
+   - **`last_sha != HEAD`** → WARN. "Review ran on an earlier commit (last: `last_sha`, HEAD: `$(git rev-parse HEAD)`). Re-run `kbg:review-pr` or confirm the delta is trivial." (AskUserQuestion required — advisory, not a hard stop.)
+   - **`clean: true` and `last_sha == HEAD`** → proceed.
 1. **Collect proof artifacts** (at least one required per METHODOLOGY Rule 4 sub-rule):
    - Run tests and capture output: `npm test`, `pytest`, `go test`, etc. Save output to `.scratch/<slug>/proofs/test-output.txt`.
    - Run type-checker / linter: `tsc --noEmit`, `flake8`, `cargo check`. Save output to `.scratch/<slug>/proofs/typecheck.txt`.

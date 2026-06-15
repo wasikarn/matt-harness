@@ -44,7 +44,7 @@ _Personals/kbg-harness_
   ◇ types-first                    types-first
   ◇ usage-monitor                  Read-only cost and subagent usage summary for the current session. Use when the user asks about session cost, token burn, cost breakdown by agent, or suspects nested-team token amplification. Reads the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; L2 read-only, no gates. Don't use for: real-time cost gating (none exists), cross-session aggregation, or OTEL/OTLP export (not implemented).
 
-### Commands (17)
+### Commands (18)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ debug-debate                   Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', or when teammates disagree on architecture. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate).
   ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when user says 'research this', 'deep dive on X', 'compare Z approaches', or any open-ended exploration. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (spawn code-architect).
@@ -56,6 +56,7 @@ _Personals/kbg-harness_
   ◇ pre-ship-verify                Run machine-checkable acceptance criteria for the current task before shipping. Use when a task has an ACCEPTANCE.md and you want deterministic verification before merge, release, or PR submission. Don't use for: tasks without an acceptance contract (no ground truth to verify), or when the user has already manually verified and explicitly says 'skip checks'.
   ◇ ship-merge                     Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use `hotfix` skill).
   ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use `hotfix` skill), or when there is no release branch / tag strategy defined.
+  ◇ ship-task                      9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration.
   ◇ status-update                  Rewrite engineering content for leadership (VPs, directors, PMs) and shape for channel — JIRA, Slack, standup, email, or talking-points. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update', or wants a channel-specific version. Don't use for: technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes.
   ◇ team-build                     Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, then run post-build validation. Use after /team-plan completes, or when user says 'team build: <slug>', 'execute the plan'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev).
   ◇ team-cleanup                   Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans, and expired mailbox messages. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', or when disk space in ~/.claude/tasks/ grows. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days).
@@ -93,7 +94,7 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer).
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code.
 
-### Hooks (41)
+### Hooks (42)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
@@ -119,6 +120,7 @@ _Personals/kbg-harness_
   ◇ notify-sensor-staleness.sh     notify-sensor-staleness.sh — matcher-less SessionStart hook
   ◇ orchestrator-nudge.sh          UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function.
   ◇ post-edit-audit.sh             Post-edit async audit — background scan after Edit/Write for common issues.
+  ◇ post-edit-test.sh              PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell).
   ◇ post-witness-memory.sh         PostToolUse:Bash — post-witness-memory nudge.
   ◇ precompact-backup.sh           PreCompact backup hook — async transcript archive before context compaction.
   ◇ qmd-reindex.py                 PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops.
@@ -235,6 +237,7 @@ _Personals/kbg-harness_
 | notify-sensor-staleness.sh | notify-sensor-staleness.sh — matcher-less SessionStart hook |
 | orchestrator-nudge.sh | UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function. |
 | post-edit-audit.sh | Post-edit async audit — background scan after Edit/Write for common issues. |
+| post-edit-test.sh | PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell). |
 | post-witness-memory.sh | PostToolUse:Bash — post-witness-memory nudge. |
 | precompact-backup.sh | PreCompact backup hook — async transcript archive before context compaction. |
 | qmd-reindex.py | PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops. |
@@ -258,7 +261,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-15T15:26:46Z_
+_Generated: 2026-06-15T16:15:08Z_
 
 ---
 
