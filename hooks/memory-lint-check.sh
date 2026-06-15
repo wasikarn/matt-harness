@@ -24,6 +24,7 @@ export LC_ALL=C
 HOOK_ID="memory-lint-check"
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # Resolve the current project's memory dir the same way memory-lint.py does:
 # git toplevel with '/' → '-', under ~/.claude/projects/<enc>/memory.

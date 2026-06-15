@@ -30,6 +30,7 @@ source "$(dirname "$0")/_lib.sh"
 # Honors PROFILE=off (default) — an advisory nudge should go quiet when the
 # user minimizes hooks. Matches review-pr-marker.sh (the PostToolUse:Bash analog).
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # Soft-fail silently on missing jq (matches review-pr-marker convention).
 command -v jq >/dev/null 2>&1 || exit 0

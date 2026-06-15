@@ -25,6 +25,7 @@ HOOK_ID="post-edit-test"
 HOOK_HONOR_PROFILE_OFF=0
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 LOG="$HOME/.claude/post-edit-test.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true

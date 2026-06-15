@@ -20,6 +20,15 @@ set -uo pipefail
 ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 [ -n "$ROOT" ] || exit 0   # only act when running as an installed plugin
 
+INPUT=$(cat 2>/dev/null || true)
+# shellcheck disable=SC2034  # HOOK_ID + SID read by _sensor_heartbeat in _lib.sh (cross-file)
+HOOK_ID="doctrine-bootstrap"
+# shellcheck disable=SC1090
+source "$ROOT/hooks/_lib.sh" 2>/dev/null || true
+# shellcheck disable=SC2034
+SID=$(printf '%s' "$INPUT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("session_id","nosid"))' 2>/dev/null) || SID="nosid"
+_sensor_heartbeat 2>/dev/null || true
+
 # Coexistence guard — skip if the symlinked CLAUDE.md still imports doctrine.
 # Read once to avoid TOCTOU: the file could change between grep and cat.
 CLAUDE_MD_CONTENT=""

@@ -33,6 +33,7 @@ TTL_SECONDS=1800
 
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # Original soft-failed silently on missing jq (exit 0) — preserve.
 command -v jq >/dev/null 2>&1 || exit 0

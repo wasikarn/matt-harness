@@ -36,6 +36,7 @@
 HOOK_ID="cleanup-bak-ttl"
 source "$(dirname "$0")/_lib.sh"
 hook_init "$HOOK_ID" || exit 0
+_sensor_heartbeat
 
 # Configurable TTL; 0 disables the check.
 TTL_DAYS="${CLAUDE_BAK_TTL_DAYS:-90}"
