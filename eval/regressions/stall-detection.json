@@ -10,7 +10,10 @@
         "command": "python3 scripts/recursive-improve-observe.py",
         "mock_projects_dir": true,
         "stall_threshold_min": 10,
-        "staleness_min": 30
+        "staleness_min": 30,
+        "mock_journal": [
+          {"id": "mock-v1", "ts": "2026-06-11T09:55:00.000Z", "session": "fakesession", "hook": "test", "event": "verification_summary", "fields": {"features": 1, "tdd_provenance": 1, "analyzer_pass": 1, "no_trail": 0, "gaps": 0}}
+        ]
       },
       "success_criteria": [
         "process exits 0",
