@@ -76,7 +76,7 @@ This plan designs a notification surface: at the start of each session, the harn
 
 | Task ID | Description | Depends On | Assigned To | Files | Criteria | Constraints |
 |---------|-------------|------------|-------------|-------|----------|-------------|
-| REG-1 | Author `hooks/sensors.json` registry v1 with 43 entries (Q2 bucket defaults) | - | LEAD-D | hooks/sensors.json | 43 sensors listed, all required fields present, JSON schema-valid | hand-curated; no env-var defaults (per METHODOLOGY Rule 2) |
+| REG-1 | Author `hooks/sensors.json` registry v1 with 31 entries (unique hook scripts in `hooks/hooks.json`; 42 registrations when multi-matcher dupes are counted — see INT-1 + design doc §2). 43 in the original plan was an overcount (lead-revised post-Wave-1). | - | LEAD-D | hooks/sensors.json | 31 sensors listed, all required fields present, JSON schema-valid, zero drift vs `hooks/*.sh` filesystem | hand-curated; no env-var defaults (per METHODOLOGY Rule 2) |
 | AUDIT-1 | Add `--staleness-only` flag to `audit.sh`; emit JSON list `[{name, last_fired, days_silent, fallback_role}]` | REG-1 | LEAD-B | skills/harness-audit/scripts/audit.sh | `bash audit.sh --staleness-only` exits 0, emits valid JSON, < 5s on real repo | reuse existing journal-query helper; no new audit logic |
 | HOOK-1 | Author matcher-less SessionStart hook + register in `hooks/hooks.json`; apply Q3 severity gating + Q4 hash check | REG-1, AUDIT-1 | LEAD-B | hooks/notify-sensor-staleness.sh, hooks/hooks.json | BASH_SOURCE-stable, degrades on `audit.sh` absent (silent no-op), injects `additionalContext` only when Q3 trigger fires AND hash mismatch | hook fires *after* `doctrine-bootstrap.sh`; no `permissionDecision` |
 | CMD-1 | Author `commands/dismiss-stale.md`; writes `~/.claude/state/kbg-staleness-dismissed.json` with `{dismissed_until, dismissed_set_hash}` | HOOK-1 | LEAD-B | commands/dismiss-stale.md, .claude-plugin/plugin.json, .claude-plugin/marketplace.json | `/dismiss-stale` exits 0, file written, 7-day TTL, plugin manifest version bumped | disable-model-invocation: true (operator-only); updates description count in both manifests |
@@ -86,9 +86,9 @@ This plan designs a notification surface: at the start of each session, the harn
 
 ## Acceptance Criteria
 
-- [ ] REG-1: 43 entries in `hooks/sensors.json` with all required fields validation_command: jq empty hooks/sensors.json
+- [ ] REG-1: 31 entries in `hooks/sensors.json` with all required fields (lead-revised from plan's 43 — see INT-1 + design doc §2) validation_command: jq empty hooks/sensors.json
 - [ ] AUDIT-1: `--staleness-only` exits 0 in < 5s and emits valid JSON validation_command: bash skills/harness-audit/scripts/audit.sh . --staleness-only | jq . > /dev/null
-- [ ] HOOK-1: 209/209 critical-hooks tests pass (current 204 + 5 new) and shellcheck-clean validation_command: bash hooks/tests/test-critical-hooks.sh
+- [ ] HOOK-1: 215/215 critical-hooks tests pass (current 210 + 5 new; lead-revised from plan's 209 — the suite grew post-2026-06-12 audit) and shellcheck-clean validation_command: bash hooks/tests/test-critical-hooks.sh
 - [ ] CMD-1: `claude plugin validate --strict .` exits 0 (manifest + description counts consistent) validation_command: claude plugin validate --strict .
 - [ ] FIX-1: 3 fixtures pass `python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate` validation_command: python3 eval/run-eval.py --regression --tag sensor-staleness-notifier --gate
 - [ ] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .

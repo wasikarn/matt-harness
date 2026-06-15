@@ -1,11 +1,11 @@
 {
   "name": "kbg",
-  "version": "0.1.18",
-  "description": "Personal Claude Code harness: 27 senior-specialist agents, 34 workflow skills, 16 commands (incl. /team-plan + /team-build + /wave-status + /team-cleanup + /validate-and-fix + /pre-flight-plan-linter + /debug-debate for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, and /pre-ship-verify for deterministic acceptance gating), governance hooks across 14 lifecycle events, always-on doctrine injection (METHODOLOGY/RTK/ACLI/DBGATE), and the TECH-LEAD-THAI output style. Components auto-discover from the default agents/, skills/, commands/, hooks/, output-styles/, and themes/ directories.",
+  "version": "0.2.0",
+  "description": "Personal Claude Code harness: 27 senior-specialist agents, 34 workflow skills, 17 commands (incl. /team-plan + /team-build + /wave-status + /team-cleanup + /validate-and-fix + /pre-flight-plan-linter + /debug-debate for opt-in Agent Teams via CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, /pre-ship-verify for deterministic acceptance gating, and /dismiss-stale for 7-day hash-gated sensor-staleness dismissal), governance hooks across 14 lifecycle events, always-on doctrine injection (METHODOLOGY/RTK/ACLI/DBGATE), and the TECH-LEAD-THAI output style. Components auto-discover from the default agents/, skills/, commands/, hooks/, output-styles/, and themes/ directories.",
   "author": { "name": "KOBIG" },
   "license": "MIT",
   "homepage": "https://github.com/wasikarn/kbg-harness",
   "repository": "https://github.com/wasikarn/kbg-harness",
   "defaultEnabled": false,
-  "keywords": ["harness", "agents", "skills", "workflow", "governance", "doctrine", "hooks", "agent-teams", "team-plan", "team-build", "wave-status", "team-cleanup", "validate-and-fix", "pre-flight-plan-linter", "debug-debate", "pre-ship-verify"]
+  "keywords": ["harness", "agents", "skills", "workflow", "governance", "doctrine", "hooks", "agent-teams", "team-plan", "team-build", "wave-status", "team-cleanup", "validate-and-fix", "pre-flight-plan-linter", "debug-debate", "pre-ship-verify", "dismiss-stale", "sensor-staleness"]
 }

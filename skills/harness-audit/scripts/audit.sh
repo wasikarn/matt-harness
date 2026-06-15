@@ -9,10 +9,12 @@ set -uo pipefail
 # call shape `bash audit.sh <repo>` still works).
 REPO_ROOT=""
 PLUGIN_CACHE_ARG=""
+STALENESS_ONLY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --plugin-cache) PLUGIN_CACHE_ARG="${2:-}"; shift 2 ;;
     --plugin-cache=*) PLUGIN_CACHE_ARG="${1#--plugin-cache=}"; shift ;;
+    --staleness-only) STALENESS_ONLY=1; shift ;;
     *) [ -z "$REPO_ROOT" ] && REPO_ROOT="$1"; shift ;;
   esac
 done
@@ -27,6 +29,98 @@ else
 fi
 SETTINGS="$CLAUDE_DIR/settings.json"
 MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|/|_|g')/memory"
+
+# AUDIT-1: --staleness-only flag — emit a JSON list of {name, last_fired,
+# days_silent, fallback_role, ...} joined from hooks/sensors.json (Wave 1
+# registry) and the governance evidence journal. Consumed by HOOK-1
+# (Wave 2) at SessionStart to apply Q3 severity gating. Runs BEFORE the
+# rest of the audit so the non-flag path is byte-identical: this block
+# is the only difference vs upstream, and it early-exits when set.
+# BASH_SOURCE-stable: REGISTRY resolves from the script's own location
+# (line 53) so the path is correct whether the script runs from the
+# source tree, the plugin cache, or with no <repo> arg. Degrades to `[]`
+# if the registry is missing (the registry may be rolled back
+# independently of this flag).
+if [ "$STALENESS_ONLY" = "1" ]; then
+  # The default $REPO_ROOT fallback (line 19: /../../../..) is 1 level
+  # too high — it resolves to the *parent* of the kbg-harness repo when
+  # no <repo> arg is given. The brief requires this flag to work with
+  # OR without the optional <repo> argument, so we resolve the registry
+  # via BASH_SOURCE instead of depending on $REPO_ROOT. This also keeps
+  # the registry path correct in plugin-cache invocations (the script
+  # is the same file regardless of where the cache copy lives).
+  REGISTRY="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../hooks" && pwd)/sensors.json"
+  if [ ! -f "$REGISTRY" ]; then
+    echo "[]"
+    exit 0
+  fi
+  # Honor the JOURNAL-SCHEMA.md test override (CLAUDE_JOURNAL_PATH). Same
+  # convention journal_append() uses — keep the read side consistent.
+  JOURNAL="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
+  python3 - "$REGISTRY" "$JOURNAL" <<'PY' 2>/dev/null || echo "[]"
+import datetime as dt, json, os, sys
+registry_path, journal_path = sys.argv[1], sys.argv[2]
+now = dt.datetime.now(dt.timezone.utc)
+# Build name -> last_fired_iso from the journal. Hook basenames in the
+# journal match the registry's `name` field (basename without .sh/.py
+# extension; see JOURNAL-SCHEMA.md envelope: `hook` is the script id,
+# not a path). A sensor that never journaled is `null` by design — the
+# absence is the signal the notifier is built to detect.
+last_fired = {}
+if os.path.isfile(journal_path):
+    with open(journal_path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            h = d.get("hook")
+            ts = d.get("ts")
+            if not h or not ts:
+                continue
+            # Keep the maximum (latest) ts per hook. ts is ISO8601
+            # string-comparable; no parsing needed for the max.
+            if h not in last_fired or ts > last_fired[h]:
+                last_fired[h] = ts
+with open(registry_path, encoding="utf-8") as f:
+    reg = json.load(f)
+sensors = reg.get("sensors", [])
+out = []
+for s in sensors:
+    name = s["name"]
+    lf = last_fired.get(name)
+    if lf is None:
+        ds = None
+    else:
+        # days_silent = floor((now - last_fired) / 1 day). ISO8601
+        # string sort order matches chronological order, but use
+        # datetime subtraction for the day count to be safe across
+        # fractional seconds and tz variants in the journal stream.
+        try:
+            lf_dt = dt.datetime.fromisoformat(lf.replace("Z", "+00:00"))
+            ds = (now - lf_dt).days
+        except ValueError:
+            ds = None
+    out.append({
+        "name": name,
+        "should_fire_when": s.get("should_fire_when"),
+        "max_silent_days": s.get("max_silent_days"),
+        "fallback_role": s.get("fallback_role"),
+        "must_fire_in_session": s.get("must_fire_in_session", False),
+        "enabled": s.get("enabled", True),
+        "last_fired": lf,
+        "days_silent": ds,
+    })
+# Stable order for the consumer (HOOK-1 hashes the stale set, see Q4 in
+# docs/research/sensor-staleness-notifier-design.md). Sort by name.
+out.sort(key=lambda e: e["name"])
+print(json.dumps(out, separators=(",", ":")))
+PY
+  exit 0
+fi
 
 # Shared frontmatter helpers (sourced, not executed). Same `_lib` is used by
 # inventory.sh / inventory-boundary.sh — see claude/skills/_lib/fm.sh for the

@@ -10,6 +10,14 @@
         ]
       },
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/notify-sensor-staleness.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "startup",
         "hooks": [
           {

@@ -1,0 +1,261 @@
+{
+  "_about": "v1 registry of every Claude-Code hook-event sensor in the kbg@kobig plugin. Consumed by hooks/notify-sensor-staleness.sh (SessionStart matcher-less, post-cutover) to surface 'N sensors haven't fired in X days' via additionalContext. See docs/research/sensor-staleness-notifier-design.md for schema rationale and Q1-Q6 verdicts.",
+  "version": 1,
+  "_provenance": {
+    "authored": "2026-06-15",
+    "authored_by": "LEAD-D (code-architect) on sensor-fire-notification plan",
+    "derived_from": "hooks/hooks.json — 31 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh). Plan's '43 entries' target was an overcount: actual unique-script count is 31, total kbg registrations 42. See handoff report for defect details.",
+    "hand_curated": true,
+    "no_env_var_defaults": "Per METHODOLOGY Rule 2 (no speculative configurability). All values are explicit; not sourced from $KBG_* env vars."
+  },
+  "sensors": [
+    {
+      "name": "auto-mode-denial-log",
+      "should_fire_when": "PermissionDenied:*",
+      "max_silent_days": 90,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "auto-review-nudge",
+      "should_fire_when": "UserPromptSubmit:*",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "block-alias-shadowing",
+      "should_fire_when": "PreToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "block-bash-doctrine-write",
+      "should_fire_when": "PreToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "block-dangerous-git",
+      "should_fire_when": "PreToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "bypass-audit-log",
+      "should_fire_when": "PreToolUse:*",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "cleanup-bak-ttl",
+      "should_fire_when": "SessionStart:startup",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "config-change-log",
+      "should_fire_when": "ConfigChange:",
+      "max_silent_days": 90,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "config-protection",
+      "should_fire_when": "PreToolUse:Edit|Write|MultiEdit",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "db-write-gate",
+      "should_fire_when": "PreToolUse:mcp__*",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "doctrine-bootstrap",
+      "should_fire_when": "SessionStart:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "doctrine-edit-gate",
+      "should_fire_when": "PreToolUse:Edit|Write|MultiEdit",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "evidence-trail-log",
+      "should_fire_when": "PreToolUse:WebFetch|WebSearch",
+      "max_silent_days": 1,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "fabrication-verdict-log",
+      "should_fire_when": "Stop:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "iron-rule-reminder",
+      "should_fire_when": "UserPromptSubmit:*",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "memory-lint-check",
+      "should_fire_when": "SessionStart:startup",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "orchestrator-nudge",
+      "should_fire_when": "UserPromptSubmit:*",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "post-edit-audit",
+      "should_fire_when": "PostToolUse:Edit|Write",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "post-witness-memory",
+      "should_fire_when": "PostToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "precompact-backup",
+      "should_fire_when": "PreCompact:manual|auto",
+      "max_silent_days": 90,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "review-pr-marker",
+      "should_fire_when": "PostToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "secret-read-guard",
+      "should_fire_when": "PreToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "secret-scan",
+      "should_fire_when": "PreToolUse:Edit|Write|MultiEdit",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "session-load",
+      "should_fire_when": "SessionStart:startup",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "session-summary",
+      "should_fire_when": "SessionEnd:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "skill-nudge",
+      "should_fire_when": "UserPromptSubmit:*",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "superset-notify-wrapper",
+      "should_fire_when": "SessionStart:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "task-lifecycle",
+      "should_fire_when": "TaskCompleted:*",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "usage-monitor-capture",
+      "should_fire_when": "SessionEnd:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "validator-bash-guard",
+      "should_fire_when": "PreToolUse:Bash",
+      "max_silent_days": 1,
+      "fallback_role": "computational-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "verification-gate",
+      "should_fire_when": "SessionEnd:*",
+      "max_silent_days": 30,
+      "fallback_role": "inferential-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    }
+  ]
+}

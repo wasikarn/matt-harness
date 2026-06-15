@@ -2164,6 +2164,167 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s truthy-typo regression: 0 CRIT (want 1+) — check would silently pass `: True` — rc=%s:\n%s\n' "harness-audit #32" "$RR_RC" "$RR_OUT"
 fi
 
+# ── HOOK-1: notify-sensor-staleness.sh (matcher-less SessionStart) ──
+# Five tests, each builds a hermetic temp tree (copy of the hook + fixture
+# sensors.json + stub audit.sh), runs the hook with HOME=$TEMP (dismissal
+# file redirection) and CLAUDE_JOURNAL_PATH=$TEMP/journal.jsonl (journal
+# redirection), and asserts on the emitted additionalContext. The stub
+# audit.sh reads STUB_AUDIT_OUTPUT_FILE (env var) and emits its contents
+# — this is a one-line, test-only artifact, NOT a real audit re-implementation.
+# AUDIT-1 (the real audit.sh --staleness-only flag) is tested separately in
+# the audit-flag's own acceptance gate; HOOK-1 tests the Q3/Q4 logic only.
+HOOK1_HOOK_SRC="$HOOKS/notify-sensor-staleness.sh"
+[ -f "$HOOK1_HOOK_SRC" ] || { echo "FATAL: $HOOK1_HOOK_SRC missing" >&2; exit 1; }
+
+# Test helper: build a fresh temp tree and run the hook once. Args:
+#   $1 = sensors.json content (will be written to $T/sensors.json)
+#   $2 = STUB_AUDIT_OUTPUT_FILE content (will be written to $FIXTURE/.claude/audit-stub-output.json)
+#   $3 = HOME override (dismissal file lives at $HOME/.claude/state/...)
+#   $4 = sensors.json filename (default: "sensors.json"; for the missing-file test)
+# Outputs the hook's stdout to FD 1. Returns the hook's exit code via $?.
+# Drops the per-test tree on return (caller's $FIXTURE trap handles cleanup).
+#
+# Layout note: the hook resolves AUDIT_SH via "$(dirname "$BASH_SOURCE")/../skills/...".
+# For the hook at $T/notify-sensor-staleness.sh, that's $T/../skills/... which
+# resolves to the PARENT of $T (which is $FIXTURE). So the stub audit.sh must
+# live at $FIXTURE/skills/harness-audit/scripts/audit.sh — shared across tests.
+# We pre-create the parent tree once and the helper just writes the per-test
+# stub-output file.
+HOO1_STUB_DIR="$FIXTURE/skills/harness-audit/scripts"
+HOO1_STUB_SH="$HOO1_STUB_DIR/audit.sh"
+HOO1_STUB_OUT="$FIXTURE/.claude/audit-stub-output.json"
+mkdir -p "$HOO1_STUB_DIR" "$FIXTURE/.claude"
+# Write the stub once (idempotent — same content each call)
+cat > "$HOO1_STUB_SH" <<'STUB'
+#!/usr/bin/env bash
+# Test stub for audit.sh --staleness-only. Emits the JSON in
+# $STUB_AUDIT_OUTPUT_FILE (env var). Empty file → `[]`.
+out="${STUB_AUDIT_OUTPUT_FILE:-}"
+if [ -f "$out" ]; then
+  cat "$out"
+else
+  echo "[]"
+fi
+STUB
+chmod +x "$HOO1_STUB_SH"
+
+hoo1_run() {
+  local sensors_content="$1" stub_output_content="$2" home_override="$3"
+  local sensors_filename="${4:-sensors.json}"
+  local T="$FIXTURE/hook1-$$-$RANDOM"
+  mkdir -p "$T"
+  # Copy the hook script (not symlink — the trap deletes the dir)
+  cp "$HOOK1_HOOK_SRC" "$T/notify-sensor-staleness.sh"
+  # Fixture registry (or skip for the missing-file test)
+  if [ -n "$sensors_content" ]; then
+    printf '%s' "$sensors_content" > "$T/$sensors_filename"
+  fi
+  # Write the stub's output file (the JSON list the real audit would emit)
+  printf '%s' "$stub_output_content" > "$HOO1_STUB_OUT"
+  # Run the hook. HOME redirects the dismissal file; CLAUDE_JOURNAL_PATH
+  # redirects the journal. Both are required for hermetic isolation.
+  ( HOME="$home_override" \
+      CLAUDE_JOURNAL_PATH="$FIXTURE/.claude/journal.jsonl" \
+      STUB_AUDIT_OUTPUT_FILE="$HOO1_STUB_OUT" \
+      bash "$T/notify-sensor-staleness.sh" < /dev/null )
+}
+
+# Fixture: a single enforcement sensor (computational-FF) with last_fired=null
+# (i.e. never fired → days_silent=null → Q3 treats as stale).
+HOO1_SENSORS_1ENF='{"version":1,"sensors":[
+  {"name":"block-dangerous-git","should_fire_when":"PreToolUse:Bash","max_silent_days":1,"fallback_role":"computational-FF","must_fire_in_session":false,"enabled":true}
+]}'
+# Audit-flag output: 1 entry, days_silent=null
+HOO1_AUDIT_1ENF='[{"name":"block-dangerous-git","last_fired":null,"days_silent":null,"fallback_role":"computational-FF","max_silent_days":1,"must_fire_in_session":false,"enabled":true,"should_fire_when":"PreToolUse:Bash"}]'
+
+# Test 1: Q3 enforcement trigger fires (1 stale enforcement, no dismissal file).
+# Expect: stdout contains `additionalContext` with the sensor name + [enforcement].
+HOO1_T1_HOME="$FIXTURE/hook1-t1-home"; mkdir -p "$HOO1_T1_HOME"
+HOO1_T1_OUT=$(hoo1_run "$HOO1_SENSORS_1ENF" "$HOO1_AUDIT_1ENF" "$HOO1_T1_HOME" 2>/dev/null)
+HOO1_T1_RC=$?
+if [ "$HOO1_T1_RC" = "0" ] \
+   && [ -n "$HOO1_T1_OUT" ] \
+   && printf '%s' "$HOO1_T1_OUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1 \
+   && printf '%s' "$HOO1_T1_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF 'block-dangerous-git' \
+   && printf '%s' "$HOO1_T1_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF '[enforcement]'; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s Q3 enforcement: 1 stale fires additionalContext with [enforcement] tag\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s Q3 enforcement: hook did not fire correctly (rc=%s, out=%s)\n' "notify-sensor-staleness" "$HOO1_T1_RC" "$HOO1_T1_OUT"
+fi
+
+# Test 2: Q3 advisory threshold (3+ fires). 3 stale advisory sensors (inferrential-FF).
+HOO1_SENSORS_3ADV='{"version":1,"sensors":[
+  {"name":"auto-review-nudge","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"inferential-FF","must_fire_in_session":false,"enabled":true},
+  {"name":"iron-rule-reminder","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"inferential-FF","must_fire_in_session":false,"enabled":true},
+  {"name":"skill-nudge","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"inferential-FF","must_fire_in_session":false,"enabled":true}
+]}'
+HOO1_AUDIT_3ADV='[{"name":"auto-review-nudge","last_fired":null,"days_silent":null,"fallback_role":"inferential-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"},{"name":"iron-rule-reminder","last_fired":null,"days_silent":null,"fallback_role":"inferential-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"},{"name":"skill-nudge","last_fired":null,"days_silent":null,"fallback_role":"inferential-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"}]'
+HOO1_T2_HOME="$FIXTURE/hook1-t2-home"; mkdir -p "$HOO1_T2_HOME"
+HOO1_T2_OUT=$(hoo1_run "$HOO1_SENSORS_3ADV" "$HOO1_AUDIT_3ADV" "$HOO1_T2_HOME" 2>/dev/null)
+HOO1_T2_RC=$?
+if [ "$HOO1_T2_RC" = "0" ] \
+   && [ -n "$HOO1_T2_OUT" ] \
+   && printf '%s' "$HOO1_T2_OUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1 \
+   && printf '%s' "$HOO1_T2_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF '[advisory]' \
+   && printf '%s' "$HOO1_T2_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF 'iron-rule-reminder' \
+   && printf '%s' "$HOO1_T2_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF 'auto-review-nudge' \
+   && printf '%s' "$HOO1_T2_OUT" | jq -r '.hookSpecificOutput.additionalContext' | grep -qF 'skill-nudge'; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s Q3 advisory: 3 stale fires additionalContext with [advisory] tag\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s Q3 advisory: hook did not fire correctly (rc=%s, out=%s)\n' "notify-sensor-staleness" "$HOO1_T2_RC" "$HOO1_T2_OUT"
+fi
+
+# Test 3: Q3 advisory below threshold (silent). 2 stale advisory + 0 enforcement
+# → trigger does NOT fire → no additionalContext on stdout.
+HOO1_SENSORS_2ADV='{"version":1,"sensors":[
+  {"name":"auto-review-nudge","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"inferential-FF","must_fire_in_session":false,"enabled":true},
+  {"name":"iron-rule-reminder","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"inferential-FF","must_fire_in_session":false,"enabled":true}
+]}'
+HOO1_AUDIT_2ADV='[{"name":"auto-review-nudge","last_fired":null,"days_silent":null,"fallback_role":"inferential-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"},{"name":"iron-rule-reminder","last_fired":null,"days_silent":null,"fallback_role":"inferential-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"}]'
+HOO1_T3_HOME="$FIXTURE/hook1-t3-home"; mkdir -p "$HOO1_T3_HOME"
+HOO1_T3_OUT=$(hoo1_run "$HOO1_SENSORS_2ADV" "$HOO1_AUDIT_2ADV" "$HOO1_T3_HOME" 2>/dev/null)
+HOO1_T3_RC=$?
+if [ "$HOO1_T3_RC" = "0" ] && [ -z "$HOO1_T3_OUT" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s Q3 advisory below threshold: 2 stale is silent (no additionalContext)\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s Q3 advisory below threshold: expected silent, got rc=%s out=%s\n' "notify-sensor-staleness" "$HOO1_T3_RC" "$HOO1_T3_OUT"
+fi
+
+# Test 4: Q4 hash match (silent). 1 stale enforcement + a dismissal file whose
+# `dismissed_set_hash` matches the current stale-set hash AND `dismissed_until`
+# is in the future. Expect: no additionalContext.
+# Compute the expected hash: stale_set = ["block-dangerous-git"], joined with
+# "\n", sha256 hex. The hook uses `hashlib.sha256("\n".join(stale_set).encode())`
+# which for a 1-element list is just sha256 of the name (no trailing \n).
+HOO1_T4_HOME="$FIXTURE/hook1-t4-home"; mkdir -p "$HOO1_T4_HOME/.claude/state"
+HOO1_T4_HASH=$(printf 'block-dangerous-git' | shasum -a 256 | awk '{print $1}')
+# dismissed_until = 2099-01-01 (way in the future, deterministic across runs)
+cat > "$HOO1_T4_HOME/.claude/state/kbg-staleness-dismissed.json" <<EOF
+{"dismissed_until":"2099-01-01T00:00:00Z","dismissed_set_hash":"sha256:${HOO1_T4_HASH}"}
+EOF
+HOO1_T4_OUT=$(hoo1_run "$HOO1_SENSORS_1ENF" "$HOO1_AUDIT_1ENF" "$HOO1_T4_HOME" 2>/dev/null)
+HOO1_T4_RC=$?
+if [ "$HOO1_T4_RC" = "0" ] && [ -z "$HOO1_T4_OUT" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s Q4 hash match: matching dismissal + future TTL is silent\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s Q4 hash match: expected silent, got rc=%s out=%s\n' "notify-sensor-staleness" "$HOO1_T4_RC" "$HOO1_T4_OUT"
+fi
+
+# Test 5: graceful degradation (silent). Missing sensors.json. Expect: no
+# additionalContext, exit 0, no stderr. The stub audit.sh + a missing
+# sensors.json is the production failure mode (registry rolled back
+# independently of the hook). Pass empty sensors content + a non-existent
+# filename so hoo1_run skips writing the file.
+HOO1_T5_HOME="$FIXTURE/hook1-t5-home"; mkdir -p "$HOO1_T5_HOME"
+# 4th arg "" tells hoo1_run to skip writing sensors.json entirely.
+HOO1_T5_OUT=$(hoo1_run "" "[]" "$HOO1_T5_HOME" "" 2>&1)
+HOO1_T5_RC=$?
+if [ "$HOO1_T5_RC" = "0" ] && [ -z "$HOO1_T5_OUT" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s graceful degradation: missing sensors.json → silent, rc=0, no stderr\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s graceful degradation: expected silent/rc=0, got rc=%s out=%s\n' "notify-sensor-staleness" "$HOO1_T5_RC" "$HOO1_T5_OUT"
+fi
+
 echo
 echo "=== $PASS passed, $FAIL failed ==="
 [ "$FAIL" = 0 ] || { echo "FAIL: $FAIL test(s) failed" >&2; exit 1; }
