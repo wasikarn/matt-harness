@@ -67,12 +67,12 @@ jobs:
           enc="-home-runner-work-kbg-harness-kbg-harness"
           store="$HOME/.claude/projects/${enc}/memory"
           mkdir -p "$store"
-          cat > "$store/MEMORY.md" <>'EOF'
+          cat > "$store/MEMORY.md" <<'EOF'
           # Memory index
 
           - [test-topic](test-topic.md) — test memory entry
           EOF
-          cat > "$store/test-topic.md" <>'EOF'
+          cat > "$store/test-topic.md" <<'EOF'
           ---
           name: test-topic
           description: test memory topic
