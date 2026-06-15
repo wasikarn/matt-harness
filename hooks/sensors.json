@@ -272,6 +272,30 @@
       "fallback_role": "inferential-FB",
       "must_fire_in_session": false,
       "enabled": true
+    },
+    {
+      "name": "pr-style-reminder",
+      "should_fire_when": "PostToolUse:Bash(git commit|gh pr)",
+      "max_silent_days": 7,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "mcp-session-watchdog",
+      "should_fire_when": "SessionStart:startup|resume",
+      "max_silent_days": 30,
+      "fallback_role": "computational-FB",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "hypothesis-precommit",
+      "should_fire_when": "UserPromptSubmit:*(investigation keywords)",
+      "max_silent_days": 7,
+      "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
     }
   ]
 }

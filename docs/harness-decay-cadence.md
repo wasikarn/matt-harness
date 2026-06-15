@@ -212,3 +212,70 @@ honest (no duplicate `tools:` tokens, every token a real Claude Code
 tool — see `harness-audit/scripts/audit.sh` checks #6 / #22); the
 re-audit's role is to keep the *contents* honest on the human cadence
 above. They are complements, not substitutes.
+
+## Harness-coverage quarterly review
+
+*last_reviewed: 2026-06-15 (initial section, paired with the
+`harness-coverage-metric` build; revisit quarterly or on model upgrade).*
+
+The build-to-delete sweep above asks "does each component still earn
+its place?" A sibling question: **is each quadrant of the 2×2 still
+populated by sensors doing real work, or are some cells going silent?**
+`kbg:harness-coverage` is the quarterly-lens surface for that second
+question. It emits a 2×2 matrix of the 14 hook events ×
+{computational, inferential} × {feedforward, feedback}. Full design
+in
+[`docs/research/harness-coverage-metric-design.md`](../research/harness-coverage-metric-design.md);
+the human-cadence posture is restated below.
+
+### Cadence
+
+- **Quarterly** — pair with the build-to-delete sweep + the permission
+  re-audit above so one human pass clears stale, over-permissioned,
+  *and* silent-cell candidates.
+- **On model upgrade** — a new tier shifts which cells the harness
+  needs to police (typically the inferential-FB cell thins, per the
+  LLM-judge-circularity section above).
+
+### Threshold
+
+A **decay candidate** is any 2×2 cell whose output falls
+**below 60%** of its expected sensor-fire count for the review window.
+"Expected" is per-cell in the
+[design doc](../research/harness-coverage-metric-design.md); a cell
+with no sensors (e.g. a hook event the harness has no entry for) is
+*not* a decay candidate — it is a deliberate gap, recorded as such.
+Sub-60% means a sensor exists but stopped firing, fires for inert
+reasons, or is being routed around by a newer surface.
+
+### Action loop (operator, 3 steps)
+
+1. **Diagnose** — for each sub-60% cell, read the per-fire
+   evidence `kbg:harness-coverage` emits (session IDs, matched
+   events, the upstream surface that *should* have triggered the
+   sensor). Ask *why* it is silent: broken, obsolete, or work
+   genuinely absent. The 2×2 framing in `CLAUDE.md` is the diagnosis
+   aid — a silent computational-FF cell and a silent inferential-FB
+   cell point to different root causes.
+2. **Plan a fix or document a deliberate gap** — broken/obsolete →
+   `decommission` ticket with the evidence attached. Work moved to a
+   non-harness surface → record the gap in the build-to-delete
+   sweep's "kept the assumption" form (*why* the cell is empty *now*,
+   baseline for the next upgrade).
+3. **Re-measure next quarter** — the verdict rolls into the next
+   pass's expected counts. A "deliberate gap" three quarters running
+   is itself removal-from-matrix-shape eligible (an `ABSENT_*`
+   witness through the same `decommission` flow).
+
+### Autonomy posture (explicit)
+
+`kbg:harness-coverage` does **not** auto-prune. The operator runs
+the surface on the cadence above, the surface emits a report, and
+the human decides what (if anything) to delete. No cron, no
+scheduled hook event, no model-as-own-gate. Same posture as the
+build-to-delete sweep + the permission re-audit; same posture ADR
+0002's autonomy invariant protects. The
+[2×2 section in `CLAUDE.md`](../../CLAUDE.md#hook-architecture-two-conventions)
+calls out the LLM-judge-circularity hazard of any inferential-FB
+sensor that emits a `permissionDecision` — a coverage-driven
+auto-prune would be the same hazard at the meta-decay layer.

@@ -216,13 +216,13 @@ check validator-bash-guard.sh deny "code-reviewer + no-space fork-bomb"        "
 #     (f) TaskCreated → exit 0 (same)
 #     (g) Claim variants: "pytest" alone in subject, "npm test" in description,
 #         "cargo test" + "validation_command: cargo test" → all pass when validation_command present
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'All tests pass' (no validation_command)"  "$(task_event '1' 'All tests pass' 'Implemented feature X')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'pytest' in subject (no validation_command)" "$(task_event '2' 'Run pytest suite' 'Wrote tests for X')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'npm test' in description (no validation_command)" "$(task_event '3' 'Build complete' 'Verify with npm test before commit')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'cargo test' alone" "$(task_event '4' 'cargo test green' 'Refactored module Y')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'go test' alone" "$(task_event '5' 'go test' 'Wrote handler')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'pnpm test' alone" "$(task_event '6' 'pnpm test' 'Frontend changes')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7a blocks 'jest' alone" "$(task_event '7' 'jest green' 'Frontend tests')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'All tests pass' (no validation_command)"  "$(task_event '1' 'All tests pass' 'Implemented feature X')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'pytest' in subject (no validation_command)" "$(task_event '2' 'Run pytest suite' 'Wrote tests for X')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'npm test' in description (no validation_command)" "$(task_event '3' 'Build complete' 'Verify with npm test before commit')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'cargo test' alone" "$(task_event '4' 'cargo test green' 'Refactored module Y')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'go test' alone" "$(task_event '5' 'go test' 'Wrote handler')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'pnpm test' alone" "$(task_event '6' 'pnpm test' 'Frontend changes')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7a blocks 'jest' alone" "$(task_event '7' 'jest green' 'Frontend tests')"
 check_task task-lifecycle.sh 0  ""          "F7b allows 'npm test' + validation_command"  "$(task_event '8' 'Build complete' 'Verify with npm test\nvalidation_command: npm test --workspaces')"
 check_task task-lifecycle.sh 0  ""          "F7b allows 'pytest' + validation_command"  "$(task_event '9' 'All tests pass' 'validation_command: pytest tests/test_x.py -v')"
 check_task task-lifecycle.sh 0  ""          "F7b allows 'Validation Command:' (case-insensitive)" "$(task_event '10' 'cargo test green' 'Refactored Y\nValidation Command: cargo test --release')"
@@ -241,10 +241,10 @@ check_task task-lifecycle.sh 0  ""          "F7g 'pitsc' does NOT match (tsc sub
 check_task task-lifecycle.sh 0  ""          "F7g 'pytest' as substring of unrelated word does NOT match" "$(task_event '24' 'sppytest path' 'Config tweak')"
 # F7h — boundary-class match: jest as a standalone word DOES match (positive
 # regression guard for the F7g fix — make sure anchoring didn't over-correct).
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7h standalone 'jest' still matches" "$(task_event '25' 'jest' 'Frontend test runner')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7h 'jest green' still matches (jest at word boundary)" "$(task_event '26' 'jest green' 'Wrote tests')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7h standalone 'tsc' still matches" "$(task_event '27' 'tsc' 'Type-checked the codebase')"
-check_task task-lifecycle.sh 2  "TASK-GATE"  "F7h 'pytest' still matches as a word" "$(task_event '28' 'pytest' 'Ran the suite')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7h standalone 'jest' still matches" "$(task_event '25' 'jest' 'Frontend test runner')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7h 'jest green' still matches (jest at word boundary)" "$(task_event '26' 'jest green' 'Wrote tests')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7h standalone 'tsc' still matches" "$(task_event '27' 'tsc' 'Type-checked the codebase')"
+check_task task-lifecycle.sh 2  "TASK-GATE[blocked]"  "F7h 'pytest' still matches as a word" "$(task_event '28' 'pytest' 'Ran the suite')"
 check_task task-lifecycle.sh 0  ""          "F7e TeammateIdle still log-only (siblings unaffected)"  "$(teammate_idle_event)"
 check_task task-lifecycle.sh 0  ""          "F7f TaskCreated still log-only" "$(task_created_event '15' 'Implement F7 hook' 'Write the enforcement branch')"
 

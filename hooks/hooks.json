@@ -36,6 +36,10 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/cleanup-bak-ttl.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mcp-session-watchdog.sh\""
           }
         ]
       },
@@ -49,6 +53,10 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/memory-lint-check.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/mcp-session-watchdog.sh\""
           }
         ]
       },
@@ -162,6 +170,16 @@
             "type": "command",
             "command": "if command -v code-review-graph >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then code-review-graph update --skip-flows; fi",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/pr-style-reminder.sh\"",
+            "async": true
           }
         ]
       },
@@ -292,6 +310,14 @@
       }
     ],
     "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/hypothesis-precommit.sh\""
+          }
+        ]
+      },
       {
         "hooks": [
           {

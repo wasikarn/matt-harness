@@ -15,6 +15,13 @@ Before implementing:
 - If something is unclear, stop. Name what's confusing. Ask.
 - **Iterative Q&A loops** (grill-me, /to-prd handoffs, multi-round clarification): same gate between rounds. Reject high-fidelity Qs (UI feel, layout) → /prototype. Preserve the design-decision artifact (`/to-prd`) before context-clearing.
 
+**Sub-rule: Session resume boot sequence.** On returning to a task after any context break (session restart, /compact, /clear, handoff):
+1. Confirm working directory (`pwd`).
+2. Read recent git activity (`git log --oneline -5`).
+3. Read `.scratch/<slug>/ACCEPTANCE.md` and `.scratch/<slug>/PROGRESS.md` if they exist.
+4. Verify tests pass before touching code.
+A mis-oriented session costs more to fix than the 30 seconds this sequence takes.
+
 ## 2. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
@@ -151,6 +158,8 @@ Before adding code:
 - Summarize what was done, what's verified, what's left.
 - Don't continue from a state you can't describe back.
 - If you lose track, stop and restate.
+
+**Sub-rule: Carry forward acknowledged complexity.** If you named an open question, unresolved contradiction, or unverified assumption in a prior turn, restate it verbatim at the top of your next turn before continuing. Complexity that is acknowledged but not restated is silently dropped — the leading cause of "attention fade" where complications noted in round 3 disappear by round 7.
 
 ## 11. Match the Codebase's Conventions, Even If You Disagree
 

@@ -163,6 +163,16 @@ if [ "$EVENT" = "TaskCreated" ]; then
   fi
 fi
 
+# Exit reason vocabulary (ADR 0002 §L12 — named for observability, not for automation).
+# Only "blocked" is enforced today; the others are future-compatible placeholders.
+# kbg never runs autonomous loops (ADR 0002), so stalled/degrading/timeout are
+# not yet wired but are reserved so any future bounded loop can adopt the taxonomy.
+#   blocked   — explicit human-actionable blocker (e.g. test-claim without validation_command)
+#   stalled   — (future) no-progress detected across N iterations
+#   degrading — (future) output quality declining
+#   timeout   — (future) wall-clock limit exceeded
+#   complete  — exit 0 path (normal completion)
+
 # Phase 2 F7 enforcement — TaskCompleted test-claim gate.
 # Vendor convention: TaskCompleted uses exit 2 + stderr feedback to block
 # (per https://code.claude.com/docs/en/hooks § TaskCompleted). Exit 0 = pass,
@@ -219,7 +229,7 @@ if [ "$EVENT" = "TaskCompleted" ] && [ "$ENFORCE_TASK_COMPLETED" = 1 ]; then
       # Block. Send stderr feedback to the teammate; the runtime feeds
       # stderr back as the rejection reason. Exit 2 = block per vendor spec.
       cat >&2 <<EOF
-TASK-GATE: completion claimed test execution ("tests pass" / "pytest" / "npm test" / "cargo test" / "go test" / "tsc" / "pnpm test" / "yarn test" / "jest") but no \`validation_command:\` field is present in the task subject or description.
+TASK-GATE[blocked]: completion claimed test execution ("tests pass" / "pytest" / "npm test" / "cargo test" / "go test" / "tsc" / "pnpm test" / "yarn test" / "jest") but no \`validation_command:\` field is present in the task subject or description.
 
 Add a runnable \`validation_command: <cmd>\` line to the task description (e.g. \`validation_command: pytest tests/test_x.py -v\`) and re-trigger TaskCompleted. The validation command will be journaled for post-build review.
 

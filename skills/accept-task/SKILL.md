@@ -51,7 +51,31 @@ Write `.scratch/<slug>/ACCEPTANCE.md`. `<slug>` is the feature/fix kebab-case na
 2. **Source the criteria** — if `issue.md` has an `## Acceptance Criteria` section, pull from it. Otherwise draft 2–5 criteria with the user.
 3. **Make each criterion machine-checkable** — rewrite vague criteria into falsifiable ones. "Works correctly" → "`npm test` exits 0 and `tests/auth.spec.ts` covers the null-token path". If a criterion can't be made checkable, mark it `(manual)` and say how it's judged.
 4. **Capture the start point** — `git rev-parse HEAD` for `start-sha`, current UTC for `accepted`.
-5. **Write `ACCEPTANCE.md`** — fill the template. Name the executor (which agent[s] will do the work). Then write the consequence report:
+5. **Write `ACCEPTANCE.md` and `PROGRESS.md`** — fill the template. Name the executor (which agent[s] will do the work). Also create the mutable progress tracker:
+   ```bash
+   cat > ".scratch/<slug>/PROGRESS.md" <<'PROGRESS_EOF'
+   # Progress: <slug>
+   <!-- Mutable state file — update after each significant step. Read on session resume. -->
+   - task: <slug>
+   - accepted: <ISO-8601 UTC>
+
+   ## Status
+   <!-- in_progress | blocked | complete -->
+   in_progress
+
+   ## What was tried
+   <!-- append-only log: "<date> — <what> — <outcome>" -->
+
+   ## What passed
+   <!-- criteria confirmed green (with evidence command) -->
+
+   ## What's still open
+   <!-- criteria not yet verified + open questions -->
+   PROGRESS_EOF
+   ```
+   Downstream: on session resume, read `PROGRESS.md` before touching code (METHODOLOGY Rule 1 boot sequence).
+
+   Then write the consequence report:
    ```bash
    mkdir -p "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}"
    printf '{"slug":"%s","path":"%s","criteria_count":%s,"ts":"%s"}\n' \

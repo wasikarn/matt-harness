@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (36)
+### Skills (37)
   ◇ 7-agent-pattern                7-agent-pattern
   ◇ accept-task                    Lock a machine-checkable acceptance contract before any non-trivial task. Use when starting multi-file changes, schema migrations, or before dispatching write-capable agents; write `.scratch/<slug>/ACCEPTANCE.md` with criteria + start SHA. Use when user says 'lock acceptance', 'define acceptance criteria', or 'what does done look like'. Don't use for trivial single-file edits, read-only analysis, or existing contracts.
   ◇ acli                           ALWAYS trigger for bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Do NOT trigger for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers.
@@ -21,6 +21,7 @@ _Personals/kbg-harness_
   ◇ critical-eval                  Stress-test reasoning in arguments, PRs, ADRs, RFCs, incidents, decisions. Use when asked to critique, evaluate reasoning, check assumptions, stress-test arguments, review logic, verify it holds up, or when something feels off. Flag overconfident plans (definitely safe, zero downtime). Don't use for: system dynamics/architecture trade-offs (kbg:backend-dev/code-architect), code review (kbg:review-pr), security audit (kbg:security-auditor), or research (kbg:research-brief).
   ◇ decommission                   decommission
   ◇ harness-audit                  harness-audit
+  ◇ harness-coverage               Read-only harness-coverage report. Renders the 2x2x3 (12-cell) coverage grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold (per decay-cadence DECAY-1) highlighted cell-by-cell and the known intentional-gap cell `inf-fb-behaviour` named explicitly (Bockeler L465-L478 + ADR 0002 L112). Use when: the operator wants to know which harness cells are populated, stale, or coverage holes; wants a quarter-end decay-cadence measurement; wants a single 12-row markdown table instead of reading the journal directly. Don't use for: per-session forensic drill-down (use `kbg:harness-health`), per-sensor fire-rate investigation (read the journal directly), or for a verdict stream (use `kbg:harness-health` `--event-type verdict`). Stdlib-only Python, no LLM in the loop, never writes to the journal or the registry.
   ◇ harness-health                 Read-only query surface over the governance journal. Surfaces inferential-structural-judge verdicts (advisory: accept/flag/escalate per docs/research/inferential-structural-judge-design.md §3) and sensor staleness from hooks/sensors.json. The L553 dual-fire-count mitigation shows BOTH the verdict count AND the fired-event count per sensor, so a sensor that never fires is visible (otherwise zero verdicts could mean 'high quality' or 'inadequate detection' — we cannot tell without the fire count). Use when: the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts > 7 in the last 30 days', 'silent-sensor count', or wants to see a single sensor's recent activity. Routes from: state-of-the-harness-style posture queries (when that command lands, it should defer the journal-history view to this skill). Routes to: kbg:review-pr for deep PR review, security-auditor for security posture, harness-audit for fleet-level schema/manifest audit, inferential-structural-judge agent for the underlying scoring engine. Don't use for: deep PR review (use kbg:review-pr), security posture (use security-auditor), fleet-level audit (use harness-audit), or invoking the scoring engine itself (use the inferential-structural-judge agent). Stdlib-only Python (no pip install), no subprocess to claude, never writes to the journal.
   ◇ harness-nav                    L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, and commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for tasks where the right skill is already known (use it directly); don't use for operational health queries (use kbg:harness-health instead). The skill-nudge hook handles common-path discovery automatically; reach for harness-nav only when the nudge didn't fire or didn't help.
   ◇ hotfix                         Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices.
@@ -95,7 +96,7 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer).
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code.
 
-### Hooks (42)
+### Hooks (45)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
@@ -114,15 +115,18 @@ _Personals/kbg-harness_
   ◇ fabrication-verdict-log.sh     Stop hook — audit-log every "X is fabricated / doesn't exist / ไม่มีจริง"
   ◇ hooks.json                     (no description)
   ◇ hooks.json.test.bak            (no description)
+  ◇ hypothesis-precommit.sh        UserPromptSubmit advisory — hypothesis-first gate for investigation prompts.
   ◇ inferential-structural-judge-on-session-end.sh inferential-structural-judge-on-session-end.sh — matcher-less SessionEnd hook.
   ◇ iron-rule-reminder.sh          UserPromptSubmit: inject METHODOLOGY rule reminders (1 Think before
   ◇ JOURNAL-SCHEMA.md              Governance Evidence Journal — Schema Contract
+  ◇ mcp-session-watchdog.sh        SessionStart advisory — probes MCP connections on startup/resume.
   ◇ memory-lint-check.sh           SessionStart: memory-lint-check — surface memory-store drift at session start.
   ◇ notify-sensor-staleness.sh     notify-sensor-staleness.sh — matcher-less SessionStart hook
   ◇ orchestrator-nudge.sh          UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function.
   ◇ post-edit-audit.sh             Post-edit async audit — background scan after Edit/Write for common issues.
   ◇ post-edit-test.sh              PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell).
   ◇ post-witness-memory.sh         PostToolUse:Bash — post-witness-memory nudge.
+  ◇ pr-style-reminder.sh           PostToolUse:Bash advisory — fires after git commit / gh pr create / gh pr edit.
   ◇ precompact-backup.sh           PreCompact backup hook — async transcript archive before context compaction.
   ◇ qmd-reindex.py                 PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops.
   ◇ review-pr-marker.sh            PostToolUse:Bash - review-pr-marker consumer.
@@ -187,6 +191,7 @@ _Personals/kbg-harness_
 | critical-eval | Stress-test reasoning in arguments, PRs, ADRs, RFCs, incidents, decisions. Use when asked to critique, evaluate reasoning, check assumptions, stress-test arguments, review logic, verify it holds up, or when something feels off. Flag overconfident plans (definitely safe, zero downtime). Don't use for: system dynamics/architecture trade-offs (kbg:backend-dev/code-architect), code review (kbg:review-pr), security audit (kbg:security-auditor), or research (kbg:research-brief). | inline | auto |
 | decommission | decommission | inline | manual |
 | harness-audit | harness-audit | inline | auto |
+| harness-coverage | Read-only harness-coverage report. Renders the 2x2x3 (12-cell) coverage grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold (per decay-cadence DECAY-1) highlighted cell-by-cell and the known intentional-gap cell `inf-fb-behaviour` named explicitly (Bockeler L465-L478 + ADR 0002 L112). Use when: the operator wants to know which harness cells are populated, stale, or coverage holes; wants a quarter-end decay-cadence measurement; wants a single 12-row markdown table instead of reading the journal directly. Don't use for: per-session forensic drill-down (use `kbg:harness-health`), per-sensor fire-rate investigation (read the journal directly), or for a verdict stream (use `kbg:harness-health` `--event-type verdict`). Stdlib-only Python, no LLM in the loop, never writes to the journal or the registry. | inline | auto |
 | harness-health | Read-only query surface over the governance journal. Surfaces inferential-structural-judge verdicts (advisory: accept/flag/escalate per docs/research/inferential-structural-judge-design.md §3) and sensor staleness from hooks/sensors.json. The L553 dual-fire-count mitigation shows BOTH the verdict count AND the fired-event count per sensor, so a sensor that never fires is visible (otherwise zero verdicts could mean 'high quality' or 'inadequate detection' — we cannot tell without the fire count). Use when: the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts > 7 in the last 30 days', 'silent-sensor count', or wants to see a single sensor's recent activity. Routes from: state-of-the-harness-style posture queries (when that command lands, it should defer the journal-history view to this skill). Routes to: kbg:review-pr for deep PR review, security-auditor for security posture, harness-audit for fleet-level schema/manifest audit, inferential-structural-judge agent for the underlying scoring engine. Don't use for: deep PR review (use kbg:review-pr), security posture (use security-auditor), fleet-level audit (use harness-audit), or invoking the scoring engine itself (use the inferential-structural-judge agent). Stdlib-only Python (no pip install), no subprocess to claude, never writes to the journal. | inline | auto |
 | harness-nav | L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, and commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for tasks where the right skill is already known (use it directly); don't use for operational health queries (use kbg:harness-health instead). The skill-nudge hook handles common-path discovery automatically; reach for harness-nav only when the nudge didn't fire or didn't help. | inline | auto |
 | hotfix | Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices. | inline | auto |
@@ -232,15 +237,18 @@ _Personals/kbg-harness_
 | fabrication-verdict-log.sh | Stop hook — audit-log every "X is fabricated / doesn't exist / ไม่มีจริง" |
 | hooks.json | — |
 | hooks.json.test.bak | — |
+| hypothesis-precommit.sh | UserPromptSubmit advisory — hypothesis-first gate for investigation prompts. |
 | inferential-structural-judge-on-session-end.sh | inferential-structural-judge-on-session-end.sh — matcher-less SessionEnd hook. |
 | iron-rule-reminder.sh | UserPromptSubmit: inject METHODOLOGY rule reminders (1 Think before |
 | JOURNAL-SCHEMA.md | Governance Evidence Journal — Schema Contract |
+| mcp-session-watchdog.sh | SessionStart advisory — probes MCP connections on startup/resume. |
 | memory-lint-check.sh | SessionStart: memory-lint-check — surface memory-store drift at session start. |
 | notify-sensor-staleness.sh | notify-sensor-staleness.sh — matcher-less SessionStart hook |
 | orchestrator-nudge.sh | UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function. |
 | post-edit-audit.sh | Post-edit async audit — background scan after Edit/Write for common issues. |
 | post-edit-test.sh | PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell). |
 | post-witness-memory.sh | PostToolUse:Bash — post-witness-memory nudge. |
+| pr-style-reminder.sh | PostToolUse:Bash advisory — fires after git commit / gh pr create / gh pr edit. |
 | precompact-backup.sh | PreCompact backup hook — async transcript archive before context compaction. |
 | qmd-reindex.py | PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops. |
 | review-pr-marker.sh | PostToolUse:Bash - review-pr-marker consumer. |
@@ -263,7 +271,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-15T16:30:20Z_
+_Generated: 2026-06-15T17:21:02Z_
 
 ---
 
