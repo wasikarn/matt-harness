@@ -99,6 +99,13 @@ jobs:
              ".scratch/acceptance-blocked-only/ACCEPTANCE.md"
           python3 scripts/run-acceptance.py acceptance-blocked-only || true
 
+      - name: debug audit output
+        run: |
+          echo "=== plugin cache contents ==="
+          ls -la "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17" || true
+          echo "=== audit stdout+stderr ==="
+          bash skills/harness-audit/scripts/audit.sh /Users/kobig/Codes/Personals/kbg-harness || true
+
       - name: run eval harness
         run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 
