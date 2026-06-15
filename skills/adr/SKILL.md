@@ -1,6 +1,6 @@
 ---
 name: adr
-description: "Draft an Architecture Decision Record when a decision is hard to reverse, surprising without context, or the result of a real trade-off. Use when choosing between frameworks, changing data models, introducing dependencies, or retiring patterns. Do NOT use for: trivial choices (use inline comment), documenting what already exists (use README), or decisions with no alternatives considered."
+description: "adr"
 disable-model-invocation: true
 ---
 

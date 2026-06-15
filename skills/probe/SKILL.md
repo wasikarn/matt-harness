@@ -1,6 +1,6 @@
 ---
 name: probe
-description: "Systems-thinking probe for architecture and design decisions. Use when the user asks 'should we...', 'why not...', 'what if...', or when evaluating trade-offs, risks, second-order effects, or the systemic impact of a technical choice. Don't use for: implementation work (use /feature-dev or kbg:backend-dev), prioritization (use kbg:orchestrate), pure research (use kbg:research-brief), or security audits (use kbg:security-auditor)."
+description: "probe"
 ---
 
 # Probe

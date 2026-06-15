@@ -1,6 +1,6 @@
 ---
 name: task-sizing
-description: "Size and shape tasks for multi-agent builds: split oversized work, merge undersized crumbs, and balance the 5-6 tasks/person sweet spot. Use when planning a /team-build, when the user asks 'is this plan too big', 'how many tasks per agent', or when a wave has >16 tasks (F8.5 overflow). Don't use for: single-file work (use /feature-dev), or post-build quality checks (use /validate-and-fix)."
+description: "task-sizing"
 ---
 
 # Task Sizing

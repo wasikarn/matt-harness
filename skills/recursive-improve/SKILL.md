@@ -1,6 +1,6 @@
 ---
 name: recursive-improve
-description: "Run ONE bounded, human-gated cycle of harness self-improvement: observe verify + audit signals → propose ranked candidates → ASK → act → verify → surface. Use when the user says 'improve the harness', 'run an improvement cycle', or 'what should we fix in the harness'. Don't use for: a single known bug (/fix-bug), a new feature (/feature-dev), external-tool/article eval (kbg:article-mine), refactoring (maintenance-engineer), or any autonomous run — human-gated by design."
+description: "recursive-improve"
 disable-model-invocation: true
 ---
 

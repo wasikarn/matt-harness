@@ -1,6 +1,6 @@
 ---
 name: progressive-refine
-description: "Run a multi-pass progressive refinement pipeline: rough draft → review → revise → polish. Use when the output quality matters more than speed (docs, complex algorithms, public APIs, architecture decisions). Don't use for: one-pass sufficient work (use inline or /feature-dev), or when the user explicitly says 'quick and dirty'."
+description: "progressive-refine"
 ---
 
 # Progressive Refine

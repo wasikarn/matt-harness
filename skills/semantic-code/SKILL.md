@@ -1,6 +1,6 @@
 ---
 name: semantic-code
-description: "Use this skill when the user asks about functions, classes, or methods — not just lines of code. Use for: what functions or classes changed in commits or PRs, history of a specific function or class, cross-file dependency graphs showing callers and callees, whether refactoring or renaming will break things, and token-budgeted context on a specific entity. Do NOT use for: plain git operations like raw diffs, file listings, or simple blame."
+description: "semantic-code"
 ---
 
 # semantic-code — Semantic Version Control
