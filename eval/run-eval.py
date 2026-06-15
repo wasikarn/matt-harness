@@ -419,6 +419,8 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     if "0 criteria with status failed" in crit_lower and ar_failed == 0:
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                    if "0 criteria with status passed" in crit_lower and ar_passed == 0:
+                        passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     failed += 1; details.append({"criterion": crit, "status": "failed", "note": "heuristic miss"})
             except Exception as e:
                 failed = len(criteria)

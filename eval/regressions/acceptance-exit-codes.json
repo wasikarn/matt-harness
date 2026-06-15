@@ -7,15 +7,15 @@
       "task": "When all remaining criteria are BLOCKED by the safety deny list and none FAILED, run-acceptance.py must return exit code 4 (not 0, not 1). The previous binary logic returned 0, which let BLOCKed criteria masquerade as PASS.",
       "skill": "pre-ship-verify",
       "context": {
-        "slug": "phase-1-safety-fixes-2026-06-12",
+        "slug": "acceptance-blocked-only",
         "expected_exit_code": 4,
-        "command": "python3 scripts/run-acceptance.py phase-1-safety-fixes-2026-06-12"
+        "command": "python3 scripts/run-acceptance.py acceptance-blocked-only"
       },
       "success_criteria": [
         "process exits 4",
         "results.json contains at least 1 criterion with status blocked",
         "results.json contains 0 criteria with status failed",
-        "at least 1 criteria passed"
+        "results.json contains 0 criteria with status passed"
       ],
       "expected_duration_seconds": 30,
       "expected_tokens": 1000,

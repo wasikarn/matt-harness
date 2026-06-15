@@ -57,9 +57,12 @@ jobs:
       - name: setup plugin cache stub for audit
         run: |
           # audit.sh checks ~/.claude/plugins/cache/kobig/kbg/<version>/
-          # so the F1 check passes for plugin-delivered skills on CI
-          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17"
-          ln -s "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17/repo"
+          # so the F1 check passes for plugin-delivered skills on CI.
+          # The cache entry must be a direct symlink to the repo root
+          # (not a "repo" subdirectory) because is_plugin_delivered()
+          # looks for skills/<name>/SKILL.md under the cache version dir.
+          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg"
+          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17"
 
       - name: seed memory store for memory-trim evals
         run: |
@@ -88,6 +91,13 @@ jobs:
           cp "eval/fixtures/phase-1-safety-fixes-2026-06-12-ACCEPTANCE.md" \
              ".scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md"
           python3 scripts/run-acceptance.py phase-1-safety-fixes-2026-06-12
+
+      - name: seed blocked-only acceptance fixture for regression
+        run: |
+          mkdir -p ".scratch/acceptance-blocked-only"
+          cp "eval/fixtures/acceptance-blocked-only/ACCEPTANCE.md" \
+             ".scratch/acceptance-blocked-only/ACCEPTANCE.md"
+          python3 scripts/run-acceptance.py acceptance-blocked-only || true
 
       - name: run eval harness
         run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
