@@ -1,13 +1,17 @@
 ---
 name: acli
-description: "ALWAYS trigger for bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. Do NOT trigger for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
+description: "ALWAYS trigger for bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Do NOT trigger for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI
 
 Drive Jira, Confluence, org admin, and Rovo Dev from the terminal. Auth-first, JQL-driven, confirmation-gated.
 
-**When to use:** the **default** path for ALL Jira/Confluence work — single ops included, not just bulk (user directive 2026-06-12). Reach for acli first: search, view, create, edit, transition, comment, link, page/space ops.
+**When to use:** the **default** path for all Jira/Confluence work — search, view, edit, transition, comment, link, clone, bulk ops, page/space ops, admin.
+
+**Prefer dedicated skills for structured single-ticket creation:**
+- `kbg:create-jira-bug` — single Bug with Thai PO/QA-readable reproduction/impact/AC template.
+- `kbg:create-jira-story` — single Story with Thai business-reason/scope/AC template.
 
 **Atlassian MCP is the fallback, not the default** — use it only for the few things acli genuinely can't do (see [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp)). Not for git/gh or non-Atlassian trackers.
 
