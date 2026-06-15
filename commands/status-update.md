@@ -1,5 +1,5 @@
 ---
-description: "Rewrite engineer-to-engineer content for engineering-org leadership (VPs, directors, PMs, release managers, execs in an engineering-savvy company) and shape it for the channel it's going to — JIRA comment, Slack post, async standup line, email, or meeting talking-points. Trigger when the user asks to write/rewrite for management / exec / VP / director / PM / release manager, asks for an 'executive summary / leadership update / status update', says 'make this less technical / less jargony', or asks for a slack / email / standup / meeting version of work originally written engineer-to-engineer."
+description: "Rewrite engineer-to-engineer content for engineering leadership (VPs, directors, PMs, release managers) and shape for the target channel — JIRA comment, Slack post, standup line, email, or meeting talking-points. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update / status update', says 'make this less technical', or wants a channel-specific version of engineer-to-engineer work."
 argument-hint: Optional channel and source material
 disable-model-invocation: true
 ---

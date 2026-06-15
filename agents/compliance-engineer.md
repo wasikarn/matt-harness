@@ -1,6 +1,6 @@
 ---
 name: compliance-engineer
-description: "Senior compliance and privacy engineer for GDPR, SOC2, HIPAA, and audit-readiness. Spawn when designing data retention policies, mapping controls to frameworks, or preparing evidence for external audits. Don't use for: threat modeling or vulnerability scanning (defer to security-reviewer), production code implementation (defer to backend-engineer or frontend-engineer), or infrastructure deployment (defer to devops-engineer). Owns the control layer between legal requirements and engineering execution."
+description: "Senior compliance and privacy engineer for GDPR, SOC2, HIPAA, and audit-readiness. Spawn when designing data retention policies, mapping controls to frameworks, or preparing evidence for external audits. Don't use for: threat modeling or vulnerability scanning (defer to security-reviewer), production code implementation (defer to backend-engineer/frontend-engineer), or infrastructure deployment (defer to devops-engineer). Owns the control layer between legal requirements and engineering execution."
 model: sonnet
 effort: high
 color: orange

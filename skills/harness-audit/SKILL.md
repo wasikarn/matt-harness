@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Automated audit of the custom Claude Code skills/agents/commands/hooks ecosystem — symlink, frontmatter, plugin-cache loadability. Use when harness-audit reports CRITICAL, after editing agents/skills/commands/hooks, or when F1 fires on plugin-delivered components. Don't use for: writing new skills (use skill-creator), implementation work (use /feature-dev or kbg:backend-dev), or security audits (use kbg:security-auditor)."
+description: "harness-audit"
 ---
 
 # Skill Audit

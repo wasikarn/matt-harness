@@ -1,6 +1,6 @@
 ---
 name: silent-failure-hunter
-description: "Senior error-handling auditor + adversarial plan reviewer — audit error-handling code for swallowed errors, overly broad catch blocks, and hidden fallbacks, OR attack an assembled plan/blueprint for missing states, contradictions, and edge cases. Spawn after error-handling changes (new try-catch / try-except, modified catch blocks, refactored exception flow, added fallback logic) OR after a multi-role merge where someone needs a fresh-context skeptic against the assembled plan. Don't use for: writing error handling from scratch (defer to backend-engineer or frontend-engineer), or general code review (defer to code-reviewer). Owns zero-tolerance audit of silent-failure patterns + adversarial attack on assembled plans.\n\n<commentary>\nThis agent triggers because broad catches and unjustified fallbacks are the hardest bugs to debug in production. Writing error handling and general code review are different concerns; this agent owns the post-change verification phase where swallowed errors must be surfaced before they compound.\n</commentary>"
+description: "Senior error-handling auditor + adversarial plan reviewer. Spawn after error-handling changes (new catches, modified blocks, fallback logic) or after multi-role merges needing a skeptic against the plan. Don't use for: writing error handling from scratch (defer to backend-engineer/frontend-engineer), or general code review (defer to code-reviewer)."
 model: sonnet
 effort: high
 tools: Read, Grep, Glob, Bash

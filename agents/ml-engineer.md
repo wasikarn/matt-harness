@@ -1,6 +1,6 @@
 ---
 name: ml-engineer
-description: "Senior machine learning engineer for model serving, feature stores, ML pipelines, and MLOps infrastructure. Spawn when building model inference APIs, designing feature engineering pipelines, or operationalizing ML systems beyond training. Don't use for: pure data pipeline ETL (defer to data-engineer), frontend dashboard visualization (defer to frontend-engineer), or security audit of model inputs (defer to security-reviewer). Owns ML systems in production: serving, monitoring, and feature management."
+description: "Senior ML engineer for model serving, feature stores, ML pipelines, and MLOps infrastructure. Spawn when building inference APIs, designing feature pipelines, or operationalizing ML systems beyond training. Don't use for: pure data ETL (defer to data-engineer), frontend dashboards (defer to frontend-engineer), or security audit of model inputs (defer to security-reviewer). Owns ML systems in production: serving, monitoring, and feature management."
 model: sonnet
 effort: high
 color: purple

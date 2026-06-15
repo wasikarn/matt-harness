@@ -1,6 +1,6 @@
 ---
 name: decommission
-description: Sign a tamper-evident witness when removing a component so orphans (stray files, crons, launchd jobs, processes) are detected later. Use when deleting a worker, daemon, hook, cron, script, or background component. Do NOT trigger when adding or keeping a component (use assert-presence — asserts presence), for temporary disables (witnesses encode permanent absence), or for one-off file removals with no downstream consumers (overkill for ad-hoc cleanup).
+description: "decommission"
 disable-model-invocation: true
 user-invocable: false
 ---

@@ -1,6 +1,6 @@
 ---
 name: type-design-analyzer
-description: "Senior type-design and data-modeling reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, schemas, or data structures — especially when new types cross module boundaries or are exposed in public APIs. Grades encapsulation and invariants on a 1–10 scale. Don't use for: general code-quality review (defer to code-reviewer), security-specific concerns (defer to security-reviewer), performance analysis (defer to perf skill), or runtime behavior verification (defer to test-engineer). Owns type-system correctness and data-integrity boundaries.\n\n<commentary>\nThis agent triggers because type design is a distinct boundary from general code review, security, and performance. Poor encapsulation and broken invariants are root causes of many bugs that only surface at runtime; catching them during design review prevents downstream issues. The 1–10 grading forces explicit judgment rather than vague 'looks fine' approvals.\n</commentary>"
+description: "Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to perf), or runtime verification (defer to test-engineer)."
 model: sonnet
 effort: high
 color: purple

@@ -1,6 +1,6 @@
 ---
 name: devops-engineer
-description: "Senior devops/SRE engineer for CI/CD, deployment, observability, rollback signals, and infrastructure as code. Spawn when changing build pipelines, deploy configs, monitoring, or infrastructure. Don't use for: application logic changes (defer to backend-engineer), security policy design or vulnerability review (defer to security-reviewer), or auth/secrets/credential handling (defer to security-reviewer). Owns runtime and deploy concerns; defers to backend-engineer for application logic."
+description: "Senior devops/SRE engineer for CI/CD, deployment, observability, and infrastructure as code. Spawn when changing build pipelines, deploy configs, monitoring, or infrastructure. Don't use for: application logic (defer to backend-engineer), security policy/vulnerability review (defer to security-reviewer), or auth/secrets handling (defer to security-reviewer). Owns runtime and deploy concerns."
 model: sonnet
 effort: high
 color: orange

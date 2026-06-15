@@ -1,6 +1,6 @@
 ---
 name: 7-agent-pattern
-description: "Apply the canonical 7-agent feature pattern: API/middleware → styles → tests → types → hooks → integration → remaining. Use when planning a non-trivial full-stack feature that spans backend, frontend, DB, tests, and docs. Don't use for: single-file changes (use /feature-dev), pure backend or pure frontend work (use 3-4 agents instead), or research-only tasks."
+description: "7-agent-pattern"
 ---
 
 # 7-Agent Pattern

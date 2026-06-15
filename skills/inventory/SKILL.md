@@ -1,6 +1,6 @@
 ---
 name: inventory
-description: List the Claude artifacts loadable here — skills, agents, commands, hooks. Use when asked "what skills do I have", "list my agents", "what's available here", or "what can this repo do". Merges ~/.claude/ (global) with <git-root>/.claude/ (project-local), marking user-authored vs plugin items; zero config. Do NOT use for installing new skills (use find-skills) or auditing skill quality (use code-review or a custom audit pass — inventory only lists, doesn't judge).
+description: "inventory"
 ---
 
 # Inventory

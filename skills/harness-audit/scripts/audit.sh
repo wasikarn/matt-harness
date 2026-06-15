@@ -281,9 +281,11 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   if [ "$name" != "harness-audit" ] && grep -qi 'Daisy\|\\bdaisy\\b' "$f"; then
     warn "skill '$name' contains upstream 'Daisy' placeholder"
   fi
-  # "Don't use for" in description (skill pattern) — exclude self during bootstrap
-  if [ "$name" != "harness-audit" ]; then
-    desc=$(fm_get "$f" "description" --block)
+  # "Don't use for" in description (skill pattern) — exclude self during bootstrap.
+  # Name-only skills (description ≤ 20 chars) carry no routing text; skip routing checks.
+  desc=$(fm_get "$f" "description" --block)
+  desc_len=${#desc}
+  if [ "$name" != "harness-audit" ] && [ "$desc_len" -gt 20 ]; then
     if ! echo "$desc" | grep -qiE "Don't use for|Do NOT use for|Do NOT trigger"; then
       warn "skill '$name' missing negation clause (e.g. 'Don't use for') in description"
     fi

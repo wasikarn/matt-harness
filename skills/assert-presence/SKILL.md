@@ -1,6 +1,6 @@
 ---
 name: assert-presence
-description: Sign a tamper-evident assertion that an agent's claimed change is PRESENT. Use when YOU want to pin an agent's claimed change (after it reports "I fixed X at file:line", "I added function Y", or "I created file W") so a later session can verify the claim hasn't regressed. Do NOT trigger when removing a component (use decommission — that asserts absence) or for temporary disables (witnesses encode permanent state, not toggles).
+description: "assert-presence"
 disable-model-invocation: true
 user-invocable: false
 ---

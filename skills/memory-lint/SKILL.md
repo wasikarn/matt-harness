@@ -1,6 +1,6 @@
 ---
 name: memory-lint
-description: "Use this skill whenever the user wants to lint memory, check memory health, find broken cross-links, or after any memory edit (add/edit/remove). Catches dangling [[links]], orphaned facts, index drift, and load-budget violations. Deterministic bookkeeping checks only. Do NOT use for: writing memories (just Write the file), semantic contradiction/staleness review (needs an LLM pass), or skill/agent/hook health (use harness-audit)."
+description: "memory-lint"
 ---
 
 # memory-lint

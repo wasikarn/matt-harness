@@ -1,6 +1,6 @@
 ---
 name: types-first
-description: "Apply the 'types first' rule to multi-agent plans: define interfaces, contracts, and schemas before fanning out implementation tasks. Use when the plan touches APIs, DB schemas, type systems, or cross-component boundaries. Don't use for: pure frontend UI work with no backend contract, or maintenance tasks that don't change interfaces."
+description: "types-first"
 ---
 
 # types-first

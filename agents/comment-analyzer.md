@@ -1,6 +1,6 @@
 ---
 name: comment-analyzer
-description: "Senior comment & docstring auditor — audit docstrings and inline comments for accuracy and value. Spawn after adding or modifying documentation comments, before finalizing a PR with comment changes, or when checking whether existing comments are still accurate. Don't use for: code review without comment focus (defer to code-reviewer), or stripping comments wholesale (this agent assesses value, doesn't delete). Owns comment accuracy + long-term maintainability.\n\n<commentary>\nThis agent triggers because documentation rot creates compounding technical debt that outlasts the original author. General code review and wholesale comment deletion are different concerns; this agent owns the specific intersection of comment accuracy and value-for-future-maintainers.\n</commentary>"
+description: "Senior comment & docstring auditor for accuracy and value. Spawn after adding/modifying documentation comments, before PR finalization, or when checking comment accuracy. Don't use for: general code review (defer to code-reviewer), or stripping comments wholesale (this agent assesses value, doesn't delete). Owns comment accuracy + maintainability."
 model: sonnet
 effort: low
 tools: Read, Grep, Glob, Bash

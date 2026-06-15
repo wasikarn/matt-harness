@@ -1,5 +1,5 @@
 ---
-description: "Triage and respond to existing PR review comments — fetch threads via gh, classify each (action / clarify / wontfix / out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing the commit sha that addressed it, re-request review. Use when a PR has open review threads needing response, after review-pr or external review returns findings, or when user says 'address the review', 'apply review feedback', 'respond to PR comments'. Don't use for: doing the review yourself (use review-pr), pre-PR cleanup before requesting feedback, or merging post-approval (use /ship-merge)."
+description: "Triage and respond to existing PR review comments — fetch threads via gh, classify each (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug for bug-shaped comments), reply per-thread citing commit sha, re-request review. Use when a PR has open review threads, after review-pr returns findings, or when user says 'address the review', 'apply review feedback'. Don't use for: doing the review yourself (use review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge)."
 argument-hint: Optional PR number
 disable-model-invocation: true
 ---

@@ -1,6 +1,6 @@
 ---
 name: backend-engineer
-description: "Senior backend engineer for API design, data integrity, server-side implementation, performance tuning, and schema/migration work. Spawn when implementing or reviewing backend code, database changes, or service-side refactoring. Don't use for: auth/secrets/credential handling (defer to security-reviewer), UI-side rendering (defer to frontend-engineer), runtime infrastructure / CI/CD (defer to devops-engineer), or test strategy design (defer to test-engineer). Owns backend-side data integrity and contract stability."
+description: "Senior backend engineer for API design, data integrity, server-side implementation, and schema/migration work. Spawn when implementing or reviewing backend code, database changes, or service-side refactoring. Don't use for: auth/secrets (defer to security-reviewer), UI rendering (defer to frontend-engineer), infrastructure/CI/CD (defer to devops-engineer), or test strategy (defer to test-engineer). Owns backend-side data integrity and contract stability."
 model: opus
 effort: xhigh
 skills:

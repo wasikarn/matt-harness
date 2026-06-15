@@ -1,6 +1,6 @@
 ---
 name: pr-test-analyzer
-description: "Senior PR test-coverage analyzer. Spawn after a PR is opened or updated, or before marking it ready for review, to surface critical untested paths in new logic. Don't use for: writing tests (defer to test-engineer), or chasing line-coverage percentage (this agent rates by behavioral criticality 1-10, not coverage %). Owns regression-risk visibility before merge.\n\n<commentary>\nThis agent triggers because behavioral criticality matters more than line-coverage percentage for preventing regressions. Writing tests and general code review are different concerns; this agent owns the pre-merge gap analysis that identifies which untested paths would hurt most if they broke.\n</commentary>"
+description: "Senior PR test-coverage analyzer. Spawn after PR open/update or before ready-for-review to surface untested critical paths. Don't use for: writing tests (defer to test-engineer), or chasing line-coverage % (rates by behavioral criticality 1–10, not coverage %). Owns regression-risk visibility before merge."
 model: sonnet
 effort: high
 tools: Read, Grep, Glob, Bash

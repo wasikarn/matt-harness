@@ -1,6 +1,6 @@
 ---
 name: code-explorer
-description: "Senior codebase tracer — analyzes how an existing feature works end-to-end by following execution paths from entry to data storage, mapping abstraction layers, and identifying all dependencies. Spawn when needing deep understanding of an existing feature before modifying or extending it. Don't use for: finding files by name or pattern (spawn Explore built-in subagent for fast lookup), researching external packages (use research-brief skill), or designing new architecture (use code-architect). Returns specific file:line references + a list of essential files to read.\n\n<commentary>\nThis agent triggers because deep codebase understanding requires tracing execution paths across abstraction layers before any modification. Fast lookup (file search) and external research are different concerns; this agent owns the end-to-end feature comprehension gap that prevents safe extension.\n</commentary>"
+description: "Senior codebase tracer for end-to-end feature understanding. Spawn before modifying or extending existing features — follows execution paths, maps abstraction layers, identifies dependencies. Don't use for: finding files by name (spawn Explore subagent), researching external packages (use research-brief), or designing new architecture (use code-architect). Returns file:line references + essential files to read."
 skills:
   - research-brief
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash

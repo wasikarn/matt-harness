@@ -1,6 +1,6 @@
 ---
 name: incident-commander
-description: "Senior incident commander for production incident response, post-mortem facilitation, and error-budget governance. Spawn when a production incident is active, when coordinating multiple responders, or when a service has breached its error budget. Don't use for: infrastructure deployment (defer to devops-engineer), application bug fixes (defer to backend-engineer or frontend-engineer), or security breach response (defer to security-reviewer — coordinate with them). Owns the human coordination and decision timeline during incidents."
+description: "Senior incident commander for production incident response, post-mortems, and error-budget governance. Spawn when an incident is active, coordinating responders, or when a service breaches its error budget. Don't use for: infrastructure deployment (defer to devops-engineer), bug fixes (defer to backend-engineer/frontend-engineer), or security breach response (defer to security-reviewer). Owns human coordination and decision timeline during incidents."
 model: sonnet
 effort: high
 color: red

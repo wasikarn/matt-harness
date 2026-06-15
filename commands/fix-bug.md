@@ -1,5 +1,5 @@
 ---
-description: "Guided 7-phase bug-fix workflow with /diagnose and /tdd patterns built in (reproduce+minimise → localize → hypothesize+instrument → fix strategy → TDD-implement → verify regression → review). Use when fixing a non-trivial bug where the root cause is non-obvious, the blast radius is unclear, or the fix should be pinned with a regression test. Don't use for: typos / one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), understand-only diagnostic loops without a fix plan (use /diagnose standalone), greenfield TDD on new features (use /tdd standalone), or refactors not driven by a specific bug (spawn `maintenance-engineer` agent)."
+description: "Guided 7-phase bug-fix workflow with /diagnose and /tdd patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use /diagnose), greenfield TDD (use /tdd), or refactors not driven by a bug (spawn maintenance-engineer)."
 argument-hint: Optional bug description or repro steps
 disable-model-invocation: true
 ---

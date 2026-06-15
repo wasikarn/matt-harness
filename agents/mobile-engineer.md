@@ -1,6 +1,6 @@
 ---
 name: mobile-engineer
-description: "Senior mobile engineer for iOS, Android, and React Native development. Spawn when building native or cross-platform mobile features, handling app store submissions, or optimizing mobile-specific performance (bundle size, startup time, battery usage). Don't use for: web-only frontend work (defer to frontend-engineer), backend API design (defer to backend-engineer), or pure data pipeline work (defer to data-engineer). Owns the mobile application layer and platform-specific concerns."
+description: "Senior mobile engineer for iOS, Android, and React Native development. Spawn when building native or cross-platform mobile features, handling app store submissions, or optimizing mobile-specific performance. Don't use for: web-only frontend work (defer to frontend-engineer), backend API design (defer to backend-engineer), or pure data pipeline work (defer to data-engineer). Owns the mobile application layer and platform-specific concerns."
 model: sonnet
 effort: high
 color: blue

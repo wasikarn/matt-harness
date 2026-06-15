@@ -1,6 +1,6 @@
 ---
 name: code-simplifier
-description: "Senior post-implementation code simplifier — refines recently-modified code for clarity and project conventions WITHOUT changing behavior. Spawn after a coding task lands (feature, bug fix, refactor) when the code works but is verbose / nested / hard to read. Don't use for: reviewing for bugs or correctness (use code-reviewer), designing new architecture (use code-architect), or refactoring across the whole codebase (defer to maintenance-engineer). Owns clarity-preserving simplification, never behavior changes.\n\n<commentary>\nThis agent triggers because working code often accumulates verbosity and nesting that obscure intent. Bug review and architecture design are different concerns; this agent owns the post-implementation refinement phase where readability is improved without altering behavior.\n</commentary>"
+description: "Senior post-implementation code simplifier for clarity and conventions without changing behavior. Spawn after coding tasks land when code works but is verbose or hard to read. Don't use for: bug review (use code-reviewer), architecture design (use code-architect), or whole-codebase refactoring (defer to maintenance-engineer). Owns clarity-preserving simplification."
 model: sonnet
 effort: medium
 color: green

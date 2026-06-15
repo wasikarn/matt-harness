@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Senior non-security, non-test-coverage, non-error-handling code-quality reviewer for bugs, project-guideline compliance, and quality issues. Spawn after writing/modifying code, before committing changes, or before creating PRs — reviews unstaged `git diff` by default. Don't use for: security-specific concerns (defer to security-reviewer), test coverage completeness (defer to pr-test-analyzer), error-handling-only paths (defer to silent-failure-hunter), or comment accuracy (defer to comment-analyzer). Owns general bug + convention review at high confidence (≥80) — signal over volume.\n\n<commentary>\nThis agent triggers because general code-quality review requires a dedicated boundary separate from security, test coverage, error handling, and comment accuracy. Each of those concerns has its own specialist; this agent owns the intersection of bug detection and project-guideline compliance that no other role covers.\n</commentary>"
+description: "Senior code-quality reviewer for bugs and guideline compliance. Spawn after writing/modifying code, before commit or PR — reviews unstaged git diff by default. Don't use for: security (defer to security-reviewer), test coverage (defer to pr-test-analyzer), error-handling (defer to silent-failure-hunter), or comment accuracy (defer to comment-analyzer). Owns general bug + convention review."
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash
 model: sonnet
 effort: high

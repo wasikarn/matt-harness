@@ -1,7 +1,7 @@
 ---
 name: memory-trim
 last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
-description: "Apply the A3 trim rubric to MEMORY.md — collapses verbose pointers, archives superseded topic files, rewrites dangling wikilinks. Use when the user says 'trim memory', 'MEMORY.md is too long', 'fold stale entries', 'apply A3', 'memory near-budget', or after memory-lint reports NEAR-BUDGET. Do NOT use for: writing new memories (use the Write tool directly), semantic staleness review (needs an LLM pass, not a mechanical fold), or first-time memory setup."
+description: "memory-trim"
 ---
 
 # Memory-Trim
