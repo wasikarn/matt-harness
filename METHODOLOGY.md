@@ -81,6 +81,8 @@ queue is drained. Codifies "what stays manual" into a quantified, machine-checka
 signal so the operator iterates on top of *reviewed* state, not stacked-up unread
 findings. (SYNTHESIS #41, spec §4.4.)
 
+**Sub-rule: Acceptance criteria are the upper bound on what the test gate can prove.** (Böckeler, [harness-engineering 2026-04](https://martinfowler.com/articles/harness-engineering.html) L448: *"Correctness is outside any sensor's remit if the human didn't clearly specify what they wanted in the first place."*) A green test run is a *necessary not sufficient* gate when the same agent that wrote the code also wrote the tests; the ceiling is the quality of the locked `ACCEPTANCE.md` (see `kbg:accept-task` → `commands/pre-ship-verify.md`). Improving the test gate (mutation testing, property-based tests, sandbox) closes part of the gap; **raising acceptance-criteria quality closes the upper bound**. Default to writing the spec first, then the test, then the code — and treat a vague `ACCEPTANCE.md` as a build-blocker, not a fix-it-later.
+
 **Sub-rule: TaskCompleted enforcement is opt-OUT, not opt-IN.** The F7
 test-claim gate in `hooks/task-lifecycle.sh` is always ON by default — it
 blocks a TaskCompleted event that claims test execution ("pytest" / "npm test" /

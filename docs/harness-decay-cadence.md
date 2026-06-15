@@ -68,6 +68,49 @@ for the output and you ship agent slop.
 
 **See [ADR 0002](0002-autonomy-invariant.md) for the rationale** — the autonomy invariant is irreversible, the "never auto-prune" guard is its concrete expression in decay reasoning, and the 5-iteration soft cap in `recursive-improve/SKILL.md:127` is a context-exhaustion backstop (not the primary gate).
 
+## LLM-judge circularity (decay-perspective mirror)
+
+The `2×2 harness mental model` documented in `CLAUDE.md` (after the
+Hook architecture section) has a load-bearing consequence for
+decay reasoning: **inferential-FB sensors share a model class with the
+generator**, so they cannot be trusted to emit `permissionDecision`s.
+
+Böckeler (Thoughtworks, [harness-engineering
+2026-04](https://martinfowler.com/articles/harness-engineering.html))
+frames a coding-agent harness as a 2×2 of **direction** (feedforward /
+feedback) × **execution type** (computational / inferential). The
+article's L345 warning is symmetric: feedback-only = "agent that keeps
+repeating the same mistakes"; feedforward-only = "agent that encodes
+rules but never finds out whether they worked." kbg populates all
+four cells — but the **inferential-FB cell** carries a specific decay
+hazard: a "smart" sensor that uses the same model class to judge work
+the model just produced inherits the generator's blind spots and can
+quietly self-confirm. A `permissionDecision: deny` from such a sensor
+is also a model-as-own-gate — covert L4, autonomy-invariant
+forbidden.
+
+**kbg's posture, captured at the decay layer:**
+
+1. All inferential-FB sensors in `hooks/` are **advisory only** — they
+   journal, they do not block. `verification-gate.sh` (SessionEnd) and
+   `fabrication-verdict-log.sh` (Stop) are the load-bearing examples;
+   the full inventory is in the CLAUDE.md 2×2 section.
+2. The 204 critical-hooks tests + 38 audit checks are the
+   **computational** FB that does the enforcement — the cell that
+   *can* be trusted to emit `permissionDecision`s because it is
+   deterministic, fast, and cheap.
+3. When a model upgrade lands, the **first** lens to apply is on
+   inferential-FB components: is the upgrade a stronger *generator* or
+   a stronger *judge*? If only the former, the inferential-FB
+   layer gets *thinner*, not thicker — the right decay move is to
+   retire the sensor, not to lean on it. If both, the sensor is
+   decay-eligible on the same "coherence tax" axis as any other
+   non-load-bearing control.
+
+This is the decay-perspective mirror of the CLAUDE.md 2×2 section.
+The 1-pager at `.scratch/research/harness-engineering-2026-04.md`
+holds the full comparison (3-now / 3-later actions).
+
 ## Irreversible-action class (gates the harness already has)
 
 The corpus converges on a class-name: **irreversible actions** (writes to
