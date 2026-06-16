@@ -41,7 +41,15 @@ LINT="$REPO_ROOT/skills/memory-lint/scripts/memory-lint.py"
 [ -f "$LINT" ] || exit 0            # skill not present in repo → skip
 command -v python3 >/dev/null 2>&1 || exit 0
 
+# Skip Python subprocess if no memory file is newer than our last-run sentinel.
+CACHE="$HOME/.claude/state/memory-lint-cache"
+mkdir -p "$HOME/.claude/state"
+if [ -f "$CACHE" ] && [ -z "$(find "$MEMDIR" -maxdepth 1 -type f -newer "$CACHE" 2>/dev/null | head -1)" ]; then
+  exit 0
+fi
+
 OUT=$(python3 "$LINT" "$MEMDIR" 2>/dev/null) || true
+touch "$CACHE"  # stamp after run so next startup skips until a memory file changes
 
 # memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when clean).
 printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0

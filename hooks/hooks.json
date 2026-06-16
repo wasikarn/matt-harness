@@ -83,7 +83,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/bypass-audit-log.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/bypass-audit-log.sh\"",
+            "async": true
           }
         ]
       },
