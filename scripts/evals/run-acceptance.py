@@ -36,7 +36,10 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRATCH_DIR = REPO_ROOT / ".scratch"
-DEFAULT_TIMEOUT = 60  # seconds per criterion
+DEFAULT_TIMEOUT = 300  # seconds per criterion — a criterion may invoke a full test
+# suite (e.g. `bash hooks/tests/test-critical-hooks.sh` is ~130s and grows as tests
+# are added); 60s timed it out and failed the CI gate. The runner is a CI/gate tool
+# under a job-level timeout-minutes cap, so a looser per-criterion ceiling is fine.
 
 
 def parse_acceptance_md(path: Path) -> dict[str, Any]:
@@ -317,10 +320,17 @@ def run_command(cmd: str, timeout: int, cwd: Path) -> dict[str, Any]:
         }
     except subprocess.TimeoutExpired as e:
         elapsed_ms = int((time.time() - start_time) * 1000)
+        # TimeoutExpired.stdout/.stderr come back as raw bytes even when the call
+        # set text=True (CPython quirk — the decode only happens on the normal
+        # communicate() path, not when the timeout kills it). Coerce to str here,
+        # otherwise the bytes flow into json.dumps(results) at the end of main()
+        # and crash the whole run with "Object of type bytes is not JSON serializable".
+        out = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+        err = e.stderr.decode("utf-8", "replace") if isinstance(e.stderr, bytes) else (e.stderr or "")
         return {
             "exit_code": -1,
-            "stdout": e.stdout[-2000:] if e.stdout and len(e.stdout) > 2000 else (e.stdout or ""),
-            "stderr": e.stderr[-2000:] if e.stderr and len(e.stderr) > 2000 else (e.stderr or ""),
+            "stdout": out[-2000:] if len(out) > 2000 else out,
+            "stderr": err[-2000:] if len(err) > 2000 else err,
             "timed_out": True,
             "latency_ms": elapsed_ms,
         }
