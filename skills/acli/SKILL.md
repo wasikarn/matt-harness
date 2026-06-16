@@ -9,6 +9,8 @@ Drive Jira, Confluence, org admin, and Rovo Dev from the terminal. Auth-first, J
 
 **When to use:** the **default** path for all Jira/Confluence work — search, view, edit, transition, comment, link, clone, bulk ops, page/space ops, admin.
 
+> **Why this skill is model-invokable (no `disable-model-invocation`) despite doing bulk external Jira writes:** it is a *capability* the model uses to carry out tracker work the operator explicitly asked for — not an autonomous decision to mutate Jira. Every write is confirmation-gated in-flow (auth-first, JQL-driven, confirmation-gated) and runs through Bash with its own guards; gating the whole skill user-only would block the model from doing the bulk ops the operator requested. The deliberate exception is single guided ticket *creation* — `create-jira-bug` / `create-jira-story` are user-only.
+
 **Prefer dedicated skills for structured single-ticket creation:**
 - `kbg:create-jira-bug` — single Bug with Thai PO/QA-readable reproduction/impact/AC template.
 - `kbg:create-jira-story` — single Story with Thai business-reason/scope/AC template.

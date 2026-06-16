@@ -2,6 +2,7 @@
 name: ship-change
 description: "Orchestrate the full change lifecycle from classify → implement → review → address → merge. Use when starting non-trivial changes needing guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Don't use for: one-line fixes, changes already mid-flight, or pure research/exploration."
 disable-model-invocation: true
+disable-model-invocation-reason: "orchestrates the full lifecycle ending in merge (external) — sequences self-gating mutations"
 ---
 
 # Ship Change

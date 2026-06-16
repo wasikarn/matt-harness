@@ -3,6 +3,7 @@ name: feature-dev
 description: "Guided 7-phase feature development workflow (discover → explore codebase → ask clarifying questions → design architecture → implement → review → summarize). Use when starting a non-trivial new feature where deep codebase understanding and architectural choices matter. Don't use for: bug fixes (use /fix-bug), refactors (spawn `maintenance-engineer` agent), one-line changes (just do it), or quick prototypes (just do it inline)."
 argument-hint: "Optional feature description"
 disable-model-invocation: true
+disable-model-invocation-reason: "spawns agents and mutates across phases — a build the user commits to"
 ---
 
 # Feature Development

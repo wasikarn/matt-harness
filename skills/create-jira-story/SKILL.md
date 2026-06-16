@@ -2,6 +2,7 @@
 name: create-jira-story
 description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create story', 'new Jira story', 'write a story', or wants a structured Thai Story with business reason, scope, and Given/When/Then AC. Don't use for: bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
 disable-model-invocation: true
+disable-model-invocation-reason: "external Jira write — the model must not auto-create tickets"
 ---
 
 # Create Jira Story

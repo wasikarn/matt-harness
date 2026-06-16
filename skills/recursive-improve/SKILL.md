@@ -2,6 +2,7 @@
 name: recursive-improve
 description: "recursive-improve"
 disable-model-invocation: true
+disable-model-invocation-reason: "LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion"
 ---
 
 # Recursive Improve

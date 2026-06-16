@@ -3,6 +3,7 @@ name: team-cleanup
 description: "Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans, and expired mailbox messages. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', or when disk space in ~/.claude/tasks/ grows. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days)."
 argument-hint: "Plan slug or --all"
 disable-model-invocation: true
+disable-model-invocation-reason: "destructive — deletes stale team locks/heartbeats/artifacts"
 ---
 
 # /team-cleanup — Clean up stale agent-team artifacts

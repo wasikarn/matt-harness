@@ -2,6 +2,7 @@
 name: adr
 description: "adr"
 disable-model-invocation: true
+disable-model-invocation-reason: "records an architectural decision — the user commits to writing an ADR"
 ---
 
 # ADR

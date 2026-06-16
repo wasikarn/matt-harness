@@ -3,6 +3,7 @@ name: dismiss-stale
 description: "Dismiss the sensor-staleness notification for 7 days (writes ~/.claude/state/kbg-staleness-dismissed.json with the current stale-set hash). Use when the user says 'dismiss', 'silence the staleness alert', 'mute the sensor warning', or after a SessionStart injection has been acknowledged. The dismissal is hash-gated: a new sensor going stale re-injects immediately. Don't use for: removing sensors (decay-cadence), silencing one specific sensor (edit hooks/sensors.json), or auditing why a sensor is stale (run /harness-audit)."
 argument-hint: ""
 disable-model-invocation: true
+disable-model-invocation-reason: "governance — the model must not mute its own staleness/safety alert"
 ---
 
 # /dismiss-stale — Silence the sensor-staleness notification (7-day TTL)

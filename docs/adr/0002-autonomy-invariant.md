@@ -197,6 +197,30 @@ value is independence (it catches what the maker cannot see), not the operator's
 deliberation at a gate, so a verifier is never a ceremony candidate on a
 rubber-stamp argument (§Consequences — "Trust-the-model verifier collapse").
 
+### `disable-model-invocation` is one judgment gate, not a fleet of them
+
+The `disable-model-invocation: true` frontmatter flag makes a surface user-only.
+The harness carries it on ~26 surfaces, but only **one** is a judgment-bearing
+instance of *this* invariant: `recursive-improve` — the self-improvement loop the
+principle above forecloses from self-starting. That flag is load-bearing and is
+CRIT-guarded by `harness-audit` check #32 (exact-match on the frontmatter line);
+weakening it regresses the invariant.
+
+The other ~25 flags are **reversible UX taste** — "should the model auto-fire
+this side-effecting / external / destructive workflow, or only the user?" —
+governed by the per-surface selection criterion in `CLAUDE.md`, **not** by this
+ADR. They are exactly the ceremony-candidate class above: each must carry a
+recorded `disable-model-invocation-reason:` (audit check #35, WARN on a missing
+reason), and any one may be flipped on its reason without touching the invariant.
+
+The live risk is **conflation**: a maintainer who reads the CLAUDE.md taste
+criterion and "tidies up" `recursive-improve`'s flag would silently regress
+ADR 0002. That is why the two are guarded differently — **#32 (CRIT,
+exact-match)** governs the one safety flag; **#35 (WARN, reason-presence)**
+governs the reversible rest. Do not reason about the 25 as if they were
+autonomy gates, and never reason about `recursive-improve`'s flag as if it were
+taste.
+
 ## Rejected alternatives
 
 - **L3 (scheduled, model-as-gate).** The corpus's

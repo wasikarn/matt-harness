@@ -2,6 +2,7 @@
 name: article-mine
 description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
 disable-model-invocation: true
+disable-model-invocation-reason: "5-agent fan-out plus ships doctrine in-session (cost and writes)"
 ---
 
 # Article Mine

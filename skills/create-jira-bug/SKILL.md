@@ -2,6 +2,7 @@
 name: create-jira-bug
 description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', or wants a structured Thai bug ticket with reproduction steps, impact, and Given/When/Then AC. Don't use for: bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
 disable-model-invocation: true
+disable-model-invocation-reason: "external Jira write — the model must not auto-create tickets"
 ---
 
 # Create Jira Bug

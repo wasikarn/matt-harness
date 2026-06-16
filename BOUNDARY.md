@@ -193,7 +193,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-16T09:49:34Z_
+_Generated: 2026-06-16T10:24:07Z_
 
 ---
 

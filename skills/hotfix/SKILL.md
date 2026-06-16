@@ -9,6 +9,8 @@ Ship a critical fix fast. This is a compressed version of `/fix-bug` + `kbg:revi
 
 This skill produces a structured hotfix plan for the main agent to execute inline. It does not dispatch sub-agents — the main agent holds full context and acts with surgical speed.
 
+> **Why this skill is model-invokable (no `disable-model-invocation`) despite reaching `gh pr merge --admin`:** it is a *capability the operator reaches for under an incident* — invoked off an explicit "production is down / P0" request where speed is the whole point and a user-only gate would defeat it. The irreversible prod merge is reached only after the in-skill severity + review gates and runs through Bash, which carries its own guards. The safety here comes from those gates, not from making the skill user-only. (The non-urgent twin `/fix-bug` *is* user-only — there, deliberate timing is the right default.)
+
 ## Core Principles
 
 - **Stop the bleeding first.** Rollback or kill-switch is always faster than code. Only hotfix when rollback is impossible or insufficient.

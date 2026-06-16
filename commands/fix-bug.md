@@ -3,6 +3,7 @@ name: fix-bug
 description: "Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-dev), greenfield TDD (use kbg:backend-dev), or refactors not driven by a bug (spawn maintenance-engineer)."
 argument-hint: "Optional bug description or repro steps"
 disable-model-invocation: true
+disable-model-invocation-reason: "spawns agents and mutates — a fix the user commits to"
 ---
 
 # Fix Bug

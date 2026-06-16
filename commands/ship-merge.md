@@ -3,6 +3,7 @@ name: ship-merge
 description: "Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use `hotfix` skill)."
 argument-hint: "Optional PR number or branch name"
 disable-model-invocation: true
+disable-model-invocation-reason: "irreversible external — merges a PR server-side"
 ---
 
 # Ship Merge

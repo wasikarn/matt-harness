@@ -1330,24 +1330,26 @@ if [ -f "$SENSORS_JSON" ] && command -v jq >/dev/null 2>&1; then
   done < <(jq -r '.sensors[] | select(.fallback_role=="inferential-FB") | .name' "$SENSORS_JSON" 2>/dev/null)
 fi
 
-# 35. disable-model-invocation selection heuristic (ADVISORY / INFO only) —
-# encodes the flag-selection criterion (CLAUDE.md): the flag makes a surface
-# user-only, which is right for side-effect/irreversible/cost/governance
-# surfaces but WRONG for read-only reporters (a reporter the model can't invoke
-# can't answer "where are we?" on the user's behalf — the wave-status lesson).
-# Appropriateness is semantic and cannot be decided deterministically, so this
-# never CRITs — it flags the realistic misuse shape (a flagged surface whose
-# description is reporter-shaped) for human review. Name-only descriptions are
-# #31.1's job, skipped here via the length guard.
+# 35. disable-model-invocation must carry a documented reason (DETERMINISTIC).
+# The flag is a per-surface judgment (CLAUDE.md selection criterion); a flag
+# WITHOUT a recorded reason is an undocumented decision — and in practice the
+# audit found these were often dir-of-origin residue ("all commands flagged")
+# rather than a real per-surface call. This is a presence check (NOT a semantic
+# judge): every `disable-model-invocation: true` surface must also carry a
+# non-empty `disable-model-invocation-reason:`. It HAS teeth (any unreasoned flag
+# WARNs and can fail) — unlike the prior reporter-shape heuristic it replaced,
+# which matched zero real flagged surfaces (a Rule-9 test that could not fail).
+# Appropriateness stays semantic + advisory (human review of the reasons); this
+# check only enforces that the reason EXISTS, which is deterministic. WARN (not
+# CRIT): a missing reason is a doc gap, not a safety regression — the one
+# safety-load-bearing flag (recursive-improve) is CRIT-guarded by #32.
 for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/skills"/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   head -20 "$f" | grep -qF 'disable-model-invocation: true' || continue
   _nm=$(basename "$f" .md); case "$f" in */SKILL.md) _nm=$(basename "$(dirname "$f")") ;; esac
-  _d=$(fm_get "$f" "description" --block)
-  [ "${#_d}" -gt 25 ] || continue
-  if printf '%s' "$_d" | grep -qiE '^"?(Report|Read-only|Query|Summari|Render)[[:space:]]|read-only'; then
-    info "'$_nm': disable-model-invocation set on a reporter-shaped (read-only) description — read-only surfaces usually want model invocation; verify the flag is warranted (selection criterion in CLAUDE.md)"
+  if [ -z "$(fm_get "$f" "disable-model-invocation-reason" --block)" ]; then
+    warn "'$_nm': disable-model-invocation: true without a 'disable-model-invocation-reason:' — record WHY this surface is user-only (per-surface, not blanket; CLAUDE.md selection criterion)"
   fi
 done
 
