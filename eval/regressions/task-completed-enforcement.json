@@ -7,7 +7,7 @@
       "task": "Run task-lifecycle.sh with NO env var set and a TaskCompleted event that claims 'pytest' but provides no validation_command. The hook must exit 2 and emit the TASK-GATE feedback on stderr. This is the default F7 contract; the escape hatch must not silently turn it off.",
       "skill": "hook-script",
       "context": {
-        "hook_path": "hooks/task-lifecycle.sh",
+        "hook_path": "hooks/lifecycle/task-lifecycle.sh",
         "stdin": {
           "hook_event_name": "TaskCompleted",
           "task_id": "1",
@@ -34,7 +34,7 @@
       "task": "Run task-lifecycle.sh with KBG_ENFORCE_TASK_COMPLETED=0 and the same TaskCompleted event that would otherwise be blocked. The hook must exit 0 (no block) — pure L2 advisory mode. The event is still journaled (the L2 sensor side stays intact), but no exit 2 is sent. This is the documented escape hatch for operators who want to opt out per-session.",
       "skill": "hook-script",
       "context": {
-        "hook_path": "hooks/task-lifecycle.sh",
+        "hook_path": "hooks/lifecycle/task-lifecycle.sh",
         "stdin": {
           "hook_event_name": "TaskCompleted",
           "task_id": "2",

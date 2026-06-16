@@ -218,7 +218,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
 
             full_cmd = [
                 sys.executable,
-                str(REPO_ROOT / "scripts" / "recursive-improve-observe.py"),
+                str(REPO_ROOT / "scripts" / "pr" / "recursive-improve-observe.py"),
                 "--projects-dir", str(Path(tmpdir)),
                 "--stall-threshold-min", str(threshold),
                 "--debt-ceiling", str(debt_ceiling),

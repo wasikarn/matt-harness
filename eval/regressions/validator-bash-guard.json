@@ -7,7 +7,7 @@
       "task": "Run validator-bash-guard.sh with stdin simulating a validator agent (agent_type=code-reviewer) issuing 'git push'. The hook must emit hookSpecificOutput.permissionDecision='deny' in JSON to stdout.",
       "skill": "hook-script",
       "context": {
-        "hook_path": "hooks/validator-bash-guard.sh",
+        "hook_path": "hooks/gates/validator-bash-guard.sh",
         "stdin": {
           "agent_type": "code-reviewer",
           "tool_input": {
@@ -28,14 +28,14 @@
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "validator-regression-mutation-unblocked",
-      "fixed_by": "2d3c743 + hooks/validator-bash-guard.sh"
+      "fixed_by": "2d3c743 + hooks/gates/validator-bash-guard.sh"
     },
     {
       "id": "validator-bash-guard-fails-open-for-non-validator",
       "task": "Run validator-bash-guard.sh with stdin having NO agent_type (main thread / non-validator). The hook must emit NO permissionDecision JSON (fail-open for non-validator calls is the documented contract, hook line 22: 'Fail-open for non-validator agents and main-thread').",
       "skill": "hook-script",
       "context": {
-        "hook_path": "hooks/validator-bash-guard.sh",
+        "hook_path": "hooks/gates/validator-bash-guard.sh",
         "stdin": {
           "tool_input": {
             "command": "git push origin develop"
@@ -54,7 +54,7 @@
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "validator-bash-guard-fails-closed-by-default",
-      "fixed_by": "2d3c743 + hooks/validator-bash-guard.sh"
+      "fixed_by": "2d3c743 + hooks/gates/validator-bash-guard.sh"
     }
   ]
 }
