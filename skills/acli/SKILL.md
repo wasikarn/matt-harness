@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "ALWAYS trigger for bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Do NOT trigger for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
+description: "Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI
