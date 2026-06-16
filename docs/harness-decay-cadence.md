@@ -147,6 +147,42 @@ with human in-the-loop confirmation (e.g. secret-reads,
 doctrine-via-Bash). See `secret-read-guard.sh:36-41` and
 `block-bash-doctrine-write.sh:3-4` for the rationale pattern.
 
+## Gate discipline review (judgment vs ceremony)
+
+*Pairs with the quarterly sweep above; see [ADR 0002 § "Gate discipline:
+judgment gate vs ceremony gate"](0002-autonomy-invariant.md) for the rationale.*
+
+The gates mapped above (DB writes, secret reads, config edits, doctrine edits —
+plus the `recursive-improve` Step 3 gate) earn their place only by carrying
+judgment. A gate the operator approves every time without a recorded change of
+decision is **ceremony**, not judgment — and ceremony trains the atrophy the
+autonomy invariant exists to prevent. This review is the exit condition for the
+gate *implementation* (the principle stays irreversible — ADR 0002).
+
+One question, folded into the quarterly pass: **which gates did the operator
+rubber-stamp this quarter?** The evidence is the `ask`-gate decisions the harness
+already logs (`governance-events.jsonl` + the verification-gate journal) — this is
+a reading task, no new machinery. If a gate's approvals aren't currently
+distinguishable in the journal, that gap is itself the first finding. For each
+gate:
+
+- **fired and changed an outcome at least once** → judgment gate, keep.
+- **fired but always approved unchanged** → ceremony *candidate* (not an
+  auto-delete). Ask "would I ever deny here?". If no: the gate is mis-scoped (too
+  broad, catching non-judgment mutations) or the limitation it guarded is gone —
+  narrow it, or `decommission` with an `ABSENT_*` witness, same flow as a stale
+  component.
+- **never fired** → already covered by the harness-coverage silent-cell review
+  below.
+
+Removing a ceremony gate is **not** a move toward L3/L4; it is the
+build-to-delete sweep applied to gates — keep every remaining gate one the
+operator actually deliberates at. Measure and delete stay human-gated, no
+auto-prune. **Carve-out:** the maker≠checker hard guard above still binds — never
+retire a *verifier* on a rubber-stamp argument. A verifier's value is
+independence, not the operator's deliberation at a gate, so it is never a ceremony
+candidate.
+
 ## Permission re-audit
 
 *last_reviewed: 2026-06-11 (initial section, written as part of the

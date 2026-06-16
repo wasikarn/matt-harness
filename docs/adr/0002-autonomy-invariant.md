@@ -163,6 +163,40 @@ human gate at Step 3 is the load-bearing single point of enforcement.
   pulls a new commit gets the latest harness, but no machine runs an
   unattended improvement cycle.
 
+## Gate discipline: judgment gate vs ceremony gate
+
+The **principle** above is irreversible (§Rejected alternatives). The
+**implementation** — which specific human gates exist — is not, and must not be
+treated as if it were. A gate earns its place by carrying judgment. A gate the
+operator approves every time without deliberation is not preserving judgment; it
+is **ceremony**, and ceremony trains the exact atrophy the invariant exists to
+prevent — an operator who rubber-stamps is an operator whose judgment is already
+thinning.
+
+So the invariant reads, precisely: **judgment-bearing mutations stop at a human
+gate.** It is not a mandate to multiply gates. A rubber-stamped gate is a defect
+— friction wearing the invariant's clothes — and the correct response is to
+remove *that gate*, not to defend it on invariant grounds.
+
+**What this makes falsifiable (the implementation, never the principle):** a gate
+the operator approves N consecutive times with no recorded change of decision is
+a *ceremony candidate* — not an auto-delete, but a prompt to ask "would I ever
+deny here?". The observable is the rubber-stamp streak, read at the quarterly
+decay sweep (`harness-decay-cadence.md` § "Gate discipline review"). Removing a
+ceremony gate is *not* a step toward L3/L4 — it is the opposite: it keeps every
+*remaining* gate one the operator actually thinks at.
+
+This is the answer to the standing dogma risk. A value choice with no exit
+condition is a belief; a belief tied to identity survives its own disproof (the
+trap Altman names in the CS153 talk — "don't tie your identity to whether a thing
+works"). The **principle** here has no exit condition by design and is held on
+that basis openly. Its **implementation** has one — per gate, on the rubber-stamp
+evidence — so the harness can always tell a judgment gate from a habit. The
+maker≠checker verifier separation is **out of scope** for this test: a verifier's
+value is independence (it catches what the maker cannot see), not the operator's
+deliberation at a gate, so a verifier is never a ceremony candidate on a
+rubber-stamp argument (§Consequences — "Trust-the-model verifier collapse").
+
 ## Rejected alternatives
 
 - **L3 (scheduled, model-as-gate).** The corpus's
