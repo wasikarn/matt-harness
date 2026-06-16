@@ -12,6 +12,12 @@ check gates/block-dangerous-git.sh deny "blocks bare force-w-lease"  "$(bash_eve
 check gates/block-dangerous-git.sh ask  "asks on force push develop" "$(bash_event 'git push --force origin develop')"
 check gates/block-dangerous-git.sh none "allows force push feature/" "$(bash_event 'git push --force-with-lease origin feature/x')"
 check gates/block-dangerous-git.sh none "allows git status"          "$(bash_event 'git status')"
+# Adversarial — git global options (-c / --no-pager / -C) between `git` and the
+# subcommand must NOT bypass the gate (pre-fix: `git -c x=y push --force` slipped).
+check gates/block-dangerous-git.sh deny "blocks force-push w/ -c global opt"  "$(bash_event 'git -c protocol.version=2 push --force origin main')"
+check gates/block-dangerous-git.sh deny "blocks reset --hard w/ --no-pager"   "$(bash_event 'git --no-pager reset --hard origin/main')"
+check gates/block-dangerous-git.sh deny "blocks branch -D w/ -C global opt"   "$(bash_event 'git -C /tmp branch -D main')"
+check gates/block-dangerous-git.sh none "allows log w/ -c global opt (no FP)" "$(bash_event 'git -c x=y log --oneline')"
 
 # --- doctrine-edit-gate: ask on doctrine files under .claude/, kbg-harness/, or claude/, allow others ---
 check gates/doctrine-edit-gate.sh ask  "asks on METHODOLOGY.md"   "$(edit_event '/x/.claude/METHODOLOGY.md')"
@@ -92,6 +98,14 @@ check gates/validator-bash-guard.sh none "main-thread + rm -rf (no agent_type, f
 check gates/validator-bash-guard.sh deny "code-reviewer + canonical fork-bomb"       "$(validator_bash_event 'code-reviewer' ':(){ :|:& };:')"
 check gates/validator-bash-guard.sh deny "code-reviewer + spaces-in-body fork-bomb"  "$(validator_bash_event 'code-reviewer' ':() { :|: & };:')"
 check gates/validator-bash-guard.sh deny "code-reviewer + no-space fork-bomb"        "$(validator_bash_event 'code-reviewer' ':(){:|:&};:')"
+
+# Adversarial — a mutation verb GLUED to a quote (bash -c '...') or an arbitrary-
+# code interpreter must NOT bypass (pre-fix: the SEP class omitted '/"; the hook's
+# own header claimed `bash -c 'git push'` was caught but it wasn't).
+check gates/validator-bash-guard.sh deny "code-reviewer + bash -c 'git push'"        "$(validator_bash_event 'code-reviewer' "bash -c 'git push origin main'")"
+check gates/validator-bash-guard.sh deny "code-reviewer + eval \"rm -rf\""           "$(validator_bash_event 'code-reviewer' 'eval "rm -rf /tmp/x"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + python3 -c interpreter"    "$(validator_bash_event 'code-reviewer' 'python3 -c "import os"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + node -e interpreter"       "$(validator_bash_event 'code-reviewer' 'node -e "x"')"
 
 # --- task-lifecycle.sh F7: TaskCompleted test-claim gate.
 #     Vendor convention (verified 2026-06-12): TaskCompleted uses exit 2 + stderr
@@ -328,6 +342,12 @@ check gates/db-write-gate.sh none "ignores non-DB MCP tool"                 "$(m
 check gates/db-write-gate.sh none "ignores non-MCP tool"                    "$(bash_event 'psql -c "DELETE FROM t"')"
 check gates/db-write-gate.sh none "allows SELECT with leading comment"      "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' '-- safety check\nSELECT 1')"
 check gates/db-write-gate.sh none "allows comment-only query (no-op)"        "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' '-- just a comment, nothing else')"
+# Adversarial — a write hidden behind a leading comment line, a WITH-CTE, or a
+# string literal containing information_schema must NOT slip through as a no-op
+# (pre-fix: `tr '\n' ' '` ran before comment-strip → `-- x\nDELETE` went silent).
+check gates/db-write-gate.sh ask "asks on WITH..DELETE CTE bypass"           "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' 'WITH t AS (SELECT 1) DELETE FROM users')"
+check gates/db-write-gate.sh ask "asks on DELETE w/ info_schema string"      "$(mcp_db_event 'mcp__tathep-db__execute_sql_production' "DELETE FROM users WHERE note='information_schema.'")"
+check gates/db-write-gate.sh ask "asks on leading-comment+REAL-newline DELETE" "$(printf '{"tool_name":"mcp__tathep-db__execute_sql_production","tool_input":{"query":%s}}' "$(printf -- '-- nightly cleanup\nDELETE FROM users' | jq -Rs .)")"
 
 # --- bypass contract: CLAUDE_DISABLED_HOOKS must let a blocked case through ---
 out=$(printf '%s' "$(bash_event 'git reset --hard')" | CLAUDE_DISABLED_HOOKS=block-dangerous-git bash "$HOOKS/gates/block-dangerous-git.sh" 2>/dev/null)

@@ -46,6 +46,8 @@ HOOK_ID="secret-read-guard"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
+hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
+
 
 # jq is mandatory for the per-toolcase jq calls below; fail loud if missing.
 if ! command -v jq >/dev/null 2>&1; then

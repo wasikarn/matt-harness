@@ -39,13 +39,25 @@ hook_init() {
   esac
 
   if command -v jq >/dev/null 2>&1; then
-    # Validate the payload is JSON. If not, leave $TOOL etc. empty and stash
-    # an INPUT_PARSE_ERROR flag so hooks that need a hard-fail can check it.
-    if printf '%s' "$INPUT" | jq -e . >/dev/null 2>&1; then
+    # ONE jq call extracts the SECURITY-CRITICAL fields (tool_name + tool_input)
+    # AND validates the payload is an object (else→error). Folding validation +
+    # extraction into a single fork shrinks the transient-jq-failure window that
+    # previously left a gate with empty $TOOL = silent fail-open under CPU
+    # contention (the validate call and the field calls were separate forks; a
+    # transient failure on a field call gave empty TOOL with INPUT_PARSE_ERROR=0).
+    # Both fields are newline-free (tool_name is an identifier; tool_input via
+    # `tojson` is single-line), so the 2-line output reads cleanly.
+    local _crit
+    if _crit=$(printf '%s' "$INPUT" | jq -r 'if type=="object" then (.tool_name // ""), (.tool_input // {} | tojson) else error("not-object") end' 2>/dev/null); then
       INPUT_PARSE_ERROR=0
-      TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
-      SID=$(printf '%s' "$INPUT" | jq -r '.session_id // "no-sid"' 2>/dev/null)
-      TOOL_INPUT=$(printf '%s' "$INPUT" | jq -c '.tool_input // {}' 2>/dev/null)
+      # Two reads, one per line: a single `read TOOL TOOL_INPUT` stops at the
+      # first newline (the line terminator), leaving TOOL_INPUT empty. The first
+      # line is tool_name, the second is the single-line tool_input JSON.
+      { IFS= read -r TOOL; IFS= read -r TOOL_INPUT; } <<<"$_crit"
+      [ -z "$TOOL_INPUT" ] && TOOL_INPUT="{}"
+      # session_id + prompt are NON-security (logging only): a transient failure
+      # here degrades the log row, not a gate decision — soft defaults are fine.
+      SID=$(printf '%s' "$INPUT" | jq -r '.session_id // "no-sid"' 2>/dev/null); [ -z "$SID" ] && SID="no-sid"
       PROMPT=$(printf '%s' "$INPUT" | jq -r '.prompt // empty' 2>/dev/null)
     else
       INPUT_PARSE_ERROR=1
@@ -62,6 +74,19 @@ hook_init() {
     PROMPT=""
   fi
   return 0
+}
+
+# hook_guard_unreadable — call right after hook_init in a SECURITY gate. If the
+# input was PRESENT but could not be parsed (transient jq failure under load, or
+# a malformed envelope), FAIL CLOSED: emit `ask` so the human decides, instead of
+# the default fall-through that silently ALLOWS the action. Advisory/log hooks
+# skip this (they have nothing to gate). Pairs with the single-fork hook_init
+# above: a transient jq failure now reliably sets INPUT_PARSE_ERROR=1, which this
+# guard converts to a safe `ask`.
+hook_guard_unreadable() {
+  if [ "${INPUT_PARSE_ERROR:-0}" -ne 0 ] && [ -n "${INPUT:-}" ]; then
+    hook_decision ask "[${HOOK_ID:-hook}] could not parse hook input — failing safe (ask). Retry, or set CLAUDE_DISABLED_HOOKS=${HOOK_ID:-this-hook} if this is a false positive."
+  fi
 }
 
 # hook_require_jq — call AFTER hook_init when the hook's body needs jq and
@@ -88,11 +113,26 @@ hook_require_prompt() {
   fi
 }
 
-# Emit permissionDecision JSON, then exit 0.
+# Emit permissionDecision JSON, then exit 0. Robust against a flaky/broken jq:
+# jq is primary, python3 is the fallback, a hand-escaped printf is the last
+# resort. This is load-bearing for security — if jq transiently fails (fork/fd
+# pressure under load) while emitting a deny/ask, a jq-only path would emit
+# NOTHING and the action silently fails OPEN. The fallbacks guarantee the
+# decision is always emitted.
 hook_decision() {
-  jq -nc --arg d "$1" --arg r "$2" '{
-    hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: $d, permissionDecisionReason: $r }
-  }'
+  local d="$1" r="$2"
+  if command -v jq >/dev/null 2>&1 && \
+     jq -nc --arg d "$d" --arg r "$r" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:$d,permissionDecisionReason:$r}}' 2>/dev/null; then
+    exit 0
+  fi
+  if command -v python3 >/dev/null 2>&1 && \
+     HD_D="$d" HD_R="$r" python3 -c 'import json,os,sys; sys.stdout.write(json.dumps({"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":os.environ["HD_D"],"permissionDecisionReason":os.environ["HD_R"]}}, separators=(",",":"))+"\n")' 2>/dev/null; then
+    exit 0
+  fi
+  # Last resort: hand-escape the reason (flatten newlines/tabs, escape \ and ").
+  local safe
+  safe=$(printf '%s' "$r" | tr '\n\t' '  ' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"%s","permissionDecisionReason":"%s"}}\n' "$d" "$safe"
   exit 0
 }
 

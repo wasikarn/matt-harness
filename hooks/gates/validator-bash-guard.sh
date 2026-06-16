@@ -33,6 +33,8 @@ HOOK_ID="validator-bash-guard"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
+hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
+
 
 # jq is mandatory for the command parse below; if missing, fail loud.
 if ! command -v jq >/dev/null 2>&1; then
@@ -65,7 +67,14 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # unstripped command (catches mutations hidden inside quotes, e.g.
 # bash -c 'git push origin main'), then against the stripped command.
 # The full-command check must come BEFORE hook_strip_quoted.
-DENY_PATTERNS='(^|[[:space:];&|()`])(rm[[:space:]]|sed[[:space:]]+-i|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
+# SEP class now includes the quote chars '"` so a mutation verb GLUED to an
+# opening quote (`bash -c 'git push'`, `eval "rm -rf x"`) is at a boundary and
+# matches — pre-fix it slipped through because `'`/`"` weren't separators (the
+# hook's own header claimed this case was closed; it wasn't). Interpreters that
+# run arbitrary code in another language (eval, python -c, node -e, perl -e,
+# ruby -e) are denied outright — they defeat shell-pattern matching entirely and
+# a read-only validator never needs them (it has Read/Grep).
+DENY_PATTERNS='(^|[[:space:];&|()`'\''"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
 
 # 1. Full-command deny check — catches quoted mutations that
 # hook_strip_quoted would strip away.

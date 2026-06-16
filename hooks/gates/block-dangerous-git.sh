@@ -13,6 +13,8 @@ HOOK_ID="block-dangerous-git"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
+hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
+
 
 # jq is mandatory for the command parse below; if missing, fail loud.
 if ! command -v jq >/dev/null 2>&1; then
@@ -30,6 +32,13 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 
 SEP='(^|[[:space:];&|()`])'
 
+# Git global options sit BETWEEN `git` and the subcommand (`git -c k=v push`,
+# `git --no-pager reset`, `git -C dir branch -D`). Without allowing them, the
+# `git<space>subcommand` adjacency is broken and every gate is bypassed
+# (`git -c x=y push --force origin main` slipped through pre-fix). GOPT matches
+# zero-or-more global-option tokens (value-takers consume their arg; flags don't).
+GOPT='((-c|-C|--git-dir|--work-tree|--namespace|--super-prefix|--config-env)[=[:space:]]+[^[:space:]]+[[:space:]]+|(-P|-p|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks|--exec-path|--html-path|--man-path|--info-path)[[:space:]]+)*'
+
 # Use command grep to bypass potential ugrep/claude wrapper that breaks backtracking
 _GREP="command grep"
 
@@ -43,37 +52,37 @@ FORCE_FLAG_PAT='([[:space:]]--force([[:space:]]|$)|[[:space:]]-f([[:space:]]|$)|
 # orders via a 2-branch alternation.
 
 # Force push to main/master: always BLOCK
-FORCE_MAIN_PATTERN="${SEP}git[[:space:]]+push.*(${FORCE_FLAG_PAT}.*main|main.*${FORCE_FLAG_PAT})"
-FORCE_MASTER_PATTERN="${SEP}git[[:space:]]+push.*(${FORCE_FLAG_PAT}.*master|master.*${FORCE_FLAG_PAT})"
-FORCE_LEASE_MAIN_PATTERN="${SEP}git[[:space:]]+push.*(--force-with-lease.*main|main.*--force-with-lease)"
-FORCE_LEASE_MASTER_PATTERN="${SEP}git[[:space:]]+push.*(--force-with-lease.*master|master.*--force-with-lease)"
-REF_MAIN_PATTERN="${SEP}git[[:space:]]+push.*([+].*main|main.*[+])"
-REF_MASTER_PATTERN="${SEP}git[[:space:]]+push.*([+].*master|master.*[+])"
+FORCE_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*main|main.*${FORCE_FLAG_PAT})"
+FORCE_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*master|master.*${FORCE_FLAG_PAT})"
+FORCE_LEASE_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(--force-with-lease.*main|main.*--force-with-lease)"
+FORCE_LEASE_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(--force-with-lease.*master|master.*--force-with-lease)"
+REF_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*main|main.*[+])"
+REF_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*master|master.*[+])"
 
 # Force push to develop: WARN
-FORCE_DEVELOP_PATTERN="${SEP}git[[:space:]]+push.*(${FORCE_FLAG_PAT}.*develop|develop.*${FORCE_FLAG_PAT})"
-REF_DEVELOP_PATTERN="${SEP}git[[:space:]]+push.*([+].*develop|develop.*[+])"
+FORCE_DEVELOP_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*develop|develop.*${FORCE_FLAG_PAT})"
+REF_DEVELOP_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*develop|develop.*[+])"
 
 # Force push to allowed prefixes (fix/bugfix/feature/feat): ALLOW
-FORCE_FIX_PATTERN="${SEP}git[[:space:]]+push.*(${FORCE_FLAG_PAT}.*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*${FORCE_FLAG_PAT})"
-REF_FIX_PATTERN="${SEP}git[[:space:]]+push.*([+].*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*[+])"
+FORCE_FIX_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*${FORCE_FLAG_PAT})"
+REF_FIX_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*[+])"
 
 # General force push: BLOCK (any --force/-f/--force-with-lease or + refspec after git push)
-FORCE_ANY_PATTERN="${SEP}git[[:space:]]+push.*(${FORCE_FLAG_PAT}|[+])"
+FORCE_ANY_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}|[+])"
 
 # Other dangerous patterns
 DANGEROUS_PATTERNS=(
-  "${SEP}git[[:space:]]+reset[[:space:]]+--hard"
-  "${SEP}git[[:space:]]+clean[[:space:]]+-[a-zA-Z]*f"
-  "${SEP}git[[:space:]]+branch[[:space:]]+-D"
-  "${SEP}git[[:space:]]+checkout[[:space:]]+\\."
-  "${SEP}git[[:space:]]+restore[[:space:]]+\\."
+  "${SEP}git[[:space:]]+${GOPT}reset[[:space:]]+--hard"
+  "${SEP}git[[:space:]]+${GOPT}clean[[:space:]]+-[a-zA-Z]*f"
+  "${SEP}git[[:space:]]+${GOPT}branch[[:space:]]+-D"
+  "${SEP}git[[:space:]]+${GOPT}checkout[[:space:]]+\\."
+  "${SEP}git[[:space:]]+${GOPT}restore[[:space:]]+\\."
 )
 
 # Check force push to main/master first (BLOCK via canonical permissionDecision=deny)
 for pattern in "$FORCE_MAIN_PATTERN" "$FORCE_MASTER_PATTERN" "$FORCE_LEASE_MAIN_PATTERN" "$FORCE_LEASE_MASTER_PATTERN" "$REF_MAIN_PATTERN" "$REF_MASTER_PATTERN"; do
   if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
-    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}push[^#]*" | head -1 | xargs)
     hook_decision deny "force push to main/master: '$matched'. User policy prevents this command."
   fi
 done
@@ -81,7 +90,7 @@ done
 # Check force push to develop (escalate to user via permissionDecision=ask)
 for pattern in "$FORCE_DEVELOP_PATTERN" "$REF_DEVELOP_PATTERN"; do
   if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
-    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+    matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}push[^#]*" | head -1 | xargs)
     hook_decision ask "force push to develop: '$matched'. Confirm before proceeding."
   fi
 done
@@ -95,7 +104,7 @@ done
 
 # Check general force push (BLOCK)
 if printf '%s\n' "$STRIPPED" | $_GREP -qE "$FORCE_ANY_PATTERN"; then
-  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+push[^#]*" | head -1 | xargs)
+  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}push[^#]*" | head -1 | xargs)
   hook_decision deny "force push: '$matched'. User policy prevents this command."
 fi
 
@@ -111,9 +120,9 @@ done
 # Closes round-4 audit finding: silent remote swap → next `git push`
 # exfiltrates repo. Legitimate uses exist (upstream tracking, repo migration),
 # so ASK rather than BLOCK.
-REMOTE_MUTATION_PATTERN="${SEP}git[[:space:]]+remote[[:space:]]+(add|set-url)"
+REMOTE_MUTATION_PATTERN="${SEP}git[[:space:]]+${GOPT}remote[[:space:]]+(add|set-url)"
 if printf '%s\n' "$STRIPPED" | $_GREP -qE "$REMOTE_MUTATION_PATTERN"; then
-  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+remote[[:space:]]+(add|set-url)[^#]*" | head -1 | xargs)
+  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}remote[[:space:]]+(add|set-url)[^#]*" | head -1 | xargs)
   hook_decision ask "git remote mutation: '$matched'. Adding/changing a remote redirects future pushes — confirm origin URL is intended."
 fi
 

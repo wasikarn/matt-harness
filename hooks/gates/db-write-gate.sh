@@ -37,6 +37,8 @@ HOOK_ID="db-write-gate"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
+hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
+
 
 # jq is mandatory for the query parse below; if missing, fail loud
 # (matches block-bash-doctrine-write.sh / doctrine-edit-gate.sh).
@@ -67,31 +69,33 @@ STATEMENT=$(printf '%s' "$TOOL_INPUT" | jq -r '
 }
 [ -z "$STATEMENT" ] && exit 0
 
-# Strip leading whitespace + line comments so the verb match is
-# against the first SQL token, not whitespace or `-- foo` banners.
-# `^` anchors the verb at the first non-whitespace, non-comment
-# character — mirrors the canonical SQL-parser intent.
-# Newlines are replaced with single spaces first so a comment line
-# (`-- foo`) can't glom onto a verb on the next line via newline
-# removal (without the space, `-- fooSELECT 1` would be one comment
-# run and SELECT would never see the verb check).
-NORMALIZED=$(printf '%s' "$STATEMENT" | tr '\n' ' ' | sed -E 's/^[[:space:]]+//; s/^(--[[:space:]]*[^[:space:]]+([ ]+[^[:space:]]+)*)//; s/^[[:space:]]+//')
+# Strip `--` line comments PER LINE (before collapsing newlines), then
+# collapse to one line and trim leading whitespace. Order is load-bearing:
+# the previous version did `tr '\n' ' '` FIRST, so a leading `-- comment`
+# line then greedily ate the real SQL verb on the next line, leaving an
+# empty NORMALIZED that was treated as a no-op — a `-- x\nDELETE FROM users`
+# bypass of the production write gate. Stripping `--…EOL` per line first
+# means a comment only consumes to its own line end.
+NORMALIZED=$(printf '%s' "$STATEMENT" | sed -E 's/--.*$//' | tr '\n' ' ' | sed -E 's/^[[:space:]]+//')
 
 # A comment-only query is effectively a no-op — allow through silently
 # rather than nagging the human about a "write" that's actually empty.
 [ -z "$NORMALIZED" ] && exit 0
 
-# Allow read-only queries through silently. WITH...SELECT (CTE),
-# EXPLAIN, and information_schema reads all qualify as read-only.
-if printf '%s' "$NORMALIZED" | command grep -qiE '^(SELECT|EXPLAIN|WITH)\b'; then
-  exit 0
-fi
-
-# information_schema reads can be wrapped in subqueries or CTEs; if
-# the body contains `information_schema.` it's still read-only even
-# if the verb is harder to classify. Allow-through.
-if printf '%s' "$NORMALIZED" | command grep -qiE 'information_schema\.'; then
-  exit 0
+# Classify write vs read. A leading write verb is a write. A WITH-CTE whose
+# OUTER statement writes (`WITH t AS (...) DELETE ...`) is also a write — a
+# leading `WITH` alone is no longer a free pass. information_schema mention does
+# NOT rescue a write: it can sit in a string literal of a DELETE
+# (`DELETE ... WHERE note='information_schema.'`). Reads (SELECT / EXPLAIN /
+# pure-SELECT CTE / information_schema read) fall through to allow.
+WRITE_VERBS='INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE|MERGE|REPLACE|GRANT|REVOKE|RENAME|COMMENT'
+if printf '%s' "$NORMALIZED" | command grep -qiE "^(${WRITE_VERBS})\b"; then
+  : # leading write verb → fall through to the ask gate below
+elif printf '%s' "$NORMALIZED" | command grep -qiE '^WITH\b' \
+     && printf '%s' "$NORMALIZED" | command grep -qiE "\b(${WRITE_VERBS})\b"; then
+  : # WITH-CTE whose outer statement writes → fall through to the ask gate
+else
+  exit 0  # read-only → allow silently
 fi
 
 # Everything else is treated as a write. Surface the first 80 chars

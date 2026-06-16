@@ -19,6 +19,8 @@ HOOK_ID="doctrine-edit-gate"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
+hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
+
 
 # jq is mandatory for the file_path parse below; if missing, fail loud.
 if ! command -v jq >/dev/null 2>&1; then

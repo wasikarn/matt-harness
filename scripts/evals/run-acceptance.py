@@ -114,6 +114,12 @@ KNOWN_CMD_VERBS = {
     "curl", "wget", "jq", "cat", "grep", "find", "ls", "cd", "mkdir", "rm",
     "cp", "mv", "echo", "test", "true", "false", "exit", "source", ".",
     "./", "../",
+    # test / lint / build / pkg verbs that frequently name a file as their arg
+    # (so they were the ones wrongly rejected by the file-extension guard):
+    "ruff", "tsc", "eslint", "prettier", "mypy", "pyright", "black", "isort",
+    "vitest", "jest", "mocha", "playwright", "npx", "pnpm", "yarn", "bun",
+    "deno", "pip", "pip3", "uv", "tox", "hatch", "poetry", "mvn", "gradle",
+    "terraform", "ansible", "dotnet", "rustc", "rspec", "phpunit", "dart",
 }
 
 
@@ -126,16 +132,26 @@ def looks_like_command(text: str) -> bool:
     if not t:
         return False
 
-    # Reject file paths / references
+    first_word = t.split(None, 1)[0].lower().rstrip(";|&")
+    has_shell_meta = bool(re.search(r"[|&;<>$=`\"']", t))
+
+    # A known command verb at the front makes it a runnable command EVEN IF it
+    # names a file with an extension — `pytest tests/test_api.py`, `bash
+    # scripts/check.sh`, `ruff check .` are commands, not prose file references.
+    # (The prior order rejected any text containing `.ext` first, so these — the
+    # MOST COMMON validation-command shapes — were silently skipped and the
+    # acceptance gate reported PASS on an unrun/broken suite.)
+    if first_word in KNOWN_CMD_VERBS:
+        return True
+
+    # No known verb: now apply the prose/file-reference rejections. A bare file
+    # or line reference (`agents/code-explorer.md`, `SKILL.md:42`) is NOT a
+    # command; only shell metacharacters indicate an actual command line.
     if re.search(r"\.[a-zA-Z]{2,5}\b", t):  # e.g. agents/code-explorer.md
         return False
     if re.search(r":[0-9]+", t):  # e.g. SKILL.md:42
         return False
-
-    # Reject pure noun phrases (no shell metacharacters, no known verb)
-    first_word = t.split(None, 1)[0].lower().rstrip(";|&")
-    has_shell_meta = bool(re.search(r"[|&;<>$=`\"']", t))
-    if first_word not in KNOWN_CMD_VERBS and not has_shell_meta:
+    if not has_shell_meta:
         return False
 
     return True
