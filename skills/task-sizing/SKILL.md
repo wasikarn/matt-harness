@@ -64,6 +64,8 @@ A `/team-build` plan is executed in waves: all Wave 1 tasks run in parallel, the
 
 **Total waves for a feature: 3-5.** More than 5 waves means the plan is too coarse-grained; merge waves or enlarge task scope. Fewer than 3 waves means the feature is small enough for `/feature-dev` (single-agent).
 
+**Wave bands vs. the F8 min-3 floor (different axes — they do not conflict).** The task counts above are the width of an *auto-resolved* wave: a property of the dependency graph, which legitimately narrows as a feature integrates (the 7-agent pattern's later waves are often a single task — that is correct, not under-parallelized). The F8 "min 3 / max 5" band is a *different* axis — how many teammates a lead *chooses* to fan out into one explicit `type: parallel` stage. A later wave with 2 ready tasks is the DAG narrowing, never flagged. The dispatcher's F8.4 advisory fires only on an explicit `parallel` agent fan-out below 3 (`scripts/orchestrate/planner.py` `f8_4_under_warnings`), never on auto-resolved wave width; a fixed diverse-lens panel (e.g. code-review + security-review = 2 by design) opts out with `panel: true`.
+
 **F8.5 hard cap:** If any wave has >5 tasks, split the wave or merge tasks. A "20-35 items" prompt is NOT a cap — the LLM will overshoot (audit 2026-06-12: 44 items spawned from a 20-35 prompt). Clamp in code, not in prose. See `skills/orchestrate/SKILL.md` § Bounded fan-out.
 
 ## Output Format

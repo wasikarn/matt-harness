@@ -30,6 +30,8 @@ stages:
   - id: review-fanout
     type: parallel
     depends_on: [audit]
+    panel: true   # fixed 2-lens review panel (code-review + security), not an
+                  # under-split builder fan-out — opts out of the F8.4 min-3 floor.
     done_when: "both review agents returned reports"
     stages:
       - id: code-review

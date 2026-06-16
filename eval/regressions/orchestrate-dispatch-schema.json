@@ -102,6 +102,25 @@
       "expected_failure": false,
       "failure_pattern": "f8-4-advisory-silently-dropped",
       "fixed_by": "0.2.12 (build_plan emits f8_4_under_warnings; min-per-wave default 3, owner request)"
+    },
+    {
+      "id": "orchestrate-dispatch-f8-4-panel-optout",
+      "task": "Verify that `panel: true` on a parallel stage suppresses the F8.4 under-parallelized advisory. A fixed diverse-lens panel (code-review + security-review = 2 agents by design) is not an under-split builder fan-out, so the min-3 floor must NOT fire. The fixture writes a 2-agent parallel WITH panel:true and asserts NO F8.4 advisory (emits PANEL_CLEAN; PANEL_FIRED would mean the opt-out regressed).",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: panel-test\\nstages:\\n  - id: fan\\n    type: parallel\\n    panel: true\\n    stages:\\n      - {id: a, type: agent, agent_type: code-reviewer, prompt: x}\\n      - {id: b, type: agent, agent_type: security-reviewer, prompt: y}\\n' > /tmp/panel-test.yml && python3 scripts/orchestrate-dispatch.py /tmp/panel-test.yml 2>&1 | grep -q 'F8.4 UNDER' && echo PANEL_FIRED || echo PANEL_CLEAN",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains PANEL_CLEAN"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "f8-4", "panel-optout", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "f8-4-panel-optout-regressed",
+      "fixed_by": "0.2.13 (planner f8_4 skips stages with panel:true; owner request)"
     }
   ]
 }

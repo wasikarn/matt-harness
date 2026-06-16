@@ -135,8 +135,11 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
                 # fan-out (a 2-command parallel like lint+typecheck is fine; the
                 # F8 "3-5 teammates" band is about agents, where coordination
                 # overhead vs parallelism payoff actually trades off).
+                # `panel: true` opts a stage out: a fixed diverse-lens panel
+                # (e.g. code-review + security-review = 2 by design) is NOT an
+                # under-split builder fan-out, so the min-3 floor does not apply.
                 agent_subs = [s for s in sub if s.get("type") == "agent"]
-                if agent_subs and len(sub) < min_per_wave:
+                if agent_subs and len(sub) < min_per_wave and not stage.get("panel"):
                     plan["f8_4_under_warnings"].append({
                         "kind": "parallel_under",
                         "stage_id": stage["id"],
