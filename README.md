@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`) — 27 senior-specialist agents, 32 workflow skills, 16 slash commands, governance hooks across 14 lifecycle events, and always-on doctrine injection. No symlink farm, no manual wiring — components auto-discover from the plugin cache.
+A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`) — 28 senior-specialist agents, 37 workflow skills, 18 slash commands, governance hooks across 14 lifecycle events, and always-on doctrine injection. No symlink farm, no manual wiring — components auto-discover from the plugin cache.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute cold-start.
 
@@ -49,10 +49,10 @@ After `/plugin install kbg@kobig`, Claude Code loads all components from the plu
 
 | Component | Count | How to Use |
 |-----------|-------|-----------|
-| **Agents** | 27 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`) |
-| **Skills** | 32 | Invoke via `/kbg:<skill>` (e.g. `/kbg:review-pr`) |
-| **Commands** | 16 | Invoke via `/kbg:<command>` (e.g. `/kbg:ship-merge`) |
-| **Hooks** | 32 scripts | Governance + doctrine across 14 lifecycle events |
+| **Agents** | 28 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`) |
+| **Skills** | 37 | Invoke via `/kbg:<skill>` (e.g. `/kbg:review-pr`) |
+| **Commands** | 18 | Invoke via `/kbg:<command>` (e.g. `/kbg:ship-merge`) |
+| **Hooks** | 38 scripts | Governance + doctrine across 14 lifecycle events |
 | **Output Styles** | 1 | `TECH-LEAD-THAI` (Thai-code-switched register) |
 | **Themes** | 1 | `catppuccin-mocha` |
 

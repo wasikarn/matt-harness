@@ -40,12 +40,14 @@ What this script IS NOT
 The fan-out cap (F8.5, hard cap = 5 per wave) is enforced in this
 script via `--max-per-wave` (default 5); a symmetric F8.4 advisory floor
 (`--min-per-wave`, default 3) flags an under-parallelized AGENT fan-out.
-Clamping happens BEFORE the wave list is printed, not after — the lead
-sees the clamped structure, not a 44-item wall of doom. The cap is on the
-resolved wave list, not
-on the input spec; the spec can declare more stages if the DAG fans
-out organically. Over-cap stages are emitted to
-`.scratch/<slug>/deferred-<date>.md` and queued for a follow-up wave.
+Two enforcement modes (NOT a silent universal clamp): an AUTO-RESOLVED
+top-level wave wider than the cap is SPLIT before printing — the overflow
+lands in the next wave, so the lead sees the split structure, not a
+44-item wall of doom. An EXPLICIT `parallel`/`loop` stage over the cap is
+FLAGGED (`f8_5_overflow_warnings`), NOT split — the lead clamps it (ADR
+0002: the dispatcher does not silently mutate the spec). The cap is on the
+resolved wave list, not on the input spec; the spec can declare more
+stages if the DAG fans out organically.
 
 ADR 0002 alignment
 ------------------

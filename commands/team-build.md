@@ -19,7 +19,7 @@ You are the lead. You are in **delegate mode + plan-mode** for the entire lifeti
 1. **You do not write code.** Teammates write code. You dispatch, validate, merge.
 2. **Opus-lead + Sonnet-teammate cost split.** Teammate spawn prompts set `model: "sonnet"` (or the cheapest model that can do the task). You stay on Opus for synthesis + judgment.
 3. **Plan-mode is fixed by the plan, not the session.** You do not drop plan-mode mid-build, even to answer a teammate's "faster-inline" question. Revise the plan, not the mode.
-4. **3-5 teammates is the sweet spot.** If the plan is outside this range, refuse to build and ask the user to revise the plan at `/team-plan` time.
+4. **3-5 teammates is the sweet spot.** If the plan is outside this range, refuse to build and ask the user to revise the plan at `/team-plan` time. "3-5" is **peak concurrent live teammates**, not total tasks/seats — a teammate takes multiple tasks, so a 7-seat feature (e.g. `7-agent-pattern`) is a ≤5-concurrent roster, not 7; don't refuse it for its seat count.
 
 The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctrine.
 
@@ -52,7 +52,7 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 2. **Verify completeness:**
    - `## Brain dump` filled?
    - `## Q&A log` has ≥ 10 answered questions? (Hard requirement; refuse if < 10.)
-   - `## Team Members` has 3-5 members? (Refuse if outside the F8 sweet spot — but tell the user, don't silently revise.)
+   - `## Team Members` has 3-5 members? (Peak concurrent roster, not total tasks/seats. Refuse if outside the F8 sweet spot — but tell the user, don't silently revise.)
    - `## Step by Step Tasks` table complete with `Depends On` + `Files` + `Criteria` + `Constraints`?
    - `## Acceptance Criteria` machine-checkable?
    - `## Validation Commands` present and runnable?

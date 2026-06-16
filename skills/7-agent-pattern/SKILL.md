@@ -151,8 +151,19 @@ rules and the `eval/regressions/bounded-agent-spawning.json` fixture that keeps 
 contract in place.
 
 **Work-list count ≠ spawn count.** Audit + verify is a second fan-out layer. If the
-work-list hits 16 and validation doubles it, the cap is on **total spawned agents
+work-list hits 44 and validation doubles it to 88, the cap is on **total spawned agents
 across the entire plan lifetime**, not on the work-list alone.
+
+**"7 agents" vs the F8 3-5 cap — no conflict.** The "7" is 7 **seats/tasks** spread
+across 6 waves, with **peak 3 concurrent** (Wave 2: Seats 2, 3, 5). The F8 "3-5
+teammates" cap counts **peak concurrent live teammates**, not total seats — so this
+pattern's peak of 3 sits inside 3-5. When rendered as a `/team-build` plan, the
+`## Team Members` roster is the **concurrent** set (≤5): teammates are persistent and
+take multiple seats across waves (with wave-based eviction freeing slots), so the
+7 seats are covered by ≤5 concurrent members. `/team-build` + `plan_linter` therefore
+do **not** refuse this pattern for its seat count — they gate the concurrent roster,
+which is ≤5. (If you author a `## Team Members` section listing one entry per seat,
+that's the authoring mistake, not a flaw in the pattern.)
 
 ---
 

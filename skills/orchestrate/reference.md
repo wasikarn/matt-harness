@@ -147,6 +147,24 @@ The CC Workflow tool composes from 6 named patterns (trq212, "A harness for ever
 
 A dispatched agent's context is initialized **at spawn time** and frozen there. Editing `CLAUDE.md`, `METHODOLOGY.md`, or any doctrine mid-session does **not** change an agent already in flight — and mid-session `export` of hook/env vars silently fails (`feedback_doctrine_gate_session_bound`). To change agent behavior: edit the source, then **re-dispatch** (or start a fresh session). Don't assume a running fleet picked up your edit.
 
+## Workflow spec fields (`scripts/orchestrate-dispatch.py`)
+
+The dispatcher has no JSON schema; this is the canonical field list. The loader is lenient on unknown keys (validates required fields per type, ignores extras).
+
+**Top level:** `name` (required), `description`, `stages` (required, non-empty list).
+
+**Every stage:** `id` (required, unique), `type` (`command` | `agent` | `parallel` | `loop`; default `command`), `depends_on` (list of stage ids), `done_when` (observable criterion, prose).
+
+**Per type:**
+| `type` | Required fields | Optional |
+|--------|-----------------|----------|
+| `command` | `command` (shell string) | |
+| `agent` | `agent_type`, `prompt` | `model` |
+| `parallel` | `stages` (list of sub-stages) | **`panel: true`** — marks a fixed diverse-lens panel (e.g. code-review + security-review = 2 by design); opts the stage out of the F8.4 min-3 under-parallelized advisory. Does NOT opt out of the F8.5 max-5 cap. |
+| `loop` | `loop_until`, `body` (list) | |
+
+**Fan-out bounds:** an agent `parallel` with `<3` sub-stages draws an F8.4 advisory (unless `panel: true`); any `parallel`/`loop`/wave `>5` draws an F8.5 overflow warning. See `skills/orchestrate/SKILL.md` § Bounded fan-out.
+
 ## Anti-patterns (distribution mistakes)
 
 From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agents-split-tasks`, `task-management-distribute-work`. A teachable anti-pattern frame — these mistakes compound at scale, and naming them turns a vague "don't do that" into a checkable rule.

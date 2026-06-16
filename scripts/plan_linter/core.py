@@ -151,7 +151,7 @@ class PlanLinter:
         count = len(self.team_members)
         if count < 3 or count > 5:
             self._add_error(
-                f"Team Members count = {count}, expected 3-5"
+                f"Team Members count = {count}, expected 3-5 (peak concurrent teammates, not total tasks/seats across waves)"
             )
 
         for idx, member in enumerate(self.team_members):
