@@ -95,7 +95,7 @@ forbidden.
    journal, they do not block. `verification-gate.sh` (SessionEnd) and
    `fabrication-verdict-log.sh` (Stop) are the load-bearing examples;
    the full inventory is in the CLAUDE.md 2×2 section.
-2. The 237 critical-hooks tests + 38 audit checks are the
+2. The 239 critical-hooks tests + 38 audit checks are the
    **computational** FB that does the enforcement — the cell that
    *can* be trusted to emit `permissionDecision`s because it is
    deterministic, fast, and cheap.

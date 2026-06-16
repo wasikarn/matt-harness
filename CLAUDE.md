@@ -69,7 +69,7 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 
 - **Computational FF** → `block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`, `config-protection.sh`, `db-write-gate.sh`, `secret-read-guard`, `doctrine-edit-gate`
 - **Inferential FF** → `doctrine-bootstrap.sh` (matcher-less SessionStart injects METHODOLOGY/RTK/ACLI/DBGATE), `iron-rule-reminder.sh`, `orchestrator-nudge.sh`
-- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (237 assertions), `audit.sh` (38 sub-checks)
+- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (239 assertions), `audit.sh` (38 sub-checks)
 - **Inferential FB** → `verification-gate.sh` (SessionEnd, **journals but NEVER emits `permissionDecision`** — see [LLM-judge circularity](#llm-judge-circularity-why-inferential-sensors-are-advisory) below), `fabrication-verdict-log.sh` (Stop), `kbg:review-pr` (command), `inferential-structural-judge` (SessionEnd, advisories on diff shape — over-engineering / arch-drift / test-pattern / doctrine-conformance; designed in `docs/research/inferential-structural-judge-design.md`)
 
 **Anti-pattern:** don't add an inferential-FB sensor that emits a `permissionDecision` — same model class across generation, judgment, and meta-engineering is a single-model failure mode. The 2×2 framing is the *justification* for the `verification-gate.sh` "advisory only" invariant (ADR 0002 §L115).
@@ -82,7 +82,7 @@ The 2×2 cell most at risk of a covert failure is **inferential FB**: a "smart" 
 2. **Self-confirming verdicts.** Inferential-FB sensors on a "happy path" of similar-generation-then-judge sessions can quietly converge to "everything is fine."
 3. **Covert L4 loop.** A `permissionDecision: deny` from an inferential-FB sensor is a model-driven mutation gate — the autonomy invariant (ADR 0002) forbids it.
 
-**kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The 237 critical-hooks tests + 38 audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
+**kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The 239 critical-hooks tests + 38 audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
 
 The `.scratch/research/harness-engineering-2026-04.md` 1-pager (cross-referenced from `docs/harness-decay-cadence.md`) is the full comparison and 3-now/3-later action list.
 
@@ -102,7 +102,7 @@ The dispatcher is the deterministic rendering half of the coordination contract;
 # Plugin manifest strict validation (catches schema/manifest drift)
 claude plugin validate --strict .
 
-# Critical-hooks smoke tests (237 tests; the primary safety gate)
+# Critical-hooks smoke tests (239 tests; the primary safety gate)
 bash hooks/tests/test-critical-hooks.sh
 
 # Harness self-audit (0 Critical / 0 Warnings = clean)
@@ -116,7 +116,7 @@ All three must pass before any commit that touches hooks, skills, agents, comman
 
 ### Running a single test
 
-There is no "single test" runner for the critical-hooks suite — it is a single bash script that runs 237 assertions sequentially. To debug one assertion, extract the `check()` or `check_task()` call plus its preceding `json='...'` payload and run it in isolation:
+There is no "single test" runner for the critical-hooks suite — it is a single bash script that runs 239 assertions sequentially. To debug one assertion, extract the `check()` or `check_task()` call plus its preceding `json='...'` payload and run it in isolation:
 
 ```bash
 HOOKS="$(pwd)/hooks"

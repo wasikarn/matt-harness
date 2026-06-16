@@ -87,6 +87,63 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s truthy-typo regression: 0 CRIT (want 1+) — check would silently pass `: True` — rc=%s:\n%s\n' "harness-audit #32" "$RR_RC" "$RR_OUT"
 fi
 
+# (SS) deleted-skill hole — the surface-closure (2026-06-16) case. ADR 0002 is
+# present (the repo DECLARES the invariant) but the self-binding skill was
+# deleted. Pre-closure the check silently passed ("no file = no guard"); now
+# the deletion itself is the regression and must CRIT.
+SS_F="$FIXTURE/ss-ri-deleted"; rm -rf "$SS_F"; mkdir -p "$SS_F/claude/docs/adr" "$SS_F/claude/agents" "$SS_F/claude/commands" "$SS_F/claude/hooks" "$SS_F/.claude-plugin"
+cat > "$SS_F/claude/docs/adr/0002-autonomy-invariant.md" <<'ADR'
+# ADR 0002: Autonomy invariant — fixture (declares the invariant, no skill present)
+ADR
+cat > "$SS_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "ss-fixture", "version": "0.0.1" }
+PJ
+set +e
+SS_OUT=$(bash "$AUDIT" "$SS_F" 2>&1)
+SS_RC=$?
+set -e
+SS_HAS_CRIT=$(printf '%s' "$SS_OUT" | grep -c "recursive-improve/SKILL.md is MISSING" || true)
+if [ "$SS_HAS_CRIT" -ge 1 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s deleted-skill hole: ADR present + skill gone fires CRIT (was silent pass)\n' "harness-audit #32"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s deleted-skill hole: 0 CRIT (want 1+), rc=%s:\n%s\n' "harness-audit #32" "$SS_RC" "$SS_OUT"
+fi
+
+# (TT) doc-surface phrase drop — surfaces 1/2/4 closure. ADR present, skill
+# present AND good (no surface-3 CRIT), but a doc surface (CONTEXT.md) lost its
+# load-bearing phrase. Must CRIT on the phrase drop, and must NOT CRIT surface 3.
+TT_F="$FIXTURE/tt-surface-drop"; rm -rf "$TT_F"; mkdir -p "$TT_F/claude/skills/recursive-improve" "$TT_F/claude/docs/adr" "$TT_F/claude/agents" "$TT_F/claude/commands" "$TT_F/claude/hooks" "$TT_F/.claude-plugin"
+cat > "$TT_F/claude/skills/recursive-improve/SKILL.md" <<'SK'
+---
+name: recursive-improve
+description: "fixture — good flag, so surface 3 is silent"
+disable-model-invocation: true
+---
+# fixture
+SK
+cat > "$TT_F/claude/docs/adr/0002-autonomy-invariant.md" <<'ADR'
+# ADR 0002: Autonomy invariant — fixture
+ADR
+# CONTEXT.md present but reworded (the load-bearing phrase is gone).
+cat > "$TT_F/claude/CONTEXT.md" <<'CTX'
+## Invariants
+- Autonomy is human-gated. No self-driving repair cycle lives here.
+CTX
+cat > "$TT_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "tt-fixture", "version": "0.0.1" }
+PJ
+set +e
+TT_OUT=$(bash "$AUDIT" "$TT_F" 2>&1)
+TT_RC=$?
+set -e
+TT_HAS_PHRASE_CRIT=$(printf '%s' "$TT_OUT" | grep -c "dropped its load-bearing phrase" || true)
+TT_HAS_S3=$(printf '%s' "$TT_OUT" | grep -c "missing 'disable-model-invocation: true'" || true)
+if [ "$TT_HAS_PHRASE_CRIT" -ge 1 ] && [ "$TT_HAS_S3" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s surface phrase drop: reworded CONTEXT.md fires CRIT; good skill stays silent\n' "harness-audit #32"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s surface phrase drop: want phrase-CRIT + no-S3, got phrase=%s s3=%s rc=%s:\n%s\n' "harness-audit #32" "$TT_HAS_PHRASE_CRIT" "$TT_HAS_S3" "$TT_RC" "$TT_OUT"
+fi
+
 # ── HOOK-1.5: inferential-structural-judge-on-session-end.sh (matcher-less SessionEnd) ──
 # Inferential-FB sensor that journals a verdict to ~/.claude/governance-events.jsonl.
 # It is journal-only and never emits a permissionDecision (autonomy invariant,

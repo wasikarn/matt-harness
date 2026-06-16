@@ -973,30 +973,59 @@ else
   warn "eval-target freshness check skipped — python3 unavailable"
 fi
 
-# 32. Autonomy invariant guardrail — round-2 drill-down (2026-06-12)
-# found that the load-bearing autonomy invariant (CONTEXT.md §Invariants:
-# "no autonomous or unattended self-repair loop, and no multi-iteration
-# loop that runs without a human gate between iterations") had no
-# deterministic check. The invariant is enforced socially (in code
-# review + CHANGELOG notes) via the `disable-model-invocation: true`
-# frontmatter on skills/recursive-improve/SKILL.md. This check makes
-# the guardrail deterministic. If this check ever fires on a real
-# repo, the invariant has regressed and the harness is one
-# model-version away from self-rewriting — emit CRIT, not WARN.
+# 32. Autonomy invariant guardrail — round-2 drill-down (2026-06-12),
+# surface-closure 2026-06-16. ADR 0002 names FIVE load-bearing surfaces for the
+# invariant; before this closure only surface 3 (the `disable-model-invocation:
+# true` frontmatter on recursive-improve) was guarded — and even that silently
+# passed when the skill file was deleted (delete the skill -> the guard no-ops
+# -> the invariant is unprotected with no flag raised). Surfaces 1/2/4 (the
+# prose homes in CONTEXT.md, METHODOLOGY.md, harness-decay-cadence.md) had no
+# check at all and could be reworded or removed silently.
 #
-# Implementation note: we read only the first 20 lines (frontmatter
-# region) of recursive-improve/SKILL.md. The check is exact-match on
-# "disable-model-invocation: true" — a regression guard against typos
-# (e.g. "True", "yes", "1") that would silently disable the gate.
-# The check is hermetic (single file read, no JSON parse, no
-# transitive dependencies). If the skill is renamed or removed, the
-# check silently passes (no file = no invariant to guard); this is
-# intentional — the invariant is about THIS skill being self-binding,
-# not about a future skill needing the same property.
-if [ -f "$CLAUDE_DIR/skills/recursive-improve/SKILL.md" ]; then
-  if ! head -20 "$CLAUDE_DIR/skills/recursive-improve/SKILL.md" | grep -qF "disable-model-invocation: true"; then
+# Trigger: a repo DECLARES the invariant iff docs/adr/0002-autonomy-invariant.md
+# exists. When it does, the self-binding skill must EXIST (not merely match-when-
+# present) and every doc surface must keep its load-bearing phrase. When ADR 0002
+# is absent (other plugin repos, the audit fixtures) the whole block is skipped —
+# the invariant is THIS repo's, not a universal plugin requirement.
+#
+# Phrase matches are exact (grep -qF) on a single contiguous line, each the most
+# invariant-specific wording on its surface, so a careless reword trips the gate.
+# If this check fires on a real repo the invariant has regressed and the harness
+# is one model-version from self-rewriting — CRIT, not WARN.
+#
+# Two triggers, deliberately split: surface 3 (the frontmatter flag) is checked
+# whenever the skill is PRESENT — this preserves the original guard for any repo
+# carrying the skill, regardless of ADR. The deleted-skill hole and the doc
+# surfaces 1/2/4 are checked only when the repo DECLARES the invariant (ADR 0002
+# present), because absence-as-regression and the prose homes are meaningful
+# only for this harness, not every plugin repo that happens to vendor the skill.
+RI_SKILL="$CLAUDE_DIR/skills/recursive-improve/SKILL.md"
+ADR0002="$CLAUDE_DIR/docs/adr/0002-autonomy-invariant.md"
+if [ -f "$RI_SKILL" ]; then
+  # Surface 3: present skill must carry the flag in its frontmatter (first 20 lines).
+  if ! head -20 "$RI_SKILL" | grep -qF "disable-model-invocation: true"; then
     crit "skills/recursive-improve/SKILL.md: missing 'disable-model-invocation: true' in frontmatter (autonomy invariant regressed — see CONTEXT.md §Invariants + ADR 0002)"
   fi
+elif [ -f "$ADR0002" ]; then
+  # Deleted-skill hole: ADR declares the invariant but the self-binding skill is
+  # gone — deleting it silently no-opped the old guard. That deletion IS the regression.
+  crit "autonomy invariant: ADR 0002 present but skills/recursive-improve/SKILL.md is MISSING — deleting the self-binding skill no-ops the guard (ADR 0002 surface 3)"
+fi
+if [ -f "$ADR0002" ]; then
+  # Surfaces 1/2/4: each doc surface must exist and keep its load-bearing phrase.
+  while IFS='|' read -r _label _rel _phrase; do
+    [ -n "$_label" ] || continue
+    _f="$CLAUDE_DIR/$_rel"
+    if [ ! -f "$_f" ]; then
+      crit "autonomy invariant: ADR 0002 present but $_rel is MISSING ($_label — ADR 0002)"
+    elif ! grep -qF "$_phrase" "$_f"; then
+      crit "autonomy invariant: $_rel dropped its load-bearing phrase \"$_phrase\" ($_label — ADR 0002)"
+    fi
+  done <<'AUTONOMY_SURFACES'
+surface 1 CONTEXT §Invariants|CONTEXT.md|unattended self-repair loop
+surface 2 METHODOLOGY Rule 4|METHODOLOGY.md|every loop terminates at a human gate
+surface 4 decay-cadence|docs/harness-decay-cadence.md|autonomous self-rewriter
+AUTONOMY_SURFACES
 fi
 
 # 33. Skill description injection-risk + imperative-intensity scan.
