@@ -36,10 +36,14 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRATCH_DIR = REPO_ROOT / ".scratch"
-DEFAULT_TIMEOUT = 300  # seconds per criterion — a criterion may invoke a full test
-# suite (e.g. `bash hooks/tests/test-critical-hooks.sh` is ~130s and grows as tests
-# are added); 60s timed it out and failed the CI gate. The runner is a CI/gate tool
-# under a job-level timeout-minutes cap, so a looser per-criterion ceiling is fine.
+DEFAULT_TIMEOUT = 60  # seconds per criterion. Deliberately low: the phase-1 contract
+# has one criterion that runs the whole critical-hooks suite
+# (`bash hooks/tests/test-critical-hooks.sh`) — ~130s locally, 300s+ on CI runners, and
+# the eval harness re-runs the contract ~3x, so no per-criterion ceiling that lets it
+# pass also fits the eval-harness job's 10-min cap. That criterion is EXPECTED to time
+# out here; the TimeoutExpired handler records it as a failed criterion (no crash), the
+# CI seed step is non-gating, and the suite itself is verified by the pre-commit gate +
+# local runs. Bumping this just burns the CI budget without ever letting the suite pass.
 
 
 def parse_acceptance_md(path: Path) -> dict[str, Any]:

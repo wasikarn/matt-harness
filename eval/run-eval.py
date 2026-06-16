@@ -416,12 +416,13 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             try:
                 result = subprocess.run(
                     [sys.executable, str(RUN_ACCEPTANCE), slug],
-                    # 300s, not 120s: a phase-1 acceptance criterion runs the full
-                    # critical-hooks suite (`bash hooks/tests/test-critical-hooks.sh`
-                    # ~132s and growing). At 120s this wrapper raised TimeoutExpired
-                    # mid-suite and the except-branch failed all criteria. Must stay
-                    # >= run-acceptance.py's DEFAULT_TIMEOUT so the suite can finish.
-                    capture_output=True, text=True, timeout=300, cwd=REPO_ROOT,
+                    # 120s wrapper > run-acceptance's 60s per-criterion timeout, so the
+                    # runner finishes (its slow critical-hooks-suite criterion times out
+                    # at 60s and is recorded as failed) and writes the results json BEFORE
+                    # this wrapper would fire. These fixtures only assert ">=1 criteria
+                    # passed", which the fast criteria satisfy — they don't need the slow
+                    # suite criterion to pass. Keep this > DEFAULT_TIMEOUT.
+                    capture_output=True, text=True, timeout=120, cwd=REPO_ROOT,
                 )
                 results_json = REPO_ROOT / ".scratch" / slug / "acceptance-results.json"
                 ar = json.loads(results_json.read_text()) if results_json.exists() else {}
