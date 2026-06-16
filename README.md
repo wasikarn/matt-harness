@@ -134,7 +134,7 @@ No autonomous or unattended self-repair loop. Every self-improvement iteration s
 # Plugin manifest validation
 claude plugin validate --strict .
 
-# Critical-hooks smoke tests (308 tests)
+# Critical-hooks smoke tests (310 tests)
 bash hooks/tests/test-critical-hooks.sh
 
 # Harness self-audit (must be 0 Critical / 0 Warnings)

@@ -1,6 +1,5 @@
 ---
 name: ship-task
-type: command
 description: "9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration."
 disable-model-invocation: true
 ---

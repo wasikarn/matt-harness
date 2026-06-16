@@ -404,9 +404,11 @@ for f in "$CLAUDE_DIR/commands"/*.md; do
   if [ -z "$(fm_get "$f" "name" --block)" ]; then
     crit "command '$name' missing name: in frontmatter"
   fi
-  if ! grep -q '^type: command' "$f"; then
-    crit "command '$name' missing type: command in frontmatter"
-  fi
+  # NOTE: a `type: command` frontmatter requirement was retired 2026-06-16 — it
+  # was self-referential (the field existed only to satisfy this check; nothing
+  # functional read it, it is not in the official slash-command schema, and the
+  # commands/ directory already determines command-ness). See CLAUDE.md
+  # "disable-model-invocation — selection criterion" note.
 done
 
 # 7. Name/filename consistency — agents
@@ -1327,6 +1329,27 @@ if [ -f "$SENSORS_JSON" ] && command -v jq >/dev/null 2>&1; then
     fi
   done < <(jq -r '.sensors[] | select(.fallback_role=="inferential-FB") | .name' "$SENSORS_JSON" 2>/dev/null)
 fi
+
+# 35. disable-model-invocation selection heuristic (ADVISORY / INFO only) —
+# encodes the flag-selection criterion (CLAUDE.md): the flag makes a surface
+# user-only, which is right for side-effect/irreversible/cost/governance
+# surfaces but WRONG for read-only reporters (a reporter the model can't invoke
+# can't answer "where are we?" on the user's behalf — the wave-status lesson).
+# Appropriateness is semantic and cannot be decided deterministically, so this
+# never CRITs — it flags the realistic misuse shape (a flagged surface whose
+# description is reporter-shaped) for human review. Name-only descriptions are
+# #31.1's job, skipped here via the length guard.
+for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/skills"/*/SKILL.md; do
+  [ -f "$f" ] || continue
+  case "$f" in */skills/_*) continue ;; esac
+  head -20 "$f" | grep -qF 'disable-model-invocation: true' || continue
+  _nm=$(basename "$f" .md); case "$f" in */SKILL.md) _nm=$(basename "$(dirname "$f")") ;; esac
+  _d=$(fm_get "$f" "description" --block)
+  [ "${#_d}" -gt 25 ] || continue
+  if printf '%s' "$_d" | grep -qiE '^"?(Report|Read-only|Query|Summari|Render)[[:space:]]|read-only'; then
+    info "'$_nm': disable-model-invocation set on a reporter-shaped (read-only) description — read-only surfaces usually want model invocation; verify the flag is warranted (selection criterion in CLAUDE.md)"
+  fi
+done
 
 # ── summary ──────────────────────────────────────────────────────────
 

@@ -1,6 +1,5 @@
 ---
 name: post-mortem
-type: command
 description: "Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead)."
 argument-hint: "Optional bug ID, Jira key, or summary"
 disable-model-invocation: true

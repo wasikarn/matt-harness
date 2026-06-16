@@ -194,6 +194,53 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s violation fixture: want foo-CRIT + no-bar, got foo=%s bar=%s:\n%s\n' "harness-audit #34" "$VV_HAS_FOO" "$VV_HAS_BAR" "$VV_OUT"
 fi
 
+# --- harness-audit check #35 — disable-model-invocation selection heuristic (INFO) ---
+# Advisory: a flagged surface with a reporter-shaped (read-only) description is
+# usually mis-flagged (the wave-status lesson). INFO only, never CRIT.
+
+# (WW) positive control — real repo: wave-status is now model-invokable, so no
+# reporter-shaped surface carries the flag → zero #35 INFO.
+set +e
+WW_OUT=$(bash "$AUDIT" . 2>&1)
+set -e
+WW_HAS=$(printf '%s' "$WW_OUT" | grep -c "reporter-shaped (read-only) description" || true)
+if [ "$WW_HAS" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s real repo: 0 reporter-shaped flagged surfaces (wave-status flipped)\n' "harness-audit #35"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s real repo emitted %s reporter-INFO (want 0):\n%s\n' "harness-audit #35" "$WW_HAS" "$WW_OUT"
+fi
+
+# (XX) violation fixture — a flagged command whose description starts with
+# "Report …" must emit the #35 INFO. A flagged side-effect command must NOT.
+XX_F="$FIXTURE/xx-reporter-flagged"; rm -rf "$XX_F"; mkdir -p "$XX_F/commands" "$XX_F/skills" "$XX_F/agents" "$XX_F/.claude-plugin"
+cat > "$XX_F/commands/foo-status.md" <<'MD'
+---
+name: foo-status
+description: "Report the current build status, wave progress, and ETA. Use when the user asks where are we, status of the build."
+disable-model-invocation: true
+---
+MD
+cat > "$XX_F/commands/foo-ship.md" <<'MD'
+---
+name: foo-ship
+description: "Ship the release: merge the PR, tag, push to the deploy target, and verify. Use when the user says ship it."
+disable-model-invocation: true
+---
+MD
+cat > "$XX_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "xx-fixture", "version": "0.0.1" }
+PJ
+set +e
+XX_OUT=$(bash "$AUDIT" "$XX_F" 2>&1)
+set -e
+XX_HAS_REPORTER=$(printf '%s' "$XX_OUT" | grep -c "'foo-status': disable-model-invocation set on a reporter-shaped" || true)
+XX_HAS_SHIP=$(printf '%s' "$XX_OUT" | grep -c "'foo-ship'.*reporter-shaped" || true)
+if [ "$XX_HAS_REPORTER" -ge 1 ] && [ "$XX_HAS_SHIP" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s reporter fixture: INFO on flagged "Report…"; silent on flagged side-effect cmd\n' "harness-audit #35"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s reporter fixture: want reporter-INFO + no-ship, got rep=%s ship=%s:\n%s\n' "harness-audit #35" "$XX_HAS_REPORTER" "$XX_HAS_SHIP" "$XX_OUT"
+fi
+
 # ── HOOK-1.5: inferential-structural-judge-on-session-end.sh (matcher-less SessionEnd) ──
 # Inferential-FB sensor that journals a verdict to ~/.claude/governance-events.jsonl.
 # It is journal-only and never emits a permissionDecision (autonomy invariant,

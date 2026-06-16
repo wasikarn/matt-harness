@@ -1,6 +1,5 @@
 ---
 name: team-build
-type: command
 description: "Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, then run post-build validation. Use after /team-plan completes, or when user says 'team build: <slug>', 'execute the plan'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev)."
 argument-hint: "Path to plan file (e.g. .claude/tasks/health-endpoint.md)"
 disable-model-invocation: true
