@@ -23,25 +23,31 @@ fi
 
 out="$(bash "$AUDIT" "$FIXTURE" --plugin-cache "$FAKE_CACHE" 2>&1)"
 crit_n=$(printf '%s\n' "$out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-f1_n=$(printf '%s\n' "$out" | grep -c "CRIT F1")
+# Assert on the loadability check's MESSAGE, not the positional finding-ID:
+# findings are numbered F1/F2/... in emission order, so "CRIT F1" no longer
+# means "the symlink/loadability check" — it means "the first crit, whatever it
+# was" (an unrelated fixture wart would steal the F1 slot). Grep the stable
+# message text instead.
+load_n=$(printf '%s\n' "$out" | grep -c "not loadable")
 
 if [ -z "$crit_n" ]; then
   echo "FAIL: audit did not produce a CRIT summary line" >&2
   printf '%s\n' "$out" | tail -5 >&2
   exit 1
 fi
-if [ "$f1_n" -ne 0 ]; then
-  echo "FAIL: expected 0 F1 CRITs (plugin-delivered), got $f1_n" >&2
-  printf '%s\n' "$out" | grep "CRIT F1" >&2
+if [ "$load_n" -ne 0 ]; then
+  echo "FAIL: expected 0 'not loadable' CRITs (plugin-delivered), got $load_n" >&2
+  printf '%s\n' "$out" | grep "not loadable" >&2
   exit 1
 fi
 
-# Sanity: the INFO line about plugin-mode should fire (proves the cache was
-# detected, not just that the F1 count is 0 for some other reason).
-if ! printf '%s\n' "$out" | grep -q "INFO.*Plugin.*cache detected"; then
-  echo "FAIL: expected 'Plugin cache detected' INFO line" >&2
+# Sanity: the plugin-cache context line should fire (proves the cache was
+# detected, not just that the F1 count is 0 for some other reason). It is a
+# header context line, not a finding — grep the line text, not an INFO tier.
+if ! printf '%s\n' "$out" | grep -q "Plugin cache:.*F1 treats plugin-delivered"; then
+  echo "FAIL: expected 'Plugin cache:' context line" >&2
   exit 1
 fi
 
-echo "PASS: plugin-repo reports 0 F1 CRITs (plugin-mode INFO present)"
+echo "PASS: plugin-repo reports 0 F1 CRITs (plugin-cache context line present)"
 exit 0

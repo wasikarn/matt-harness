@@ -21,33 +21,33 @@ if [ ! -d "$FIXTURE" ]; then
 fi
 
 out="$(bash "$AUDIT" "$FIXTURE" --plugin-cache "$EMPTY_CACHE" 2>&1)"
-ec=$?
 crit_n=$(printf '%s\n' "$out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')
-f1_n=$(printf '%s\n' "$out" | grep -c "CRIT F1")
+# Assert on the loadability check's MESSAGE, not the positional finding-ID.
+# Findings are numbered F1/F2/... in emission order, so the five loadability
+# CRITs land on F1..F5 (not five "F1"s) — grep the stable "not loadable" text.
+# Total CRIT may include unrelated findings (e.g. command missing 'name:'); we
+# scope to the loadability message to keep the test about F1's liveness.
+load_n=$(printf '%s\n' "$out" | grep -c "not loadable")
 
-# Expectation: 5 F1 CRITs (one per kind: agent, command, hook, output-style,
-# skill). Total CRIT may include other findings from the audit (e.g. command
-# missing 'name:' field, output-style missing name/description) — we only
-# assert on F1 count to keep the test scoped to the fix.
-if [ -z "$crit_n" ] || [ -z "$f1_n" ]; then
+if [ -z "$crit_n" ] || [ -z "$load_n" ]; then
   echo "FAIL: audit did not produce a CRIT summary line" >&2
   printf '%s\n' "$out" | tail -5 >&2
   exit 1
 fi
-if [ "$f1_n" -lt 5 ]; then
-  echo "FAIL: expected >=5 F1 CRITs (one per kind), got $f1_n" >&2
-  printf '%s\n' "$out" | grep "CRIT F1" >&2
+if [ "$load_n" -lt 5 ]; then
+  echo "FAIL: expected >=5 'not loadable' CRITs (one per kind), got $load_n" >&2
+  printf '%s\n' "$out" | grep "not loadable" >&2
   exit 1
 fi
 
 # Also assert each kind fires individually (regression guard — a future edit
-# might accidentally skip a kind).
+# might accidentally skip a kind). Match the kind + loadability message, any ID.
 for kind in skill hook agent command "output-style"; do
-  if ! printf '%s\n' "$out" | grep -q "CRIT F1: ${kind} '"; then
-    echo "FAIL: expected F1 for kind='$kind', not found" >&2
+  if ! printf '%s\n' "$out" | grep -q "${kind} '[^']*' not loadable"; then
+    echo "FAIL: expected 'not loadable' CRIT for kind='$kind', not found" >&2
     exit 1
   fi
 done
 
-echo "PASS: symlink-farm-repo fires $f1_n F1 CRITs (>=5 expected, all 5 kinds covered)"
+echo "PASS: symlink-farm-repo fires $load_n 'not loadable' CRITs (>=5 expected, all 5 kinds covered)"
 exit 0

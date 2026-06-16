@@ -228,8 +228,12 @@ SKILLS=$(ls -d "$CLAUDE_DIR/skills"/[!_]*/ 2>/dev/null | wc -l | tr -d ' ')  # [
 COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
 HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh "$CLAUDE_DIR/hooks"/*.py 2>/dev/null | wc -l | tr -d ' ')
 echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
+# Header context, NOT a finding: a plugin cache always exists for the owner who
+# dogfoods the plugin, so this fires every run and is never actionable. An
+# always-on non-actionable "finding" is noise in the findings channel — print it
+# as a context line alongside Root:/Fleet: instead (keeps 0C/0W/0I honest).
 if [ "$PLUGIN_ACTIVE" -eq 1 ]; then
-  info "Plugin cache detected at $PLUGIN_CACHE — F1 treats plugin-delivered components as loadable"
+  echo "Plugin cache: $PLUGIN_CACHE (F1 treats plugin-delivered components as loadable)"
 fi
 echo ""
 
