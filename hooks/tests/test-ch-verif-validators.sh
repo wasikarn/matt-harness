@@ -349,3 +349,42 @@ if [ "$RIO7_RC" = 0 ] && grep -qi 'unparseable' "$RIO7_ERR" && grep -q 'corrupte
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s garbage field not surfaced: rc=%s err=%q\n' "recursive-improve-observe.py" "$RIO7_RC" "$(cat "$RIO7_ERR")"
 fi
+
+# (8) run-acceptance.py exit-3 (malformed ACCEPTANCE.md). A "## Criteria" section
+#     the author wrote but that has ZERO parseable `- [ ]` checkboxes is a parse
+#     error (exit 3), NOT exit 0 — before the malformed guard such a file parsed
+#     to an empty criteria list and was silently scored as PASS (exit 0). Reads
+#     the committed repro at eval/fixtures/acceptance-malformed-criteria/ into a
+#     temp .scratch slug (run-acceptance resolves slugs under REPO_ROOT/.scratch).
+RA="$HOOKS/../scripts/evals/run-acceptance.py"
+RA_REPO="$(cd "$HOOKS/.." && pwd)"
+RA_FIX="$RA_REPO/eval/fixtures/acceptance-malformed-criteria/ACCEPTANCE.md"
+RA_SLUG_BAD="ch-acc-malformed-$$"
+mkdir -p "$RA_REPO/.scratch/$RA_SLUG_BAD"
+cp "$RA_FIX" "$RA_REPO/.scratch/$RA_SLUG_BAD/ACCEPTANCE.md"
+RA_BAD_ERR="$FIXTURE/ra-bad-err.txt"
+set +e
+python3 "$RA" "$RA_SLUG_BAD" >/dev/null 2>"$RA_BAD_ERR"; RA_BAD_RC=$?
+set -e
+rm -rf "$RA_REPO/.scratch/$RA_SLUG_BAD"
+if [ "$RA_BAD_RC" = 3 ] && grep -qi 'malformed' "$RA_BAD_ERR"; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s malformed ## Criteria (no checkboxes) → exit 3 (was unreachable/silent exit 0)\n' "run-acceptance.py"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s malformed → want rc=3+"malformed", got rc=%s err=%q\n' "run-acceptance.py" "$RA_BAD_RC" "$(cat "$RA_BAD_ERR")"
+fi
+
+# (9) positive control — a well-formed `## Criteria` with one safe checkbox must
+#     NOT hit exit 3 (the guard is specific to the zero-checkbox case, not all
+#     `## Criteria` sections).
+RA_SLUG_OK="ch-acc-ok-$$"
+mkdir -p "$RA_REPO/.scratch/$RA_SLUG_OK"
+printf '# ok\n\n## Criteria\n\n- [ ] true\n' > "$RA_REPO/.scratch/$RA_SLUG_OK/ACCEPTANCE.md"
+set +e
+python3 "$RA" "$RA_SLUG_OK" >/dev/null 2>&1; RA_OK_RC=$?
+set -e
+rm -rf "$RA_REPO/.scratch/$RA_SLUG_OK"
+if [ "$RA_OK_RC" != 3 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s well-formed ## Criteria (1 checkbox) does NOT exit 3 (rc=%s)\n' "run-acceptance.py" "$RA_OK_RC"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s well-formed wrongly hit exit 3 (false positive)\n' "run-acceptance.py"
+fi

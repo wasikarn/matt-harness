@@ -374,3 +374,57 @@ for f in "$HOOKS"/*.py "$HOOKS"/post-tool/*.py; do
     FAIL=$((FAIL+1)); printf '  ❌ %-26s ast.parse FAILED\n' "$name"
   fi
 done
+
+# ════════════════════════════════════════════════════════════════════════════
+# Pattern-breadth tests — each entry in a gate's pattern list gets its own case,
+# so dropping ANY single entry from the hook fails a test (the prior tests only
+# exercised the head of each list, leaving silent per-entry coverage holes).
+# The expected lists are hardcoded HERE as the spec: if the hook drops an entry,
+# the test still asserts it and goes red.
+# ════════════════════════════════════════════════════════════════════════════
+
+# --- secret-scan: one deny per high-confidence pattern (13). Tokens are built
+#     at runtime so no full secret-shaped literal lives in this file.
+SS_LBL=(); SS_TOK=()
+ss_add() { SS_LBL+=("$1"); SS_TOK+=("$2"); }
+ss_add AWS                "AKIA$(printf 'A%.0s' $(seq 1 16))"
+ss_add Anthropic          "sk-ant-$(printf 'a%.0s' $(seq 1 24))"
+ss_add OpenAI             "sk-$(printf 'a%.0s' $(seq 1 48))"
+ss_add GitHub-PAT-classic "ghp_$(printf '0%.0s' $(seq 1 36))"
+ss_add GitHub-OAuth       "gho_$(printf '0%.0s' $(seq 1 36))"
+ss_add GitHub-App         "ghs_$(printf '0%.0s' $(seq 1 36))"
+ss_add GitHub-PAT-fine    "github_pat_$(printf 'a%.0s' $(seq 1 82))"
+ss_add GitLab-PAT         "glpat-$(printf 'a%.0s' $(seq 1 20))"
+ss_add HuggingFace        "hf_$(printf 'a%.0s' $(seq 1 34))"
+ss_add Slack              "xoxb-$(printf '1%.0s' $(seq 1 5))-$(printf '2%.0s' $(seq 1 5))-$(printf 'a%.0s' $(seq 1 8))"
+ss_add Stripe-live        "sk_live_$(printf 'a%.0s' $(seq 1 24))"
+ss_add Google-API         "AIza$(printf 'a%.0s' $(seq 1 35))"
+ss_add Private-key        "-----BEGIN RSA PRIVATE ""KEY-----"
+for i in "${!SS_TOK[@]}"; do
+  check gates/secret-scan.sh deny "secret breadth: ${SS_LBL[$i]}" "$(write_event /x/a.txt "val=${SS_TOK[$i]}")"
+done
+
+# --- config-protection: one ask per protected basename (32). Each file must
+#     pre-exist (the hook only gates MODIFICATION of an existing config).
+CP_DIR="$FIXTURE/cp-breadth"; mkdir -p "$CP_DIR"
+CP_FILES=(
+  .eslintrc .eslintrc.js .eslintrc.cjs .eslintrc.json .eslintrc.yml .eslintrc.yaml
+  eslint.config.js eslint.config.mjs eslint.config.cjs eslint.config.ts eslint.config.mts eslint.config.cts
+  .prettierrc .prettierrc.js .prettierrc.cjs .prettierrc.json .prettierrc.yml .prettierrc.yaml
+  prettier.config.js prettier.config.cjs prettier.config.mjs
+  biome.json biome.jsonc
+  .ruff.toml ruff.toml
+  .shellcheckrc .stylelintrc .stylelintrc.json .stylelintrc.yml
+  .markdownlint.json .markdownlint.yaml .markdownlintrc
+)
+for cfg in "${CP_FILES[@]}"; do
+  : > "$CP_DIR/$cfg"
+  check gates/config-protection.sh ask "config breadth: $cfg" "$(write_event "$CP_DIR/$cfg" 'weakened')"
+done
+
+# --- block-alias-shadowing: one ask per safety-binary (20). Dropping a binary
+#     from BINARIES means its alias stops being gated.
+BAS_BINS=(git curl wget npm pip pip3 brew gh aws gcloud az docker kubectl terraform cargo helm doctl heroku op vault)
+for b in "${BAS_BINS[@]}"; do
+  check gates/block-alias-shadowing.sh ask "alias-shadow breadth: $b" "$(bash_event "alias $b='$b --danger'")"
+done

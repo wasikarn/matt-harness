@@ -144,6 +144,56 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s surface phrase drop: want phrase-CRIT + no-S3, got phrase=%s s3=%s rc=%s:\n%s\n' "harness-audit #32" "$TT_HAS_PHRASE_CRIT" "$TT_HAS_S3" "$TT_RC" "$TT_OUT"
 fi
 
+# --- harness-audit check #34 — autonomy invariant surface 5 (advisory-only) ---
+# Inferential-FB sensors (sensors.json fallback_role=="inferential-FB") must
+# NEVER emit a permissionDecision. #29 catches decide-AND-journal; #34 catches
+# decide-WITHOUT-journal, which would otherwise slip the net (covert L4 gate).
+
+# (UU) positive control — real repo: every inferential-FB sensor is advisory,
+# so zero "emits a permissionDecision" CRITs.
+set +e
+UU_OUT=$(bash "$AUDIT" . 2>&1)
+set -e
+UU_HAS_CRIT=$(printf '%s' "$UU_OUT" | grep -c "inferential-FB sensor.*emits a permissionDecision" || true)
+if [ "$UU_HAS_CRIT" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s real repo: 0 surface-5 CRIT (all inferential-FB sensors advisory)\n' "harness-audit #34"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s real repo emitted %s surface-5 CRIT (want 0):\n%s\n' "harness-audit #34" "$UU_HAS_CRIT" "$UU_OUT"
+fi
+
+# (VV) violation fixture — an inferential-FB sensor whose hook calls hook_decision
+# (the _lib emitter) must CRIT. Comment-only mentions must NOT (comment-stripping).
+VV_F="$FIXTURE/vv-inf-fb-gates"; rm -rf "$VV_F"; mkdir -p "$VV_F/claude/hooks/advisory" "$VV_F/claude/agents" "$VV_F/claude/commands" "$VV_F/.claude-plugin"
+cat > "$VV_F/claude/hooks/sensors.json" <<'JSON'
+{"version":1,"sensors":[
+  {"name":"foo-advisory-log","should_fire_when":"Stop:*","max_silent_days":30,"fallback_role":"inferential-FB","must_fire_in_session":false,"enabled":true},
+  {"name":"bar-clean-log","should_fire_when":"Stop:*","max_silent_days":30,"fallback_role":"inferential-FB","must_fire_in_session":false,"enabled":true}
+]}
+JSON
+cat > "$VV_F/claude/hooks/advisory/foo-advisory-log.sh" <<'SH'
+#!/usr/bin/env bash
+# advisory sensor that WRONGLY gates the tool call
+hook_decision deny "should not gate"
+SH
+cat > "$VV_F/claude/hooks/advisory/bar-clean-log.sh" <<'SH'
+#!/usr/bin/env bash
+# clean advisory sensor — only a comment mentions permissionDecision, never emits it
+echo '{"ok":true}'
+SH
+cat > "$VV_F/.claude-plugin/plugin.json" <<'PJ'
+{ "name": "vv-fixture", "version": "0.0.1" }
+PJ
+set +e
+VV_OUT=$(bash "$AUDIT" "$VV_F" 2>&1)
+set -e
+VV_HAS_FOO=$(printf '%s' "$VV_OUT" | grep -c "inferential-FB sensor 'foo-advisory-log'" || true)
+VV_HAS_BAR=$(printf '%s' "$VV_OUT" | grep -c "inferential-FB sensor 'bar-clean-log'" || true)
+if [ "$VV_HAS_FOO" -ge 1 ] && [ "$VV_HAS_BAR" = 0 ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s violation fixture: gating sensor CRITs; comment-only sensor stays silent\n' "harness-audit #34"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s violation fixture: want foo-CRIT + no-bar, got foo=%s bar=%s:\n%s\n' "harness-audit #34" "$VV_HAS_FOO" "$VV_HAS_BAR" "$VV_OUT"
+fi
+
 # ── HOOK-1.5: inferential-structural-judge-on-session-end.sh (matcher-less SessionEnd) ──
 # Inferential-FB sensor that journals a verdict to ~/.claude/governance-events.jsonl.
 # It is journal-only and never emits a permissionDecision (autonomy invariant,

@@ -82,6 +82,19 @@ def parse_acceptance_md(path: Path) -> dict[str, Any]:
             }
         )
 
+    # Malformed guard: a "## Criteria" heading the author explicitly wrote but
+    # whose block yields ZERO parseable `- [ ]` items is a parse error, not a
+    # legit "no criteria" file. Without this, such a file slips through with an
+    # empty criteria list and main() returns exit 0 — a malformed contract
+    # silently scored as PASS (the anti-cheat failure mode the exit-code split
+    # exists to prevent). main() maps this ValueError to exit 3. A file with no
+    # "## Criteria" heading at all is unaffected (legit "no criteria" -> exit 0).
+    if criteria_match and not criteria:
+        raise ValueError(
+            f"'## Criteria' section found in {path.name} but it contains no "
+            "parseable '- [ ] ...' checkbox items — malformed ACCEPTANCE.md"
+        )
+
     # Extract metadata from YAML-like frontmatter
     task = None
     accepted = None
