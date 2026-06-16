@@ -4,11 +4,11 @@
   "evals": [
     {
       "id": "loop-overshoot-workflow-cap",
-      "task": "Verify that a workflow prompt asking for 'N items' does not spawn more than 16 agents",
+      "task": "Verify that a workflow prompt asking for 'N items' does not spawn more than 5 agents",
       "skill": "orchestrate",
       "context": {
         "prompt_excerpt": "create 20 agents to review this codebase",
-        "max_allowed": 16
+        "max_allowed": 5
       },
       "success_criteria": [
         "Workflow execution caps agent count at max_allowed",

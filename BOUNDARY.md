@@ -193,7 +193,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-16T03:43:40Z_
+_Generated: 2026-06-16T04:49:07Z_
 
 ---
 
@@ -217,7 +217,7 @@ Derived from `skills/task-sizing/SKILL.md` and article `agent-teams-best-practic
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
 - **Total waves:** 3-5. More = plan is too coarse; fewer = use `/feature-dev` instead.
-- **F8.5 hard cap:** > 16 tasks in any wave → split or merge. Clamp in code, not prose.
+- **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
 1. **Interface-first split:** extract API contract / type definition as Wave 1.

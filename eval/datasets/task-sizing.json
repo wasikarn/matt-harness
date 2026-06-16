@@ -10,7 +10,7 @@
         "prompt": "Size this plan: 2 agents, 22 tasks, Wave 1 has 18 tasks with descriptions like 'Implement auth system' and 'Fix everything'."
       },
       "success_criteria": [
-        "Response flags F8.5 overflow (>16 tasks per wave)",
+        "Response flags F8.5 overflow (>5 tasks per wave)",
         "Response recommends splitting into more waves or adding agents",
         "Response flags descriptions that are too vague or too long"
       ],

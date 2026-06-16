@@ -90,7 +90,7 @@ For each team member, list:
 
 **Sweet spot: 3-5 teammates** (per F8 lead doctrine in `skills/orchestrate/SKILL.md`). Plans outside this range are flagged for revision here, not at `/team-build` time.
 
-**⚠️ F8.5 — Hard cap = 16 per wave** (the [[bounded-agent-spawning]] contract). A "20-35 items" prompt is NOT a cap — the LLM will overshoot (audit 2026-06-12: prompt said 20-35, spawned 44). The dispatch step in `commands/team-build.md` Step 6 is the enforcement point; this planning step is responsible for **pre-trimming** any work-list >16 by deferring the tail to a `deferred-<date>.md` and queuing it as a follow-up wave. The audit fixture `eval/regressions/bounded-agent-spawning.json` locks this in code.
+**⚠️ F8.5 — Hard cap = 5 per wave** (advisory floor 3 — F8.4; the [[bounded-agent-spawning]] contract). A "20-35 items" prompt is NOT a cap — the LLM will overshoot (audit 2026-06-12: prompt said 20-35, spawned 44). The dispatch step in `commands/team-build.md` Step 6 is the enforcement point; this planning step is responsible for **pre-trimming** any work-list >5 by deferring the tail to a `deferred-<date>.md` and queuing it as a follow-up wave. The audit fixture `eval/regressions/bounded-agent-spawning.json` locks this in code.
 
 ### 3b. `## Step by Step Tasks`
 

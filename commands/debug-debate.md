@@ -335,7 +335,7 @@ The debate is complete when:
 
 - **F9 spawn-prompt template** — `skills/orchestrate/SKILL.md` § Spawn-prompt template. Adapted here for read-only debate roles.
 - **Ungated dispatch** — `skills/orchestrate/SKILL.md` § Ungated dispatch. Read-only agents (no Edit/Write/Bash) do not require `AskUserQuestion`.
-- **Bounded fan-out (F8.5)** — `skills/orchestrate/SKILL.md` § Bounded fan-out. `/debug-debate` caps at 4 agents, well under the 16 hard cap.
+- **Bounded fan-out (F8.5)** — `skills/orchestrate/SKILL.md` § Bounded fan-out. `/debug-debate` caps at 4 agents, well under the 5 hard cap.
 - **Lead doctrine (F8)** — `skills/orchestrate/SKILL.md` § Lead-coordinator doctrine. The moderator is a lead in synthesis mode, not implementation mode.
 - **`/deep-dive`** — `commands/deep-dive.md`. For research briefs, not structured debate.
 - **`/feature-dev`** — `commands/feature-dev.md`. For implementation after the debate concludes.

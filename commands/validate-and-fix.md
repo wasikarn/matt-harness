@@ -278,7 +278,7 @@ The board is the single source of truth. Mutations are atomic via `board_write`.
 
 This command processes **one task at a time**. If the user passes multiple task IDs (e.g., `/validate-and-fix API-1 API-2`), process them **sequentially**, not in parallel. Each task's Step 3 (Fix) may require user interaction, and Step 4 depends on Step 3's output. The validation chain is inherently sequential.
 
-The hard cap of 16 agents per wave from `skills/orchestrate/SKILL.md` does not apply directly because this command spawns at most 2 reviewers + 1 fixer per task. Still, do not spawn the V1 reviews for multiple tasks simultaneously; finish one chain before starting the next.
+The hard cap of 5 agents per wave from `skills/orchestrate/SKILL.md` does not apply directly because this command spawns at most 2 reviewers + 1 fixer per task. Still, do not spawn the V1 reviews for multiple tasks simultaneously; finish one chain before starting the next.
 
 ---
 

@@ -64,7 +64,7 @@ A `/team-build` plan is executed in waves: all Wave 1 tasks run in parallel, the
 
 **Total waves for a feature: 3-5.** More than 5 waves means the plan is too coarse-grained; merge waves or enlarge task scope. Fewer than 3 waves means the feature is small enough for `/feature-dev` (single-agent).
 
-**F8.5 hard cap:** If any wave has >16 tasks, split the wave or merge tasks. A "20-35 items" prompt is NOT a cap — the LLM will overshoot (audit 2026-06-12: 44 items spawned from a 20-35 prompt). Clamp in code, not in prose. See `skills/orchestrate/SKILL.md` § Bounded fan-out.
+**F8.5 hard cap:** If any wave has >5 tasks, split the wave or merge tasks. A "20-35 items" prompt is NOT a cap — the LLM will overshoot (audit 2026-06-12: 44 items spawned from a 20-35 prompt). Clamp in code, not in prose. See `skills/orchestrate/SKILL.md` § Bounded fan-out.
 
 ## Output Format
 
@@ -200,7 +200,7 @@ def main():
     for w, ts in sorted(waves.items()):
         print(f"  Wave {w}: {len(ts)} tasks")
         if len(ts) > 16:
-            print(f"    ⚠️  F8.5 overflow — split or merge (cap = 16)")
+            print(f"    ⚠️  F8.5 overflow — split or merge (cap = 5)")
         if w == 1 and not (3 <= len(ts) <= 5):
             print(f"    ⚠️  Wave 1 expected 3-5 tasks (found {len(ts)})")
         if w > 1 and not (2 <= len(ts) <= 4):
@@ -268,7 +268,7 @@ if __name__ == '__main__':
 1. **Splitting by function instead of by file.** "Agent A writes the first half of `src/api/users.py`, agent B writes the second half" → silent overwrite. The boundary is file-level, never function-level.
 2. **Forgetting the interface-first task.** If Wave 1 has no contract/schema task, parallel agents in Wave 2 will invent incompatible shapes. Always extract the shared interface as Wave 1.
 3. **Treating "validation" as a single task.** One validator per component is the minimum. For cross-component features, add an integration validator (INT-N) that blocks on ALL builders.
-4. **Ignoring the F8.5 hard cap at planning time.** A prompt asking for "20-35 items" is not a cap. If the plan has >16 tasks in any wave, split the wave or merge tasks before `/team-build` dispatches.
+4. **Ignoring the F8.5 hard cap at planning time.** A prompt asking for "20-35 items" is not a cap. If the plan has >5 tasks in any wave, split the wave or merge tasks before `/team-build` dispatches.
 5. **Verbal estimates without observable done-whens.** "Make the code work" is not a criterion. Every task must have an observable check a reviewer can run.
 
 ## Cross-references

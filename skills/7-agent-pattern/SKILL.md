@@ -142,10 +142,10 @@ Paste this table into your plan file (see `commands/team-plan.md` for the full p
 
 ## F8.5 bounded fan-out check
 
-7 agents in 4 waves = **never exceeds 16**. But if a wave has > 3 tasks per agent
+7 agents, max 3 per wave (Wave 2) = **never exceeds the 5/wave cap**. But if a wave has > 3 tasks per agent
 (21 total), split into sub-waves.
 
-The hard cap is **16 agents per wave**, enforced in code, not prose. See
+The hard cap is **5 agents per wave**, enforced in code, not prose. See
 `skills/orchestrate/SKILL.md` § "Bounded fan-out — hard cap (F8.5)" for the clamp
 rules and the `eval/regressions/bounded-agent-spawning.json` fixture that keeps the
 contract in place.

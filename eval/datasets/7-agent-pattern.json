@@ -47,7 +47,7 @@
         "prompt": "A user asks for a plan with 20 parallel tasks in Wave 2. What should happen?"
       },
       "success_criteria": [
-        "Response explicitly cites the hard cap of 16 agents per wave",
+        "Response explicitly cites the hard cap of 5 agents per wave",
         "Response recommends splitting into sub-waves or reducing scope",
         "Response references bounded fan-out (F8.5)"
       ],

@@ -37,10 +37,12 @@ What this script IS NOT
   LLM; the lead does. If you need headless agent dispatch, that's a
   separate project (and a separate ADR-0002 conversation).
 
-The fan-out cap (F8.5, hard cap = 16 per wave) is enforced in this
-script via `--max-per-wave` (default 16). Clamping happens BEFORE the
-wave list is printed, not after — the lead sees the clamped structure,
-not a 44-item wall of doom. The cap is on the resolved wave list, not
+The fan-out cap (F8.5, hard cap = 5 per wave) is enforced in this
+script via `--max-per-wave` (default 5); a symmetric F8.4 advisory floor
+(`--min-per-wave`, default 3) flags an under-parallelized AGENT fan-out.
+Clamping happens BEFORE the wave list is printed, not after — the lead
+sees the clamped structure, not a 44-item wall of doom. The cap is on the
+resolved wave list, not
 on the input spec; the spec can declare more stages if the DAG fans
 out organically. Over-cap stages are emitted to
 `.scratch/<slug>/deferred-<date>.md` and queued for a follow-up wave.
@@ -65,7 +67,7 @@ Usage
     # half — build, lint, test). Agent stages are emitted as plans only.
     python scripts/orchestrate-dispatch.py examples/ship-merge.yml --execute
 
-    # Clamp the wave size before printing (default 16 per F8.5):
+    # Clamp the wave size before printing (default 5 per F8.5):
     python scripts/orchestrate-dispatch.py examples/ship-merge.yml --max-per-wave 8
 
     # JSON input works too:
@@ -104,7 +106,8 @@ from orchestrate.loader import load_spec, validate_spec, SpecValidationError
 from orchestrate.planner import resolve_waves, build_plan, print_plan_human
 from orchestrate.executor import run_execute, DEFAULT_TIMEOUT
 
-DEFAULT_MAX_PER_WAVE = 16  # F8.5 hard cap (skills/orchestrate/SKILL.md)
+DEFAULT_MAX_PER_WAVE = 5  # F8.5 hard cap — max teammates per wave (skills/orchestrate/SKILL.md)
+DEFAULT_MIN_PER_WAVE = 3  # F8.4 advisory floor — below this an AGENT fan-out is under-parallelized
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +132,10 @@ def main() -> int:
         help=f"Hard cap on stages per emitted wave (F8.5). Default: {DEFAULT_MAX_PER_WAVE}.",
     )
     parser.add_argument(
+        "--min-per-wave", type=int, default=DEFAULT_MIN_PER_WAVE,
+        help=f"Advisory floor for agent fan-out (F8.4 under-parallelized). Default: {DEFAULT_MIN_PER_WAVE}.",
+    )
+    parser.add_argument(
         "--timeout", type=int, default=DEFAULT_TIMEOUT,
         help=f"Per-command timeout in seconds. Default: {DEFAULT_TIMEOUT}.",
     )
@@ -148,6 +155,7 @@ def main() -> int:
         {"name": spec["name"], "description": spec.get("description", ""), "stages": stages},
         waves,
         max_per_wave=args.max_per_wave,
+        min_per_wave=args.min_per_wave,
     )
 
     if args.emit_plan:

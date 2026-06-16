@@ -23,7 +23,7 @@ def resolve_waves(stages: list[dict[str, Any]], max_per_wave: int) -> list[list[
     first `max_per_wave` siblings land in the current wave, the rest
     are deferred to the next wave (still respecting their deps). This
     is the F8.5 clamp: the cap is on the emitted wave, not on the
-    spec; a 30-stage spec with no deps fans into 2 waves of 16+14.
+    spec; a 12-stage spec with no deps fans into 3 waves of 5+5+2.
 
     Returns a list of waves, each a list of stage ids in deterministic
     (sorted) order.
@@ -67,7 +67,7 @@ def resolve_waves(stages: list[dict[str, Any]], max_per_wave: int) -> list[list[
 # Plan emission
 # ---------------------------------------------------------------------------
 
-def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int) -> dict[str, Any]:
+def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, min_per_wave: int = 3) -> dict[str, Any]:
     """Build a structured plan: {name, waves: [{ids, stages}, ...], ...}.
 
     Each wave carries the FULL stage data for the lead to render into
@@ -77,7 +77,7 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int) 
 
     F8.5 overflow is FLAGGED, not auto-split. The lead (or a human
     operator) is the one who decides whether to split a 30-sub-stage
-    parallel into 16+14 follow-up waves, merge some agents, or accept
+    parallel into 5-agent follow-up waves, merge some agents, or accept
     the overshoot explicitly. The dispatcher refuses to silently mutate
     the spec — that would be a covert L4 auto-block, which the autonomy
     invariant (ADR 0002) forbids. The flag is a `f8_5_overflow` list on
@@ -90,7 +90,9 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int) 
         "wave_count": len(waves),
         "stage_count": len(spec["stages"]),
         "max_per_wave": max_per_wave,
+        "min_per_wave": min_per_wave,
         "f8_5_overflow_warnings": [],
+        "f8_4_under_warnings": [],
         "waves": [
             {
                 "index": i + 1,
@@ -129,6 +131,25 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int) 
                             f"chunks of {max_per_wave} or accept explicitly."
                         ),
                     })
+                # F8.4 under-parallelized — advisory only, and scoped to AGENT
+                # fan-out (a 2-command parallel like lint+typecheck is fine; the
+                # F8 "3-5 teammates" band is about agents, where coordination
+                # overhead vs parallelism payoff actually trades off).
+                agent_subs = [s for s in sub if s.get("type") == "agent"]
+                if agent_subs and len(sub) < min_per_wave:
+                    plan["f8_4_under_warnings"].append({
+                        "kind": "parallel_under",
+                        "stage_id": stage["id"],
+                        "sub_stage_count": len(sub),
+                        "agent_sub_count": len(agent_subs),
+                        "min_per_wave": min_per_wave,
+                        "message": (
+                            f"Parallel stage {stage['id']!r} has {len(sub)} sub-stage(s) "
+                            f"({len(agent_subs)} agent), below the F8 min of {min_per_wave} "
+                            f"(under-parallelized teammate fan-out). Add a teammate, merge "
+                            f"upstream, or run inline."
+                        ),
+                    })
             elif stype == "loop":
                 body = stage.get("body", [])
                 if len(body) > max_per_wave:
@@ -152,13 +173,19 @@ def print_plan_human(plan: dict[str, Any], spec_path: Path) -> int:
         print(f"# {plan['description']}")
     print(f"# Spec: {spec_path}")
     print(f"# Stages: {plan['stage_count']} across {plan['wave_count']} wave(s)")
-    print(f"# F8.5 cap: {plan.get('max_per_wave', '?')} stages per wave / parallel / loop body")
+    print(f"# F8 fan-out band: min {plan.get('min_per_wave', 3)} (advisory) / max {plan.get('max_per_wave', '?')} (hard cap) per parallel / wave / loop body")
     print()
     overflows = plan.get("f8_5_overflow_warnings", [])
     if overflows:
         print(f"# ⚠ F8.5 OVERFLOW ({len(overflows)} warning(s)):")
         for w in overflows:
             print(f"#   - {w['message']}")
+        print()
+    unders = plan.get("f8_4_under_warnings", [])
+    if unders:
+        print(f"# ⓘ F8.4 UNDER-PARALLELIZED ({len(unders)} advisory):")
+        for u in unders:
+            print(f"#   - {u['message']}")
         print()
     for wave in plan["waves"]:
         print(f"## Wave {wave['index']} ({len(wave['stage_ids'])} stage(s))")
@@ -176,7 +203,7 @@ def print_plan_human(plan: dict[str, Any], spec_path: Path) -> int:
             elif stype == "parallel":
                 sub_ids = [s.get("id", "?") for s in stage.get("stages", [])]
                 overflow_marker = ""
-                if len(sub_ids) > plan.get("max_per_wave", 16):
+                if len(sub_ids) > plan.get("max_per_wave", 5):
                     overflow_marker = f" ⚠ OVER F8.5 cap ({len(sub_ids)}>{plan['max_per_wave']})"
                 print(f"  - {sid} (parallel ×{len(sub_ids)}){deps_str}: {', '.join(sub_ids)}{overflow_marker}")
             elif stype == "loop":

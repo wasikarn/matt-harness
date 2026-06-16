@@ -163,7 +163,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
    ```
    If below v2.1.45, update. Earlier versions had missing API provider env var propagation to tmux sessions.
 
-2. The F8.5 bounded fan-out cap (`skills/orchestrate/SKILL.md` § Bounded fan-out) clamps total spawned agents to 16 per wave. If a wave has >16 tasks, `/team-build` MUST split it: spawn 16, queue the rest in `deferred-<date>.md`, dispatch the next batch after the first finishes.
+2. The F8.5 bounded fan-out cap (`skills/orchestrate/SKILL.md` § Bounded fan-out) clamps total spawned agents to 5 per wave. If a wave has >5 tasks, `/team-build` MUST split it: spawn 5, queue the rest in `deferred-<date>.md`, dispatch the next batch after the first finishes.
 
 3. If a spawn still fails, queue the deferred task:
    ```bash
@@ -171,7 +171,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
    ```
    Re-dispatch manually after the rate limit clears.
 
-**Prevention:** Respect the F8.5 cap in plan design. The `/team-build` command enforces it at Step 6: "A wave with >16 tasks MUST be split." The cap is on total spawned agents across the plan lifetime (worklist + audit + verify), not just the work-list size.
+**Prevention:** Respect the F8.5 cap in plan design. The `/team-build` command enforces it at Step 6: "A wave with >5 tasks MUST be split." The cap is on total spawned agents across the plan lifetime (worklist + audit + verify), not just the work-list size.
 
 ---
 

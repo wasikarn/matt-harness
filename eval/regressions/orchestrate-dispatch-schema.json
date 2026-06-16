@@ -65,10 +65,10 @@
     },
     {
       "id": "orchestrate-dispatch-flags-f8-5-overflow",
-      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.5 fan-out warning when a parallel stage has more sub-stages than the cap (default 16). The warning is critical: the lead must split over-cap parallels into chunks of 16 BEFORE dispatch, otherwise the audit goes wrong (the original 2026-06-12 failure was a soft-cap prompt that overshot to 44 agents). The warning goes on the human plan (stdout) AND on the --emit-plan JSON output. The fixture writes a 17-sub-stage parallel, runs the dispatcher with --max-per-wave 16, asserts the warning text is in the output.",
+      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.5 fan-out warning when a parallel stage has more sub-stages than the cap (default 5). The warning is critical: the lead must split over-cap parallels into chunks of 5 BEFORE dispatch, otherwise the audit goes wrong (the original 2026-06-12 failure was a soft-cap prompt that overshot to 44 agents). The warning goes on the human plan (stdout) AND on the --emit-plan JSON output. The fixture writes a 17-sub-stage parallel, runs the dispatcher at the default cap (5), asserts the warning text is in the output.",
       "skill": "script-cli",
       "context": {
-        "command": "printf 'name: overflow-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/overflow-test.yml && for i in $(seq -w 1 17); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/overflow-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/overflow-test.yml --max-per-wave 16 2>&1 | grep -E 'F8.5 OVERFLOW|has 17 sub-stages' | head -3",
+        "command": "printf 'name: overflow-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/overflow-test.yml && for i in $(seq -w 1 17); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/overflow-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/overflow-test.yml 2>&1 | grep -E 'F8.5 OVERFLOW|has 17 sub-stages' | head -3",
         "timeout": 10
       },
       "success_criteria": [
@@ -82,6 +82,26 @@
       "expected_failure": false,
       "failure_pattern": "f8-5-warning-silently-dropped",
       "fixed_by": "P2.4 (build_plan emits f8_5_overflow_warnings list)"
+    },
+    {
+      "id": "orchestrate-dispatch-flags-f8-4-under",
+      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.4 under-parallelized advisory when a parallel stage has fewer than the F8 floor (3) of AGENT sub-stages. Symmetric counterpart to the F8.5 overflow warning (the min 3 / max 5 band, owner request 2026-06-16). ADVISORY only — the dispatcher flags but never blocks — and scoped to agent fan-out (a 2-command parallel like lint+typecheck must NOT fire it). The fixture writes a 2-agent parallel, runs the dispatcher at the default floor (3), and asserts the advisory text is in the output.",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: under-test\\nstages:\\n  - id: fan\\n    type: parallel\\n    stages:\\n      - {id: a, type: agent, agent_type: claude, prompt: x}\\n      - {id: b, type: agent, agent_type: claude, prompt: y}\\n' > /tmp/under-test.yml && python3 scripts/orchestrate-dispatch.py /tmp/under-test.yml 2>&1 | grep -E 'F8.4 UNDER|under-parallelized' | head -3",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains F8.4 UNDER-PARALLELIZED",
+        "stdout contains under-parallelized teammate fan-out"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "f8-4", "fan-out-floor", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "f8-4-advisory-silently-dropped",
+      "fixed_by": "0.2.12 (build_plan emits f8_4_under_warnings; min-per-wave default 3, owner request)"
     }
   ]
 }
