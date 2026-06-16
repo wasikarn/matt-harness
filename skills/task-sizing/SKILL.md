@@ -201,7 +201,7 @@ def main():
     print(f"Waves: {len(waves)}")
     for w, ts in sorted(waves.items()):
         print(f"  Wave {w}: {len(ts)} tasks")
-        if len(ts) > 16:
+        if len(ts) > 5:
             print(f"    ⚠️  F8.5 overflow — split or merge (cap = 5)")
         if w == 1 and not (3 <= len(ts) <= 5):
             print(f"    ⚠️  Wave 1 expected 3-5 tasks (found {len(ts)})")

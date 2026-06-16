@@ -28,6 +28,9 @@ def resolve_waves(stages: list[dict[str, Any]], max_per_wave: int) -> list[list[
     Returns a list of waves, each a list of stage ids in deterministic
     (sorted) order.
     """
+    # max_per_wave <= 0 would make `ready[:0]` empty every iteration, so
+    # `placed` never grows and the while-loop spins forever. Clamp to >= 1.
+    max_per_wave = max(1, max_per_wave)
     stage_by_id = {s["id"]: s for s in stages}
     placed: set[str] = set()
     waves: list[list[str]] = []
@@ -138,8 +141,11 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
                 # `panel: true` opts a stage out: a fixed diverse-lens panel
                 # (e.g. code-review + security-review = 2 by design) is NOT an
                 # under-split builder fan-out, so the min-3 floor does not apply.
+                # Threshold on the AGENT count, not total sub-count: a 2-agent +
+                # 1-command parallel is still a 2-agent (under-3) fan-out — the
+                # padding command must not suppress the advisory.
                 agent_subs = [s for s in sub if s.get("type") == "agent"]
-                if agent_subs and len(sub) < min_per_wave and not stage.get("panel"):
+                if agent_subs and len(agent_subs) < min_per_wave and not stage.get("panel"):
                     plan["f8_4_under_warnings"].append({
                         "kind": "parallel_under",
                         "stage_id": stage["id"],
@@ -147,10 +153,10 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
                         "agent_sub_count": len(agent_subs),
                         "min_per_wave": min_per_wave,
                         "message": (
-                            f"Parallel stage {stage['id']!r} has {len(sub)} sub-stage(s) "
-                            f"({len(agent_subs)} agent), below the F8 min of {min_per_wave} "
-                            f"(under-parallelized teammate fan-out). Add a teammate, merge "
-                            f"upstream, or run inline."
+                            f"Parallel stage {stage['id']!r} has {len(agent_subs)} agent "
+                            f"sub-stage(s) (of {len(sub)} total), below the F8 min of "
+                            f"{min_per_wave} (under-parallelized teammate fan-out). Add a "
+                            f"teammate, merge upstream, or run inline."
                         ),
                     })
             elif stype == "loop":

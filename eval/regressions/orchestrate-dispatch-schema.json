@@ -65,15 +65,15 @@
     },
     {
       "id": "orchestrate-dispatch-flags-f8-5-overflow",
-      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.5 fan-out warning when a parallel stage has more sub-stages than the cap (default 5). The warning is critical: the lead must split over-cap parallels into chunks of 5 BEFORE dispatch, otherwise the audit goes wrong (the original 2026-06-12 failure was a soft-cap prompt that overshot to 44 agents). The warning goes on the human plan (stdout) AND on the --emit-plan JSON output. The fixture writes a 17-sub-stage parallel, runs the dispatcher at the default cap (5), asserts the warning text is in the output.",
+      "task": "Verify that scripts/orchestrate-dispatch.py surfaces the F8.5 fan-out warning when a parallel stage has more sub-stages than the cap (default 5). The warning is critical: the lead must split over-cap parallels into chunks of 5 BEFORE dispatch, otherwise the audit goes wrong (the original 2026-06-12 failure was a soft-cap prompt that overshot to 44 agents). The warning goes on the human plan (stdout) AND on the --emit-plan JSON output. The fixture writes a 6-sub-stage parallel (just over the default cap of 5 — this also locks the cap VALUE, since a regression to the old cap of 16 would NOT overflow at 6), runs the dispatcher, asserts the warning text is in the output.",
       "skill": "script-cli",
       "context": {
-        "command": "printf 'name: overflow-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/overflow-test.yml && for i in $(seq -w 1 17); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/overflow-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/overflow-test.yml 2>&1 | grep -E 'F8.5 OVERFLOW|has 17 sub-stages' | head -3",
+        "command": "printf 'name: overflow-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/overflow-test.yml && for i in $(seq -w 1 6); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/overflow-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/overflow-test.yml 2>&1 | grep -E 'F8.5 OVERFLOW|has 6 sub-stages' | head -3",
         "timeout": 10
       },
       "success_criteria": [
         "stdout contains F8.5 OVERFLOW",
-        "stdout contains has 17 sub-stages"
+        "stdout contains has 6 sub-stages"
       ],
       "expected_duration_seconds": 10,
       "expected_tokens": 300,
@@ -121,6 +121,45 @@
       "expected_failure": false,
       "failure_pattern": "f8-4-panel-optout-regressed",
       "fixed_by": "0.2.13 (planner f8_4 skips stages with panel:true; owner request)"
+    },
+    {
+      "id": "orchestrate-dispatch-f8-4-agent-count-semantics",
+      "task": "Verify the F8.4 floor thresholds on AGENT count, not total sub-stage count. A parallel of 2 agents + 1 command is a 2-agent (under-3) fan-out — the padding command must NOT suppress the advisory. Locks the fix where the threshold was len(sub) (wrong: padded to 3 total went silent) and is now len(agent_subs).",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: mixed-test\\nstages:\\n  - id: fan\\n    type: parallel\\n    stages:\\n      - {id: a, type: agent, agent_type: claude, prompt: x}\\n      - {id: b, type: agent, agent_type: claude, prompt: y}\\n      - {id: c, type: command, command: \"true\"}\\n' > /tmp/mixed-test.yml && python3 scripts/orchestrate-dispatch.py /tmp/mixed-test.yml 2>&1 | grep -E 'F8.4 UNDER|agent sub-stage' | head -3",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains F8.4 UNDER-PARALLELIZED",
+        "stdout contains 2 agent sub-stage"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "f8-4", "agent-count", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "f8-4-padded-by-command",
+      "fixed_by": "0.2.14 (F8.4 threshold uses len(agent_subs), not len(sub))"
+    },
+    {
+      "id": "orchestrate-dispatch-f8-5-boundary-exactly-5",
+      "task": "Verify the F8.5 cap is exclusive at exactly 5: a 5-sub-stage parallel must NOT overflow (the cap fires on >5, not >=5). Locks the off-by-one boundary the 6-sub-stage overflow fixture does not exercise. Emits CAP_CLEAN; CAP_OVERFLOW would mean the boundary regressed to >=5.",
+      "skill": "script-cli",
+      "context": {
+        "command": "printf 'name: boundary-test\\nstages:\\n  - id: validate\\n    type: parallel\\n    stages:\\n' > /tmp/boundary-test.yml && for i in $(seq -w 1 5); do printf '      - {id: s%s, type: command, command: \"true\"}\\n' \"$i\" >> /tmp/boundary-test.yml; done && python3 scripts/orchestrate-dispatch.py /tmp/boundary-test.yml 2>&1 | grep -q 'F8.5 OVERFLOW' && echo CAP_OVERFLOW || echo CAP_CLEAN",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains CAP_CLEAN"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 300,
+      "tags": ["orchestrate-dispatch", "f8-5", "boundary", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "f8-5-boundary-off-by-one",
+      "fixed_by": "0.2.14 (boundary lock; cap fires on >max, exclusive at max)"
     }
   ]
 }

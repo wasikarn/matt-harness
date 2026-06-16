@@ -141,6 +141,22 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Guard degenerate fan-out bounds (exit 2 = bad invocation). max-per-wave < 1
+    # would hang resolve_waves; min > max is a contradictory band.
+    if args.max_per_wave < 1:
+        print("orchestrate-dispatch: --max-per-wave must be >= 1", file=sys.stderr)
+        return 2
+    if args.min_per_wave < 0:
+        print("orchestrate-dispatch: --min-per-wave must be >= 0", file=sys.stderr)
+        return 2
+    if args.min_per_wave > args.max_per_wave:
+        print(
+            f"orchestrate-dispatch: --min-per-wave ({args.min_per_wave}) cannot exceed "
+            f"--max-per-wave ({args.max_per_wave})",
+            file=sys.stderr,
+        )
+        return 2
+
     spec_path = Path(args.spec).resolve()
     spec = load_spec(spec_path)
 
