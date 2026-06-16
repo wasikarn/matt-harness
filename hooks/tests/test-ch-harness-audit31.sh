@@ -1,16 +1,16 @@
 # shellcheck disable=SC1090,SC2034
 # shellcheck shell=bash
 # test-ch-harness-audit31.sh — sourced by test-critical-hooks.sh
-# Covers: harness-audit check #31 (tests MM, NN, NN2, NN3, OO).
+# Covers: harness-audit check #31 (tests MM, NN, OO).
 
-# --- harness-audit check #31 — schema-rot detector (4 sub-checks) ---
+# --- harness-audit check #31 — schema-rot detector (3 sub-checks) ---
 # Round-2 (2026-06-11) gap-closure: the pre-emit validator is scoped to
 # the review-pr journaler's enum regexes only. Check #31 adds a general
-# detector for (1) skill SKILL.md I/O contract section presence,
-# (2) plugin.json / marketplace.json version validity + 30d cadence,
-# (3) decay-cadence.md permission-re-audit bookmark, (4) hooks.json
-# schema shape. Sub-checks 1-3 emit info (advisory); sub-check 4 emits
-# crit (structural). The tests below are hermetic — they build a
+# detector for (31.2) plugin.json / marketplace.json version validity + 30d
+# cadence, (31.3) decay-cadence.md permission-re-audit bookmark, (31.4)
+# hooks.json schema shape. 31.2-31.3 emit info (advisory); 31.4 emits crit
+# (structural). [31.1 skill-section presence was RETIRED 2026-06-16 — it was a
+# self-referential blanket forcing byte-identical boilerplate; see audit.sh.] The tests below are hermetic — they build a
 # fresh temp-dir fixture (.claude-plugin/, claude/skills/, claude/hooks/,
 # claude/docs/) and run the audit against it, so the harness's real
 # plugin.json/hooks.json state is irrelevant. Mirrors the (K)
@@ -149,81 +149,17 @@ set +e
 SREP_V_OUT=$(bash "$AUDIT" "$SREP_V" 2>&1)
 SREP_V_RC=$?
 set -e
-SREP_V_HAS_SKILL_INFO=$(printf '%s' "$SREP_V_OUT" | grep -c "schema-rot: skill 'bad-skill'" || true)
 SREP_V_HAS_PLUGIN_CRIT=$(printf '%s' "$SREP_V_OUT" | grep -c "plugin.json has no 'version' field" || true)
 SREP_V_HAS_HOOKS_CRIT=$(printf '%s' "$SREP_V_OUT" | grep -c "hooks.json —" || true)
 SREP_V_HAS_PERM_INFO=$(printf '%s' "$SREP_V_OUT" | grep -c "schema-rot:.*decay-cadence" || true)
-# Exit code must be > 0 (findings present)
-if [ "$SREP_V_HAS_SKILL_INFO" -ge 1 ] && [ "$SREP_V_HAS_PLUGIN_CRIT" -ge 1 ] \
+# (#31.1 skill-section sub-check was RETIRED 2026-06-16 — the bad-skill SKILL.md
+# missing sections no longer fires; the remaining 3 sub-checks still must.)
+if [ "$SREP_V_HAS_PLUGIN_CRIT" -ge 1 ] \
    && [ "$SREP_V_HAS_HOOKS_CRIT" -ge 1 ] && [ "$SREP_V_HAS_PERM_INFO" -ge 1 ] \
    && [ "$SREP_V_RC" -ge 2 ]; then
-  PASS=$((PASS+1)); printf '  ✅ %-26s violating fixture: 4 sub-checks all fire (skill info, plugin crit, hooks crit, perm info); rc>=2 (got %s)\n' "harness-audit #31" "$SREP_V_RC"
+  PASS=$((PASS+1)); printf '  ✅ %-26s violating fixture: 3 sub-checks fire (plugin crit, hooks crit, perm info); rc>=2 (got %s)\n' "harness-audit #31" "$SREP_V_RC"
 else
-  FAIL=$((FAIL+1)); printf '  ❌ %-26s skill=%s plugin=%s hooks=%s perm=%s rc=%s (want >=1/1/1/1/2):\n%s\n' "harness-audit #31" "$SREP_V_HAS_SKILL_INFO" "$SREP_V_HAS_PLUGIN_CRIT" "$SREP_V_HAS_HOOKS_CRIT" "$SREP_V_HAS_PERM_INFO" "$SREP_V_RC" "$SREP_V_OUT"
-fi
-
-# (NN2) deferral — a skill missing canonical sections BUT carrying a
-# `last_reviewed_reason:` marker in either its SKILL.md frontmatter OR
-# its evals/evals.json must NOT fire SKILL_MISSING.
-SREP_D1="$FIXTURE/srep-defer-fm"; rm -rf "$SREP_D1"; mkdir -p "$SREP_D1/claude/skills/deferred-skill" "$SREP_D1/claude/hooks" "$SREP_D1/claude/agents" "$SREP_D1/claude/commands" "$SREP_D1/claude/docs" "$SREP_D1/.claude-plugin"
-cat > "$SREP_D1/claude/skills/deferred-skill/SKILL.md" <<'SK'
----
-name: deferred-skill
-last_reviewed_reason: 'deferred to quarterly cadence per docs/harness-decay-cadence.md'
-description: 'Test fixture for audit #31 deferral — frontmatter marker.'
----
-# Deferred Skill
-SK
-cat > "$SREP_D1/.claude-plugin/plugin.json" <<'PJ'
-{ "name": "d1-fixture", "version": "0.0.1" }
-PJ
-cat > "$SREP_D1/claude/docs/harness-decay-cadence.md" <<DC
-# Decay cadence
-last_permission_review: $TODAY_ISO abc123
-DC
-set +e
-SREP_D1_OUT=$(bash "$AUDIT" "$SREP_D1" 2>&1)
-SREP_D1_RC=$?
-set -e
-SREP_D1_HAS_SKILL_INFO=$(printf '%s' "$SREP_D1_OUT" | grep -c "schema-rot: skill 'deferred-skill'" || true)
-if [ "$SREP_D1_HAS_SKILL_INFO" = 0 ]; then
-  PASS=$((PASS+1)); printf '  ✅ %-26s deferral (frontmatter): SKILL_MISSING suppressed by last_reviewed_reason: marker\n' "harness-audit #31.1"
-else
-  FAIL=$((FAIL+1)); printf '  ❌ %-26s deferral (frontmatter): SKILL_MISSING fired %s times (want 0):\n%s\n' "harness-audit #31.1" "$SREP_D1_HAS_SKILL_INFO" "$SREP_D1_OUT"
-fi
-
-# (NN3) deferral via evals/evals.json — same suppression, marker
-# lives in the sibling evals file instead of SKILL.md frontmatter.
-SREP_D2="$FIXTURE/srep-defer-evals"; rm -rf "$SREP_D2"; mkdir -p "$SREP_D2/claude/skills/deferred-via-evals" "$SREP_D2/claude/skills/deferred-via-evals/evals" "$SREP_D2/claude/hooks" "$SREP_D2/claude/agents" "$SREP_D2/claude/commands" "$SREP_D2/claude/docs" "$SREP_D2/.claude-plugin"
-cat > "$SREP_D2/claude/skills/deferred-via-evals/SKILL.md" <<'SK'
----
-name: deferred-via-evals
-description: 'Test fixture for audit #31 deferral — evals.json marker.'
----
-# Deferred via evals
-SK
-cat > "$SREP_D2/claude/skills/deferred-via-evals/evals/evals.json" <<'EJ'
-{
-  "skill_name": "deferred-via-evals",
-  "last_reviewed_reason": "deferred to quarterly cadence per docs/harness-decay-cadence.md"
-}
-EJ
-cat > "$SREP_D2/.claude-plugin/plugin.json" <<'PJ'
-{ "name": "d2-fixture", "version": "0.0.1" }
-PJ
-cat > "$SREP_D2/claude/docs/harness-decay-cadence.md" <<DC
-# Decay cadence
-last_permission_review: $TODAY_ISO abc123
-DC
-set +e
-SREP_D2_OUT=$(bash "$AUDIT" "$SREP_D2" 2>&1)
-SREP_D2_RC=$?
-set -e
-SREP_D2_HAS_SKILL_INFO=$(printf '%s' "$SREP_D2_OUT" | grep -c "schema-rot: skill 'deferred-via-evals'" || true)
-if [ "$SREP_D2_HAS_SKILL_INFO" = 0 ]; then
-  PASS=$((PASS+1)); printf '  ✅ %-26s deferral (evals.json): SKILL_MISSING suppressed — JSON key form matched\n' "harness-audit #31.1"
-else
-  FAIL=$((FAIL+1)); printf '  ❌ %-26s deferral (evals.json): SKILL_MISSING fired %s times (want 0) — JSON form regex broken:\n%s\n' "harness-audit #31.1" "$SREP_D2_HAS_SKILL_INFO" "$SREP_D2_OUT"
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s plugin=%s hooks=%s perm=%s rc=%s (want >=1/1/1/2):\n%s\n' "harness-audit #31" "$SREP_V_HAS_PLUGIN_CRIT" "$SREP_V_HAS_HOOKS_CRIT" "$SREP_V_HAS_PERM_INFO" "$SREP_V_RC" "$SREP_V_OUT"
 fi
 
 # (OO) regression guard — empty matcher must NOT fire HOOKS_SHAPE_FAIL.

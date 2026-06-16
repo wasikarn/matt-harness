@@ -107,7 +107,7 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 ## Step 4 — Preview and confirm
 
-Show resolved metadata + Thai title + rendered description + chosen backend path. Ask for explicit confirmation before creating. Creating a Jira issue is outward-facing — never call create without a "yes".
+Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create on the user's go-ahead. (The `disable-model-invocation` flag already prevents the model from auto-creating — this is review-and-proceed, not a second hard gate.)
 
 ## Step 5 — Create the issue
 

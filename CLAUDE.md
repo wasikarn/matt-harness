@@ -16,7 +16,7 @@ There is **one delivery path**: the plugin cache at `~/.claude/plugins/cache/kob
 
 **Cache-invalidation is manual and load-bearing:** when you add/modify/remove any plugin-delivered surface (agent, skill, command, hook, output-style, theme), you MUST:
 1. Bump version in **both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
-2. Update description counts in both manifests (skills/agents/commands/hooks)
+2. Update description counts in both manifests (skills/agents/commands/hooks) — only when **adding/removing** a component (a pure modify changes no count)
 3. Commit + push
 4. Run `claude plugin update kbg@kobig`
 5. Restart Claude Code
@@ -69,7 +69,7 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 
 - **Computational FF** → `block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`, `config-protection.sh`, `db-write-gate.sh`, `secret-read-guard`, `doctrine-edit-gate`
 - **Inferential FF** → `doctrine-bootstrap.sh` (matcher-less SessionStart injects METHODOLOGY/RTK/ACLI/DBGATE), `iron-rule-reminder.sh`, `orchestrator-nudge.sh`
-- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (310 assertions), `audit.sh` (40 sub-checks)
+- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (310 assertions), `audit.sh` (39 sub-checks)
 - **Inferential FB** → `verification-gate.sh` (SessionEnd, **journals but NEVER emits `permissionDecision`** — see [LLM-judge circularity](#llm-judge-circularity-why-inferential-sensors-are-advisory) below), `fabrication-verdict-log.sh` (Stop), `kbg:review-pr` (command), `inferential-structural-judge` (SessionEnd, advisories on diff shape — over-engineering / arch-drift / test-pattern / doctrine-conformance; designed in `docs/research/inferential-structural-judge-design.md`)
 
 **Anti-pattern:** don't add an inferential-FB sensor that emits a `permissionDecision` — same model class across generation, judgment, and meta-engineering is a single-model failure mode. The 2×2 framing is the *justification* for the `verification-gate.sh` "advisory only" invariant (ADR 0002 §L115).
@@ -82,7 +82,7 @@ The 2×2 cell most at risk of a covert failure is **inferential FB**: a "smart" 
 2. **Self-confirming verdicts.** Inferential-FB sensors on a "happy path" of similar-generation-then-judge sessions can quietly converge to "everything is fine."
 3. **Covert L4 loop.** A `permissionDecision: deny` from an inferential-FB sensor is a model-driven mutation gate — the autonomy invariant (ADR 0002) forbids it.
 
-**kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The 310 critical-hooks tests + 40 audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
+**kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The 310 critical-hooks tests + 39 audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
 
 The `.scratch/research/harness-engineering-2026-04.md` 1-pager (cross-referenced from `docs/harness-decay-cadence.md`) is the full comparison and 3-now/3-later action list.
 
@@ -146,7 +146,7 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only
 ### Adding a new component
 
 1. **Agent:** create `agents/<name>.md` with frontmatter (`name`, `description`, `tools` allowlist). No registration needed — auto-discovered.
-2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter (`name`, `description`). Add `## Input Contract`, `## Output Format`, `## Failure Modes` canonical sections (audit check #31.1 flags missing ones). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
+2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter (`name`, `description`). Add a `## Input Contract` / `## Output Format` / `## Failure Modes` section **only where the skill has a real I/O contract worth stating** — these are no longer mandated fleet-wide (the blanket #31.1 requirement was retired 2026-06-16; it manufactured byte-identical boilerplate). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
 3. **Command:** create `commands/<name>.md` with frontmatter (`name`, `description`). Set `disable-model-invocation` per the criterion below (not a blanket "all commands"). Update `plugin.json` + `marketplace.json` description counts. (`commands/` is officially a *legacy* dir — [docs](https://code.claude.com/docs/en/plugins) say "use skills/ instead"; kbg keeps it for the user-verb surface. Do **not** add a `type:` field — it is not in the official frontmatter schema and nothing reads it.)
 
 #### `disable-model-invocation` — per-surface, with a recorded reason

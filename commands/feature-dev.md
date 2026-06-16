@@ -17,7 +17,7 @@ You are helping a developer implement a new feature. Follow a systematic approac
 - **Read files identified by agents**: When launching agents, ask them to return lists of the most important files to read. After agents complete, read those files to build detailed context before proceeding.
 - **Simple and elegant**: Prioritize readable, maintainable, architecturally sound code
 - **Use TodoWrite**: Track all progress throughout
-- **No "too simple to design"**: Every feature goes through Phases 1-4 before Phase 5. The design can be short (a few sentences for trivial work), but it MUST be presented and approved. "Simple" features are where unexamined assumptions cause the most wasted work (per obra/superpowers brainstorming discipline).
+- **Right-size the design**: non-trivial features go through Phases 1-4 before Phase 5 — the design can be short, but it MUST be presented and approved ("simple" features are where unexamined assumptions cause the most wasted work, per obra/superpowers). **Carve-out:** genuinely trivial work (a one-liner, a copy tweak — reach for `kbg:task-sizing` if unsure) may skip the Phase-1 approval gate and implement directly, per METHODOLOGY Rule 1 ("for trivial tasks, use judgment"). Don't manufacture a design for a one-line change.
 
 ---
 

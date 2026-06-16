@@ -67,14 +67,6 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
-          }
-        ]
       }
     ],
     "PreToolUse": [
@@ -249,15 +241,6 @@
             "async": true
           }
         ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
-          }
-        ]
       }
     ],
     "SessionEnd": [
@@ -298,14 +281,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
           }
         ]
       }
@@ -358,14 +333,6 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
-          }
-        ]
       }
     ],
     "Stop": [
@@ -384,14 +351,6 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
-          }
-        ]
       }
     ],
     "PostToolUseFailure": [
@@ -403,15 +362,6 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
-          }
-        ]
       }
     ],
     "PermissionRequest": [
@@ -421,15 +371,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -n \"$SUPERSET_HOME_DIR\" ] && [ -x \"$SUPERSET_HOME_DIR/hooks/notify.sh\" ] && SUPERSET_AGENT_ID=claude \"$SUPERSET_HOME_DIR/hooks/notify.sh\" || true"
           }
         ]
       }

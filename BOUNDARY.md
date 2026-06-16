@@ -134,7 +134,7 @@ _Personals/kbg-harness_
 | technical-writer | Senior technical writer for READMEs, ADRs, runbooks, API docs, onboarding guides, and changelog prose. Spawn when creating docs from scratch, rewriting stale docs, or turning tribal knowledge into reference material. Don't use for: code review (defer to code-reviewer), security audit docs (defer to security-reviewer), or one-line inline comments (defer to the engineer who wrote the code). | Read, Grep, Glob, Edit, Write, Bash | yes |
 | test-engineer | Senior test-discipline owner for coverage design, edge cases, contract testing, and integration boundaries. Spawn when writing tests for new features or designing test strategy. Don't use for: reviewing PR test-coverage gaps (defer to pr-test-analyzer), implementing production code — write tests that drive the implementation, defer fixes to backend-engineer or frontend-engineer. Tests must encode WHY behavior matters, not just WHAT it does. | Read, Grep, Glob, Edit, Write, Bash | yes |
 | type-design-analyzer | Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer). | Read, Grep, Glob, Bash, WebFetch, WebSearch | yes |
-| ux-reviewer | Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code. | Read, Grep, Glob, Edit, Write, Bash | yes |
+| ux-reviewer | Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code. | Read, Grep, Glob, Bash | yes |
 
 ## Skills — Repo
 | Skill | Description | Agent | Invoke |
@@ -193,7 +193,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-16T10:24:07Z_
+_Generated: 2026-06-16T11:07:00Z_
 
 ---
 

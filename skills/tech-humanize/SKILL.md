@@ -604,21 +604,3 @@ Deliver the draft, the brief "still-AI" bullets, the final rewrite, and (optiona
 - `references.md` — External references (Royal Thai Institute RTGS, Mozilla Thai Style Guide, W3C Thai Layout, PyThaiNLP 4.0, WangchanBERTa, Conventional Commits Thai) + default Thai+tech glossary + calques/typography cheat sheet. **Load when:** verifying transliteration, citing sources, or onboarding a new editor to Thai-specific rules.
 
 > **v3.0 note:** This skill is bilingual (EN + TH). Universal patterns (§1-§30) apply to both. Thai-specific patterns in `patterns-thai.md` apply only when Thai text is present. There is no separate `patterns-en.md` yet — the universal catalog + the EN worked examples in `examples.md` cover the EN side. If you find yourself needing EN-specific anti-patterns (corporate tells, EN em-dash overuse, EN hedging tics) flagged beyond §1-§30, file a request and we'll add them in a v3.1.
-
-## Input Contract
-
-- **Trigger phrases:** See `description` in SKILL.md frontmatter.
-- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
-- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
-
-## Output Format
-
-- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
-- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
-- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
-
-## Failure Modes
-
-- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
-- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
-- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.

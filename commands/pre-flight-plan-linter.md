@@ -3,7 +3,7 @@ name: pre-flight-plan-linter
 description: "Validate a /team-plan artifact before /team-build consumes it. Catches structural errors, missing validation commands, cyclic dependencies, overlapping file ownership, and F10 plan-approval risks. Use after /team-plan finishes and before /team-build starts. Don't use for: single-file work (no plan file needed), or plans you already started building (use /wave-status instead)."
 argument-hint: "Path to plan markdown file"
 disable-model-invocation: true
-disable-model-invocation-reason: "workflow-step gate the user runs deliberately before /team-build"
+disable-model-invocation-reason: "operator-initiated workflow checkpoint by preference — read-only (lints the plan, mutates nothing); user-only so the lint is a deliberate pre-/team-build step"
 ---
 
 # /pre-flight-plan-linter — Pre-flight plan validator

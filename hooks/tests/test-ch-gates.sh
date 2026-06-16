@@ -56,6 +56,10 @@ check gates/secret-scan.sh none "ignores secret in Bash (not its tool)" "$(bash_
 check gates/config-protection.sh ask  "asks on existing .eslintrc"    "$(write_event "$FIXTURE/.eslintrc" 'x')"
 check gates/config-protection.sh none "allows new .eslintrc (create)" "$(write_event "$FIXTURE/new/.eslintrc" 'x')"
 check gates/config-protection.sh none "ignores non-config file"       "$(write_event "$FIXTURE/foo.txt" 'x')"
+# narrow (2026-06-16): full Write of an existing config still asks (above); an
+# Edit only asks when the change shows a rule-relaxation signal — a benign tweak doesn't.
+check gates/config-protection.sh ask  "Edit relaxes a rule -> ask"     "$(edit_new_event "$FIXTURE/.eslintrc" '"no-console": "off"')"
+check gates/config-protection.sh none "Edit benign bump -> none"       "$(edit_new_event "$FIXTURE/.eslintrc" '"version": "9.2.0"')"
 
 # --- block-bash-doctrine-write: deny shell writes to doctrine (all roots), allow reads/non-doctrine ---
 check gates/block-bash-doctrine-write.sh deny "blocks > redirect to CLAUDE.md" "$(bash_event 'echo hacked > /repo/claude/CLAUDE.md')"

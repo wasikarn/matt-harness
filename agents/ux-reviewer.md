@@ -4,7 +4,7 @@ description: "Senior UX and interaction reviewer for user journeys, accessibilit
 model: sonnet
 effort: medium
 color: pink
-tools: Read, Grep, Glob, Edit, Write, Bash
+tools: Read, Grep, Glob, Bash
 ---
 
 ## Why this role exists

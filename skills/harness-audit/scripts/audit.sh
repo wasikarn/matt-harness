@@ -1105,7 +1105,6 @@ if command -v python3 >/dev/null 2>&1; then
   while IFS=$'\t' read -r kind payload extra; do
     [ -n "$kind" ] || continue
     case "$kind" in
-      SKILL_MISSING)         info "schema-rot: skill '$payload' is missing canonical sections ($extra) — possible I/O contract drift" ;;
       PLUGIN_PARSE_FAIL)     crit "schema-rot: $(basename "$payload" 2>/dev/null || echo "$payload") failed to parse as JSON" ;;
       PLUGIN_NO_VERSION)     crit "schema-rot: $(basename "$payload" 2>/dev/null || echo "$payload") has no 'version' field (cache-resolver will break)" ;;
       PLUGIN_STALE)          info "schema-rot: $payload — consider a version bump (30d cadence per decay-cadence)" ;;
@@ -1120,48 +1119,14 @@ import datetime as dt, json, os, re, sys
 claude_dir, repo_root = sys.argv[1], sys.argv[2]
 today = dt.date.today()
 
-# 31.1: Skill SKILL.md section presence (info, single bullet per skill)
-# Deferral: a sibling `last_reviewed_reason:` marker (in SKILL.md frontmatter
-# OR in the skill's evals/evals.json) suppresses the INFO — same convention
-# section #30 uses for eval-target freshness and the plugin-version check at
-# 31.2 uses for plugin.json. Decay-cadence (docs/harness-decay-cadence.md)
-# owns the quarterly human sweep that revisits these; the audit is sensor
-# only, sensor-with-documented-deferral is preferred over stubbing.
-skills_dir = os.path.join(claude_dir, "skills")
-REQUIRED = ["## Input Contract", "## Output Format", "## Failure Modes"]
-# Same form as #30: JSON "last_reviewed_reason":, YAML `last_reviewed_reason:`,
-# or comment `# last_reviewed_reason:`. See audit.sh LINE_RE/REASON_RE pair.
-REASON_RE = re.compile(r"""^[\s#/*'"]*last_reviewed_reason["']?\s*:\s*\S+""", re.MULTILINE)
-if os.path.isdir(skills_dir):
-    for name in sorted(os.listdir(skills_dir)):
-        # skip _-prefixed scaffolds (not real fleet, may have placeholders)
-        if name.startswith("_"):
-            continue
-        path = os.path.join(skills_dir, name, "SKILL.md")
-        if not os.path.isfile(path):
-            continue
-        try:
-            text = open(path, encoding="utf-8", errors="replace").read(65536)
-        except OSError:
-            continue
-        missing = [s for s in REQUIRED if s not in text]
-        if not missing:
-            continue
-        # Deferral check: frontmatter on SKILL.md OR sibling evals.json.
-        # Mirrors the #30 eval-target pattern — see audit.sh:807.
-        if REASON_RE.search(text):
-            deferred = True
-        else:
-            evals_path = os.path.join(skills_dir, name, "evals", "evals.json")
-            deferred = False
-            if os.path.isfile(evals_path):
-                try:
-                    evals_text = open(evals_path, encoding="utf-8", errors="replace").read(65536)
-                except OSError:
-                    evals_text = ""
-                deferred = bool(REASON_RE.search(evals_text))
-        if not deferred:
-            print(f"SKILL_MISSING\t{name}\t{', '.join(missing)}")
+# 31.1 RETIRED 2026-06-16 — the "every SKILL.md must carry ## Input Contract /
+# ## Output Format / ## Failure Modes" requirement was a self-referential blanket:
+# a presence-only check (substring of three headings, never content) that 29/37
+# skills satisfied with byte-identical boilerplate from an unreferenced generator
+# (scripts/utils/add-canonical-sections.py, now deleted). Nothing functional read
+# the sections beyond this check; it manufactured the schema-rot it claimed to
+# police (same shape as the retired `type: command`). The real per-skill contract
+# survives where a skill actually has one; it is no longer mandated fleet-wide.
 
 # 31.2: plugin.json / marketplace.json version validity + cadence
 # For plugin.json the top-level `version` is canonical. For

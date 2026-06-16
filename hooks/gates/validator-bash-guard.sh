@@ -52,7 +52,7 @@ AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null)
 # file under agents/. Add a name here only after verifying the agent is
 # validator-class (read-only-by-doctrine) and is the source of an actual
 # mutation risk.
-VALIDATORS='^(code-reviewer|code-explorer|code-architect|comment-analyzer|pr-test-analyzer|silent-failure-hunter|security-reviewer)$'
+VALIDATORS='^(code-reviewer|code-explorer|code-architect|comment-analyzer|pr-test-analyzer|silent-failure-hunter|security-reviewer|ux-reviewer)$'
 if ! [[ "$AGENT_TYPE" =~ $VALIDATORS ]]; then
   exit 0
 fi

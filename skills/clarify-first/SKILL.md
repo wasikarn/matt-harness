@@ -83,21 +83,3 @@ Match the situation to the right questioning model. Don't mix models — pick on
 Use `AskUserQuestion` when the decision is discrete (2–4 options), high-stakes, and guessing creates rework. Use prose for open-ended or narrative clarification. In both cases, run the 3-step gate first.
 
 See [reference.md](reference.md) for: the 4 rules with Thai adaptations, anti-patterns, question templates (5W1H, blameless, scope), Thai-register softening phrases, METHODOLOGY alignment, and integration notes (Auto Mode, sub-agents, budget).
-
-## Input Contract
-
-- **Trigger phrases:** See `description` in SKILL.md frontmatter.
-- **Required context:** The skill expects the user to provide the task scope, target files, or relevant domain context.
-- **Optional context:** Prior session summaries, acceptance contracts, or memory pointers may improve output quality.
-
-## Output Format
-
-- **Primary artifact:** Varies by skill — typically a plan, script invocation, structured report, or file modification.
-- **Structured sections:** When applicable, output uses markdown sections, tables, or code blocks for clarity.
-- **Reference style:** Links to related memories use `[[name]]` wikilink syntax.
-
-## Failure Modes
-
-- **No-op:** Skill exits without action if preconditions are not met (e.g., missing context, already satisfied criteria).
-- **Partial output:** If the task scope exceeds what the skill can safely automate, it returns a plan and defers execution to a scoped sub-agent.
-- **Human gate:** Any destructive or irreversible action requires explicit user confirmation before proceeding.

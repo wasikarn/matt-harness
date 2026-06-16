@@ -31,7 +31,7 @@ tools: Read, Grep, Glob, Bash
 - The team wants a single source of truth for "what can this agent do" — answer is the `tools:` line.
 - The agent is a specialist (single domain) rather than a generalist (multi-domain with selective restrictions).
 
-**Why we prefer it (27/27 agents in this harness use it):**
+**Why we prefer it (27/28 agents in this harness use it):**
 
 1. **Readable at a glance.** A reader of the agent's frontmatter sees the full capability set in one line. The constraint is the list, not the diff from a default.
 2. **No implicit inheritance.** If the vendor's default toolset changes, the agent's tools don't change with it. The contract is stable.
