@@ -2,8 +2,6 @@
 name: debug-debate
 description: "Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', or when teammates disagree on architecture. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate)."
 argument-hint: "Debate topic or question"
-disable-model-invocation: true
-disable-model-invocation-reason: "deliberate multi-agent fan-out (cost) — user chooses to run a debate"
 ---
 
 # /debug-debate — Parallel technical debate

@@ -134,6 +134,8 @@ echo "=== critical hook tests ==="
 . "$(dirname "$0")/test-ch-harness-audit32.sh"
 # shellcheck source=hooks/tests/test-ch-harness-audit-fixtures.sh
 . "$(dirname "$0")/test-ch-harness-audit-fixtures.sh"
+# shellcheck source=hooks/tests/test-ch-orphaned-runners.sh
+. "$(dirname "$0")/test-ch-orphaned-runners.sh"
 
 echo
 echo "=== $PASS passed, $FAIL failed ==="

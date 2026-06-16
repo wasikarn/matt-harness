@@ -1,11 +1,11 @@
 #!/bin/bash
 # Regression test for the positive-side trigger-pattern check added to
-# claude/skills/harness-audit/scripts/audit.sh. The check warns when a skill's
+# skills/harness-audit/scripts/audit.sh. The check warns when a skill's
 # frontmatter description: lacks a "when"-clause (Use when… / Trigger when… /
 # ALWAYS trigger when… / Trigger on: / etc.). Bare-verb descriptions auto-fire
 # on every prompt and pollute routing — this test pins the regex behavior.
 #
-# Run: bash claude/hooks/tests/test-trigger-pattern.sh
+# Run: bash hooks/tests/test-trigger-pattern.sh
 
 set -u
 
@@ -78,7 +78,14 @@ echo
 echo "=== live audit.sh regression (real skills) ==="
 # Run the actual audit against the real skills dir; expect no WARN on
 # trigger pattern (other unrelated WARNs are fine).
-if bash claude/skills/harness-audit/scripts/audit.sh 2>&1 | grep -qE "missing trigger pattern"; then
+# Resolve audit.sh from $0 (repo-root-relative), not a hard-coded CWD path —
+# the old `claude/skills/...` path didn't exist, so the run produced no output
+# and the check passed because its target was MISSING (green-because-broken).
+AUDIT="$(cd "$(dirname "$0")/../.." && pwd)/skills/harness-audit/scripts/audit.sh"
+if [ ! -f "$AUDIT" ]; then
+  printf '  ❌ %-58s audit.sh not found at %s\n' "audit.sh against real skills/" "$AUDIT"
+  FAIL=$((FAIL+1))
+elif bash "$AUDIT" . 2>&1 | grep -qE "missing trigger pattern"; then
   printf '  ❌ %-58s real skill flagged (regression)\n' "audit.sh against real skills/"
   FAIL=$((FAIL+1))
 else

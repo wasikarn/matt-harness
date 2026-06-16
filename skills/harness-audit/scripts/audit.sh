@@ -3,6 +3,10 @@
 # Usage: bash audit.sh [<repo-root>] [--plugin-cache <path>]
 # Exit code = number of findings (0 = clean).
 set -uo pipefail
+# Hooks moved into subdirs (gates/, advisory/, lifecycle/, …); the per-hook
+# checks (#3/#11/#29) and the Fleet count must recurse, not glob top-level —
+# else they silently scan 0 of ~36 real hooks (green-because-empty).
+shopt -s globstar
 
 # Parse args. Positional [<repo-root>] first; optional --plugin-cache <path>
 # second. Keep backward-compat: a single arg is treated as repo-root (the old
@@ -226,7 +230,7 @@ echo "Root: $REPO_ROOT"
 AGENTS=$(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
 SKILLS=$(ls -d "$CLAUDE_DIR/skills"/[!_]*/ 2>/dev/null | wc -l | tr -d ' ')  # [!_]*/ skips _-prefixed scaffolds (e.g. _template) — not real fleet
 COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
-HOOKS=$(ls "$CLAUDE_DIR/hooks"/*.sh "$CLAUDE_DIR/hooks"/*.py 2>/dev/null | wc -l | tr -d ' ')
+HOOKS=$(find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path "$CLAUDE_DIR/hooks/tests/*" -not -path '*__pycache__*' -not -name '_*' 2>/dev/null | wc -l | tr -d ' ')
 echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
 # Header context, NOT a finding: a plugin cache always exists for the owner who
 # dogfoods the plugin, so this fires every run and is never actionable. An
@@ -257,11 +261,11 @@ for d in "$CLAUDE_DIR/skills"/*/; do
   fi
 done
 
-# 3. Symlink integrity — hooks
-for f in "$CLAUDE_DIR/hooks"/*; do
+# 3. Symlink integrity — hooks (recurse: hooks live in gates/, advisory/, …)
+for f in "$CLAUDE_DIR/hooks"/**/*; do
   [ -f "$f" ] || continue
+  case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
   name=$(basename "$f")
-  [ "$name" = "__pycache__" ] && continue
   # Skip hook libraries (sourced by hooks, not registered as hooks themselves).
   # install.sh's *.{sh,py} glob WILL symlink these so hooks can `source` them
   # at runtime via `$(dirname "$0")/_lib.sh` — but the audit shouldn't expect
@@ -461,10 +465,10 @@ done
 
 # 11. Orphaned hooks (in filesystem but not in settings.json)
 if [ -f "$SETTINGS" ]; then
-  for f in "$CLAUDE_DIR/hooks"/*; do
+  for f in "$CLAUDE_DIR/hooks"/**/*; do
     [ -f "$f" ] || continue
+    case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
     hook_name=$(basename "$f")
-    [ "$hook_name" = "__pycache__" ] && continue
     # Skip hook libraries (sourced by hooks, not registered as hooks themselves).
     # The _lib.sh prefix matches the existing project scaffold convention used
     # in skills/ and agents/; install.sh's hooks glob *.{sh,py} symlinks it so
@@ -517,17 +521,18 @@ if git -C "$REPO_ROOT" ls-files | grep -q '__pycache__\|\.pyc$'; then
   crit "__pycache__ or *.pyc tracked by git (should be .gitignore'd)"
 fi
 
-# 15. settings.json has commands/agents/skills arrays (not just hooks)
+# 15. settings.json delivery mode — context, NOT a finding. In the single
+# plugin-delivery path (ADR 0001) settings.json carries only `hooks`; the
+# commands/agents/skills arrays are absent BY DESIGN (loaded from the plugin
+# cache). That's permanent, not drift, so a missing array fires every run and
+# is never actionable — same shape as the demoted F1/plugin-cache line. Print
+# it as context alongside Root:/Fleet:, don't emit info() noise.
 if [ -f "$SETTINGS" ]; then
-  if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'commands' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'commands' array — commands loaded via plugin or ~/.claude/commands/ directly"
-  fi
-  if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'agents' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'agents' array — agents loaded via plugin or ~/.claude/agents/ directly"
-  fi
-  if ! python3 -c "import json; d=json.load(open('$SETTINGS')); exit(0 if 'skills' in d else 1)" 2>/dev/null; then
-    info "settings.json missing 'skills' array — skills loaded via plugin or ~/.claude/skills/ directly"
-  fi
+  _missing=""
+  for _k in commands agents skills; do
+    python3 -c "import json,sys; d=json.load(open('$SETTINGS')); sys.exit(0 if '$_k' in d else 1)" 2>/dev/null || _missing="$_missing $_k"
+  done
+  [ -n "$_missing" ] && echo "settings.json delivery: arrays absent ($_missing ) — loaded via plugin cache / ~/.claude directly"
 fi
 
 # 16. BOUNDARY.md drift — committed capability map vs live fleet
@@ -857,8 +862,9 @@ fi
 # 0, so any journal_append alongside it is either dead code or a decision path
 # that journals before it decides — both wrong. See claude/hooks/JOURNAL-SCHEMA.md.
 # Skip _*.sh libraries: _lib.sh DEFINES both functions and is not itself a hook.
-for f in "$CLAUDE_DIR/hooks"/*.sh; do
+for f in "$CLAUDE_DIR/hooks"/**/*.sh; do
   [ -f "$f" ] || continue
+  case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
   name=$(basename "$f")
   case "$name" in _*.sh) continue;; esac
   if grep -qw 'journal_append' "$f" && grep -qw 'hook_decision' "$f"; then
@@ -1051,9 +1057,6 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   if printf '%s' "$desc" | /usr/bin/grep -iEq "$INJECTION_PATTERNS"; then
     warn "skill '$skill_name' description: contains potential injection pattern — review manually"
     desc_inj_issues=$((desc_inj_issues + 1))
-  fi
-  if [ "${#desc}" -gt 500 ]; then
-    info "skill '$skill_name' description: is ${#desc} chars (>500) — harder to audit for injection"
   fi
   if printf '%s' "$desc" | /usr/bin/grep -Eq "$IMPERATIVE_PATTERNS"; then
     info "skill '$skill_name' description: over-forceful imperative (ALWAYS/CRITICAL/MUST/'if in doubt') — Opus 4.8+ over-triggers; prefer 'Use when …'"

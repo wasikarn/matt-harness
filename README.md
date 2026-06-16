@@ -134,7 +134,7 @@ No autonomous or unattended self-repair loop. Every self-improvement iteration s
 # Plugin manifest validation
 claude plugin validate --strict .
 
-# Critical-hooks smoke tests (310 tests)
+# Critical-hooks smoke tests
 bash hooks/tests/test-critical-hooks.sh
 
 # Harness self-audit (must be 0 Critical / 0 Warnings)
@@ -147,8 +147,8 @@ python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 ### Adding Components
 
 1. **Agent** — create `agents/<name>.md` with frontmatter. Auto-discovered.
-2. **Skill** — create `skills/<name>/SKILL.md` with `## Input Contract`, `## Output Format`, `## Failure Modes`.
-3. **Command** — create `commands/<name>.md` with frontmatter. Update manifest counts.
+2. **Skill** — create `skills/<name>/SKILL.md` with frontmatter. Add `## Input Contract`/`## Output Format`/`## Failure Modes` *only* where there's a real I/O contract (the blanket mandate was retired — see CLAUDE.md § "Adding a new component"). Auto-discovered.
+3. **Command** — create `commands/<name>.md` with frontmatter. Update manifest counts on add/remove (a pure modify changes no count).
 4. **Hook** — create `hooks/<name>.sh`, add to `hooks/hooks.json`, add tests if a gate.
 
 After any addition: bump manifest versions → validate → commit → push → `claude plugin update kbg@kobig` → restart.

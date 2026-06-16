@@ -90,14 +90,14 @@ jobs:
           mkdir -p ".scratch/phase-1-safety-fixes-2026-06-12"
           cp "eval/fixtures/phase-1-safety-fixes-2026-06-12-ACCEPTANCE.md" \
              ".scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md"
-          python3 scripts/run-acceptance.py phase-1-safety-fixes-2026-06-12
+          python3 scripts/evals/run-acceptance.py phase-1-safety-fixes-2026-06-12
 
       - name: seed blocked-only acceptance fixture for regression
         run: |
           mkdir -p ".scratch/acceptance-blocked-only"
           cp "eval/fixtures/acceptance-blocked-only/ACCEPTANCE.md" \
              ".scratch/acceptance-blocked-only/ACCEPTANCE.md"
-          python3 scripts/run-acceptance.py acceptance-blocked-only || true
+          python3 scripts/evals/run-acceptance.py acceptance-blocked-only || true
 
       - name: run eval harness
         run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
