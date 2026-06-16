@@ -32,11 +32,11 @@ KNOWN_INTENTIONAL_GAPS = {
         "rationale": (
             "Bockeler L465-L478 names behaviour-inferential-FB as the article's "
             "deepest open problem; kbg's verification-gate, fabrication-verdict-log, "
-            "and inferential-structural-judge are advisory-only per ADR 0002 L112 "
+            "and inferential-structural-judge are advisory-only per ADR 0002 L115 "
             "(LLM-judge-circularity mitigation)."
         ),
         "article_citation": "L465-L478",
-        "kbg_decision_ref": "ADR 0002 L112",
+        "kbg_decision_ref": "ADR 0002 L115",
         "revisit_when": (
             "When a non-model-class judge (different model family) is available; "
             "the autonomy invariant forbids a model-driven gating decision from this "

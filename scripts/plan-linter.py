@@ -52,7 +52,7 @@ def run_linter(plan_path: str, strict: bool = False, json_mode: bool = False) ->
             print(msg, file=sys.stderr)
         return 1
 
-    content = p.read_text(encoding="utf-8")
+    content = p.read_text(encoding="utf-8", errors="replace")
     linter = PlanLinter(content, strict=strict)
     result = linter.lint()
 
@@ -396,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Apply fixes if requested
     if args.fix:
-        content = plan_path.read_text(encoding="utf-8")
+        content = plan_path.read_text(encoding="utf-8", errors="replace")
         fixed_content, fix_descriptions = auto_fix(content)
         if fix_descriptions:
             plan_path.write_text(fixed_content, encoding="utf-8")

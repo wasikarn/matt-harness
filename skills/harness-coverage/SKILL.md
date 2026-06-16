@@ -211,7 +211,7 @@ Status legend:
 - `intentional_gap` — a known deliberate gap, annotated in the
   script's `KNOWN_INTENTIONAL_GAPS` table. The current
   intentional-gap cell is `inf-fb-behaviour` (Bockeler L465-L478,
-  ADR 0002 L112).
+  ADR 0002 L115).
 
 Global rollup line (last 2 lines of the markdown output):
 
@@ -288,7 +288,7 @@ The script does not enforce a threshold. The skill surfaces a
   routed around by a newer surface.
 - A cell with `status == intentional_gap` is *not* a decay candidate,
   even at 0%. The known intentional gap (`inf-fb-behaviour`) is
-  deliberately empty per Bockeler L465-L478 and ADR 0002 L112.
+  deliberately empty per Bockeler L465-L478 and ADR 0002 L115.
 - The 3-step decay loop is in `decay-cadence.md` DECAY-1:
   **Diagnose** (read the per-fire `top_finding` to learn *why* the
   cell is silent) → **Plan a fix or document a deliberate gap**
@@ -345,7 +345,7 @@ How to read this:
   L465-L478 names behaviour-inferential-FB as the article's
   open problem; kbg's posture is `verification-gate` +
   `fabrication-verdict-log` + `inferential-structural-judge`,
-  all advisory-only per ADR 0002 L112. This is *not* a coverage
+  all advisory-only per ADR 0002 L115. This is *not* a coverage
   hole; it is a deliberate choice, recorded in
   `KNOWN_INTENTIONAL_GAPS` in the script.
 
@@ -359,7 +359,7 @@ How to read this:
   pre-tool-use gate, no ask-gate, no SessionStart/PostToolUse
   consumer; mirrors the inferential-FB "advisory only" invariant
   per `docs/research/inferential-structural-judge-design.md`
-  §4(c) and ADR 0002 §L112).
+  §4(c) and ADR 0002 §L115).
 - Does **not** restrict the operator's tool access. Per
   decay-cadence convention the surface gets full tool access so
   the operator can read whatever it needs.

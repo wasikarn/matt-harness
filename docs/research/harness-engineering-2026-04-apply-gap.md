@@ -47,9 +47,9 @@ date: 2026-06-15
 |  | **Computational** | **Inferential** |
 |---|---|---|
 | **Feedforward** | PreToolUse gates (`block-dangerous-git.sh:86-89`, `block-bash-doctrine-write.sh`, `block-alias-shadowing.sh`, `secret-scan.sh`) — emit `permissionDecision: deny/ask` | Doctrine injection (`doctrine-bootstrap.sh:7-9`, `iron-rule-reminder.sh`, `orchestrator-nudge.sh`) |
-| **Feedback** | `post-edit-audit.sh:1-2` · `security-diff-review.py:1-2` · `audit.sh` 38 checks · `test-critical-hooks.sh` 204 assertions | `verification-gate.sh:1-2` (SessionEnd, *advisory* — ADR 0002 §L112) · `fabrication-verdict-log.sh` (Stop) · `kbg:review-pr` |
+| **Feedback** | `post-edit-audit.sh:1-2` · `security-diff-review.py:1-2` · `audit.sh` 38 checks · `test-critical-hooks.sh` 204 assertions | `verification-gate.sh:1-2` (SessionEnd, *advisory* — ADR 0002 §L115) · `fabrication-verdict-log.sh` (Stop) · `kbg:review-pr` |
 
-All inferential-feedback sensors are **advisory by design** — `verification-gate.sh` "journals but NEVER emits a `permissionDecision`" (ADR 0002 §L112). Addresses critique-cost §3 (LLM-judge-circularity) at the cost of a thinner sensor stack.
+All inferential-feedback sensors are **advisory by design** — `verification-gate.sh` "journals but NEVER emits a `permissionDecision`" (ADR 0002 §L115). Addresses critique-cost §3 (LLM-judge-circularity) at the cost of a thinner sensor stack.
 
 ## 6. Steering loop (L388-394)
 

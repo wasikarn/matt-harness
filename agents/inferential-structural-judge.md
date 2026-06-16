@@ -1,6 +1,6 @@
 ---
 name: inferential-structural-judge
-description: "Inferential-FB sensor that judges the session's diff against 4 structural dimensions: over_engineering, arch_drift, test_pattern, doctrine_conformance. Invoked by the SessionEnd hook (HOOK-1) once per session; journals a verdict to ~/.claude/governance-events.jsonl with event=inferential_structural_verdict per docs/research/inferential-structural-judge-design.md §3. Advisory only — journal-only verdict, never blocks, never mutates code (autonomy invariant, ADR 0002 §L112). Score 1-3 = silent accept; 4-6 = flag (surfaces in kbg:state-of-the-harness); 7-10 = escalate (mirrors to next SessionStart additionalContext). Cost ceiling: ~4k tokens/session; if session is already at ≥ 25k tokens, the hook skips and journals skipped:budget. Hard cap of 50 files in the diff (truncated=true beyond). Use when: SessionEnd lifecycle fires and the session touched ≥ 1 file. Don't use for: deep PR review (use kbg:review-pr), security audit (defer to security-reviewer), test coverage (defer to pr-test-analyzer), or live diff review (defer to code-reviewer)."
+description: "Inferential-FB sensor that judges the session's diff against 4 structural dimensions: over_engineering, arch_drift, test_pattern, doctrine_conformance. Invoked by the SessionEnd hook (HOOK-1) once per session; journals a verdict to ~/.claude/governance-events.jsonl with event=inferential_structural_verdict per docs/research/inferential-structural-judge-design.md §3. Advisory only — journal-only verdict, never blocks, never mutates code (autonomy invariant, ADR 0002 §L115). Score 1-3 = silent accept; 4-6 = flag (surfaces in kbg:harness-health); 7-10 = escalate (mirrors to next SessionStart additionalContext). Cost ceiling: ~4k tokens/session; if session is already at ≥ 25k tokens, the hook skips and journals skipped:budget. Hard cap of 50 files in the diff (truncated=true beyond). Use when: SessionEnd lifecycle fires and the session touched ≥ 1 file. Don't use for: deep PR review (use kbg:review-pr), security audit (defer to security-reviewer), test coverage (defer to pr-test-analyzer), or live diff review (defer to code-reviewer)."
 tools:
   - Read
   - Grep
@@ -80,8 +80,8 @@ Per `docs/research/inferential-structural-judge-design.md` §3:
 
 | `score` | `recommendation` | What the surface does |
 |---|---|---|
-| **1-3** | `accept` | Journal only. Session is silently green. `kbg:state-of-the-harness` shows verdict count, never rationale. |
-| **4-6** | `flag` | Journal + verdict surfaces in `kbg:state-of-the-harness` (or the new `kbg:harness-health` command) with the rationale. Operator is *informed*, not interrupted. |
+| **1-3** | `accept` | Journal only. Session is silently green. `kbg:harness-health` shows verdict count, never rationale. |
+| **4-6** | `flag` | Journal + verdict surfaces in `kbg:harness-health` (or the new `kbg:harness-health` command) with the rationale. Operator is *informed*, not interrupted. |
 | **7-10** | `escalate` | Journal + verdict surfaces prominently with rationale *and* is mirrored to the next SessionStart's `additionalContext`, so the next session's first prompt carries "the previous session escalated on X." No push, no PagerDuty — user-facing surface is the next-session context, not an interrupt. |
 
 The escalation channel is *the next session*, not the current one: a model cannot fix its own session-end problem, and interrupting a finished session is meaningless.
@@ -186,7 +186,7 @@ Per `docs/research/inferential-structural-judge-design.md` §6 (verbatim, with t
 ## What this agent does NOT do
 
 - Does **not** mutate the repo (no `Edit` / `Write` in the `tools:` allowlist — autonomy invariant).
-- Does **not** emit a model-driven mutation gate (autonomy invariant, ADR 0002 §L112 — the design doc §4(c) guard; the agent journals, the human acts).
+- Does **not** emit a model-driven mutation gate (autonomy invariant, ADR 0002 §L115 — the design doc §4(c) guard; the agent journals, the human acts).
 - Does **not** call `git diff` directly (the hook passes the diff in the Input Contract envelope; the `Bash` tool is for `git log` / `git rev-parse` style lookups only, not for re-fetching the diff).
 - Does **not** add a 5th dimension (the design doc §3 enumerates exactly 4; adding a fifth breaks the 4-dimension contract that the `harness-coverage-metric` aggregator will rely on).
 - Does **not** narrate reasoning in the verdict JSON (the hook journals the verdict, not the prompt trail — drift-awareness is for *your scoring*, not the output).

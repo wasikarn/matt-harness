@@ -46,7 +46,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 
 ## Where the article is weak (adversarial summary)
 
-- **LLM-judge circularity unaddressed.** Coding model, judging model, and meta-engineering model are all the same class (L356–L359, L393). A judge inherits the generator's blind spots. kbg's mitigation: inferential-feedback sensors (`verification-gate.sh`, `fabrication-verdict-log.sh`) are *advisory only* — they journal but **never** emit a `permissionDecision` (ADR 0002 §L112).
+- **LLM-judge circularity unaddressed.** Coding model, judging model, and meta-engineering model are all the same class (L356–L359, L393). A judge inherits the generator's blind spots. kbg's mitigation: inferential-feedback sensors (`verification-gate.sh`, `fabrication-verdict-log.sh`) are *advisory only* — they journal but **never** emit a `permissionDecision` (ADR 0002 §L115).
 - **Behaviour is a cop-out.** The article classifies the problem, names one pattern (approved-fixtures), and admits defeat. Most of what humans bring *is* behavioural judgment (L527–L531) — the framework is structurally unequipped to deliver the autonomy the abstract promises.
 - **Coherence tax under-acknowledged.** L553 raises "how do we keep a harness coherent" and drops it. N guides × M sensors is multiplicative; the article frames it additively.
 - **Quality-left without trade-off analysis.** Stripe's "shift feedback left" (L544) is cited uncritically. The costs — reviewer fatigue, false positives, slow pre-commit, "tool said fine" stamp on Critical CVEs — are never acknowledged.
@@ -82,7 +82,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 **Now (low-cost, high-signal):**
 
 1. **Document the 2×2 grid in `CLAUDE.md`** as the mental model for *why* kbg has 14 hook events. Currently the hook architecture is described mechanically; the 2×2 framing makes the *purpose* of each event obvious.
-2. **Add a `## Open questions` mirror to `docs/harness-decay-cadence.md`** for the harness's own LLM-judge-circularity concern — single paragraph explaining why `verification-gate.sh` is *advisory*. Today this is in ADR 0002 §L112 but isn't surfaced to harness-readers.
+2. **Add a `## Open questions` mirror to `docs/harness-decay-cadence.md`** for the harness's own LLM-judge-circularity concern — single paragraph explaining why `verification-gate.sh` is *advisory*. Today this is in ADR 0002 §L115 but isn't surfaced to harness-readers.
 3. **Surface the behaviour-harness honesty.** Add a one-liner to `METHODOLOGY.md`: "Acceptance criteria are the upper bound on what the test gate can prove." This bakes the L448 lesson into doctrine.
 
 **Later (require own design work):**

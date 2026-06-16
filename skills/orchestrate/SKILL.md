@@ -413,7 +413,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 ## Bounded fan-out — hard cap (F8.5)
 
-**The fan-out cap is CODE-ENFORCED, not advisory.** A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
+**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (ADR 0002: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
 
 **Hard rules:**
 

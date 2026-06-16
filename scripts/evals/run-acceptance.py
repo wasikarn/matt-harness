@@ -41,7 +41,7 @@ DEFAULT_TIMEOUT = 60  # seconds per criterion
 
 def parse_acceptance_md(path: Path) -> dict[str, Any]:
     """Parse ACCEPTANCE.md and extract structured criteria."""
-    content = path.read_text(encoding="utf-8")
+    content = path.read_text(encoding="utf-8", errors="replace")
 
     # Strategy 1: look for explicit ## Criteria section
     criteria_block = ""

@@ -11,7 +11,7 @@ follow_up_plans:
 tag_only_eval: true
 target: kbg-harness 0.2.x (after 0.1.18 description-trim lands)
 created: 2026-06-15
-related: ADR 0002 §L112 (verification-gate.sh advisory invariant), sensor-fire-notification.md
+related: ADR 0002 §L115 (verification-gate.sh advisory invariant), sensor-fire-notification.md
 ---
 
 # Plan: Inferential structural-test layer for kbg-harness

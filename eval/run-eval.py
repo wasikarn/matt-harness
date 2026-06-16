@@ -866,7 +866,7 @@ def main() -> int:
         print(f"Running {len(evals)} eval(s) from {len(datasets)} dataset(s)...", file=sys.stderr)
         for ev in evals:
             if args.verbose:
-                print(f"  [{ev['id']}] running...", file=sys.stderr)
+                print(f"  [{ev.get('id','?')}] running...", file=sys.stderr)
             result = run_assertion_eval(ev, args.verbose)
             all_results.append(result)
             if result["result"] == "passed":
@@ -887,7 +887,7 @@ def main() -> int:
             print(f"Running {len(evals)} eval(s) from default datasets/...", file=sys.stderr)
             for ev in evals:
                 if args.verbose:
-                    print(f"  [{ev['id']}] running...", file=sys.stderr)
+                    print(f"  [{ev.get('id','?')}] running...", file=sys.stderr)
                 result = run_assertion_eval(ev, args.verbose)
                 all_results.append(result)
                 if result["result"] == "passed":
