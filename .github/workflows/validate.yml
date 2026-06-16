@@ -114,3 +114,31 @@ jobs:
         with:
           name: eval-results
           path: eval/results/*/summary.json
+
+  critical-hooks:
+    name: critical-hooks suite
+    runs-on: ubuntu-latest
+    # The suite is ~125s locally and ~300s on slower CI runners; 15 min is ample
+    # headroom as it grows. This is the dedicated, single-run home for the suite —
+    # it can't be gated through the acceptance fixture (that re-runs the contract
+    # ~3x, which doesn't fit a 10-min job). See run-acceptance.py DEFAULT_TIMEOUT.
+    timeout-minutes: 15
+    steps:
+      - name: checkout
+        uses: actions/checkout@v5
+
+      - name: setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: setup plugin cache stub for audit
+        run: |
+          # The suite's audit-backed tests (audit32 / trigger-pattern) run
+          # audit.sh; the F1 check expects ~/.claude/plugins/cache/kobig/kbg/<v>/
+          # to resolve plugin-delivered skills (mirrors the eval-harness job).
+          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg"
+          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17"
+
+      - name: run critical-hooks suite
+        run: bash hooks/tests/test-critical-hooks.sh

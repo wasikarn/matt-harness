@@ -156,13 +156,6 @@ hook_audit_log() {
   }
 }
 
-# _now_ms — millisecond epoch timestamp. BSD `date` (macOS) has no %N, so
-# `date +%3N` yields a literal "3N" — mint via python3 instead. Used to compose
-# the journal `id`. See claude/hooks/JOURNAL-SCHEMA.md.
-_now_ms() {
-  python3 -c 'import time; print(int(time.time() * 1000))'
-}
-
 # journal_append <hook_id> <event_name> <fields_json>
 # Append one nested-envelope event to the governance evidence journal
 # (~/.claude/governance-events.jsonl). Contract: claude/hooks/JOURNAL-SCHEMA.md.
@@ -185,9 +178,14 @@ journal_append() {
   }
 
   local ms iso rand
-  ms=$(_now_ms)
-  # ISO8601-with-ms (ts) + random suffix (id uniqueness), one python call.
-  read -r iso rand < <(python3 -c 'import uuid,datetime as d; print(d.datetime.now(d.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z", uuid.uuid4().hex[:8])')
+  # Mint ms-epoch + ISO8601-with-ms (ts) + random suffix (id uniqueness) in ONE
+  # python3 call. Was two cold-starts (_now_ms + this); one ~halves the per-event
+  # minting cost, which compounds across every journaling hook and the test suite.
+  # BSD `date` (macOS) has no %N, so python3 stays the portable minter. Same three
+  # fields, same format. n.timestamp()*1000 == the old time.time()*1000 epoch ms.
+  read -r ms iso rand < <(python3 -c 'import uuid,datetime as d
+n=d.datetime.now(d.timezone.utc)
+print(int(n.timestamp()*1000), n.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z", uuid.uuid4().hex[:8])')
   # Fail loud if the mint came back empty (python3 missing/broken) instead of
   # writing a malformed envelope with an empty ts or a "<ms>-<hook>-" id.
   if [ -z "$ms" ] || [ -z "$iso" ] || [ -z "$rand" ]; then
