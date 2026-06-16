@@ -1,6 +1,6 @@
 ---
 name: harness-coverage
-description: "Read-only harness-coverage report. Renders the 2x2x3 (12-cell) coverage grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold (per decay-cadence DECAY-1) highlighted cell-by-cell and the known intentional-gap cell `inf-fb-behaviour` named explicitly (Bockeler L465-L478 + ADR 0002 L112). Use when: the operator wants to know which harness cells are populated, stale, or coverage holes; wants a quarter-end decay-cadence measurement; wants a single 12-row markdown table instead of reading the journal directly. Don't use for: per-session forensic drill-down (use `kbg:harness-health`), per-sensor fire-rate investigation (read the journal directly), or for a verdict stream (use `kbg:harness-health` `--event-type verdict`). Stdlib-only Python, no LLM in the loop, never writes to the journal or the registry."
+description: "Read-only harness-coverage report: renders the 2x2x3 (12-cell) grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold and the intentional-gap cell `inf-fb-behaviour` flagged. Use when the operator wants to know which cells are populated, stale, or empty, wants a quarter-end decay measurement, or a 12-row table view of the journal. Don't use for: per-session drill-down or a verdict stream (use `kbg:harness-health`), or per-sensor fire-rate (read the journal)."
 ---
 
 # Skill: harness-coverage

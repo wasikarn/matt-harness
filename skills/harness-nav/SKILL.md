@@ -1,6 +1,6 @@
 ---
 name: harness-nav
-description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, and commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for tasks where the right skill is already known (use it directly); don't use for operational health queries (use kbg:harness-health instead). The skill-nudge hook handles common-path discovery automatically; reach for harness-nav only when the nudge didn't fire or didn't help."
+description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health). Reach for it only when the skill-nudge hook didn't surface the match."
 ---
 
 # Harness Navigation — L3 Escape Hatch
