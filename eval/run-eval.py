@@ -10,7 +10,7 @@ Usage:
 Prerequisites:
     - Datasets are JSON files matching eval/SCHEMA.md.
     - Regression fixtures are JSON files in eval/regressions/.
-    - scripts/run-acceptance.py exists (for acceptance-type evals).
+    - scripts/evals/run-acceptance.py exists (for acceptance-type evals).
 """
 
 import argparse
@@ -27,7 +27,7 @@ EVAL_DIR = REPO_ROOT / "eval"
 DATASETS_DIR = EVAL_DIR / "datasets"
 REGRESSIONS_DIR = EVAL_DIR / "regressions"
 RESULTS_DIR = EVAL_DIR / "results"
-RUN_ACCEPTANCE = REPO_ROOT / "scripts" / "run-acceptance.py"
+RUN_ACCEPTANCE = REPO_ROOT / "scripts" / "evals" / "run-acceptance.py"
 
 # Tags that run in "tag-only" mode: the runner emits per-fixture status,
 # computes the bucket-threshold pass criterion, and never fails --gate.
@@ -676,7 +676,7 @@ def run_harness_coverage_eval(eval_item: dict, verbose: bool) -> dict:
         }, indent=2))
 
         # Find the script (relative to this file's eval/ dir → repo root → scripts/)
-        script_path = Path(__file__).resolve().parent.parent / "scripts" / "harness-coverage.py"
+        script_path = Path(__file__).resolve().parent.parent / "scripts" / "evals" / "harness-coverage.py"
         if not script_path.exists():
             return {
                 "id": eval_item.get("id", "harness-coverage"),

@@ -218,11 +218,11 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 1. Run the lock reaper for the plan's team:
    ```bash
-   bash scripts/lock-reap.sh --team=health-endpoint --dry-run
+   bash scripts/locks/lock-reap.sh --team=health-endpoint --dry-run
    ```
    This previews which locks are broken (expired). If the output looks correct, remove `--dry-run`:
    ```bash
-   bash scripts/lock-reap.sh --team=health-endpoint
+   bash scripts/locks/lock-reap.sh --team=health-endpoint
    ```
    The script breaks expired locks, logs via `journal_append`, and removes the lock directory.
 
@@ -250,7 +250,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 | Pre-flight plan check | `python3 scripts/plan-linter.py .claude/tasks/health-endpoint.md --strict` |
 | Validate a completed task | `/validate-and-fix API-1 health-endpoint` |
 | Clean up stale artifacts | `/team-cleanup health-endpoint --dry-run` |
-| Reap expired locks | `bash scripts/lock-reap.sh --team=health-endpoint` |
+| Reap expired locks | `bash scripts/locks/lock-reap.sh --team=health-endpoint` |
 | Disable one hook | `export CLAUDE_DISABLED_HOOKS=hook-name` |
 | Disable all hooks | `export CLAUDE_HOOK_PROFILE=off` |
 | Downgrade F7 to log-only | `export KBG_ENFORCE_TASK_COMPLETED=0` |
@@ -270,4 +270,4 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 - [`hooks/task-lifecycle.sh`](../hooks/task-lifecycle.sh) — F7 TaskCompleted gate, TeammateIdle heartbeat check
 - [`hooks/validator-bash-guard.sh`](../hooks/validator-bash-guard.sh) — PreToolUse Bash mutation guard
 - [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight plan validation (file ownership, team size, F10 risks)
-- [`scripts/lock-reap.sh`](../scripts/lock-reap.sh) — expired lock reaper
+- [`scripts/locks/lock-reap.sh`](../scripts/locks/lock-reap.sh) — expired lock reaper

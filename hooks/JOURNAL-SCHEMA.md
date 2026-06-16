@@ -4,7 +4,7 @@ One append-only JSONL stream at `~/.claude/governance-events.jsonl` replaces the
 scatter of bespoke per-hook TSV logs. This file is the **language-agnostic
 contract** every producer honors: bash hooks emit via `journal_append` (in
 `_lib.sh`); python hooks build the same dict with `json.dumps`. The consumer
-(`claude/scripts/governance-summary.py`) reads this shape. Change the shape here
+(`claude/scripts/governance/governance-summary.py`) reads this shape. Change the shape here
 first, then update producers and consumer together.
 
 ## Envelope (nested)
@@ -84,7 +84,7 @@ events and is a superset of the `review_finding.fields` shape, plus
 human-readability, NOT used for cross-event linkage), `decision` (the user
 choice), and `rejected_reason` (the SCRUTINIZE justification). The per-line
 shape is: `{local_id, file, line, tier, disposition, decision, agent,
-rejected_reason, summary}` (9 fields). The journaler (`claude/scripts/review-pr-journal.py`) validates `tier`, `disposition`, `decision` against the
+rejected_reason, summary}` (9 fields). The journaler (`claude/scripts/pr/review-pr-journal.py`) validates `tier`, `disposition`, `decision` against the
 enums above and surfaces a `WARNING` on stderr for a miss — but does NOT block
 the emit (Q3=a "silent FYI, never unwinds" — the journaler is best-effort, not
 a submit gate).
@@ -96,7 +96,7 @@ audit on 2026-06-11 (FLAG-4) found that an enum-miss verdict silently landing
 in the governance stream gets aggregated downstream as if it were a strict-tier
 verdict — polluting the digest. **The fix is additive, not contract-changing:**
 
-- **Layer 2 — `scripts/review-pr-journal-pre-emit-validator.py` (pre-emit ask-gate).** CLI
+- **Layer 2 — `scripts/pr/review-pr-journal-pre-emit-validator.py` (pre-emit ask-gate).** CLI
   preflight that `/review-pr` SKILL.md step 4 calls BEFORE the journaler.
   - Re-imports the journaler's enum regexes (`TIER_OK`, `DISPOSITION_OK`, `DECISION_OK`)
     so a schema change there propagates here — DO NOT redeclare the enums.
@@ -112,7 +112,7 @@ verdict — polluting the digest. **The fix is additive, not contract-changing:*
     (`recursive-improve stays disable-model-invocation:true` — no autonomous
     multi-iteration loop) is preserved: the validator hands the choice back to
     the human, never decides for them.
-- **Layer 1 — `scripts/review-pr-journal.py` (best-effort, never unwinds).** Unchanged.
+- **Layer 1 — `scripts/pr/review-pr-journal.py` (best-effort, never unwinds).** Unchanged.
   WARNINGs on enum-miss but emits anyway. The two-layer design is the answer
   to "the journaler should warn but not block" (Q3=a) AND "we should still
   catch the drift before it pollutes the stream" (audit FLAG-4) — Layer 2

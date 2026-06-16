@@ -312,4 +312,4 @@ ETA: 42m (3/6 done)
 - `scripts/task_board_lib.py` — `board_read()`, `heartbeat_read_all()`, board schema
 - `commands/team-build.md` — writes the board and heartbeats this command reads
 - `commands/team-plan.md` — produces the plan file that seeds the board
-- `scripts/lock-query.sh` — per-resource lock query (used here for broad scan fallback)
+- `scripts/locks/lock-query.sh` — per-resource lock query (used here for broad scan fallback)

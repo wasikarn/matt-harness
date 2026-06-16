@@ -38,12 +38,12 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
 
 ## Phase 2: Execute
 
-**Goal**: Run `scripts/run-acceptance.py` and capture structured results.
+**Goal**: Run `scripts/evals/run-acceptance.py` and capture structured results.
 
 **Actions**:
 1. Run:
    ```bash
-   python3 scripts/run-acceptance.py <slug> --verbose
+   python3 scripts/evals/run-acceptance.py <slug> --verbose
    ```
    - Working directory: repo root.
    - Timeout: default (30s per criterion).
@@ -120,5 +120,5 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
 
 - **Called from `/ship-merge` Phase 1** (optional): if the PR has an associated `ACCEPTANCE.md`, Phase 1 can suggest `/pre-ship-verify` before the merge gate.
 - **Called from `kbg:review-pr` Phase 6**: the acceptance-contract check can invoke this command to replace prose cross-checking with deterministic execution.
-- **CI integration**: `python3 scripts/run-acceptance.py <slug> --gate` (non-zero exit on any failure) can run in GitHub Actions before merge.
+- **CI integration**: `python3 scripts/evals/run-acceptance.py <slug> --gate` (non-zero exit on any failure) can run in GitHub Actions before merge.
 - **Hook integration**: `verification-gate.sh` (advisory sensor) reads `acceptance-results.json` and logs; it does not block. Blocking is the user's decision via this command or `/ship-merge` gate.

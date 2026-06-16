@@ -5,7 +5,7 @@ description: "Read-only harness-coverage report. Renders the 2x2x3 (12-cell) cov
 
 # Skill: harness-coverage
 
-Read-only rendering layer over `scripts/harness-coverage.py` (the
+Read-only rendering layer over `scripts/evals/harness-coverage.py` (the
 deterministic 12-cell aggregator shipped in wave 2). The script reads
 `hooks/sensors.json` + the governance journal and emits the
 2x2x3 coverage grid (Bockeler 2026-04, L356-L374 + L437-L479; the same
@@ -23,7 +23,7 @@ decides what to decommission per the decay-cadence 3-step loop
 
 The skill is the **SKILL-1** deliverable of the `harness-coverage-metric`
 plan (`.claude/tasks/harness-coverage-metric.md`). Aggregator = wave 2
-(`scripts/harness-coverage.py`, AGG-1); this skill = wave 3; regression
+(`scripts/evals/harness-coverage.py`, AGG-1); this skill = wave 3; regression
 fixture = wave 4 (`eval/regressions/harness-coverage.json`, FIX-1);
 decay-cadence wiring = LEAD-D's DECAY-1.
 
@@ -39,7 +39,7 @@ decay-cadence wiring = LEAD-D's DECAY-1.
 - The operator wants the global rollup line (`populated=N holes=N
   gaps=N score=N% drift_30d=N%`) at the bottom of the table.
 - The operator wants JSON for downstream tooling
-  (`python3 scripts/harness-coverage.py --format json`).
+  (`python3 scripts/evals/harness-coverage.py --format json`).
 - The operator wants to confirm that the *known intentional gap* cell
   (`inf-fb-behaviour`) is annotated as such, not scored as 0% decay.
 
@@ -84,17 +84,17 @@ decay-cadence wiring = LEAD-D's DECAY-1.
 
 ```bash
 # 12-row markdown table (the default operator view)
-python3 scripts/harness-coverage.py --format markdown
+python3 scripts/evals/harness-coverage.py --format markdown
 
 # JSON for downstream tooling (eval fixtures, future harness-coverage
 # fixture, dashboards)
-python3 scripts/harness-coverage.py --format json
+python3 scripts/evals/harness-coverage.py --format json
 
 # Custom window (default is 30 sessions; the script caps at 180)
-python3 scripts/harness-coverage.py --window-sessions 7 --format markdown
+python3 scripts/evals/harness-coverage.py --window-sessions 7 --format markdown
 
 # Override journal / sensors path (used by the wave-4 regression fixture)
-python3 scripts/harness-coverage.py --journal-path /tmp/j.jsonl --format json
+python3 scripts/evals/harness-coverage.py --journal-path /tmp/j.jsonl --format json
 ```
 
 ## Input Contract
@@ -261,7 +261,7 @@ regression fixture (`eval/regressions/harness-coverage.json`).
 
 ## Failure Modes
 
-Per the script's design (`scripts/harness-coverage.py` main + the
+Per the script's design (`scripts/evals/harness-coverage.py` main + the
 journal consumer pattern from `hooks/JOURNAL-SCHEMA.md` "Fail-loud"):
 
 | # | Failure | Behavior | Why |
@@ -305,7 +305,7 @@ scheduled hook event, no model-as-own-gate.
 ## Example
 
 Below is the exact markdown output of
-`python3 scripts/harness-coverage.py --format markdown` against the
+`python3 scripts/evals/harness-coverage.py --format markdown` against the
 current `hooks/sensors.json` + governance journal (captured 2026-06-15
 on `develop` at plugin version 0.2.2):
 
@@ -379,7 +379,7 @@ How to read this:
 
 ## Cross-references
 
-- **Upstream script:** `scripts/harness-coverage.py` (AGG-1, wave 2).
+- **Upstream script:** `scripts/evals/harness-coverage.py` (AGG-1, wave 2).
   The CLI flags + exit-code contract are the only stable
   interface; this skill is a thin wrapper.
 - **Upstream design doc:** `docs/research/harness-coverage-metric-design.md`

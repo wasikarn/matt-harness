@@ -149,7 +149,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
    **Acceptance-contract check** (only if the task locked one via `kbg:accept-task`): look for `.scratch/<slug>/ACCEPTANCE.md`. If absent, skip this silently. If present, **run machine-checkable criteria first**, then cross-check findings:
-   1. **Machine layer:** Run `python3 scripts/run-acceptance.py <slug>` (or invoke `/pre-ship-verify <slug>`). Read `acceptance-results.json`.
+   1. **Machine layer:** Run `python3 scripts/evals/run-acceptance.py <slug>` (or invoke `/pre-ship-verify <slug>`). Read `acceptance-results.json`.
       - Any `failed` or `blocked` criteria → treat as **Critical [acceptance-gap]** regardless of review findings. The contract is broken.
       - Skipped criteria (prose/manual) → proceed to human layer below.
    2. **Human layer:** Cross-check each Critical/Important review finding against the locked `## Criteria`:
@@ -244,12 +244,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 4. **(Phase II: journal the findings — best-effort, NEVER blocks submit).** Two-layer design (see `hooks/JOURNAL-SCHEMA.md`):
    - **Layer 2 — pre-emit validator (ask-gate, additive):** run BEFORE the journaler.
      ```bash
-     python3 "$HOME/.claude/scripts/review-pr-journal-pre-emit-validator.py" ".scratch/review-pr-<UTC-timestamp>/"
+     python3 "$HOME/.claude/scripts/pr/review-pr-journal-pre-emit-validator.py" ".scratch/review-pr-<UTC-timestamp>/"
      ```
      Exits **0** if every finding passes enum validation (or is already in the manifest), **2** if any finding has an enum-miss (bad `tier` / `disposition` / `decision` / `local_id`) NOT already in the manifest. On exit 2: **AskUserQuestion** the human with the validator's named summary — *"validator found N enum-miss (e.g. `local_id=b: tier='CRITICAL_TYPO'`); the journaler is best-effort and would still emit, but this drift will pollute the governance stream. Proceed anyway, or pause to fix the finding first?"* Options: *Proceed — emit anyway (downgrade to journaler WARNING)* / *Pause — fix the finding first* / *Cancel — abort journal step*. The validator is **additive, not authoritative** — its exit-2 path is an ASK gate, not a deny, per the autonomy invariant (the user keeps the choice to proceed with degraded data; the default is to pause).
    - **Layer 1 — journaler (best-effort, never unwinds):** run after the validator clears (or the user overrides).
      ```bash
-     python3 "$HOME/.claude/scripts/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
+     python3 "$HOME/.claude/scripts/pr/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
      ```
      If the script exits **0**, the `findings.jsonl` is now a stable set of `review_finding` + `verification_verdict` pairs in `~/.claude/governance-events.jsonl`, linked by `verdict.subject_id == finding.id`. A `.journaled` marker in the scratch dir prevents re-runs. **If the script exits 2** (malformed JSON, missing `findings.jsonl`), capture the error verbatim in the Phase 7 summary under `Journaler:` as a silent FYI — the submit (step 3) and the worktree cleanup (step 5) are NOT unwound. The user's review is still posted; the journal just isn't. Re-runnable on the next `kbg:review-pr` call (the marker is the only state; nothing in the journal itself blocks re-emit). This step runs AFTER the submit (so a journaler failure cannot prevent the user-visible review) and BEFORE the worktree cleanup (so the scratch dir still exists when the script reads it).
 5. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.

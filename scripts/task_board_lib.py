@@ -10,553 +10,79 @@ writer of board.json. This library supports BOTH paths:
 
 All board mutations go through atomic write (tempfile + os.rename) and mkdir-based
 locking. Recomputation of blocked_by is deterministic from depends_on + completed set.
+
+Implementation is split across three private modules:
+  _task_board_io   — constants, board_init / board_read / board_write + helpers
+  _task_board_lock — lock_acquire / lock_release
+  _task_board_ops  — recompute_blocked / heartbeat_* / claim_task
+
+This file is the public API facade: import from here, not from the private modules.
 """
 
 from __future__ import annotations
 
-import json
-import os
-import shutil
-import tempfile
-import time
-from datetime import datetime, timedelta, timezone
+import sys
 from pathlib import Path
-from typing import Any
+
+# Ensure private sibling modules are importable when this file is on sys.path
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
 
 # ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-CURRENT_SCHEMA_VERSION = 1
-BOARD_FILENAME = "board.json"
-LOCK_DIRNAME = ".lock"
-HEARTBEAT_DIRNAME = "heartbeat"
-
-
-# ---------------------------------------------------------------------------
-# Board I/O
+# Re-exports — public API
 # ---------------------------------------------------------------------------
 
-def board_init(plan_file: str) -> dict:
-    """Parse a markdown plan file and create a fresh board.json payload.
-
-    Parameters
-    ----------
-    plan_file: Path to .claude/tasks/<slug>.md
-
-    Returns
-    -------
-    dict: board payload (not yet written to disk)
-    """
-    plan_path = Path(plan_file).resolve()
-    if not plan_path.exists():
-        raise FileNotFoundError(f"Plan file not found: {plan_file}")
-
-    slug = plan_path.stem
-    content = plan_path.read_text(encoding="utf-8")
-
-    # Extract tasks table from ## Step by Step Tasks section
-    tasks, waves = _parse_plan_table(content)
-
-    now = _utcnow_iso()
-    board = {
-        "schema_version": CURRENT_SCHEMA_VERSION,
-        "plan_slug": slug,
-        "plan_file": str(plan_path.relative_to(Path.cwd())) if _is_under_cwd(plan_path) else str(plan_path),
-        "created_at": now,
-        "updated_at": now,
-        "status": "pending",
-        "current_wave": 1,
-        "tasks": tasks,
-        "waves": waves,
-        "agents": {},
-    }
-
-    # Initial blocked recomputation
-    board = recompute_blocked(board)
-    return board
-
-
-def board_read(plan_dir: str) -> dict:
-    """Read and validate board.json from plan_dir.
-
-    Parameters
-    ----------
-    plan_dir: Directory containing board.json (e.g. .claude/tasks/<slug>/)
-
-    Returns
-    -------
-    dict: Parsed board payload
-
-    Raises
-    ------
-    FileNotFoundError: board.json does not exist
-    ValueError: schema_version mismatch or malformed JSON
-    """
-    board_file = Path(plan_dir) / BOARD_FILENAME
-    if not board_file.exists():
-        raise FileNotFoundError(f"Board file not found: {board_file}")
-
-    raw = board_file.read_text(encoding="utf-8")
-    try:
-        payload: dict[str, Any] = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON in {board_file}: {exc}") from exc
-
-    version = payload.get("schema_version")
-    if version != CURRENT_SCHEMA_VERSION:
-        raise ValueError(
-            f"Unsupported schema_version: {version} (expected {CURRENT_SCHEMA_VERSION})"
-        )
-
-    if "tasks" not in payload or not isinstance(payload["tasks"], dict):
-        raise ValueError(f"Malformed board: missing 'tasks' dict in {board_file}")
-
-    return payload
-
-
-def board_write(plan_dir: str, payload: dict) -> None:
-    """Atomically write board.json using tempfile + os.rename.
-
-    Parameters
-    ----------
-    plan_dir: Target directory
-    payload:  Board dict to serialize
-    """
-    board_file = Path(plan_dir) / BOARD_FILENAME
-    # Ensure directory exists
-    board_file.parent.mkdir(parents=True, exist_ok=True)
-
-    payload["updated_at"] = _utcnow_iso()
-    tmp = board_file.with_suffix(f".tmp.{os.getpid()}")
-    try:
-        with tmp.open("w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        os.rename(str(tmp), str(board_file))
-    except Exception:
-        if tmp.exists():
-            os.unlink(str(tmp))
-        raise
-
-
-# ---------------------------------------------------------------------------
-# Locking (mkdir protocol — portable POSIX)
-# ---------------------------------------------------------------------------
-
-def lock_acquire(plan_dir: str, timeout: int = 10) -> bool:
-    """Acquire a mkdir-based lock on plan_dir/.lock
-
-    Parameters
-    ----------
-    plan_dir: Directory to lock under
-    timeout:  Seconds to wait before giving up
-
-    Returns
-    -------
-    bool: True if lock acquired, False on timeout
-    """
-    lock_dir = Path(plan_dir) / LOCK_DIRNAME
-    waited = 0
-    retries = 0
-    max_retries = 3
-    stale_grace_seconds = 30
-    lock_ttl_seconds = 60
-    # Each iteration sleeps 0.1s, so timeout*10 iterations ~= timeout seconds
-    while True:
-        try:
-            lock_dir.mkdir(parents=False, exist_ok=False)
-            expires_at = (datetime.now(timezone.utc) + timedelta(seconds=lock_ttl_seconds)).isoformat()
-            (lock_dir / "lock.json").write_text(
-                json.dumps({"expires_at": expires_at}),
-                encoding="utf-8",
-            )
-            return True
-        except FileExistsError:
-            if retries >= max_retries:
-                return False
-            now = datetime.now(timezone.utc)
-            stale = False
-            lock_json = lock_dir / "lock.json"
-            if lock_json.exists():
-                try:
-                    data = json.loads(lock_json.read_text(encoding="utf-8"))
-                    expires_at_str = data.get("expires_at")
-                    if expires_at_str:
-                        expires_at = datetime.fromisoformat(expires_at_str)
-                        if now > expires_at:
-                            stale = True
-                    else:
-                        stale = True
-                except (json.JSONDecodeError, ValueError, OSError):
-                    stale = True
-            else:
-                # No lock.json — treat as stale after grace period based on mtime
-                try:
-                    mtime = datetime.fromtimestamp(lock_dir.stat().st_mtime, tz=timezone.utc)
-                    if (now - mtime).total_seconds() > stale_grace_seconds:
-                        stale = True
-                except OSError:
-                    stale = True
-
-            if stale:
-                try:
-                    shutil.rmtree(lock_dir)
-                    retries += 1
-                    continue
-                except OSError:
-                    pass
-
-            time.sleep(0.1)
-            waited += 1
-            if waited >= timeout * 10:
-                return False
-
-
-def lock_release(plan_dir: str) -> None:
-    """Release the mkdir-based lock.
-
-    Parameters
-    ----------
-    plan_dir: Directory whose .lock should be removed
-    """
-    lock_dir = Path(plan_dir) / LOCK_DIRNAME
-    if lock_dir.exists():
-        lock_dir.rmdir()
-
-
-# ---------------------------------------------------------------------------
-# Dependency recomputation
-# ---------------------------------------------------------------------------
-
-def recompute_blocked(board: dict) -> dict:
-    """Update blocked_by and status from depends_on + completed status.
-
-    A task is blocked if any of its depends_on tasks are not completed.
-    Status transitions:
-      - completed → stays completed
-      - blocked   → pending if no remaining blockers
-      - pending   → blocked if blockers appear (should not happen in normal flow)
-
-    Parameters
-    ----------
-    board: Board dict (mutated in place and returned)
-
-    Returns
-    -------
-    dict: The mutated board dict
-    """
-    tasks = board.get("tasks", {})
-    completed = {
-        tid for tid, task in tasks.items()
-        if task.get("status") == "completed"
-    }
-
-    for tid, task in tasks.items():
-        if task.get("status") == "completed":
-            task["blocked_by"] = []
-            continue
-
-        deps = task.get("depends_on", []) or []
-        remaining = [d for d in deps if d not in completed]
-        task["blocked_by"] = remaining
-
-        if remaining:
-            if task.get("status") not in ("in_progress", "completed"):
-                task["status"] = "blocked"
-        else:
-            if task.get("status") == "blocked":
-                task["status"] = "pending"
-
-    # Derive plan-level status
-    if any(t.get("status") == "in_progress" for t in tasks.values()):
-        board["status"] = "in_progress"
-    elif any(t.get("status") in ("pending", "blocked") for t in tasks.values()):
-        board["status"] = "pending"
-    else:
-        board["status"] = "completed"
-
-    # Derive current_wave from unblocked / in-progress tasks
-    current_wave = None
-    for tid, task in sorted(tasks.items()):
-        status = task.get("status")
-        if status in ("pending", "in_progress"):
-            wave = task.get("wave")
-            if wave is not None and (current_wave is None or wave < current_wave):
-                current_wave = wave
-    board["current_wave"] = current_wave if current_wave is not None else 1
-
-    return board
-
-
-# ---------------------------------------------------------------------------
-# Heartbeat I/O
-# ---------------------------------------------------------------------------
-
-def heartbeat_write(plan_dir: str, agent_id: str, task_id: str, status: str, note: str) -> None:
-    """Write a per-agent heartbeat JSON. No lock required.
-
-    Parameters
-    ----------
-    plan_dir: Plan directory
-    agent_id: Agent/session identifier
-    task_id:  Current task being worked on
-    status:   Task status string
-    note:     Human-readable progress note
-    """
-    hb_dir = Path(plan_dir) / HEARTBEAT_DIRNAME
-    hb_dir.mkdir(parents=True, exist_ok=True)
-
-    payload = {
-        "agent_id": agent_id,
-        "current_task": task_id,
-        "task_status": status,
-        "last_heartbeat": _utcnow_iso(),
-        "progress_note": note,
-    }
-
-    hb_file = hb_dir / f"{agent_id}.json"
-    tmp = hb_file.with_suffix(f".tmp.{os.getpid()}")
-    try:
-        with tmp.open("w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        os.rename(str(tmp), str(hb_file))
-    except Exception:
-        if tmp.exists():
-            os.unlink(str(tmp))
-        raise
-
-
-def heartbeat_read_all(plan_dir: str) -> list:
-    """Scan heartbeat/*.json and return list of heartbeat dicts.
-
-    Parameters
-    ----------
-    plan_dir: Plan directory containing heartbeat/ subdirectory
-
-    Returns
-    -------
-    list: Parsed heartbeat JSON objects
-    """
-    hb_dir = Path(plan_dir) / HEARTBEAT_DIRNAME
-    if not hb_dir.exists():
-        return []
-
-    results = []
-    for fpath in sorted(hb_dir.glob("*.json")):
-        try:
-            raw = fpath.read_text(encoding="utf-8")
-            data = json.loads(raw)
-            data.setdefault("_file", str(fpath.name))
-            results.append(data)
-        except (json.JSONDecodeError, OSError):
-            # Skip corrupted heartbeat files silently — they are ephemeral
-            continue
-    return results
-
-
-# ---------------------------------------------------------------------------
-# Claim protocol
-# ---------------------------------------------------------------------------
-
-def claim_task(board: dict, task_id: str, agent_id: str) -> dict | None:
-    """Attempt to claim a task. Mutates board in place if successful.
-
-    Eligibility:
-      - task.status == "pending"
-      - len(task.blocked_by) == 0
-      - task.claimed_by is None
-
-    On success, sets status="in_progress", claimed_by=agent_id, claimed_at=now.
-
-    Parameters
-    ----------
-    board:    Board dict
-    task_id:  Task to claim
-    agent_id: Agent claiming the task
-
-    Returns
-    -------
-    dict: Mutated board on success, None on failure
-    """
-    tasks = board.get("tasks", {})
-    task = tasks.get(task_id)
-    if task is None:
-        return None
-
-    if task.get("status") != "pending":
-        return None
-    if task.get("claimed_by") is not None:
-        return None
-    blocked_by = task.get("blocked_by", []) or []
-    if blocked_by:
-        return None
-
-    task["status"] = "in_progress"
-    task["claimed_by"] = agent_id
-    task["claimed_at"] = _utcnow_iso()
-    board["updated_at"] = _utcnow_iso()
-
-    # Ensure agent entry exists
-    agents = board.setdefault("agents", {})
-    if agent_id not in agents:
-        agents[agent_id] = {
-            "id": agent_id,
-            "spawned_at": _utcnow_iso(),
-            "last_heartbeat_file": str(Path(HEARTBEAT_DIRNAME) / f"{agent_id}.json"),
-        }
-
-    return board
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-
-def _utcnow_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _is_under_cwd(p: Path) -> bool:
-    try:
-        p.relative_to(Path.cwd())
-        return True
-    except ValueError:
-        return False
-
-
-def _parse_plan_table(content: str) -> tuple[dict, dict]:
-    """Naive markdown table parser for ## Step by Step Tasks.
-
-    Expected table columns (order-insensitive header matching):
-      Task ID | Description | Depends On | Assigned To | Files | Criteria | Constraints
-
-    Returns (tasks dict, waves dict).
-    """
-    lines = content.splitlines()
-    in_section = False
-    header_line_idx = None
-    separator_idx = None
-    for i, line in enumerate(lines):
-        if line.strip().startswith("## Step by Step Tasks"):
-            in_section = True
-            continue
-        if in_section and line.strip().startswith("## "):
-            break
-        if in_section and line.strip().startswith("|") and "Task ID" in line:
-            if i + 1 < len(lines) and "|---" in lines[i + 1]:
-                header_line_idx = i
-                separator_idx = i + 1
-                break
-            continue
-
-    if header_line_idx is None or separator_idx is None:
-        raise ValueError("Could not find Step by Step Tasks table in plan file")
-
-    headers = [h.strip().lower() for h in lines[header_line_idx].split("|")]
-    col_map = {}
-    for idx, h in enumerate(headers):
-        if "task id" in h:
-            col_map["id"] = idx
-        elif "description" in h:
-            col_map["description"] = idx
-        elif "depends on" in h:
-            col_map["depends_on"] = idx
-        elif "assigned to" in h or "assigned" in h:
-            col_map["assigned_to"] = idx
-        elif "files" in h:
-            col_map["files"] = idx
-        elif "criteria" in h:
-            col_map["criteria"] = idx
-        elif "constraints" in h:
-            col_map["constraints"] = idx
-
-    if "id" not in col_map or "description" not in col_map:
-        raise ValueError("Step by Step Tasks table missing required columns (Task ID, Description)")
-
-    tasks: dict[str, dict] = {}
-    for line in lines[separator_idx + 1 :]:
-        stripped = line.strip()
-        if not stripped or not stripped.startswith("|"):
-            continue
-        if stripped.startswith("## "):
-            break
-        cells = [c.strip() for c in stripped.split("|")]
-        if len(cells) < max(col_map.values()) + 1:
-            continue
-
-        task_id = cells[col_map["id"]]
-        if not task_id or task_id.lower() == "task id":
-            continue
-
-        desc = cells[col_map.get("description", 1)] if "description" in col_map else ""
-        depends_raw = cells[col_map.get("depends_on", 2)] if "depends_on" in col_map else ""
-        depends_on = [d.strip() for d in depends_raw.split(",") if d.strip() and d.strip() != "-"]
-        assigned = cells[col_map.get("assigned_to", 3)] if "assigned_to" in col_map else ""
-        files_raw = cells[col_map.get("files", 5)] if "files" in col_map else ""
-        files = [f.strip() for f in files_raw.split(",") if f.strip() and f.strip() != "(none)"]
-        criteria = cells[col_map.get("criteria", 6)] if "criteria" in col_map else ""
-        constraints = cells[col_map.get("constraints", 7)] if "constraints" in col_map else None
-        if constraints in ("", "(none)", "-"):
-            constraints = None
-
-        if task_id in tasks:
-            raise ValueError(f"Duplicate task ID in plan: {task_id}")
-        tasks[task_id] = {
-            "id": task_id,
-            "description": desc,
-            "status": "pending",
-            "assigned_role": assigned,
-            "claimed_by": None,
-            "claimed_at": None,
-            "completed_at": None,
-            "depends_on": depends_on,
-            "blocked_by": [],
-            "files": files,
-            "criteria": criteria,
-            "constraints": constraints,
-            "wave": None,
-            "notes": "",
-        }
-
-    waves = _derive_waves(tasks)
-    for tid, task in tasks.items():
-        task["wave"] = waves.get(tid)
-
-    # Convert waves mapping to wave-number -> list-of-task-ids
-    wave_groups: dict[str, list] = {}
-    for tid, wave in waves.items():
-        wave_groups.setdefault(str(wave), []).append(tid)
-    return tasks, wave_groups
-
-
-def _derive_waves(tasks: dict) -> dict[str, int]:
-    """Topological wave assignment from depends_on.
-
-    Wave 1 = no dependencies.
-    Wave N = max(wave of all deps) + 1.
-    """
-    waves: dict[str, int] = {}
-
-    def wave_of(tid: str) -> int:
-        if tid in waves:
-            return waves[tid]
-        task = tasks.get(tid)
-        if task is None:
-            return 0
-        deps = task.get("depends_on", []) or []
-        if not deps:
-            waves[tid] = 1
-            return 1
-        max_dep = max(wave_of(d) for d in deps)
-        waves[tid] = max_dep + 1
-        return waves[tid]
-
-    for tid in tasks:
-        wave_of(tid)
-    return waves
+from task_board.io import (  # noqa: E402
+    BOARD_FILENAME,
+    CURRENT_SCHEMA_VERSION,
+    HEARTBEAT_DIRNAME,
+    LOCK_DIRNAME,
+    _derive_waves,
+    _is_under_cwd,
+    _parse_plan_table,
+    _utcnow_iso,
+    board_init,
+    board_read,
+    board_write,
+)
+
+from task_board.lock import (  # noqa: E402
+    lock_acquire,
+    lock_release,
+)
+
+from task_board.ops import (  # noqa: E402
+    claim_task,
+    heartbeat_read_all,
+    heartbeat_write,
+    recompute_blocked,
+)
+
+__all__ = [
+    # Constants
+    "BOARD_FILENAME",
+    "CURRENT_SCHEMA_VERSION",
+    "HEARTBEAT_DIRNAME",
+    "LOCK_DIRNAME",
+    # Board I/O
+    "board_init",
+    "board_read",
+    "board_write",
+    # Locking
+    "lock_acquire",
+    "lock_release",
+    # Operations
+    "recompute_blocked",
+    "heartbeat_write",
+    "heartbeat_read_all",
+    "claim_task",
+    # Internal helpers (re-exported for backward compat)
+    "_utcnow_iso",
+    "_is_under_cwd",
+    "_parse_plan_table",
+    "_derive_waves",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -565,6 +91,7 @@ def _derive_waves(tasks: dict) -> dict[str, int]:
 
 if __name__ == "__main__":
     import shutil
+    import tempfile
     import uuid
 
     tmp_base = Path(tempfile.gettempdir()) / f"kbg_test_{uuid.uuid4().hex}"

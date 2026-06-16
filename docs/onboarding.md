@@ -62,5 +62,5 @@ Unreleased → Phase 1.1–2.5.
 - **`hooks/db-write-gate.sh` + `KBG_ENFORCE_TASK_COMPLETED`** — opt-OUT task gate.
 - **`recursive-improve` skill** — stall detection + debt ceiling.
 - **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
-- **`scripts/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
+- **`scripts/governance/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
 - **[ADR 0002 addendum](adr/0002-addendum-deferred-items.md)** — 10 deferred items + L2 alternatives.

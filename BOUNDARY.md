@@ -96,52 +96,13 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer).
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code.
 
-### Hooks (45)
+### Hooks (6)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
-  ◇ auto-mode-denial-log.sh        PermissionDenied hook — append-only audit trail of auto-mode classifier denials.
-  ◇ auto-review-nudge.sh           UserPromptSubmit: auto-review-nudge — miss-detector for /review-pr.
-  ◇ block-alias-shadowing.sh       Block alias / shell-function shadowing of safety-relevant binaries.
-  ◇ block-bash-doctrine-write.sh   Block Bash commands that WRITE to doctrine files via shell redirect,
-  ◇ block-dangerous-git.sh         Block dangerous git commands — strips quoted strings and comments
-  ◇ bypass-audit-log.sh            Append-only audit trail of hook bypasses. Fires on every PreToolUse;
-  ◇ cleanup-bak-ttl.sh             cleanup-bak-ttl — SessionStart TTL gate for stale *.bak residue in ~/.claude/.
-  ◇ config-change-log.sh           ConfigChange logger — append-only audit trail when external processes
-  ◇ config-protection.sh           Config-protection gate — escalate Edit/Write/MultiEdit on an EXISTING linter/
-  ◇ db-write-gate.sh               db-write-gate — ask on non-SELECT MCP database calls.
-  ◇ doctrine-bootstrap.sh          doctrine-bootstrap.sh — SessionStart hook (plugin mode only)
-  ◇ doctrine-edit-gate.sh          Pre-edit doctrine gate — escalate Edit/Write/MultiEdit on doctrine docs
-  ◇ evidence-trail-log.sh          Log every WebFetch URL to a per-session audit trail. Supports
-  ◇ fabrication-verdict-log.sh     Stop hook — audit-log every "X is fabricated / doesn't exist / ไม่มีจริง"
   ◇ hooks.json                     (no description)
   ◇ hooks.json.test.bak            (no description)
-  ◇ hypothesis-precommit.sh        UserPromptSubmit advisory — hypothesis-first gate for investigation prompts.
-  ◇ inferential-structural-judge-on-session-end.sh inferential-structural-judge-on-session-end.sh — matcher-less SessionEnd hook.
-  ◇ iron-rule-reminder.sh          UserPromptSubmit: inject METHODOLOGY rule reminders (1 Think before
   ◇ JOURNAL-SCHEMA.md              Governance Evidence Journal — Schema Contract
-  ◇ mcp-session-watchdog.sh        SessionStart advisory — probes MCP connections on startup/resume.
-  ◇ memory-lint-check.sh           SessionStart: memory-lint-check — surface memory-store drift at session start.
-  ◇ notify-sensor-staleness.sh     notify-sensor-staleness.sh — matcher-less SessionStart hook
-  ◇ orchestrator-nudge.sh          UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function.
-  ◇ post-edit-audit.sh             Post-edit async audit — background scan after Edit/Write for common issues.
-  ◇ post-edit-test.sh              PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell).
-  ◇ post-witness-memory.sh         PostToolUse:Bash — post-witness-memory nudge.
-  ◇ pr-style-reminder.sh           PostToolUse:Bash advisory — fires after git commit / gh pr create / gh pr edit.
-  ◇ precompact-backup.sh           PreCompact backup hook — async transcript archive before context compaction.
-  ◇ qmd-reindex.py                 PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops.
-  ◇ review-pr-marker.sh            PostToolUse:Bash - review-pr-marker consumer.
-  ◇ secret-read-guard.sh           Block READING secret files via the Read tool or Bash reader-commands.
-  ◇ secret-scan.sh                 Pre-write secret scan — block Edit/Write/MultiEdit content containing
-  ◇ security-diff-review.py        Structured governance audit stream (concept ported from affaan-m/ECC
   ◇ sensors.json                   (no description)
-  ◇ session-load.sh                Session-load — SessionStart companion to session-summary.sh.
-  ◇ session-summary.sh             Session summary hook — append a small handoff note at SessionEnd.
-  ◇ skill-nudge.sh                 UserPromptSubmit: skill-nudge — deterministic command-route miss-detector.
-  ◇ superset-notify-wrapper.sh     Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag
-  ◇ task-lifecycle.sh              task-lifecycle.sh — observability for agent-team lifecycle events.
-  ◇ usage-monitor-capture.sh       usage-monitor-capture.sh — SessionEnd capture for nested-team token cost.
-  ◇ validator-bash-guard.sh        Block mutation Bash commands issued by validator-class agents.
-  ◇ verification-gate.sh           verification-gate — SessionEnd verification-doctrine sensor (advisory).
 
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
@@ -221,49 +182,10 @@ _Personals/kbg-harness_
 |---|---|
 | _lib.py | Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language |
 | _lib.sh | _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc). |
-| auto-mode-denial-log.sh | PermissionDenied hook — append-only audit trail of auto-mode classifier denials. |
-| auto-review-nudge.sh | UserPromptSubmit: auto-review-nudge — miss-detector for /review-pr. |
-| block-alias-shadowing.sh | Block alias / shell-function shadowing of safety-relevant binaries. |
-| block-bash-doctrine-write.sh | Block Bash commands that WRITE to doctrine files via shell redirect, |
-| block-dangerous-git.sh | Block dangerous git commands — strips quoted strings and comments |
-| bypass-audit-log.sh | Append-only audit trail of hook bypasses. Fires on every PreToolUse; |
-| cleanup-bak-ttl.sh | cleanup-bak-ttl — SessionStart TTL gate for stale *.bak residue in ~/.claude/. |
-| config-change-log.sh | ConfigChange logger — append-only audit trail when external processes |
-| config-protection.sh | Config-protection gate — escalate Edit/Write/MultiEdit on an EXISTING linter/ |
-| db-write-gate.sh | db-write-gate — ask on non-SELECT MCP database calls. |
-| doctrine-bootstrap.sh | doctrine-bootstrap.sh — SessionStart hook (plugin mode only) |
-| doctrine-edit-gate.sh | Pre-edit doctrine gate — escalate Edit/Write/MultiEdit on doctrine docs |
-| evidence-trail-log.sh | Log every WebFetch URL to a per-session audit trail. Supports |
-| fabrication-verdict-log.sh | Stop hook — audit-log every "X is fabricated / doesn't exist / ไม่มีจริง" |
 | hooks.json | — |
 | hooks.json.test.bak | — |
-| hypothesis-precommit.sh | UserPromptSubmit advisory — hypothesis-first gate for investigation prompts. |
-| inferential-structural-judge-on-session-end.sh | inferential-structural-judge-on-session-end.sh — matcher-less SessionEnd hook. |
-| iron-rule-reminder.sh | UserPromptSubmit: inject METHODOLOGY rule reminders (1 Think before |
 | JOURNAL-SCHEMA.md | Governance Evidence Journal — Schema Contract |
-| mcp-session-watchdog.sh | SessionStart advisory — probes MCP connections on startup/resume. |
-| memory-lint-check.sh | SessionStart: memory-lint-check — surface memory-store drift at session start. |
-| notify-sensor-staleness.sh | notify-sensor-staleness.sh — matcher-less SessionStart hook |
-| orchestrator-nudge.sh | UserPromptSubmit: orchestrator-nudge — delegation-posture forcing function. |
-| post-edit-audit.sh | Post-edit async audit — background scan after Edit/Write for common issues. |
-| post-edit-test.sh | PostToolUse:Edit|Write — async per-edit test runner (Computational/Feedback cell). |
-| post-witness-memory.sh | PostToolUse:Bash — post-witness-memory nudge. |
-| pr-style-reminder.sh | PostToolUse:Bash advisory — fires after git commit / gh pr create / gh pr edit. |
-| precompact-backup.sh | PreCompact backup hook — async transcript archive before context compaction. |
-| qmd-reindex.py | PostToolUse hook: refresh QMD index when tracked collection files change (Write/Edit). Collection roots read from ~/.config/qmd/index.yml; hot-path exit ~25ms for non-trigger ops. |
-| review-pr-marker.sh | PostToolUse:Bash - review-pr-marker consumer. |
-| secret-read-guard.sh | Block READING secret files via the Read tool or Bash reader-commands. |
-| secret-scan.sh | Pre-write secret scan — block Edit/Write/MultiEdit content containing |
-| security-diff-review.py | Structured governance audit stream (concept ported from affaan-m/ECC |
 | sensors.json | — |
-| session-load.sh | Session-load — SessionStart companion to session-summary.sh. |
-| session-summary.sh | Session summary hook — append a small handoff note at SessionEnd. |
-| skill-nudge.sh | UserPromptSubmit: skill-nudge — deterministic command-route miss-detector. |
-| superset-notify-wrapper.sh | Superset notify wrapper — honors Stop/SubagentStop `stop_hook_active` flag |
-| task-lifecycle.sh | task-lifecycle.sh — observability for agent-team lifecycle events. |
-| usage-monitor-capture.sh | usage-monitor-capture.sh — SessionEnd capture for nested-team token cost. |
-| validator-bash-guard.sh | Block mutation Bash commands issued by validator-class agents. |
-| verification-gate.sh | verification-gate — SessionEnd verification-doctrine sensor (advisory). |
 
 ## Output styles — Repo
 | Style | Description |
@@ -271,7 +193,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-15T17:21:02Z_
+_Generated: 2026-06-16T00:38:53Z_
 
 ---
 

@@ -55,7 +55,7 @@ runtime layer (`.claude/tasks/<slug>/board.json` + `heartbeat/` + `.lock/`).
 
 ## 5. Lock Release & Auto-Cleanup
 
-- `scripts/lock-release.sh` is called from `TaskCompleted` only when the task has
+- `scripts/locks/lock-release.sh` is called from `TaskCompleted` only when the task has
   a non-empty `files` array.  It brute-force `rmdir`s the `.lock` directory.
 - **Why not `trap` alone?** `trap EXIT` already auto-releases the lock when the
   hook process exits, but the hook is a *separate* process from the task runner.

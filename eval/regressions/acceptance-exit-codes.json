@@ -9,7 +9,7 @@
       "context": {
         "slug": "acceptance-blocked-only",
         "expected_exit_code": 4,
-        "command": "python3 scripts/run-acceptance.py acceptance-blocked-only"
+        "command": "python3 scripts/evals/run-acceptance.py acceptance-blocked-only"
       },
       "success_criteria": [
         "process exits 4",

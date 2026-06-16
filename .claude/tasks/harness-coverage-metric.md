@@ -64,23 +64,23 @@ The metric is **blocked by** the other two sibling plans: it consumes the regist
 ## Acceptance Criteria
 
 - [x] DOC-1: design doc resolves all 12 Q&A items validation_command: grep -c '^12\.' docs/research/harness-coverage-metric-design.md
-- [x] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/harness-coverage.py > /dev/null
+- [x] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/evals/harness-coverage.py > /dev/null
 - [x] SKILL-1: skill has all 3 canonical sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
 - [x] FIX-1: regression fixture is hand-curated (no agent-generated text); 30 sessions, expected grid present validation_command: jq '.sessions | length' eval/regressions/harness-coverage.json
 - [x] FIX-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag harness-coverage --gate
 - [x] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
 - [x] DECAY-1: decay-cadence has a new section naming `kbg:harness-coverage` as a quarterly-lens surface validation_command: grep -c 'kbg:harness-coverage' docs/harness-decay-cadence.md
 - [x] The metric's "intentional gap" annotation is a *first-class* concept in the output (not a footnote) validation_command: grep -c 'intentional_gap\|intentional-gap\|intentional gap' docs/research/harness-coverage-metric-design.md
-- [x] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/harness-coverage.py skills/harness-coverage/SKILL.md
+- [x] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py skills/harness-coverage/SKILL.md
 
 ## Validation Commands
 
 - `bash skills/harness-audit/scripts/audit.sh .` — manifest, schema, descriptions
 - `bash hooks/tests/test-critical-hooks.sh` — critical-hooks regression
 - `python3 eval/run-eval.py --regression --tag harness-coverage --gate` — eval gate green
-- `time python3 scripts/harness-coverage.py | head -50` — manual smoke: 12-cell grid + global
+- `time python3 scripts/evals/harness-coverage.py | head -50` — manual smoke: 12-cell grid + global
 - `claude plugin validate --strict .` — manifest valid (new skill + new script → plugin-surface change → version bump required)
-- `git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/harness-coverage.py skills/harness-coverage/SKILL.md` — autonomy-invariant scan (expect 0)
+- `git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py skills/harness-coverage/SKILL.md` — autonomy-invariant scan (expect 0)
 - `claude plugin update kbg@kobig` — plugin cache update + restart Claude Code
 
 ## What this plan does NOT do

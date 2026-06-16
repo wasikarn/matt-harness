@@ -67,7 +67,7 @@ validated and may be omitted:
   at session end (trails are not session-tagged; `.scratch` is conventionally per-session), emits
   the `verification_summary` event, and prints a gap advisory.
   **Advisory only** — it journals but never blocks session end.
-- `scripts/verification-tier-audit.py` — retro-grades a feature from its trail
+- `scripts/governance/verification-tier-audit.py` — retro-grades a feature from its trail
   (and other evidence) against this rubric.
-- `scripts/recursive-improve-observe.py` — surfaces sessions with `gaps > 0` as
+- `scripts/pr/recursive-improve-observe.py` — surfaces sessions with `gaps > 0` as
   harness-improvement triggers.

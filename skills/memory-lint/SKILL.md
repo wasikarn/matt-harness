@@ -48,7 +48,7 @@ For the wrapper skill (`plan` / `apply` / `status` subcommands + before/after si
 
 ## Consuming audit drafts (companion to lint)
 
-The `scripts/audit-to-memory.py` script (in this repo's `scripts/`) generates
+The `scripts/governance/audit-to-memory.py` script (in this repo's `scripts/`) generates
 a `draft-audit-findings.md` in this memory store after every audit. Treat it
 as a **separation-of-duties buffer** between "the audit ran" and "the lesson
 is in memory":

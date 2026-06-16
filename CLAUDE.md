@@ -176,7 +176,7 @@ Single-branch (`develop` only). Commit + push direct. No feature branches. See `
 | `skills/inventory/scripts/inventory-boundary.sh` | BOUNDARY.md regenerator. Contains XREF heredoc blocks that preserve hand-edited sections across regen. | Any BOUNDARY.md edit |
 | `scripts/orchestrate-dispatch.py` | Workflow spec validator + DAG resolver + plan emitter. Enforces F8.5 fan-out cap. | Any orchestrate skill change |
 | `scripts/auth-health-check.py` | gh/MCP/plugins health probe. 3-state exit contract (0=healthy, 1=degraded, 2=broken). | Any auth/MCP/plugin change |
-| `scripts/run-acceptance.py` | Deterministic acceptance runner against locked `ACCEPTANCE.md` contracts. 5 exit codes (PASS/FAIL/INVOCATION/PARSE/BLOCK). | Any pre-ship-verify change |
+| `scripts/evals/run-acceptance.py` | Deterministic acceptance runner against locked `ACCEPTANCE.md` contracts. 5 exit codes (PASS/FAIL/INVOCATION/PARSE/BLOCK). | Any pre-ship-verify change |
 | `docs/harness-decay-cadence.md` | Quarterly build-to-delete + permission re-audit cadence. `last_permission_review:` marker is machine-checked by audit. | Any agent `tools:` change |
 
 ## Deliberate non-goals (do not add)

@@ -7,7 +7,7 @@
       "task": "Create a mock journal with 6 security_finding events (each with a unique id, no matching verification_verdict) and 0 verification_summary events. Run recursive-improve-observe.py with --debt-ceiling=5 --debt-open-prs=0 and a mock journal containing those 6 events. Assert: (a) script exits 0, (b) output contains 'comprehension debt ledger' section header, (c) output contains 'DEBT-CEILING BREACHED' marker, (d) output shows debt_count: 6, (e) the verification table area still prints (the breach does not abort the report).",
       "skill": "observe-script",
       "context": {
-        "command": "python3 scripts/recursive-improve-observe.py",
+        "command": "python3 scripts/pr/recursive-improve-observe.py",
         "debt_ceiling": 5,
         "debt_open_prs": 0,
         "expected_breach": true,

@@ -85,7 +85,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 1. **Collect proof artifacts** (at least one required per METHODOLOGY Rule 4 sub-rule):
    - Run tests and capture output: `npm test`, `pytest`, `go test`, etc. Save output to `.scratch/<slug>/proofs/test-output.txt`.
    - Run type-checker / linter: `tsc --noEmit`, `flake8`, `cargo check`. Save output to `.scratch/<slug>/proofs/typecheck.txt`.
-   - Run deterministic acceptance: `python3 scripts/run-acceptance.py <slug>`. Save `acceptance-results.json` to `.scratch/<slug>/proofs/`.
+   - Run deterministic acceptance: `python3 scripts/evals/run-acceptance.py <slug>`. Save `acceptance-results.json` to `.scratch/<slug>/proofs/`.
    - Fresh-context adversarial review: spawn `code-reviewer` or `security-reviewer` with no prior context, capture findings to `.scratch/<slug>/proofs/adversarial-review.md`.
    - **Gate**: if NONE of the above are available → STOP. Tell user: "Proof missing. Run at least one verification step before merge."
 2. **Verify acceptance contract** (if the task locked one via `kbg:accept-task`):

@@ -7,7 +7,7 @@
       "task": "Create a temp projects dir with a mock session jsonl containing an unmatched Bash tool_use whose timestamp is 30 min in the past (older than the default 10-min threshold). Run recursive-improve-observe.py with --projects-dir pointing at the temp dir and --no-stall-check DISABLED. Assert: (a) the script exits 0, (b) the output contains 'loop posture', (c) the output contains 'STALLED' with a suggested_action string, (d) the verification table still renders after the stall signal (the warning does not abort the report).",
       "skill": "observe-script",
       "context": {
-        "command": "python3 scripts/recursive-improve-observe.py",
+        "command": "python3 scripts/pr/recursive-improve-observe.py",
         "mock_projects_dir": true,
         "stall_threshold_min": 10,
         "staleness_min": 30,
