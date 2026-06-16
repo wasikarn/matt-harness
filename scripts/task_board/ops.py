@@ -36,11 +36,11 @@ def recompute_blocked(board: dict) -> dict:
     """
     tasks = board.get("tasks", {})
     completed = {
-        tid for tid, task in tasks.items()
+        t for t, task in tasks.items()
         if task.get("status") == "completed"
     }
 
-    for tid, task in tasks.items():
+    for _, task in tasks.items():
         if task.get("status") == "completed":
             task["blocked_by"] = []
             continue
@@ -66,7 +66,7 @@ def recompute_blocked(board: dict) -> dict:
 
     # Derive current_wave from unblocked / in-progress tasks
     current_wave = None
-    for tid, task in sorted(tasks.items()):
+    for _, task in sorted(tasks.items()):
         status = task.get("status")
         if status in ("pending", "in_progress"):
             wave = task.get("wave")
