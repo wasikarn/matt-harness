@@ -258,7 +258,7 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 
 ## What this command does NOT do
 
-- Does NOT stop running agents. If a task has a heartbeat younger than 1 hour, it is considered active and is never reset or deleted.
+- Does NOT stop running agents. If a task has a heartbeat younger than 1 hour, it is considered active and is never reset or deleted. **Graceful end-of-build teardown is `/team-build` Step 8's job, not cleanup's** — that step stops teammates once the build's done-when is met. Cleanup only reaps *stale artifacts* (expired locks, dead heartbeats, orphaned board entries) left behind after agents are already gone.
 - Does NOT automatically delete plan `.md` files. The plan file is preserved after board archival unless `--force` is passed.
 - Does NOT resume archived plans. To resume, move the archive JSON back to the plan directory and rename it to `board.json`.
 - Does NOT clean the global `~/.claude/locks/` tree outside the scoped team. Only the plan's team context is touched.

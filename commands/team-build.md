@@ -10,7 +10,7 @@ disable-model-invocation-reason: "spawns agent waves (large cost) — the user m
 
 You are executing a plan produced by `/team-plan`. The plan file `.claude/tasks/<slug>.md` is the **session-resettable, lead-handoffable decoupling interface** (per D10): a fresh session, a different lead, or a partial resumption all work because the plan decouples state from session context. Read the plan first, then execute.
 
-This is Step 4-7 of the article `agent-teams-workflow` 7-step pipeline. Steps 1-3 belong to `/team-plan`.
+This is Step 4-7 of the article `agent-teams-workflow` 7-step pipeline (Steps 1-3 belong to `/team-plan`), plus a kbg teardown step (Step 8) that reaps idle teammates once the build is done — persistent teammates do not self-terminate, so the lead stops them explicitly.
 
 ## Lead-coordinator contract (F8)
 
@@ -138,6 +138,25 @@ The build is complete when:
 - [ ] The integration validator (D8) passes
 - [ ] The plan file's done-when checklist is checked
 - [ ] The build is reported to the user with per-criterion evidence
+- [ ] Every teammate spawned for this build is stopped (Step 8 teardown) — no idle teammate left waiting
+
+---
+
+## Step 8 — Teardown (reap idle teammates)
+
+**Goal:** stop every teammate spawned for this build once the done-when above is met, so no teammate lingers idle waiting for a `SendMessage` that will never come.
+
+**Why:** teammates are **persistent** (F8 — one teammate takes multiple tasks across waves; the mailbox/heartbeat/board infra assumes named, addressable, long-lived sessions). Persistence is what makes wave-based reuse work, but it also means a teammate does **not** self-terminate when its last task completes — it goes idle and stays alive. Without an explicit teardown the roster accumulates idle teammates after every build (the symptom: "the team finished but never terminated itself"). `/team-cleanup` does **not** cover this — it reaps stale *artifacts* (locks, heartbeats, board entries) and explicitly refuses to stop *running* agents. Stopping live teammates at end-of-build is this step's job, not cleanup's.
+
+**Actions:**
+1. Confirm the Step 7 done-when checklist is fully checked. Do **not** tear down a build with a failing criterion — a teammate may still be needed for a re-dispatch.
+2. For each teammate in the plan's `## Team Members` roster (and any wave-spawned teammate still live), issue `TaskStop` against its agent id/name. The lead owns this — a deliberate, human-initiated reap at the end of a build the user asked for, **not** an autonomous loop. (Ephemeral Task-tool sub-agents that already returned are not live; `TaskStop` is a no-op for them.)
+3. Journal the teardown via `journal_append` (event `team_teardown`, fields `{"slug":"<slug>","stopped":<count>}`) so the reap is auditable.
+4. Report the teardown in the Step 7 summary: "N teammates stopped."
+
+**Observability:** the `TeammateIdle` hook (`hooks/lifecycle/task-lifecycle.sh`) journals a `teammate_teardown_ready` advisory when a teammate goes idle and the board shows every task completed. That advisory is the signal this step is due; it is **journal-only and never stops the teammate itself** (a hook that terminated agents would be the autonomous mutation ADR 0002 forbids — the lead is the actor, the hook is the sensor).
+
+**Done-when Step 8:** every teammate spawned for this build is stopped; the reap is journaled; the count is reported.
 
 ---
 

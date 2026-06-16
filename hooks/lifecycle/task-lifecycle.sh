@@ -49,10 +49,15 @@
 # Deferred (still log-only, add when pain demonstrates need):
 #   - TaskCreated     block if description < 30 chars (vendor: "Size tasks appropriately" — too small) or
 #                     overlapping file paths across in-progress tasks (vendor: "Avoid file conflicts")
-#   - TeammateIdle    block if pending unblocked tasks remain (vendor: "Wait for teammates" — keep working)
-#                     NOW IMPLEMENTED via heartbeat scan (Phase 3, 2026-06-12)
+#   - TeammateIdle    block (exit 2) if pending unblocked tasks remain (vendor: "Wait for
+#                     teammates" — keep working) — IMPLEMENTED via heartbeat scan (Phase 3,
+#                     2026-06-12). Inverse case: when the board shows ALL tasks completed,
+#                     journal a teammate_teardown_ready advisory (exit 0) so the lead reaps
+#                     idle teammates via /team-build Step 8 instead of leaving them to linger.
 #
-# Failure mode: TeammateIdle + TaskCreated remain silent (exit 0, log-only).
+# Failure mode: TaskCreated stays silent (exit 0, log-only). TeammateIdle exits 2 on
+# stale-heartbeat-with-pending, journals teammate_teardown_ready when the build is
+# complete, else exit 0.
 # TaskCompleted enforces test-claim gate (exit 2 + stderr if claim found
 # without validation_command). Always log before exit so the journal
 # captures both pass-through and blocked attempts.
@@ -292,6 +297,8 @@ if [ "$EVENT" = "TeammateIdle" ]; then
 
   IDLE_BLOCKED=0
   IDLE_PLAN=""
+  TEARDOWN_READY=0
+  TEARDOWN_PLAN=""
 
   _kbg_check_plan_idle() {
     local pdir="$1"
@@ -316,11 +323,28 @@ if [ "$EVENT" = "TeammateIdle" ]; then
     return 1
   }
 
+  # Teardown-ready advisory (ADR 0002 — journal-only, NEVER stops the teammate).
+  # When a teammate goes idle and the board shows every task completed (nothing
+  # left pending/in_progress/blocked), the build is done. We journal a
+  # teammate_teardown_ready signal so the lead (/team-build Step 8) and
+  # /wave-status can observe "build complete, teammates idle → reap" instead of
+  # teammates lingering forever on a SendMessage that never arrives. The actual
+  # TaskStop is the lead's job — a hook that stopped agents itself would be the
+  # autonomous mutation the autonomy invariant forbids.
+  _kbg_plan_complete() {
+    local bfile="$1/board.json"
+    [ -f "$bfile" ] || return 1
+    jq -e '(.tasks | length) > 0 and ([.tasks[]? | select(.status != "completed")] | length) == 0' "$bfile" >/dev/null 2>&1
+  }
+
   if [ -n "$PLAN_SLUG" ]; then
     PLAN_DIR="${HOME}/.claude/tasks/${PLAN_SLUG}"
     if _kbg_check_plan_idle "$PLAN_DIR"; then
       IDLE_BLOCKED=1
       IDLE_PLAN="$PLAN_SLUG"
+    elif _kbg_plan_complete "$PLAN_DIR"; then
+      TEARDOWN_READY=1
+      TEARDOWN_PLAN="$PLAN_SLUG"
     fi
   elif [ -n "$CWD" ]; then
     TASKS_DIR="${CWD}/.claude/tasks"
@@ -333,6 +357,10 @@ if [ "$EVENT" = "TeammateIdle" ]; then
           IDLE_BLOCKED=1
           IDLE_PLAN="$pname"
           break
+        elif _kbg_plan_complete "$pdir"; then
+          # Note, don't break: a later plan may still have pending work to block on.
+          TEARDOWN_READY=1
+          TEARDOWN_PLAN="$pname"
         fi
       done
     fi
@@ -343,6 +371,9 @@ if [ "$EVENT" = "TeammateIdle" ]; then
 TeammateIdle blocked: stale heartbeat detected for plan '${IDLE_PLAN}' and pending unblocked tasks remain. Resume work or explicitly release your claimed task.
 EOF
     exit 2
+  elif [ "$TEARDOWN_READY" = 1 ]; then
+    # Advisory only: the lead reaps via /team-build Step 8; we never stop the teammate here.
+    journal_append "$HOOK_ID" "teammate_teardown_ready" "$(jq -nc --arg plan "$TEARDOWN_PLAN" '{plan: $plan, trigger: "TeammateIdle"}')" >/dev/null 2>&1 || true
   fi
 fi
 

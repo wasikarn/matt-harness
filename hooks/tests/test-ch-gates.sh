@@ -328,6 +328,30 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s TeammateIdle no-context: rc=%s (want 0) stderr=%s\n' "task-lifecycle.sh" "$TB5_RC" "$TB5_STDERR"
 fi
 
+# (TB6) TeammateIdle when the build is complete (all tasks completed) → exit 0
+#       + journals a teammate_teardown_ready advisory (the signal /team-build
+#       Step 8 reaps on). Advisory only — the hook never stops the teammate (ADR 0002).
+mkdir -p "$BOARD_FIXTURE/.claude/tasks/done-plan"
+cat > "$BOARD_FIXTURE/.claude/tasks/done-plan/board.json" <<'BEOF'
+{
+  "schema_version": 1,
+  "plan_slug": "done-plan",
+  "tasks": {
+    "D-1": { "id": "D-1", "status": "completed", "depends_on": [], "blocked_by": [], "files": [] },
+    "D-2": { "id": "D-2", "status": "completed", "depends_on": ["D-1"], "blocked_by": [], "files": [] }
+  }
+}
+BEOF
+TB6_JOURNAL="$BOARD_FIXTURE/.claude/governance-events.jsonl"
+rm -f "$TB6_JOURNAL"
+TB6_STDERR=$( ( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/lifecycle/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB6_RC=$?
+if [ "$TB6_RC" = 0 ] && grep -q 'teammate_teardown_ready' "$TB6_JOURNAL" 2>/dev/null; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle build-complete → exit 0 + teardown_ready journal\n' "task-lifecycle.sh"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s TeammateIdle teardown: rc=%s (want 0) journal=%s\n' "task-lifecycle.sh" "$TB6_RC" "$(test -f "$TB6_JOURNAL" && echo present || echo missing)"
+fi
+
 # --- db-write-gate: ask on non-SELECT MCP DB calls, allow SELECT/EXPLAIN/info_schema,
 #     ignore non-DB MCP tools. Mirrors DBGATE doctrine as a deterministic gate.
 mcp_db_event() { printf '{"tool_name":"%s","tool_input":{"query":%s}}' "$1" "$(printf '%s' "$2" | jq -R .)"; }
