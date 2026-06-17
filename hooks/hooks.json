@@ -272,7 +272,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/ideate-convergence-capture.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/ideate-convergence-capture.sh\"",
+            "timeout": 25
           }
         ]
       },
@@ -280,7 +281,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/ideate-memory-capture.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/ideate-memory-capture.sh\"",
+            "timeout": 25
           }
         ]
       },

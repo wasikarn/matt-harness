@@ -31,13 +31,16 @@ SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/nu
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SCRIPT="${PLUGIN_ROOT}/scripts/ideate-memory.py"
 
-# Capture any ideate runs from the transcript.
+# Capture any ideate runs from the transcript synchronously (cheap, depends
+# only on transcript size).
 if [ -x "${SCRIPT}" ] || [ -f "${SCRIPT}" ]; then
   python3 "$SCRIPT" capture --transcript "$TRANSCRIPT" --session-id "$SESSION_ID_VAL" >/dev/null 2>&1 || true
 
-  # Update + embed the qmd collection so the new runs are immediately searchable.
+  # Update + embed the qmd collection so the new runs are eventually searchable.
+  # This is done asynchronously because qmd embed can take 10s+ as the collection
+  # grows; SessionEnd hooks must return before Claude CLI kills them.
   if command -v qmd >/dev/null 2>&1; then
-    python3 "$SCRIPT" index >/dev/null 2>&1 || true
+    nohup python3 "$SCRIPT" index >/dev/null 2>&1 &
   fi
 fi
 

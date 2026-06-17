@@ -69,15 +69,19 @@ PROBLEM=$(printf '%s' "$PROBLEM" | tr '\n' ' ' | sed 's/  */ /g' | head -c 500)
 DATE=$(date -u +%Y-%m-%d)
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# Compute embedding via local Ollama API (all-minilm). Fall back gracefully
-# if Ollama is not running or the model is absent.
+# Compute embedding via local Ollama API (all-minilm). Keep a tight timeout so
+# SessionEnd (Claude CLI hook budget) is never blocked waiting for Ollama or a
+# cold model load. Fall back gracefully if Ollama is not running or the model
+# is absent.
 EMBEDDING=""
 CONVERGENCE_STATUS="unknown"
 CONVERGENCE_REASON="Ollama embedding endpoint not available"
+KBG_IDEATE_OLLAMA_TIMEOUT="${KBG_IDEATE_OLLAMA_TIMEOUT:-8}"
 if command -v python3 >/dev/null 2>&1; then
   EMBEDDING=$(KBG_IDEATE_PROBLEM="$PROBLEM" \
     KBG_IDEATE_OLLAMA_HOST="${KBG_IDEATE_OLLAMA_HOST:-http://localhost:11434}" \
     KBG_IDEATE_EMBEDDING_MODEL="${KBG_IDEATE_EMBEDDING_MODEL:-all-minilm:latest}" \
+    KBG_IDEATE_OLLAMA_TIMEOUT="$KBG_IDEATE_OLLAMA_TIMEOUT" \
     python3 - <<'PY' 2>/dev/null
 import json, os, sys, urllib.request, urllib.error
 
@@ -87,6 +91,12 @@ if not problem:
 
 host = os.environ.get('KBG_IDEATE_OLLAMA_HOST', 'http://localhost:11434').rstrip('/')
 model = os.environ.get('KBG_IDEATE_EMBEDDING_MODEL', 'all-minilm:latest')
+try:
+    timeout = float(os.environ.get('KBG_IDEATE_OLLAMA_TIMEOUT', '8'))
+    if timeout <= 0:
+        timeout = 8
+except ValueError:
+    timeout = 8
 payload = json.dumps({'model': model, 'prompt': problem}).encode('utf-8')
 req = urllib.request.Request(
     f'{host}/api/embeddings',
@@ -95,7 +105,7 @@ req = urllib.request.Request(
     method='POST',
 )
 try:
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode('utf-8'))
         emb = data.get('embedding')
         if emb:

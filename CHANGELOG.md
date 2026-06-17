@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.61] — 2026-06-18
+
+Fix SessionEnd hook cancellations by capping unbounded I/O inside `ideate-convergence-capture` and moving `ideate-memory-capture` reindex off the SessionEnd critical path.
+
+### Fixed
+
+- **`ideate-convergence-capture.sh` no longer blocks SessionEnd on Ollama.** The Ollama embedding call now uses an 8-second timeout (override via `KBG_IDEATE_OLLAMA_TIMEOUT`) and still appends the record with a null embedding on failure.
+- **`ideate-memory-capture.sh` reindexes qmd asynchronously.** The cheap `capture` step stays synchronous; the potentially slow `qmd update` + `qmd embed` now runs via `nohup` in the background so SessionEnd returns immediately.
+- **`hooks/hooks.json` declares a 25-second SessionEnd budget for both hooks.** This makes the Claude CLI hook timeout contract explicit and gives the internal caps headroom.
+
 ## [0.2.60] — 2026-06-18
 
 Harden `SENIOR-DEV` output style against official best practices. Adds explicit format rules, scope boundaries, and a model-facing description while keeping the senior lead register.

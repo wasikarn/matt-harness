@@ -32,6 +32,7 @@ SUITES=(
   test-ch-harness-audit-fixtures.sh
   test-ch-orphaned-runners.sh
   test-ch-ideate-fanout.sh
+  test-ch-ideate-session-end.sh
 )
 
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/test-critical-hooks.XXXXXX")
