@@ -728,8 +728,15 @@ done < <(
 # on its base name.
 _known_skills=$(mktemp)
 {
-  for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done                       # [!_]*/ skips _-prefixed scaffolds (e.g. _template)
-  [ -d "$HOME/.claude/skills" ] && for d in "$HOME/.claude/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+  # [!_]*/ skips _-prefixed scaffolds (e.g. _template). Guard each loop with
+  # an if so the command group ends with exit 0 even when the directory is
+  # missing; with set -euo pipefail the pipeline would otherwise abort here.
+  if [ -d "$CLAUDE_DIR/skills" ]; then
+    for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+  fi
+  if [ -d "$HOME/.claude/skills" ]; then
+    for d in "$HOME/.claude/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+  fi
 } | sort -u > "$_known_skills"
 while IFS= read -r ref_line; do
   warn "$ref_line"

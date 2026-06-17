@@ -105,16 +105,6 @@ jobs:
              ".scratch/acceptance-blocked-only/ACCEPTANCE.md"
           python3 scripts/evals/run-acceptance.py acceptance-blocked-only || true
 
-      - name: debug audit trace
-        run: |
-          echo "=== Direct audit trace (debug) ==="
-          bash -x skills/harness-audit/scripts/audit.sh . > /tmp/audit-stdout.log 2> /tmp/audit-stderr.log || true
-          echo "--- stdout tail ---"
-          tail -80 /tmp/audit-stdout.log
-          echo "--- stderr tail ---"
-          tail -80 /tmp/audit-stderr.log
-          echo "=== End direct audit trace ==="
-
       - name: run eval harness
         run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 
