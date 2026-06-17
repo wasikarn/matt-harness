@@ -8,10 +8,10 @@ disable-model-invocation-reason: "governance — the model must not mute its own
 
 # /dismiss-stale — Silence the sensor-staleness notification (7-day TTL)
 
-Write `~/.claude/state/kbg-staleness-dismissed.json` so the SessionStart hook (`hooks/notify-sensor-staleness.sh`) stays quiet for the next 7 days — *only* if the operator is acknowledging the *current* set of stale sensors. The dismissal is hash-gated: if a *new* sensor goes silent, the hash changes and the hook re-injects. This is the operator-only reset for the Q3-triggered `additionalContext` block, not a permanent off-switch.
+Write `~/.claude/state/kbg-staleness-dismissed.json` so the SessionStart hook (`hooks/maintenance/notify-sensor-staleness.sh`) stays quiet for the next 7 days — *only* if the operator is acknowledging the *current* set of stale sensors. The dismissal is hash-gated: if a *new* sensor goes silent, the hash changes and the hook re-injects. This is the operator-only reset for the Q3-triggered `additionalContext` block, not a permanent off-switch.
 
 **Design:** `docs/research/sensor-staleness-notifier-design.md` §4 (Dismissal — Q4 verdict C).
-**Symmetric partner:** `hooks/notify-sensor-staleness.sh` (HOOK-1) — the Q3 severity gate logic MUST match.
+**Symmetric partner:** `hooks/maintenance/notify-sensor-staleness.sh` (HOOK-1) — the Q3 severity gate logic MUST match.
 
 ---
 
@@ -26,14 +26,14 @@ Without dismissal, every session the operator is re-paged with the same stale-se
 - **Operator-only.** `disable-model-invocation: true` is mandatory. The harness never invokes this on the operator's behalf — the autonomy invariant (ADR 0002) forbids the model from self-muting its own coverage alerts.
 - **Atomic write.** Plain `>` redirect is forbidden — it leaves a window where the file is truncated but not yet written, and a racing `notify-sensor-staleness.sh` read could see an empty/corrupt dismissal. The write MUST go via `mktemp` + `os.replace` (or `mv -f` after `fsync`). The script below uses Python's `os.replace` so the rename is atomic on POSIX (and `os.fsync` flushes the temp file before the rename).
 - **Q3 severity gate must match the hook.** The Q3 trigger is the same set the hook uses to decide "should I inject?" — i.e. the *current* stale set under the same severity rules (1 enforcement stale OR ≥3 advisory stale OR ≥1 must_fire stale). If the Q3 trigger does *not* fire (no stale sensors), the command refuses to write a dismissal — otherwise the operator is dismissing a non-existent problem and the next SessionStart would re-inject immediately, masking the actual reason the Q3 was off.
-- **7-day TTL, hard-coded.** `now + 7 days` is the only TTL. Not configurable, per METHODOLOGY Rule 2 (no speculative configurability). An operator who wants a different cadence edits `hooks/notify-sensor-staleness.sh` itself.
+- **7-day TTL, hard-coded.** `now + 7 days` is the only TTL. Not configurable, per METHODOLOGY Rule 2 (no speculative configurability). An operator who wants a different cadence edits `hooks/maintenance/notify-sensor-staleness.sh` itself.
 - **Hash of sorted stale names.** The set is computed by the same logic the hook uses (load `hooks/sensors.json` + `audit.sh --staleness-only`, apply Q3, sort, sha256 over newline-joined names).
 
 ---
 
 ## Step 1 — Compute the current stale set (Q3 mirror)
 
-Run the following single `python3` invocation. It mirrors the Q3 severity gate from `hooks/notify-sensor-staleness.sh` (the hook's `enforcement_roles`, `advisory_roles`, `is_stale`, `is_must_fire_stale`, and `triggered` definitions are duplicated verbatim). Output is JSON on stdout:
+Run the following single `python3` invocation. It mirrors the Q3 severity gate from `hooks/maintenance/notify-sensor-staleness.sh` (the hook's `enforcement_roles`, `advisory_roles`, `is_stale`, `is_must_fire_stale`, and `triggered` definitions are duplicated verbatim). Output is JSON on stdout:
 
 ```bash
 cd <repo-root>  # the kbg-harness checkout
@@ -45,7 +45,7 @@ REPO_ROOT = os.getcwd()
 SENSORS_JSON = os.path.join(REPO_ROOT, "hooks", "sensors.json")
 AUDIT_SH = os.path.join(REPO_ROOT, "skills", "harness-audit", "scripts", "audit.sh")
 
-# ── Q3 mirror (must match hooks/notify-sensor-staleness.sh) ──
+# ── Q3 mirror (must match hooks/maintenance/notify-sensor-staleness.sh) ──
 enforcement_roles = {"computational-FF", "computational-FB"}
 advisory_roles    = {"inferential-FF",   "inferential-FB"}
 
@@ -128,7 +128,7 @@ PY
 
 Capture the JSON into a variable. The fields you'll use: `triggered` (bool), `stale_set` (list of names), `hash` (string or `null`).
 
-**Why mirror the gate instead of importing it?** — `hooks/notify-sensor-staleness.sh` is a shell script, not a Python module. Importing the gate verbatim into a Python helper would require either (a) parsing the shell script, or (b) refactoring the hook into Python. Both are out of scope. The mirror is small (~15 lines), well-commented, and the brief explicitly identifies Q3-gate-mismatch as a regression risk — so the duplication is intentional and load-bearing. The `// SYNC-WITH: hooks/notify-sensor-staleness.sh:107-121` comment in the script above is the seam.
+**Why mirror the gate instead of importing it?** — `hooks/maintenance/notify-sensor-staleness.sh` is a shell script, not a Python module. Importing the gate verbatim into a Python helper would require either (a) parsing the shell script, or (b) refactoring the hook into Python. Both are out of scope. The mirror is small (~15 lines), well-commented, and the brief explicitly identifies Q3-gate-mismatch as a regression risk — so the duplication is intentional and load-bearing. The `// SYNC-WITH: hooks/maintenance/notify-sensor-staleness.sh:107-121` comment in the script above is the seam.
 
 ---
 
@@ -219,7 +219,7 @@ Exit 0. The dismissal is now effective on the next SessionStart.
 
 ## Done-when
 
-- [ ] Stale set computed by Q3 mirror, matches what `hooks/notify-sensor-staleness.sh` would consider stale for the same journal state
+- [ ] Stale set computed by Q3 mirror, matches what `hooks/maintenance/notify-sensor-staleness.sh` would consider stale for the same journal state
 - [ ] If Q3 is not triggered: `No stale sensors to dismiss.` printed, no file written, exit 0
 - [ ] `dismissed_until` = `now + 7d` in ISO-8601 UTC (Z suffix)
 - [ ] `~/.claude/state/kbg-staleness-dismissed.json` written atomically (`mktemp` + `os.fsync` + `os.replace`), mode 0o600
@@ -240,7 +240,7 @@ Exit 0. The dismissal is now effective on the next SessionStart.
 
 ## Cross-references
 
-- `hooks/notify-sensor-staleness.sh` — the SessionStart hook this command is the symmetric partner to. The Q3 gate at `hooks/notify-sensor-staleness.sh:107-121` MUST be kept in sync with Step 1.
+- `hooks/maintenance/notify-sensor-staleness.sh` — the SessionStart hook this command is the symmetric partner to. The Q3 gate at `hooks/maintenance/notify-sensor-staleness.sh:107-121` MUST be kept in sync with Step 1.
 - `hooks/sensors.json` — the 31-entry registry (Wave 1 deliverable) whose `fallback_role` + `max_silent_days` fields feed the Q3 gate.
 - `skills/harness-audit/scripts/audit.sh --staleness-only` — the AUDIT-1 deliverable whose output drives both the hook and this command's stale-set computation.
 - `docs/research/sensor-staleness-notifier-design.md` §4 — the design doc this command implements.

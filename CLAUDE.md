@@ -37,7 +37,7 @@ kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical
 
 ### Doctrine injection (mandatory, no opt-in)
 
-`hooks/doctrine-bootstrap.sh` is a **matcher-less SessionStart hook** (registered in `hooks/hooks.json`) that injects `METHODOLOGY.md` / `RTK.md` / `ACLI.md` / `DBGATE.md` as `additionalContext` on **every** SessionStart sub-event (`startup`, `resume`, `clear`, `compact`). No manual `@import` needed. The hook self-suppresses if `~/.claude/CLAUDE.md` still `@import`s doctrine (it does not, post-cutover).
+`hooks/session/doctrine-bootstrap.sh` is a **matcher-less SessionStart hook** (registered in `hooks/hooks.json`) that injects `METHODOLOGY.md` / `RTK.md` / `ACLI.md` / `DBGATE.md` as `additionalContext` on **every** SessionStart sub-event (`startup`, `resume`, `clear`, `compact`). No manual `@import` needed. The hook self-suppresses if `~/.claude/CLAUDE.md` still `@import`s doctrine (it does not, post-cutover).
 
 **Do not** add speculative configurability to doctrine files — this is a personal harness, not a product. METHODOLOGY Rule 2: "No speculative configurability."
 
@@ -52,7 +52,7 @@ No autonomous or unattended self-repair loop. Every self-improvement iteration s
 Hooks are shell scripts registered in `hooks/hooks.json`. There are two distinct hook conventions:
 
 1. **PreToolUse gates** — emit JSON `permissionDecision` (`deny`/`ask`/`none`) on stdout. Must exit 0 (per vendor spec, exit 2 discards the JSON). Assert the emitted decision string, not the exit code.
-2. **TaskCompleted enforcement** (`hooks/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
+2. **TaskCompleted enforcement** (`hooks/lifecycle/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
 
 All hooks that shell out to external tools (`rtk`, `qmd`, `code-review-graph`) must degrade gracefully when absent (`command -v` guard, silent no-op). No bundled dependencies.
 

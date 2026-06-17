@@ -63,3 +63,5 @@ Fix: <if Weak: top 2–3 gaps | if Strong/Cautious: 0–2 minor refinements>
 - **Rule 1 (Think before coding):** Evaluating reasoning before implementation prevents building on shaky premises.
 - **Rule 7 (Surface conflicts, don't average):** If evidence points two ways, say so — don't smooth over contradiction.
 - **Rule 5 (Use model only for judgment):** Evidence quality is a deterministic question; confidence labels must map to actual evidence strength, not rhetorical force.
+
+**Named models** (cc-thinking-skills): *red-team* (attack the argument), *steel-manning* (cover the strongest opposing case), *debiasing* (confidence calibration). Catalog + honesty caveat: [`docs/reference/reasoning-models.md`](../../docs/reference/reasoning-models.md).

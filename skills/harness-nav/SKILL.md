@@ -5,13 +5,7 @@ description: "L3 escape hatch for kbg-harness capability discovery. Use when no 
 
 # Harness Navigation — L3 Escape Hatch
 
-kbg-harness context loads in three tiers:
-
-| Tier | What's in it | When it loads |
-|------|--------------|---------------|
-| **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Every session, always resident |
-| **L2** | Individual SKILL.md files | On demand — one invocation or skill-nudge keyword match |
-| **L3** | BOUNDARY.md + raw source (skills/, agents/, commands/, hooks/) | Explicit read; reach here only when L2 has no coverage |
+kbg-harness context loads in three tiers — **L1** always-resident doctrine (METHODOLOGY/RTK/ACLI/DBGATE + CLAUDE.md + MEMORY.md), **L2** on-demand SKILL.md / command / agent specs, **L3** BOUNDARY.md + raw source (skills/, agents/, commands/, hooks/). Full table: [`CLAUDE.md` § Context hierarchy](../../CLAUDE.md).
 
 The model should prefer L2 (low cost, one discovery step) over L3 (multiple reads). Use this skill when the L2 path (skill-nudge, direct invoke) failed to surface the right capability and you need to mine L3 directly.
 

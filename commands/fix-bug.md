@@ -184,3 +184,4 @@ Update todos as you progress.
 - **assert-presence skill**: Phase 7 optional — sign a load-bearing fix so a later session detects regression. Don't assert-presence every fix (ceremony); assert-presence only fragile ones.
 - **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), pr-test-analyzer (test-coverage gaps), security-reviewer (auth/secrets/OWASP), comment-analyzer (docstring/inline comment accuracy).
+- **Named model**: the reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog: [`docs/reference/reasoning-models.md`](../docs/reference/reasoning-models.md).

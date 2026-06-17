@@ -50,7 +50,7 @@ python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.y
      - `Revise — remove or add items (Recommended when dependencies are misordered or scope is off)`
      - `Reject — keep as plan only (Recommended when user only asked for prioritization, not execution)`
    - **If `AskUserQuestion` is denied** (session in `dontAsk` mode, or headless `-p` — the tool is *not* permission-exempt, the runtime can refuse it): fall back to the **same** question + three options rendered as numbered prose, and wait for an explicit reply. Denial is **not** approval — never fail open. If no user can answer (background / headless run), **stop at plan-only**; do not dispatch any write-capable agent.
-   - **Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:` (denylist), for agent tool grants. See [`docs/agent-tool-patterns.md`](../docs/agent-tool-patterns.md) for the convention. The "agent holds Bash" classification above is reading the `tools:` line, not the runtime default.
+   - **Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:` (denylist), for agent tool grants. See [`docs/agent-tool-patterns.md`](../../docs/agent-tool-patterns.md) for the convention. The "agent holds Bash" classification above is reading the `tools:` line, not the runtime default.
    - Gate on each agent's **actual `tools:` grant, not this name list** — if the fleet changes, a hardcoded list silently drifts and fails open; re-check the grant before dispatch.
    - Give each agent a **done-when**: "`<observable output>` in `<location>`, or confirmed via `<command>`" (Rule 4) — not a topic. Parallel when independent, sequential when one feeds the next.
 5. **Verify results, then combine into whole.** Before integrating any sub-agent output:
@@ -240,7 +240,7 @@ Minimal blast radius — no new dependencies.
 `src/api/routes/health.py` exists and `GET /health` returns `{"status":"ok"}`.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 (Empty list — first task in chain.)
@@ -292,7 +292,7 @@ A verdict file at `.scratch/health-review/verdict.md` with pass/fail and file:li
 - [ ] No edit to any file (read-only validation)
 ```
 
-Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/validator-bash-guard.sh` hook prevents mutation even if the prompt drifts.
+Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/gates/validator-bash-guard.sh` hook prevents mutation even if the prompt drifts.
 
 **Task 3 — Fixer: address review findings (conditional)**
 
@@ -314,7 +314,7 @@ Precision over creativity — apply the fix exactly as described.
 `src/api/routes/health.py` passes all T2 findings.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 - From task T2: verbatim findings from `.scratch/health-review/verdict.md` — reproduce each in the fix commit message.
@@ -399,7 +399,7 @@ kbg_recompute_blocked "$PLAN_DIR"
 | Fixer (C) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
 | Re-validator (D) | **No** | Read-only; no AskUserQuestion |
 
-**Validator safety:** Even though validators are ungated, `hooks/validator-bash-guard.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
+**Validator safety:** Even though validators are ungated, `hooks/gates/validator-bash-guard.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
 
 ### Upstream contract propagation
 
@@ -469,3 +469,5 @@ Every agent dispatched here holds Bash or Edit/Write → present the plan, get o
 - **Rule 10 (Checkpoint after every step):** validate before integration.
 - **Rule 12 (Fail loud):** report the full allocation including what was dropped and why; no silent de-scoping.
 - **Rule 13 (Orchestrate, don't solo):** decompose → distribute pieces → verify results → combine into whole.
+
+**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog: [`docs/reference/reasoning-models.md`](../../docs/reference/reasoning-models.md).

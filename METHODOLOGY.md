@@ -91,7 +91,7 @@ findings. (SYNTHESIS #41, spec §4.4.)
 **Sub-rule: Acceptance criteria are the upper bound on what the test gate can prove.** (Böckeler, [harness-engineering 2026-04](https://martinfowler.com/articles/harness-engineering.html) L448: *"Correctness is outside any sensor's remit if the human didn't clearly specify what they wanted in the first place."*) A green test run is a *necessary not sufficient* gate when the same agent that wrote the code also wrote the tests; the ceiling is the quality of the locked `ACCEPTANCE.md` (see `kbg:accept-task` → `commands/pre-ship-verify.md`). Improving the test gate (mutation testing, property-based tests, sandbox) closes part of the gap; **raising acceptance-criteria quality closes the upper bound**. Default to writing the spec first, then the test, then the code — and treat a vague `ACCEPTANCE.md` as a build-blocker, not a fix-it-later.
 
 **Sub-rule: TaskCompleted enforcement is opt-OUT, not opt-IN.** The F7
-test-claim gate in `hooks/task-lifecycle.sh` is always ON by default — it
+test-claim gate in `hooks/lifecycle/task-lifecycle.sh` is always ON by default — it
 blocks a TaskCompleted event that claims test execution ("pytest" / "npm test" /
 etc.) without a `validation_command:` field. The gate preserves the
 "test-claim-without-evidence" anti-pattern from sneaking through teammate
@@ -124,7 +124,7 @@ default-on safety check. (SYNTHESIS #13, P2.3, eval fixture:
 - 30,000 tokens per session.
 - Summarize and restart on approach.
 - Surface the breach. Do not silently overrun.
-- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the [`subagent-token-cost-awareness`](../.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md) audit row to Present — see commit `7194037`.)
+- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the [`subagent-token-cost-awareness`](.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md) audit row to Present — see commit `7194037`.)
 
 **Model-era caveat (1M-context models — Fable 5 / Opus 4.8+).** The budgets above are a deliberate **cost ceiling**, not a context-exhaustion guard. Two corrections on a modern backend: (1) **Do not surface a remaining-context countdown to the model as a wrap-up trigger** — at 1M context it provokes premature "let me start a new session / summarize / trim my work" (Fable 5 prompting guidance); "restart on approach" is a cost choice, not a capability need. (2) Tune reasoning *depth* with `effort` (`high`/`xhigh`), not by prompting around the token budget (Opus 4.8 — `effort` is the depth dial; prompting around it just makes the model reason shallower while pretending otherwise). Keep the cost discipline; drop the context-anxiety framing.
 
@@ -215,6 +215,8 @@ Behavior:
 | library comparison, external docs, codebase onboarding | `researcher` |
 
 (For the full 24-persona table, see the agents' own `description:` fields — always preloaded.)
+
+**Naming the reasoning, not just the route.** The index above picks *who* acts; for *how* to reason — the named mental models (first-principles, pre-mortem, reversibility, red-team, scientific-method, via-negativa…) that kbg skills already apply — see the catalog at [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md). It is a reference, not new skills: the models are framing scaffolds, **not** a proven accuracy boost (their own eval shows zero hold up; one measurably hurt).
 
 **Routing Confidence** — judgment calls must be surfaced, not hidden:
 

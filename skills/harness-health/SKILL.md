@@ -9,7 +9,7 @@ Read-only query layer over `~/.claude/governance-events.jsonl` (the
 governance evidence journal per `hooks/JOURNAL-SCHEMA.md`) and
 `hooks/sensors.json` (the sensor registry). Surfaces the
 `inferential-structural_verdict` event stream emitted by the
-SessionEnd hook (`hooks/inferential-structural-judge-on-session-end.sh`),
+SessionEnd hook (`hooks/session/inferential-structural-judge-on-session-end.sh`),
 plus per-sensor staleness / fire-count derived by joining the journal
 to the registry.
 
@@ -134,7 +134,7 @@ shown below.
 
 ```text
 ## Verdicts (n=5)
-journal: /Users/kobig/.claude/governance-events.jsonl
+journal: ~/.claude/governance-events.jsonl
 
 | ts | score | recommendation | hook | top_finding |
 |---|---|---|---|---|
@@ -153,7 +153,7 @@ with `|` escaped for markdown).
 
 ```text
 ## Sensor staleness
-sensors: hooks/sensors.json  journal: /Users/kobig/.claude/governance-events.jsonl
+sensors: hooks/sensors.json  journal: ~/.claude/governance-events.jsonl
 
 | sensor | max_silent_days | last_fired | days_silent | fire_count | enabled |
 |---|---|---|---|---|---|
@@ -172,7 +172,7 @@ registry).
 
 ```text
 ## Dual fire-count (L553 mitigation)
-sensors: hooks/sensors.json  journal: /Users/kobig/.claude/governance-events.jsonl
+sensors: hooks/sensors.json  journal: ~/.claude/governance-events.jsonl
 
 | sensor | verdict_count | fired_event_count | last_verdict_score |
 |---|---|---|---|
@@ -198,7 +198,7 @@ side-by-side counts make the difference visible.
 
 ```jsonc
 {
-  "journal": "/Users/kobig/.claude/governance-events.jsonl",
+  "journal": "~/.claude/governance-events.jsonl",
   "sensors": "hooks/sensors.json",
   "verdicts": [ /* filtered events with event ∈ JUDGMENT */ ],
   "sensors_registry": [ /* raw sensors.json entries */ ]
@@ -272,7 +272,7 @@ Per the design doc §6 (the upstream contract) and the task spec:
   `docs/research/inferential-structural-judge-design.md` §3 (verdict
   schema), §6 (failure modes), §7 (SURF-1 bullet — the surfacing
   contract this skill implements).
-- **Source of events:** `hooks/inferential-structural-judge-on-session-end.sh`
+- **Source of events:** `hooks/session/inferential-structural-judge-on-session-end.sh`
   (HOOK-1) — emits `inferential_structural_verdict` and
   `inferential_structural_verdict_skipped` events.
 - **Producer agent:** `agents/inferential-structural-judge.md`

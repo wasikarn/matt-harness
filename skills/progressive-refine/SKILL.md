@@ -549,7 +549,7 @@ Coverage over elegance.
 src/api/routes/health.py exists and GET /health returns {"status":"ok"} with HTTP 200.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 (Empty list — first pass.)
@@ -575,7 +575,7 @@ src/api/routes/health.py exists and GET /health returns {"status":"ok"} with HTT
 Refactor the health endpoint for clarity. Extract helper if needed, reduce nesting, rename for readability.
 
 ## Where
-/Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+src/api/routes/health.py
 
 ## Focus
 Clarity over cleverness.
@@ -584,7 +584,7 @@ Clarity over cleverness.
 The same file, refactored, with all original tests still passing.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 - From task T1: src/api/routes/health.py — behavior is frozen
@@ -610,7 +610,7 @@ The same file, refactored, with all original tests still passing.
 Review the simplified health endpoint for edge-case gaps and correctness.
 
 ## Where
-/Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+src/api/routes/health.py
 
 ## Focus
 Correctness over speed.
@@ -619,7 +619,7 @@ Correctness over speed.
 Verdict report at .scratch/health-review/verdict.md.
 
 ## FILES YOU OWN (read-only)
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 - From task T2: final diff — behavior should be identical to T1
@@ -646,7 +646,7 @@ Verdict report at .scratch/health-review/verdict.md.
 Address the T3a findings: add 503 response for degraded DB and add request timeout handling.
 
 ## Where
-/Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+src/api/routes/health.py
 
 ## Focus
 Precision over creativity — apply the fix exactly as described.
@@ -655,7 +655,7 @@ Precision over creativity — apply the fix exactly as described.
 The modified file passes all T3a findings.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 - From T3a: missing 503 case and timeout handling — reproduce each in the fix commit message
@@ -689,7 +689,7 @@ Behavioral coverage.
 Test file with >80% coverage for health.py.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/test_health.py
+- src/api/routes/test_health.py
 
 ## UPSTREAM CONTRACTS
 - From T3a: coverage gaps — 503 and timeout are untested
@@ -714,7 +714,7 @@ Test file with >80% coverage for health.py.
 Check the final health endpoint for information leakage in error messages (stack traces, internal IPs, dependency versions).
 
 ## Where
-/Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+src/api/routes/health.py
 
 ## Focus
 Security correctness — no leakage.
@@ -723,7 +723,7 @@ Security correctness — no leakage.
 Security verdict at .scratch/health-review/security-verdict.md.
 
 ## FILES YOU OWN (read-only)
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/routes/health.py
+- src/api/routes/health.py
 
 ## UPSTREAM CONTRACTS
 - From T3-fix: final diff after 503+timeout fix
@@ -748,7 +748,7 @@ This optional Pass 4 is gated by blast radius: if the endpoint is public-facing 
 - **F9 spawn-prompt template** — `skills/orchestrate/SKILL.md` § Spawn-prompt template. Every pass above uses this template verbatim.
 - **Task board integration (`depends_on`, `recompute_blocked`)** — `skills/orchestrate/SKILL.md` § Task board integration.
 - **`/validate-and-fix`** — `commands/validate-and-fix.md`. Use this command to run the builder-validator-fix-revalidator chain reactively on a single already-completed task. Use `progressive-refine` when you want to plan the multi-pass pipeline upfront.
-- **`code-simplifier`** — `skills/code-simplifier.md`. The Pass 2 agent for the 3-pass code pattern. If the skill file does not yet exist in the fleet, dispatch a simplification pass using the spawn prompt above with `backend-engineer` scoped to "refactor for clarity only."
+- **`code-simplifier`** — `agents/code-simplifier.md`. The Pass 2 agent for the 3-pass code pattern. If the agent file does not yet exist in the fleet, dispatch a simplification pass using the spawn prompt above with `backend-engineer` scoped to "refactor for clarity only."
 - **`7-agent-pattern`** — `skills/7-agent-pattern/SKILL.md`. Catalog of agent roles including `technical-writer`, `comment-analyzer`, `ux-reviewer`, and `security-reviewer` used in the 5-pass doc pattern and optional Pass 4.
 - **`recursive-improve`** — `skills/recursive-improve/SKILL.md`. Use `recursive-improve` when the harness itself needs improvement; use `progressive-refine` when a single artifact needs quality passes. The former is human-gated by design; the latter can be scripted once the plan is approved.
 - **`backend-dev`** — `skills/backend-dev/SKILL.md`. The builder agent's own workflow (tests first, minimal implementation, architecture concerns). Pass 1 of the 3-pass pattern delegates to this skill.

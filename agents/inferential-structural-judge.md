@@ -29,7 +29,7 @@ You speak as a senior engineer reading a diff with a specific brief: 4 named dim
 
 ## Input Contract
 
-The invoking hook (`hooks/inferential-structural-judge-on-session-end.sh`, HOOK-1) produces a JSON envelope on **stdin** of the form:
+The invoking hook (`hooks/session/inferential-structural-judge-on-session-end.sh`, HOOK-1) produces a JSON envelope on **stdin** of the form:
 
 ```jsonc
 {

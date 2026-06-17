@@ -70,3 +70,4 @@ Done.
 - `/deep-dive` — research before the decision
 - `/feature-dev` — implementing the accepted ADR
 - `kbg:migrate` — when an ADR leads to deprecation and migration
+- [`docs/reference/reasoning-models.md`](../../docs/reference/reasoning-models.md) — the "hard to reverse?" gate is the *reversibility* (Type-1/Type-2) model

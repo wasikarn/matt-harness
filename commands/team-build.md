@@ -67,7 +67,7 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 
 **Optional `--spec` shortcut (P2.4):** the plan file's `## Step by Step Tasks` table is hand-written today, but a future spec-file shape is wired through `scripts/orchestrate-dispatch.py` (P2.4 / SYNTHESIS #49). If the user passes `--spec path/to/ship-merge.yml` as the first argument, `/team-build` can ask the dispatcher to render the wave plan JSON via `--emit-plan` and use it as the starting point for wave execution. v1 of `/team-build` still expects the hand-written plan file; the `--spec` flag is a future enhancement. The dispatcher does NOT auto-spawn agents — it renders the plan, the lead dispatches.
 
-**This is distinct from F7's post-execution gate (in `hooks/task-lifecycle.sh`).** F10 catches bad plans BEFORE work; F7 catches bad completions AFTER work. Two different layers of the same quality pipeline.
+**This is distinct from F7's post-execution gate (in `hooks/lifecycle/task-lifecycle.sh`).** F10 catches bad plans BEFORE work; F7 catches bad completions AFTER work. Two different layers of the same quality pipeline.
 
 ---
 
@@ -124,7 +124,7 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
    - Any leftover risks (e.g. "Wave 2 succeeded but the plan didn't include a regression test for the migration rollback path")
 4. **Do NOT mark the build complete** if any criterion fails. The user decides whether to revise the plan, re-dispatch a failed wave, or accept the partial state with explicit acknowledgement.
 
-**Logging:** each spawn, contract, and validation result is journaled via the existing `task-lifecycle.sh` pattern (TeammateIdle / TaskCreated / TaskCompleted hooks, see REPORT.md § 1.5 + § 2.10). F7's TaskCompleted test-claim gate (in `hooks/task-lifecycle.sh`) is the runtime enforcement: a teammate claiming "tests pass" without a `validation_command:` field in the event payload will be blocked from completing. This is the F7 half of the quality pipeline.
+**Logging:** each spawn, contract, and validation result is journaled via the existing `task-lifecycle.sh` pattern (TeammateIdle / TaskCreated / TaskCompleted hooks, see REPORT.md § 1.5 + § 2.10). F7's TaskCompleted test-claim gate (in `hooks/lifecycle/task-lifecycle.sh`) is the runtime enforcement: a teammate claiming "tests pass" without a `validation_command:` field in the event payload will be blocked from completing. This is the F7 half of the quality pipeline.
 
 ---
 
@@ -174,7 +174,7 @@ The build is complete when:
 - **F9 spawn-prompt template** — `skills/orchestrate/SKILL.md` § Spawn-prompt template. The template is the rendering format; the plan file is the data source.
 - **F8 lead doctrine** — `skills/orchestrate/SKILL.md` § Lead-coordinator doctrine. Four rules: delegate, model split, plan-mode, 3-5 sweet spot.
 - **F10 plan approval filter** — this command's Step 5. Pre-execution gate, complements F7.
-- **F7 TaskCompleted gate** — `hooks/task-lifecycle.sh`. Post-execution gate, complements F10. Uses exit 2 + stderr (NOT exit 0 + JSON like PreToolUse).
+- **F7 TaskCompleted gate** — `hooks/lifecycle/task-lifecycle.sh`. Post-execution gate, complements F10. Uses exit 2 + stderr (NOT exit 0 + JSON like PreToolUse).
 - **D8 integration validator** — this command's Step 6 final sub-step. Single `TaskUpdate addBlockedBy=[all]` after all builders.
 - **D10 plan-file interface** — `.claude/tasks/<slug>.md` is the session-resettable, lead-handoffable interface. This command reads from it; a fresh session can resume from it.
 - **Validation chain** — `skills/orchestrate/SKILL.md` § Validation chain. The DAG `B → V1 → F → V2` is the per-task quality pattern; this command's wave structure is the multi-task quality pattern.

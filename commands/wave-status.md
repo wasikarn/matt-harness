@@ -40,7 +40,7 @@ If `board_read` raises `FileNotFoundError` or `ValueError`, report the error ver
 
 ## Step 3 — Compute status report
 
-Run the following analysis against the board payload. Write a small Python helper script under `.scratch/wave-status.py` (create `.scratch/` if needed) and execute it. The script imports `scripts/task_board_lib` from the repo root.
+Run the following analysis against the board payload. Write a small Python helper script under `.scratch/wave-status.py` (create `.scratch/` if needed) and execute it. The script imports `scripts/task_board_lib.py` from the repo root.
 
 ### 3a. Wave breakdown
 

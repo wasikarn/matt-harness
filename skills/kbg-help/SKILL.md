@@ -9,13 +9,7 @@ Display this reference card when invoked. One-shot, read-only. Do not switch mod
 
 ## Context hierarchy
 
-kbg-harness loads context in three tiers:
-
-| Tier | What's in it | When it loads |
-|------|--------------|---------------|
-| **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Every session, always resident |
-| **L2** | Individual SKILL.md files, command `.md` files, agent specs | On demand — one invocation or skill-nudge keyword match |
-| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) | Explicit read; use `kbg:harness-nav` to mine it efficiently |
+Context loads in three tiers — **L1** always-resident doctrine (METHODOLOGY/RTK/ACLI/DBGATE + CLAUDE.md + MEMORY.md), **L2** on-demand SKILL.md / command / agent specs, **L3** BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`). Full table: [`CLAUDE.md` § Context hierarchy](../../CLAUDE.md).
 
 **Navigation rule:** prefer L2 over L3. L2 is one read; L3 is many. Reach for `kbg:harness-nav` only when L2 (skill-nudge or direct invoke) did not surface the right capability.
 

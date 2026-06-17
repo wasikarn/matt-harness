@@ -47,7 +47,7 @@ Domain specialists (dispatch when the task matches the domain — `backend-engin
 
 These agents are invoked by hook scripts, not by the user via `/orchestrate`. They appear in the routing table only so the harness-audit W1 ("not referenced in orchestrate routing table") does not false-flag a sensor. They are **read-only** by design (autonomy invariant, ADR 0002 §L115) — they judge, they do not write. The orchestrator MUST NOT dispatch them; only the matching hook may invoke them.
 
-- `inferential-structural-judge` — SessionEnd sensor for diff-shape judging (over-engineering / arch-drift / test-pattern / doctrine-conformance; 4-dimension schema per `docs/research/inferential-structural-judge-design.md` §3). Invoked by `hooks/inferential-structural-judge-on-session-end.sh`. Advisory only — journals to `~/.claude/governance-events.jsonl`, never emits `permissionDecision`.
+- `inferential-structural-judge` — SessionEnd sensor for diff-shape judging (over-engineering / arch-drift / test-pattern / doctrine-conformance; 4-dimension schema per `docs/research/inferential-structural-judge-design.md` §3). Invoked by `hooks/session/inferential-structural-judge-on-session-end.sh`. Advisory only — journals to `~/.claude/governance-events.jsonl`, never emits `permissionDecision`.
 
 ### Skill-invoked critics (NOT user-dispatched via /orchestrate)
 

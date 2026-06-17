@@ -298,7 +298,7 @@ Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable
 **What it unlocks:**
 - `/team-plan <feature>` — Steps 1-3: brain dump + research + ≥10 Q&A → `.claude/tasks/<slug>.md`
 - `/team-build <plan-file>` — Steps 4-7: contract chain + wave execution + post-build validation
-- TaskCompleted test-claim gate (`hooks/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
+- TaskCompleted test-claim gate (`hooks/lifecycle/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
 - F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
 XREF2
 fi

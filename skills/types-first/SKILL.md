@@ -99,8 +99,8 @@ Correctness over speed — every field must have a documented purpose.
 `src/types/user.ts` exports `CreateUserRequest` and `UserResponse`; `openapi/users.yaml` validates with `redocly lint`.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/types/user.ts
-- /Users/kobig/Codes/Personals/kbg-harness/openapi/users.yaml
+- src/types/user.ts
+- openapi/users.yaml
 
 ## UPSTREAM CONTRACTS
 (Empty list — first task in chain.)
@@ -137,7 +137,7 @@ API stability — the contract is fixed; the implementation must match it exactl
 `src/api/users.py` exports a `POST /users` handler that returns HTTP 201 + `UserResponse` JSON.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/api/users.py
+- src/api/users.py
 
 ## UPSTREAM CONTRACTS
 - From task T1: `src/types/user.ts` — `CreateUserRequest` has fields `email: string`, `password: string`; `UserResponse` has `id: UUID`, `email: string`, `created_at: ISO8601`.
@@ -174,7 +174,7 @@ Type safety over styling — the form must compile against the exact T1 interfac
 `src/components/SignupForm.tsx` exports `SignupForm` and compiles with `tsc --noEmit`.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/components/SignupForm.tsx
+- src/components/SignupForm.tsx
 
 ## UPSTREAM CONTRACTS
 - From task T1: `src/types/user.ts` — `CreateUserRequest` has fields `email: string`, `password: string`; `UserResponse` has `id: UUID`, `email: string`, `created_at: ISO8601`.
@@ -210,8 +210,8 @@ Data integrity — idempotency, FK constraints, no data loss on retry.
 Validation middleware enforces `CreateUserRequest` schema; migration creates `users` table matching `UserResponse` fields.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/src/middleware/validate_user.py
-- /Users/kobig/Codes/Personals/kbg-harness/migrations/003_user.sql
+- src/middleware/validate_user.py
+- migrations/003_user.sql
 
 ## UPSTREAM CONTRACTS
 - From task T2: `src/api/users.py` — the handler signature and current implementation.
@@ -251,7 +251,7 @@ Contract fidelity — the implementation must not drift from the spec.
 Contract test file that fails if the API response shape diverges from `openapi/users.yaml`.
 
 ## FILES YOU OWN
-- /Users/kobig/Codes/Personals/kbg-harness/tests/contract/test_users.openapi.py
+- tests/contract/test_users.openapi.py
 
 ## UPSTREAM CONTRACTS
 - From task T1: `openapi/users.yaml` — the canonical spec.
