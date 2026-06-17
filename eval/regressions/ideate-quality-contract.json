@@ -1,0 +1,105 @@
+{
+  "dataset_name": "ideate-quality-contract",
+  "description": "Machine-checkable contract for the ideate-quality surface. The ideate skill's output quality (diversity, trap detection, actionability) requires an LLM grader, so the behavioral evals live in eval/datasets/ideate-quality.json as manual/skipped fixtures. This regression fixture locks the structural contract: the skill body must mention the fresh-context critic option, the ideate-critic agent must exist with the right rubric, and the preflight gate must remain in place.",
+  "evals": [
+    {
+      "id": "ideate-quality-contract-critic-option",
+      "task": "Verify that skills/ideate/SKILL.md mentions the fresh-context critic option and the ideate-critic agent, reducing the chance that a future edit silently removes the LLM-judge-circularity mitigation.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "skills/ideate/SKILL.md"
+        ],
+        "required_phrases": [
+          "fresh-context critic option",
+          "ideate-critic",
+          "agents/ideate-critic.md",
+          "LLM-judge-circularity"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references fresh-context critic option",
+        "At least one of the checked files references ideate-critic",
+        "At least one of the checked files references agents/ideate-critic.md",
+        "At least one of the checked files references LLM-judge-circularity"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 300,
+      "tags": ["ideate", "quality", "contract", "regression", "critic"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-critic-option-removed",
+      "fixed_by": "fine-tune: add ideate-critic agent + ideate-quality contract"
+    },
+    {
+      "id": "ideate-quality-contract-critic-agent-rubric",
+      "task": "Verify that agents/ideate-critic.md exists and contains the load-bearing scoring contract: 3-axis rubric, scoring formula, trap field, cluster/deepen/provocation shape, and advisory-only caveat.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "agents/ideate-critic.md"
+        ],
+        "required_phrases": [
+          "fresh-context critic",
+          "novelty*0.35 + viability*0.40 + fit*0.25",
+          "trap",
+          "clusters",
+          "deepened",
+          "provocation",
+          "advisory only"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references fresh-context critic",
+        "At least one of the checked files references novelty*0.35 + viability*0.40 + fit*0.25",
+        "At least one of the checked files references trap",
+        "At least one of the checked files references clusters",
+        "At least one of the checked files references deepened",
+        "At least one of the checked files references provocation",
+        "At least one of the checked files references advisory only"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 300,
+      "tags": ["ideate", "quality", "contract", "regression", "critic"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-critic-contract-drift",
+      "fixed_by": "fine-tune: add ideate-critic agent + ideate-quality contract"
+    },
+    {
+      "id": "ideate-quality-contract-preflight-gate",
+      "task": "Verify that skills/ideate/SKILL.md still contains the pre-flight gate (Step 1 explicit invocation + Step 2 self-judge) so the expensive divergent pass does not fire on closed prompts.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "skills/ideate/SKILL.md"
+        ],
+        "required_phrases": [
+          "Pre-flight gate",
+          "Explicit invocation check",
+          "Self-judge",
+          "Open-ended?",
+          "High-stakes?",
+          "Open phrasing?",
+          "ABORT"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references Pre-flight gate",
+        "At least one of the checked files references Explicit invocation check",
+        "At least one of the checked files references Self-judge",
+        "At least one of the checked files references Open-ended?",
+        "At least one of the checked files references High-stakes?",
+        "At least one of the checked files references Open phrasing?",
+        "At least one of the checked files references ABORT"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 300,
+      "tags": ["ideate", "quality", "contract", "regression", "preflight"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-preflight-gate-removed",
+      "fixed_by": "PR1 (ideate-adhd-port)"
+    }
+  ]
+}

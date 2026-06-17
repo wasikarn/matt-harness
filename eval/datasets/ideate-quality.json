@@ -1,0 +1,150 @@
+{
+  "dataset_name": "ideate-quality",
+  "description": "Quality assertions for the kbg:ideate skill. The behavior being tested (idea diversity, trap detection, actionability) requires an LLM grader, so the dataset evals are tagged manual and exercised by human review plus sibling regression tests. The machine-checkable contract is enforced by eval/regressions/ideate-quality-contract.json.",
+  "evals": [
+    {
+      "id": "ideate-quality-lru-cache",
+      "task": "Run kbg:ideate on a thread-safe LRU cache that survives process restart without losing more than 100ms of writes. Verify the output contains at least 4 distinct conceptual angles, names at least 3 traps with reasons, and provides a concrete first step for the top recommendation.",
+      "skill": "ideate",
+      "context": {
+        "problem": "Design a thread-safe LRU cache that survives process restart without losing more than the last 100ms of writes.",
+        "trigger": "explicit /ideate invocation"
+      },
+      "success_criteria": [
+        "Output references at least 4 distinct conceptual angles or clusters",
+        "Output names at least 3 traps with one-line reasons",
+        "Top recommendation includes a concrete first step a builder can take",
+        "Output is structured (brief / wide set / converge / focus / provocation)"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 6000,
+      "tags": ["ideate", "quality", "systems", "lru-cache", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated ideation quality requires a human or separate LLM grader; machine-checkable contract is covered by eval/regressions/ideate-quality-contract.json"
+    },
+    {
+      "id": "ideate-quality-llm-hang-cli",
+      "task": "Run kbg:ideate on a CLI that calls an LLM and sometimes hangs for 90 seconds. Verify the output goes beyond textbook timeout/retry patterns and names UX/control-surface traps that a single-shot answer usually misses.",
+      "skill": "ideate",
+      "context": {
+        "problem": "We have a CLI that calls an LLM and it sometimes hangs for 90 seconds before responding. Design the right retry/timeout/UX strategy.",
+        "trigger": "explicit /ideate invocation"
+      },
+      "success_criteria": [
+        "Output includes at least one non-obvious UX or control-surface angle (e.g. user abort, model fallback, daemon queue)",
+        "Output names at least 2 traps specific to retry/timeout strategies",
+        "Output does not present only textbook patterns as the final answer"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 6000,
+      "tags": ["ideate", "quality", "ux", "reliability", "llm-hang-cli", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated ideation quality requires a human or separate LLM grader; machine-checkable contract is covered by eval/regressions/ideate-quality-contract.json"
+    },
+    {
+      "id": "ideate-quality-rate-limiter-leader",
+      "task": "Run kbg:ideate on a rate limiter that must stay correct across leader election. Verify the output questions the obvious in-memory-counter assumption and explores at least 3 structurally different approaches.",
+      "skill": "ideate",
+      "context": {
+        "problem": "Design a rate limiter that stays correct across a leader election. Existing leader had counters in memory; new leader takes over with no warning.",
+        "trigger": "explicit /ideate invocation"
+      },
+      "success_criteria": [
+        "Output questions the in-memory counter / leader assumption explicitly",
+        "Output explores at least 3 structurally distinct approaches",
+        "Top recommendation names a load-bearing risk and first concrete step"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 6000,
+      "tags": ["ideate", "quality", "distsys", "rate-limiter", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated ideation quality requires a human or separate LLM grader; machine-checkable contract is covered by eval/regressions/ideate-quality-contract.json"
+    },
+    {
+      "id": "ideate-quality-fuzzy-bug",
+      "task": "Run kbg:ideate on an intermittent 0.1% API timeout with no stack trace or pattern. Verify the output produces hypothesis classes, not specific premature fixes, and flags investigation traps.",
+      "skill": "ideate",
+      "context": {
+        "problem": "0.1% of API requests time out intermittently. No stack trace, no obvious pattern, no recent deploy. How should we investigate? Generate hypothesis classes, not specific fixes.",
+        "trigger": "explicit /ideate invocation"
+      },
+      "success_criteria": [
+        "Output provides at least 4 distinct hypothesis classes",
+        "Output names at least 2 investigation traps (e.g. reproducing symptom not cause, false positives from synthetic injection)",
+        "Output does not prematurely recommend a specific fix before diagnosis"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 6000,
+      "tags": ["ideate", "quality", "debugging", "fuzzy-bug", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated ideation quality requires a human or separate LLM grader; machine-checkable contract is covered by eval/regressions/ideate-quality-contract.json"
+    },
+    {
+      "id": "ideate-quality-naming-feature-flag",
+      "task": "Run kbg:ideate on naming a feature-flag service. Verify the output explores multiple metaphor domains and explicitly flags names that conflict with reversibility/control requirements.",
+      "skill": "ideate",
+      "context": {
+        "problem": "Generate names for a feature-flag service that supports gradual rollout, kill-switches, and per-tenant overrides. The name should signal control and reversibility.",
+        "trigger": "explicit /ideate invocation"
+      },
+      "success_criteria": [
+        "Output explores at least 3 distinct metaphor domains (e.g. control hardware, biology, emergency-stop)",
+        "Output flags at least 2 names as traps with reasons why they conflict with control/reversibility",
+        "Top recommendation includes a concrete first implementation step"
+      ],
+      "expected_duration_seconds": 60,
+      "expected_tokens": 6000,
+      "tags": ["ideate", "quality", "naming", "feature-flag", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated ideation quality requires a human or separate LLM grader; machine-checkable contract is covered by eval/regressions/ideate-quality-contract.json"
+    },
+    {
+      "id": "ideate-preflight-blocks-closed-prompts",
+      "task": "Give kbg:ideate a closed prompt with words like 'quick', 'standard', or 'textbook'. Verify it does NOT run the expensive divergent ideation and instead answers directly or aborts with a one-line pointer to /ideate.",
+      "skill": "ideate",
+      "context": {
+        "problem": "Give me a quick standard way to fix a syntax error in this Python function.",
+        "trigger": "auto-fire attempt with closed phrasing"
+      },
+      "success_criteria": [
+        "Response is direct and does not contain a wide-set / converge / focus structure",
+        "Response completes in under 10 seconds",
+        "Response optionally includes a one-line pointer to /ideate for wider exploration"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 1000,
+      "tags": ["ideate", "preflight", "gate", "closed-prompt", "manual"],
+      "eval_type": "assertion",
+      "manual_reason": "LLM-generated preflight behavior requires a human or separate LLM grader; machine-checkable gate contract is covered by eval/regressions/ideate-preflight.json"
+    },
+    {
+      "id": "ideate-critic-agent-exists",
+      "task": "Verify that the ideate-critic agent file exists and is machine-discoverable, with the correct tools allowlist and the LLM-judge-circularity caveat.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "agents/ideate-critic.md"
+        ],
+        "required_phrases": [
+          "fresh-context critic",
+          "LLM-judge-circularity",
+          "advisory only",
+          "novelty*0.35 + viability*0.40 + fit*0.25",
+          "Output Format"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references ideate-critic",
+        "At least one of the checked files references fresh-context critic",
+        "At least one of the checked files references LLM-judge-circularity",
+        "At least one of the checked files references advisory only",
+        "At least one of the checked files references novelty*0.35 + viability*0.40 + fit*0.25",
+        "At least one of the checked files references Output Format"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": ["ideate", "critic", "agent", "coverage"],
+      "eval_type": "assertion"
+    }
+  ]
+}

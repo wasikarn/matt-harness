@@ -49,6 +49,12 @@ These agents are invoked by hook scripts, not by the user via `/orchestrate`. Th
 
 - `inferential-structural-judge` — SessionEnd sensor for diff-shape judging (over-engineering / arch-drift / test-pattern / doctrine-conformance; 4-dimension schema per `docs/research/inferential-structural-judge-design.md` §3). Invoked by `hooks/inferential-structural-judge-on-session-end.sh`. Advisory only — journals to `~/.claude/governance-events.jsonl`, never emits `permissionDecision`.
 
+### Skill-invoked critics (NOT user-dispatched via /orchestrate)
+
+These agents are invoked directly by a skill body, not by the user via `/orchestrate`. They are fresh-context judges that reduce LLM-judge-circularity for expensive generation skills. Like sensors, they are **read-only** and **advisory only** — they score and report, they do not write or block.
+
+- `ideate-critic` — Fresh-context critic for `kbg:ideate`. Scores, clusters, and deepens the output of ideate Phase 1 (Diverge) so the critic pass does not run on the same host-context that just generated the ideas. Invoked by `skills/ideate/SKILL.md` Phase 2. Uses the 3-axis rubric `novelty*0.35 + viability*0.40 + fit*0.25` per `agents/ideate-critic.md`.
+
 ## Scripted Execution Modes (L4)
 
 For urgent, not-important, bounded compound work — decompose then execute via bash scripts rather than interactive conversation. Same trust boundary. Same tools. Different orchestration style.

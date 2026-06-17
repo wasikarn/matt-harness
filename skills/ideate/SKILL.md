@@ -173,17 +173,26 @@ After all 5 Diverge branches return:
    branch's output. See
    [Isolation invariant](#isolation-invariant).
 
-**On the "fresh-context critic" pattern.** Phase 2 + 3 scoring on
-the host Claude is the same model class as the generators — this
-is the LLM-judge-circularity caveat documented in
-`CLAUDE.md` §"LLM-judge circularity". The kbg-native critic
-precedent is `agents/inferential-structural-judge.md` (same model
-class, **fresh context**, advisory only — never blocks). The skill
-body is structured so the score + cluster + deepen calls can be
-re-pointed at a fresh-context critic agent without changing the
-algorithm shape. Treat scoring as **advisory evidence**, not as
-ground truth; the user is still the gate. See METHODOLOGY.md:74
-on "the implementer agreeing with its own work."
+**Fresh-context critic option (recommended for high-stakes runs).**
+By default Phase 2 + 3 run on the host Claude. That is the same
+model class as the generators, which carries the
+LLM-judge-circularity caveat documented in `CLAUDE.md`
+§"LLM-judge-circularity". For runs where the cost of a blind spot
+is high, re-point the critic pass at the `ideate-critic` agent
+(`agents/ideate-critic.md`). It uses the same scoring rubric but
+starts from a fresh context, reducing the chance that the host
+Claude's own generation anchors the judgment. Output is still
+**advisory evidence**, not ground truth; the user remains the
+gate. See METHODOLOGY.md:74 on "the implementer agreeing with
+its own work."
+
+To use the critic agent, collect the Phase 1 `ideas[]` JSON and
+invoke `ideate-critic` with the Input Contract in
+`agents/ideate-critic.md`. Use its returned `scores`, `clusters`,
+`shortlist`, `nonObviousPick`, `traps`, `deepened`, and
+`provocation` to render the final output shape below. The
+deepen pass can still run as 3 parallel Agent calls on the host,
+using the critic's `shortlist` as input.
 
 Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
 `/tmp/adhd-repo/src/engine.ts:103-175, 177-229`.
