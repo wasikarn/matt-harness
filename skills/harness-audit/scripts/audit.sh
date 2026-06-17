@@ -295,7 +295,7 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
     if [ ! -L "$HOME/.claude/hooks/$name" ]; then
       crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
     fi
-  done < <(find "$CLAUDE_DIR/hooks" -type f -not -path '*__pycache__*' -print0 2>/dev/null)
+  done < <(find "$CLAUDE_DIR/hooks" -type f -not -path '*__pycache__*' -print0 2>/dev/null || true)
 fi
 
 # 3b. Symlink integrity — agents and commands.
@@ -522,7 +522,7 @@ if [ -f "$MEMORY_INDEX" ]; then
     if [ ! -f "$mem_path" ]; then
       crit "memory references '$memf' but file missing"
     fi
-  done < <(grep -oE '\([^)]+\.md\)' "$MEMORY_INDEX" | tr -d '()' | sort -u)
+  done < <(grep -oE '\([^)]+\.md\)' "$MEMORY_INDEX" | tr -d '()' | sort -u || true)
 fi
 
 # 14. PyCache tracked by git
@@ -568,21 +568,21 @@ while IFS= read -r f; do
   if ! python3 -c "import sys; compile(open(sys.argv[1]).read(), sys.argv[1], 'exec')" "$f" 2>/dev/null; then
     crit "bundled script '${f#$CLAUDE_DIR/}' has a Python syntax error"
   fi
-done < <(find "$CLAUDE_DIR/skills" -name '*.py' -not -path '*__pycache__*' 2>/dev/null)
+done < <(find "$CLAUDE_DIR/skills" -name '*.py' -not -path '*__pycache__*' 2>/dev/null || true)
 
 # 18. Bundled shell scripts pass syntax check
 while IFS= read -r f; do
   if ! bash -n "$f" 2>/dev/null; then
     crit "bundled script '${f#$CLAUDE_DIR/}' has a shell syntax error"
   fi
-done < <(find "$CLAUDE_DIR/skills" -name '*.sh' 2>/dev/null)
+done < <(find "$CLAUDE_DIR/skills" -name '*.sh' 2>/dev/null || true)
 
 # 19. Bundled JSON files parse
 while IFS= read -r f; do
   if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then
     crit "bundled JSON '${f#$CLAUDE_DIR/}' is invalid"
   fi
-done < <(find "$CLAUDE_DIR/skills" -name '*.json' 2>/dev/null)
+done < <(find "$CLAUDE_DIR/skills" -name '*.json' 2>/dev/null || true)
 
 # 20. Description length — skills, agents, commands.
 # code.claude.com/docs/en/skills + /sub-agents: description max 1536 chars
@@ -776,8 +776,8 @@ while IFS= read -r cmd; do
     if [ ! -e "$target" ]; then
       crit "CLAUDE.md '${cmd#$REPO_ROOT/}' import '@$ref' resolves to no file"
     fi
-  done < <(grep -E '^@[^[:space:]]' "$cmd")
-done < <(find "$REPO_ROOT" -name 'CLAUDE.md' -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+  done < <(grep -E '^@[^[:space:]]' "$cmd" 2>/dev/null || true)
+done < <(find "$REPO_ROOT" -name 'CLAUDE.md' -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null || true)
 
 # 27. Test-honesty / tautology detector — METHODOLOGY Rule 9 static check.
 # Catches "test that can't fail when behavior changes" by greppable patterns
@@ -815,7 +815,7 @@ done < <(find "$REPO_ROOT" -type f \( \
     -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.test.js' -o -name '*.test.jsx' -o \
     -name '*.spec.ts' -o -name '*.spec.tsx' -o -name '*.spec.js' -o -name '*.spec.jsx' -o \
     -name 'test_*.py' -o -name '*_test.py' \
-  \) -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+  \) -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null || true)
 
 # 28. Frontmatter YAML validity — strict-parse every agent/skill/command
 # frontmatter. The grep-based fm_get reads `name:` even out of a malformed
@@ -894,8 +894,8 @@ if command -v python3 >/dev/null 2>&1; then
   # Collect candidate files. We pass paths via NUL delimiters so a path with
   # spaces (rare in this repo, but cheap to handle) doesn't get mangled.
   EVAL_TARGETS=()
-  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/tests/evals/skills" -type f -name 'evals.json' -print0 2>/dev/null)
-  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/scripts" -maxdepth 2 -type f -name 'run-baseline-eval.py' -print0 2>/dev/null)
+  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/tests/evals/skills" -type f -name 'evals.json' -print0 2>/dev/null || true)
+  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/scripts" -maxdepth 2 -type f -name 'run-baseline-eval.py' -print0 2>/dev/null || true)
   if [ "${#EVAL_TARGETS[@]}" -gt 0 ]; then
     while IFS=$'\t' read -r eval_path age_days has_reason reason_text; do
       [ -n "$eval_path" ] || continue
@@ -1308,7 +1308,7 @@ if [ -f "$SENSORS_JSON" ] && command -v jq >/dev/null 2>&1; then
     if grep -vE '^[[:space:]]*#' "$_hook" 2>/dev/null | grep -qE 'permissionDecision|hook_decision|kbg_permission_decision'; then
       crit "autonomy invariant: inferential-FB sensor '$_sname' (${_hook#"$CLAUDE_DIR"/}) emits a permissionDecision in code — advisory sensors must journal, not gate (ADR 0002 surface 5 + CLAUDE.md 'advisory only')"
     fi
-  done < <(jq -r '.sensors[] | select(.fallback_role=="inferential-FB") | .name' "$SENSORS_JSON" 2>/dev/null)
+  done < <(jq -r '.sensors[] | select(.fallback_role=="inferential-FB") | .name' "$SENSORS_JSON" 2>/dev/null || true)
 fi
 
 # 35. disable-model-invocation must carry a documented reason (DETERMINISTIC).
