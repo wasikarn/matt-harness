@@ -79,9 +79,13 @@ acquire_lock() {
   local status="claimed"
   mkdir -p "$LOCK_BASE" 2>/dev/null || true
 
+  # P0: always remove the temp claim file on exit; the mv path turns it into
+  # lock.json, so the rm -f is harmless after success.
+  trap 'rm -f "$TMP_FILE"' EXIT
+
   if mkdir "$LOCK_DIR" 2>/dev/null; then
     # P0: ERR trap removes zombie dir if mkdir succeeds but mv fails
-    trap 'rm -rf "$LOCK_DIR"' ERR
+    trap 'rm -f "$TMP_FILE"; rm -rf "$LOCK_DIR"' ERR
     status="claimed"
   else
     if [ -f "$LOCK_FILE" ]; then
@@ -97,7 +101,7 @@ acquire_lock() {
         if [ "$now_epoch" -gt "$exp_epoch" ]; then
           rm -rf "$LOCK_DIR"
           if mkdir "$LOCK_DIR" 2>/dev/null; then
-            trap 'rm -rf "$LOCK_DIR"' ERR
+            trap 'rm -f "$TMP_FILE"; rm -rf "$LOCK_DIR"' ERR
             status="claimed-stale"
           else
             echo "conflict: owner=$owner_str reason=$reason_str"
@@ -110,7 +114,7 @@ acquire_lock() {
       else
         rm -rf "$LOCK_DIR"
         if mkdir "$LOCK_DIR" 2>/dev/null; then
-          trap 'rm -rf "$LOCK_DIR"' ERR
+          trap 'rm -f "$TMP_FILE"; rm -rf "$LOCK_DIR"' ERR
           status="claimed-stolen"
         else
           echo "conflict: owner=$owner_str reason=$reason_str"

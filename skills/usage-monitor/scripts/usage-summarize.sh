@@ -99,22 +99,20 @@ SUMMARY=$(echo "$SESSIONS" | jq -s '
 echo "| Agent | Calls | Input tokens | Output tokens | Parents |"
 echo "|-------|-------|--------------|---------------|---------|"
 echo "$SUMMARY" | jq -r '
+  def fmt: tostring | if length > 3 then (.[0:length-3] | fmt) + "," + .[length-3:] else . end;
   .agents[] | [
     .agent_id,
     .calls,
-    (.in_tokens | tostring | (if length > 3 then .[0:length-3] + "," + .[length-3:] else . end)),
-    (.out_tokens | tostring | (if length > 3 then .[0:length-3] + "," + .[length-3:] else . end)),
+    (.in_tokens | fmt),
+    (.out_tokens | fmt),
     (if (.parents | length) == 0 then "—" else (.parents | join(", ")) end)
   ] | "| " + join(" | ") + " |"
 '
 
-echo "| **TOTAL** | **$SESSION_COUNT** | | | |" 2>/dev/null  # placeholder; replaced below
-
-# Totals row with real numbers
+# Totals row in the same table shape.
 echo "$SUMMARY" | jq -r '
-  "**Totals:** " + (.totals.calls | tostring) + " calls, " +
-  (.totals.in_tokens  | tostring | (if length > 3 then .[0:length-3] + "," + .[length-3:] else . end)) + " input tokens, " +
-  (.totals.out_tokens | tostring | (if length > 3 then .[0:length-3] + "," + .[length-3:] else . end)) + " output tokens"
+  def fmt: tostring | if length > 3 then (.[0:length-3] | fmt) + "," + .[length-3:] else . end;
+  "| **TOTAL** | " + (.totals.calls | fmt) + " | " + (.totals.in_tokens | fmt) + " | " + (.totals.out_tokens | fmt) + " | — |"
 '
 
 echo ""

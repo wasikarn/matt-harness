@@ -36,11 +36,7 @@ _sensor_heartbeat
 hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
 
 
-# jq is mandatory for the command parse below; if missing, fail loud.
-if ! command -v jq >/dev/null 2>&1; then
-  echo "[$HOOK_ID] ERROR: jq not found — cannot parse hook input" >&2
-  exit 1
-fi
+hook_require_jq
 
 # agent_type is the agent's `name:` frontmatter value. Present only when
 # the hook fires inside a subagent call or a `--agent` session. For the

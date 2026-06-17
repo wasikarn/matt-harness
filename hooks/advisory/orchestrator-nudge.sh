@@ -88,51 +88,67 @@ printf '%s' "$LOWERED" | grep -qE "\b(comprehensive|end[- ]to[- ]end|exhaustive)
 
 # Path-overlap route — fires when the prompt mentions file paths that resolve
 # into ≥2 bounded-contexts per the mirror table in DOMAINS.md. Catches the
-# case where a user says "fix the bug in app/api/users.py AND update the
-# runbook AND ship it" — three contexts, one prompt, must route not inline.
-# SYNC: keep PATH_PATTERNS in lockstep with `claude/DOMAINS.md` ## Path → Context.
+# case where a user says "fix the bug in hooks/ AND update the docs runbook AND
+# ship the plugin" — three contexts, one prompt, must route not inline.
+# SYNC: keep PATH_PATTERNS in lockstep with `DOMAINS.md` ## Path → Context.
 PATH_PATTERNS='
-claude/commands/feature-dev|Execution
-claude/commands/fix-bug|Execution
-claude/commands/deep-dive|Execution
-claude/skills/diagnose|Execution
-claude/skills/migrate|Execution
-claude/skills/perf|Execution
-claude/skills/research-brief|Execution
-claude/skills/tdd|Execution
-claude/skills/ship-change|Orchestration
-claude/skills/orchestrate|Orchestration
-claude/skills/inventory|Orchestration
-claude/skills/harness-audit|Orchestration
-claude/skills/clarify-first|Orchestration
-claude/skills/backend-dev|Implementation
-claude/agents/|Implementation
+commands/feature-dev|Execution
+commands/fix-bug|Execution
+commands/deep-dive|Execution
+skills/migrate|Execution
+skills/perf|Execution
+skills/research-brief|Execution
+skills/types-first|Execution
+skills/task-sizing|Execution
+skills/tech-humanize|Execution
+skills/backend-dev|Implementation
+agents/|Implementation
 app/|Implementation
 src/|Implementation
 packages/|Implementation
 services/|Implementation
 lib/|Implementation
-claude/skills/review-pr|Quality
-claude/skills/security-auditor|Quality
-claude/skills/critical-eval|Quality
-claude/skills/probe|Quality
+skills/ship-change|Orchestration
+skills/orchestrate|Orchestration
+skills/inventory|Orchestration
+skills/harness-audit|Quality
+skills/harness-coverage|Quality
+skills/critical-eval|Quality
+skills/review-pr|Quality
+skills/security-auditor|Quality
+skills/probe|Quality
 tests/|Quality
-claude/skills/adr|Communication
-claude/commands/address-review|Communication
-claude/commands/status-update|Communication
-claude/commands/post-mortem|Communication
+eval/|Quality
+skills/adr|Communication
+commands/address-review|Communication
+commands/status-update|Communication
+commands/post-mortem|Communication
 docs/|Communication
-claude/skills/incident|Emergency
-claude/skills/hotfix|Emergency
+skills/incident|Emergency
+skills/hotfix|Emergency
 runbooks/|Emergency
-claude/skills/acli|Integration
-claude/skills/assert-presence|Integration
-claude/skills/decommission|Integration
-claude/skills/memory-lint|Integration
-claude/skills/semantic-code|Integration
-claude/commands/ship-merge|Integration
-claude/commands/ship-release|Integration
+skills/acli|Integration
+skills/assert-presence|Integration
+skills/decommission|Integration
+skills/memory-lint|Integration
+skills/semantic-code|Integration
+commands/ship-merge|Integration
+commands/ship-release|Integration
+commands/ship-task|Integration
 .scratch/|Integration
+METHODOLOGY.md|doctrine
+RTK.md|doctrine
+ACLI.md|doctrine
+DBGATE.md|doctrine
+CLAUDE.md|doctrine
+DOMAINS.md|doctrine
+BOUNDARY.md|doctrine
+docs/adr/|doctrine
+scripts/|infra
+git-hooks/|infra
+.claude-plugin/|infra
+README.md|docs
+CHANGELOG.md|docs
 '
 
 # contexts_for_paths <lowered-prompt> — echo distinct contexts hit (newline-separated).

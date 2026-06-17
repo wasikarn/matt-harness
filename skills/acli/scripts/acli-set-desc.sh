@@ -37,5 +37,7 @@ fi
 
 TMP="$(mktemp -t acli-set-desc.XXXXXX.json)"
 trap 'rm -f "$TMP"' EXIT
-printf '%s' "$ADF" | python3 -c "import json,sys; print(json.dumps({'issues':['$KEY'],'description':json.load(sys.stdin)}))" > "$TMP"
+# Pass KEY as argv[1] so shell meta-characters (especially single quotes) never
+# reach a Python string literal. ADF arrives via stdin.
+printf '%s' "$ADF" | python3 -c "import json,sys; print(json.dumps({'issues':[sys.argv[1]],'description':json.load(sys.stdin)}))" "$KEY" > "$TMP"
 acli jira workitem edit --from-json "$TMP" --yes

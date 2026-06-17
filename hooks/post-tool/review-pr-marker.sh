@@ -60,7 +60,9 @@ if ! printf '%s' "$STRIPPED" | command grep -qE "$GIT_COMMIT_RE"; then
 fi
 
 # TTL check: marker mtime must be within last 30 min.
-MTIME=$(stat -f %m "$MARKER" 2>/dev/null || stat -c %Y "$MARKER" 2>/dev/null) || exit 0
+# GNU stat uses `-c %Y`; BSD stat uses `-f %m`. Try GNU first so Linux doesn't
+# accidentally accept BSD's `--file-system` mode, which exits 0 with garbage.
+MTIME=$(stat -c %Y "$MARKER" 2>/dev/null || stat -f %m "$MARKER" 2>/dev/null) || exit 0
 NOW=$(date +%s)
 AGE=$(( NOW - MTIME ))
 [ "$AGE" -ge 0 ] && [ "$AGE" -lt "$TTL_SECONDS" ] || exit 0

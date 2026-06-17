@@ -2,9 +2,9 @@
   "_about": "v1 registry of every Claude-Code hook-event sensor in the kbg@kobig plugin. Consumed by hooks/notify-sensor-staleness.sh (SessionStart matcher-less, post-cutover) to surface 'N sensors haven't fired in X days' via additionalContext. See docs/research/sensor-staleness-notifier-design.md for schema rationale and Q1-Q6 verdicts.",
   "version": 1,
   "_provenance": {
-    "authored": "2026-06-15",
+    "authored": "2026-06-17",
     "authored_by": "LEAD-D (code-architect) on sensor-fire-notification plan",
-    "derived_from": "hooks/hooks.json — 31 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh). Plan's '43 entries' target was an overcount: actual unique-script count is 31, total kbg registrations 42. See handoff report for defect details.",
+    "derived_from": "hooks/hooks.json — 43 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 58 total kbg registrations across 14 lifecycle events.",
     "hand_curated": true,
     "no_env_var_defaults": "Per METHODOLOGY Rule 2 (no speculative configurability). All values are explicit; not sourced from $KBG_* env vars."
   },

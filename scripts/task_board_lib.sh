@@ -67,6 +67,17 @@ kbg_lock_acquire() {
   return 0
 }
 
+# Explicitly release the lock acquired by kbg_lock_acquire and disable the EXIT
+# trap so we don't double-release (the trap's `|| true` makes it harmless, but
+# removing it keeps logs clean).  Safe to call even if the lock was already
+# released.
+kbg_lock_release() {
+  local plan_dir="$1"
+  local lock_dir="${plan_dir}/.lock"
+  rmdir "$lock_dir" 2>/dev/null || true
+  trap - EXIT
+}
+
 # Recompute blocked_by for all non-completed tasks based on depends_on.
 # Updates board.json in place.
 kbg_recompute_blocked() {

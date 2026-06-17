@@ -5,6 +5,42 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.41] — 2026-06-17
+
+Reliability + safety sweep. Closes findings from the 2026-06-17 multi-agent audit.
+
+### Fixed
+
+- **PreToolUse fail-open on missing `jq` (P0).** `hooks/_lib.sh` set `INPUT_PARSE_ERROR=0`
+  when `jq` was missing, so security gates reached their own `exit 1` blocks and
+  discarded the `permissionDecision`, failing open. Now non-empty input without `jq`
+  is treated as a parse failure; `hook_guard_unreadable` emits `ask` and exits 0.
+  All PreToolUse gates now use the shared `hook_require_jq` helper instead of
+  inline `exit 1` checks. (`v0.2.41`)
+- **Undefined `kbg_lock_release` (P0).** `hooks/lifecycle/task-lifecycle.sh` called
+  `kbg_lock_release` at lines 161 and 282, but `scripts/task_board_lib.sh` only defined
+  `kbg_lock_acquire`. Added `kbg_lock_release` with safe double-release handling. (`v0.2.41`)
+- **`acli-set-desc.sh` Python injection.** A Jira key containing a single quote broke
+  the Python one-liner (or worse). Pass the key via `sys.argv[1]` instead of interpolating
+  it into a string literal. (`v0.2.41`)
+- **`review-pr-marker.sh` GNU `stat` portability.** `stat -f %m || stat -c %Y` accepted
+  GNU's `--file-system` output as mtime. Reversed the order so GNU's `-c %Y` wins on Linux
+  and BSD's `-f %m` is the fallback. (`v0.2.41`)
+- **`lock-claim.sh` temp-file leak.** Added an `EXIT` trap to clean up the temporary
+  claim JSON, and updated `ERR` traps to remove it on failure paths. (`v0.2.41`)
+- **`precompact-backup.sh` hook convention violation.** Removed `set -e` so the advisory
+  PreCompact hook matches the hook-wide `set -uo pipefail` convention. (`v0.2.41`)
+- **`usage-summarize.sh` totals rendering.** Removed a placeholder table row that was never
+  replaced, and replaced the brittle single-comma thousands formatter with a recursive
+  `fmt` helper that handles numbers of any size. (`v0.2.41`)
+- **Stale `orchestrator-nudge.sh` path patterns.** PATH_PATTERNS used `claude/...` prefixes
+  from the pre-cutover layout and referenced a missing `DOMAINS.md`. Added `DOMAINS.md`
+  with a bounded-context table and updated PATH_PATTERNS to root-relative paths and the
+  actual skill/command names. (`v0.2.41`)
+- **Stale provenance docs.** Updated `README.md` version badge and newest-additions blurb,
+  regenerated `BOUNDARY.md`, corrected `hooks/sensors.json` provenance to 43 unique scripts
+  / 58 registrations, and bumped both plugin manifests to 0.2.41. (`v0.2.41`)
+
 ## [0.1.2] — 2026-06-11
 
 Patch release — surfaces two post-`0.1.1` fixes as a clean release line. No new features, no

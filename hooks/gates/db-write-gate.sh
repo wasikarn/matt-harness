@@ -40,12 +40,7 @@ _sensor_heartbeat
 hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
 
 
-# jq is mandatory for the query parse below; if missing, fail loud
-# (matches block-bash-doctrine-write.sh / doctrine-edit-gate.sh).
-if ! command -v jq >/dev/null 2>&1; then
-  echo "[$HOOK_ID] ERROR: jq not found — cannot parse hook input" >&2
-  exit 1
-fi
+hook_require_jq
 
 # Only act on MCP DB tool calls. Other MCP tools (atlassian, etc.)
 # stay gated by their own doctrine (ACLI.md) and out of scope for

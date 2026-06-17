@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.36-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.41-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,8 +9,9 @@ It adds 29 specialist agents, 39 workflow skills, 21 slash commands, and 43 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.35):** `/ideate` for divergent ideation and `/ideate-search`
-> for recalling past ideate runs via the local `qmd` search engine.
+> **Newest additions (v0.2.41):** shared `skills/_lib/err.sh` error-handling contract,
+> fail-closed PreToolUse parsing when `jq` is missing, `DOMAINS.md` bounded-context
+> dispatch table, and a sweep of stale provenance / portability docs.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

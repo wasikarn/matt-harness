@@ -13,7 +13,7 @@
 #   - Rule 12 (Fail loud): non-zero exit surfaces stderr.
 #
 
-set -euo pipefail
+set -uo pipefail
 
 CLAUDE_DIR="${HOME}/.claude"
 BACKUP_DIR="${CLAUDE_DIR}/backups"
@@ -29,7 +29,7 @@ BACKUP="${BACKUP_DIR}/transcript-${TS}.jsonl"
 cp "$TRANSCRIPT" "$BACKUP"
 
 # Prune old backups — keep last 20 (portable; no GNU xargs -r)
-cd "$BACKUP_DIR"
+cd "$BACKUP_DIR" || exit 0
 ls -t transcript-*.jsonl 2>/dev/null | tail -n +21 | while IFS= read -r f; do
   rm -f "$f"
 done

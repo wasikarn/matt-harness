@@ -22,11 +22,7 @@ _sensor_heartbeat
 hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
 
 
-# jq is mandatory for the file_path parse below; if missing, fail loud.
-if ! command -v jq >/dev/null 2>&1; then
-  echo "[$HOOK_ID] ERROR: jq not found — cannot parse hook input" >&2
-  exit 1
-fi
+hook_require_jq
 
 FILE_PATH=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.file_path // empty') || {
   echo "[$HOOK_ID] ERROR: failed to parse file_path from input" >&2

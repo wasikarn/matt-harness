@@ -67,7 +67,15 @@ hook_init() {
       PROMPT=""
     fi
   else
-    INPUT_PARSE_ERROR=0
+    # jq is missing: we cannot distinguish a benign empty payload from a real
+    # request, so treat non-empty input as a parse failure.  hook_guard_unreadable
+    # will then fail CLOSED (ask) in security gates instead of letting them fall
+    # through to their own `exit 1` blocks, which discard the JSON and fail OPEN.
+    if [ -n "$INPUT" ]; then
+      INPUT_PARSE_ERROR=1
+    else
+      INPUT_PARSE_ERROR=0
+    fi
     TOOL=""
     SID="no-sid"
     TOOL_INPUT="{}"
