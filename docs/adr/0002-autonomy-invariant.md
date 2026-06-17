@@ -321,11 +321,13 @@ backlog gap.
 ### Loop-Engineering Articles — added since original (3)
 
 The `loop-engineering/` subdir grew from 10 to 16 files after the 2026-06-12
-audit (re-mined 2026-06-17 via `kbg:article-mine`). Of the 6 additions, two are
-already cataloged in memory — the 0xCodez "Agent harness engineering 14-step
-roadmap" sibling (`memory/0xcodez-harness-roadmap.md`) and Sydney Runkle's "The
-Art of Loop Engineering" (`memory/sydney-runkle-loop-engineering.md`). The three
-below were unmapped; they diverge (or align) on the same single autonomy axis.
+audit (re-mined 2026-06-17 via `kbg:article-mine`). Of the 6 additions, three
+are already accounted for — two in memory (the 0xCodez "Agent harness
+engineering 14-step roadmap" sibling, `memory/0xcodez-harness-roadmap.md`; Sydney
+Runkle's "The Art of Loop Engineering", `memory/sydney-runkle-loop-engineering.md`)
+and one tabled above as production-article #15 ("The Anatomy of an Agent
+Harness"). The three below were unmapped; they diverge (or align) on the same
+single autonomy axis.
 
 | # | Article | Prescription | Harness Alternative | Divergence Rationale |
 |---|---------|-----------|---------------------|----------------------|
