@@ -14,14 +14,14 @@
         "required_phrases": [
           "ideate-convergence-capture.sh",
           "SessionEnd",
-          "sentence-transformers",
+          "Ollama",
           "ideate-embeddings.jsonl"
         ]
       },
       "success_criteria": [
         "At least one of the checked files references ideate-convergence-capture.sh",
         "At least one of the checked files references SessionEnd",
-        "At least one of the checked files references sentence-transformers",
+        "At least one of the checked files references Ollama",
         "At least one of the checked files references ideate-embeddings.jsonl"
       ],
       "expected_duration_seconds": 5,

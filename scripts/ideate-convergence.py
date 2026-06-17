@@ -2,8 +2,9 @@
 """ideate-convergence.py — query local convergence history for kbg:ideate.
 
 Reads ~/.claude/state/ideate-embeddings.jsonl and prints a summary of how
-similar today's ideate runs are to each other. Requires sentence-transformers
-only if you want to recompute embeddings; the query mode is stdlib-only.
+similar today's ideate runs are to each other. The embedding vectors are
+computed by the SessionEnd hook via the local Ollama API (all-minilm); this
+script is stdlib-only for querying.
 
 Usage:
     python3 scripts/ideate-convergence.py

@@ -131,30 +131,24 @@ upstream form, with these kbg-specific bindings:
 
 ## Open questions
 
-Three things deliberately deferred to a follow-up PR. Recording them
-here so a future agent does not re-derive them by reading the code.
+All three original follow-ups were implemented as the v0.2.32/v0.2.33
+`ideate` fine-tunes and are recorded in
+`memory/ideate-adhd-fine-tunes.md`. This section is kept as a tombstone
+so future agents do not re-derive the same gaps.
 
-- **Per-session cost budget for auto-invocation.** With
-  `disable-model-invocation: false` the skill can fire on vague
-  prompts. Today there is no per-session cap on `ideate` runs. A
-  reasonable follow-up is to journal a per-session counter and
-  surface a soft warning after N runs. The right place for that
-  is the `kbg:usage-monitor` skill or a new session-end hook; not
-  in `ideate` itself.
-- **Embedding-based convergence detection.** The skill's "when to
-  stop diverging" stop-signal is "new candidates repeat the shape
-  of existing ones." This is a human judgment, not a code check.
-  Embedding-based novelty-vs-existing-set scoring would be a clean
-  way to automate the stop-signal, but it is a research project
-  in its own right and out of scope for PR1/PR2.
-- **Frame rotation across sessions.** If a user runs `ideate`
-  repeatedly on the same problem, they should see different
-  frames each time. The deterministic-pick replacement for
-  `Math.random()` (see §"What we rejected") gives reproducible
-  results in a single session but does not rotate across sessions.
-  A session-keyed rotation strategy is a reasonable follow-up —
-  probably as a hook that writes the last-pick set to
-  `~/.claude/state/ideate-rotation.json`.
+- **Per-session cost budget for auto-invocation.** Resolved by
+  `hooks/session/ideate-budget-capture.sh` + the SessionStart budget
+  advisory. The daily threshold defaults to 10 and is adjustable via
+  `KBG_IDEATE_DAILY_THRESHOLD`.
+- **Embedding-based convergence detection.** Resolved by
+  `hooks/session/ideate-convergence-capture.sh` using the local Ollama
+  API (`all-minilm:latest` by default). Same-day cosine similarity
+  ≥ 0.85 emits an advisory warning; absence of Ollama degrades to
+  `unknown`.
+- **Frame rotation across sessions.** Resolved by
+  `hooks/session/ideate-rotate.sh`, which writes
+  `~/.claude/state/ideate-rotation.json` and emits a deterministic
+  5-frame rotation via `additionalContext`.
 
 ## Eval rigor limitation (explicit)
 

@@ -91,11 +91,16 @@ fall back to the deterministic picker in
 ## Convergence warning (advisory)
 
 A SessionEnd hook (`ideate-convergence-capture.sh`) computes a local
-sentence-transformers embedding for each ideate problem and stores it in
-`~/.claude/state/ideate-embeddings.jsonl`. If today's runs on similar
-problems have cosine similarity ≥ 0.85, the next session's
-`<ideate-convergence status="warning">` block warns that the same
+embedding for each ideate problem via the Ollama API (`all-minilm:latest` by
+default) and stores it in `~/.claude/state/ideate-embeddings.jsonl`. If
+today's runs on similar problems have cosine similarity ≥ 0.85, the next
+session's `<ideate-convergence status="warning">` block warns that the same
 problem is being ideated repeatedly without new vantages.
+
+The default model is `all-minilm:latest`; override with
+`KBG_IDEATE_EMBEDDING_MODEL`, and the Ollama host with
+`KBG_IDEATE_OLLAMA_HOST`. If Ollama is not running or the model is absent,
+the hook silently degrades to `convergence_status=unknown`.
 
 This is a heuristic, not a quality judgment. Query the history with:
 

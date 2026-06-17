@@ -1,13 +1,13 @@
 #!/bin/bash
 # ideate-convergence-capture.sh — SessionEnd hook that detects convergence
-# across kbg:ideate runs using local sentence embeddings.
+# across kbg:ideate runs using local Ollama embeddings.
 #
 # Advisory only. Never blocks. Never mutates the repo. Appends one JSONL row
 # per ideate run to ~/.claude/state/ideate-embeddings.jsonl.
 #
 # The hook reads the session transcript for ideate invocations, extracts the
-# problem text and the rotated frames used, and stores a sentence-transformers
-# embedding vector for the combined "problem + frames" fingerprint. This is a
+# problem text and the rotated frames used, and stores an embedding vector
+# (all-minilm via the local Ollama API) for the problem fingerprint. This is a
 # pragmatic proxy for full idea-text embeddings: if the same problem is run
 # repeatedly with similar frames, the embedding is similar and we flag
 # convergence risk.
@@ -33,16 +33,15 @@ SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/nu
 
 # Count ideate invocations in this session.
 INVOCATIONS=$(jq -c '
-  [
-    .messages[]? |
-    select(.type == "tool_use" and .tool_name == "Skill") |
-    select(.input? .skill == "ideate")
-  ] | length +
-  [
-    .messages[]? |
-    select(.type == "user") |
-    select(.content? | type == "string" and test("(^|[[:space:]])/ideate"; "i"))
-  ] | length
+  (
+    [.messages[]? |
+      select(.type == "tool_use" and .tool_name == "Skill") |
+      select(.input? .skill == "ideate")] | length
+  ) + (
+    [.messages[]? |
+      select(.type == "user") |
+      select(.content? | type == "string" and test("(^|[[:space:]])/ideate"; "i"))] | length
+  )
 ' "$TRANSCRIPT" 2>/dev/null) || INVOCATIONS=0
 [ -n "$INVOCATIONS" ] || INVOCATIONS=0
 [ "$INVOCATIONS" -eq 0 ] 2>/dev/null && exit 0
@@ -70,21 +69,40 @@ PROBLEM=$(printf '%s' "$PROBLEM" | tr '\n' ' ' | sed 's/  */ /g' | head -c 500)
 DATE=$(date -u +%Y-%m-%d)
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# Compute embedding via sentence-transformers. Fall back gracefully if library
-# or model is not available.
+# Compute embedding via local Ollama API (all-minilm). Fall back gracefully
+# if Ollama is not running or the model is absent.
 EMBEDDING=""
 CONVERGENCE_STATUS="unknown"
-CONVERGENCE_REASON="sentence-transformers not available"
+CONVERGENCE_REASON="Ollama embedding endpoint not available"
 if command -v python3 >/dev/null 2>&1; then
-  EMBEDDING=$(python3 - <<PY 2>/dev/null
-import json, sys
-problem = """$PROBLEM""".strip()
+  EMBEDDING=$(KBG_IDEATE_PROBLEM="$PROBLEM" \
+    KBG_IDEATE_OLLAMA_HOST="${KBG_IDEATE_OLLAMA_HOST:-http://localhost:11434}" \
+    KBG_IDEATE_EMBEDDING_MODEL="${KBG_IDEATE_EMBEDDING_MODEL:-all-minilm:latest}" \
+    python3 - <<'PY' 2>/dev/null
+import json, os, sys, urllib.request, urllib.error
+
+problem = os.environ.get('KBG_IDEATE_PROBLEM', '').strip()
+if not problem:
+    sys.exit(1)
+
+host = os.environ.get('KBG_IDEATE_OLLAMA_HOST', 'http://localhost:11434').rstrip('/')
+model = os.environ.get('KBG_IDEATE_EMBEDDING_MODEL', 'all-minilm:latest')
+payload = json.dumps({'model': model, 'prompt': problem}).encode('utf-8')
+req = urllib.request.Request(
+    f'{host}/api/embeddings',
+    data=payload,
+    headers={'Content-Type': 'application/json'},
+    method='POST',
+)
 try:
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    vec = model.encode(problem, convert_to_numpy=True, normalize_embeddings=True)
-    print(json.dumps(vec.tolist()))
-except Exception as e:
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.loads(resp.read().decode('utf-8'))
+        emb = data.get('embedding')
+        if emb:
+            print(json.dumps(emb))
+        else:
+            sys.exit(1)
+except Exception:
     sys.exit(1)
 PY
 )
