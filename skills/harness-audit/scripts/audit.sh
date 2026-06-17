@@ -1395,12 +1395,15 @@ if [ -f "$DOMAINS_MD" ] && [ -f "$NUDGE_SH" ]; then
 fi
 
 # 38. dismiss-stale.md Q3 mirror ≡ notify-sensor-staleness.sh gate. The command
-# duplicates the hook's is_stale/role-classification gate verbatim (a SYNC-WITH
-# comment is the only seam). It DRIFTED once: the hook's null-branch was fixed to
-# `return s.get("observable", True)` while the command kept `return True`, so the
-# two computed different stale sets and the dismissal hash never matched (a silent
-# no-op the operator hit on /dismiss-stale). This asserts the load-bearing gate
-# lines appear in BOTH files (whitespace-normalized, substring). WARN.
+# duplicates the hook's is_stale/is_must_fire_stale/role-classification gate AND
+# the Q3 trigger thresholds verbatim (a SYNC-WITH comment is the only seam). It
+# DRIFTED once: the hook's null-branch was fixed to `return s.get("observable",
+# True)` while the command kept `return True`, so the two computed different stale
+# sets and the dismissal hash never matched (a silent no-op the operator hit on
+# /dismiss-stale). This asserts the full set of load-bearing gate lines — both the
+# classification (is_stale/must_fire) AND the trigger thresholds (1 enforcement /
+# ≥3 advisory / ≥1 must_fire) — appear in BOTH files (whitespace-normalized,
+# substring). WARN.
 DSM="$CLAUDE_DIR/commands/dismiss-stale.md"
 NSS="$CLAUDE_DIR/hooks/maintenance/notify-sensor-staleness.sh"
 if [ -f "$DSM" ] && [ -f "$NSS" ]; then
@@ -1413,8 +1416,13 @@ if [ -f "$DSM" ] && [ -f "$NSS" ]; then
     fi
   done <<'SIGS'
 return s.get("observable", True)
+return ds > thr
+return ds is not None and ds >= 1
 enforcement_roles = {"computational-FF", "computational-FB"}
 advisory_roles = {"inferential-FF", "inferential-FB"}
+len(enforcement_stale) >= 1
+or len(advisory_stale) >= 3
+or len(must_fire_stale) >= 1
 SIGS
 fi
 
@@ -1435,6 +1443,27 @@ if [ -f "$SENSORS_JSON" ] && command -v jq >/dev/null 2>&1; then
       warn "sensor '$_sname' in sensors.json has no matching hook script under hooks/ (orphan — staleness monitor will report false 'never fired')"
     fi
   done < <(jq -r '.sensors[].name' "$SENSORS_JSON" 2>/dev/null || true)
+fi
+
+# 40. Fan-out band single-source — the F8.4 floor (3) and F8.5 cap (5) are
+# enforced in TWO independent places: scripts/orchestrate-dispatch.py
+# (DEFAULT_MIN/MAX_PER_WAVE constants, clamps emitted waves) and
+# scripts/plan_linter/core.py (a literal `count < N or count > M` on the
+# ## Team Members roster). Both encode the same doctrine band but neither reads
+# the other, so a doctrine change to the band could update one enforcer and not
+# the other → two gates disagreeing silently. Extract the numbers from each and
+# assert equality. WARN. Hermetic: skips if either file is absent.
+DISPATCH_PY="$CLAUDE_DIR/scripts/orchestrate-dispatch.py"
+LINTER_PY="$CLAUDE_DIR/scripts/plan_linter/core.py"
+if [ -f "$DISPATCH_PY" ] && [ -f "$LINTER_PY" ]; then
+  _dmin=$(grep -oE 'DEFAULT_MIN_PER_WAVE = [0-9]+' "$DISPATCH_PY" | grep -oE '[0-9]+$' | head -1)
+  _dmax=$(grep -oE 'DEFAULT_MAX_PER_WAVE = [0-9]+' "$DISPATCH_PY" | grep -oE '[0-9]+$' | head -1)
+  _lmin=$(grep -oE 'count < [0-9]+' "$LINTER_PY" | grep -oE '[0-9]+' | head -1)
+  _lmax=$(grep -oE 'count > [0-9]+' "$LINTER_PY" | grep -oE '[0-9]+' | head -1)
+  if [ -n "$_dmin" ] && [ -n "$_dmax" ] && [ -n "$_lmin" ] && [ -n "$_lmax" ] \
+     && { [ "$_dmin" != "$_lmin" ] || [ "$_dmax" != "$_lmax" ]; }; then
+    warn "fan-out band drift: orchestrate-dispatch.py F8.4/F8.5 = ${_dmin}-${_dmax} but plan_linter/core.py enforces ${_lmin}-${_lmax} — both encode the same doctrine band and MUST agree"
+  fi
 fi
 
 # ── summary ──────────────────────────────────────────────────────────
