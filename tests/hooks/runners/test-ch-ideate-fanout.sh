@@ -13,7 +13,7 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 
 echo
 echo "--- ideate 2-wave fan-out structure ---"
-_IDEATE_SKILL="$(cd "$(dirname "$0")/../.." && pwd)/skills/ideate/SKILL.md"
+_IDEATE_SKILL="$(cd "$(dirname "$0")/../../.." && pwd)/skills/ideate/SKILL.md"
 if [ ! -f "$_IDEATE_SKILL" ]; then
   FAIL=$((FAIL+1)); printf '  ❌ ideate-fanout          %s\n' "skills/ideate/SKILL.md missing"
 else

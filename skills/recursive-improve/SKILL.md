@@ -133,7 +133,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 - **Drift guard:** if no signal improved — `gaps` not down, audit finding count not down, and
   no other named metric moved — the iteration did **not** help. Do **not** report success.
   Surface the flat/negative delta and treat it as the rollback decision (Step 6).
-- Run the relevant deterministic check on any code touched (`bash hooks/tests/test-critical-hooks.sh`,
+- Run the relevant deterministic check on any code touched (`bash tests/hooks/runners/test-critical-hooks.sh`,
   `py_compile`, `bash -n`).
 - **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated, not
   assumed.

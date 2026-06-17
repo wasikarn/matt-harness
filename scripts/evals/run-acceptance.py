@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRATCH_DIR = REPO_ROOT / ".scratch"
 DEFAULT_TIMEOUT = 60  # seconds per criterion. Deliberately low: the phase-1 contract
 # has one criterion that runs the whole critical-hooks suite
-# (`bash hooks/tests/test-critical-hooks.sh`) — ~130s locally, 300s+ on CI runners, and
+# (`bash tests/hooks/runners/test-critical-hooks.sh`) — ~130s locally, 300s+ on CI runners, and
 # the eval harness re-runs the contract ~3x, so no per-criterion ceiling that lets it
 # pass also fits the eval-harness job's 10-min cap. That criterion is EXPECTED to time
 # out here; the TimeoutExpired handler records it as a failed criterion (no crash), the

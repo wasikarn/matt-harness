@@ -52,7 +52,7 @@ No autonomous or unattended self-repair loop. Every self-improvement iteration s
 Hooks are shell scripts registered in `hooks/hooks.json`. There are two distinct hook conventions:
 
 1. **PreToolUse gates** — emit JSON `permissionDecision` (`deny`/`ask`/`none`) on stdout. Must exit 0 (per vendor spec, exit 2 discards the JSON). Assert the emitted decision string, not the exit code.
-2. **TaskCompleted enforcement** (`hooks/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `hooks/tests/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
+2. **TaskCompleted enforcement** (`hooks/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
 
 All hooks that shell out to external tools (`rtk`, `qmd`, `code-review-graph`) must degrade gracefully when absent (`command -v` guard, silent no-op). No bundled dependencies.
 
@@ -122,7 +122,7 @@ Single-layer debugging (run these directly to isolate a failure):
 claude plugin validate --strict .
 
 # Critical-hooks smoke tests (the primary safety gate)
-bash hooks/tests/test-critical-hooks.sh
+bash tests/hooks/runners/test-critical-hooks.sh
 
 # Harness self-audit (0 Critical / 0 Warnings = clean)
 bash skills/harness-audit/scripts/audit.sh .
@@ -171,7 +171,7 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only
 ### Adding a new component
 
 1. **Agent:** create `agents/<name>.md` with frontmatter (`name`, `description`, `tools` allowlist). No registration needed — auto-discovered.
-2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter (`name`, `description`). Add a `## Input Contract` / `## Output Format` / `## Failure Modes` section **only where the skill has a real I/O contract worth stating** — these are no longer mandated fleet-wide (the blanket #31.1 requirement was retired 2026-06-16; it manufactured byte-identical boilerplate). Optionally add `skills/<name>/evals/evals.json` for eval coverage.
+2. **Skill:** create `skills/<name>/SKILL.md` with frontmatter (`name`, `description`). Add a `## Input Contract` / `## Output Format` / `## Failure Modes` section **only where the skill has a real I/O contract worth stating** — these are no longer mandated fleet-wide (the blanket #31.1 requirement was retired 2026-06-16; it manufactured byte-identical boilerplate). Optionally add `tests/evals/skills/<name>/evals.json` for eval coverage.
 3. **Command:** create `commands/<name>.md` with frontmatter (`name`, `description`). Set `disable-model-invocation` per the criterion below (not a blanket "all commands"). Update `plugin.json` + `marketplace.json` description counts. (`commands/` is officially a *legacy* dir — [docs](https://code.claude.com/docs/en/plugins) say "use skills/ instead"; kbg keeps it for the user-verb surface. Do **not** add a `type:` field — it is not in the official frontmatter schema and nothing reads it.)
 
 #### `disable-model-invocation` — per-surface, with a recorded reason
@@ -184,12 +184,12 @@ Choose **per surface** and **record why** in a `disable-model-invocation-reason:
 - **Leave it off** for **read-only reporters, analysis, and capabilities the model uses to fulfil an explicit request** — *even if they mutate the local tree or spawn agents.* Writing code (`backend-dev`), reviewing (`review-pr`, ~8 agents), researching (`research-brief`), running a bulk op the user asked for (`acli`) are the model's core job; gating them cripples the assistant. Agent-spawn **cost** is governed by the fan-out cap (F8.5 / the dispatcher), **not** by this flag — never flag a surface merely because it spawns agents.
 
 **Safety vs taste (do not conflate).** For ~25 surfaces this flag is reversible UX taste — flip it per the recorded reason. For **`recursive-improve` alone** it is a load-bearing instance of the autonomy invariant, guarded by audit **#32 (CRIT)** and recorded in **[ADR 0002](docs/adr/0002-autonomy-invariant.md)**. Never reason about `recursive-improve`'s flag through this taste criterion — #32 governs it.
-4. **Hook:** create `hooks/<name>.sh`, add entry to `hooks/hooks.json`. Add tests to `hooks/tests/test-critical-hooks.sh` if it is a PreToolUse or TaskCompleted gate.
+4. **Hook:** create `hooks/<name>.sh`, add entry to `hooks/hooks.json`. Add tests to `tests/hooks/runners/test-critical-hooks.sh` if it is a PreToolUse or TaskCompleted gate.
 5. **After any of the above:** bump manifest versions, validate, commit, push, update cache, restart:
    ```bash
    # Bump version in BOTH manifests, then:
    claude plugin validate --strict .                     # 1. validate manifest
-   bash hooks/tests/test-critical-hooks.sh              # 2. hook tests
+   bash tests/hooks/runners/test-critical-hooks.sh              # 2. hook tests
    bash skills/harness-audit/scripts/audit.sh .         # 3. self-audit
    python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate  # 4. eval gate
    git add -A && git commit -m "feat: ..." && git push origin develop   # 5. commit + push

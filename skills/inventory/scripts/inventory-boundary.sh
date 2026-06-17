@@ -278,14 +278,14 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (plugin.json v0.1.3)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash hooks/tests/test-critical-hooks.sh` (201/0 expected)
+- **Tests:** `bash tests/hooks/runners/test-critical-hooks.sh` (201/0 expected)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
 - `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (26 I = schema-rot INFO, non-blocking)
 - `claude plugin validate --strict .` — exit 0
-- `bash hooks/tests/test-critical-hooks.sh` — 201/0 expected
+- `bash tests/hooks/runners/test-critical-hooks.sh` — 201/0 expected
 - `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` — exit 0
 
 ---

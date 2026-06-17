@@ -13,7 +13,7 @@
 #   4. No match → exit 0 silently (project has not opted in)
 #
 # kbg-harness self-test: create .claude/test-runner with:
-#   bash hooks/tests/test-critical-hooks.sh 2>&1 | tail -5
+#   bash tests/hooks/runners/test-critical-hooks.sh 2>&1 | tail -5
 #
 # Log: $HOME/.claude/post-edit-test.log
 # Bypass: CLAUDE_DISABLED_HOOKS=post-edit-test

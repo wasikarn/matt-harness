@@ -19,7 +19,7 @@ date: 2026-06-15
 
 - **Coding conventions** (inferential FF) → `METHODOLOGY.md` (13 rules) + 34 skill `description:` blocks (audit.sh:288-301)
 - **Code mods** (computational FF) → **No kbg-harness counterpart found** — no OpenRewrite / AST codemods
-- **Structural tests** (computational FB) → `hooks/tests/test-critical-hooks.sh` (204 assertions) + `eval/run-eval.py --gate` (run-eval.py:704) + `audit.sh` CRIT/WARN/INFO
+- **Structural tests** (computational FB) → `tests/hooks/runners/test-critical-hooks.sh` (204 assertions) + `eval/run-eval.py --gate` (run-eval.py:704) + `audit.sh` CRIT/WARN/INFO
 - **Review instructions** (inferential FB) → `agents/code-reviewer` + 8 sub-skills via `kbg:review-pr`
 
 **Sensors kbg does NOT have**: no dead-code detector, no test-quality grader, no mutation testing, no AI `response-quality-sampling` (angle-1 §4). LLM-judge → agents — critique-cost §3 circularity risk.

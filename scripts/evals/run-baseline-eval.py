@@ -10,13 +10,13 @@ Example:
     python3 run-baseline-eval.py skills/clarify-first --iterations 1
 
 Prerequisites:
-    - The skill must have evals/evals.json with at least one eval case.
+    - The skill must have tests/evals/skills/<name>/evals.json with at least one eval case.
     - claude CLI must be available and authenticated.
     - Skill must be present in the plugin cache (~/.claude/plugins/cache/kobig/kbg/).
       Run `claude plugin update kbg@kobig` if the cache is stale.
 
 What it does:
-    1. Reads evals/evals.json from the skill directory.
+    1. Reads tests/evals/skills/<name>/evals.json for the skill.
     2. Locates the skill in the plugin cache.
     3. For each eval, spawns TWO claude -p runs:
        a) with_skill    — skill discoverable via plugin cache (normal)
@@ -322,9 +322,10 @@ def main():
         sys.exit(subprocess.run(cmd).returncode)
 
     skill_path = args.skill_path.resolve()
-    evals_file = skill_path / "evals" / "evals.json"
+    skill_name = skill_path.name
+    evals_file = Path(__file__).resolve().parent.parent.parent / "tests" / "evals" / "skills" / skill_name / "evals.json"
     if not evals_file.exists():
-        print(f"Error: No evals/evals.json found at {skill_path}", file=sys.stderr)
+        print(f"Error: No tests/evals/skills/{skill_name}/evals.json found", file=sys.stderr)
         sys.exit(1)
 
     evals_data = json.loads(evals_file.read_text())

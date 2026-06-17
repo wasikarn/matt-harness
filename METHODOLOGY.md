@@ -95,7 +95,7 @@ test-claim gate in `hooks/task-lifecycle.sh` is always ON by default — it
 blocks a TaskCompleted event that claims test execution ("pytest" / "npm test" /
 etc.) without a `validation_command:` field. The gate preserves the
 "test-claim-without-evidence" anti-pattern from sneaking through teammate
-chains (12 tests in `hooks/tests/test-critical-hooks.sh` lock this behavior).
+chains (12 tests in `tests/hooks/runners/test-critical-hooks.sh` lock this behavior).
 Operators may opt **out** of L3 enforcement on a per-session basis via
 `KBG_ENFORCE_TASK_COMPLETED=0` — this downgrades F7 to log-only for that
 session (the event is still journaled, but no exit 2 is sent). Use case:

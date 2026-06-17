@@ -12,10 +12,11 @@ Mapping rules:
                                   eval/datasets/<name>*.json
   agents/<name>.md              -> eval/regressions/<name>*.json
                                   eval/datasets/<name>*.json
-  hooks/<name>.sh               -> hooks/tests/test-critical-hooks.sh (pre_push_only)
-  hooks/_lib.sh                 -> hooks/tests/test-critical-hooks.sh (pre_push_only)
+  hooks/<name>.sh               -> tests/hooks/runners/test-critical-hooks.sh (pre_push_only)
+  hooks/_lib.sh                 -> tests/hooks/runners/test-critical-hooks.sh (pre_push_only)
   eval/regressions/<name>.json  -> itself
   eval/datasets/<name>.json     -> itself
+  tests/evals/skills/<name>/evals.json -> fallback (skill eval target changed)
   scripts/run-gauntlet.sh       -> fallback (all fixtures)
   .claude-plugin/*.json         -> fallback (all fixtures)
   eval/run-eval.py              -> fallback (grader changed)
@@ -34,7 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 EVAL_DIR = REPO_ROOT / "eval"
 REGRESSIONS_DIR = EVAL_DIR / "regressions"
 DATASETS_DIR = EVAL_DIR / "datasets"
-CRITICAL_HOOKS_SUITE = REPO_ROOT / "hooks" / "tests" / "test-critical-hooks.sh"
+CRITICAL_HOOKS_SUITE = REPO_ROOT / "tests" / "hooks" / "runners" / "test-critical-hooks.sh"
 
 
 def glob_fixtures(component: str):

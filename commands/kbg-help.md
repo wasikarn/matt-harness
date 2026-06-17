@@ -56,7 +56,7 @@ Run from the repo root:
 bash git-hooks/pre-commit                    # commit-time: syntax/lint + audit + affected evals
 bash scripts/run-gauntlet.sh                 # push-time: full parallel gauntlet
 bash scripts/run-gauntlet.sh --fast          # skip the slow critical-hooks suite
-bash hooks/tests/test-critical-hooks.sh      # safety suite only
+bash tests/hooks/runners/test-critical-hooks.sh      # safety suite only
 bash skills/harness-audit/scripts/audit.sh . # self-audit only
 python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 ```

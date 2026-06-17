@@ -13,7 +13,7 @@
 # shellcheck shell=bash
 set -uo pipefail
 
-HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../hooks" && pwd)"
 PASS=0
 FAIL=0
 

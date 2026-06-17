@@ -85,13 +85,13 @@ Four layers run in parallel:
 |-------|---------|----------------|
 | Plugin manifest | `claude plugin validate --strict .` | Manifest schema, component counts |
 | Harness audit | `bash skills/harness-audit/scripts/audit.sh .` | Schema, manifest drift, sensor staleness |
-| Critical hooks | `bash hooks/tests/test-critical-hooks.sh` | PreToolUse + TaskCompleted safety gates |
+| Critical hooks | `bash tests/hooks/runners/test-critical-hooks.sh` | PreToolUse + TaskCompleted safety gates |
 | Eval gate | `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` | Dataset fixtures + regression fixtures |
 
 ### Run one layer in isolation
 
 ```bash
-bash hooks/tests/test-critical-hooks.sh
+bash tests/hooks/runners/test-critical-hooks.sh
 bash skills/harness-audit/scripts/audit.sh .
 python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate --workers 4
 ```

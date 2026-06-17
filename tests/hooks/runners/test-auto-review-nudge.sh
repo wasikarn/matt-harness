@@ -13,7 +13,7 @@
 
 set -uo pipefail
 
-HOOKS="$(cd "$(dirname "$0")/.." && pwd)"
+HOOKS="$(cd "$(dirname "$0")/../../../hooks" && pwd)"
 HOOK_AUTO="$HOOKS/advisory/auto-review-nudge.sh"
 HOOK_SKILL="$HOOKS/advisory/skill-nudge.sh"
 

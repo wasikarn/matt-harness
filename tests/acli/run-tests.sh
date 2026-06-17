@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # run-tests.sh — deterministic guards for the acli skill's helper scripts.
 #
-# Convention mirrors skills/memory-lint/tests + tests/harness-audit/fixtures:
+# Convention mirrors tests/memory-lint + tests/harness-audit/fixtures:
 # each skill owns its tests; fixtures live in-repo (the shipped examples/*.json),
 # not /tmp, for reproducibility.
 #
@@ -17,7 +17,7 @@
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-ACLI="$(cd "$HERE/.." && pwd)"
+ACLI="$(cd "$HERE/../../skills/acli" && pwd)"
 ADF2MD="python3 $ACLI/scripts/adf2md.py"
 
 pass=0

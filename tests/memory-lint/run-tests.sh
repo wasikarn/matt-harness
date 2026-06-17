@@ -9,7 +9,7 @@
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-LINT="python3 $HERE/../scripts/memory-lint.py"
+LINT="python3 $HERE/../../skills/memory-lint/scripts/memory-lint.py"
 
 pass=0
 fail=0

@@ -4,7 +4,7 @@ review-pr-journal — emit Phase-II review_finding + verification_verdict pairs
 from a /review-pr scratch dir's findings.jsonl. Idempotent via a per-finding
 JSONL manifest (.journaled). Port of review-pr-journal.sh (232 LoC); the
 contract is the 11 test cases (M, N, N2, P, R, S, T, U, V, W, X, Y) pinned
-at claude/hooks/tests/test-critical-hooks.sh:333-739.
+at tests/hooks/runners/test-critical-hooks.sh:333-739.
 
 Usage: review-pr-journal.py <scratch_dir>
   scratch_dir/findings.jsonl — per-finding JSONL stream, one finding per line

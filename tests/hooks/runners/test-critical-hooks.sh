@@ -11,12 +11,12 @@
 # "SUITE PASS=x FAIL=y" line. This runner executes the sub-suites concurrently,
 # aggregates the results, and fails if any sub-suite reported failures.
 #
-# Usage: bash hooks/tests/test-critical-hooks.sh
+# Usage: bash tests/hooks/runners/test-critical-hooks.sh
 # Exit 0 = all pass; exit 1 = one or more failed.
 
 set -uo pipefail
 
-HOOKS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+HOOKS_DIR="$(cd "$(dirname "$0")/../../../hooks" && pwd)"
 TESTS_DIR="$(dirname "$0")"
 
 # Order matches the old sequential suite; parallel execution does not depend on

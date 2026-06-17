@@ -12,10 +12,10 @@
 # (trash, not rm -rf, for cleanup — see feedback_use_trash_not_rm).
 # No real ~/.claude/ files are touched.
 #
-# Usage: bash hooks/tests/test-cleanup-bak-ttl.sh
+# Usage: bash tests/hooks/runners/test-cleanup-bak-ttl.sh
 # Exit 0 = all pass; exit 1 = one or more failed.
 
-HOOK="$(cd "$(dirname "$0")/.." && pwd)/maintenance/cleanup-bak-ttl.sh"
+HOOK="$(cd "$(dirname "$0")/../../../hooks" && pwd)/maintenance/cleanup-bak-ttl.sh"
 [ -x "$HOOK" ] || { echo "FATAL: $HOOK not executable" >&2; exit 1; }
 
 PASS=0

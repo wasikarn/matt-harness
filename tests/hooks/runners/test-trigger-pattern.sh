@@ -5,7 +5,7 @@
 # ALWAYS trigger when… / Trigger on: / etc.). Bare-verb descriptions auto-fire
 # on every prompt and pollute routing — this test pins the regex behavior.
 #
-# Run: bash hooks/tests/test-trigger-pattern.sh
+# Run: bash tests/hooks/runners/test-trigger-pattern.sh
 
 set -u
 
@@ -81,7 +81,7 @@ echo "=== live audit.sh regression (real skills) ==="
 # Resolve audit.sh from $0 (repo-root-relative), not a hard-coded CWD path —
 # the old `claude/skills/...` path didn't exist, so the run produced no output
 # and the check passed because its target was MISSING (green-because-broken).
-AUDIT="$(cd "$(dirname "$0")/../.." && pwd)/skills/harness-audit/scripts/audit.sh"
+AUDIT="$(cd "$(dirname "$0")/../../.." && pwd)/skills/harness-audit/scripts/audit.sh"
 if [ ! -f "$AUDIT" ]; then
   printf '  ❌ %-58s audit.sh not found at %s\n' "audit.sh against real skills/" "$AUDIT"
   FAIL=$((FAIL+1))

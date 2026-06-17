@@ -7,25 +7,25 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # green). Each is run as a SUBPROCESS (they call `exit`), and PASS/FAIL is shared
 # with the parent test-critical-hooks.sh that sources this file.
 #
-# Convention reminder: a `hooks/tests/test-ch-*.sh` file is auto-noticed in review
-# (the suite sources every one); a bare `test-*.sh` / `run-tests.sh` is invisible.
+# Convention reminder: a `tests/hooks/runners/test-ch-*.sh` file is auto-noticed in
+# review (the suite sources every one); a bare `test-*.sh` / `run-tests.sh` is invisible.
 # These 10 were the invisible kind — now gated here.
 # shellcheck disable=SC2034
 
 echo
 echo "--- orphaned test runners (subprocess) ---"
-_ORPHAN_REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+_ORPHAN_REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 for _ot in \
-  hooks/tests/test-auto-review-nudge.sh \
-  hooks/tests/test-cleanup-bak-ttl.sh \
-  hooks/tests/test-nudge.sh \
-  hooks/tests/test-review-pr-ledger.sh \
-  hooks/tests/test-review-pr-marker.sh \
-  hooks/tests/test-trigger-pattern.sh \
+  tests/hooks/runners/test-auto-review-nudge.sh \
+  tests/hooks/runners/test-cleanup-bak-ttl.sh \
+  tests/hooks/runners/test-nudge.sh \
+  tests/hooks/runners/test-review-pr-ledger.sh \
+  tests/hooks/runners/test-review-pr-marker.sh \
+  tests/hooks/runners/test-trigger-pattern.sh \
   scripts/locks/test-lock-system.sh \
   scripts/mailbox/test-mailbox.sh \
-  skills/acli/tests/run-tests.sh \
-  skills/memory-lint/tests/run-tests.sh ; do
+  tests/acli/run-tests.sh \
+  tests/memory-lint/run-tests.sh ; do
   _rp="$_ORPHAN_REPO/$_ot"
   _label="${_ot##*/}"
   if [ ! -f "$_rp" ]; then

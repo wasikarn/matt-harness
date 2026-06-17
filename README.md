@@ -211,7 +211,7 @@ at startup. A missing `/ideate-search` almost always means the restart step was 
 claude plugin validate --strict .
 
 # Critical-hooks smoke tests
-bash hooks/tests/test-critical-hooks.sh
+bash tests/hooks/runners/test-critical-hooks.sh
 
 # Harness self-audit (must be 0 Critical / 0 Warnings)
 bash skills/harness-audit/scripts/audit.sh .

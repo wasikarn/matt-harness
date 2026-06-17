@@ -102,11 +102,10 @@ _Personals/kbg-harness_
   ◇ type-design-analyzer           Senior type-design reviewer for encapsulation, invariants, and API contracts. Spawn after writing/modifying types, interfaces, DTOs, models, or schemas crossing module boundaries or public APIs. Grades encapsulation on 1–10. Don't use for: general code review (defer to code-reviewer), security (defer to security-reviewer), performance (defer to kbg:perf), or runtime verification (defer to test-engineer).
   ◇ ux-reviewer                    Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code.
 
-### Hooks (6)
+### Hooks (5)
   ◇ _lib.py                        Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language
   ◇ _lib.sh                        _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc).
   ◇ hooks.json                     (no description)
-  ◇ hooks.json.test.bak            (no description)
   ◇ JOURNAL-SCHEMA.md              Governance Evidence Journal — Schema Contract
   ◇ sensors.json                   (no description)
 
@@ -192,7 +191,6 @@ _Personals/kbg-harness_
 | _lib.py | Pinned — JOURNAL-SCHEMA.md § "source" enum. Do NOT change to a per-language |
 | _lib.sh | _lib.sh — shared protocol for Claude Code hooks (PreToolUse / UserPromptSubmit / etc). |
 | hooks.json | — |
-| hooks.json.test.bak | — |
 | JOURNAL-SCHEMA.md | Governance Evidence Journal — Schema Contract |
 | sensors.json | — |
 
@@ -202,7 +200,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-17T05:29:16Z_
+_Generated: 2026-06-17T06:41:19Z_
 
 ---
 
@@ -298,14 +296,14 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (plugin.json v0.1.3)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash hooks/tests/test-critical-hooks.sh` (201/0 expected)
+- **Tests:** `bash tests/hooks/runners/test-critical-hooks.sh` (201/0 expected)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
 - `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (26 I = schema-rot INFO, non-blocking)
 - `claude plugin validate --strict .` — exit 0
-- `bash hooks/tests/test-critical-hooks.sh` — 201/0 expected
+- `bash tests/hooks/runners/test-critical-hooks.sh` — 201/0 expected
 - `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` — exit 0
 
 ---

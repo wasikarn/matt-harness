@@ -230,7 +230,7 @@ echo "Root: $REPO_ROOT"
 AGENTS=$(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
 SKILLS=$(ls -d "$CLAUDE_DIR/skills"/[!_]*/ 2>/dev/null | wc -l | tr -d ' ')  # [!_]*/ skips _-prefixed scaffolds (e.g. _template) — not real fleet
 COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
-HOOKS=$(find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path "$CLAUDE_DIR/hooks/tests/*" -not -path '*__pycache__*' -not -name '_*' 2>/dev/null | wc -l | tr -d ' ')
+HOOKS=$(find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*' 2>/dev/null | wc -l | tr -d ' ')
 echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
 # Header context, NOT a finding: a plugin cache always exists for the owner who
 # dogfoods the plugin, so this fires every run and is never actionable. An
@@ -885,7 +885,7 @@ if command -v python3 >/dev/null 2>&1; then
   # Collect candidate files. We pass paths via NUL delimiters so a path with
   # spaces (rare in this repo, but cheap to handle) doesn't get mangled.
   EVAL_TARGETS=()
-  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$CLAUDE_DIR/skills" -type f -name 'evals.json' -print0 2>/dev/null)
+  while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/tests/evals/skills" -type f -name 'evals.json' -print0 2>/dev/null)
   while IFS= read -r -d '' f; do EVAL_TARGETS+=("$f"); done < <(find "$REPO_ROOT/scripts" -maxdepth 2 -type f -name 'run-baseline-eval.py' -print0 2>/dev/null)
   if [ "${#EVAL_TARGETS[@]}" -gt 0 ]; then
     while IFS=$'\t' read -r eval_path age_days has_reason reason_text; do

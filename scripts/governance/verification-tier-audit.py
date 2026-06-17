@@ -4,7 +4,7 @@ verification_tier rubric.
 
 For each feature it gathers evidence — a `.scratch/<feature>/verification-trail.md`
 (authoritative if present), an `ACCEPTANCE.md`, eval files under a matching
-`claude/skills/<feature>/`, and references in `claude/hooks/tests/` — then assigns
+`skills/<feature>/` (or `claude/skills/<feature>/` in dotfiles layout), and references in `tests/hooks/runners/` (or `claude/hooks/tests/` in dotfiles layout) — then assigns
 one `verification_tier`:
 
     tdd-provenance | analyzer-pass | no-trail
@@ -61,18 +61,34 @@ def _read_trail_tier(scratch_dir):
     return None
 
 
-def _has_eval_evidence(skill_dir):
-    """True if a matching skill dir carries eval files (an analyzer-pass signal)."""
+def _has_eval_evidence(skill_dir, root):
+    """True if a matching skill dir carries eval files (an analyzer-pass signal).
+
+    Supports both the flat kbg-harness layout (evals live under
+    tests/evals/skills/<feature>/) and the nested dotfiles layout
+    (claude/skills/<feature>/evals/).
+    """
     if not skill_dir.is_dir():
         return False
+    name = skill_dir.name
+    # New flat layout: evals moved out of auto-discovered component dirs.
+    flat_evals = root / "tests" / "evals" / "skills" / name / "evals.json"
+    if flat_evals.is_file():
+        return True
     if (skill_dir / "evals").is_dir():
         return True
     return any("eval" in p.name.lower() for p in skill_dir.rglob("*") if p.is_file())
 
 
 def _referenced_in_hook_tests(root, names):
-    """True if any claude/hooks/tests/ file mentions one of the feature's names."""
-    tests_dir = root / "claude" / "hooks" / "tests"
+    """True if any hook-test runner mentions one of the feature's names.
+
+    Supports both the flat kbg-harness layout (tests/hooks/runners/) and the
+    nested dotfiles layout (claude/hooks/tests/).
+    """
+    tests_dir = root / "tests" / "hooks" / "runners"
+    if not tests_dir.is_dir():
+        tests_dir = root / "claude" / "hooks" / "tests"
     if not tests_dir.is_dir():
         return False
     # Match both the hyphenated slug and its space form: test prose tends to write
@@ -109,7 +125,7 @@ def grade(feature, root):
         notes.append(f"scratch={scratch_dir.name}")
         if (scratch_dir / "ACCEPTANCE.md").is_file():
             notes.append("ACCEPTANCE.md")
-    evals = _has_eval_evidence(skill_dir)
+    evals = _has_eval_evidence(skill_dir, root)
     if evals:
         notes.append("evals")
     tref = _referenced_in_hook_tests(root, scratch_names)

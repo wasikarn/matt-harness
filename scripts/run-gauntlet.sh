@@ -74,7 +74,7 @@ run_layer "plugin-validate" "claude plugin validate --strict ."
 run_layer "audit" "bash skills/harness-audit/scripts/audit.sh ."
 
 if [ "$FAST" -eq 0 ]; then
-  run_layer "critical-hooks" "bash hooks/tests/test-critical-hooks.sh"
+  run_layer "critical-hooks" "bash tests/hooks/runners/test-critical-hooks.sh"
 fi
 
 run_layer "eval-gate" "python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate"

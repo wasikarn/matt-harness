@@ -17,7 +17,7 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 echo
 echo "--- harness-audit fixture runners ---"
 
-_AUDIT_FIXTURES="$(dirname "$0")/../../tests/harness-audit/fixtures"
+_AUDIT_FIXTURES="$(cd "$(dirname "$0")/../../harness-audit/fixtures" && pwd)"
 for _ft in plugin-repo symlink-farm-repo; do
   _rt="$_AUDIT_FIXTURES/$_ft/run-test.sh"
   if [ ! -f "$_rt" ]; then
