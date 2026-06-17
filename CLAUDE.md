@@ -94,6 +94,23 @@ The `.scratch/research/harness-engineering-2026-04.md` 1-pager (cross-referenced
 
 The dispatcher is the deterministic rendering half of the coordination contract; the lead (`/team-build`) is the judgment half. It reads workflow specs (JSON/YAML), validates schema (no cycles / no bad refs / no missing fields), resolves DAG into waves, flags F8.5 fan-out overflow, and emits plans. It does **NOT** spawn LLM agents — agent-typed stages are emitted as "would-spawn" lines that the lead dispatches per the F9 template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant forbids.
 
+### Error-handling convention (`skills/_lib/err.sh`)
+
+Shell scripts under `skills/` use a shared error-handling contract defined in `skills/_lib/err.sh`:
+
+- **`set -euo pipefail`** as the first executable line in every skill script that does I/O.
+- **`err_die <message> [code]`** for unrecoverable failures — always prints `ERROR:` to stderr with a clear reason.
+- **`err_warn <message>`** for non-fatal problems the operator should know about.
+- **`err_usage <message>`** for bad arguments (exits 2).
+- **`require_cmd <command>`** for mandatory dependencies; degrades gracefully for optional ones via `command -v`.
+- **`temp_register <path>`** + automatic `EXIT` trap cleanup for temp files.
+
+**Why this matters:** fail-open bash scripts silently produce green-but-empty audit results (the 2026-06-12 audit found that `globstar` and `set -uo pipefail` without `-e` masked zero-file scans). The contract keeps failures loud and readable without adding speculative retry/circuit-breaker machinery.
+
+**Hook exception:** hooks remain on `set -uo pipefail` (no `-e`) because PreToolUse gates must emit a valid JSON `permissionDecision` and exit 0 even when internal tools fail; a non-zero exit would discard the JSON per the vendor spec. Hooks may still source `err.sh` for `err_warn` and readable stderr, but must never let an unhandled error change the exit code. TaskCompleted hooks use the exit-2 + stderr convention documented above.
+
+**Test coverage:** `tests/skills/_lib/run-tests.sh` guards `err.sh` helpers; add cases there when extending the contract.
+
 ## Commands to develop in this codebase
 
 ### Validation (the "build" equivalent)

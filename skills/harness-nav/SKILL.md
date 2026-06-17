@@ -21,16 +21,17 @@ The model should prefer L2 (low cost, one discovery step) over L3 (multiple read
 
 Run from the **repo root** (the session CWD).
 
-### 1. Quick keyword search across skill descriptions
+### 1. Smart miner (preferred)
+
+`nav.py` searches skills, commands, agents, and hooks by description/frontmatter, ranks matches, and prints a markdown table. Use this as the first L3 probe.
 
 ```bash
-# Find skills covering a domain keyword
-grep -r "^description:" skills/*/SKILL.md | grep -i "<keyword>"
+python3 skills/harness-nav/scripts/nav.py "<keyword-or-phrase>"
 
 # Examples
-grep -r "^description:" skills/*/SKILL.md | grep -i "acceptance"
-grep -r "^description:" skills/*/SKILL.md | grep -i "security"
-grep -r "^description:" skills/*/SKILL.md | grep -i "review"
+python3 skills/harness-nav/scripts/nav.py "acceptance"
+python3 skills/harness-nav/scripts/nav.py "security audit"
+python3 skills/harness-nav/scripts/nav.py "team orchestration"
 ```
 
 ### 2. List all available commands (workflow pipeline commands)
@@ -80,7 +81,8 @@ Need a capability?
        └─ known skill name? → invoke it directly (e.g. kbg:review-pr)
        └─ harness-health shows a relevant sensor? → check the sensor's skill
   └─ L2 miss → mine L3 (this skill):
-       └─ keyword grep on skill descriptions → find nearest match
+       └─ run `nav.py "<phrase>"` for ranked cross-surface matches
+       └─ keyword grep on skill descriptions → secondary confirmation
        └─ BOUNDARY.md grep → broader cross-surface search
        └─ Still nothing? → do it inline (no skill needed), or note the gap
 ```

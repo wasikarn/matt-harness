@@ -35,7 +35,7 @@ command -v python3 >/dev/null 2>&1 || { printf '[%s] WARN: python3 missing — s
 command -v claude  >/dev/null 2>&1 || {
   # failure-mode 1 (design doc §6): agent runtime absent → journal a skipped event so
   # the staleness-notifier surfaces the coverage gap, then exit 0.
-  fields='{"reason":"agent_absent"}'
+  fields='{"reason":"agent_absent","actionable_hint":"install Claude CLI so the inferential-structural-judge agent can run at SessionEnd"}'
   ( journal_append "$HOOK_ID" "inferential_structural_verdict_skipped" "$fields" >/dev/null ) || true
   exit 0
 }
@@ -64,7 +64,7 @@ fi
 if [ "$SESSION_TOKENS" -ge 25000 ]; then
   # failure-mode 5: budget gate. 5k headroom preserved for session-summary.sh
   # which runs on the same lifecycle and has the same budget contract.
-  fields='{"reason":"budget","session_tokens_used":'"$SESSION_TOKENS"',"cap":25000}'
+  fields='{"reason":"budget","session_tokens_used":'"$SESSION_TOKENS"',"cap":25000,"actionable_hint":"session is near the token budget; run a manual structural review or compact context before the next large change"}'
   ( journal_append "$HOOK_ID" "inferential_structural_verdict_skipped" "$fields" >/dev/null ) || true
   exit 0
 fi

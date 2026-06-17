@@ -29,6 +29,7 @@ ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 features=0 tdd=0 analyzer=0 notrail=0 gaps=0
 gap_slugs=""
+gap_features_json="[]"
 
 while IFS= read -r f; do
   [ -n "$f" ] || continue
@@ -49,11 +50,17 @@ while IFS= read -r f; do
     no-trail)
       notrail=$((notrail + 1))
       # a no-trail with no named reason is the one fully-reliable verification gap
-      if [ "$blank_reason" = 1 ]; then gaps=$((gaps + 1)); gap_slugs="${gap_slugs:+$gap_slugs, }$slug"; fi
+      if [ "$blank_reason" = 1 ]; then
+        gaps=$((gaps + 1))
+        gap_slugs="${gap_slugs:+$gap_slugs, }$slug"
+        gap_features_json=$(printf '%s' "$gap_features_json" | jq --arg s "$slug" '. + [$s]')
+      fi
       ;;
     *)
       # malformed/undeclared tier — also a gap (the trail exists but says nothing)
-      gaps=$((gaps + 1)); gap_slugs="${gap_slugs:+$gap_slugs, }$slug"
+      gaps=$((gaps + 1))
+      gap_slugs="${gap_slugs:+$gap_slugs, }$slug"
+      gap_features_json=$(printf '%s' "$gap_features_json" | jq --arg s "$slug" '. + [$s]')
       ;;
   esac
 done < <(find "$ROOT/.scratch" -maxdepth 2 -type f -name verification-trail.md 2>/dev/null)
@@ -93,8 +100,8 @@ fi
 # terminate this SessionEnd hook — its stderr still surfaces, but the gate must
 # never block session end. stdout (the minted id) is discarded; this hook's
 # stdout is the human-facing advisory above.
-fields=$(printf '{"features":%d,"tdd_provenance":%d,"analyzer_pass":%d,"no_trail":%d,"gaps":%d,"exit_reason":"%s"}' \
-  "$features" "$tdd" "$analyzer" "$notrail" "$gaps" "$exit_reason")
+fields=$(printf '{"features":%d,"tdd_provenance":%d,"analyzer_pass":%d,"no_trail":%d,"gaps":%d,"exit_reason":"%s","gap_features":%s}' \
+  "$features" "$tdd" "$analyzer" "$notrail" "$gaps" "$exit_reason" "$gap_features_json")
 ( journal_append "$HOOK_ID" "verification_summary" "$fields" >/dev/null ) || true
 
 exit 0

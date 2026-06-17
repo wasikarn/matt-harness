@@ -2,7 +2,10 @@
 # inventory-witness.sh — snapshot the current boundary map for drift detection.
 # Generates a canonical BOUNDARY.md that can be committed and diff'd in CI.
 # Usage: bash inventory-witness.sh [<output-path>]
-set -uo pipefail
+set -euo pipefail
+
+# shellcheck source=../../_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT="${1:-claude/BOUNDARY.md}"

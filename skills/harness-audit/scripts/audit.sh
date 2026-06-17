@@ -2,7 +2,7 @@
 # audit.sh — automated health check for the custom Claude Code ecosystem.
 # Usage: bash audit.sh [<repo-root>] [--plugin-cache <path>]
 # Exit code = number of findings (0 = clean).
-set -uo pipefail
+set -euo pipefail
 # Hooks moved into subdirs (gates/, advisory/, lifecycle/, …); the per-hook
 # checks (#3/#11/#29) and the Fleet count must recurse, not glob top-level —
 # else they silently scan 0 of ~36 real hooks (green-because-empty).
@@ -126,21 +126,18 @@ PY
   exit 0
 fi
 
-# Shared frontmatter helpers (sourced, not executed). Same `_lib` is used by
-# inventory.sh / inventory-boundary.sh — see claude/skills/_lib/fm.sh for the
-# full surface (fm_get, fm_has, fm_in_fm_section, fm_hook_desc,
-# SKIP_SCAFFOLD_GLOB).
+# Source the shared libraries.
 # shellcheck source=../../_lib/fm.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
+# shellcheck source=../../_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
 
 # Fail loud (Rule 12): if the resolved root holds none of the fleet dirs, root
 # resolution failed — error out instead of a false-clean "0 artifacts" pass. A
 # post-extraction dotfiles root legitimately has only hooks/; that still counts.
 if [ ! -d "$CLAUDE_DIR/agents" ] && [ ! -d "$CLAUDE_DIR/skills" ] && \
    [ ! -d "$CLAUDE_DIR/commands" ] && [ ! -d "$CLAUDE_DIR/hooks" ]; then
-  echo "FATAL: no harness fleet (agents/skills/commands/hooks) under: $CLAUDE_DIR" >&2
-  echo "Pass the repo root explicitly: bash audit.sh <repo-root>" >&2
-  exit 1
+  err_die "no harness fleet (agents/skills/commands/hooks) under: $CLAUDE_DIR — pass the repo root explicitly: bash audit.sh <repo-root>"
 fi
 
 CRIT_COUNT=0
@@ -221,17 +218,25 @@ info() { INFO_COUNT=$((INFO_COUNT + 1)); echo "  INFO I${INFO_COUNT}: $1"; }
 
 # ── helpers (fm_get / fm_has / SKIP_SCAFFOLD_GLOB come from _lib/fm.sh) ──
 
+# Run a find-like command and return its match count; if the starting directory
+# is missing (find exits 1) we still get "0" instead of tripping set -e/pipefail.
+safe_count() {
+  local n
+  n=$({ "$@" 2>/dev/null || true; } | wc -l | tr -d ' ')
+  printf '%s' "$n"
+}
+
 # ── main ─────────────────────────────────────────────────────────────
 
 echo "=== Skill Audit Report ==="
 echo "Root: $REPO_ROOT"
 
 # 1. Fleet count
-AGENTS=$(ls "$CLAUDE_DIR/agents"/*.md 2>/dev/null | wc -l | tr -d ' ')
-SKILLS=$(ls -d "$CLAUDE_DIR/skills"/[!_]*/ 2>/dev/null | wc -l | tr -d ' ')  # [!_]*/ skips _-prefixed scaffolds (e.g. _template) — not real fleet
-COMMANDS=$(ls "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
-HOOKS=$(find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*' 2>/dev/null | wc -l | tr -d ' ')
-echo "Fleet: $AGENTS agents, $SKILLS skills, $COMMANDS commands, $HOOKS hooks"
+AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
+SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills')
+COMMANDS=$(safe_count find "$CLAUDE_DIR/commands" -maxdepth 1 -name '*.md' -type f)
+HOOKS=$(safe_count find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*')
+echo "Fleet: ${AGENTS:-0} agents, ${SKILLS:-0} skills, ${COMMANDS:-0} commands, ${HOOKS:-0} hooks"
 # Header context, NOT a finding: a plugin cache always exists for the owner who
 # dogfoods the plugin, so this fires every run and is never actionable. An
 # always-on non-actionable "finding" is noise in the findings channel — print it
@@ -262,32 +267,36 @@ for d in "$CLAUDE_DIR/skills"/*/; do
 done
 
 # 3. Symlink integrity — hooks (recurse: hooks live in gates/, advisory/, …)
-for f in "$CLAUDE_DIR/hooks"/**/*; do
-  [ -f "$f" ] || continue
-  case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
-  name=$(basename "$f")
-  # Skip hook libraries (sourced by hooks, not registered as hooks themselves).
-  # install.sh's *.{sh,py} glob WILL symlink these so hooks can `source` them
-  # at runtime via `$(dirname "$0")/_lib.sh` — but the audit shouldn't expect
-  # them in settings.json. Mirrors the _* scaffold rule used in skills/.
-  # *.md = co-located docs (JOURNAL-SCHEMA.md, the evidence-journal contract) —
-  # not registrable hooks; install.sh's {sh,py} glob never symlinks them.
-  # *.json = plugin hook registry (hooks/hooks.json), not a hook script.
-  # *.bak = editor/backup residue (e.g. hooks.json.test.bak from a hook-test
-  # session), not a real hook — should not be symlinked and not in F1.
-  case "$name" in _*.sh|_*.py|*.md|*.json|*.bak) continue;; esac
-  # Plugin-mode hooks are wired in hooks/hooks.json and resolved at runtime via
-  # ${CLAUDE_PLUGIN_ROOT}; they are intentionally NOT symlinked into ~/.claude.
-  # Distinguishing mark: present in hooks.json but absent from settings.json,
-  # OR present in the kbg@kobig plugin cache (delivery model is plugin-enable,
-  # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
-  if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
-     && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
-  if is_plugin_delivered hooks "$name"; then continue; fi
-  if [ ! -L "$HOME/.claude/hooks/$name" ]; then
-    crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
-  fi
-done
+# globstar with set -e exits if the directory is empty and the pattern expands
+# literally to itself; use find so empty/minimal fixtures don't kill the audit.
+if [ -d "$CLAUDE_DIR/hooks" ]; then
+  while IFS= read -r -d '' f; do
+    [ -f "$f" ] || continue
+    case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
+    name=$(basename "$f")
+    # Skip hook libraries (sourced by hooks, not registered as hooks themselves).
+    # install.sh's *.{sh,py} glob WILL symlink these so hooks can `source` them
+    # at runtime via `$(dirname "$0")/_lib.sh` — but the audit shouldn't expect
+    # them in settings.json. Mirrors the _* scaffold rule used in skills/.
+    # *.md = co-located docs (JOURNAL-SCHEMA.md, the evidence-journal contract) —
+    # not registrable hooks; install.sh's {sh,py} glob never symlinks them.
+    # *.json = plugin hook registry (hooks/hooks.json), not a hook script.
+    # *.bak = editor/backup residue (e.g. hooks.json.test.bak from a hook-test
+    # session), not a real hook — should not be symlinked and not in F1.
+    case "$name" in _*.sh|_*.py|*.md|*.json|*.bak) continue;; esac
+    # Plugin-mode hooks are wired in hooks/hooks.json and resolved at runtime via
+    # ${CLAUDE_PLUGIN_ROOT}; they are intentionally NOT symlinked into ~/.claude.
+    # Distinguishing mark: present in hooks.json but absent from settings.json,
+    # OR present in the kbg@kobig plugin cache (delivery model is plugin-enable,
+    # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
+    if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
+       && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
+    if is_plugin_delivered hooks "$name"; then continue; fi
+    if [ ! -L "$HOME/.claude/hooks/$name" ]; then
+      crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
+    fi
+  done < <(find "$CLAUDE_DIR/hooks" -type f -not -path '*__pycache__*' -print0 2>/dev/null)
+fi
 
 # 3b. Symlink integrity — agents and commands.
 # Regression guard: 14 agents (and at least one command) were committed to the

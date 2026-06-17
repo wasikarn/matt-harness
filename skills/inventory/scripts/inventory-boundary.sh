@@ -2,16 +2,15 @@
 # inventory-boundary.sh — canonical boundary map of agents, skills, and hooks.
 # Extends inventory.sh with tool grants, mutation capability, and routing metadata.
 # Usage: bash inventory-boundary.sh [<path>]
-set -uo pipefail
+set -euo pipefail
 
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source the shared frontmatter library (claude/skills/_lib/fm.sh). The
-# 4 in-line parsers this consolidates — extract_tools, extract_agent,
-# extract_auto_invoke, plus the inline `awk /^description:/` blocks — are
-# all replaced by fm_get / fm_has with a shared contract.
+# Source the shared libraries.
 # shellcheck source=../../_lib/fm.sh
 . "$SCRIPT_DIR/../../_lib/fm.sh"
+# shellcheck source=../../_lib/err.sh
+. "$SCRIPT_DIR/../../_lib/err.sh"
 
 # extract_auto_invoke is NOT a key reader — it checks for the presence of
 # `disable-model-invocation:` and inverts the result (auto = absent,
