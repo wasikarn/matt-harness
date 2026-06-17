@@ -478,9 +478,7 @@ def cmd_search(args: argparse.Namespace) -> int:
 
 def cmd_status(_args: argparse.Namespace) -> int:
     """Show how many ideate runs have been captured."""
-    if not STATE_DIR.exists():
-        print(f"State directory does not exist yet: {STATE_DIR}")
-        return 0
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
     files = sorted(STATE_DIR.glob("*.md"))
     print(f"Captured ideate runs: {len(files)}")
     print(f"State directory: {STATE_DIR}")
