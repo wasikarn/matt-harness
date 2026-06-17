@@ -200,7 +200,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-17T08:34:56Z_
+_Generated: 2026-06-17T08:46:26Z_
 
 ---
 
@@ -278,6 +278,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in a `/
 ## Cross-references
 
 - **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
+- **[@0xCodez 14-step harness roadmap](https://x.com/0xCodez/article/2066867539305459732)** — external framing (2026-06-16): harness → loop → self-improving system. Useful for onboarding; kbg keeps the 3-floor vocabulary but rejects the article's L3/L4 unattended-loop conclusion per ADR 0002. Keep/discard analysis is in [[0xcodez-harness-roadmap]] memory.
 
 ---
 
