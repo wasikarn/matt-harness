@@ -7,7 +7,7 @@
 #
 # Explicit override: pass a path as $1 to scan ONLY that path
 # (useful for inspecting dotfiles source directly).
-set -uo pipefail
+set -euo pipefail
 
 # ── helpers ──────────────────────────────────────────────────────────
 #
@@ -17,9 +17,11 @@ set -uo pipefail
 # the single-line description value, and fm_hook_desc for hook comments
 # (not YAML frontmatter — different shape, kept separate in the lib).
 
-# Source the shared frontmatter library.
+# Source the shared libraries.
 # shellcheck source=../../_lib/fm.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
+# shellcheck source=../../_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
 
 # ── per-section printer ──────────────────────────────────────────────
 
@@ -109,8 +111,7 @@ echo "_Legend: ◇ plugin-delivered / project-local_"
 # Explicit override mode
 if [ -n "${1:-}" ]; then
   if [ ! -d "$1" ]; then
-    echo "✗ not a directory: $1" >&2
-    exit 1
+    err_die "not a directory: $1"
   fi
   # Host-portable: render the label as `Source: <parent_bn>/<basename>` so
   # the artifact doesn't leak the host install dir. print_source still

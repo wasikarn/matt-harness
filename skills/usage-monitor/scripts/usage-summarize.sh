@@ -11,7 +11,12 @@
 # Output: a markdown table (per-agent calls + input/output tokens + parent)
 # plus a totals row. Stdout only — no writes.
 
-set -uo pipefail
+set -euo pipefail
+
+# shellcheck source=../../_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+
+require_cmd jq
 
 CWD="${CLAUDE_PROJECT_DIR:-$PWD}"
 SLUG=$(echo "$CWD" | sed 's|^/||; s|/|-|g' | tr '[:upper:]' '[:lower:]' | cut -c1-80)
@@ -29,7 +34,7 @@ while [ $# -gt 0 ]; do
       sed -n '2,12p' "$0" | sed 's/^# *//'
       exit 0
       ;;
-    *) echo "usage-summarize: unknown arg: $1" >&2; exit 2 ;;
+    *) err_usage "usage-summarize [--last N|--all|--project-slug SLUG]" ;;
   esac
 done
 
