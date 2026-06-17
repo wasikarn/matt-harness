@@ -273,7 +273,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `skills/` — 28 workflow skills
 - `commands/` — 11 slash commands
 - `hooks/` — 38 hook scripts
-- `output-styles/` — 1 TECH-LEAD-THAI
+- `output-styles/` — 1 SENIOR-DEV
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context

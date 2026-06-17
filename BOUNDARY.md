@@ -197,10 +197,10 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
+| SENIOR-DEV | Senior engineering lead execution style — direct, opinionated, execution-first |
 
 ---
-_Generated: 2026-06-17T16:21:02Z_
+_Generated: 2026-06-17T16:50:39Z_
 
 ---
 
@@ -292,7 +292,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `skills/` — 28 workflow skills
 - `commands/` — 11 slash commands
 - `hooks/` — 38 hook scripts
-- `output-styles/` — 1 TECH-LEAD-THAI
+- `output-styles/` — 1 SENIOR-DEV
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context

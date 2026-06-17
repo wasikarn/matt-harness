@@ -99,7 +99,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
 | **Hooks** | 43 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
-| **Output Style** | 1 | `TECH-LEAD-THAI` — Thai-English code-switched register |
+| **Output Style** | 1 | `SENIOR-DEV` — direct senior engineering lead register |
 | **Theme** | 1 | `catppuccin-mocha` |
 
 ### Spotlight Commands
