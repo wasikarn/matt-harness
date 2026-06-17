@@ -197,10 +197,10 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| SENIOR-DEV | Senior engineering lead execution style — direct, opinionated, execution-first |
+| SENIOR-DEV | Plugin-default senior-engineering lead register: lead with conclusions, state tradeoffs, prefer plain English, use structure only when it carries information. |
 
 ---
-_Generated: 2026-06-17T16:50:39Z_
+_Generated: 2026-06-17T17:23:05Z_
 
 ---
 

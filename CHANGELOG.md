@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.60] — 2026-06-18
+
+Harden `SENIOR-DEV` output style against official best practices. Adds explicit format rules, scope boundaries, and a model-facing description while keeping the senior lead register.
+
+### Changed
+
+- **`SENIOR-DEV` description is now model-facing.** States the style's job as a register directive: lead with conclusions, state tradeoffs, prefer plain English, structure only when it carries information.
+- **Added `Format` section.** Table-driven rules for one-line answers, two-option comparisons, ≥3-item tables, numbered sequences, bold caveats, and nested bullets. Structure must carry information, not fill space.
+- **Added `Scope` section.** Clarifies that this file governs voice/register only and does not override METHODOLOGY, CLAUDE.md, or agent-specific instructions.
+
 ## [0.2.59] — 2026-06-18
 
 Output-style hardening + audit alignment. Renames `TECH-LEAD-THAI` to `SENIOR-DEV`, makes it the plugin-default output style, and aligns the audit suite with the official Claude Code hook/tool schemas.
