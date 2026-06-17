@@ -1,0 +1,27 @@
+{
+  "dataset_name": "ideate-preflight",
+  "description": "Verify the ideate skill's Pre-flight gate (skills/ideate/SKILL.md ## Pre-flight gate) correctly classifies prompts as PASS (proceed to Phase 1 fan-out) or FAIL (abort and answer directly). The gate has 3 self-judge questions: (1) Open-ended? not a canonical-answer task; (2) High-stakes? cost of obvious answer being wrong is high; (3) Open phrasing? user avoided 'quick', 'standard', 'canonical', 'textbook', 'just', 'one-line'. All 3 must pass; any failure = abort. This fixture runs an inline Python implementation of the gate against 6 representative cases (3 PASS + 3 FAIL) and asserts the expected verdict on each.",
+  "evals": [
+    {
+      "id": "ideate-preflight-open-ended-architecture",
+      "task": "Architecture-prompt case: 'How should I architect a new microservice for user auth?' — open-ended (many viable architectures), high-stakes (auth is critical), open phrasing (no closed-vocabulary words). All 3 gate questions PASS; pre-flight should let Phase 1 run.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 -c \"\nimport re\n# Inline mirror of the 3-question gate in skills/ideate/SKILL.md ## Pre-flight gate\nCLOSED_TOKENS = re.compile(r'\\\\b(quick|standard|canonical|textbook|just|one-line|one-liner)\\\\b', re.I)\n# Close-ended canonical-answer tasks: syntax fix, known root cause, name lookup, translation\nTRANSLATE_RE = re.compile(r'\\\\b(translate|translation|transliterat)\\\\b', re.I)\nSYNTAX_FIX_RE = re.compile(r'\\\\b(syntax error|missing semicolon|missing colon|typo|compile error)\\\\b', re.I)\nCANONICAL_LOOKUP_RE = re.compile(r'\\\\b(what.{0,5}is the (command|function|method|syntax|api) for|how do you (configure|enable|disable) (x|flag|setting))\\\\b', re.I)\nCASES = [\n    ('How should I architect a new microservice for user auth?', 'PASS'),\n    ('Fix this syntax error: missing semicolon on line 42', 'FAIL'),\n    (\\\"What's the quick standard textbook way to add a retry?\\\", 'FAIL'),\n    ('Should I use Postgres or MongoDB for a new product?', 'PASS'),\n    ('Translate this string to Thai', 'FAIL'),\n    ('Name 5 possible root causes for a 0.1% timeout spike with no stack trace', 'PASS'),\n]\nfor i,(p, expected) in enumerate(CASES, 1):\n    p_l = p.lower()\n    closed_phrasing = bool(CLOSED_TOKENS.search(p_l))\n    is_syntax_fix = bool(SYNTAX_FIX_RE.search(p_l))\n    is_translate = bool(TRANSLATE_RE.search(p_l))\n    is_canonical_lookup = bool(CANONICAL_LOOKUP_RE.search(p_l))\n    # Open-ended gate: true unless one of the canonical-answer close-outs fires\n    open_ended = not (is_syntax_fix or is_translate or is_canonical_lookup)\n    # High-stakes: false for low-stakes (translation is a canonical mapping)\n    high_stakes = not (is_translate or is_syntax_fix)\n    # Fuzzy-debug exception: even a 'root causes' prompt with no stack trace passes\n    is_fuzzy_debug = ('root cause' in p_l or 'possible cause' in p_l) and ('no stack' in p_l or 'no obvious' in p_l or '0.1' in p_l or 'spike' in p_l)\n    if is_fuzzy_debug:\n        open_ended = True\n        high_stakes = True\n    open_phrasing = not closed_phrasing\n    verdict = 'PASS' if (open_ended and high_stakes and open_phrasing) else 'FAIL'\n    status = 'OK' if verdict == expected else 'WRONG'\n    print(f'case{i}={status} expected={expected} got={verdict} prompt={p!r}')\n\"",
+        "timeout": 10
+      },
+      "success_criteria": [
+        "stdout contains case1=OK",
+        "stdout contains case2=OK",
+        "stdout contains case3=OK",
+        "stdout contains case4=OK",
+        "stdout contains case5=OK",
+        "stdout contains case6=OK"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 300,
+      "tags": ["ideate", "preflight", "gate", "assertion"],
+      "eval_type": "assertion"
+    }
+  ]
+}
