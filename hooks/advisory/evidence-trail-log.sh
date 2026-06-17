@@ -23,4 +23,10 @@ URL=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.url // .query // empty' 2>/dev/null)
 [ -z "$URL" ] && exit 0
 
 hook_audit_log evidence-trail "$TOOL" "$URL"
+
+# Mirror into the unified governance journal (JOURNAL-SCHEMA: the journal
+# replaces the scatter of per-hook TSV logs). Dual-write — governance-summary.py
+# still reads the .log. Subshell + `|| true` contains journal_append's exit-2.
+( journal_append "$HOOK_ID" "evidence_trail" \
+    "$(jq -nc --arg tool "$TOOL" --arg url "$URL" '{tool:$tool,url:$url}')" >/dev/null 2>&1 ) || true
 exit 0

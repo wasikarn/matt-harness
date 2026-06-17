@@ -73,6 +73,13 @@ printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
   "$REASON" \
   "$EXCERPT" >> "$LOG"
 
+# Mirror into the unified governance journal (JOURNAL-SCHEMA: the journal
+# replaces the scatter of per-hook TSV logs). Dual-write — governance-summary.py
+# still reads the .log. Subshell + `|| true` contains journal_append's exit-2.
+( journal_append "$HOOK_ID" "auto_mode_denial" \
+    "$(jq -nc --arg tool "$TOOL" --arg reason "$REASON" --arg excerpt "$EXCERPT" \
+       '{tool:$tool,action:"denied",reason:$reason,excerpt:$excerpt}')" >/dev/null 2>&1 ) || true
+
 # Emit desktop notification via terminalSequence (OSC 9 — iTerm2, Terminal.app, etc.)
 # Requires Claude Code 2.1.141+ to route terminalSequence without a controlling TTY.
 NOTIFY_TOOL=$(printf '%s' "$TOOL" | sed 's/"/\\"/g')

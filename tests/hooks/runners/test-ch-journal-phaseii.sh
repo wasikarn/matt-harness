@@ -369,3 +369,31 @@ if [ "$N_EVT_BB" = 1 ] && printf '%s' "$BB_STDERR" | grep -q "WARNING.*depth-cap
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s n_evt=%s (want 1) stderr=%s\n' "_lib.py:_redact" "$N_EVT_BB" "$BB_STDERR" >&2
 fi
+
+# (CC) Legacy *-log audit hooks mirror into the governance journal (v0.2.51 —
+# JOURNAL-SCHEMA: journal replaces scattered TSV logs). bypass-audit-log fires
+# only when a bypass is in effect → assert it dual-writes event=hook_bypass with
+# hook==name (so the staleness monitor can match it) + the tool field.
+: > "$JPATH"
+printf '{"tool_name":"Bash","tool_input":{"command":"echo hi"}}' | \
+  CLAUDE_JOURNAL_PATH="$JPATH" CLAUDE_DISABLED_HOOKS="some-other-hook" \
+  bash "$HOOKS/advisory/bypass-audit-log.sh" >/dev/null 2>&1
+CC_HOOK=$(grep '"event":"hook_bypass"' "$JPATH" | head -1 | jq -r '.hook')
+CC_TOOL=$(grep '"event":"hook_bypass"' "$JPATH" | head -1 | jq -r '.fields.tool')
+if [ "$CC_HOOK" = "bypass-audit-log" ] && [ "$CC_TOOL" = "Bash" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s dual-writes journal (event=hook_bypass, hook==name) when bypass active\n' "bypass-audit-log"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s no/bad journal entry: hook=%s tool=%s\n' "bypass-audit-log" "$CC_HOOK" "$CC_TOOL" >&2
+fi
+
+# (CC2) Distinguishing: the dual-write must sit AFTER the bypass gate — a
+# standard (non-bypass) session journals NOTHING. Guards against hoisting
+# journal_append above the early-exit.
+: > "$JPATH"
+printf '{"tool_name":"Bash","tool_input":{"command":"echo hi"}}' | \
+  CLAUDE_JOURNAL_PATH="$JPATH" bash "$HOOKS/advisory/bypass-audit-log.sh" >/dev/null 2>&1
+if [ ! -s "$JPATH" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s standard session journals nothing (dual-write is below the bypass gate)\n' "bypass-audit-log"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s journaled in a standard session (should be silent): %s\n' "bypass-audit-log" "$(cat "$JPATH")" >&2
+fi

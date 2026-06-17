@@ -90,4 +90,11 @@ mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SID" "$GT_COUNT" "${TOOLS_CSV:-none}" "$VERDICT" "$SNIPPET" >> "$LOG"
 
+# Mirror into the unified governance journal (JOURNAL-SCHEMA: the journal
+# replaces the scatter of per-hook TSV logs). Dual-write — governance-summary.py
+# still reads the .log. Subshell + `|| true` contains journal_append's exit-2.
+( journal_append "$HOOK_ID" "fabrication_verdict" \
+    "$(jq -nc --argjson gt "${GT_COUNT:-0}" --arg tools "${TOOLS_CSV:-none}" --arg verdict "$VERDICT" --arg snippet "$SNIPPET" \
+       '{gt_count:$gt,tools:$tools,verdict:$verdict,snippet:$snippet}')" >/dev/null 2>&1 ) || true
+
 exit 0

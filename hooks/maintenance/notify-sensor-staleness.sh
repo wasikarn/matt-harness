@@ -84,11 +84,14 @@ def is_stale(s):
 
     null days_silent (never journaled) is treated as stale per Böckeler L553 —
     the absence of a sensor firing is a coverage gap, not a quality signal —
-    BUT only for sensors observable to this monitor. The monitor reads the
-    governance journal; sensors that emit context or log to a separate sink
-    (observable:false) never write it, so journal-absence is unmeasurable for
-    them, not death. Flagging those produced false 'silent never' alarms (e.g.
-    iron-rule-reminder fires every risky prompt yet never journals)."""
+    BUT only for observable:true sensors (those expected to fire on a regular
+    cadence). observable:false marks sensors where journal-silence is benign:
+    either they never write the journal (nudges, session/usage/backup hooks —
+    e.g. iron-rule-reminder fires every risky prompt yet never journals), or
+    they journal only on event-dependent triggers where 'never fired' means 'no
+    such event', not a broken sensor (the *-log audit hooks). Flagging those
+    produced false 'silent never' alarms; they are still measured once they
+    actually fire (the days_silent > thr path below ignores observable)."""
     if not s.get("enabled", True):
         return False
     thr = s.get("max_silent_days")

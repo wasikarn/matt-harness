@@ -66,4 +66,11 @@ printf '%s\t%s\t%s\t[%s]\t%s\t%s\n' \
   "$TOOL" \
   "$EXCERPT" >> "$HOME/.claude/bypass-audit.log"
 
+# Mirror into the unified governance journal (JOURNAL-SCHEMA: the journal
+# replaces the scatter of per-hook TSV logs). Dual-write — governance-summary.py
+# still reads the .log. Subshell + `|| true` contains journal_append's exit-2.
+( journal_append "$HOOK_ID" "hook_bypass" \
+    "$(jq -nc --arg profile "$PROFILE_VAL" --arg disabled "${DISABLED:-none}" --arg tool "$TOOL" --arg excerpt "$EXCERPT" \
+       '{profile:$profile,disabled:$disabled,tool:$tool,excerpt:$excerpt}')" >/dev/null 2>&1 ) || true
+
 exit 0
