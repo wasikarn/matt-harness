@@ -65,9 +65,9 @@ Each dimension is 1-5 (not 1-10) because the agent's prompt needs four coarse bu
 |---|---|---|
 | **1-3** | `accept` | Journal only. The session is silently green. `kbg:harness-health` shows the verdict count, never the rationale. |
 | **4-6** | `flag` | Journal + the verdict surfaces in `kbg:harness-health` (or the new `kbg:harness-health` command) with the rationale. The operator is *informed*, not interrupted. |
-| **7-10** | `escalate` | Journal + the verdict surfaces prominently with the rationale *and* is mirrored to the next SessionStart's `additionalContext` block, so the next session's first prompt carries "the previous session escalated on X." No push notification, no PagerDuty — the *user-facing surface* is the next-session context, not an interrupt. |
+| **7-10** | `escalate` | Journal + the verdict surfaces prominently with the rationale in `kbg:harness-health`. The next-session auto-mirror (into SessionStart `additionalContext`, so the next session's first prompt carries "the previous session escalated on X") is a deferred follow-up — see `.claude/tasks/inferential-structural-judge-escalation-mirror.md` and Q10 below. No push notification, no PagerDuty. |
 
-The escalation channel is *the next session*, not the current one: a model cannot fix its own session-end problem, and interrupting a finished session is meaningless. This is the symmetric counterpart of `verification-gate.sh`'s "pure SENSOR" stance (per its own header) — the FB cell journals by default and escalates into the next-session FF cell only when warranted.
+The *intended* escalation channel is *the next session*, not the current one: a model cannot fix its own session-end problem, and interrupting a finished session is meaningless. (Until the mirror lands per Q10, escalate-tier verdicts are read from `kbg:harness-health`.) This is the symmetric counterpart of `verification-gate.sh`'s "pure SENSOR" stance (per its own header) — the FB cell journals by default and escalates into the next-session FF cell only when warranted.
 
 ## 4. LLM-judge-circularity mitigations (resolves Q6)
 

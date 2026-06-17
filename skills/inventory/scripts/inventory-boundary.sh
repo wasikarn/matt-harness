@@ -52,7 +52,7 @@ print_boundary() {
       [ -f "$f" ] || continue
       local name desc tools mutates
       name=$(basename "$f" .md)
-      desc=$(fm_get "$f" description)
+      desc=$(fm_get "$f" description --block)
       tools=$(fm_get "$f" tools)
       mutates=$(can_mutate "$tools")
       printf "| %s | %s | %s | %s |\n" "$name" "${desc:-—}" "${tools:-inherit-all}" "$mutates"
@@ -71,7 +71,7 @@ print_boundary() {
       name=$(basename "$d")
       local skill_file="$d/SKILL.md"
       [ -f "$skill_file" ] || continue
-      desc=$(fm_get "$skill_file" description)
+      desc=$(fm_get "$skill_file" description --block)
       agent=$(fm_get "$skill_file" agent)
       invoke=$(extract_auto_invoke "$skill_file")
       printf "| %s | %s | %s | %s |\n" "$name" "${desc:-—}" "${agent:-inline}" "$invoke"
@@ -105,7 +105,7 @@ print_boundary() {
       [ -f "$f" ] || continue
       local name desc
       name=$(basename "$f" .md)
-      desc=$(fm_get "$f" description)
+      desc=$(fm_get "$f" description --block)
       printf "| %s | %s |\n" "$name" "${desc:-—}"
     done
   fi
