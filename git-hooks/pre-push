@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# pre-push — run the full parallel validation gauntlet before allowing push.
+#
+# This is the heavy gate. It runs plugin-validate, self-audit, the full
+# critical-hooks behavioral suite, and the eval gate (all datasets + all
+# regressions) in parallel. Failures are reported with log tails.
+#
+# For a faster local check on every commit, see git-hooks/pre-commit.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
+
+if [ ! -x "$GAUNTLET" ]; then
+  echo "pre-push: gauntlet script not found or not executable: $GAUNTLET" >&2
+  exit 1
+fi
+
+echo "pre-push: running full validation gauntlet..."
+bash "$GAUNTLET"

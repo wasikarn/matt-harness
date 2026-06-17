@@ -7,17 +7,13 @@
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
 #   2. **/*.json          → jq -e (parses cleanly)
-#   3. {agents,skills,commands,hooks}/* staged → harness-audit ecosystem
+#   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only (broken symlink,
 #      missing frontmatter, name/dir mismatch, syntax error). Warnings (drift,
 #      style) are surfaced but do NOT block — often intentional mid-edit.
-#   4. hooks/*.{sh,py} staged → critical-hooks behavioral smoke tests
-#      (the enforcement gates + journal/observability scripts), asserting each
-#      still emits its expected permissionDecision / output. Catches logic
-#      regressions that bash -n / shellcheck can't: a gate that stops denying
-#      but still parses cleanly. The suite depends on scripts/ (governance-
-#      summary, verification-tier-audit, recursive-improve-observe), which live
-#      in this repo — so it runs green here.
+#   4. eval fixtures staged → run only the affected eval fixtures/datasets
+#      (determined by scripts/select-affected-fixtures.py). The full eval gate
+#      and the critical-hooks suite are left to the pre-push gauntlet.
 #
 # Wired via: git config core.hooksPath git-hooks
 # Bypass:    git commit --no-verify  (use only when you know why)
@@ -60,7 +56,7 @@ fi
 ecosystem_staged=0
 for f in "${STAGED[@]}"; do
   case "$f" in
-    agents/*|skills/*|commands/*|hooks/*)
+    agents/*|skills/*|commands/*|hooks/*|scripts/*)
       ecosystem_staged=1; break ;;
   esac
 done
@@ -87,28 +83,56 @@ if [ "$ecosystem_staged" -eq 1 ]; then
   fi
 fi
 
-# 4. Behavioral gates — when a hook script changes, run the enforcement-gate
-#    smoke tests. bash -n / shellcheck above catch syntax + style, but NOT a
-#    logic regression that silently stops a gate from denying. The suite
-#    asserts each gate's emitted permissionDecision, catching that class.
-#    Scoped to hook edits; exits non-zero on any failure → fail loud.
-hooks_staged=0
-for f in "${STAGED[@]}"; do
-  case "$f" in
-    hooks/*.sh|hooks/*.py) hooks_staged=1; break ;;
-  esac
-done
+# 4. Affected eval fixtures — when a plugin-delivered surface changes, run
+#    only the regression fixtures / datasets that reference it. The full eval
+#    gate (all datasets + all regressions) and the critical-hooks behavioral
+#    suite are intentionally deferred to the pre-push gauntlet; they are too
+#    slow to run on every commit (~5 minutes serial, ~3 minutes parallel).
+selector="$ROOT/scripts/select-affected-fixtures.py"
+# shellcheck disable=SC2064
+eval_tmp=""
+if [ -f "$selector" ] && [ -x "$selector" ]; then
+  eval_staged=0
+  for f in "${STAGED[@]}"; do
+    case "$f" in
+      agents/*|skills/*|commands/*|hooks/*|scripts/*|eval/*|.claude-plugin/*)
+        eval_staged=1; break ;;
+    esac
+  done
 
-if [ "$hooks_staged" -eq 1 ]; then
-  TESTS="$ROOT/hooks/tests/test-critical-hooks.sh"
-  if [ -f "$TESTS" ]; then
-    if ! test_out="$(bash "$TESTS" 2>&1)"; then
-      printf '%s\n' "$test_out" | grep -E '❌|FAIL' >&2
-      echo "  critical-hooks tests failed — run: bash $TESTS" >&2
+  if [ "$eval_staged" -eq 1 ]; then
+    sel_out="$(python3 "$selector" --staged-files "${STAGED[@]}" 2>&1)"
+    if [ $? -ne 0 ]; then
+      echo "  select-affected-fixtures failed: $sel_out" >&2
       fail=1
+    else
+      # Extract fixture lists from JSON using python3 (no jq dependency here).
+      all_sel="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("\n".join(d["pre_commit"]["regressions"] + d["pre_commit"]["datasets"]))')"
+      fallback="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; print("true" if json.load(sys.stdin)["fallback"] else "false")')"
+
+      if [ "$fallback" = "true" ]; then
+        echo "  pre-commit: fallback mode — full eval gate deferred to pre-push" >&2
+      fi
+
+      if [ -n "$all_sel" ]; then
+        eval_tmp="$(mktemp -d)"
+        while IFS= read -r p; do
+          [ -n "$p" ] || continue
+          ln -s "$ROOT/$p" "$eval_tmp/$(basename "$p")"
+        done <<< "$all_sel"
+
+        if ! eval_out="$(python3 "$ROOT/eval/run-eval.py" --dataset "$eval_tmp" --gate 2>&1)"; then
+          printf '%s\n' "$eval_out" | tail -20 >&2
+          echo "  affected eval fixtures failed — run: python3 $selector --staged-files ${STAGED[*]}" >&2
+          fail=1
+        fi
+      fi
     fi
   fi
 fi
+
+# Cleanup temp eval dir if we created one.
+[ -n "$eval_tmp" ] && rm -rf "$eval_tmp"
 
 if [ "$fail" -ne 0 ]; then
   echo "" >&2

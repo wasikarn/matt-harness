@@ -98,6 +98,25 @@ The dispatcher is the deterministic rendering half of the coordination contract;
 
 ### Validation (the "build" equivalent)
 
+Git hooks run the right layer at the right lifecycle:
+
+```bash
+# On every commit: syntax/lint checks + self-audit + affected eval fixtures only
+# (installed as core.hooksPath=git-hooks)
+bash git-hooks/pre-commit
+
+# On every push: full parallel gauntlet
+bash git-hooks/pre-push
+
+# Manual fast parallel gauntlet (same as pre-push)
+bash scripts/run-gauntlet.sh
+
+# Skip the slow critical-hooks suite for a quick local check
+bash scripts/run-gauntlet.sh --fast
+```
+
+Single-layer debugging (run these directly to isolate a failure):
+
 ```bash
 # Plugin manifest strict validation (catches schema/manifest drift)
 claude plugin validate --strict .
@@ -112,7 +131,12 @@ bash skills/harness-audit/scripts/audit.sh .
 python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 ```
 
-All three must pass before any commit that touches hooks, skills, agents, commands, or manifests.
+The pre-push gauntlet runs four layers in parallel: plugin-validate, self-audit,
+critical-hooks suite, and the full eval gate. The pre-commit hook runs syntax
+and lint checks, the self-audit, and only the eval fixtures affected by the
+staged files (selected by `scripts/select-affected-fixtures.py`). All four layers
+must pass before any commit that touches hooks, skills, agents, commands, or
+manifests.
 
 ### Running a single test
 
