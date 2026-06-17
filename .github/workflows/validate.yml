@@ -5,9 +5,6 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-  schedule:
-    - cron: "0 17 * * *"   # 17:00 UTC daily (~midnight Asia/Bangkok) — runs the slow critical-hooks suite
-  workflow_dispatch: {}    # allow manual runs of the full matrix (incl. the suite)
 
 permissions:
   contents: read
@@ -118,35 +115,9 @@ jobs:
           name: eval-results
           path: eval/results/*/summary.json
 
-  critical-hooks:
-    name: critical-hooks suite
-    runs-on: ubuntu-latest
-    # NIGHTLY / MANUAL ONLY — not per-push. The suite is ~125s locally but ~800s on
-    # GitHub runners (subprocess-spawn amplification: 8 audit.sh runs + many
-    # verification-gate scans + python3 cold-starts), too slow to tax every push and
-    # it grows. So it runs on the nightly `schedule` and on-demand via
-    # `workflow_dispatch`, gated by this `if`. Per-push CI stays fast (validate +
-    # eval). The suite is also verified by the local pre-commit gate. 20-min cap is
-    # headroom over the ~800s run.
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    # ~1200s suite + setup ≈ 22 min on CI runners; 30 gives headroom for variance.
-    timeout-minutes: 30
-    steps:
-      - name: checkout
-        uses: actions/checkout@v5
-
-      - name: setup python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: setup plugin cache stub for audit
-        run: |
-          # The suite's audit-backed tests (audit32 / trigger-pattern) run
-          # audit.sh; the F1 check expects ~/.claude/plugins/cache/kobig/kbg/<v>/
-          # to resolve plugin-delivered skills (mirrors the eval-harness job).
-          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg"
-          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.1.17"
-
-      - name: run critical-hooks suite
-        run: bash hooks/tests/test-critical-hooks.sh
+  # NOTE: the critical-hooks suite is NOT run in CI. It is ~121s locally but ~20 min
+  # on GitHub runners (subprocess-spawn amplification: 8 audit.sh runs + many
+  # verification-gate scans + a python3 cold-start per test), too slow + fragile for
+  # a recurring job. It is verified by the local pre-commit gate, and Linux-only
+  # portability is checked locally with the gnubin + uname-shim simulator (see
+  # memory ci-suite-portability). Re-add a job here only if the suite gets fast.
