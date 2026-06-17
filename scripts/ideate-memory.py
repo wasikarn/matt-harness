@@ -61,6 +61,22 @@ def _extract_text(content: Any) -> str:
     return str(content)
 
 
+def _event_content(ev: Any) -> Any:
+    """Return the content payload for a transcript event.
+
+    Current vendor transcripts wrap the message payload in a nested `message`
+    object; legacy transcripts stored content directly on the event.
+    """
+    if not isinstance(ev, dict):
+        return None
+    if "content" in ev:
+        return ev["content"]
+    msg = ev.get("message")
+    if isinstance(msg, dict):
+        return msg.get("content")
+    return None
+
+
 def _load_transcript(path: Path) -> tuple[list[dict], list[dict]]:
     """Return (messages, tool_uses) from a Claude Code transcript.
 
@@ -101,7 +117,7 @@ def _load_transcript(path: Path) -> tuple[list[dict], list[dict]]:
         for msg in messages:
             if msg.get("type") != "assistant":
                 continue
-            content = msg.get("content")
+            content = _event_content(msg)
             if isinstance(content, list):
                 for item in content:
                     if isinstance(item, dict) and item.get("type") == "tool_use":
@@ -116,10 +132,12 @@ def _load_transcript(path: Path) -> tuple[list[dict], list[dict]]:
     if isinstance(data, dict) and isinstance(data.get("messages"), list):
         messages = data["messages"]
         for msg in messages:
-            if msg.get("type") == "assistant" and isinstance(msg.get("content"), list):
-                for item in msg["content"]:
-                    if isinstance(item, dict) and item.get("type") == "tool_use":
-                        tool_uses.append(item)
+            if msg.get("type") == "assistant":
+                content = _event_content(msg)
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and item.get("type") == "tool_use":
+                            tool_uses.append(item)
         return messages, tool_uses
 
     return [], []
@@ -133,7 +151,7 @@ def _is_ideate_skill_call(item: dict) -> bool:
     if tool_name != "Skill":
         return False
     inp = item.get("input") or {}
-    return inp.get("skill") == "ideate"
+    return inp.get("skill") in ("ideate", "kbg:ideate")
 
 
 def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]:
@@ -175,6 +193,20 @@ def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]
                 idx = i
                 break
         if idx is None:
+            # Nested tool_use blocks extracted from assistant content share the
+            # same object reference as the block inside the parent message.
+            for i, m in enumerate(messages):
+                if m.get("type") != "assistant":
+                    continue
+                content = _event_content(m)
+                if isinstance(content, list):
+                    for block in content:
+                        if block is msg:
+                            idx = i
+                            break
+                if idx is not None:
+                    break
+        if idx is None:
             idx = raw_idx
 
         inp = msg.get("input") or {}
@@ -191,7 +223,7 @@ def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]
                     prev_ts = prev.get("timestamp", "")
                     if prev_ts and ts and prev_ts > ts:
                         break
-                    candidate = _extract_text(prev.get("content"))
+                    candidate = _extract_text(_event_content(prev))
                     if candidate.strip():
                         problem = candidate
                         break
@@ -202,7 +234,7 @@ def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]
         for nxt in messages[idx + 1 :]:
             nxt_type = nxt.get("type")
             if nxt_type == "assistant":
-                candidate = _extract_text(nxt.get("content"))
+                candidate = _extract_text(_event_content(nxt))
                 if candidate.strip():
                     output = candidate
                     break

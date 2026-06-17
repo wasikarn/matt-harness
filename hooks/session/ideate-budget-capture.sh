@@ -27,22 +27,119 @@ SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/nu
 # No transcript path = nothing to count (normal for very short sessions).
 [ -z "$TRANSCRIPT" ] || [ ! -r "$TRANSCRIPT" ] && exit 0
 
-# Count invocations of the ideate skill. Vendor tool spans for Skill use contain
-# tool_name == "Skill" and input.skill == "ideate". We also count explicit user
-# utterances of "/ideate" as an invocation signal, because a user typing the
-# slash command may not always reach the Skill tool in the transcript.
-INVOCATIONS=$(jq -c '
-  [
-    .messages[]? |
-    select(.type == "tool_use" and .tool_name == "Skill") |
-    select(.input? .skill == "ideate")
-  ] | length +
-  [
-    .messages[]? |
-    select(.type == "user") |
-    select(.content? | type == "string" and test("(^|[[:space:]])/ideate"; "i"))
-  ] | length
-' "$TRANSCRIPT" 2>/dev/null) || INVOCATIONS=0
+# Count invocations of the ideate skill. Vendor tool spans for Skill use are
+# nested inside assistant message content arrays in JSONL transcripts; the old
+# jq-only filter assumed a single JSON object with a .messages[] array and
+# silently counted zero on real transcripts.
+INVOCATIONS=$(
+  KBG_IDEATE_TRANSCRIPT="$TRANSCRIPT" \
+  python3 - <<'PY' 2>/dev/null
+import json
+import os
+import re
+from pathlib import Path
+
+TRANSCRIPT = os.environ.get('KBG_IDEATE_TRANSCRIPT', '')
+SLASH_RE = re.compile(r'(?:^|[\s])/ideate\b', re.IGNORECASE)
+IDEATE_SKILLS = frozenset({'ideate', 'kbg:ideate'})
+
+
+def extract_text(content):
+    if content is None:
+        return ''
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                if item.get('type') == 'text':
+                    parts.append(item.get('text', ''))
+                elif item.get('type') == 'tool_use':
+                    continue
+            elif isinstance(item, str):
+                parts.append(item)
+        return '\n'.join(parts)
+    return str(content)
+
+
+def event_content(ev):
+    """Return the content payload for a transcript event.
+
+    Current vendor transcripts wrap the message payload in a nested `message`
+    object; legacy transcripts stored content directly on the event.
+    """
+    if not isinstance(ev, dict):
+        return None
+    if 'content' in ev:
+        return ev['content']
+    msg = ev.get('message')
+    if isinstance(msg, dict):
+        return msg.get('content')
+    return None
+
+
+def is_ideate_skill(item):
+    if not isinstance(item, dict):
+        return False
+    tool_name = item.get('tool_name') or item.get('name') or ''
+    if tool_name != 'Skill':
+        return False
+    inp = item.get('input') or {}
+    return inp.get('skill') in IDEATE_SKILLS
+
+
+def iter_ideate_skill_calls(ev):
+    found = []
+    if is_ideate_skill(ev):
+        found.append(ev)
+    content = event_content(ev)
+    if isinstance(content, list):
+        for block in content:
+            if is_ideate_skill(block):
+                found.append(block)
+    return found
+
+
+p = Path(TRANSCRIPT)
+if not p.exists():
+    print(0)
+    raise SystemExit(0)
+
+raw = p.read_text(encoding='utf-8', errors='replace')
+if not raw.strip():
+    print(0)
+    raise SystemExit(0)
+
+invocations = 0
+for line in raw.splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        obj = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if not isinstance(obj, dict):
+        continue
+
+    # Legacy single-object format with a .messages array.
+    if 'messages' in obj and isinstance(obj.get('messages'), list):
+        for ev in obj['messages']:
+            if not isinstance(ev, dict):
+                continue
+            invocations += len(iter_ideate_skill_calls(ev))
+            if ev.get('type') == 'user' and SLASH_RE.search(extract_text(event_content(ev))):
+                invocations += 1
+        break
+
+    invocations += len(iter_ideate_skill_calls(obj))
+    if obj.get('type') == 'user' and SLASH_RE.search(extract_text(event_content(obj))):
+        invocations += 1
+
+print(invocations)
+PY
+)
 
 [ -n "$INVOCATIONS" ] || INVOCATIONS=0
 [ "$INVOCATIONS" -eq 0 ] 2>/dev/null && exit 0

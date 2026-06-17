@@ -37,4 +37,53 @@ check_task "session/ideate-convergence-capture.sh" 0 "" "exits 0 with empty enve
 # 5. Dynamic: memory hook exits 0 on an empty SessionEnd envelope.
 check_task "session/ideate-memory-capture.sh" 0 "" "exits 0 with empty envelope" "$SE_EVENT"
 
+# 6. Dynamic: convergence hook correctly parses a JSONL transcript with a
+# nested ideate Skill call and appends a record.
+JSONL_CONV="$FIXTURE/jsonl-conv-transcript.jsonl"
+cat > "$JSONL_CONV" <<'EOF'
+{"type":"user","message":{"role":"user","content":"/ideate how to refactor auth"},"timestamp":"2026-06-18T10:00:00Z","sessionId":"jsonl-conv"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Skill","input":{"skill":"ideate"}}]},"timestamp":"2026-06-18T10:00:01Z","sessionId":"jsonl-conv"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"some ideas"}]},"timestamp":"2026-06-18T10:01:00Z","sessionId":"jsonl-conv"}
+EOF
+SE_JSONL='{"hook_event_name":"SessionEnd","session_id":"jsonl-conv","transcript_path":"'$JSONL_CONV'"}'
+HOME="$FIXTURE" KBG_IDEATE_OLLAMA_TIMEOUT=1 \
+  check_task "session/ideate-convergence-capture.sh" 0 "" "appends record for JSONL ideate call" "$SE_JSONL"
+if [ -s "$FIXTURE/.claude/state/ideate-embeddings.jsonl" ] \
+    && /usr/bin/grep -qF '"session_id":"jsonl-conv"' "$FIXTURE/.claude/state/ideate-embeddings.jsonl"; then
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "convergence-capture" "record present in isolated state"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "convergence-capture" "record missing in isolated state"
+fi
+
+# 7. Dynamic: budget hook correctly counts an ideate call in a JSONL transcript.
+JSONL_BUD="$FIXTURE/jsonl-bud-transcript.jsonl"
+cat > "$JSONL_BUD" <<'EOF'
+{"type":"user","message":{"role":"user","content":"/ideate how to refactor auth"},"timestamp":"2026-06-18T10:00:00Z","sessionId":"jsonl-bud"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"Skill","input":{"skill":"kbg:ideate"}}]},"timestamp":"2026-06-18T10:00:01Z","sessionId":"jsonl-bud"}
+EOF
+SE_BUD='{"hook_event_name":"SessionEnd","session_id":"jsonl-bud","transcript_path":"'$JSONL_BUD'"}'
+HOME="$FIXTURE" check_task "session/ideate-budget-capture.sh" 0 "" "appends usage for JSONL kbg:ideate call" "$SE_BUD"
+if [ -s "$FIXTURE/.claude/state/ideate-usage.jsonl" ] \
+    && /usr/bin/grep -qF '"session_id":"jsonl-bud"' "$FIXTURE/.claude/state/ideate-usage.jsonl"; then
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "budget-capture" "usage row present in isolated state"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "budget-capture" "usage row missing in isolated state"
+fi
+
+# 8. Dynamic: convergence hook exits 0 and leaves state untouched when there
+# are no ideate calls in a JSONL transcript.
+JSONL_EMPTY="$FIXTURE/jsonl-empty-transcript.jsonl"
+cat > "$JSONL_EMPTY" <<'EOF'
+{"type":"user","message":{"role":"user","content":"hello"},"timestamp":"2026-06-18T10:00:00Z","sessionId":"jsonl-empty"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"hi"}]},"timestamp":"2026-06-18T10:00:01Z","sessionId":"jsonl-empty"}
+EOF
+SE_EMPTY='{"hook_event_name":"SessionEnd","session_id":"jsonl-empty","transcript_path":"'$JSONL_EMPTY'"}'
+rm -f "$FIXTURE/.claude/state/ideate-embeddings.jsonl"
+HOME="$FIXTURE" check_task "session/ideate-convergence-capture.sh" 0 "" "exits 0 with no ideate calls" "$SE_EMPTY"
+if [ -f "$FIXTURE/.claude/state/ideate-embeddings.jsonl" ]; then
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "convergence-capture" "wrote state when no ideate calls"
+else
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "convergence-capture" "no state written when no ideate calls"
+fi
+
 report

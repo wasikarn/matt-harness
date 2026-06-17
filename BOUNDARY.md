@@ -200,7 +200,7 @@ _Personals/kbg-harness_
 | SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
 
 ---
-_Generated: 2026-06-17T18:22:49Z_
+_Generated: 2026-06-17T18:47:05Z_
 
 ---
 

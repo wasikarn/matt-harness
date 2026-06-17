@@ -31,125 +31,306 @@ SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/nu
 
 [ -z "$TRANSCRIPT" ] || [ ! -r "$TRANSCRIPT" ] && exit 0
 
-# Count ideate invocations in this session.
-INVOCATIONS=$(jq -c '
-  (
-    [.messages[]? |
-      select(.type == "tool_use" and .tool_name == "Skill") |
-      select(.input? .skill == "ideate")] | length
-  ) + (
-    [.messages[]? |
-      select(.type == "user") |
-      select(.content? | type == "string" and test("(^|[[:space:]])/ideate"; "i"))] | length
-  )
-' "$TRANSCRIPT" 2>/dev/null) || INVOCATIONS=0
-[ -n "$INVOCATIONS" ] || INVOCATIONS=0
+# Everything that touches the transcript is done in a single Python pass:
+# Claude Code transcripts are JSONL event streams (one JSON object per line),
+# and Skill calls are often nested inside assistant message content arrays.
+# The old jq-only filter assumed a single JSON object with a .messages[] array,
+# which produced a multi-line zero string on real transcripts and broke both
+# the early-exit guard and the final --argjson append.
+KBG_IDEATE_OLLAMA_TIMEOUT="${KBG_IDEATE_OLLAMA_TIMEOUT:-8}"
+PY_OUT=$(
+  KBG_IDEATE_TRANSCRIPT="$TRANSCRIPT" \
+  KBG_IDEATE_SESSION_ID="$SESSION_ID_VAL" \
+  KBG_IDEATE_OLLAMA_HOST="${KBG_IDEATE_OLLAMA_HOST:-http://localhost:11434}" \
+  KBG_IDEATE_EMBEDDING_MODEL="${KBG_IDEATE_EMBEDDING_MODEL:-all-minilm:latest}" \
+  KBG_IDEATE_OLLAMA_TIMEOUT="$KBG_IDEATE_OLLAMA_TIMEOUT" \
+  KBG_IDEATE_CONVERGENCE_THRESHOLD="${KBG_IDEATE_CONVERGENCE_THRESHOLD:-0.85}" \
+  KBG_IDEATE_EMBEDDINGS_FILE="$EMB_FILE" \
+  python3 - <<'PY' 2>/dev/null
+import json
+import math
+import os
+import re
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Optional
+
+TRANSCRIPT = os.environ.get('KBG_IDEATE_TRANSCRIPT', '')
+OLLAMA_HOST = os.environ.get('KBG_IDEATE_OLLAMA_HOST', 'http://localhost:11434').rstrip('/')
+OLLAMA_MODEL = os.environ.get('KBG_IDEATE_EMBEDDING_MODEL', 'all-minilm:latest')
+try:
+    OLLAMA_TIMEOUT = float(os.environ.get('KBG_IDEATE_OLLAMA_TIMEOUT', '8'))
+    if OLLAMA_TIMEOUT <= 0:
+        OLLAMA_TIMEOUT = 8
+except ValueError:
+    OLLAMA_TIMEOUT = 8
+THRESHOLD = os.environ.get('KBG_IDEATE_CONVERGENCE_THRESHOLD', '0.85')
+try:
+    THRESHOLD = float(THRESHOLD)
+except ValueError:
+    THRESHOLD = 0.85
+EMB_FILE = os.environ.get('KBG_IDEATE_EMBEDDINGS_FILE', '')
+
+SLASH_RE = re.compile(r'(?:^|[\s])/ideate\b', re.IGNORECASE)
+IDEATE_SKILLS = frozenset({'ideate', 'kbg:ideate'})
+
+
+def extract_text(content: Any) -> str:
+    if content is None:
+        return ''
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict):
+                if item.get('type') == 'text':
+                    parts.append(item.get('text', ''))
+                elif item.get('type') == 'tool_use':
+                    continue
+            elif isinstance(item, str):
+                parts.append(item)
+        return '\n'.join(parts)
+    return str(content)
+
+
+def event_content(ev: Any) -> Any:
+    """Return the content payload for a transcript event.
+
+    Current vendor transcripts wrap the message payload in a nested `message`
+    object; legacy transcripts stored content directly on the event.
+    """
+    if not isinstance(ev, dict):
+        return None
+    if 'content' in ev:
+        return ev['content']
+    msg = ev.get('message')
+    if isinstance(msg, dict):
+        return msg.get('content')
+    return None
+
+
+def clean_problem(text: str) -> str:
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()[:500]
+
+
+def is_ideate_skill(item: Any) -> bool:
+    if not isinstance(item, dict):
+        return False
+    tool_name = item.get('tool_name') or item.get('name') or ''
+    if tool_name != 'Skill':
+        return False
+    inp = item.get('input') or {}
+    return inp.get('skill') in IDEATE_SKILLS
+
+
+def iter_ideate_skill_calls(ev: dict) -> list[dict]:
+    """Return any ideate Skill calls carried by this event."""
+    found = []
+    if is_ideate_skill(ev):
+        found.append(ev)
+    # Nested tool_use blocks inside assistant message content.
+    content = event_content(ev)
+    if isinstance(content, list):
+        for block in content:
+            if is_ideate_skill(block):
+                found.append(block)
+    return found
+
+
+def parse_transcript(path: str) -> tuple[list[dict], list[dict]]:
+    """Return (events_in_order, ideate_skill_calls)."""
+    p = Path(path)
+    if not p.exists():
+        return [], []
+    raw = p.read_text(encoding='utf-8', errors='replace')
+    if not raw.strip():
+        return [], []
+
+    events: list[dict] = []
+    skill_calls: list[dict] = []
+
+    # Prefer JSONL; fall back to legacy single-object .messages format.
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(obj, dict):
+            continue
+        if 'messages' in obj and isinstance(obj.get('messages'), list):
+            # Legacy format: the whole file is one object with a .messages array.
+            for ev in obj['messages']:
+                if not isinstance(ev, dict):
+                    continue
+                events.append(ev)
+                skill_calls.extend(iter_ideate_skill_calls(ev))
+            break
+        events.append(obj)
+        skill_calls.extend(iter_ideate_skill_calls(obj))
+
+    return events, skill_calls
+
+
+def compute_embedding(problem: str) -> Optional[list[float]]:
+    if not problem or not problem.strip():
+        return None
+    payload = json.dumps({'model': OLLAMA_MODEL, 'prompt': problem}).encode('utf-8')
+    req = urllib.request.Request(
+        f'{OLLAMA_HOST}/api/embeddings',
+        data=payload,
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            emb = data.get('embedding')
+            if isinstance(emb, list) and emb:
+                return [float(x) for x in emb]
+    except Exception:
+        pass
+    return None
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def max_same_day_similarity(current: list[float], today: str, path: str) -> float:
+    if not path or not current:
+        return 0.0
+    p = Path(path)
+    if not p.exists():
+        return 0.0
+    max_sim = 0.0
+    with p.open('r', encoding='utf-8', errors='replace') as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(rec, dict):
+                continue
+            if rec.get('date') != today:
+                continue
+            emb = rec.get('embedding')
+            if not isinstance(emb, list) or not emb:
+                continue
+            try:
+                emb = [float(x) for x in emb]
+            except (TypeError, ValueError):
+                continue
+            sim = cosine_similarity(current, emb)
+            if sim > max_sim:
+                max_sim = sim
+    return max_sim
+
+
+def main() -> None:
+    events, skill_calls = parse_transcript(TRANSCRIPT)
+    slash_invocations = 0
+    last_slash_msg: Optional[dict] = None
+
+    for ev in events:
+        if ev.get('type') == 'user':
+            text = extract_text(event_content(ev))
+            if SLASH_RE.search(text):
+                slash_invocations += 1
+                last_slash_msg = ev
+
+    skill_invocations = len(skill_calls)
+    invocations = skill_invocations + slash_invocations
+
+    if invocations == 0:
+        print(json.dumps({'invocations': 0, 'problem': '', 'embedding': None,
+                          'status': 'ok', 'reason': 'no ideate calls in session'}))
+        return
+
+    # Problem extraction: prefer the most recent ideate Skill call's explicit
+    # argument, otherwise the nearest preceding user message.
+    last_skill = skill_calls[-1] if skill_calls else None
+    problem = ''
+    if last_skill is not None:
+        inp = last_skill.get('input') or {}
+        for key in ('args', 'problem'):
+            val = extract_text(inp.get(key))
+            if val.strip():
+                problem = val
+                break
+        if not problem.strip():
+            skill_ts = last_skill.get('timestamp') or ''
+            for prev in reversed(events):
+                if prev.get('type') != 'user':
+                    continue
+                prev_ts = prev.get('timestamp') or ''
+                if prev_ts and skill_ts and prev_ts > skill_ts:
+                    continue
+                candidate = extract_text(event_content(prev))
+                if candidate.strip():
+                    problem = candidate
+                    break
+    if not problem.strip() and last_slash_msg is not None:
+        problem = extract_text(event_content(last_slash_msg))
+    if not problem.strip():
+        problem = '(no problem extracted)'
+    problem = clean_problem(problem)
+
+    embedding = compute_embedding(problem)
+    status = 'unknown'
+    reason = 'Ollama embedding endpoint not available'
+
+    if embedding is not None:
+        status = 'ok'
+        reason = 'embedding computed'
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        max_sim = max_same_day_similarity(embedding, today, EMB_FILE)
+        if max_sim >= THRESHOLD:
+            status = 'warning'
+            reason = f'max same-day cosine similarity {max_sim:.4f} >= threshold {THRESHOLD:.2f} — ideate runs may be converging'
+
+    print(json.dumps({
+        'invocations': invocations,
+        'problem': problem,
+        'embedding': embedding,
+        'status': status,
+        'reason': reason,
+    }, default=lambda o: None if o is None else str(o)))
+
+
+if __name__ == '__main__':
+    main()
+PY
+)
+
+# If the Python helper failed to return valid JSON, fail silently.
+if [ -z "$PY_OUT" ] || ! printf '%s' "$PY_OUT" | jq -e . >/dev/null 2>&1; then
+    exit 0
+fi
+
+INVOCATIONS=$(printf '%s' "$PY_OUT" | jq -r '.invocations // 0')
 [ "$INVOCATIONS" -eq 0 ] 2>/dev/null && exit 0
-
-# Extract the most recent user problem that triggered ideate. Heuristic: the
-# first user message before the most recent ideate Skill call.
-PROBLEM=$(jq -r '
-  def last_user_before_ideate:
-    [.messages[]? | select(.type == "tool_use" and .tool_name == "Skill" and .input? .skill == "ideate")]
-    | last
-    | .timestamp;
-  last_user_before_ideate as $last_ideate_ts
-  | [.messages[]?
-      | select(.type == "user" and (.timestamp // "") <= ($last_ideate_ts // ""))
-      | select(.content? | type == "string")
-      | .content
-    ]
-  | last // ""
-' "$TRANSCRIPT" 2>/dev/null)
-
-# Clean the problem text to one line.
-PROBLEM=$(printf '%s' "$PROBLEM" | tr '\n' ' ' | sed 's/  */ /g' | head -c 500)
-[ -z "$PROBLEM" ] && PROBLEM="(no problem extracted)"
 
 DATE=$(date -u +%Y-%m-%d)
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PROBLEM=$(printf '%s' "$PY_OUT" | jq -r '.problem // "(no problem extracted)"')
+EMBEDDING=$(printf '%s' "$PY_OUT" | jq -c '.embedding')
+CONVERGENCE_STATUS=$(printf '%s' "$PY_OUT" | jq -r '.status // "unknown"')
+CONVERGENCE_REASON=$(printf '%s' "$PY_OUT" | jq -r '.reason // ""')
 
-# Compute embedding via local Ollama API (all-minilm). Keep a tight timeout so
-# SessionEnd (Claude CLI hook budget) is never blocked waiting for Ollama or a
-# cold model load. Fall back gracefully if Ollama is not running or the model
-# is absent.
-EMBEDDING=""
-CONVERGENCE_STATUS="unknown"
-CONVERGENCE_REASON="Ollama embedding endpoint not available"
-KBG_IDEATE_OLLAMA_TIMEOUT="${KBG_IDEATE_OLLAMA_TIMEOUT:-8}"
-if command -v python3 >/dev/null 2>&1; then
-  EMBEDDING=$(KBG_IDEATE_PROBLEM="$PROBLEM" \
-    KBG_IDEATE_OLLAMA_HOST="${KBG_IDEATE_OLLAMA_HOST:-http://localhost:11434}" \
-    KBG_IDEATE_EMBEDDING_MODEL="${KBG_IDEATE_EMBEDDING_MODEL:-all-minilm:latest}" \
-    KBG_IDEATE_OLLAMA_TIMEOUT="$KBG_IDEATE_OLLAMA_TIMEOUT" \
-    python3 - <<'PY' 2>/dev/null
-import json, os, sys, urllib.request, urllib.error
-
-problem = os.environ.get('KBG_IDEATE_PROBLEM', '').strip()
-if not problem:
-    sys.exit(1)
-
-host = os.environ.get('KBG_IDEATE_OLLAMA_HOST', 'http://localhost:11434').rstrip('/')
-model = os.environ.get('KBG_IDEATE_EMBEDDING_MODEL', 'all-minilm:latest')
-try:
-    timeout = float(os.environ.get('KBG_IDEATE_OLLAMA_TIMEOUT', '8'))
-    if timeout <= 0:
-        timeout = 8
-except ValueError:
-    timeout = 8
-payload = json.dumps({'model': model, 'prompt': problem}).encode('utf-8')
-req = urllib.request.Request(
-    f'{host}/api/embeddings',
-    data=payload,
-    headers={'Content-Type': 'application/json'},
-    method='POST',
-)
-try:
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode('utf-8'))
-        emb = data.get('embedding')
-        if emb:
-            print(json.dumps(emb))
-        else:
-            sys.exit(1)
-except Exception:
-    sys.exit(1)
-PY
-)
-fi
-
-if [ -n "$EMBEDDING" ]; then
-  CONVERGENCE_STATUS="ok"
-  CONVERGENCE_REASON="embedding computed"
-
-  # Compare against prior embeddings for the same calendar day.
-  MAX_SIM=0.0
-  if [ -s "$EMB_FILE" ]; then
-    MAX_SIM=$(jq -s --arg today "$DATE" '
-      def cosine(a; b):
-        ([a, b] | transpose | map(.[0] * .[1]) | add) /
-        (([a[] | . * .] | add | sqrt) * ([b[] | . * .] | add | sqrt));
-      . as $all | $all
-      | map(select(.date == $today and .embedding != null) | .embedding)
-      | if length == 0 then [0]
-        else . as $priors | $all[-1].embedding as $current
-          | $priors | map(cosine($current; .)) | max
-        end
-    ' "$EMB_FILE" 2>/dev/null)
-  fi
-
-  # Default to 0 if jq returned empty/null.
-  [ -z "$MAX_SIM" ] && MAX_SIM=0.0
-
-  THRESHOLD="${KBG_IDEATE_CONVERGENCE_THRESHOLD:-0.85}"
-  # Compare as float via python3.
-  if python3 -c "import sys; sys.exit(0 if float('$MAX_SIM') >= float('$THRESHOLD') else 1)" 2>/dev/null; then
-    CONVERGENCE_STATUS="warning"
-    CONVERGENCE_REASON="max same-day cosine similarity $MAX_SIM >= threshold $THRESHOLD — ideate runs may be converging"
-  fi
-fi
-
-# Append record.
 jq -nc \
   --arg date "$DATE" \
   --arg session_id "$SESSION_ID_VAL" \
