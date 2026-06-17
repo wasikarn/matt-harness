@@ -18,7 +18,7 @@ injection. See [`CONTEXT.md`](../CONTEXT.md) for the bounded-context model.
 3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — irreversible decision record for L2-only.
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
 
-The four are auto-injected on every SessionStart by `hooks/doctrine-bootstrap.sh`.
+The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
 No manual `@import` needed.
 
 ## The 3 commands you'll use most

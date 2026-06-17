@@ -25,7 +25,7 @@ in the sibling `dotfiles` repo sets `enabledPlugins["kbg@kobig"] = true` in
 components are auto-discovered and namespaced under `kbg:` (so a skill is
 invoked as `kbg:fix-bug`, a command as `/kbg:fix-bug`).
 
-Doctrine reaches the session through `hooks/doctrine-bootstrap.sh`, a
+Doctrine reaches the session through `hooks/session/doctrine-bootstrap.sh`, a
 **matcher-less SessionStart hook** that injects `METHODOLOGY.md` / `RTK.md` /
 `ACLI.md` / `DBGATE.md` as `hookSpecificOutput.additionalContext` on every
 SessionStart sub-event (`startup`, `resume`, `clear`, `compact`). The legacy
@@ -78,7 +78,7 @@ the delivery model.
 ## Doctrine files (mandatory imports)
 
 `METHODOLOGY.md`, `ACLI.md`, `DBGATE.md`, `RTK.md` — reach the session through
-`hooks/doctrine-bootstrap.sh` (a single source for both owner and external
+`hooks/session/doctrine-bootstrap.sh` (a single source for both owner and external
 installers). The four files live in the plugin root and are injected as
 SessionStart `additionalContext`.
 

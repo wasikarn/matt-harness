@@ -1,4 +1,4 @@
-# Architecture Concerns — Task Board Integration (hooks/task-lifecycle.sh)
+# Architecture Concerns — Task Board Integration (hooks/lifecycle/task-lifecycle.sh)
 
 Scope: backend-side data-integrity and contract stability for the new task-board
 runtime layer (`.claude/tasks/<slug>/board.json` + `heartbeat/` + `.lock/`).

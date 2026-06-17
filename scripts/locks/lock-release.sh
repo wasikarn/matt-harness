@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # NOTE: This script expects --team, --type, --resource, and --owner.
-#       hooks/task-lifecycle.sh lines 250-254 call it with --plan-dir and --task-id,
+#       hooks/lifecycle/task-lifecycle.sh lines 250-254 call it with --plan-dir and --task-id,
 #       which is a dead-code mismatch; the caller should align with the interface above.
 
 # Source _lib.sh for journal_append; provide no-op fallback if unavailable.

@@ -29,7 +29,7 @@ claude --version  # must be ≥ 2.1.170 (June 2026) for full hook support
 echo $CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS  # must print 1
 ```
 
-**If missing:** `/team-build` and `/team-plan` still work (they are command files), but the lifecycle hooks in `hooks/task-lifecycle.sh` never fire — no board auto-update, no F7 test-claim gate, no stale-heartbeat detection.
+**If missing:** `/team-build` and `/team-plan` still work (they are command files), but the lifecycle hooks in `hooks/lifecycle/task-lifecycle.sh` never fire — no board auto-update, no F7 test-claim gate, no stale-heartbeat detection.
 
 ---
 
@@ -121,4 +121,4 @@ claude --agent code-explorer -- "List the 5 most recently modified files in this
 - `commands/team-plan.md` — Step 1-3 of the 7-step pipeline
 - `commands/team-build.md` — Step 4-7, including the F10 plan approval filter
 - `skills/orchestrate/SKILL.md` — F9 spawn-prompt template and validation chain
-- `hooks/validator-bash-guard.sh` — runtime enforcement of read-only validator doctrine
+- `hooks/gates/validator-bash-guard.sh` — runtime enforcement of read-only validator doctrine

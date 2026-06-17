@@ -36,7 +36,7 @@ tools: Read, Grep, Glob, Bash
 1. **Readable at a glance.** A reader of the agent's frontmatter sees the full capability set in one line. The constraint is the list, not the diff from a default.
 2. **No implicit inheritance.** If the vendor's default toolset changes, the agent's tools don't change with it. The contract is stable.
 3. **Safer default.** Adding a new tool to the vendor's default set is a **silent capability expansion** for denylisted agents but a **no-op** for allowlisted agents. We err on the side of explicit over implicit.
-4. **Pairs with the F1 Bash-gate.** Validators (e.g. `code-reviewer`, `security-reviewer`) use `tools: [Bash]` for read-only inspection but rely on `hooks/validator-bash-guard.sh` to block mutation. The allowlist surfaces "this agent has Bash" in the frontmatter; the Bash-gate is the read-only-by-behavior layer.
+4. **Pairs with the F1 Bash-gate.** Validators (e.g. `code-reviewer`, `security-reviewer`) use `tools: [Bash]` for read-only inspection but rely on `hooks/gates/validator-bash-guard.sh` to block mutation. The allowlist surfaces "this agent has Bash" in the frontmatter; the Bash-gate is the read-only-by-behavior layer.
 
 **Tradeoffs (when allowlist is the wrong choice):**
 
@@ -109,6 +109,6 @@ disallowedTools: Write, Edit, NotebookEdit
 
 - **[Permission re-audit cadence](./harness-decay-cadence.md#permission-re-audit)** — quarterly review of `tools:` grants.
 - **[ADR 0002 — Autonomy invariant](./adr/0002-autonomy-invariant.md)** — the autonomy invariant is enforced by **allowlist-based tool grants** (Pillar 1: deterministic via `audit.sh #32` on `recursive-improve`'s `disable-model-invocation: true`). The allowlist convention is the substrate for the invariant's enforcement.
-- **[F1 Bash-gate pattern](./harness-decay-cadence.md#permission-re-audit)** — the `hooks/validator-bash-guard.sh` hook applies to the 7 validator-class agents and is the runtime enforcement of "validators are read-only" beyond the allowlist's `Bash` grant.
+- **[F1 Bash-gate pattern](./harness-decay-cadence.md#permission-re-audit)** — the `hooks/gates/validator-bash-guard.sh` hook applies to the 7 validator-class agents and is the runtime enforcement of "validators are read-only" beyond the allowlist's `Bash` grant.
 - **BOUNDARY.md** — the regenerator outputs a `Mutates` column that reflects `Edit`/`Write`/`Bash` grants (allows readers to see at-a-glance which agents can mutate state).
 - **Skill template (`docs/skill-template/SKILL.md`)** — the skill template does not use `tools:` (skills are loaded into the parent agent, not invoked as separate contexts), but the allowlist convention still applies to the parent agent that loads the skill.

@@ -13,7 +13,7 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 
 `kbg-harness` has 31 unique hook-event sensors and 42 kbg hook registrations across 14 lifecycle events. The plugin's 2×2 model (see `CLAUDE.md` § "Harness as a 2×2 mental model") populates every cell. But the article's "silent sensors = coverage gap" insight is *not* operationalized: the closest analog is `audit.sh:773-880` (eval-target freshness), which *reports* staleness at audit time but does not *notify* the operator when a runtime sensor goes dark in production.
 
-This plan closes the gap. It is intentionally narrow: a hand-curated registry of runtime sensors, a SessionStart hook that diffs the journal against the registry, a Q3 severity-gated `additionalContext` block, and a Q4 hash-gated dismiss command. Total new surface: `hooks/sensors.json` (1 file) + `commands/dismiss-stale.md` (1 file) + `hooks/notify-sensor-staleness.sh` (1 file) + 1 entry in `hooks/hooks.json` + 1 flag in `audit.sh`. Q&A #12 calls this "scope creep that's bounded and load-bearing."
+This plan closes the gap. It is intentionally narrow: a hand-curated registry of runtime sensors, a SessionStart hook that diffs the journal against the registry, a Q3 severity-gated `additionalContext` block, and a Q4 hash-gated dismiss command. Total new surface: `hooks/sensors.json` (1 file) + `commands/dismiss-stale.md` (1 file) + `hooks/maintenance/notify-sensor-staleness.sh` (1 file) + 1 entry in `hooks/hooks.json` + 1 flag in `audit.sh`. Q&A #12 calls this "scope creep that's bounded and load-bearing."
 
 ## 2. Registry schema (v1)
 

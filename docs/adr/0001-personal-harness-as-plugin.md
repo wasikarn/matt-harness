@@ -38,7 +38,7 @@ auto-discovered and **namespaced** under `kbg:` (so a skill is invoked as
 `kbg:fix-bug`, a command as `/kbg:fix-bug`). All governance components flow
 from the plugin cache (`~/.claude/plugins/cache/kobig/kbg/<version>/`).
 
-Doctrine reaches the session through `hooks/doctrine-bootstrap.sh`, a
+Doctrine reaches the session through `hooks/session/doctrine-bootstrap.sh`, a
 **matcher-less SessionStart hook** that injects `METHODOLOGY.md` / `RTK.md` /
 `ACLI.md` / `DBGATE.md` as `hookSpecificOutput.additionalContext` on every
 SessionStart sub-event (`startup`, `resume`, `clear`, `compact`).
@@ -54,7 +54,7 @@ The owner must never load doctrine (or any hook) twice. Two guards hold this:
    self-suppresses when `~/.claude/CLAUDE.md` `@import`s doctrine:
 
    ```sh
-   # hooks/doctrine-bootstrap.sh
+   # hooks/session/doctrine-bootstrap.sh
    if grep -qs '@METHODOLOGY.md' "$HOME/.claude/CLAUDE.md"; then
      exit 0  # CLAUDE.md already imports doctrine — don't double-inject
    fi

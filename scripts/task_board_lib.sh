@@ -1,6 +1,6 @@
 #!/bin/bash
 # task_board_lib.sh — bash helpers for task board integration
-# Used by hooks/task-lifecycle.sh and other bash consumers.
+# Used by hooks/lifecycle/task-lifecycle.sh and other bash consumers.
 #
 # Functions:
 #   kbg_board_read <plan_dir>          → stdout: board.json contents

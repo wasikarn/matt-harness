@@ -13,7 +13,7 @@ date: 2026-06-15
 |---|---|
 | **Model** | Claude (Opus/Sonnet) — out of scope |
 | **Builder harness** | Claude Code CLI + plugin runtime; `~/.claude/plugins/cache/kobig/kbg/0.1.18/` (CLAUDE.md:13-24) + 14-event hook lifecycle (`hooks/hooks.json:3-449`) |
-| **User harness** | The `kbg@kobig` plugin — 28 agents, 34 skills, 16 commands, 38 hooks + doctrine on SessionStart (`hooks/doctrine-bootstrap.sh`, CLAUDE.md:26-30) |
+| **User harness** | The `kbg@kobig` plugin — 28 agents, 34 skills, 16 commands, 38 hooks + doctrine on SessionStart (`hooks/session/doctrine-bootstrap.sh`, CLAUDE.md:26-30) |
 
 ## 2. Maintainability axis (L354-446)
 
@@ -26,7 +26,7 @@ date: 2026-06-15
 
 ## 3. Architecture fitness axis (L451-491)
 
-- **Performance requirements** → `skills/perf/SKILL.md`; the only *enforced* standard is `METHODOLOGY.md:113-118` "Token Budgets Are Not Advisory" (4k/task, 30k/session), observable via `audit.sh` + `hooks/usage-monitor-capture.sh`
+- **Performance requirements** → `skills/perf/SKILL.md`; the only *enforced* standard is `METHODOLOGY.md:113-118` "Token Budgets Are Not Advisory" (4k/task, 30k/session), observable via `audit.sh` + `hooks/session/usage-monitor-capture.sh`
 - **Logging standards** → `hooks/JOURNAL-SCHEMA.md` (JSONL contract) + 5 journaling hooks
 - **Module boundaries** → `BOUNDARY.md` (auto-regen, CLAUDE.md:47-49) + `last_permission_review` cadence (audit.sh:1075-1103) + file-ownership table (BOUNDARY.md:289-321) — *social + audited*, not ArchUnit-typed
 

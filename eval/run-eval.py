@@ -317,7 +317,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
     # that the harness-audit grader can't directly observe.
     #
     # Fixture context shape:
-    #   "hook_path": "hooks/validator-bash-guard.sh"
+    #   "hook_path": "hooks/gates/validator-bash-guard.sh"
     #   "stdin":     {"agent_type": "code-reviewer", "tool_input": {"command": "git push"}}
     #   "expected_decision": "deny"   # or "allow" or "" (fail-open = no JSON)
     #   "must_contain": ["VALIDATOR-BASH", "code-reviewer"]   # substrings in stdout

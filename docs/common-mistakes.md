@@ -73,7 +73,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The 7 validator agents (`code-reviewer`, `code-explorer`, `code-architect`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`) list `Read, Grep, Glob, Bash` at most — never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
 
-2. **Runtime Bash guard.** `hooks/validator-bash-guard.sh` is a `PreToolUse` hook that intercepts Bash commands from the 7 validator agents. It maintains an allow-list of read-only prefixes (`git diff`, `ls`, `cat`, `grep`, `pytest`, etc.) and a deny-list of mutation patterns (`rm`, `sed -i`, `git push`, `curl POST`, `mv`, `cp`, etc.). If a validator attempts a mutation pattern, the hook emits a `deny` decision with feedback: "Validators are read-only-by-doctrine." The hook is wired into `settings.json` and runs on every Bash invocation inside a subagent.
+2. **Runtime Bash guard.** `hooks/gates/validator-bash-guard.sh` is a `PreToolUse` hook that intercepts Bash commands from the 7 validator agents. It maintains an allow-list of read-only prefixes (`git diff`, `ls`, `cat`, `grep`, `pytest`, etc.) and a deny-list of mutation patterns (`rm`, `sed -i`, `git push`, `curl POST`, `mv`, `cp`, etc.). If a validator attempts a mutation pattern, the hook emits a `deny` decision with feedback: "Validators are read-only-by-doctrine." The hook is wired into `settings.json` and runs on every Bash invocation inside a subagent.
 
 3. **Orchestrate dispatch gate.** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Procedure step 4) gates any agent holding `Edit`, `Write`, or `Bash` behind an `AskUserQuestion`. Read-only agents (no mutation tools) dispatch without a gate; write-capable agents require explicit approval. This means even if a validator accidentally had `Edit` added to its frontmatter, the orchestrator would not dispatch it without user consent.
 
@@ -81,7 +81,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" agents/code-reviewer.md agents/security-reviewer.md agents/code-explorer.md agents/code-architect.md agents/comment-analyzer.md agents/pr-test-analyzer.md agents/silent-failure-hunter.md 2>/dev/null
-grep -c "VALIDATOR-BASH" hooks/validator-bash-guard.sh
+grep -c "VALIDATOR-BASH" hooks/gates/validator-bash-guard.sh
 ```
 
 The first grep should return no files. The second grep should return a non-zero count (the hook contains the validator class regex and deny patterns).
@@ -126,7 +126,7 @@ The first count should be > 0. The second grep should return nothing — both co
 
 1. **F10 plan approval filter** — in `/team-build` Step 5 (`commands/team-build.md`). Before any agent is spawned, the lead checks the plan file (`.claude/tasks/<slug>.md`) for pre-execution risks: overlapping file ownership, missing migration tasks, auth/secrets without a security reviewer, and absent integration validators. Bad plans are rejected with reasons; the user revises and re-invokes.
 
-2. **F7 test-claim gate** — in `hooks/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A teammate that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The teammate must add the command and re-trigger completion. This is the post-execution half of the pipeline.
+2. **F7 test-claim gate** — in `hooks/lifecycle/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A teammate that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The teammate must add the command and re-trigger completion. This is the post-execution half of the pipeline.
 
 3. **`/validate-and-fix` command** — for single-task validation after the build. The command runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain, applied to one completed task. It is the manual invocation of the same quality gate for tasks that slipped through or need extra scrutiny.
 
@@ -140,7 +140,7 @@ python3 scripts/plan-linter.py .claude/tasks/<slug>.md --strict
 
 ```bash
 grep -c "plan approval filter\|F10" commands/team-build.md
-grep -c "TaskCompleted\|F7" hooks/task-lifecycle.sh
+grep -c "TaskCompleted\|F7" hooks/lifecycle/task-lifecycle.sh
 grep -c "B → V1 → F → V2\|validation chain" commands/validate-and-fix.md
 ```
 
@@ -156,6 +156,6 @@ All three counts should be non-zero. If any is zero, that gate is missing from t
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 template, F8 lead doctrine, validation chain, routing table
 - [`commands/team-build.md`](../commands/team-build.md) — F10 plan approval filter, wave execution, post-build validation
 - [`commands/validate-and-fix.md`](../commands/validate-and-fix.md) — per-task B→V1→F→V2 validation chain
-- [`hooks/validator-bash-guard.sh`](../hooks/validator-bash-guard.sh) — runtime Bash mutation guard for validators
-- [`hooks/task-lifecycle.sh`](../hooks/task-lifecycle.sh) — F7 TaskCompleted test-claim gate
+- [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — runtime Bash mutation guard for validators
+- [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted test-claim gate
 - [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight structural + F10 risk validation

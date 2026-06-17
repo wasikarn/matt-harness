@@ -77,7 +77,7 @@ The F9 spawn-prompt template also requires `## FILES YOU OWN` — a teammate wit
 
 **Symptom:** A teammate reports "tests pass" or "implementation complete," but the validation command exits non-zero or the acceptance criterion is not satisfied. The task board shows `status: completed`, yet the artifact is broken.
 
-**Likely cause:** The teammate claimed completion without running the validation command, or it ran the command in a different environment (wrong working directory, missing env vars). The F7 gate in `hooks/task-lifecycle.sh` is designed to catch this, but it only fires when the claim text includes test keywords without a `validation_command:` field.
+**Likely cause:** The teammate claimed completion without running the validation command, or it ran the command in a different environment (wrong working directory, missing env vars). The F7 gate in `hooks/lifecycle/task-lifecycle.sh` is designed to catch this, but it only fires when the claim text includes test keywords without a `validation_command:` field.
 
 **Fix:**
 
@@ -94,7 +94,7 @@ The F9 spawn-prompt template also requires `## FILES YOU OWN` — a teammate wit
    tail -20 ~/.claude/team-events/$(date -u +%Y-%m-%d).jsonl | jq -r 'select(.event == "TaskCompleted") | .payload.task_subject'
    ```
 
-**Prevention:** The F7 gate (`hooks/task-lifecycle.sh`) blocks TaskCompleted events that contain test keywords (`pytest`, `npm test`, `cargo test`, etc.) but lack a `validation_command:` field. Ensure every spawn prompt from `/team-build` includes the validation command in the task description body, e.g.:
+**Prevention:** The F7 gate (`hooks/lifecycle/task-lifecycle.sh`) blocks TaskCompleted events that contain test keywords (`pytest`, `npm test`, `cargo test`, etc.) but lack a `validation_command:` field. Ensure every spawn prompt from `/team-build` includes the validation command in the task description body, e.g.:
 
 ```markdown
 validation_command: pytest tests/test_api.py -v
@@ -200,7 +200,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
    ```bash
    export KBG_ENFORCE_TASK_COMPLETED=0
    ```
-   This preserves journaling but removes the exit 2 block. Documented in `hooks/task-lifecycle.sh` § Phase 2.3 escape hatch.
+   This preserves journaling but removes the exit 2 block. Documented in `hooks/lifecycle/task-lifecycle.sh` § Phase 2.3 escape hatch.
 
 4. After bypassing, re-run the blocked action. Then fix the underlying issue (update the hook regex, or correct the task description format) so the bypass is no longer needed.
 
@@ -267,7 +267,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 - [`commands/wave-status.md`](../commands/wave-status.md) — heartbeat and lock status report
 - [`commands/team-cleanup.md`](../commands/team-cleanup.md) — stale artifact cleanup pipeline
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F8 lead doctrine, F8.5 bounded fan-out, F9 spawn-prompt template
-- [`hooks/task-lifecycle.sh`](../hooks/task-lifecycle.sh) — F7 TaskCompleted gate, TeammateIdle heartbeat check
-- [`hooks/validator-bash-guard.sh`](../hooks/validator-bash-guard.sh) — PreToolUse Bash mutation guard
+- [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted gate, TeammateIdle heartbeat check
+- [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — PreToolUse Bash mutation guard
 - [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight plan validation (file ownership, team size, F10 risks)
 - [`scripts/locks/lock-reap.sh`](../scripts/locks/lock-reap.sh) — expired lock reaper
