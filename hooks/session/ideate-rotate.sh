@@ -129,7 +129,7 @@ fi
 ROTATION_MARKDOWN=$(cat <<EOF
 # kbg:ideate session advisory
 
-If you are about to run `kbg:ideate` in this session, prefer this frame
+If you are about to run \`kbg:ideate\` in this session, prefer this frame
 rotation unless the user explicitly asks for different frames:
 
 <ideate-rotation index="$INDEX">
@@ -143,8 +143,8 @@ use the deterministic picker in the skill body instead.
 ${BUDGET_MESSAGE:+$BUDGET_MESSAGE}
 </ideate-budget>
 
-If the budget block shows `status="warning"`, do not auto-fire `/ideate`
-from the pre-flight gate unless the user explicitly invoked `/ideate`; if they
+If the budget block shows \`status="warning"\`, do not auto-fire \`/ideate\`
+from the pre-flight gate unless the user explicitly invoked \`/ideate\`; if they
 did, surface the warning in the brief.
 EOF
 )
