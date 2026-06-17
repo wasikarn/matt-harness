@@ -243,7 +243,14 @@ taste.
   the invariant. Rejected: a meta loop is the highest-autonomy
   architecture, and the same judgment-preservation argument applies
   with extra force (the loop would be rewriting its own gating
-  logic, which the human can no longer vouch for).
+  logic, which the human can no longer vouch for). **Scope note:**
+  only the self-rewriting harness is rejected. The article's *stop*
+  mechanism — "Detect and act stay separate; never a silent kill"
+  (a recommendation handed to a separate gated enforcer, with
+  runtime problems it can't fix escalated to a human) — is
+  *aligned* with this harness's lead=actor / hook=sensor rule
+  (`memory/team-teardown-gap.md`), not forbidden by it. Do not
+  cite this rejection as "even detect/act separation is banned."
 
 - **Opik Ollie flywheel (trace→fix→regression-locked).** From
   *Your Agent Harness Should Repair Itself*. The self-repair
