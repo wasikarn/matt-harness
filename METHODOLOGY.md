@@ -15,6 +15,10 @@ Before implementing:
 - If something is unclear, stop. Name what's confusing. Ask.
 - **Iterative Q&A loops** (grill-me, /to-prd handoffs, multi-round clarification): same gate between rounds. Reject high-fidelity Qs (UI feel, layout) → /prototype. Preserve the design-decision artifact (`/to-prd`) before context-clearing.
 
+**Sub-rule: Give the reason, not just the request.** When you impose a constraint, request, or gate, state the reason for it before the instruction. A rule the operator understands can be accepted; a rule without a reason becomes ceremony.
+
+**Sub-rule: State assumptions, don't extract internal reasoning.** Surface the assumptions behind a recommendation so the operator can inspect them. Do not ask the model to echo, explain, or introspect its own reasoning process — some backends refuse and fall back to a slower, lower-quality mode. If justification is needed, ask for a fresh post-hoc rationale instead.
+
 **Sub-rule: Session resume boot sequence.** On returning to a task after any context break (session restart, /compact, /clear, handoff):
 1. Confirm working directory (`pwd`).
 2. Read recent git activity (`git log --oneline -5`).
@@ -163,6 +167,8 @@ Before adding code:
 
 **Sub-rule: Carry forward acknowledged complexity.** If you named an open question, unresolved contradiction, or unverified assumption in a prior turn, restate it verbatim at the top of your next turn before continuing. Complexity that is acknowledged but not restated is silently dropped — the leading cause of "attention fade" where complications noted in round 3 disappear by round 7.
 
+**Sub-rule: Model-era narration caveat (silence-default backends — Opus 4.8+).** Some backends default to minimal narration unless explicitly asked. On those backends, request the checkpoint explicitly rather than assuming the model will narrate progress.
+
 ## 11. Match the Codebase's Conventions, Even If You Disagree
 
 **Conformance beats taste. Surface harmful conventions. Don't fork silently.**
@@ -170,6 +176,7 @@ Before adding code:
 - Conformance beats taste inside the codebase.
 - If you genuinely think a convention is harmful, surface it.
 - Don't fork silently.
+- **Readability is not brevity.** House shorthand (arrow-chains, `maker≠checker`, coined compound terms) is compression, not a universal readability virtue. Use it only when the reader already shares the vocabulary.
 
 ## 12. Fail Loud
 

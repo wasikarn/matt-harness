@@ -276,6 +276,13 @@ taste.
   of model capability and will not be reopened on a "the model got
   better" argument.
 
+- **Mid-session system-message as standing consent.** Some prompting
+  guides suggest a mid-session `system` message that refreshes the
+  operator's intent or grants standing consent to continue iterating.
+  Rejected: it would function as a deferred human gate, allowing a
+  single approval to cover multiple future mutations. The invariant
+  requires a human gate *per mutation*, not per session launch.
+
 ## Mapping to Harness-Engineering Corpus Prescriptions
 
 The articles in `llm-wiki/raw/ai-agents/harness-engineering/` (16 at the
