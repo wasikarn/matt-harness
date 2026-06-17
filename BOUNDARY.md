@@ -197,10 +197,10 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state one reason, prefer plain English, and use structure only when it carries information. |
+| SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
 
 ---
-_Generated: 2026-06-17T18:16:55Z_
+_Generated: 2026-06-17T18:22:49Z_
 
 ---
 
