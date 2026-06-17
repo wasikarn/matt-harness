@@ -19,7 +19,7 @@ This plan closes the gap. It is intentionally narrow: a hand-curated registry of
 
 The registry is `hooks/sensors.json`, co-located with the consumer hook (Q1 verdict A: BASH_SOURCE-stable — `$(dirname "$0")/sensors.json` works whether the hook runs from the source tree or the plugin cache). It is *hand-curated* per METHODOLOGY Rule 2 (no speculative configurability): no `$KBG_*` env-var defaults, no inference from filesystem globs.
 
-Each entry has six fields:
+Each entry has seven fields:
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -29,6 +29,7 @@ Each entry has six fields:
 | `fallback_role` | enum | no | one of `computational-FF` / `inferential-FF` / `computational-FB` / `inferential-FB`; **omit** to treat as `off` (Q7 — the only intentional-silent exemplar) |
 | `must_fire_in_session` | bool | no (default `false`) | if `true`, the staleness check is session-count, not days (Q2's "days ≠ session-count" extension) |
 | `enabled` | bool | no (default `true`) | runtime kill switch (Q5 verdict A); flipping this in place is the toggle, structural removal = decay-cadence quarter |
+| `observable` | bool | no (default `true`) | does this sensor write the **governance journal** (`journal_append`/`hook_decision`) on fire? `false` for sensors that emit `additionalContext` or log to a separate sink — nudges/reminders, the `*-log` hooks with their own `.log` (`auto-mode-denial`, `bypass-audit`, `evidence-trail`, `fabrication-verdict`), and session/usage/backup hooks. The monitor reads only the journal, so for `observable:false` sensors journal-absence is **unmeasurable**, not staleness: a never-journaled one is NOT flagged. Böckeler L553 (never-fired = coverage gap) applies only to `observable:true` sensors — this prevents the false "silent never" alarms that listed 13 fire-but-don't-journal sensors every SessionStart. |
 
 **Q2 bucket defaults (per `sensor-fire-notification.md:25-28`):**
 

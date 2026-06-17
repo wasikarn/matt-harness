@@ -549,3 +549,26 @@ if [ "$HOO1_T5_RC" = "0" ] && [ -z "$HOO1_T5_OUT" ]; then
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s graceful degradation: expected silent/rc=0, got rc=%s out=%s\n' "notify-sensor-staleness" "$HOO1_T5_RC" "$HOO1_T5_OUT"
 fi
+
+# Test 6: observable:false + never-fired is NOT flagged (the monitor reads the
+# governance journal; a sensor that never writes it is unmeasurable, not dead).
+# Distinguishing fixture: two never-fired (days_silent=null) enforcement sensors,
+# one observable:false (blind sink) and one default-observable. The banner MUST
+# fire for the observable one and MUST omit the blind one — revert the is_stale
+# `observable` branch and this fails (blind one reappears in the banner).
+HOO1_SENSORS_OBS='{"version":1,"sensors":[
+  {"name":"iron-rule-reminder","should_fire_when":"UserPromptSubmit:*","max_silent_days":7,"fallback_role":"computational-FF","must_fire_in_session":false,"enabled":true,"observable":false},
+  {"name":"block-dangerous-git","should_fire_when":"PreToolUse:Bash","max_silent_days":1,"fallback_role":"computational-FF","must_fire_in_session":false,"enabled":true}
+]}'
+HOO1_AUDIT_OBS='[{"name":"iron-rule-reminder","last_fired":null,"days_silent":null,"fallback_role":"computational-FF","max_silent_days":7,"must_fire_in_session":false,"enabled":true,"should_fire_when":"UserPromptSubmit:*"},{"name":"block-dangerous-git","last_fired":null,"days_silent":null,"fallback_role":"computational-FF","max_silent_days":1,"must_fire_in_session":false,"enabled":true,"should_fire_when":"PreToolUse:Bash"}]'
+HOO1_T6_HOME="$FIXTURE/hook1-t6-home"; mkdir -p "$HOO1_T6_HOME"
+HOO1_T6_OUT=$(hoo1_run "$HOO1_SENSORS_OBS" "$HOO1_AUDIT_OBS" "$HOO1_T6_HOME" 2>/dev/null)
+HOO1_T6_RC=$?
+HOO1_T6_CTX=$(printf '%s' "$HOO1_T6_OUT" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null)
+if [ "$HOO1_T6_RC" = "0" ] \
+   && printf '%s' "$HOO1_T6_CTX" | grep -qF 'block-dangerous-git' \
+   && ! printf '%s' "$HOO1_T6_CTX" | grep -qF 'iron-rule-reminder'; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s observable:false never-fired is suppressed; observable sensor still flags\n' "notify-sensor-staleness"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s observable guard failed (rc=%s ctx=%s)\n' "notify-sensor-staleness" "$HOO1_T6_RC" "$HOO1_T6_CTX"
+fi

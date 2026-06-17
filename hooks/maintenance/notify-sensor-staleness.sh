@@ -81,8 +81,14 @@ def days_silent_of(s):
 
 def is_stale(s):
     """Standard staleness: enabled + days_silent > max_silent_days.
-    null days_silent (never fired) is treated as stale per Böckeler L553 —
-    the absence of a sensor firing is a coverage gap, not a quality signal."""
+
+    null days_silent (never journaled) is treated as stale per Böckeler L553 —
+    the absence of a sensor firing is a coverage gap, not a quality signal —
+    BUT only for sensors observable to this monitor. The monitor reads the
+    governance journal; sensors that emit context or log to a separate sink
+    (observable:false) never write it, so journal-absence is unmeasurable for
+    them, not death. Flagging those produced false 'silent never' alarms (e.g.
+    iron-rule-reminder fires every risky prompt yet never journals)."""
     if not s.get("enabled", True):
         return False
     thr = s.get("max_silent_days")
@@ -90,7 +96,7 @@ def is_stale(s):
         return False
     ds = days_silent_of(s)
     if ds is None:
-        return True
+        return s.get("observable", True)
     return ds > thr
 
 def is_must_fire_stale(s):

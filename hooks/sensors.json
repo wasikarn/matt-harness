@@ -11,6 +11,7 @@
   "sensors": [
     {
       "name": "auto-mode-denial-log",
+      "observable": false,
       "should_fire_when": "PermissionDenied:*",
       "max_silent_days": 90,
       "fallback_role": "computational-FB",
@@ -19,6 +20,7 @@
     },
     {
       "name": "auto-review-nudge",
+      "observable": false,
       "should_fire_when": "UserPromptSubmit:*",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",
@@ -51,6 +53,7 @@
     },
     {
       "name": "bypass-audit-log",
+      "observable": false,
       "should_fire_when": "PreToolUse:*",
       "max_silent_days": 1,
       "fallback_role": "computational-FB",
@@ -107,6 +110,7 @@
     },
     {
       "name": "evidence-trail-log",
+      "observable": false,
       "should_fire_when": "PreToolUse:WebFetch|WebSearch",
       "max_silent_days": 1,
       "fallback_role": "inferential-FB",
@@ -115,6 +119,7 @@
     },
     {
       "name": "fabrication-verdict-log",
+      "observable": false,
       "should_fire_when": "Stop:*",
       "max_silent_days": 30,
       "fallback_role": "inferential-FB",
@@ -123,6 +128,7 @@
     },
     {
       "name": "iron-rule-reminder",
+      "observable": false,
       "should_fire_when": "UserPromptSubmit:*",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",
@@ -139,6 +145,7 @@
     },
     {
       "name": "orchestrator-nudge",
+      "observable": false,
       "should_fire_when": "UserPromptSubmit:*",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",
@@ -163,6 +170,7 @@
     },
     {
       "name": "precompact-backup",
+      "observable": false,
       "should_fire_when": "PreCompact:manual|auto",
       "max_silent_days": 90,
       "fallback_role": "inferential-FB",
@@ -195,6 +203,7 @@
     },
     {
       "name": "session-load",
+      "observable": false,
       "should_fire_when": "SessionStart:startup",
       "max_silent_days": 30,
       "fallback_role": "inferential-FB",
@@ -203,6 +212,7 @@
     },
     {
       "name": "session-summary",
+      "observable": false,
       "should_fire_when": "SessionEnd:*",
       "max_silent_days": 30,
       "fallback_role": "inferential-FB",
@@ -211,6 +221,7 @@
     },
     {
       "name": "skill-nudge",
+      "observable": false,
       "should_fire_when": "UserPromptSubmit:*",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",
@@ -219,6 +230,7 @@
     },
     {
       "name": "superset-notify-wrapper",
+      "observable": false,
       "should_fire_when": "SessionStart:*",
       "max_silent_days": 30,
       "fallback_role": "inferential-FB",
@@ -235,6 +247,7 @@
     },
     {
       "name": "usage-monitor-capture",
+      "observable": false,
       "should_fire_when": "SessionEnd:*",
       "max_silent_days": 30,
       "fallback_role": "inferential-FB",
