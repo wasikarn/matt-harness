@@ -1,13 +1,13 @@
 {
   "dataset_name": "harness-vs-loop-autonomy",
-  "description": "Regression fixture using the @0xCodez 14-step harness roadmap article as test material. Verifies that kbg-harness doctrine (ADR 0002, CLAUDE.md, memory) preserves the distinction between harness, loop, and autonomy invariant, and does not silently adopt the article's L3/L4 loop recommendation.",
+  "description": "Regression fixture using the @0xCodez 14-step harness roadmap article and Sydney Runkle's 'The Art of Loop Engineering' as test material. Verifies that kbg-harness doctrine (ADR 0002, CLAUDE.md, memory, BOUNDARY.md) preserves the distinction between harness, loop, and autonomy invariant, and does not silently adopt either article's L3/L4 loop recommendation.",
   "evals": [
     {
       "id": "harness-vs-loop-autonomy-doctrine-present",
       "task": "Check that doctrine files and the 0xCodez article memory explicitly distinguish harness vs loop and reject unattended loops (autonomy invariant).",
       "skill": "script-cli",
       "context": {
-        "command": "python3 - <<'PY'\nimport pathlib, sys\nfiles = [\n    'docs/adr/0002-autonomy-invariant.md',\n    'CLAUDE.md',\n    'memory/harness-engineering-2x2-model.md',\n    'memory/0xcodez-harness-roadmap.md',\n]\nrequired = [\n    'autonomy invariant',\n    'out of scope by design',\n    'unattended self-repair loop',\n    '14-step roadmap',\n]\ncombined = ''\nfor f in files:\n    p = pathlib.Path(f)\n    if p.exists():\n        combined += p.read_text(encoding='utf-8').lower()\nall_found = True\nfor phrase in required:\n    if phrase.lower() in combined:\n        print(f'FOUND: {phrase}')\n    else:\n        print(f'MISSING: {phrase}')\n        all_found = False\nsys.exit(0 if all_found else 1)\nPY",
+        "command": "python3 -c \"import pathlib, sys; files = ['docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'memory/harness-engineering-2x2-model.md', 'memory/0xcodez-harness-roadmap.md']; required = ['autonomy invariant', 'out of scope by design', 'unattended self-repair loop', '14-step roadmap']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
         "expected_exit_code": 0,
         "timeout": 30
       },
@@ -20,11 +20,49 @@
       ],
       "expected_duration_seconds": 5,
       "expected_tokens": 500,
-      "tags": ["harness-vs-loop", "autonomy-invariant", "regression", "memory-contract", "doctrine"],
+      "tags": [
+        "harness-vs-loop",
+        "autonomy-invariant",
+        "regression",
+        "memory-contract",
+        "doctrine"
+      ],
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "doctrine-forgets-harness-loop-autonomy-boundary",
       "fixed_by": "memory/0xcodez-harness-roadmap.md + eval/regressions/harness-vs-loop-autonomy.json"
+    },
+    {
+      "id": "sydney-runkle-loop-engineering-rejected",
+      "task": "Check that the Sydney Runkle / LangChain 4-loop article is catalogued as a reference memory and that its L3/L4 unattended-loop conclusion is rejected in doctrine, memory, and BOUNDARY.md.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 -c \"import pathlib, sys; files = ['memory/sydney-runkle-loop-engineering.md', 'docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'BOUNDARY.md', 'skills/inventory/scripts/inventory-boundary.sh']; required = ['sydneyrunkle', 'hill-climbing loop', 'event-driven loop', 'out of scope by design', 'ADR 0002']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
+        "expected_exit_code": 0,
+        "timeout": 30
+      },
+      "success_criteria": [
+        "rc=0",
+        "stdout contains FOUND: sydneyrunkle",
+        "stdout contains FOUND: hill-climbing loop",
+        "stdout contains FOUND: event-driven loop",
+        "stdout contains FOUND: out of scope by design",
+        "stdout contains FOUND: ADR 0002"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 500,
+      "tags": [
+        "harness-vs-loop",
+        "autonomy-invariant",
+        "regression",
+        "memory-contract",
+        "doctrine",
+        "boundary"
+      ],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "sydney-runkle-loop-engineering-not-locked",
+      "fixed_by": "memory/sydney-runkle-loop-engineering.md + skills/inventory/scripts/inventory-boundary.sh + eval/regressions/harness-vs-loop-autonomy.json"
     }
   ]
 }
