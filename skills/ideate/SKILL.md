@@ -25,6 +25,15 @@ This skill is expensive. About 8 to 10 Agent calls, 30 to 90 seconds
 wall clock, 5 to 10x a single answer. Do not pay that cost when a
 direct answer is better. Run this gate before Phase 1.
 
+**Step 0. Budget warning check.**
+
+If the session context contains a block of the form
+`<ideate-budget status="warning" ...>`, the daily ideate threshold has
+been crossed. **Do not auto-fire ideate from Step 2 below**; let the
+self-judge gate abort and answer directly. If Step 1 matches (the user
+explicitly invoked `/ideate` or asked for ideate mode), still proceed to
+Phase 1, but surface the warning in the brief.
+
 **Step 1. Explicit invocation check.**
 
 If the user typed `/ideate` or explicitly asked for "ideate mode",
@@ -55,6 +64,27 @@ If any fails, ABORT and answer the question directly. Optionally
 append one sentence: *"If you want a wider exploration under
 parallel cognitive frames with explicit trap detection, run
 `/ideate <your problem>`."*
+
+## Session frame rotation (advisory)
+
+A SessionStart hook emits a block of the form:
+
+```markdown
+<ideate-rotation index="N">
+- hardware-eyes
+- regulator
+- ...
+</ideate-rotation>
+```
+
+**If this block is present in the session context, prefer these 5
+frames for the next ideate run.** The hook has already satisfied the
+1-wild minimum and rotated the set relative to prior sessions, so
+re-running ideate on a similar problem yields different vantages.
+
+If the block is absent (fresh install, hook disabled, or malformed),
+fall back to the deterministic picker in
+[Picking frames](#picking-frames).
 
 ## 2-wave fan-out (load-bearing)
 
