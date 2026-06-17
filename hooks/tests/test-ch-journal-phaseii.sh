@@ -1,8 +1,8 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-journal-phaseii.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-journal-phaseii.sh — standalone suite run by test-critical-hooks.sh
 # Covers: C1 Phase II (L1, L2, M, N, N2, P, O, R, S, T, U, V, W, X, Y, Z, AA, BB).
-# Requires: JLIB, JPATH, GS from test-ch-journal.sh (sourced first); HOOKS, FIXTURE from main.
 
 # --- C1 Phase II: id-echo additive + non-hook emitter + journaler + registry ---
 # The journaler is the /review-pr producer bridge. (L)/(M)/(N)/(O) prove each

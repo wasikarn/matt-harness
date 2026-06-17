@@ -14,12 +14,14 @@ Prerequisites:
 """
 
 import argparse
+import concurrent.futures
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -178,8 +180,6 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
     # of journal events (dict per event). The script reads from --journal,
     # so the mock journal is written to a temp file and passed via --journal.
     elif skill == "observe-script" and "command" in context:
-        import tempfile
-
         cmd_str = context["command"]
         threshold = context.get("stall_threshold_min", 10)
         staleness = context.get("staleness_min", 30)
@@ -408,14 +408,23 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             failed = len(criteria)
             details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
 
-    # Strategy: for acceptance-contract evals, run run-acceptance.py if slug exists
+    # Strategy: for acceptance-contract evals, run run-acceptance.py if slug exists.
+    # Each eval gets a unique --output file so multiple evals that share the same
+    # slug (e.g., review-pr + ship-change both reference phase-1-safety-fixes)
+    # can run in parallel without racing on .scratch/<slug>/acceptance-results.json.
     elif skill in ("ship-change", "review-pr", "pre-ship-verify") and "slug" in context:
         slug = context["slug"]
         acceptance_md = REPO_ROOT / ".scratch" / slug / "ACCEPTANCE.md"
         if acceptance_md.exists() and RUN_ACCEPTANCE.exists():
+            # Unique temp output per eval invocation.
+            ar_output_fd = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", prefix=f"acceptance-{slug}-", delete=False
+            )
+            ar_output_path = Path(ar_output_fd.name)
+            ar_output_fd.close()
             try:
                 result = subprocess.run(
-                    [sys.executable, str(RUN_ACCEPTANCE), slug],
+                    [sys.executable, str(RUN_ACCEPTANCE), slug, "--output", str(ar_output_path)],
                     # 120s wrapper > run-acceptance's 60s per-criterion timeout, so the
                     # runner finishes (its slow critical-hooks-suite criterion times out
                     # at 60s and is recorded as failed) and writes the results json BEFORE
@@ -424,8 +433,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                     # suite criterion to pass. Keep this > DEFAULT_TIMEOUT.
                     capture_output=True, text=True, timeout=120, cwd=REPO_ROOT,
                 )
-                results_json = REPO_ROOT / ".scratch" / slug / "acceptance-results.json"
-                ar = json.loads(results_json.read_text()) if results_json.exists() else {}
+                ar = json.loads(ar_output_path.read_text()) if ar_output_path.exists() else {}
                 crit_counts = ar.get("criteria", [])
                 ar_passed = sum(1 for c in crit_counts if c.get("result", {}).get("status") == "passed")
                 ar_failed = sum(1 for c in crit_counts if c.get("result", {}).get("status") == "failed")
@@ -439,7 +447,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                         if result.returncode == want:
                             passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                         failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"got rc={result.returncode}"}); continue
-                    if "results.json" in crit_lower and results_json.exists():
+                    if "results.json" in crit_lower and ar_output_path.exists():
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
                     if "exists" in crit_lower and acceptance_md.exists():
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
@@ -460,6 +468,11 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             except Exception as e:
                 failed = len(criteria)
                 details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+            finally:
+                try:
+                    ar_output_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
         else:
             # No acceptance.md — test the "no contract" path
             for crit in criteria:
@@ -648,9 +661,6 @@ def run_harness_coverage_eval(eval_item: dict, verbose: bool) -> dict:
     TAG_ONLY_TAGS so failures here never fail --gate (the plan's
     EVAL-1 row is explicit). The verdict is reported as `tag-only`.
     """
-    import subprocess
-    import tempfile
-
     sessions = eval_item.get("sessions", [])
     expected_grid = eval_item.get("expected_grid", [])
     cases = eval_item.get("cases", [])
@@ -784,6 +794,40 @@ def filter_by_tag(eval_items: list[dict], tag: str | None) -> list[dict]:
     return [ev for ev in eval_items if tag in ev.get("tags", [])]
 
 
+def _run_eval_worker(item: dict, verbose: bool) -> dict:
+    """Run a single eval item in a worker process.
+
+    Workers are stateless and print nothing; the main thread collects the
+    result and handles output + aggregation. This keeps the per-eval output
+    ordered and avoids interleaved logs from concurrent subprocesses.
+    """
+    source = item["_source"]
+    ev = item["_eval"]
+    if source == "dataset":
+        return run_assertion_eval(ev, verbose)
+    if source == "harness-coverage":
+        return run_harness_coverage_eval(ev, verbose)
+    return run_regression_eval(ev, verbose)
+
+
+def _build_jobs(datasets: list[dict], regressions: list[dict], tag: str | None) -> list[dict]:
+    """Flatten datasets and regressions into a single job list."""
+    jobs = []
+    for ds in datasets:
+        for ev in filter_by_tag(flatten_evals([ds]), tag):
+            jobs.append({"_source": "dataset", "_eval": ev})
+    for ev in filter_by_tag(flatten_evals(regressions), tag):
+        if "expected_grid" in ev and "sessions" in ev:
+            jobs.append({"_source": "harness-coverage", "_eval": ev})
+        else:
+            jobs.append({"_source": "regression", "_eval": ev})
+    return jobs
+
+
+def _default_workers() -> int:
+    return max(1, min(8, os.cpu_count() or 1))
+
+
 def compute_bucket_threshold(fixture_results: list[dict]) -> dict:
     """Bucket-threshold pass criterion for inferential-structural-judge.
 
@@ -847,6 +891,8 @@ def main() -> int:
     parser.add_argument("--tag", type=str, help="Filter evals by tag")
     parser.add_argument("--verbose", "-v", action="store_true", help="Print per-eval details")
     parser.add_argument("--output", "-o", type=str, help="Override results directory")
+    parser.add_argument("--workers", "-w", type=int, default=_default_workers(),
+                        help=f"Parallel eval workers (default: {_default_workers()})")
     args = parser.parse_args()
 
     results_dir = Path(args.output) if args.output else RESULTS_DIR
@@ -861,41 +907,62 @@ def main() -> int:
     overall_regressions = 0
     overall_skipped = 0
 
-    # ---- Datasets ----
+    # ---- Collect jobs ----
+    datasets: list[dict] = []
+    regressions: list[dict] = []
+
     if args.dataset:
         ds_path = Path(args.dataset)
         if not ds_path.exists():
             print(f"Error: dataset directory not found: {ds_path}", file=sys.stderr)
             return 1
         datasets = load_json_files(ds_path)
-        evals = filter_by_tag(flatten_evals(datasets), args.tag)
-        print(f"Running {len(evals)} eval(s) from {len(datasets)} dataset(s)...", file=sys.stderr)
-        for ev in evals:
-            if args.verbose:
-                print(f"  [{ev.get('id','?')}] running...", file=sys.stderr)
-            result = run_assertion_eval(ev, args.verbose)
-            all_results.append(result)
-            if result["result"] == "passed":
-                overall_passed += 1
-            elif result["result"] == "failed":
-                overall_failed += 1
-            else:
-                overall_skipped += 1
-            if args.verbose:
-                print(f"    → {result['result']} ({result['passed']}/{result['total']})", file=sys.stderr)
 
-    # ---- Regressions ----
-    if args.regression or (not args.dataset and not args.regression):
-        # Default: if neither flag, run both datasets (if default dir exists) and regressions
-        if not args.dataset and DATASETS_DIR.exists() and any(DATASETS_DIR.glob("*.json")):
-            datasets = load_json_files(DATASETS_DIR)
-            evals = filter_by_tag(flatten_evals(datasets), args.tag)
-            print(f"Running {len(evals)} eval(s) from default datasets/...", file=sys.stderr)
-            for ev in evals:
-                if args.verbose:
-                    print(f"  [{ev.get('id','?')}] running...", file=sys.stderr)
-                result = run_assertion_eval(ev, args.verbose)
-                all_results.append(result)
+    run_default = not args.dataset and not args.regression
+    if run_default and DATASETS_DIR.exists() and any(DATASETS_DIR.glob("*.json")):
+        datasets = load_json_files(DATASETS_DIR)
+
+    if args.regression or run_default:
+        regressions = load_json_files(REGRESSIONS_DIR)
+
+    jobs = _build_jobs(datasets, regressions, args.tag)
+
+    is_tag_only_mode = bool(args.tag) and args.tag in TAG_ONLY_TAGS
+    if is_tag_only_mode:
+        print(f"TAG-ONLY: tag={args.tag!r} — failure here does not fail global --gate "
+              f"(per plan EVAL-1 row, design doc §4(b))", file=sys.stdout)
+
+    print(f"Running {len(jobs)} eval(s) in parallel (workers={args.workers})...", file=sys.stderr)
+    bucket_inputs: list[dict] = []
+
+    # ---- Parallel execution ----
+    with concurrent.futures.ProcessPoolExecutor(max_workers=args.workers) as executor:
+        future_to_job = {
+            executor.submit(_run_eval_worker, job, False): job
+            for job in jobs
+        }
+        for future in concurrent.futures.as_completed(future_to_job):
+            job = future_to_job[future]
+            ev = job["_eval"]
+            source = job["_source"]
+            try:
+                result = future.result()
+            except Exception as exc:
+                ev_id = ev.get("id", ev.get("_source_file", "?"))
+                result = {
+                    "id": ev_id,
+                    "skill": ev.get("skill", "unknown"),
+                    "result": "failed",
+                    "passed": 0,
+                    "failed": 1,
+                    "total": 1,
+                    "details": [{"criterion": "worker", "status": "error", "error": str(exc)}],
+                }
+
+            all_results.append(result)
+
+            if source == "dataset":
+                # Dataset results feed the gate directly.
                 if result["result"] == "passed":
                     overall_passed += 1
                 elif result["result"] == "failed":
@@ -903,56 +970,17 @@ def main() -> int:
                 else:
                     overall_skipped += 1
                 if args.verbose:
-                    print(f"    → {result['result']} ({result['passed']}/{result['total']})", file=sys.stderr)
+                    print(f"  [{ev.get('id', '?')}] → {result['result']} "
+                          f"({result['passed']}/{result['total']})", file=sys.stderr)
+                continue
 
-        regressions = load_json_files(REGRESSIONS_DIR)
-        reg_evals = filter_by_tag(flatten_evals(regressions), args.tag)
-        # Tag-only mode: this tag is in TAG_ONLY_TAGS (e.g.
-        # `inferential-structural-judge`). Failures here MUST NOT
-        # fail --gate — the plan's EVAL-1 row is explicit ("tag-only
-        # failure mode"). We still run every fixture (so the
-        # bucket-threshold verdict is computable), but the per-fixture
-        # result is re-classified as `tag-only` (or `skipped` if the
-        # fixture is also tagged `manual`) and contributes zero to
-        # overall_failed / overall_regressions.
-        is_tag_only_mode = bool(args.tag) and args.tag in TAG_ONLY_TAGS
-        if is_tag_only_mode and reg_evals:
-            print(f"TAG-ONLY: tag={args.tag!r} — failure here does not fail global --gate "
-                  f"(per plan EVAL-1 row, design doc §4(b))", file=sys.stdout)
-        print(f"Running {len(reg_evals)} regression fixture(s)...", file=sys.stderr)
-        bucket_inputs: list[dict] = []  # populated only in tag-only mode
-        for ev in reg_evals:
-            if args.verbose:
-                print(f"  [{ev.get('id', 'harness-coverage')}] running regression...", file=sys.stderr)
-            # Dispatch on fixture shape: harness-coverage fixtures use
-            # the new `sessions[]/expected_grid[]/cases[]` shape (per
-            # the Wave 4 FIX-1 contract) instead of the canonical
-            # `evals[]` array. Branch to the dedicated evaluator; this
-            # keeps the canonical `run_regression_eval` path unchanged.
-            if ("expected_grid" in ev and "sessions" in ev):
-                result = run_harness_coverage_eval(ev, args.verbose)
-            else:
-                result = run_regression_eval(ev, args.verbose)
-            all_results.append(result)
-            # Per-eval tag-only check: a fixture that carries a TAG_ONLY_TAG in its
-            # own `tags` list is tag-only in ALL runs, not just when --tag is passed.
-            # This ensures inferential-structural-judge fixtures never fail --gate
-            # even when no --tag filter is active.
+            # Regression (or harness-coverage) result.
             ev_is_tag_only = bool(set(ev.get("tags", [])) & TAG_ONLY_TAGS)
-            # Harness-coverage fixtures use the new
-            # `sessions[]/expected_grid[]` shape (per the Wave 4 FIX-1
-            # contract) instead of the canonical `evals[]` + `tags[]`.
-            # Detect by shape and force tag-only treatment; this
-            # matches the plan's EVAL-1 row contract.
-            if "expected_grid" in ev and "sessions" in ev:
+            if source == "harness-coverage":
                 ev_is_tag_only = True
             effective_tag_only = is_tag_only_mode or ev_is_tag_only
+
             if effective_tag_only:
-                # Re-classify: tag-only fixtures never fail the gate.
-                # Preserves the base result in `result["result"]` only
-                # if the fixture was `skipped` (manual) — that stays
-                # `skipped` so the per-eval detail is honest. Otherwise
-                # stamp the result as `tag-only` with a clear note.
                 if result.get("result") == "skipped":
                     note = ("fixture is manual, skipped — will be live when "
                             "manual tag is removed (EVAL-1.5)")
@@ -962,30 +990,17 @@ def main() -> int:
                             "per-fixture pass/fail does not fail --gate")
                     result = {**result, "result": "tag-only", "tag_only": True,
                               "regression_note": note}
-                # Capture stdout for the bucket-threshold score parser
-                # (only meaningful for fixtures that actually ran;
-                # manual-skipped fixtures have no stdout).
                 result["_fixture"] = ev
-                # _actual_score stays None in the stub state: the
-                # runner's run_regression_eval does not capture stdout,
-                # and the inferential-structural-judge fixtures are
-                # echo-only stubs until EVAL-1.5 wires the agent
-                # dispatcher. When that lands, the agent's verdict
-                # JSONL will be parsed for the actual score here.
                 result["_actual_score"] = None
                 bucket_inputs.append(result)
-                # Counts: tag-only fixtures show as `passed` in the
-                # console summary (the tag-only verdict is itself a
-                # "pass the gate" event), with skipped/manual ones
-                # counted as `skipped`.
                 if result.get("result") == "skipped":
                     overall_skipped += 1
                 else:
                     overall_passed += 1
                 if args.verbose:
-                    print(f"    → {result['result']} (tag-only) "
-                          f"{result.get('regression_note', '')}", file=sys.stderr)
+                    print(f"  [{ev.get('id', 'harness-coverage')}] → {result['result']} (tag-only)", file=sys.stderr)
                 continue
+
             if result["result"] == "passed":
                 overall_passed += 1
             elif result["result"] == "regression":
@@ -995,21 +1010,22 @@ def main() -> int:
             else:
                 overall_skipped += 1
             if args.verbose:
-                print(f"    → {result['result']} ({result.get('regression_note', '')})", file=sys.stderr)
+                print(f"  [{ev.get('id', '?')}] → {result['result']} "
+                      f"({result.get('regression_note', '')})", file=sys.stderr)
 
-        # ---- Tag-only bucket-threshold verdict (e.g. EVAL-1) ----
-        if bucket_inputs:
-            bt = compute_bucket_threshold(bucket_inputs)
-            verdict = "PASS" if bt["passes"] else "FAIL"
-            print(
-                f"TAG-ONLY: bucket-threshold verdict = {verdict} "
-                f"(good: {bt['good_pass_count']}/{bt['good_total']} >= "
-                f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
-                f"bad: {bt['bad_pass_count']}/{bt['bad_total']} >= "
-                f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
-                f"skipped: {bt['skipped']})",
-                file=sys.stdout,
-            )
+    # ---- Tag-only bucket-threshold verdict (e.g. EVAL-1) ----
+    if bucket_inputs:
+        bt = compute_bucket_threshold(bucket_inputs)
+        verdict = "PASS" if bt["passes"] else "FAIL"
+        print(
+            f"TAG-ONLY: bucket-threshold verdict = {verdict} "
+            f"(good: {bt['good_pass_count']}/{bt['good_total']} >= "
+            f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
+            f"bad: {bt['bad_pass_count']}/{bt['bad_total']} >= "
+            f"{BUCKET_THRESHOLD_PASS_PER_BUCKET}, "
+            f"skipped: {bt['skipped']})",
+            file=sys.stdout,
+        )
 
     # ---- Summary ----
     summary = {

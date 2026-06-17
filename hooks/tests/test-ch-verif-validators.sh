@@ -1,6 +1,7 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-verif-validators.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-verif-validators.sh — standalone suite run by test-critical-hooks.sh
 # Covers: verification-gate (11 tests), verification-tier-audit (2 tests),
 #         review-pr-journal-pre-emit-validator (4 tests CC/DD/EE/FF),
 #         recursive-improve-observe.py (7 tests).

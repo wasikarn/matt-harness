@@ -8,12 +8,13 @@
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
-#      health check, blocking on CRITICAL findings only (broken symlink,
-#      missing frontmatter, name/dir mismatch, syntax error). Warnings (drift,
-#      style) are surfaced but do NOT block — often intentional mid-edit.
+#      health check, blocking on CRITICAL findings only.
 #   4. eval fixtures staged → run only the affected eval fixtures/datasets
-#      (determined by scripts/select-affected-fixtures.py). The full eval gate
-#      and the critical-hooks suite are left to the pre-push gauntlet.
+#      (selected by scripts/select-affected-fixtures.py).
+#
+# The three heavy layers above run in parallel so the commit gate stays fast.
+# The full eval gate and critical-hooks behavioral suite are intentionally
+# deferred to the pre-push gauntlet.
 #
 # Wired via: git config core.hooksPath git-hooks
 # Bypass:    git commit --no-verify  (use only when you know why)
@@ -25,114 +26,151 @@ mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
 
 fail=0
 
-if [ "${#STAGED[@]}" -gt 0 ]; then
-  for f in "${STAGED[@]}"; do
-    [ -f "$f" ] || continue
+WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-pre-commit.XXXXXX")
+trap 'rm -rf "$WORK_TMP"' EXIT
 
-    if [[ "$f" == hooks/*.sh ]]; then
-      if ! bash -n "$f" 2>&1; then
-        echo "  bash syntax error: $f" >&2
-        fail=1
-      fi
-      if ! shellcheck --severity=warning "$f"; then
-        echo "  shellcheck failed: $f" >&2
-        fail=1
-      fi
-    fi
+# ---- Layer 1: syntax / lint checks ----
+run_syntax_layer() {
+  local rc=0
+  if [ "${#STAGED[@]}" -gt 0 ]; then
+    for f in "${STAGED[@]}"; do
+      [ -f "$f" ] || continue
 
-    if [[ "$f" == *.json ]]; then
-      if ! jq -e . "$f" >/dev/null 2>&1; then
-        echo "  invalid JSON: $f" >&2
-        fail=1
+      if [[ "$f" == hooks/*.sh ]]; then
+        if ! bash -n "$f" 2>&1; then
+          echo "  bash syntax error: $f" >&2
+          rc=1
+        fi
+        if ! shellcheck --severity=warning "$f"; then
+          echo "  shellcheck failed: $f" >&2
+          rc=1
+        fi
       fi
-    fi
-  done
-fi
 
-# 3. Ecosystem health — run harness-audit only when a fleet artifact is staged
-#    (scoped so doc-only commits aren't slowed). Block on CRITICAL findings
-#    only; warnings are advisory. Prefer the in-repo audit (validates the
-#    version being committed); fall back to the installed copy.
+      if [[ "$f" == *.json ]]; then
+        if ! jq -e . "$f" >/dev/null 2>&1; then
+          echo "  invalid JSON: $f" >&2
+          rc=1
+        fi
+      fi
+    done
+  fi
+  return "$rc"
+}
+
+# Decide whether the audit / eval layers need to run.
 ecosystem_staged=0
+eval_staged=0
 for f in "${STAGED[@]}"; do
   case "$f" in
     agents/*|skills/*|commands/*|hooks/*|scripts/*)
-      ecosystem_staged=1; break ;;
+      ecosystem_staged=1 ;;
+  esac
+  case "$f" in
+    agents/*|skills/*|commands/*|hooks/*|scripts/*|eval/*|.claude-plugin/*)
+      eval_staged=1 ;;
   esac
 done
 
+# ---- Layer 2: harness-audit (CRITICAL only) ----
+run_audit_layer() {
+  local rc=0
+  if [ "$ecosystem_staged" -eq 1 ]; then
+    local AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
+    [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
+    if [ -f "$AUDIT" ]; then
+      local audit_out
+      audit_out="$(bash "$AUDIT" "$ROOT" 2>&1)"
+      local crit_n
+      crit_n="$(printf '%s\n' "$audit_out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
+      if [ -z "$crit_n" ]; then
+        echo "  harness-audit did not complete (no summary) — run: bash $AUDIT" >&2
+        printf '%s\n' "$audit_out" | tail -3 >&2
+        rc=1
+      elif [ "$crit_n" -gt 0 ]; then
+        printf '%s\n' "$audit_out" | grep 'CRIT' >&2
+        echo "  harness-audit: $crit_n critical ecosystem issue(s) above" >&2
+        rc=1
+      fi
+    fi
+  fi
+  return "$rc"
+}
+
+# ---- Layer 3: affected eval fixtures ----
+run_eval_layer() {
+  local rc=0
+  local selector="$ROOT/scripts/select-affected-fixtures.py"
+  local eval_tmp=""
+
+  if [ "$eval_staged" -eq 0 ] || [ ! -f "$selector" ] || [ ! -x "$selector" ]; then
+    return 0
+  fi
+
+  local sel_out
+  sel_out="$(python3 "$selector" --staged-files "${STAGED[@]}" 2>&1)"
+  if [ $? -ne 0 ]; then
+    echo "  select-affected-fixtures failed: $sel_out" >&2
+    return 1
+  fi
+
+  local all_sel fallback
+  all_sel="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("\n".join(d["pre_commit"]["regressions"] + d["pre_commit"]["datasets"]))')"
+  fallback="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; print("true" if json.load(sys.stdin)["fallback"] else "false")')"
+
+  if [ "$fallback" = "true" ]; then
+    echo "  pre-commit: fallback mode — full eval gate deferred to pre-push" >&2
+  fi
+
+  if [ -n "$all_sel" ]; then
+    eval_tmp="$(mktemp -d)"
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      ln -s "$ROOT/$p" "$eval_tmp/$(basename "$p")"
+    done <<< "$all_sel"
+
+    if ! eval_out="$(python3 "$ROOT/eval/run-eval.py" --dataset "$eval_tmp" --gate 2>&1)"; then
+      printf '%s\n' "$eval_out" | tail -20 >&2
+      echo "  affected eval fixtures failed — run: python3 $selector --staged-files ${STAGED[*]}" >&2
+      rc=1
+    fi
+  fi
+
+  [ -n "$eval_tmp" ] && rm -rf "$eval_tmp"
+  return "$rc"
+}
+
+# Start all applicable layers in parallel.
+echo "pre-commit: running staged checks in parallel..." >&2
+
+run_syntax_layer > "$WORK_TMP/syntax.log" 2>&1 &
+PID_SYNTAX=$!
+
 if [ "$ecosystem_staged" -eq 1 ]; then
-  AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
-  [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
-  if [ -f "$AUDIT" ]; then
-    # Pass the repo root explicitly so audit's layout detection resolves to
-    # this repo (it FATALs if no fleet is found).
-    audit_out="$(bash "$AUDIT" "$ROOT" 2>&1)"
-    crit_n="$(printf '%s\n' "$audit_out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
-    if [ -z "$crit_n" ]; then
-      # No "Critical:" summary line → audit crashed / FATAL. Fail loud (Rule 12)
-      # rather than treat an aborted audit as a clean pass.
-      echo "  harness-audit did not complete (no summary) — run: bash $AUDIT" >&2
-      printf '%s\n' "$audit_out" | tail -3 >&2
-      fail=1
-    elif [ "$crit_n" -gt 0 ]; then
-      printf '%s\n' "$audit_out" | grep 'CRIT' >&2
-      echo "  harness-audit: $crit_n critical ecosystem issue(s) above" >&2
-      fail=1
-    fi
-  fi
+  run_audit_layer > "$WORK_TMP/audit.log" 2>&1 &
+  PID_AUDIT=$!
 fi
 
-# 4. Affected eval fixtures — when a plugin-delivered surface changes, run
-#    only the regression fixtures / datasets that reference it. The full eval
-#    gate (all datasets + all regressions) and the critical-hooks behavioral
-#    suite are intentionally deferred to the pre-push gauntlet; they are too
-#    slow to run on every commit (~5 minutes serial, ~3 minutes parallel).
-selector="$ROOT/scripts/select-affected-fixtures.py"
-# shellcheck disable=SC2064
-eval_tmp=""
-if [ -f "$selector" ] && [ -x "$selector" ]; then
-  eval_staged=0
-  for f in "${STAGED[@]}"; do
-    case "$f" in
-      agents/*|skills/*|commands/*|hooks/*|scripts/*|eval/*|.claude-plugin/*)
-        eval_staged=1; break ;;
-    esac
-  done
-
-  if [ "$eval_staged" -eq 1 ]; then
-    sel_out="$(python3 "$selector" --staged-files "${STAGED[@]}" 2>&1)"
-    if [ $? -ne 0 ]; then
-      echo "  select-affected-fixtures failed: $sel_out" >&2
-      fail=1
-    else
-      # Extract fixture lists from JSON using python3 (no jq dependency here).
-      all_sel="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("\n".join(d["pre_commit"]["regressions"] + d["pre_commit"]["datasets"]))')"
-      fallback="$(printf '%s\n' "$sel_out" | python3 -c 'import sys,json; print("true" if json.load(sys.stdin)["fallback"] else "false")')"
-
-      if [ "$fallback" = "true" ]; then
-        echo "  pre-commit: fallback mode — full eval gate deferred to pre-push" >&2
-      fi
-
-      if [ -n "$all_sel" ]; then
-        eval_tmp="$(mktemp -d)"
-        while IFS= read -r p; do
-          [ -n "$p" ] || continue
-          ln -s "$ROOT/$p" "$eval_tmp/$(basename "$p")"
-        done <<< "$all_sel"
-
-        if ! eval_out="$(python3 "$ROOT/eval/run-eval.py" --dataset "$eval_tmp" --gate 2>&1)"; then
-          printf '%s\n' "$eval_out" | tail -20 >&2
-          echo "  affected eval fixtures failed — run: python3 $selector --staged-files ${STAGED[*]}" >&2
-          fail=1
-        fi
-      fi
-    fi
-  fi
+if [ "$eval_staged" -eq 1 ]; then
+  run_eval_layer > "$WORK_TMP/eval.log" 2>&1 &
+  PID_EVAL=$!
 fi
 
-# Cleanup temp eval dir if we created one.
-[ -n "$eval_tmp" ] && rm -rf "$eval_tmp"
+# Wait and report.
+wait_layer() {
+  local name="$1" pid="$2" log="$3"
+  if wait "$pid"; then
+    echo "  ✅ $name" >&2
+  else
+    echo "  ❌ $name" >&2
+    tail -n 20 "$log" | sed 's/^/     /' >&2
+    fail=1
+  fi
+}
+
+wait_layer "syntax/lint" "$PID_SYNTAX" "$WORK_TMP/syntax.log"
+[ -n "${PID_AUDIT:-}" ] && wait_layer "harness-audit" "$PID_AUDIT" "$WORK_TMP/audit.log"
+[ -n "${PID_EVAL:-}" ] && wait_layer "affected eval fixtures" "$PID_EVAL" "$WORK_TMP/eval.log"
 
 if [ "$fail" -ne 0 ]; then
   echo "" >&2

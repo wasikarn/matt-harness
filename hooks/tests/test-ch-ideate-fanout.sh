@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+# shellcheck disable=SC1091
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # test-ch-ideate-fanout — locks the 2-wave fan-out structure of
 # skills/ideate/SKILL.md (PR2 of ideate-adhd-port). The 2026-06-12 audit
 # caught a 44→105-agent failure mode where a soft cap on a work-list was

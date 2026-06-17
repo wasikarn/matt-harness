@@ -1,6 +1,7 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-harness-audit32.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-harness-audit32.sh — standalone suite run by test-critical-hooks.sh
 # Covers: harness-audit check #32 (PP/QQ/RR), inferential-structural-judge
 #         (HOO15 T1-T5 + bash-n + shellcheck), notify-sensor-staleness (HOO1 T1-T5).
 

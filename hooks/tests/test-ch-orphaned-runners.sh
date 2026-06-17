@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # test-ch-orphaned-runners — wires standalone test runners that NO suite sourced
 # into the gate, so they can't rot silently (the exact failure that bit the 2
 # harness-audit fixture runners: a runner breaks, nothing notices, the gate stays

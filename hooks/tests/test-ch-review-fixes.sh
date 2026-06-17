@@ -1,6 +1,7 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-review-fixes.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-review-fixes.sh — standalone suite run by test-critical-hooks.sh
 # Covers: 2026-06-09 review fixes (CC-II) and 2026-06-09 followup (JJ, LL).
 
 # --- 2026-06-09 review fixes: 7 Critical findings from PR #1 review ---

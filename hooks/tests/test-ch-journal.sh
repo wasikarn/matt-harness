@@ -1,6 +1,7 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-journal.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-journal.sh — standalone suite run by test-critical-hooks.sh
 # Covers: C1 evidence journal (A-K) and C1 Phase II (L1-BB).
 
 # --- C1 evidence journal: journal_append contract + consumer dedup ---

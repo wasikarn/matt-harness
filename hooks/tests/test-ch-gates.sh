@@ -1,6 +1,7 @@
-# shellcheck disable=SC1090,SC2034
+# shellcheck disable=SC1090,SC1091,SC2034
 # shellcheck shell=bash
-# test-ch-gates.sh — sourced by test-critical-hooks.sh
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
+# test-ch-gates.sh — standalone suite run by test-critical-hooks.sh
 # Covers: PreToolUse gates, task-lifecycle F7, task board integration,
 #         db-write-gate, bypass contract, and syntax smoke.
 
@@ -344,7 +345,7 @@ cat > "$BOARD_FIXTURE/.claude/tasks/done-plan/board.json" <<'BEOF'
 BEOF
 TB6_JOURNAL="$BOARD_FIXTURE/.claude/governance-events.jsonl"
 rm -f "$TB6_JOURNAL"
-TB6_STDERR=$( ( export HOME="$BOARD_FIXTURE"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/lifecycle/task-lifecycle.sh" ) 2>&1 >/dev/null)
+TB6_STDERR=$( ( export HOME="$BOARD_FIXTURE" CLAUDE_JOURNAL_PATH="$TB6_JOURNAL"; printf '%s' "$(teammate_idle_with_cwd_event)" | bash "$HOOKS/lifecycle/task-lifecycle.sh" ) 2>&1 >/dev/null)
 TB6_RC=$?
 if [ "$TB6_RC" = 0 ] && grep -q 'teammate_teardown_ready' "$TB6_JOURNAL" 2>/dev/null; then
   PASS=$((PASS+1)); printf '  ✅ %-26s TeammateIdle build-complete → exit 0 + teardown_ready journal\n' "task-lifecycle.sh"

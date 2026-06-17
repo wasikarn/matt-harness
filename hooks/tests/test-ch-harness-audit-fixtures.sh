@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
+source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # test-ch-harness-audit-fixtures.sh — wire the two standalone harness-audit
 # fixture runners into the gate suite so they cannot rot unobserved.
 #
