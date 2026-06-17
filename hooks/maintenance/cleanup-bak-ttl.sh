@@ -89,15 +89,23 @@ while IFS= read -r f; do
   if [[ "$base" =~ ^($FIXTURE_PATTERNS)$ ]]; then
     continue  # live test fixture
   fi
+  # Compute mtime + size in ONE uname branch. The `stat -f %z || stat -c %s`
+  # fallback used to be the size line, but it is BROKEN on GNU: `stat -f` is
+  # NOT "format" there, it is "--file-system", so `stat -f %z "$f"` SUCCEEDS
+  # (rc 0) and prints multi-line filesystem status (Inodes/Blocks/…) instead of
+  # failing over to `-c %s`. That multi-line value then embeds newlines in the
+  # TSV row → one stale file becomes ~6 report lines → count is wildly wrong
+  # (CI saw count=18 for 3 files). Branch size the same way mtime already does.
   if [ "$(uname -s)" = "Darwin" ]; then
     MTIME=$(stat -f %m "$f" 2>/dev/null) || continue
+    SIZE=$(stat -f %z "$f" 2>/dev/null)
   else
     MTIME=$(stat -c %Y "$f" 2>/dev/null) || continue
+    SIZE=$(stat -c %s "$f" 2>/dev/null)
   fi
   AGE=$((NOW - MTIME))
   if [ "$AGE" -gt "$CUTOFF_SECONDS" ]; then
     AGE_DAYS=$((AGE / 86400))
-    SIZE=$(stat -f %z "$f" 2>/dev/null || stat -c %s "$f" 2>/dev/null)
     printf '%s\t%s\t%s\n' "$AGE_DAYS" "$SIZE" "$f" >> "$STALE_FILE"
   fi
 done < <(find -L "$SCAN_ROOT" -name "*.bak" -type f 2>/dev/null)
