@@ -1,21 +1,31 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.1.9-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.35-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`) — 28 senior-specialist agents, 37 workflow skills, 18 slash commands, governance hooks across 14 lifecycle events, and always-on doctrine injection. No symlink farm, no manual wiring — components auto-discover from the plugin cache.
+A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
+It adds 29 specialist agents, 39 workflow skills, 21 slash commands, and 43 governance
+hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
+no manual wiring: components auto-discover from the plugin cache.
 
-> **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute cold-start.
+> **Newest additions (v0.2.35):** `/ideate` for divergent ideation and `/ideate-search`
+> for recalling past ideate runs via the local `qmd` search engine.
+
+> **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
+cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
 
 ---
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [First Steps After Installing](#first-steps-after-installing)
 - [What You Get](#what-you-get)
-- [Requirements](#requirements)
-- [Architecture](#architecture)
+- [Daily Commands](#daily-commands)
+- [Governance Hooks](#governance-hooks)
+- [Optional Integrations](#optional-integrations)
+- [Important Caveats](#important-caveats)
 - [Development](#development)
 - [Documentation](#documentation)
 - [License](#license)
@@ -24,114 +34,180 @@ A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobi
 
 ## Quick Start
 
-```bash
-# 1. Add marketplace
+Inside Claude Code:
+
+```text
+# 1. Add the marketplace (only needed once)
 /plugin marketplace add wasikarn/kbg-harness
 
-# 2. Install
+# 2. Install the plugin
 /plugin install kbg@kobig
 
-# 3. Verify
-/plugin list                    # look for kbg@kobig
-/kbg:review-pr --help           # confirm components load
+# 3. Enable it (the plugin ships with defaultEnabled: false)
+#    Open your Claude Code settings.json and add:
+#    "kbg@kobig": true
+
+# 4. Restart Claude Code
+#    The plugin cache is only reloaded on startup.
+
+# 5. Verify
+/kbg-help
 ```
 
-The plugin is **opt-in** (`defaultEnabled: false`) — nothing injects until you enable it in `settings.json`.
-
 **Uninstall:** `/plugin uninstall kbg`  
-**Disable (keep installed):** `"kbg@kobig": false` in `settings.json`
+**Disable (keep installed):** set `"kbg@kobig": false` in your Claude Code `settings.json`
+
+If a command is missing after install, the most common cause is forgetting step 4.
+Run `claude plugin update kbg@kobig` and restart.
+
+---
+
+## First Steps After Installing
+
+After restart, every new session automatically loads four doctrine files as
+additional context:
+
+1. [`METHODOLOGY.md`](METHODOLOGY.md) — 13 behavioral rules
+2. [`RTK.md`](RTK.md) — runtime keyboard / CLI conventions
+3. [`ACLI.md`](ACLI.md) — agent command-line interface patterns
+4. [`DBGATE.md`](DBGATE.md) — database access rules
+
+These are mandatory context; there is no opt-out. If you only want individual
+commands without doctrine injection, invoke `/kbg:<command>` without enabling the
+plugin in `settings.json`.
+
+Try these one-liners to confirm everything loads:
+
+```text
+/kbg-help              # quick-reference card of all commands
+/kbg:pre-ship-verify   # show the pre-ship acceptance gate
+/ideate How should we cache slow API responses?
+/ideate-search caching
+```
 
 ---
 
 ## What You Get
 
-After `/plugin install kbg@kobig`, Claude Code loads all components from the plugin cache (`~/.claude/plugins/cache/kobig/kbg/<version>/`).
+After enabling and restarting, Claude Code loads everything from the plugin cache
+(`~/.claude/plugins/cache/kobig/kbg/<version>/`).
 
 | Component | Count | How to Use |
-|-----------|-------|-----------|
-| **Agents** | 28 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`) |
-| **Skills** | 37 | Invoke via `/kbg:<skill>` (e.g. `/kbg:review-pr`) |
-| **Commands** | 18 | Invoke via `/kbg:<command>` (e.g. `/kbg:ship-merge`) |
-| **Hooks** | 38 scripts | Governance + doctrine across 14 lifecycle events |
-| **Output Styles** | 1 | `TECH-LEAD-THAI` (Thai-code-switched register) |
-| **Themes** | 1 | `catppuccin-mocha` |
+|---|---|---|
+| **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
+| **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
+| **Hooks** | 43 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
+| **Output Style** | 1 | `TECH-LEAD-THAI` — Thai-English code-switched register |
+| **Theme** | 1 | `catppuccin-mocha` |
 
-### Most-Used Commands
+### Spotlight Commands
 
-| Command | When |
-|---------|------|
-| `/kbg:pre-ship-verify` | Before every PR — runs `ACCEPTANCE.md` + eval-harness gate |
-| `/kbg:review-pr` | After pushing a PR — multi-agent review (code, tests, security, types) |
-| `/kbg:ship-merge` | After PR approval — verifies diff + merges |
-| `/kbg:fix-bug` | Non-trivial bug fixes — 7-phase workflow with TDD |
-| `/kbg:feature-dev` | New features — 7-phase guided development |
-| `/kbg:team-plan` / `/kbg:team-build` | Agent-team planning + execution (opt-in Agent Teams) |
+| Command | What it does |
+|---|---|
+| `/ideate <problem>` | Parallel divergent ideation under 5 rotating cognitive frames |
+| `/ideate-search <query>` | Search every past `/ideate` run stored in the local `qmd` index |
+| `/kbg:pre-ship-verify` | Run `ACCEPTANCE.md` + eval-harness gate before a PR |
+| `/kbg:review-pr` | Multi-agent review (code, tests, security, types) over the diff |
+| `/kbg:ship-task` | Full 9-step senior-engineer loop: plan → implement → verify → ship |
+| `/kbg:fix-bug` | Non-trivial bug fixes with TDD and root-cause capture |
+| `/kbg:feature-dev` | New feature development with types-first contract |
+| `/kbg:team-plan` / `/kbg:team-build` | Agent-team planning + execution (requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) |
+| `/kbg:wave-status` / `/kbg:team-cleanup` | Inspect and tear down persistent teammates |
 
-### Governance Hooks
+### Spotlight Skills
 
-Hooks fire on 14 lifecycle events (SessionStart, PreToolUse, PostToolUse, UserPromptSubmit, PermissionRequest/Denied, Stop, SessionEnd, PreCompact, TeammateIdle, TaskCreated, TaskCompleted, etc.):
-
-- **Safety gates** — block dangerous git ops, doctrine edits via Bash, alias shadowing, secret reads, DB writes
-- **Audit trail** — append-only governance journal (`~/.claude/governance-events.jsonl`)
-- **Doctrine injection** — `METHODOLOGY.md` / `RTK.md` / `ACLI.md` / `DBGATE.md` on every session start
-- **Test-claim enforcement** — blocks TaskCompleted events claiming tests pass without a `validation_command:`
+| Skill | When to use |
+|---|---|
+| `kbg:ideate` | Open-ended design, architecture, naming, fuzzy-debug |
+| `kbg:review-pr` | Post-push PR review across multiple quality dimensions |
+| `kbg:ship-change` | Land a scoped change with acceptance gating |
+| `kbg:orchestrate` | Build a multi-agent plan with a hard fan-out cap |
+| `kbg:types-first` | Define contracts before parallel implementation |
+| `kbg:recursive-improve` | Self-improvement loop — always stops at a human `AskUserQuestion` gate |
+| `kbg:harness-audit` | Run the harness self-audit on demand |
 
 ---
 
-## Requirements
+## Governance Hooks
 
-| Need | Version | Why |
-|------|---------|-----|
-| Claude Code | ≥ v2.1.154 | Honors `defaultEnabled: false` (opt-in) |
-| `python3` | any | Doctrine injection JSON-escapes; two hooks use it |
-| `git` | any | Git-aware skills/hooks |
-| `bash`, `grep`, `sed` | standard | Hook scripts |
-| `jq` | optional | Audit journaling and self-guards |
+43 hook scripts fire on 14 lifecycle events. They are split into four cells:
 
-**Optional integrations** (gracefully degrade when absent):
+| | Feedforward (before the act) | Feedback (after the act) |
+|---|---|---|
+| **Computational** | Block dangerous git ops, secret reads, DB writes, alias shadowing, doctrine edits via Bash | Audit every edit, run post-edit tests, diff security review |
+| **Inferential** | Inject doctrine, surface iron-rule reminders, skill nudges | Journal verification verdicts, fabrication verdicts, structural-judge advisories |
+
+Key properties:
+
+- **Advisory only.** Inferential sensors never emit `permissionDecision`; they journal
+evidence and let the human decide.
+- **Always-on doctrine.** `hooks/session/doctrine-bootstrap.sh` injects `METHODOLOGY.md`,
+`RTK.md`, `ACLI.md`, and `DBGATE.md` on every SessionStart sub-event.
+- **Append-only journal.** Governance events are written to `~/.claude/governance-events.jsonl`.
+
+See [`hooks/JOURNAL-SCHEMA.md`](hooks/JOURNAL-SCHEMA.md) for the event format.
+
+---
+
+## Optional Integrations
+
+The core runs with only `python3`, `git`, and `bash`. These unlock extra features:
 
 | Tool | Unlocks |
-|------|---------|
-| `rtk` | Token-optimized Bash proxy (60–90% savings) |
-| `code-review-graph` | Review-context graph (status + incremental update) |
-| `qmd` | Local markdown-search reindex |
+|---|---|
+| `qmd` | `/ideate-search`, local markdown reindex, journal queries |
+| `ollama` + `all-minilm:latest` | Convergence detector for `/ideate` (warns when you ideate the same problem repeatedly) |
+| `rtk` | Token-optimized Bash proxy |
+| `code-review-graph` | Review-context graph status + incremental updates |
 | `SUPERSET_HOME_DIR` | Agent-activity notifications |
 
-> These are **not bundled** — the core runs without any of them.
+`qmd` and `ollama` are particularly important for the ideate features:
+
+```bash
+# qmd is needed for /ideate-search
+qmd collection show ideate-memory
+
+# ollama is needed for the convergence detector
+ollama list | grep all-minilm
+ollama pull all-minilm:latest
+```
+
+All integrations degrade gracefully when absent — the plugin never hard-fails because
+an optional tool is missing.
 
 ---
 
-## Architecture
+## Important Caveats
 
-### Plugin Delivery Model
+1. **Personal harness, not a product.** `kbg` encodes one operator's workflow choices.
+There is no support SLA; versions are pre-`1.0.0`.
 
-There is **one delivery path**: the plugin cache at `~/.claude/plugins/cache/kobig/kbg/<version>/`. The owner dogfoods the same plugin that external installers use. See [`docs/adr/0001-personal-harness-as-plugin.md`](docs/adr/0001-personal-harness-as-plugin.md).
+2. **Doctrine injection is mandatory.** Enabling `kbg` makes `METHODOLOGY`, `RTK`,
+`ACLI`, and `DBGATE` context in every session, plus the `TECH-LEAD-THAI` output style.
+There is no opt-out flag.
 
-**Cache-invalidation is manual:** when you modify any plugin surface (agent, skill, command, hook), bump version in **both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, then run `claude plugin update kbg@kobig` and restart Claude Code.
+3. **Autonomy invariant (ADR 0002).** No autonomous or unattended self-repair loops.
+`kbg:recursive-improve` carries `disable-model-invocation: true` so the model cannot
+self-start it; every improvement iteration stops at a human approval gate.
 
-### Autonomy Invariant (ADR 0002)
+4. **Single branch model.** The repo uses `develop` only. No feature branches.
 
-No autonomous or unattended self-repair loop. Every self-improvement iteration stops at a human `AskUserQuestion` gate. `recursive-improve` carries `disable-model-invariant: true` so the model cannot self-start it. See [`docs/adr/0002-autonomy-invariant.md`](docs/adr/0002-autonomy-invariant.md).
+5. **Cache-invalidation is manual.** After any plugin surface change, bump both
+`.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, then run
+`claude plugin update kbg@kobig` and restart Claude Code.
 
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| [`hooks/hooks.json`](hooks/hooks.json) | Hook registry across 14 lifecycle events |
-| [`hooks/_lib.sh`](hooks/_lib.sh) | Shared helpers (audit logging, journal append, permission decisions) |
-| [`eval/run-eval.py`](eval/run-eval.py) | Eval harness — 14 datasets + 9 regression fixtures |
-| [`scripts/orchestrate-dispatch.py`](scripts/orchestrate-dispatch.py) | Workflow DAG resolver + fan-out cap enforcer |
-| [`scripts/auth-health-check.py`](scripts/auth-health-check.py) | gh / MCP / plugins health probe |
-| [`BOUNDARY.md`](BOUNDARY.md) | Auto-regenerated capability map (skills / agents / commands / hooks) |
+6. **Restart is required.** Commands, skills, and hooks are loaded into the plugin cache
+at startup. A missing `/ideate-search` almost always means the restart step was skipped.
 
 ---
 
 ## Development
 
-### Validation (run before any commit touching hooks/skills/agents/commands)
+### Validation (run before any commit touching hooks, skills, agents, commands, or manifests)
 
 ```bash
-# Plugin manifest validation
+# Plugin manifest strict validation
 claude plugin validate --strict .
 
 # Critical-hooks smoke tests
@@ -142,45 +218,41 @@ bash skills/harness-audit/scripts/audit.sh .
 
 # Eval harness (dataset + regression fixtures)
 python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
+
+# Or run the full parallel gauntlet
+bash scripts/run-gauntlet.sh
 ```
 
 ### Adding Components
 
-1. **Agent** — create `agents/<name>.md` with frontmatter. Auto-discovered.
-2. **Skill** — create `skills/<name>/SKILL.md` with frontmatter. Add `## Input Contract`/`## Output Format`/`## Failure Modes` *only* where there's a real I/O contract (the blanket mandate was retired — see CLAUDE.md § "Adding a new component"). Auto-discovered.
-3. **Command** — create `commands/<name>.md` with frontmatter. Update manifest counts on add/remove (a pure modify changes no count).
-4. **Hook** — create `hooks/<name>.sh`, add to `hooks/hooks.json`, add tests if a gate.
+1. **Agent** — create `agents/<name>.md` with frontmatter (`name`, `description`, `tools` allowlist). Auto-discovered.
+2. **Skill** — create `skills/<name>/SKILL.md` with frontmatter. Add Input/Output/Failure sections only where there is a real contract. Auto-discovered.
+3. **Command** — create `commands/<name>.md` with frontmatter. Update manifest counts only when adding/removing a component.
+4. **Hook** — create `hooks/<name>.sh`, register in `hooks/hooks.json`, and add tests if it is a gate.
 
-After any addition: bump manifest versions → validate → commit → push → `claude plugin update kbg@kobig` → restart.
+After any addition: bump both manifest versions → validate → commit → push →
+`claude plugin update kbg@kobig` → restart.
 
-### Branch Model
+### Regenerate the Capability Map
 
-Single-branch (`develop` only). Commit + push direct. No feature branches.
+```bash
+bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md
+```
 
 ---
 
 ## Documentation
 
 - [`docs/onboarding.md`](docs/onboarding.md) — 10-minute cold-start
-- [`CONTEXT.md`](CONTEXT.md) — Domain language, autonomy invariant, delivery model
 - [`METHODOLOGY.md`](METHODOLOGY.md) — 13-rule behavioral doctrine
-- [`CHANGELOG.md`](CHANGELOG.md) — Release notes (Keep-a-Changelog, SemVer)
-- [`CLAUDE.md`](CLAUDE.md) — Guidance for future Claude Code instances working in this repo
+- [`CONTEXT.md`](CONTEXT.md) — Domain language, bounded contexts, autonomy invariant
+- [`CLAUDE.md`](CLAUDE.md) — Guidance for Claude Code instances working in this repo
 - [`BOUNDARY.md`](BOUNDARY.md) — Auto-regenerated cross-context inventory
-- [`docs/adr/`](docs/adr/) — Architecture decision records
+- [`CHANGELOG.md`](CHANGELOG.md) — Release notes
+- [`docs/adr/`](docs/adr/) — Architecture decision records (start with ADR 0001 and 0002)
 
 ---
 
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
-
----
-
-## For External Installers
-
-This is a **personal harness**, not a general-purpose toolkit. Enabling `kbg` makes `METHODOLOGY` / `RTK` / `ACLI` / `DBGATE` mandatory context in every session, plus the `TECH-LEAD-THAI` output style. There is no opt-in flag.
-
-To use components **without** doctrine injection: install the marketplace and invoke individual `/kbg:<command>` / `/kbg:<skill>` / agents **without** enabling `kbg` in `settings.json`.
-
-No support SLA; best-effort, pre-`1.0.0`.
