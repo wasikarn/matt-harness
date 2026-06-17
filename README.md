@@ -185,7 +185,7 @@ an optional tool is missing.
 There is no support SLA; versions are pre-`1.0.0`.
 
 2. **Doctrine injection is mandatory.** Enabling `kbg` makes `METHODOLOGY`, `RTK`,
-`ACLI`, and `DBGATE` context in every session, plus the `TECH-LEAD-THAI` output style.
+`ACLI`, and `DBGATE` context in every session, plus the `SENIOR-DEV` output style.
 There is no opt-out flag.
 
 3. **Autonomy invariant (ADR 0002).** No autonomous or unattended self-repair loops.

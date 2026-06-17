@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.59] — 2026-06-18
+
+Output-style hardening + audit alignment. Renames `TECH-LEAD-THAI` to `SENIOR-DEV`, makes it the plugin-default output style, and aligns the audit suite with the official Claude Code hook/tool schemas.
+
+### Changed
+
+- **Output style renamed and refactored.** `output-styles/TECH-LEAD-THAI.md` → `output-styles/SENIOR-DEV.md`. Dropped the Thai code-switched register section; kept the senior engineering lead voice, readability≠brevity rule, and working-posture cross-reference. (`v0.2.57`)
+- **`SENIOR-DEV` is now plugin-default.** Added `force-for-plugin: true` to `output-styles/SENIOR-DEV.md` so enabling the plugin applies the style automatically; updated `README.md` caveats and plugin manifest descriptions. (`v0.2.59`)
+
+### Fixed
+
+- **Audit counted only 4 of 6 auto-discovery dirs.** Fleet header now reports `output-styles` and `themes`. (`v0.2.58`)
+- **Audit `VALID_TOOLS` was stale.** Replaced the hardcoded allowlist with the grantable agent tool surface from the official docs and removed deprecated/internal-only tokens (`MultiEdit`, `BashOutput`, `KillShell`, `SlashCommand`, `TodoWrite`, `Task` alias). (`v0.2.58`)
+- **Audit `hooks.json` schema was type-naive.** Check #31.4 now branches required-field validation by hook type (`command`/`http`/`mcp`/`agent`/`prompt`) and warns on unknown types. (`v0.2.58`)
+
 ## [0.2.41] — 2026-06-17
 
 Reliability + safety sweep. Closes findings from the 2026-06-17 multi-agent audit.
