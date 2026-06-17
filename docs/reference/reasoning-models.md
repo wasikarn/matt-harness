@@ -55,11 +55,11 @@ move, or to teach the harness's reasoning to someone new).
 | pre-mortem | `skills/probe`, `agents/silent-failure-hunter` | "if this is wrong, what breaks first?" + detection-latency rating |
 | five-whys | `skills/probe` | constructive root-why, one level deeper |
 | thought-experiment | `skills/probe`, `skills/ideate` frames | counterfactual branches; extreme-zero / extreme-infinite |
-| reversibility (Type-1/2) | `skills/adr`, `skills/probe`, `orchestrate` L5, ADR 0001/0002 | "hard to reverse?" is a first-class gate |
-| debiasing | `skills/probe` (anti-self-deception), `clarify-first` | confirmation-bias / forced disconfirming-evidence step |
+| reversibility (Type-1/2) | `skills/adr`, `skills/probe`, `orchestrate` L5, ADR 0002 | "hard to reverse?" is a first-class gate |
+| debiasing | `skills/probe` (anti-self-deception) | confirmation-bias / forced disconfirming-evidence step |
 | socratic | `skills/clarify-first` | names the method **and** its "Socratic Trap" failure mode |
 | scientific-method | `commands/fix-bug`, `skills/perf` | repro → hypothesize → falsify; perf's ">50% or discard" gate |
-| theory-of-constraints | `skills/perf`, `skills/task-sizing` | profile → find the one bottleneck → fix that |
+| theory-of-constraints | `skills/perf` | profile → find the one bottleneck → fix that |
 | via-negativa | `skills/decommission`, `skills/memory-trim`, decay-cadence | improve by removing, not adding |
 | red-team | `skills/critical-eval`, `agents/silent-failure-hunter`, debug-debate Skeptic | institutionalized adversarial review |
 | steel-manning | debug-debate Synthesizer, `skills/critical-eval` | charitable alternative-coverage ("why dismissed — evidence or preference?") |
@@ -71,7 +71,7 @@ move, or to teach the harness's reasoning to someone new).
 | circle-of-competence | every agent's "defer to X" boundary; METHODOLOGY routing confidence | stay in lane, escalate on no-match |
 | map-territory | METHODOLOGY Rule 8 (read before write); orchestrate stale-context-at-spawn | the doc ≠ the running system |
 | jobs-to-be-done | `agents/product-analyst` | named user-story-vs-JTBD tradeoff |
-| occams-razor | METHODOLOGY Rule 2; ponytail (plugin-global) | minimum that works |
+| occams-razor | METHODOLOGY Rule 2; `skills/orchestrate` (frozen-bid test) | minimum that works; discard speculative branches early |
 
 ## Considered, not adopted
 
