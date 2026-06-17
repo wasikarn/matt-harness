@@ -129,7 +129,8 @@ jobs:
     # eval). The suite is also verified by the local pre-commit gate. 20-min cap is
     # headroom over the ~800s run.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    timeout-minutes: 20
+    # ~1200s suite + setup ≈ 22 min on CI runners; 30 gives headroom for variance.
+    timeout-minutes: 30
     steps:
       - name: checkout
         uses: actions/checkout@v5
