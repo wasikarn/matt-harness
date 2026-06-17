@@ -236,7 +236,9 @@ AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
 SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills')
 COMMANDS=$(safe_count find "$CLAUDE_DIR/commands" -maxdepth 1 -name '*.md' -type f)
 HOOKS=$(safe_count find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*')
-echo "Fleet: ${AGENTS:-0} agents, ${SKILLS:-0} skills, ${COMMANDS:-0} commands, ${HOOKS:-0} hooks"
+OUTPUT_STYLES=$(safe_count find "$CLAUDE_DIR/output-styles" -maxdepth 1 -name '*.md' -type f)
+THEMES=$(safe_count find "$CLAUDE_DIR/themes" -maxdepth 1 -name '*.json' -type f)
+echo "Fleet: ${AGENTS:-0} agents, ${SKILLS:-0} skills, ${COMMANDS:-0} commands, ${HOOKS:-0} hooks, ${OUTPUT_STYLES:-0} output-styles, ${THEMES:-0} themes"
 # Header context, NOT a finding: a plugin cache always exists for the owner who
 # dogfoods the plugin, so this fires every run and is never actionable. An
 # always-on non-actionable "finding" is noise in the findings channel — print it
@@ -702,7 +704,7 @@ done
 # before checking, so 'Bash(git:*)' validates as 'Bash'. Catches typos that
 # silently drop a grant (e.g. 'Bsh' grants nothing). Process substitution (not a
 # pipe) keeps warn() in the current shell so WARN_COUNT folds into the exit code.
-VALID_TOOLS="Read Write Edit MultiEdit Glob Grep Bash WebFetch WebSearch NotebookEdit Task Agent TodoWrite BashOutput KillShell SlashCommand"
+VALID_TOOLS="Agent Bash CronCreate CronDelete CronList Edit EnterWorktree ExitWorktree Glob Grep LSP ListMcpResourcesTool Monitor NotebookEdit PowerShell PushNotification Read ReadMcpResourceTool RemoteTrigger SendMessage ShareOnboardingGuide Skill TaskCreate TaskGet TaskList TaskStop TaskUpdate ToolSearch WebFetch WebSearch Workflow Write"
 while IFS= read -r badtok; do
   warn "$badtok"
 done < <(
@@ -1136,6 +1138,7 @@ if command -v python3 >/dev/null 2>&1; then
       PERM_BOOKMARK_STALE)   info "schema-rot: permission re-audit $payload" ;;
       HOOKS_PARSE_FAIL)      crit "schema-rot: hooks.json failed to parse: $payload" ;;
       HOOKS_SHAPE_FAIL)      crit "schema-rot: hooks.json — $payload" ;;
+      HOOKS_SHAPE_WARN)      warn "schema-rot: hooks.json — $payload" ;;
     esac
   done < <(python3 - "$CLAUDE_DIR" "$REPO_ROOT" <<'PY' 2>/dev/null
 import datetime as dt, json, os, re, sys
@@ -1285,10 +1288,31 @@ if hooks_path is not None:
                         if not isinstance(h, dict):
                             print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}]: not an object")
                             continue
-                        if not isinstance(h.get("type"), str) or not h["type"].strip():
+                        hook_type = h.get("type")
+                        if not isinstance(hook_type, str) or not hook_type.strip():
                             print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].type: missing/empty")
-                        if not isinstance(h.get("command"), str) or not h["command"].strip():
-                            print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].command: missing/empty")
+                            continue
+                        # Validate required fields per hook type (Claude Code hook schema).
+                        if hook_type == "command":
+                            if not isinstance(h.get("command"), str) or not h["command"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].command: missing/empty")
+                        elif hook_type == "http":
+                            if not isinstance(h.get("url"), str) or not h["url"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].url: missing/empty")
+                        elif hook_type == "mcp":
+                            if not isinstance(h.get("server"), str) or not h["server"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].server: missing/empty")
+                            if not isinstance(h.get("tool"), str) or not h["tool"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].tool: missing/empty")
+                        elif hook_type == "agent":
+                            if not isinstance(h.get("agent"), str) or not h["agent"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].agent: missing/empty")
+                        elif hook_type == "prompt":
+                            if not isinstance(h.get("prompt"), str) or not h["prompt"].strip():
+                                print(f"HOOKS_SHAPE_FAIL\t{event_name}[{gi}].hooks[{hi}].prompt: missing/empty")
+                        else:
+                            # Unknown type is not a hard failure today; emit a warning shape entry.
+                            print(f"HOOKS_SHAPE_WARN\t{event_name}[{gi}].hooks[{hi}].type: unknown hook type '{hook_type}'")
 PY
 )
 else
