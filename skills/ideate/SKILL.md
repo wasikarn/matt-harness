@@ -25,14 +25,16 @@ This skill is expensive. About 8 to 10 Agent calls, 30 to 90 seconds
 wall clock, 5 to 10x a single answer. Do not pay that cost when a
 direct answer is better. Run this gate before Phase 1.
 
-**Step 0. Budget warning check.**
+**Step 0. Cost + convergence warning check.**
 
 If the session context contains a block of the form
 `<ideate-budget status="warning" ...>`, the daily ideate threshold has
-been crossed. **Do not auto-fire ideate from Step 2 below**; let the
-self-judge gate abort and answer directly. If Step 1 matches (the user
-explicitly invoked `/ideate` or asked for ideate mode), still proceed to
-Phase 1, but surface the warning in the brief.
+been crossed. If it contains `<ideate-convergence status="warning" ...>`,
+recent ideate runs on similar problems are converging (same shape, same
+frames). In either case, **do not auto-fire ideate from Step 2 below**;
+let the self-judge gate abort and answer directly. If Step 1 matches
+(the user explicitly invoked `/ideate` or asked for ideate mode), still
+proceed to Phase 1, but surface the warning in the brief.
 
 **Step 1. Explicit invocation check.**
 
@@ -85,6 +87,21 @@ re-running ideate on a similar problem yields different vantages.
 If the block is absent (fresh install, hook disabled, or malformed),
 fall back to the deterministic picker in
 [Picking frames](#picking-frames).
+
+## Convergence warning (advisory)
+
+A SessionEnd hook (`ideate-convergence-capture.sh`) computes a local
+sentence-transformers embedding for each ideate problem and stores it in
+`~/.claude/state/ideate-embeddings.jsonl`. If today's runs on similar
+problems have cosine similarity ≥ 0.85, the next session's
+`<ideate-convergence status="warning">` block warns that the same
+problem is being ideated repeatedly without new vantages.
+
+This is a heuristic, not a quality judgment. Query the history with:
+
+```bash
+python3 scripts/ideate-convergence.py --today
+```
 
 ## 2-wave fan-out (load-bearing)
 
@@ -322,13 +339,40 @@ same invariant: no shared mutable state across parallel branches.
   job). Sibling context is *read-only* inside the deepen
   Agent; it is not the focus idea.
 
+## Phase 4 — Interactive deepen (optional)
+
+If the user replies after the initial ideate output with a follow-up
+that asks to explore one of the shortlisted ideas, rotate the frames, or
+combine candidates, run a short Phase 4 pass instead of starting over.
+
+Supported follow-ups:
+
+1. **"Deepen #2"** or **"Tell me more about the second shortlist idea"**
+   → Re-run Phase 3 (Deepen) on just that idea, with the same sibling
+   recombination pool, and return a fresh sketch + risk + first step.
+2. **"Re-run with frames X, Y, Z"** → Replace the rotated/default frame
+   set with the user's explicit picks and run Phase 1 → Phase 3 again.
+   Still cap at 5 frames and 2 waves.
+3. **"Combine A and B"** (where A and B are idea texts or numbers from
+   the wide set) → Spawn one Agent call under the `remove-assumption`
+   frame to force a hybrid, then one deepen Agent call on the result.
+
+Phase 4 is **opt-in**. Do not offer it unprompted. It consumes the same
+budget envelope as a partial ideate run (1–3 Agent calls), so if the
+daily-budget or convergence warning is active, ask the user whether they
+want to continue before spawning agents.
+
 ## Output shape
 
 After Phase 2, render in this order. Do not collapse it into a
 wall of prose. The structure is the point.
 
-1. **Brief.** One or two lines confirming the problem and any
-   reframe used.
+1. **Brief + cost estimate.** One or two lines confirming the
+   problem and any reframe used, followed by a cost estimate line:
+   *"Cost estimate: ~8–10 Agent calls, ~3k–8k input tokens, ~1k–3k
+   output tokens. Actuals vary by problem size."* This is an
+   advisory heuristic, not a metered bill. The estimate reminds the
+   operator that ideate is intentionally expensive.
 2. **Wide set.** Full pool grouped by cluster. Each cluster
    labeled by underlying angle. Each idea is one short phrase.
    Show score chips like `[N7 V8 F9]` next to each.
@@ -406,8 +450,10 @@ These are how this skill goes wrong. Watch for them.
 
 ≈ 8 to 10 Agent calls per run (5 diverge + 1 score + 1 cluster +
 3 deepen, with score + cluster on the host). About 5 to 10x a
-single-shot answer. Not for every keystroke. For decision points
-where the cost of the obvious answer is high.
+single-shot answer. The brief includes an advisory cost-estimate line
+so the operator sees the token envelope up front. Not for every
+keystroke. For decision points where the cost of the obvious answer is
+high.
 
 Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
 
