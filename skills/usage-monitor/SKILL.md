@@ -1,6 +1,5 @@
 ---
 name: usage-monitor
-last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
 description: "Read-only cost and subagent usage summary for the current session. Use when the user asks about session cost, token burn, cost breakdown by agent, or suspects nested-team token amplification. Reads the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; L2 read-only, no gates. Don't use for: real-time cost gating (none exists), cross-session aggregation, or OTEL/OTLP export (not implemented)."
 ---
 

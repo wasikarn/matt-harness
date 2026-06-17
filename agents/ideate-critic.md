@@ -3,7 +3,6 @@ name: ideate-critic
 description: "Fresh-context critic for the ideate skill. Scores, clusters, and deepens divergent ideas produced by ideate Phase 1. Invoked by skills/ideate/SKILL.md Phase 2 instead of running the critic pass on the host Claude, to reduce LLM-judge-circularity (CLAUDE.md §LLM-judge-circularity). Read-only: scores and reports, never blocks, never mutates the repo. Use when ideate needs a critic pass. Don't use for: code review (code-reviewer), structural diff judgment (inferential-structural-judge), or security audit (security-reviewer)."
 tools:
   - Read
-  - Bash
 model: sonnet
 effort: high
 color: purple

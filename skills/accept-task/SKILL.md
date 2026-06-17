@@ -1,6 +1,5 @@
 ---
 name: accept-task
-last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
 description: "Lock a machine-checkable acceptance contract before any non-trivial task. Use when starting multi-file changes, schema migrations, or before dispatching write-capable agents; write `.scratch/<slug>/ACCEPTANCE.md` with criteria + start SHA. Use when user says 'lock acceptance', 'define acceptance criteria', or 'what does done look like'. Don't use for trivial single-file edits, read-only analysis, or existing contracts."
 ---
 

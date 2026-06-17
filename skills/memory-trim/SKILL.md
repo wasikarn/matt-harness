@@ -1,6 +1,5 @@
 ---
 name: memory-trim
-last_reviewed_reason: 'not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)'
 description: "memory-trim"
 ---
 
