@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (37)
+### Skills (38)
   ◇ 7-agent-pattern                7-agent-pattern
   ◇ accept-task                    Lock a machine-checkable acceptance contract before any non-trivial task. Use when starting multi-file changes, schema migrations, or before dispatching write-capable agents; write `.scratch/<slug>/ACCEPTANCE.md` with criteria + start SHA. Use when user says 'lock acceptance', 'define acceptance criteria', or 'what does done look like'. Don't use for trivial single-file edits, read-only analysis, or existing contracts.
   ◇ acli                           Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers.
@@ -25,6 +25,7 @@ _Personals/kbg-harness_
   ◇ harness-health                 Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and sensor staleness from `hooks/sensors.json`, with per-sensor fire counts so silent sensors stay visible. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts > 7 in 30 days', or 'silent-sensor count'. Don't use for: deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine.
   ◇ harness-nav                    L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health). Reach for it only when the skill-nudge hook didn't surface the match.
   ◇ hotfix                         Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices.
+  ◇ ideate                         Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — spawns 5 isolated agent calls under different cognitive frames (regulator, 10-year-old, ant-colony, speedrunner, 3am, biology), scores on novelty/viability/fit, prunes traps, deepens top 3. Also fires on /ideate, brainstorm/ideate intents. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook'). Pre-flight gate in body.
   ◇ incident                       Manage a live production incident end-to-end — detect, assess, mitigate, communicate, resolve, and handoff. Use when alerts fire, monitors show red, users report widespread issues, or error rates spike. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (use security-reviewer first), or post-incident documentation (use /post-mortem after resolution).
   ◇ inventory                      inventory
   ◇ memory-lint                    memory-lint
@@ -156,6 +157,7 @@ _Personals/kbg-harness_
 | harness-health | Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and sensor staleness from `hooks/sensors.json`, with per-sensor fire counts so silent sensors stay visible. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts > 7 in 30 days', or 'silent-sensor count'. Don't use for: deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine. | inline | auto |
 | harness-nav | L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health). Reach for it only when the skill-nudge hook didn't surface the match. | inline | auto |
 | hotfix | Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices. | inline | auto |
+| ideate | Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — spawns 5 isolated agent calls under different cognitive frames (regulator, 10-year-old, ant-colony, speedrunner, 3am, biology), scores on novelty/viability/fit, prunes traps, deepens top 3. Also fires on /ideate, brainstorm/ideate intents. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook'). Pre-flight gate in body. | inline | manual |
 | incident | Manage a live production incident end-to-end — detect, assess, mitigate, communicate, resolve, and handoff. Use when alerts fire, monitors show red, users report widespread issues, or error rates spike. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (use security-reviewer first), or post-incident documentation (use /post-mortem after resolution). | inline | auto |
 | inventory | inventory | inline | auto |
 | memory-lint | memory-lint | inline | auto |
@@ -193,7 +195,7 @@ _Personals/kbg-harness_
 | TECH-LEAD-THAI | Senior engineering lead execution style — direct, opinionated, Thai code-switched register |
 
 ---
-_Generated: 2026-06-16T11:07:00Z_
+_Generated: 2026-06-17T01:51:51Z_
 
 ---
 
