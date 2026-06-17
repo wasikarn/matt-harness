@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-scripts/migrate-plan-to-board.py — Migrate a .claude/tasks/<slug>.md plan
-into a .claude/tasks/<slug>/board.json runtime board.
+scripts/utils/migrate-plan-to-board.py — Migrate .claude/tasks/<slug>.md plan(s)
+into .claude/tasks/<slug>/board.json runtime boards. Sole producer of board.json.
 
-Idempotent: skips if board.json already exists unless --force is passed.
+  --plan PATH : migrate that one plan.
+  (no args)   : migrate every plan under .claude/tasks/.
+
+Idempotent: skips boards that already exist unless --force is passed.
 
 Uses the shared task_board_lib for board construction and atomic write.
 """
@@ -58,14 +61,29 @@ def migrate(plan_file: str, force: bool = False) -> Path:
     return board_file
 
 
+def migrate_all(tasks_dir: str = ".claude/tasks", force: bool = False) -> int:
+    """Migrate every <slug>.md directly under tasks_dir. Returns plans processed.
+
+    Idempotent via migrate() — boards that already exist print SKIP and are
+    left untouched, so re-running is safe.
+    """
+    plans = sorted(Path(tasks_dir).glob("*.md"))
+    for plan in plans:
+        migrate(str(plan), force=force)
+    return len(plans)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Migrate plan markdown to board.json")
-    parser.add_argument("--plan", required=True, help="Path to .claude/tasks/<slug>.md")
+    parser.add_argument("--plan", help="One .claude/tasks/<slug>.md (default: every plan under .claude/tasks/)")
     parser.add_argument("--force", action="store_true", help="Overwrite existing board.json")
     args = parser.parse_args(argv)
 
     try:
-        migrate(args.plan, force=args.force)
+        if args.plan:
+            migrate(args.plan, force=args.force)
+        elif migrate_all(force=args.force) == 0:
+            print("[migrate] no plan files found under .claude/tasks/")
         return 0
     except Exception as exc:
         print(f"[migrate] ERROR: {exc}", file=sys.stderr)
@@ -146,6 +164,17 @@ def _self_test() -> None:
         assert board_file3 == board_file
         board_forced = tbl.board_read(str(board_file3.parent))
         assert board_forced["plan_slug"] == "health-endpoint"
+
+        # 5b. Bulk mode — migrate_all sweeps every *.md under tasks_dir (idempotent)
+        (tasks_dir / "second-plan.md").write_text(
+            "# Second\n\n## Step by Step Tasks\n"
+            "| Task ID | Description | Depends On | Assigned To | Files | Criteria | Constraints |\n"
+            "|---------|-------------|------------|-------------|-------|----------|-------------|\n"
+            "| X-1     | only task | - | DB | a.sql | exports x | (none) |\n",
+            encoding="utf-8",
+        )
+        assert migrate_all(str(tasks_dir)) == 2  # health-endpoint skips, second-plan new
+        assert (tasks_dir / "second-plan" / tbl.BOARD_FILENAME).exists()
 
         # 6. Missing plan file should raise
         try:
