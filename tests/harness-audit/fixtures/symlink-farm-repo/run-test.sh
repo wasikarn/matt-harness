@@ -6,10 +6,10 @@
 # kind) — proves the F1 check is alive and not silently disabled.
 set -uo pipefail
 
-REPO_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
+REPO_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 AUDIT="$REPO_ROOT/skills/harness-audit/scripts/audit.sh"
-FIXTURE="$REPO_ROOT/skills/harness-audit/tests/fixtures/symlink-farm-repo"
-EMPTY_CACHE="$REPO_ROOT/skills/harness-audit/tests/fixtures/empty-plugin-cache"
+FIXTURE="$REPO_ROOT/tests/harness-audit/fixtures/symlink-farm-repo"
+EMPTY_CACHE="$REPO_ROOT/tests/harness-audit/fixtures/empty-plugin-cache"
 
 if [ ! -f "$AUDIT" ]; then
   echo "FAIL: audit.sh not found at $AUDIT" >&2

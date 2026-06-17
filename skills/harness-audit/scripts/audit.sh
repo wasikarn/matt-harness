@@ -164,7 +164,7 @@ fi
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on kbg-harness).
-# --plugin-cache <path> overrides the default for testing (see tests/fixtures/).
+# --plugin-cache <path> overrides the default for testing (see tests/harness-audit/fixtures/).
 # Resolve to the latest installed version of the kbg plugin in the cache,
 # so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable
 # F1 plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.

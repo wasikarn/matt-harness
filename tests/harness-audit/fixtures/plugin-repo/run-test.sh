@@ -7,9 +7,9 @@
 # suppressed the check entirely.
 set -uo pipefail
 
-REPO_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
+REPO_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 AUDIT="$REPO_ROOT/skills/harness-audit/scripts/audit.sh"
-FIXTURE="$REPO_ROOT/skills/harness-audit/tests/fixtures/plugin-repo"
+FIXTURE="$REPO_ROOT/tests/harness-audit/fixtures/plugin-repo"
 FAKE_CACHE="$FIXTURE/_fake-plugin-cache"
 
 if [ ! -f "$AUDIT" ]; then

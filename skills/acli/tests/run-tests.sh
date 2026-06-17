@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # run-tests.sh — deterministic guards for the acli skill's helper scripts.
 #
-# Convention mirrors skills/memory-lint/tests + skills/harness-audit/tests:
+# Convention mirrors skills/memory-lint/tests + tests/harness-audit/fixtures:
 # each skill owns its tests; fixtures live in-repo (the shipped examples/*.json),
 # not /tmp, for reproducibility.
 #
