@@ -1369,6 +1369,74 @@ else
   warn "skills/ideate/SKILL.md missing — ideate port not landed"
 fi
 
+# 37. DOMAINS.md `## Path → Context` ≡ orchestrator-nudge.sh PATH_PATTERNS.
+# Both encode the SAME path→routing-label map; DOMAINS.md and the hook's "SYNC:"
+# comment each assert they stay in lockstep, but nothing enforced it — and they
+# HAD drifted (the entire Integration group + several role assignments were
+# missing from the doc). The hook is the executor (source of truth); this check
+# verifies the doc table mirrors it token-for-token. Same class as #12/#16 (doc
+# must track code) → WARN. Deterministic set-equality on `token|Label` pairs.
+# Hermetic: skips if either file is absent. The label whitelist anchors the
+# hook-side grep so only real PATH_PATTERNS pair lines match (no block parsing).
+DOMAINS_MD="$CLAUDE_DIR/DOMAINS.md"
+NUDGE_SH="$CLAUDE_DIR/hooks/advisory/orchestrator-nudge.sh"
+if [ -f "$DOMAINS_MD" ] && [ -f "$NUDGE_SH" ]; then
+  _labels='Execution|Implementation|Orchestration|Quality|Communication|Emergency|Integration|doctrine|infra|docs'
+  _pp=$(grep -E "^[A-Za-z._][^| ]*\|(${_labels})\$" "$NUDGE_SH" 2>/dev/null | sort -u)
+  _dm=$(awk -F'|' '/^## Path . Context/{f=1;next} f&&/^## /{exit} f&&/^\|/&&/`/{
+    label=$3; gsub(/^[ \t]+|[ \t]+$/,"",label);
+    n=split($2,a,"`");
+    for(i=2;i<=n;i+=2){t=a[i]; gsub(/^[ \t]+|[ \t]+$/,"",t); if(t!="") print t"|"label}
+  }' "$DOMAINS_MD" 2>/dev/null | sort -u)
+  if [ "$_pp" != "$_dm" ]; then
+    _d=$(diff <(printf '%s\n' "$_pp") <(printf '%s\n' "$_dm") | tr '\n' ' ' | cut -c1-280)
+    warn "DOMAINS.md '## Path → Context' out of sync with orchestrator-nudge.sh PATH_PATTERNS (hook is source of truth) — diff (< hook, > doc): $_d"
+  fi
+fi
+
+# 38. dismiss-stale.md Q3 mirror ≡ notify-sensor-staleness.sh gate. The command
+# duplicates the hook's is_stale/role-classification gate verbatim (a SYNC-WITH
+# comment is the only seam). It DRIFTED once: the hook's null-branch was fixed to
+# `return s.get("observable", True)` while the command kept `return True`, so the
+# two computed different stale sets and the dismissal hash never matched (a silent
+# no-op the operator hit on /dismiss-stale). This asserts the load-bearing gate
+# lines appear in BOTH files (whitespace-normalized, substring). WARN.
+DSM="$CLAUDE_DIR/commands/dismiss-stale.md"
+NSS="$CLAUDE_DIR/hooks/maintenance/notify-sensor-staleness.sh"
+if [ -f "$DSM" ] && [ -f "$NSS" ]; then
+  _nss_n=$(tr -s ' \t' ' ' < "$NSS")
+  _dsm_n=$(tr -s ' \t' ' ' < "$DSM")
+  while IFS= read -r _sig; do
+    [ -n "$_sig" ] || continue
+    if printf '%s' "$_nss_n" | grep -qF "$_sig" && ! printf '%s' "$_dsm_n" | grep -qF "$_sig"; then
+      warn "dismiss-stale.md Q3 mirror missing gate line present in notify-sensor-staleness.sh: '$_sig' — the two MUST stay in sync (commands/dismiss-stale.md SYNC-WITH seam)"
+    fi
+  done <<'SIGS'
+return s.get("observable", True)
+enforcement_roles = {"computational-FF", "computational-FB"}
+advisory_roles = {"inferential-FF", "inferential-FB"}
+SIGS
+fi
+
+# 39. Orphan sensor — every name in hooks/sensors.json must resolve to a real
+# hook script. A sensor whose hook was renamed/removed lingers as a phantom and
+# makes the staleness monitor (notify-sensor-staleness.sh) report a false 'never
+# fired' for a sensor that no longer exists. Generalizes the sensor→file
+# resolution #34 already does for inferential-FB. Allowlist-free + deterministic
+# → WARN. (The inverse — a journaling hook with no sensor entry — is deliberately
+# NOT guarded: it needs a hand-maintained allowlist of non-sensor hooks, itself a
+# drift seam. #34 + this cover the load-bearing direction.)
+SENSORS_JSON="$CLAUDE_DIR/hooks/sensors.json"
+if [ -f "$SENSORS_JSON" ] && command -v jq >/dev/null 2>&1; then
+  while IFS= read -r _sname; do
+    [ -n "$_sname" ] || continue
+    _hk=$(find "$CLAUDE_DIR/hooks" -type f -name "${_sname}*" 2>/dev/null | grep -E '\.(sh|py)$' | head -1)
+    if [ -z "$_hk" ]; then
+      warn "sensor '$_sname' in sensors.json has no matching hook script under hooks/ (orphan — staleness monitor will report false 'never fired')"
+    fi
+  done < <(jq -r '.sensors[].name' "$SENSORS_JSON" 2>/dev/null || true)
+fi
+
 # ── summary ──────────────────────────────────────────────────────────
 
 echo ""

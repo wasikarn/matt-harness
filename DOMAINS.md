@@ -1,8 +1,11 @@
 # DOMAINS.md — Bounded contexts for kbg-harness
 
 This file is referenced by the bounded-context dispatch rule in `~/.claude/CLAUDE.md`
-and by `hooks/advisory/orchestrator-nudge.sh` path-overlap detection. Keep the
-`## Path → Context` table in sync with `orchestrator-nudge.sh` `PATH_PATTERNS`.
+and by `hooks/advisory/orchestrator-nudge.sh` path-overlap detection. The
+`## Path → Context` table below mirrors `orchestrator-nudge.sh` `PATH_PATTERNS`
+**token-for-token** — the hook is the source of truth (edit `PATH_PATTERNS`
+first, then mirror here). Drift is machine-checked by `harness-audit` check #37,
+so the two can no longer silently diverge.
 
 ## Contexts
 
@@ -16,20 +19,24 @@ and by `hooks/advisory/orchestrator-nudge.sh` path-overlap detection. Keep the
 
 ## Path → Context
 
-| Path pattern | Context | Notes |
+_The `Context` column here is the orchestrator-nudge **routing label** — the hook
+fires when a prompt's file paths span ≥2 labels. This is a finer-grained map than
+the 5 bounded-contexts in `## Contexts` above (e.g. it splits work-doing skills
+into Execution / Implementation / Integration); the two models serve different
+consumers and do not share vocabulary by design. Tokens below are the literal
+`PATH_PATTERNS` keys, not slash-prefixed skill invocations._
+
+| Path pattern(s) | Context | Notes |
 |---|---|---|
-| `commands/` | Execution | User-facing action verbs (`/feature-dev`, `/fix-bug`, `/deep-dive`, `/ship-*`). |
-| `skills/` (non-orchestrate/non-audit) | Execution | Work-doing skills (`/backend-dev`, `/acli`, `/semantic-code`, `/assert-presence`). |
-| `skills/orchestrate/` | Orchestration | Workflow planning and dispatch (`/orchestrate`, `scripts/orchestrate-dispatch.py`). |
-| `skills/inventory/` | Orchestration | Boundary regeneration and fleet accounting. |
-| `skills/harness-audit/`, `skills/harness-coverage/`, `skills/critical-eval/` | Quality | Self-audit, coverage grid, eval fixtures. |
-| `skills/review-pr/`, `skills/security-auditor/`, `skills/probe/` | Quality | Review and verification surfaces. |
-| `tests/`, `eval/` | Quality | Regression fixtures and eval harness. |
-| `skills/adr/`, `docs/` (non-ADR), `commands/address-review.md`, `commands/status-update.md`, `commands/post-mortem.md` | Communication | Documentation and status surfaces. |
-| `skills/incident/`, `skills/hotfix/` | Emergency | Incident / hotfix response. |
-| `agents/` | Implementation | Specialist subagent definitions. |
+| `commands/feature-dev`, `commands/fix-bug`, `commands/deep-dive`, `skills/migrate`, `skills/perf`, `skills/research-brief`, `skills/types-first`, `skills/task-sizing`, `skills/tech-humanize` | Execution | User-facing action verbs + work-doing skills. |
+| `skills/backend-dev`, `agents/`, `app/`, `src/`, `packages/`, `services/`, `lib/` | Implementation | Code that ships behavior + the agents that write it. |
+| `skills/ship-change`, `skills/orchestrate`, `skills/inventory` | Orchestration | Workflow planning, dispatch, fleet accounting. |
+| `skills/harness-audit`, `skills/harness-coverage`, `skills/critical-eval`, `skills/review-pr`, `skills/security-auditor`, `skills/probe`, `tests/`, `eval/` | Quality | Self-audit, coverage, review, verification, fixtures. |
+| `skills/adr`, `commands/address-review`, `commands/status-update`, `commands/post-mortem`, `docs/` | Communication | Documentation and status surfaces. |
+| `skills/incident`, `skills/hotfix`, `runbooks/` | Emergency | Incident / hotfix response. |
+| `skills/acli`, `skills/assert-presence`, `skills/decommission`, `skills/memory-lint`, `skills/semantic-code`, `commands/ship-merge`, `commands/ship-release`, `commands/ship-task`, `.scratch/` | Integration | External systems, release, decommission, scratch I/O. |
 | `METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`, `CLAUDE.md`, `DOMAINS.md`, `BOUNDARY.md`, `docs/adr/` | doctrine | Always-resident doctrine files. |
-| `scripts/`, `git-hooks/`, `.github/` | infra | Deterministic automation and CI. |
+| `scripts/`, `git-hooks/`, `.claude-plugin/` | infra | Deterministic automation, CI, manifests. |
 | `README.md`, `CHANGELOG.md` | docs | Project-level human docs. |
 
 ## Invariants

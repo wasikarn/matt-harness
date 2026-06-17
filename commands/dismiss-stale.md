@@ -131,7 +131,7 @@ PY
 
 Capture the JSON into a variable. The fields you'll use: `triggered` (bool), `stale_set` (list of names), `hash` (string or `null`).
 
-**Why mirror the gate instead of importing it?** — `hooks/maintenance/notify-sensor-staleness.sh` is a shell script, not a Python module. Importing the gate verbatim into a Python helper would require either (a) parsing the shell script, or (b) refactoring the hook into Python. Both are out of scope. The mirror is small (~15 lines), well-commented, and the brief explicitly identifies Q3-gate-mismatch as a regression risk — so the duplication is intentional and load-bearing. The `// SYNC-WITH: hooks/maintenance/notify-sensor-staleness.sh:107-121` comment in the script above is the seam.
+**Why mirror the gate instead of importing it?** — `hooks/maintenance/notify-sensor-staleness.sh` is a shell script, not a Python module. Importing the gate verbatim into a Python helper would require either (a) parsing the shell script, or (b) refactoring the hook into Python. Both are out of scope. The mirror is small (~15 lines), well-commented, and the brief explicitly identifies Q3-gate-mismatch as a regression risk — so the duplication is intentional and load-bearing. The `# SYNC-WITH notify-sensor-staleness.sh` comment on the `is_stale` null-branch in the script above is the seam, and `harness-audit` check #38 fails if the gate lines drift apart.
 
 ---
 
@@ -243,8 +243,8 @@ Exit 0. The dismissal is now effective on the next SessionStart.
 
 ## Cross-references
 
-- `hooks/maintenance/notify-sensor-staleness.sh` — the SessionStart hook this command is the symmetric partner to. The Q3 gate at `hooks/maintenance/notify-sensor-staleness.sh:107-121` MUST be kept in sync with Step 1.
-- `hooks/sensors.json` — the 31-entry registry (Wave 1 deliverable) whose `fallback_role` + `max_silent_days` fields feed the Q3 gate.
+- `hooks/maintenance/notify-sensor-staleness.sh` — the SessionStart hook this command is the symmetric partner to. The Q3 gate (the `is_stale` / `is_must_fire_stale` / role-set definitions) MUST be kept in sync with Step 1 — drift is machine-checked by `harness-audit` check #38.
+- `hooks/sensors.json` — the sensor registry (Wave 1 deliverable) whose `fallback_role` + `max_silent_days` fields feed the Q3 gate.
 - `skills/harness-audit/scripts/audit.sh --staleness-only` — the AUDIT-1 deliverable whose output drives both the hook and this command's stale-set computation.
 - `docs/research/sensor-staleness-notifier-design.md` §4 — the design doc this command implements.
 - `.claude/tasks/sensor-fire-notification.md` CMD-1 — the plan row that authorizes this work.
