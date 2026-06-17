@@ -1,0 +1,108 @@
+{
+  "dataset_name": "ideate-memory-search",
+  "description": "Lock the qmd-backed ideate memory search feature shipped in v0.2.35. A SessionEnd hook captures problem + output from each kbg:ideate run into ~/.claude/state/ideate-memory/, a qmd collection indexes them, and the /ideate-search command queries them. This fixture fails if the command, hook, script, skill documentation, or hooks.json registration are missing or broken.",
+  "evals": [
+    {
+      "id": "ideate-memory-script-runs",
+      "task": "Verify scripts/ideate-memory.py is present, executable, and its subcommands are recognised. This is the deterministic half of the feature; if the script cannot parse its own CLI the rest of the surface is unusable.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 scripts/ideate-memory.py status",
+        "timeout": 15
+      },
+      "success_criteria": [
+        "exit code is 0",
+        "stdout contains Captured ideate runs"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 100,
+      "tags": ["ideate", "memory", "script-cli", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-memory-script-broken",
+      "fixed_by": "v0.2.35"
+    },
+    {
+      "id": "ideate-memory-command-present",
+      "task": "Verify commands/ideate-search.md exists with the correct frontmatter and instructs the model to run scripts/ideate-memory.py search.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "commands/ideate-search.md"
+        ],
+        "required_phrases": [
+          "name: ideate-search",
+          "disable-model-invocation: true",
+          "scripts/ideate-memory.py search",
+          "ideate-search"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references name: ideate-search",
+        "At least one of the checked files references disable-model-invocation: true",
+        "At least one of the checked files references scripts/ideate-memory.py search",
+        "At least one of the checked files references ideate-search"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 200,
+      "tags": ["ideate", "memory", "command", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-search-command-missing",
+      "fixed_by": "v0.2.35"
+    },
+    {
+      "id": "ideate-memory-hook-present",
+      "task": "Verify hooks/session/ideate-memory-capture.sh exists, is executable, and is registered in hooks/hooks.json under SessionEnd.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "hooks/session/ideate-memory-capture.sh",
+          "hooks/hooks.json"
+        ],
+        "required_phrases": [
+          "ideate-memory-capture.sh",
+          "SessionEnd"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references ideate-memory-capture.sh",
+        "At least one of the checked files references SessionEnd"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 100,
+      "tags": ["ideate", "memory", "hook", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-memory-hook-missing",
+      "fixed_by": "v0.2.35"
+    },
+    {
+      "id": "ideate-memory-skill-doc-present",
+      "task": "Verify skills/ideate/SKILL.md documents the memory search feature and references /ideate-search.",
+      "skill": "docs-check",
+      "context": {
+        "files_to_check": [
+          "skills/ideate/SKILL.md"
+        ],
+        "required_phrases": [
+          "Ideate memory search",
+          "ideate-search",
+          "ideate-memory-capture.sh"
+        ]
+      },
+      "success_criteria": [
+        "At least one of the checked files references Ideate memory search",
+        "At least one of the checked files references ideate-search",
+        "At least one of the checked files references ideate-memory-capture.sh"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 100,
+      "tags": ["ideate", "memory", "skill-doc", "regression"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ideate-memory-skill-doc-missing",
+      "fixed_by": "v0.2.35"
+    }
+  ]
+}

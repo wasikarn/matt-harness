@@ -108,6 +108,23 @@ This is a heuristic, not a quality judgment. Query the history with:
 python3 scripts/ideate-convergence.py --today
 ```
 
+## Ideate memory search (user command)
+
+A separate SessionEnd hook (`ideate-memory-capture.sh`) persists the problem
+and final output of every `kbg:ideate` run as a markdown file under
+`~/.claude/state/ideate-memory/`. A qmd collection indexes those files, so the
+user can search past ideate runs with:
+
+```
+/ideate-search caching
+/ideate-search หาไอเดียที่เคยคิดเรื่อง caching
+```
+
+This is a read-only, local-memory feature. It does not influence the
+ideation algorithm; it only makes prior runs recallable. The companion script
+`scripts/ideate-memory.py` owns `init`, `capture`, `index`, `search`, and
+`status`.
+
 ## 2-wave fan-out (load-bearing)
 
 > **WARNING — this skill is 2 fan-out waves, NOT 1.**
