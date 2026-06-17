@@ -238,7 +238,7 @@ TASK-GATE[blocked]: completion claimed test execution ("tests pass" / "pytest" /
 
 Add a runnable \`validation_command: <cmd>\` line to the task description (e.g. \`validation_command: pytest tests/test_x.py -v\`) and re-trigger TaskCompleted. The validation command will be journaled for post-build review.
 
-This gate is Phase 2 F7 (audit 2026-06-12). See .claude/hooks/task-lifecycle.sh for the keyword regex and /team-build for the spawn-prompt template that includes the validation_command field by default.
+This gate is Phase 2 F7 (audit 2026-06-12). See hooks/lifecycle/task-lifecycle.sh for the keyword regex and /team-build for the spawn-prompt template that includes the validation_command field by default.
 EOF
       exit 2
     fi
