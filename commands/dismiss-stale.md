@@ -57,7 +57,10 @@ def is_stale(s, staleness_by_name):
         return False
     ds = staleness_by_name.get(s["name"], {}).get("days_silent")
     if ds is None:
-        return True
+        # SYNC-WITH notify-sensor-staleness.sh: never-journaled is stale only
+        # for observable:true sensors. observable:false (don't-journal nudges,
+        # or event-dependent *-log hooks) → silence is benign, not stale.
+        return s.get("observable", True)
     return ds > thr
 
 def is_must_fire_stale(s, staleness_by_name):
