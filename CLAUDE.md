@@ -132,11 +132,12 @@ python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
 ```
 
 The pre-push gauntlet runs four layers in parallel: plugin-validate, self-audit,
-critical-hooks suite, and the full eval gate. The pre-commit hook runs syntax
-and lint checks, the self-audit, and only the eval fixtures affected by the
-staged files (selected by `scripts/select-affected-fixtures.py`). All four layers
-must pass before any commit that touches hooks, skills, agents, commands, or
-manifests.
+critical-hooks suite, and the full eval gate. The critical-hooks suite itself
+runs its 10 sub-suites in parallel, and the eval gate runs fixtures concurrently
+via `eval/run-eval.py --workers` (default: min(8, CPU count)). The pre-commit hook
+runs syntax/lint checks, the self-audit, and affected eval fixtures in parallel.
+All four gauntlet layers must pass before any commit that touches hooks, skills,
+agents, commands, or manifests.
 
 ### Running a single test
 
