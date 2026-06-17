@@ -25,7 +25,10 @@ FAILS=()
 # Build a fresh sandbox with 3 stale .bak + 1 allowlisted fixture.
 # mktemp -d gives us a private HOME; we override HOME so the hook scans
 # only the sandbox, never the real ~/.claude/.
-SANDBOX=$(mktemp -d -t bak-ttl-test)/.claude
+# Portability: use an explicit `…/prefix.XXXXXX` template, NOT `mktemp -d -t prefix`.
+# BSD/macOS accepts `-t prefix` (no X's), but GNU/Linux rejects it ("too few X's")
+# → empty output → sandbox at "/.claude" → mkdir denied → count=0 → CI-only fail.
+SANDBOX=$(mktemp -d "${TMPDIR:-/tmp}/bak-ttl-test.XXXXXX")/.claude
 mkdir -p "$SANDBOX/plugins/cache/kobig"
 touch -t 202501010000 "$SANDBOX/test1.bak"  # ~526 days
 touch -t 202504010000 "$SANDBOX/test2.bak"  # ~436 days
@@ -66,7 +69,7 @@ fi
 
 echo
 echo "=== 2. silent when no .bak present ==="
-EMPTY=$(mktemp -d -t bak-ttl-test)/.claude
+EMPTY=$(mktemp -d "${TMPDIR:-/tmp}/bak-ttl-test.XXXXXX")/.claude
 mkdir -p "$EMPTY"
 OUT=$(HOME="$(dirname "$EMPTY")" CLAUDE_BAK_TTL_DAYS=1 bash "$HOOK" </dev/null)
 assert "empty sandbox is silent" "" "$OUT" "$OUT"

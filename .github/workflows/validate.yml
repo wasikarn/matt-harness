@@ -5,6 +5,9 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  schedule:
+    - cron: "0 17 * * *"   # 17:00 UTC daily (~midnight Asia/Bangkok) — runs the slow critical-hooks suite
+  workflow_dispatch: {}    # allow manual runs of the full matrix (incl. the suite)
 
 permissions:
   contents: read
@@ -118,11 +121,15 @@ jobs:
   critical-hooks:
     name: critical-hooks suite
     runs-on: ubuntu-latest
-    # The suite is ~125s locally and ~300s on slower CI runners; 15 min is ample
-    # headroom as it grows. This is the dedicated, single-run home for the suite —
-    # it can't be gated through the acceptance fixture (that re-runs the contract
-    # ~3x, which doesn't fit a 10-min job). See run-acceptance.py DEFAULT_TIMEOUT.
-    timeout-minutes: 15
+    # NIGHTLY / MANUAL ONLY — not per-push. The suite is ~125s locally but ~800s on
+    # GitHub runners (subprocess-spawn amplification: 8 audit.sh runs + many
+    # verification-gate scans + python3 cold-starts), too slow to tax every push and
+    # it grows. So it runs on the nightly `schedule` and on-demand via
+    # `workflow_dispatch`, gated by this `if`. Per-push CI stays fast (validate +
+    # eval). The suite is also verified by the local pre-commit gate. 20-min cap is
+    # headroom over the ~800s run.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
     steps:
       - name: checkout
         uses: actions/checkout@v5
