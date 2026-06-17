@@ -271,7 +271,8 @@ taste.
 
 ## Mapping to Harness-Engineering Corpus Prescriptions
 
-The 16 articles in `llm-wiki/raw/ai-agents/harness-engineering/` prescribe
+The articles in `llm-wiki/raw/ai-agents/harness-engineering/` (16 at the
+original 2026-06-12 audit) prescribe
 production harness + loop-engineering capabilities. Many of those
 prescriptions assume **L3/L4 autonomy** as the natural evolution. This
 section maps each article's key prescription to the harness's chosen
@@ -309,6 +310,21 @@ backlog gap.
 | # | Article | Prescription | Harness Alternative | Divergence Rationale |
 |---|---------|-----------|---------------------|----------------------|
 | 16 | **Your Agent Harness Should Repair Itself** | Close the loop: trace → diagnose → fix → verify → regression-lock (Opik Ollie flywheel). | **`verification-gate.sh` as read-only sensor** + **`recursive-improve` human-gated proposals**. No automatic fix, no regression-lock without operator review. | The self-repair surface is advisory; the fix decision is human-gated. A flywheel that traces, fixes, and locks regressions would be a Layer-1 actuator, foreclosed by the invariant. |
+
+### Loop-Engineering Articles — added since original (3)
+
+The `loop-engineering/` subdir grew from 10 to 16 files after the 2026-06-12
+audit (re-mined 2026-06-17 via `kbg:article-mine`). Of the 6 additions, two are
+already cataloged in memory — the 0xCodez "Agent harness engineering 14-step
+roadmap" sibling (`memory/0xcodez-harness-roadmap.md`) and Sydney Runkle's "The
+Art of Loop Engineering" (`memory/sydney-runkle-loop-engineering.md`). The three
+below were unmapped; they diverge (or align) on the same single autonomy axis.
+
+| # | Article | Prescription | Harness Alternative | Divergence Rationale |
+|---|---------|-----------|---------------------|----------------------|
+| 17 | **Master loop engineering / Trinity** | Intent-contract playbooks + three hard stops (max-iterations, wall-clock, hard cost ceiling) + tamper-resistant verification — then "disconnect, and it iterates unattended… at 3am the loop is still running" on a server-side primitive. | **Principles adopted, execution foreclosed.** Maker≠checker + unfakeable proof (`METHODOLOGY` Rule 4), cost ceiling (Rule 6, doctrinal), fresh-context contracts (`accept-task`/`ACCEPTANCE.md`) all match; the unattended server-side loop does not — every mutation stops at a human gate. | The corpus's most *seductive* article: rigorous, largely-correct harness engineering wrapped around walk-away autonomy. Its slip is relocating the human gate from per-iteration to per-launch ("the launch is the judgment act"); the invariant keeps the gate per-mutation. |
+| 18 | **Revenue Engineering** | "Put it in auto mode so it isn't stopping to ask permission at every step… Run it in the cloud so it keeps going after you close your laptop"; "the model becomes a subroutine." Extends loops to revenue workflows. | **Directly foreclosed.** "Auto mode" = disabling the PreToolUse approval gates (`block-dangerous-git.sh`, `secret-read-guard`, `db-write-gate`) that are the harness's computational-feedforward enforcement; model-as-subroutine rejected (Rule 5); revenue/marketplace is a stated non-goal. | Highest collision density, lowest rigor in the corpus. Its explicit advice would disable every PreToolUse gate the harness ships — an economic argument for removing the exact safety gates treated as load-bearing. |
+| 19 | **The 9-Step Loop** | 9-step senior-engineer pipeline (explore → plan-mode → CLAUDE.md → build-in-pieces → hooks → tests → review subagent → fix loop → slash command); "Wait for my approval before writing code." | **Aligned — no divergence.** Plan-mode approval *is* the human gate; the review subagent *is* maker≠checker (Rule 4); hooks-as-deterministic-enforcement *is* the 2×2 computational cells. | Recorded as an **ally**, not a counter-position, so a future audit does not re-flag it: "The difference isn't the model. It's the loop around it" — and that loop is human-gated end to end. |
 
 ### Summary of Divergence Pattern
 
