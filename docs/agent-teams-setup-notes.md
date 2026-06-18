@@ -5,7 +5,7 @@ description: One-stop setup reference for the 4 vendor configuration knobs that 
 
 # Agent Teams Setup Notes
 
-The kbg-harness plugin provides 18 commands, 37 skills, and 28 agents for multi-agent workflows, but **4 vendor-side settings** control whether the runtime actually permits agent spawning, subagent model selection, and teammate isolation. This doc is the setup checklist — verify these once per machine (or per `~/.claude/` directory).
+The kbg-harness plugin provides 21 commands, 38 skills, and 29 agents for multi-agent workflows, but **4 vendor-side settings** control whether the runtime actually permits agent spawning, subagent model selection, and teammate isolation. This doc is the setup checklist — verify these once per machine (or per `~/.claude/` directory).
 
 ---
 

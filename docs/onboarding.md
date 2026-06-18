@@ -8,7 +8,7 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-27 subagents, 26 skills, 8 commands, governance hooks, and mandatory doctrine
+29 subagents, 38 skills, 21 commands, governance hooks, and mandatory doctrine
 injection. See [`CONTEXT.md`](../CONTEXT.md) for the bounded-context model.
 
 ## The 4 doctrine files (read in this order)

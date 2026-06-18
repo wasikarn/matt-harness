@@ -55,7 +55,7 @@ real-but-undocumented — flagged for a human, not failed (Rule 1 / Rule 12).
 
 ```
 === Skill Audit Report ===
-Fleet: 27 agents, 26 skills, 8 commands, 32 hooks
+Fleet: <n> agents, <n> skills, <n> commands, <n> hooks
 
 CRITICAL:
   F1: probe skill not loadable by Claude Code
