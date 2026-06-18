@@ -15,13 +15,13 @@ Mechanical fold of verbose/closed entries from `MEMORY.md` to keep the load cap 
 
 ```bash
 # 1. Run the action plan in dry-run mode
-bash skills/memory-trim/scripts/memory-trim.sh plan
+bash "${CLAUDE_SKILL_DIR}/scripts/memory-trim.sh" plan
 
 # 2. Review the plan; if sane, apply (--yes skips the confirm prompt)
-bash skills/memory-trim/scripts/memory-trim.sh apply
+bash "${CLAUDE_SKILL_DIR}/scripts/memory-trim.sh" apply
 
 # 3. Re-lint to confirm no new findings
-python3 skills/memory-lint/scripts/memory-lint.py
+bash "${CLAUDE_SKILL_DIR}/scripts/memory-lint.sh"
 ```
 
 The script auto-derives the memory dir from cwd (`~/.claude/projects/<enc>/memory`) and prints before/after size deltas + lint finding count. **Always dry-run first**; `--yes` only after human review.

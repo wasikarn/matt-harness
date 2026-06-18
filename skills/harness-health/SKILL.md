@@ -29,7 +29,7 @@ bullet) and §3 (verdict schema).
   (`--sensor <name>`), or how many events a sensor has produced
   (`--dual-fire-count`).
 - The user wants a single CLI command for the harness-health view
-  (no LLM in the loop — `python3 skills/harness-health/scripts/harness-health.py ...`).
+  (no LLM in the loop — `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...`).
 - The user wants JSON output for downstream tooling (`--json`).
 
 ## When NOT to use
@@ -38,7 +38,7 @@ bullet) and §3 (verdict schema).
   full context).
 - **Fleet-level audit** (schema/manifest drift, plugin-cache
   freshness, tool-grant scoping) → use `harness-audit`
-  (`bash skills/harness-audit/scripts/audit.sh .`).
+  (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" .`).
 - **Security posture** → defer to `security-auditor` agent.
 - **The underlying scoring engine** itself → this skill *surfaces*
   verdicts, it does not *produce* them. To re-run or re-score, invoke
@@ -51,22 +51,22 @@ bullet) and §3 (verdict schema).
 
 ```bash
 # last 5 events from the journal
-python3 skills/harness-health/scripts/harness-health.py --last 5
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --last 5
 
 # verdicts with score >= 7 in the last 30 days
-python3 skills/harness-health/scripts/harness-health.py --min-score 7 --since 30 --event-type verdict
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --min-score 7 --since 30 --event-type verdict
 
 # staleness: per-sensor last_fired + days_silent + fire_count
-python3 skills/harness-health/scripts/harness-health.py --staleness
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --staleness
 
 # L553 mitigation: verdict count + fired-event count per sensor
-python3 skills/harness-health/scripts/harness-health.py --dual-fire-count
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --dual-fire-count
 
 # JSON for downstream tooling
-python3 skills/harness-health/scripts/harness-health.py --json --last 10
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --json --last 10
 
 # no args → help
-python3 skills/harness-health/scripts/harness-health.py
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py"
 ```
 
 ## Input Contract

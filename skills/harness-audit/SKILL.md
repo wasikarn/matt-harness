@@ -10,7 +10,7 @@ Run a deterministic health check across the custom Claude Code ecosystem. Detect
 ## Quick start
 
 ```bash
-bash skills/harness-audit/scripts/audit.sh
+bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"
 ```
 
 Produces exit code = count of findings. Zero = clean.
@@ -89,7 +89,7 @@ auto-detected via `ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1` â€
 Run in CI, pre-commit, or after any fleet change:
 
 ```bash
-bash skills/harness-audit/scripts/audit.sh || echo "Audit failed"
+bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" || echo "Audit failed"
 ```
 
 Wire into a post-fleet-change hook for continuous enforcement.

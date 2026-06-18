@@ -27,13 +27,13 @@ The capture hook writes `~/.claude/usage/<project-slug>.jsonl` at SessionEnd (on
 
 ```bash
 # Show the most recent session's cost breakdown by agent
-bash skills/usage-monitor/scripts/usage-summarize.sh
+bash "${CLAUDE_SKILL_DIR}/scripts/usage-summarize.sh"
 
 # Show the last N sessions
-bash skills/usage-monitor/scripts/usage-summarize.sh --last 5
+bash "${CLAUDE_SKILL_DIR}/scripts/usage-summarize.sh" --last 5
 
 # Show totals across all captured sessions for this project
-bash skills/usage-monitor/scripts/usage-summarize.sh --all
+bash "${CLAUDE_SKILL_DIR}/scripts/usage-summarize.sh" --all
 ```
 
 ## How capture works

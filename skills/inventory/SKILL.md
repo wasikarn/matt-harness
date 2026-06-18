@@ -10,7 +10,7 @@ Single command, zero config. Shows what's actually loadable from where you are r
 ## Quick start
 
 ```bash
-bash skills/inventory/scripts/inventory.sh
+bash "${CLAUDE_SKILL_DIR}/scripts/inventory.sh"
 ```
 
 That's it. No env var, no path argument, no setup. From inside a git repo you get two sections (Project-local + Global). From outside one, you get Global only.
@@ -18,7 +18,7 @@ That's it. No env var, no path argument, no setup. From inside a git repo you ge
 For a specific dir (e.g. inspecting dotfiles source where the originals live):
 
 ```bash
-bash skills/inventory/scripts/inventory.sh /path/to/some/claude
+bash "${CLAUDE_SKILL_DIR}/scripts/inventory.sh" /path/to/some/claude
 ```
 
 ## Output

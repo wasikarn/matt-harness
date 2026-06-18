@@ -39,7 +39,7 @@ decay-cadence wiring = LEAD-D's DECAY-1.
 - The operator wants the global rollup line (`populated=N holes=N
   gaps=N score=N% drift_30d=N%`) at the bottom of the table.
 - The operator wants JSON for downstream tooling
-  (`python3 scripts/evals/harness-coverage.py --format json`).
+  (`bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --format json`).
 - The operator wants to confirm that the *known intentional gap* cell
   (`inf-fb-behaviour`) is annotated as such, not scored as 0% decay.
 
@@ -84,17 +84,17 @@ decay-cadence wiring = LEAD-D's DECAY-1.
 
 ```bash
 # 12-row markdown table (the default operator view)
-python3 scripts/evals/harness-coverage.py --format markdown
+bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --format markdown
 
 # JSON for downstream tooling (eval fixtures, future harness-coverage
 # fixture, dashboards)
-python3 scripts/evals/harness-coverage.py --format json
+bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --format json
 
 # Custom window (default is 30 sessions; the script caps at 180)
-python3 scripts/evals/harness-coverage.py --window-sessions 7 --format markdown
+bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --window-sessions 7 --format markdown
 
 # Override journal / sensors path (used by the wave-4 regression fixture)
-python3 scripts/evals/harness-coverage.py --journal-path /tmp/j.jsonl --format json
+bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --journal-path /tmp/j.jsonl --format json
 ```
 
 ## Input Contract
@@ -305,7 +305,7 @@ scheduled hook event, no model-as-own-gate.
 ## Example
 
 Below is the exact markdown output of
-`python3 scripts/evals/harness-coverage.py --format markdown` against the
+`bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh" --format markdown` against the
 current `hooks/sensors.json` + governance journal (captured 2026-06-15
 on `develop` at plugin version 0.2.2):
 

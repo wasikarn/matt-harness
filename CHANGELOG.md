@@ -5,6 +5,17 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.74] — 2026-06-18
+
+Full same-skill portability sweep: every in-skill executable reference now resolves from `${CLAUDE_SKILL_DIR}`, and cross-skill / top-level helpers route through per-skill wrappers.
+
+### Fixed
+
+- **In-skill script references no longer assume repo-root CWD.** `skills/{harness-audit,harness-coverage,harness-health,harness-nav,inventory,memory-lint,memory-trim,recursive-improve,usage-monitor}` and `skills/inventory/reference.md` previously told the operator to run `skills/<name>/scripts/...` directly. All same-skill invocations now use `${CLAUDE_SKILL_DIR}/scripts/<script>`.
+- **Cross-skill / top-level helpers in skill bodies now use per-skill wrappers.** New wrappers: `skills/harness-coverage/scripts/harness-coverage.sh` → `scripts/evals/harness-coverage.py`; `skills/harness-health/scripts/audit.sh` and `skills/harness-nav/scripts/audit.sh` → `skills/harness-audit/scripts/audit.sh`; `skills/memory-trim/scripts/memory-lint.sh` → `skills/memory-lint/scripts/memory-lint.py`; `skills/recursive-improve/scripts/audit.sh` and `skills/recursive-improve/scripts/inventory-witness.sh` → sibling audit/inventory scripts.
+- **`skills/harness-nav/SKILL.md` source-tree mining works from any CWD.** The manual `ls` / `grep` / `head` recipes over `commands/`, `agents/`, and `BOUNDARY.md` now use `${KBG_PLUGIN_ROOT}`. `nav.py` invocations stay under `${CLAUDE_SKILL_DIR}`.
+- **Standalone repo-clone block left repo-relative.** The "run from the repo clone" examples in `skills/assert-presence/SKILL.md` intentionally remain bare paths for raw-terminal use outside Claude Code.
+
 ## [0.2.73] — 2026-06-18
 
 Normalize `KBG_PLUGIN_ROOT` to remove its trailing slash so command references render cleanly as `${KBG_PLUGIN_ROOT}/scripts/...`.

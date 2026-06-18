@@ -13,55 +13,55 @@ The model should prefer L2 (low cost, one discovery step) over L3 (multiple read
 
 ## Mining recipe — capability discovery
 
-Run from the **repo root** (the session CWD).
+Run from **any project CWD**; all source paths resolve from `${KBG_PLUGIN_ROOT}`.
 
 ### 1. Smart miner (preferred)
 
 `nav.py` searches skills, commands, agents, and hooks by description/frontmatter, ranks matches, and prints a markdown table. Use this as the first L3 probe.
 
 ```bash
-python3 skills/harness-nav/scripts/nav.py "<keyword-or-phrase>"
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "<keyword-or-phrase>"
 
 # Examples
-python3 skills/harness-nav/scripts/nav.py "acceptance"
-python3 skills/harness-nav/scripts/nav.py "security audit"
-python3 skills/harness-nav/scripts/nav.py "team orchestration"
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "acceptance"
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "security audit"
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "team orchestration"
 ```
 
 ### 2. List all available commands (workflow pipeline commands)
 
 ```bash
-ls commands/*.md | sed 's|commands/||;s|\.md||'
+ls "${KBG_PLUGIN_ROOT}"/commands/*.md | sed 's|.*/||;s|\.md||'
 
 # Read a specific command's description
-head -6 commands/<name>.md
+head -6 "${KBG_PLUGIN_ROOT}/commands/<name>.md"
 ```
 
 ### 3. Search BOUNDARY.md capability index
 
 ```bash
 # BOUNDARY.md is the canonical inventory — grep it for any surface area
-grep -A3 "<keyword>" BOUNDARY.md | head -30
+grep -A3 "<keyword>" "${KBG_PLUGIN_ROOT}/BOUNDARY.md" | head -30
 
 # List all skills in the inventory
-grep "^### " BOUNDARY.md | grep -i skill
+grep "^### " "${KBG_PLUGIN_ROOT}/BOUNDARY.md" | grep -i skill
 ```
 
 ### 4. Find agents by domain
 
 ```bash
 # Agent descriptions live in the frontmatter
-grep -l "description:.*<keyword>" agents/*.md 2>/dev/null
+grep -l "description:.*<keyword>" "${KBG_PLUGIN_ROOT}"/agents/*.md 2>/dev/null
 
 # Read a specific agent's spec
-head -8 agents/<name>.md
+head -8 "${KBG_PLUGIN_ROOT}/agents/<name>.md"
 ```
 
 ### 5. Check if a named skill or agent exists
 
 ```bash
-ls skills/<name>/SKILL.md 2>/dev/null && echo "skill exists" || echo "not found"
-ls agents/<name>.md 2>/dev/null && echo "agent exists" || echo "not found"
+ls "${KBG_PLUGIN_ROOT}/skills/<name>/SKILL.md" 2>/dev/null && echo "skill exists" || echo "not found"
+ls "${KBG_PLUGIN_ROOT}/agents/<name>.md" 2>/dev/null && echo "agent exists" || echo "not found"
 ```
 
 ---
@@ -96,7 +96,7 @@ If L3 confirms no coverage, do the task inline. Don't invent a new skill invocat
 | Full 9-step loop from scratch | `/ship-task` |
 | Address PR review feedback | `/address-review` |
 | Multi-agent team orchestration | `/team-plan` + `/team-build` |
-| Harness self-audit (schema / manifest) | `bash skills/harness-audit/scripts/audit.sh .` |
+| Harness self-audit (schema / manifest) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" .` |
 | Governance journal / sensor staleness | `kbg:harness-health` |
 | Research external library or approach | `kbg:research-brief` |
 | Clarify scope before coding | `kbg:clarify-first` |

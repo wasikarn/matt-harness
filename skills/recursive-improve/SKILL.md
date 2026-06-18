@@ -74,11 +74,11 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
   Same autonomy invariant: the script does NOT block. The `BREACHED` warning is
   the operator-facing pause signal; the threshold is configurable via
   `KBG_DEBT_CEILING` env var (or `--debt-ceiling` flag).
-- Run `harness-audit` (`bash skills/harness-audit/scripts/audit.sh`)
+- Run `harness-audit` (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`)
   → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
   the reader says *that* improvement is warranted, the audit says *what*.
 - Take a witness pre-snapshot:
-  `bash skills/inventory/scripts/inventory-witness.sh /tmp/ri-BEFORE.md`
+  `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh" /tmp/ri-BEFORE.md`
   → records the fleet/boundary state so Surface can attest exactly what the iteration changed.
 - **Success criterion:** a written list of candidate findings, each anchored to a `file:line`,
   a journal session, or an audit finding id. If both signals are clean → **say so and stop**:
@@ -141,7 +141,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 ### 6. Surface — report + attest + capture (rollback lives here)
 
 - Take the witness post-snapshot + diff:
-  `bash skills/inventory/scripts/inventory-witness.sh /tmp/ri-AFTER.md`
+  `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh" /tmp/ri-AFTER.md`
   then `diff /tmp/ri-BEFORE.md /tmp/ri-AFTER.md` → exactly what fleet state the iteration changed.
 - **Rollback policy — surface + ask, never auto-revert.** A regression is a *signal*, not a silent
   failure (qmd-reindex precedent). If Verify showed flat/negative delta, present the before/after
