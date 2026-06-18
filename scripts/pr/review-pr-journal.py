@@ -145,6 +145,46 @@ def _check_enums(local_id, tier, disposition, decision):
         )
 
 
+class _SkipEmit(Exception):
+    """Raised by a field validator to skip the current finding's emit. The loop
+    body catches it once, bumps n_skip_badid, and `continue`s — collapsing the
+    8 byte-identical `print(...); n_skip_badid += 1; continue` blocks that F7 /
+    CR-3 grew field-by-field across review rounds into one call sequence."""
+
+
+def _str_field(obj, name, offset):
+    """Return obj[name] as str-or-"" ; raise _SkipEmit on a non-string, non-None
+    value (F7: never silently coerce `file: 123` → `""`, which the consumer
+    reads as "no file → no dedup key"). Empty/absent stays "" — the review-body
+    absence marker for file/tier (test T, SKILL.md)."""
+    v = obj.get(name)
+    if v is not None and not isinstance(v, str):
+        print(
+            f"review-pr-journal: ERROR: finding at offset {offset} "
+            f"has non-string `{name}` field "
+            f"({name}={v!r} type={type(v).__name__}); skipping emit",
+            file=sys.stderr,
+        )
+        raise _SkipEmit
+    return v or ""
+
+
+def _int_field(obj, name, offset):
+    """Return obj[name] as int-or-None (None preserved — the review-body
+    "no file:line" marker, test T); raise _SkipEmit on a non-int, non-None
+    value. bool is rejected: it is an int subclass but never a line number."""
+    v = obj.get(name)
+    if v is not None and (not isinstance(v, int) or isinstance(v, bool)):
+        print(
+            f"review-pr-journal: ERROR: finding at offset {offset} "
+            f"has non-int `{name}` field "
+            f"({name}={v!r} type={type(v).__name__}); skipping emit",
+            file=sys.stderr,
+        )
+        raise _SkipEmit
+    return v
+
+
 def main():
     ap = argparse.ArgumentParser(prog="review-pr-journal", add_help=False)
     ap.add_argument("scratch_dir", help="Path to the /review-pr scratch dir; "
@@ -212,132 +252,26 @@ def main():
                 continue
 
             local_id = obj.get("local_id") or ""
-            # F7: field-validator asymmetry. The original `or ""` collapse
-            # on each field silently coerced None, 0, False, [], {}, and any
-            # non-string scalar to "" — a finding with `file: 123` (int) was
-            # journaled as `file: ""`, which the consumer reads as "no file
-            # → no dedup key → TSV twin counted twice". A finding with
-            # `line: "abc"` (str when int expected) was journaled as
-            # `line: "abc"`, breaking the consumer's "line: null =
-            # review-body" rendering. Fail loud on the type, like the
-            # local_id validator below.
-            #
-            # Special cases that must NOT be rejected:
-            #   `file: ""` and `tier: ""` are the review-body markers
-            #     (per test T and SKILL.md); empty-string is the absence
-            #     signal, not a validation error.
-            #   `line: null` is the review-body "no file:line" marker
-            #     (per test T); None stays None, not coerced to "".
-            _raw_file = obj.get("file")
-            if _raw_file is not None and not isinstance(_raw_file, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `file` field "
-                    f"(file={_raw_file!r} type={type(_raw_file).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
+            # F7 / CR-3: validate every field's TYPE before emit, in this exact
+            # order. Never let `or ""` silently coerce `file: 123` → `""` (breaks
+            # the consumer's dedup key) or `line: "abc"` through (breaks the
+            # "line: null = review-body" rendering). Empty/None stays the
+            # review-body absence marker for file/tier/line (test T). Each
+            # validator raises _SkipEmit on a bad type; the except counts + skips
+            # exactly as the 8 inline blocks did, so the SAME field still
+            # triggers the skip for a multi-bad-field finding (test EE = tier).
+            try:
+                file_path = _str_field(obj, "file", n_skip_badid)
+                line_num = _int_field(obj, "line", n_skip_badid)
+                summary = _str_field(obj, "summary", n_skip_badid)
+                tier = _str_field(obj, "tier", n_skip_badid)
+                agent = _str_field(obj, "agent", n_skip_badid)
+                disposition = _str_field(obj, "disposition", n_skip_badid)
+                decision = _str_field(obj, "decision", n_skip_badid)
+                rejected_reason = _str_field(obj, "rejected_reason", n_skip_badid)
+            except _SkipEmit:
                 n_skip_badid += 1
                 continue
-            file_path = _raw_file or ""
-            line_num = obj.get("line")  # None → JSON null (test T) — keep None, do not coerce
-            if line_num is not None and (
-                not isinstance(line_num, int) or isinstance(line_num, bool)
-            ):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-int `line` field "
-                    f"(line={line_num!r} type={type(line_num).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            _raw_summary = obj.get("summary")
-            if _raw_summary is not None and not isinstance(_raw_summary, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `summary` field "
-                    f"(summary={_raw_summary!r} type={type(_raw_summary).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            # CR-3 (2026-06-09 review): F7's `or ""` silent-coercion foot-gun
-            # was patched for `file`/`line`/`summary` only. The same
-            # silent-drop affected 5 more fields:
-            #   - `agent` (free text — reject non-string non-None)
-            #   - `tier` (enum, empty allowed for review-body — same rule
-            #     as `file`/`line` above: reject non-string non-None)
-            #   - `disposition` (enum, empty would be a contract miss — but
-            #     CR-2's _check_enums WARNING already covers the empty case;
-            #     here we only need to reject non-string non-None)
-            #   - `decision` (same shape as disposition)
-            #   - `rejected_reason` (free text — reject non-string non-None)
-            # A finding with `agent: ["code-reviewer"]` would have journaled
-            # `agent: ""` silently. Mirror F7's type-guard pattern.
-            _raw_tier = obj.get("tier")
-            if _raw_tier is not None and not isinstance(_raw_tier, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `tier` field "
-                    f"(tier={_raw_tier!r} type={type(_raw_tier).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            _raw_agent = obj.get("agent")
-            if _raw_agent is not None and not isinstance(_raw_agent, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `agent` field "
-                    f"(agent={_raw_agent!r} type={type(_raw_agent).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            _raw_disposition = obj.get("disposition")
-            if _raw_disposition is not None and not isinstance(_raw_disposition, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `disposition` field "
-                    f"(disposition={_raw_disposition!r} "
-                    f"type={type(_raw_disposition).__name__}); skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            _raw_decision = obj.get("decision")
-            if _raw_decision is not None and not isinstance(_raw_decision, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `decision` field "
-                    f"(decision={_raw_decision!r} type={type(_raw_decision).__name__}); "
-                    f"skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            _raw_rejected_reason = obj.get("rejected_reason")
-            if _raw_rejected_reason is not None and not isinstance(_raw_rejected_reason, str):
-                print(
-                    f"review-pr-journal: ERROR: finding at offset {n_skip_badid} "
-                    f"has non-string `rejected_reason` field "
-                    f"(rejected_reason={_raw_rejected_reason!r} "
-                    f"type={type(_raw_rejected_reason).__name__}); skipping emit",
-                    file=sys.stderr,
-                )
-                n_skip_badid += 1
-                continue
-            tier = _raw_tier or ""
-            agent = _raw_agent or ""
-            summary = _raw_summary or ""
-            disposition = _raw_disposition or ""
-            decision = _raw_decision or ""
-            rejected_reason = _raw_rejected_reason or ""
 
             # local_id validator — fail loud, skip the emit (test X). An
             # empty or non-string local_id would silently collapse under the
