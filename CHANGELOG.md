@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.72] — 2026-06-18
+
+Qualify the remaining command prose references to bundled scripts with `${KBG_PLUGIN_ROOT}` so no command file implies a repo-root CWD.
+
+### Fixed
+
+- **`commands/{pre-flight-plan-linter,pre-ship-verify,team-build,team-cleanup}`** now mention `${KBG_PLUGIN_ROOT}/scripts/...` in prose instead of bare repo-relative paths.
+
 ## [0.2.71] — 2026-06-18
 
 Make command-level bundled-script references portable when the plugin runs in a foreign project. Commands have no official `${CLAUDE_COMMAND_DIR}` variable, so this release adds a SessionStart hook that exports `${KBG_PLUGIN_ROOT}` into the session via `CLAUDE_ENV_FILE`.
