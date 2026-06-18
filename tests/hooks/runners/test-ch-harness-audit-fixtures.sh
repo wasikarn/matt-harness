@@ -18,7 +18,7 @@ echo
 echo "--- harness-audit fixture runners ---"
 
 _AUDIT_FIXTURES="$(cd "$(dirname "$0")/../../harness-audit/fixtures" && pwd)"
-for _ft in plugin-repo symlink-farm-repo; do
+for _ft in plugin-repo symlink-farm-repo doctrine-seam-repo; do
   _rt="$_AUDIT_FIXTURES/$_ft/run-test.sh"
   if [ ! -f "$_rt" ]; then
     FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-fixture" "$_ft (run-test.sh missing)"
