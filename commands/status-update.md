@@ -1,6 +1,6 @@
 ---
 name: status-update
-description: "Rewrite engineering content for leadership (VPs, directors, PMs) and shape for channel — JIRA, Slack, standup, email, or talking-points. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update', or wants a channel-specific version. Don't use for: technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes."
+description: "Rewrite operator-supplied engineering content for leadership (VPs, directors, PMs) and shape for channel — JIRA, Slack, standup, email, or talking-points. Rewrites text you provide; does NOT fetch from Jira/Confluence. Trigger when user asks to write/rewrite for management/exec/VP/PM, asks for 'executive summary / leadership update', or wants a channel-specific version. Don't use for: a report generated FROM Jira issues (use atlassian:generate-status-report), technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes."
 argument-hint: "Optional channel and source material"
 disable-model-invocation: true
 disable-model-invocation-reason: "user-driven exec rewrite — tech-humanize is the model-invokable twin"

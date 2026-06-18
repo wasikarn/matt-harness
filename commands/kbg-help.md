@@ -7,6 +7,31 @@ description: "Quick reference card for kbg-harness skills, commands, validation 
 
 Display this reference card. One-shot, read-only. Do not change mode, write files, or persist anything.
 
+## Where do I start? (by stage)
+
+You don't memorize surfaces — describe what you're doing and the harness auto-routes via each surface's `description:`. The table below is the **stable entry point** per stage; the full, always-current inventory of every surface is generated in `BOUNDARY.md`, and `kbg:harness-nav` mines it when nothing here fits.
+
+| Stage | Entry points |
+|-------|--------------|
+| **DEFINE** — idea, scope, research | `kbg:ideate` · `kbg:clarify-first` · `kbg:research-brief` (or `/deep-dive`) |
+| **PLAN** — spec, prioritize, team | `kbg:orchestrate` · `kbg:triage` · `/team-plan` → `/team-build` |
+| **BUILD** — implement | `/feature-dev` · `/fix-bug` · `kbg:backend-dev` · `kbg:hotfix` |
+| **VERIFY** — test, debug | `/validate-and-fix` · `/debug-debate` · `/pre-ship-verify` |
+| **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:critical-eval` |
+| **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
+
+Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/feature-dev`, `/deep-dive`, `kbg:probe`).
+
+## Which discovery surface?
+
+| Need | Reach for |
+|------|-----------|
+| Don't know which skill/command covers a task | `kbg:harness-nav` |
+| Full current inventory of every surface | `BOUNDARY.md` (auto-generated) — or the recipes under "Full inventory" below |
+| Read-only governance journal / verdicts / silent sensors | `kbg:harness-health` |
+| 12-cell coverage decay grid (quarter-end) | `kbg:harness-coverage` |
+| Fleet audit (manifests, schema, staleness) | `bash skills/harness-audit/scripts/audit.sh .` |
+
 ## Context tiers
 
 | Tier | What's resident | How to reach |
@@ -14,39 +39,6 @@ Display this reference card. One-shot, read-only. Do not change mode, write file
 | **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Injected every session automatically |
 | **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship-task`) or skill-nudge keyword |
 | **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) | `kbg:harness-nav` mines the inventory when you don't know the right surface |
-
-## "I need the right tool" → `kbg:harness-nav`
-
-When no skill name comes to mind, say what you want to do and invoke `kbg:harness-nav`. It teaches grep recipes over `skills/`, `commands/`, `agents/`, and `BOUNDARY.md` to find the nearest capability.
-
-## Common workflow skills
-
-| Skill | Use when |
-|-------|----------|
-| `kbg:clarify-first` | The scope is fuzzy before writing code |
-| `kbg:accept-task` | You want to lock acceptance criteria before building |
-| `kbg:ship-change` | Classify → implement → review → merge a change |
-| `kbg:review-pr` | Code review before merge |
-| `kbg:security-auditor` | Security audit of a high-stakes diff |
-| `kbg:ideate` | Divergent ideation under 15 cognitive frames |
-| `kbg:research-brief` | Research an external library or approach |
-| `kbg:harness-health` | Query the governance journal / sensor staleness |
-| `kbg:recursive-improve` | Iterative self-improvement (stops at a user gate) |
-
-## Common commands
-
-| Command | Use when |
-|---------|----------|
-| `/ship-task` | Full 9-step senior-engineer loop from scratch |
-| `/team-plan` | Produce a multi-agent plan |
-| `/team-build` | Execute a `/team-plan` with agents |
-| `/wave-status` | Check build progress mid-flight |
-| `/team-cleanup` | Teardown idle teammates after a build |
-| `/pre-ship-verify` | Deterministic acceptance gating |
-| `/pre-flight-plan-linter` | Lint a plan before `/team-build` |
-| `/validate-and-fix` | Validate + fix loop |
-| `/debug-debate` | Adversarial debug session |
-| `/dismiss-stale` | Operator-only: dismiss sensor-staleness alert for 7 days |
 
 ## Validation shortcuts
 

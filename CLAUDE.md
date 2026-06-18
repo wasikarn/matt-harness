@@ -201,6 +201,10 @@ Choose **per surface** and **record why** in a `disable-model-invocation-reason:
 - **Leave it off** for **read-only reporters, analysis, and capabilities the model uses to fulfil an explicit request** — *even if they mutate the local tree or spawn agents.* Writing code (`backend-dev`), reviewing (`review-pr`, ~8 agents), researching (`research-brief`), running a bulk op the user asked for (`acli`) are the model's core job; gating them cripples the assistant. Agent-spawn **cost** is governed by the fan-out cap (F8.5 / the dispatcher), **not** by this flag — never flag a surface merely because it spawns agents.
 
 **Safety vs taste (do not conflate).** For ~25 surfaces this flag is reversible UX taste — flip it per the recorded reason. For **`recursive-improve` alone** it is a load-bearing instance of the autonomy invariant, guarded by audit **#32 (CRIT)** and recorded in **[ADR 0002](docs/adr/0002-autonomy-invariant.md)**. Never reason about `recursive-improve`'s flag through this taste criterion — #32 governs it.
+
+#### Naming new surfaces — `noun-verb`, reuse the verb
+
+Most surfaces are named by their action (`ship-*`, `team-*`, `create-jira-*`). The **`harness-*`** cluster is the one place a single noun carries several verbs (`harness-audit` / `harness-health` / `harness-coverage` / `harness-nav`). When you add to a noun-group, **reuse an existing verb before coining a new one** and keep `noun-verb` order, so the cluster stays guessable from one example. This is for **new** surfaces only — do **not** rename the existing fleet to fit a grammar (churn the harness does not need). The duplicate-surface audit (**#20.5**) catches a new name whose description collides with an existing surface's.
 4. **Hook:** create `hooks/<name>.sh`, add entry to `hooks/hooks.json`. Add tests to `tests/hooks/runners/test-critical-hooks.sh` if it is a PreToolUse or TaskCompleted gate.
 5. **After any of the above:** bump manifest versions, validate, commit, push, update cache, restart:
    ```bash

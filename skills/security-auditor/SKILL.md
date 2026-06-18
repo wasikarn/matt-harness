@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "Use when auditing or reviewing security flaws in auth, secrets, external input, file uploads, or dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. Don't use for: code review (kbg:review-pr), incidents (kbg:hotfix/kbg:incident), or non-code security (infra, policy)."
+description: "The dedicated standalone security audit — deep threat-model + remediation for auth, secrets, external input, file uploads, or dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. The security-reviewer agent is the fast flag spawned inside kbg:review-pr — run one, not both. Don't use for: code review (kbg:review-pr), incidents (kbg:hotfix/kbg:incident), or non-code security (infra, policy)."
 ---
 
 # Security Auditor

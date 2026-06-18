@@ -100,7 +100,7 @@ If L3 confirms no coverage, do the task inline. Don't invent a new skill invocat
 | Governance journal / sensor staleness | `kbg:harness-health` |
 | Research external library or approach | `kbg:research-brief` |
 | Clarify scope before coding | `kbg:clarify-first` |
-| Quick reference / what can kbg do | `kbg:help` or `/kbg-help` |
+| Quick reference / what can kbg do | `/kbg-help` |
 
 ---
 

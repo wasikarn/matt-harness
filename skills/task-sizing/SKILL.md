@@ -1,6 +1,6 @@
 ---
 name: task-sizing
-description: "task-sizing"
+description: "Right-size /team-plan tasks before /team-build: the 5-6-tasks-per-agent rule, wave balancing, splitting oversized tasks, merging undersized ones — so a team finishes faster with fewer merge conflicts. Use when reviewing a plan's task granularity, or the user asks how big a task or wave should be. Don't use for: authoring the plan (use /team-plan), runtime dispatch (use kbg:orchestrate), or single-agent work (use /feature-dev)."
 ---
 
 # Task Sizing

@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "Senior cross-cutting security reviewer for auth, secrets, input validation, OWASP Top 10, and supply chain. Spawn before merge on changes touching auth/secrets/external input, or on active credential leaks. Flags with severity + OWASP; defers fixes to backend/frontend/devops-engineer. Don't use for: general code-quality review (defer to code-reviewer) or non-security implementation (defer to backend/frontend-engineer)."
+description: "The fast security panel flag spawned inside kbg:review-pr — cross-cutting reviewer for auth, secrets, input validation, OWASP Top 10, and supply chain. Spawn before merge on changes touching auth/secrets/external input, or on active credential leaks. Flags with severity + OWASP; defers fixes to backend/frontend/devops-engineer. For a deep standalone threat-model + remediation pass use the kbg:security-auditor skill — run one, not both. Don't use for: general code-quality review (defer to code-reviewer) or non-security implementation (defer to backend/frontend-engineer)."
 model: opus
 effort: xhigh
 color: red

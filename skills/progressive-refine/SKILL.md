@@ -1,6 +1,6 @@
 ---
 name: progressive-refine
-description: "progressive-refine"
+description: "Sequential refinement chain: each pass adds a new quality lens (draft → constrain → optimize → polish), distributed across specialized agents so no single agent handles every concern at once. Use when an artifact needs staged improvement where pass N consumes pass N-1's output, or the user asks to harden/refine something in passes. Don't use for: parallel independent domains (use kbg:orchestrate), or one-shot edits."
 ---
 
 # Progressive Refine
