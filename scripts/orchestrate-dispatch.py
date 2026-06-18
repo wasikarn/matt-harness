@@ -60,20 +60,20 @@ phases of a chain; `agent`-typed stages still need a human/lead gate.
 Usage
 -----
     # Validate + print the resolved wave plan (default; safe):
-    python scripts/orchestrate-dispatch.py examples/ship-merge.yml
+    python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml
 
     # Emit a machine-readable plan (for `/team-build` consumption):
-    python scripts/orchestrate-dispatch.py examples/ship-merge.yml --emit-plan
+    python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml --emit-plan
 
     # Run all `command`-typed stages in order (the deterministic chain
     # half — build, lint, test). Agent stages are emitted as plans only.
-    python scripts/orchestrate-dispatch.py examples/ship-merge.yml --execute
+    python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml --execute
 
     # Clamp the wave size before printing (default 5 per F8.5):
-    python scripts/orchestrate-dispatch.py examples/ship-merge.yml --max-per-wave 8
+    python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml --max-per-wave 8
 
     # JSON input works too:
-    python scripts/orchestrate-dispatch.py examples/ship-merge.json
+    python3 scripts/orchestrate-dispatch.py examples/ship-merge.json
 
 Exit codes
 ----------

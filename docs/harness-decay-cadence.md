@@ -117,17 +117,17 @@ The corpus converges on a class-name: **irreversible actions** (writes to
 external state, reads of secrets, edits of config or doctrine) deserve a
 human gate. kbg-harness already has 4 class-shaped gates:
 
-- **DB writes** — `hooks/db-write-gate.sh` (gates `mcp__*__execute_sql_*`
+- **DB writes** — `hooks/gates/db-write-gate.sh` (gates `mcp__*__execute_sql_*`
   non-SELECT writes; SELECT/EXPLAIN/information_schema pass through)
-- **Secret reads** — `hooks/secret-read-guard` (in `hooks/hooks.json`)
-- **Config edits** — `hooks/config-protection.sh` (PreToolUse gate,
+- **Secret reads** — `hooks/gates/secret-read-guard.sh` (in `hooks/hooks.json`)
+- **Config edits** — `hooks/gates/config-protection.sh` (PreToolUse gate,
   `hook_decision ask` on existing linter/formatter configs; blocks
   the model from editing established config without human approval).
-  `hooks/config-change-log.sh` is a separate append-only audit trail
+  `hooks/advisory/config-change-log.sh` is a separate append-only audit trail
   for external `ConfigChange` events (logger, not a gate — fires
   after the fact, no `permissionDecision`, no enforcement).
-- **Doctrine edits** — `hooks/doctrine-edit-gate` +
-  `hooks/block-bash-doctrine-write` (gates Edit/Write on METHODOLOGY/CONTEXT/
+- **Doctrine edits** — `hooks/gates/doctrine-edit-gate.sh` +
+  `hooks/gates/block-bash-doctrine-write.sh` (gates Edit/Write on METHODOLOGY/CONTEXT/
   RTK/ACLI/DBGATE)
 
 **Pattern for future gates**: any new gate should be keyed on the
@@ -144,8 +144,8 @@ precedent before adding a new one.
 `ask` is the default for human-supervised irreversible mutations; `deny`
 is reserved for actions the model should never be trusted to do even
 with human in-the-loop confirmation (e.g. secret-reads,
-doctrine-via-Bash). See `secret-read-guard.sh:36-41` and
-`block-bash-doctrine-write.sh:3-4` for the rationale pattern.
+doctrine-via-Bash). See `hooks/gates/secret-read-guard.sh:36-41` and
+`hooks/gates/block-bash-doctrine-write.sh:3-4` for the rationale pattern.
 
 ## Gate discipline review (judgment vs ceremony)
 

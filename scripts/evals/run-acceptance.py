@@ -7,8 +7,8 @@ runs executable criteria (shell commands in backticks or explicit command lines)
 and writes structured results to acceptance-results.json.
 
 Usage:
-    python scripts/evals/run-acceptance.py <slug> [--timeout 30] [--verbose]
-    python scripts/evals/run-acceptance.py phase-1-safety-fixes-2026-06-12
+    python3 scripts/evals/run-acceptance.py <slug> [--timeout 30] [--verbose]
+    python3 scripts/evals/run-acceptance.py phase-1-safety-fixes-2026-06-12
 
 Exit codes:
     0 — all executable criteria passed (or no executable criteria found)

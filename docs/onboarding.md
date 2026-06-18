@@ -59,7 +59,7 @@ Unreleased → Phase 1.1–2.5.
 
 - **`scripts/auth-health-check.py`** — gh/MCP/plugins health probe (3-state).
 - **`scripts/orchestrate-dispatch.py` + 3 specs** — coordination-as-code.
-- **`hooks/db-write-gate.sh` + `KBG_ENFORCE_TASK_COMPLETED`** — opt-OUT task gate.
+- **`hooks/gates/db-write-gate.sh` + `KBG_ENFORCE_TASK_COMPLETED`** — opt-OUT task gate.
 - **`recursive-improve` skill** — stall detection + debt ceiling.
 - **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
 - **`scripts/governance/audit-to-memory.py` + `memory-lint`** — learning-memory loop.

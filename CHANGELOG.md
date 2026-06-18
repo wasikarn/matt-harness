@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.89] — 2026-06-18
+
+Fourth cross-component path-sweep: correct stale hook subdir references, outdated script examples, and CHANGELOG paths after the flat-layout cutover.
+
+### Fixed
+
+- `skills/semantic-code/SKILL.md` and `skills/semantic-code/reference.md` now point to `hooks/gates/secret-read-guard.sh::function::is_secret_path` (was `claude/hooks/secret-read-guard.sh...`, then `hooks/secret-read-guard.sh...`).
+- `docs/harness-decay-cadence.md`, `docs/onboarding.md`, and `docs/adr/0002-addendum-deferred-items.md` now reference gate hooks under `hooks/gates/` and the advisory logger under `hooks/advisory/` instead of the old flat `hooks/` paths.
+- `docs/agents/verification-trail.md` now references `hooks/session/verification-gate.sh`.
+- `scripts/orchestrate-dispatch.py` and `scripts/evals/run-acceptance.py` docstring usage examples use `python3` instead of `python`.
+- `CHANGELOG.md` historical references updated: `hooks/tests/test-critical-hooks.sh` → `tests/hooks/runners/test-critical-hooks.sh`, `scripts/verification-tier-audit.py` → `scripts/governance/verification-tier-audit.py`, `scripts/review-pr-journal-pre-emit-validator.py` → `scripts/pr/review-pr-journal-pre-emit-validator.py`, `scripts/governance-summary.py` → `scripts/governance/governance-summary.py`.
+
 ## [0.2.81] — 2026-06-18
 
 Harden the reasoning-models reference path with machine checks and L3 discovery.
@@ -445,7 +457,7 @@ surface-area change.
 ### Tests
 
 - **#31.1 deferral regression guard** — 2 new hermetic fixture tests in
-  `hooks/tests/test-critical-hooks.sh`: (NN2) suppression via SKILL.md
+  `tests/hooks/runners/test-critical-hooks.sh`: (NN2) suppression via SKILL.md
   frontmatter marker, (NN3) suppression via `evals/evals.json` JSON-key
   marker. The (NN3) test is the load-bearing one — it guards the regex
   fix. Test count: 202 → 204.
@@ -577,7 +589,7 @@ category (Added / Changed / Fixed) within each phase.
   - `CONTEXT.md` §Invariants now **canonically homes the autonomy invariant** (+ judgment-
     preservation rationale), repointed from a phantom `HARNESS.md` citation that git confirms never
     existed — also removed from `doctrine-edit-gate.sh`, `block-bash-doctrine-write.sh`,
-    `verification-gate.sh`, `hooks/tests/test-critical-hooks.sh`, `scripts/verification-tier-audit.py`,
+    `verification-gate.sh`, `tests/hooks/runners/test-critical-hooks.sh`, `scripts/governance/verification-tier-audit.py`,
     and `recursive-improve`. The stale "no plugin validation CI" non-goal corrected.
   - Stop-signal / anti-cheat edits to four workflows + two surfaces: `recursive-improve` (candidate
     executor escalates on repeated failure — Rule 13, no counter), `fix-bug` (Phase-3 no-progress
@@ -628,7 +640,7 @@ category (Added / Changed / Fixed) within each phase.
   non-SELECT `execute_sql_production` had none. Allow-through: `SELECT`/`EXPLAIN`/`WITH…SELECT`/
   `information_schema`/comment-only. Ask: `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`/`ALTER`/`DROP`/
   `CREATE`. Bypass: `CLAUDE_DISABLED_HOOKS=db-write-gate`. jq-missing → fail loud. **14 new test
-  cases** in `hooks/tests/test-critical-hooks.sh`. The revert chain (`5ecdac8`) was transient —
+  cases** in `tests/hooks/runners/test-critical-hooks.sh`. The revert chain (`5ecdac8`) was transient —
   the fix landed on develop as `61e335b` "Reapply" the same content. PR #16 was then closed-
   superseded (work is on develop; the PR was a workaround for an earlier GitHub "no commits"
   rejection).
@@ -701,7 +713,7 @@ shipped in 7 commits; the user accepted all 6 (`do_now` / `file_issue` / `reject
 
 #### Changed
 
-- **Validator stderr wording** (`69a4f84`, F1) — `scripts/review-pr-journal-pre-emit-validator.py:188-189`
+- **Validator stderr wording** (`69a4f84`, F1) — `scripts/pr/review-pr-journal-pre-emit-validator.py:188-189`
   renames `"BLOCK: … journaler MUST NOT run until cleared:"` → `"ASK-GATE: … AskUserQuestion
   will surface the choice (proceed/pause/cancel):"`. Behavior unchanged (Layer 2 ask-gate
   per Q3=a; the `AskUserQuestion` in `/review-pr` SKILL.md:233 preserves the human's
@@ -738,7 +750,7 @@ shipped in 7 commits; the user accepted all 6 (`do_now` / `file_issue` / `reject
   documents the new field and the 5-value enum vocabulary (complete / blocked / stalled
   / degrading / timeout — `blocked` and `timeout` are deferred; they require per-trail
   status markers and wall-clock correlation out of scope for this fix; the journal
-  consumer can add them later without breaking the contract); `scripts/governance-summary.py`
+  consumer can add them later without breaking the contract); `scripts/governance/governance-summary.py`
   prints a `Counter` breakdown of sessions by `exit_reason`. 2 new test cases (cases 10,
   11) in `test-critical-hooks.sh` use the existing `VGROOT` fixture (gaps) + a new
   `vgroot5-clean` fixture (clean). Q3=a preserved: the journaler remains best-effort,
@@ -816,7 +828,7 @@ insertions, 7 files.
 - **`## Nest-down pattern` in `agents/researcher.md` (D5)** — same pattern with
   research-specific guidance (claim verification, WebSearch-cluster delegation,
   depth=3 absolute budget due to high-token WebSearch calls).
-- **17 new test cases in `hooks/tests/test-critical-hooks.sh`** — 6 AC cases for
+- **17 new test cases in `tests/hooks/runners/test-critical-hooks.sh`** — 6 AC cases for
   F1 + 8 extra robustness (curl, chmod, mv, npm publish, read-only allow, main-
   thread fail-open) + 3 fork-bomb variants (caught a regex regression in the
   adversarial verify pass — no AC test covered the fork-bomb case; locked in
@@ -833,7 +845,7 @@ insertions, 7 files.
 
 #### Green bar
 
-- `bash hooks/tests/test-critical-hooks.sh` → 176 passed, 0 failed (was 172)
+- `bash tests/hooks/runners/test-critical-hooks.sh` → 176 passed, 0 failed (was 172)
 - `bash skills/harness-audit/scripts/audit.sh` → 0 Critical (was 1), 1 Warning
   (pre-existing), 26 Info (baseline)
 - `claude plugin validate --strict .` → passed
@@ -965,7 +977,7 @@ the spec's "compactness rule"). Acceptance contract at
   strings (BSD `grep -E` has no `\b` word-boundary; the pad + non-word class is
   the portable equivalent). **F7 is the post-execution half of the quality
   pipeline; F10 is the pre-execution half.** 2 distinct layers, 1 goal.
-- **F7 test coverage (+9 cases) in `hooks/tests/test-critical-hooks.sh`** — F7a
+- **F7 test coverage (+9 cases) in `tests/hooks/runners/test-critical-hooks.sh`** — F7a
   positive (test-claim + validation_command → exit 0), F7b block (test-claim
   without validation_command → exit 2 with stderr feedback), F7c multi-word
   patterns (`pytest -v`, `npm test --coverage`), F7d edge case (uppercase
@@ -1115,7 +1127,7 @@ requested; ship in bulk"). Acceptance contract at
 - `harness-audit` green bar: `0C/0W/26I exit 0` (no schema-rot regression
   from the new `## Voice` section).
 - `claude plugin validate --strict .` ✔.
-- `bash hooks/tests/test-critical-hooks.sh` → 201/0 (no regression).
+- `bash tests/hooks/runners/test-critical-hooks.sh` → 201/0 (no regression).
 
 ### Phase 4 (D6) — Personality-injection commands folded into F5 extension (2026-06-12, 1 commit)
 
@@ -1278,7 +1290,7 @@ honest docs.
 #### Added
 
 - **Deterministic guardrail for the autonomy invariant** (`1d60b00`,
-  `skills/harness-audit/scripts/audit.sh` check #32 + `hooks/tests/test-critical-hooks.sh`
+  `skills/harness-audit/scripts/audit.sh` check #32 + `tests/hooks/runners/test-critical-hooks.sh`
   tests PP/QQ/RR) — `crit`-severity check that fails any audit run on a repo where
   `skills/recursive-improve/SKILL.md` is missing `disable-model-invocation: true` in
   frontmatter. Exact-match (regression-guarded against truthy typos like `: True`).
@@ -1335,7 +1347,7 @@ matches the 2026-09 quarterly cadence for deferred items already in
 `ACCEPTANCE.md`:
 
 1. `next_id` subshell bug in `audit.sh:115-122` (every finding label is `I1`/`F1`/`W1`).
-2. Unknown-`exit_reason` warning in `scripts/governance-summary.py:271`.
+2. Unknown-`exit_reason` warning in `scripts/governance/governance-summary.py:271`.
 3. "schedule" disambiguation late in `orchestrate/reference.md:12` vs `:40`.
 4. 24 SKILL_MISSING skills lacking the 3 canonical sections
    (`## Input Contract` / `## Output Format` / `## Failure Modes`).
@@ -1352,7 +1364,7 @@ findings, no new check firing), `claude plugin validate --strict .` ✔.
 Closes the opt-IN/OUT contract gap surfaced by SYNTHESIS row #13 (`stop/PostToolUse
 enforcement option`). Operators may opt **out** of the F7 TaskCompleted test-claim
 gate on a per-session basis by setting `KBG_ENFORCE_TASK_COMPLETED=0` — the
-default is ON (preserves the 12 F7 tests in `hooks/tests/test-critical-hooks.sh`).
+default is ON (preserves the 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh`).
 This is **opt-OUT, not opt-IN**: the gate is a load-bearing safety check that
 blocks test-claim-without-validation; the escape hatch is a documented way to
 downgrade F7 to log-only for sessions where the operator trusts the teammate

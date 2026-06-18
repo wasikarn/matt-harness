@@ -34,7 +34,7 @@ Install: `brew install sem-cli` (already present at `/opt/homebrew/bin/sem`)
 ## Quick workflows
 
 **Entity ID format:** `<file_path>::<type>::<name>`  
-Example: `claude/hooks/secret-read-guard.sh::function::is_secret_path`
+Example: `hooks/gates/secret-read-guard.sh::function::is_secret_path`
 
 **Token-budgeted context** (killer feature for LLMs):
 ```bash

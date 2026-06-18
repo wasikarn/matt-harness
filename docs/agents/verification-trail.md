@@ -63,7 +63,7 @@ validated and may be omitted:
 
 ## Consumers
 
-- `hooks/verification-gate.sh` (SessionEnd) — counts every trail present in `.scratch`
+- `hooks/session/verification-gate.sh` (SessionEnd) — counts every trail present in `.scratch`
   at session end (trails are not session-tagged; `.scratch` is conventionally per-session), emits
   the `verification_summary` event, and prints a gap advisory.
   **Advisory only** — it journals but never blocks session end.

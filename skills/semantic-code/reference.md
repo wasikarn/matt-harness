@@ -10,7 +10,7 @@ On-demand detail for `semantic-code` skill. The skill loads this when the agent 
 <file_path>::<type>::<name>
 ```
 
-Example: `claude/hooks/secret-read-guard.sh::function::is_secret_path`
+Example: `hooks/gates/secret-read-guard.sh::function::is_secret_path`
 
 ---
 
