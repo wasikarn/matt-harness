@@ -99,7 +99,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Skills** | 38 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
 | **Hooks** | 43 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
-| **Output Style** | 1 | `SENIOR-ENGINEER` — direct senior engineering lead register |
+| **Output Style** | 1 | `senior-eng` — direct senior engineering lead register |
 | **Theme** | 1 | `catppuccin-mocha` |
 
 ### Spotlight Commands
@@ -185,7 +185,7 @@ an optional tool is missing.
 There is no support SLA; versions are pre-`1.0.0`.
 
 2. **Doctrine injection is mandatory.** Enabling `kbg` makes `METHODOLOGY`, `RTK`,
-`ACLI`, and `DBGATE` context in every session, plus the `SENIOR-ENGINEER` output style.
+`ACLI`, and `DBGATE` context in every session, plus the `senior-eng` output style.
 There is no opt-out flag.
 
 3. **Autonomy invariant (ADR 0002).** No autonomous or unattended self-repair loops.

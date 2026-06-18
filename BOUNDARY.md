@@ -195,11 +195,11 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| SENIOR-ENGINEER | Senior-engineering register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to STAFF-ENGINEER when ownership, cross-team boundaries, or long-term consequences matter. |
-| STAFF-ENGINEER | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when SENIOR-ENGINEER escalates. |
+| senior-eng | Senior-engineering register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to staff-eng when ownership, cross-team boundaries, or long-term consequences matter. |
+| staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-18T11:29:27Z_
+_Generated: 2026-06-18T11:38:51Z_
 
 ---
 
@@ -291,7 +291,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `skills/` — 38 workflow skills
 - `commands/` — 21 slash commands
 - `hooks/` — 43 hook scripts
-- `output-styles/` — 1 SENIOR-ENGINEER
+- `output-styles/` — 1 senior-eng
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context
@@ -373,6 +373,8 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 
 ## Reference docs
 
-- **[Reasoning-models catalog](../../docs/reference/reasoning-models.md)** — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each. Use the Bash recipes in that file to read the full upstream SKILL.md files from any project CWD.
-- **[Vendored thinking-skills library](../../docs/reference/thinking-skills/README.md)** — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
+These files live in the plugin cache, not the project CWD. Read them via Bash with `KBG_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
+
+- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each.
+- **Vendored thinking-skills library** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/README.md"` — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
 
