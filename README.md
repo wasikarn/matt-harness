@@ -1,17 +1,18 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.41-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.84-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 43 governance
+It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.41):** shared `skills/_lib/err.sh` error-handling contract,
-> fail-closed PreToolUse parsing when `jq` is missing, `DOMAINS.md` bounded-context
-> dispatch table, and a sweep of stale provenance / portability docs.
+> **Newest additions (v0.2.84):** reasoning-models reference library (`docs/reference/thinking-skills/`)
+> vendored with full foreign-CWD portability, `kbg:harness-nav` now indexes reference docs by
+> friendly model names, audit check #42 guards the 39-model table, and all internal doc recipes
+> use `${KBG_PLUGIN_ROOT}` so they resolve from any project CWD.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -98,9 +99,9 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 38 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
-| **Hooks** | 43 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
-| **Output Style** | 1 | `senior-eng` — direct senior engineering lead register |
-| **Theme** | 1 | `catppuccin-mocha` |
+| **Hooks** | 44 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
+| **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
+| **Themes** | 1 | `catppuccin-mocha` |
 
 ### Spotlight Commands
 
@@ -132,7 +133,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 
 ## Governance Hooks
 
-43 hook scripts fire on 14 lifecycle events. They are split into four cells:
+44 hook scripts fire on 14 lifecycle events. They are split into four cells:
 
 | | Feedforward (before the act) | Feedback (after the act) |
 |---|---|---|
@@ -248,7 +249,7 @@ When the plugin is installed, internal docs live in the plugin cache and must be
 
 - [`docs/onboarding.md`](docs/onboarding.md) — 10-minute cold-start
 - [`METHODOLOGY.md`](METHODOLOGY.md) — 13-rule behavioral doctrine
-- [`CONTEXT.md`](CONTEXT.md) — Domain language, bounded contexts, autonomy invariant
+- [`DOMAINS.md`](DOMAINS.md) — Bounded-context dispatch table and cross-context orchestration rules
 - [`CLAUDE.md`](CLAUDE.md) — Guidance for Claude Code instances working in this repo
 - [`BOUNDARY.md`](BOUNDARY.md) — Auto-regenerated cross-context inventory
 - [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) — 39 vendored mental models (cc-thinking-skills) and where kbg already applies them

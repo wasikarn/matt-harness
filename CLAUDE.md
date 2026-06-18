@@ -29,9 +29,9 @@ kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical
 
 | Tier | What | When |
 |------|------|------|
-| **L1** (always resident) | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Injected every session by `doctrine-bootstrap.sh`; zero discovery cost |
+| **L1** (always resident) | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md + a one-line pointer to `docs/reference/reasoning-models.md` | Injected every session by `doctrine-bootstrap.sh`; zero discovery cost |
 | **L2** (on demand) | Individual SKILL.md files, command `.md` files, agent specs | One invocation (`kbg:<skill>`) or skill-nudge keyword match; low discovery cost |
-| **L3** (escape hatch) | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) | Explicit read; use `kbg:harness-nav` for guided mining when L2 misses |
+| **L3** (escape hatch) | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/` (including vendored thinking-skills) | Explicit read; use `kbg:harness-nav` for guided mining when L2 misses |
 
 **Navigation rule:** when the right skill is unknown, reach for `kbg:harness-nav` (the L3 mining skill with grep recipes) rather than reading all SKILL.md files blindly. If L3 confirms no coverage, do the task inline.
 
