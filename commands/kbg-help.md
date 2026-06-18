@@ -27,7 +27,7 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 | Need | Reach for |
 |------|-----------|
 | Don't know which skill/command covers a task | `kbg:harness-nav` |
-| Full current inventory of every surface | `BOUNDARY.md` (auto-generated) — or the recipes under "Full inventory" below |
+| Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
 | Read-only governance journal / verdicts / silent sensors | `kbg:harness-health` |
 | 12-cell coverage decay grid (quarter-end) | `kbg:harness-coverage` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
@@ -75,9 +75,11 @@ Skipping step 1 or 2 causes stale cache loads and `harness-audit` will CRIT-flag
 
 ## Full inventory
 
-- Skills: `ls skills | sed '/^_lib$/d'` or `grep -r "^name:" skills/*/SKILL.md`
-- Commands: `ls commands/*.md | sed 's|commands/||;s|\.md||'`
-- Agents: `ls agents/*.md | sed 's|agents/||;s|\.md||'`
-- Hooks: `jq '.hooks[].name' hooks/hooks.json`
+Run these from any project CWD because `${KBG_PLUGIN_ROOT}` resolves to the plugin cache:
+
+- Skills: `ls "${KBG_PLUGIN_ROOT}/skills" | sed '/^_lib$/d'` or `grep -r "^name:" "${KBG_PLUGIN_ROOT}"/skills/*/SKILL.md`
+- Commands: `ls "${KBG_PLUGIN_ROOT}"/commands/*.md | xargs -n1 basename | sed 's|\.md||'`
+- Agents: `ls "${KBG_PLUGIN_ROOT}"/agents/*.md | xargs -n1 basename | sed 's|\.md||'`
+- Hooks: `jq '.hooks[].name' "${KBG_PLUGIN_ROOT}"/hooks/hooks.json`
 
 For deeper discovery, run `kbg:harness-nav`.

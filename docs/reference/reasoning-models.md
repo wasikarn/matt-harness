@@ -67,8 +67,8 @@ Run these in the **Bash** tool. `${KBG_PLUGIN_ROOT}` is exported by
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model. Use the exact directory name from the list above,
-# which always starts with `thinking-`. Do not strip the prefix.
+# Read a specific model. Use the exact `Upstream dir` value from the table below
+# (it always starts with `thinking-`). Do not strip the prefix.
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKILL.md"
 # Example — read the systems-thinking vendored file (upstream dir is `thinking-systems`):
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
@@ -79,47 +79,47 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills
 
 ## Unified 39-model index
 
-| Model | kbg status | kbg home | How it shows up |
-|---|---|---|---|
-| systems-thinking | applied | skills/probe | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
-| feedback-loops | applied | skills/probe | named step: mark loop as reinforcing or balancing |
-| first-principles | applied | skills/probe (Root Why) | probe one level deeper than the user's stated reason |
-| second-order | applied | skills/probe (What-if) | 10x / fail / nothing consequence branches |
-| pre-mortem | applied | skills/probe | catastrophic-failure branch: what breaks first + detection + rollback |
-| five-whys-plus | applied | skills/probe | Root Why probing; upstream name is five-whys-plus |
-| thought-experiment | applied | skills/probe, skills/ideate | extreme-zero / extreme-infinite counterfactual frames |
-| inversion | applied | skills/ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | applied | skills/adr, skills/probe, ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
-| debiasing | applied | skills/probe | Check yourself — anti-self-deception step |
-| socratic | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
-| scientific-method | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
-| theory-of-constraints | applied | skills/perf | profile → find the one bottleneck → fix that |
-| red-team | applied | skills/critical-eval, commands/debug-debate | Skeptic role: argue AGAINST and find risks |
-| steel-manning | applied | skills/critical-eval, commands/debug-debate | Synthesizer: evaluate both sides; unconsidered alternatives |
-| model-router | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| model-selection | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| model-combination | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| opportunity-cost | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
-| circle-of-competence | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
-| jobs-to-be-done | applied | agents/product-analyst | named tradeoff: user story vs job-to-be-done |
-| bayesian | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
-| probabilistic | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
-| bounded-rationality | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
-| margin-of-safety | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
-| occams-razor | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
-| map-territory | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
-| via-negativa | considered | skills/decommission, skills/memory-trim | removal-first practice; model name not used |
-| ooda | considered | skills/incident, skills/hotfix | incident phases are observe-orient-decide-act shaped, but not relabeled |
-| cynefin | considered | skills/triage | triage classifies severity/scope, not problem domain |
-| regret-minimization | considered | — | no kbg anchor |
-| kepner-tregoe | considered | — | no kbg anchor |
-| triz | considered | — | no kbg anchor |
-| archetypes | considered | — | no kbg anchor |
-| effectuation | considered | — | no kbg anchor |
-| dual-process | considered | — | no kbg anchor |
-| fermi-estimation | considered | — | no kbg anchor |
-| lindy-effect | considered | — | no kbg anchor |
-| leverage-points | considered | — | no direct anchor beyond systems-thinking/probe |
+| Model | Upstream dir | kbg status | kbg home | How it shows up |
+| --- | --- | --- | --- | --- |
+| systems-thinking | `thinking-systems` | applied | skills/probe | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
+| feedback-loops | `thinking-feedback-loops` | applied | skills/probe | named step: mark loop as reinforcing or balancing |
+| first-principles | `thinking-first-principles` | applied | skills/probe (Root Why) | probe one level deeper than the user's stated reason |
+| second-order | `thinking-second-order` | applied | skills/probe (What-if) | 10x / fail / nothing consequence branches |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/probe | catastrophic-failure branch: what breaks first + detection + rollback |
+| five-whys-plus | `thinking-five-whys-plus` | applied | skills/probe | Root Why probing; upstream name is five-whys-plus |
+| thought-experiment | `thinking-thought-experiment` | applied | skills/probe, skills/ideate | extreme-zero / extreme-infinite counterfactual frames |
+| inversion | `thinking-inversion` | applied | skills/ideate | named ideate frame: ask the OPPOSITE question |
+| reversibility | `thinking-reversibility` | applied | skills/adr, skills/probe, ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
+| debiasing | `thinking-debiasing` | applied | skills/probe | Check yourself — anti-self-deception step |
+| socratic | `thinking-socratic` | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
+| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
+| theory-of-constraints | `thinking-theory-of-constraints` | applied | skills/perf | profile → find the one bottleneck → fix that |
+| red-team | `thinking-red-team` | applied | skills/critical-eval, commands/debug-debate | Skeptic role: argue AGAINST and find risks |
+| steel-manning | `thinking-steel-manning` | applied | skills/critical-eval, commands/debug-debate | Synthesizer: evaluate both sides; unconsidered alternatives |
+| model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| opportunity-cost | `thinking-opportunity-cost` | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
+| circle-of-competence | `thinking-circle-of-competence` | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
+| jobs-to-be-done | `thinking-jobs-to-be-done` | applied | agents/product-analyst | named tradeoff: user story vs job-to-be-done |
+| bayesian | `thinking-bayesian` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
+| probabilistic | `thinking-probabilistic` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
+| bounded-rationality | `thinking-bounded-rationality` | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
+| margin-of-safety | `thinking-margin-of-safety` | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
+| occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
+| map-territory | `thinking-map-territory` | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
+| via-negativa | `thinking-via-negativa` | considered | skills/decommission, skills/memory-trim | removal-first practice; model name not used |
+| ooda | `thinking-ooda` | considered | skills/incident, skills/hotfix | incident phases are observe-orient-decide-act shaped, but not relabeled |
+| cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
+| regret-minimization | `thinking-regret-minimization` | considered | — | no kbg anchor |
+| kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
+| triz | `thinking-triz` | considered | — | no kbg anchor |
+| archetypes | `thinking-archetypes` | considered | — | no kbg anchor |
+| effectuation | `thinking-effectuation` | considered | — | no kbg anchor |
+| dual-process | `thinking-dual-process` | considered | — | no kbg anchor |
+| fermi-estimation | `thinking-fermi-estimation` | considered | — | no kbg anchor |
+| lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
+| leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking/probe |
 
 ## Status definitions
 

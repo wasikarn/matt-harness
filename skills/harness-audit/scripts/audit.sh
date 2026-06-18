@@ -1586,29 +1586,62 @@ fi
 
 # 42. Reasoning-models index drift — the unified 39-model table in
 # docs/reference/reasoning-models.md must list one row for every vendored
-# thinking-*/SKILL.md file under docs/reference/thinking-skills/skills/.
-# A mismatch means a model was added/removed without updating the catalog.
+# thinking-*/SKILL.md directory under docs/reference/thinking-skills/skills/.
+# A mismatch means a model was added/removed/renamed without updating the catalog.
+# Mapping rule: upstream keeps the same hyphen-separated tokens, but moves a
+# trailing `-thinking` to the front as the `thinking-` prefix. So
+# `systems-thinking` → `thinking-systems`, while `feedback-loops` simply becomes
+# `thinking-feedback-loops`.
 RM_INDEX="$CLAUDE_DIR/docs/reference/reasoning-models.md"
 RM_SKILLS_DIR="$CLAUDE_DIR/docs/reference/thinking-skills/skills"
 if [ -f "$RM_INDEX" ] && [ -d "$RM_SKILLS_DIR" ]; then
-  _rm_rows=$(awk '/^## Unified 39-model index/{f=1; next} f && /^\| / && !/^\|[-—| ]+\|/ && !/^\| Model \|/{c++} END{print c+0}' "$RM_INDEX")
-  _rm_files=$(safe_count find "$RM_SKILLS_DIR" -maxdepth 2 -name 'SKILL.md' -type f)
-  if [ "${_rm_rows:-0}" -ne "${_rm_files:-0}" ]; then
-    warn "reasoning-models index drift: table lists $_rm_rows models but thinking-skills/skills/ holds $_rm_files SKILL.md files"
-  fi
+  _rm_drift=$(python3 - "$RM_INDEX" "$RM_SKILLS_DIR" <<'PY'
+import os, re, sys
+index_path, skills_dir = sys.argv[1:3]
 
-  # Also verify the catalog row names match the vendored directory names (modulo
-  # the `thinking-` prefix). A simple count can hide a rename/add/delete that
-  # keeps the total at 39 but mismatches entries.
-  _row_set=$(mktemp)
-  _dir_set=$(mktemp)
-  awk '/^## Unified 39-model index/{f=1; next} f && /^\| / && !/^\|[-—| ]+\|/ && !/^\| Model \|/ {gsub(/^[[:space:]]*\|[[:space:]]*/,""); print $1}' "$RM_INDEX" | tr '[:upper:]' '[:lower:]' | sed 's/^thinking-//' | sort -u > "$_row_set"
-  find "$RM_SKILLS_DIR" -maxdepth 1 -type d -name 'thinking-*' | sed 's|.*/||; s/^thinking-//; tr '[:upper:]' '[:lower:]' | sort -u > "$_dir_set"
-  _rm_diff=$(diff "$_row_set" "$_dir_set" | tr '\n' ' ' | cut -c1-240 || true)
-  if [ -n "$_rm_diff" ]; then
-    warn "reasoning-models name mismatch between catalog rows and vendored dirs (after stripping thinking- prefix): $_rm_diff"
+in_index = False
+rows = set()
+with open(index_path) as fh:
+    for line in fh:
+        if line.startswith('## Unified 39-model index'):
+            in_index = True
+            continue
+        if not in_index:
+            continue
+        if not line.startswith('|') or line.lstrip().startswith('|--') or ' Model ' in line:
+            continue
+        row = line.split('|')[1].strip().lower()
+        # Skip the separator row and any malformed entries.
+        if not row or row.startswith('---') or not re.fullmatch(r'[a-z0-9\-]+', row):
+            continue
+        rows.add(row)
+
+dirs = {entry for entry in os.listdir(skills_dir)
+        if os.path.isdir(os.path.join(skills_dir, entry)) and entry.startswith('thinking-')}
+
+def row_to_dir(row):
+    if row.endswith('-thinking'):
+        return 'thinking-' + row[:-9]
+    return 'thinking-' + row
+
+missing_dirs = sorted(row_to_dir(r) for r in rows if row_to_dir(r) not in dirs)
+orphan_dirs = sorted(d for d in dirs
+                     if (d[len('thinking-'):] not in rows)
+                     and ((d[len('thinking-'):] + '-thinking') not in rows))
+if missing_dirs or orphan_dirs:
+    msg = []
+    if missing_dirs:
+        msg.append(f"catalog rows with no vendored dir: {missing_dirs}")
+    if orphan_dirs:
+        msg.append(f"vendored dirs with no catalog row: {orphan_dirs}")
+    print('; '.join(msg))
+PY
+)
+  if [ -n "${_rm_drift:-}" ]; then
+    warn "reasoning-models index drift — $_rm_drift"
   fi
-  rm -f "$_row_set" "$_dir_set"
+else
+  warn "reasoning-models reference docs missing from plugin cache: $RM_INDEX or $RM_SKILLS_DIR"
 fi
 
 # ── summary ──────────────────────────────────────────────────────────

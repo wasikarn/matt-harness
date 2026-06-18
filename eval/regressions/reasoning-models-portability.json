@@ -3,8 +3,8 @@
   "description": "Guard against foreign-CWD breakage and discovery loss for the vendored cc-thinking-skills reference library.",
   "evals": [
     {
-      "id": "reasoning-models-portability-access-path",
-      "task": "Verify the vendored thinking-skills library is reachable from any project CWD via KBG_PLUGIN_ROOT and that harness-nav surfaces it",
+      "id": "reasoning-models-reachable-from-repo-root",
+      "task": "Verify the vendored thinking-skills library is reachable from the repo root via KBG_PLUGIN_ROOT and that harness-nav surfaces it",
       "skill": "script",
       "context": {
         "command": "set -euo pipefail\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\necho \"count=$(find \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills\" -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')\"\necho \"first_heading=$(awk '/^# /{print; exit}' \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md\")\"\nnav_json=$(python3 \"${KBG_PLUGIN_ROOT}/skills/harness-nav/scripts/nav.py\" --json \"mental models\")\nnav_refs=$(echo \"$nav_json\" | python3 -c \"import sys,json; print(sum(1 for m in json.load(sys.stdin).get('matches',[]) if m.get('kind')=='reference'))\")\nif [ \"$nav_refs\" -gt 0 ]; then\n  echo \"nav_has_reference=true\"\nelse\n  echo \"nav_has_reference=false\"\n  exit 1\nfi",
@@ -18,9 +18,47 @@
         "output contains nav_has_reference=true"
       ],
       "expected_failure": false,
-      "failure_pattern": "reasoning-models access path is broken from a foreign CWD or harness-nav no longer surfaces reference docs",
+      "failure_pattern": "reasoning-models access path is broken from the repo root or harness-nav no longer surfaces reference docs",
       "fixed_by": "09d9447",
       "tags": ["reference", "portability", "harness-nav"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "reasoning-models-reachable-from-foreign-cwd",
+      "task": "Verify the Bash recipes work from a project CWD that is not the plugin cache or repo root",
+      "skill": "script",
+      "context": {
+        "command": "set -euo pipefail\nroot=$PWD\ntmp=$(mktemp -d)\ncd \"$tmp\"\nexport KBG_PLUGIN_ROOT=\"$root\"\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\necho \"foreign_cwd=true\"\necho \"count=$(find \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills\" -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')\"\necho \"first_heading=$(awk '/^# /{print; exit}' \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md\")\"\nrm -rf \"$tmp\"",
+        "timeout": 30
+      },
+      "success_criteria": [
+        "command exits 0",
+        "output contains foreign_cwd=true",
+        "output contains count=39",
+        "output contains first_heading=# systems thinking"
+      ],
+      "expected_failure": false,
+      "failure_pattern": "reasoning-models access path breaks when the user's project CWD is not the plugin root",
+      "fixed_by": "09d9447",
+      "tags": ["reference", "portability"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "reasoning-models-nav-surfaces-all-39",
+      "task": "Verify harness-nav can find every vendored model by its catalog row name",
+      "skill": "script",
+      "context": {
+        "command": "set -euo pipefail\nroot=$PWD\nnav=\"${root}/skills/harness-nav/scripts/nav.py\"\nindex=\"${root}/docs/reference/reasoning-models.md\"\nmissing=0\nrows=$(awk '/^## Unified 39-model index/{f=1; next} f && /^\\| / && !/^\\|[-—| ]+\\|/ && !/ Model / {print $2}' \"$index\")\nfor row in $rows; do\n  # Row names are kebab-case; turn them into a natural-language query\n  query=$(echo \"$row\" | tr '-' ' ')\n  expected=\"thinking-${row}\"\n  # Special-case the one upstream directory that reverses the word order\n  if [ \"$row\" = \"systems-thinking\" ]; then\n    expected=\"thinking-systems\"\n  fi\n  found=$(python3 \"$nav\" --json \"$query\" | python3 -c \"import sys,json; data=json.load(sys.stdin); print('true' if any(m.get('kind')=='reference' and '${expected}' in (m.get('path') or '') for m in data.get('matches',[])) else 'false')\")\n  if [ \"$found\" != \"true\" ]; then\n    echo \"missing=${row}\"\n    missing=$((missing + 1))\n  fi\ndone\necho \"missing_count=${missing}\"\n[ \"$missing\" -eq 0 ]",
+        "timeout": 60
+      },
+      "success_criteria": [
+        "command exits 0",
+        "output contains missing_count=0"
+      ],
+      "expected_failure": false,
+      "failure_pattern": "harness-nav cannot discover one or more vendored mental models by catalog row name",
+      "fixed_by": "09d9447",
+      "tags": ["reference", "harness-nav"],
       "eval_type": "assertion"
     }
   ]
