@@ -105,7 +105,7 @@ the hook silently degrades to `convergence_status=unknown`.
 This is a heuristic, not a quality judgment. Query the history with:
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/../../scripts/ideate-convergence.py --today
+bash "${CLAUDE_SKILL_DIR}/scripts/convergence.sh" --today
 ```
 
 ## Ideate memory search (user command)

@@ -131,7 +131,7 @@ acli jira auth status
 
 If authed, build the create payload from the Thai Markdown description:
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/../acli/scripts/md2adf.py /tmp/bug.md \
+bash "${CLAUDE_SKILL_DIR}/scripts/md2adf.sh" /tmp/bug.md \
   -s "<Thai summary>" -p <projectKey> -t Bug -l "bug,<domain>" > /tmp/wi.json
 ```
 

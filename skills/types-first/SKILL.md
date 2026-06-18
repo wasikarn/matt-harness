@@ -290,7 +290,7 @@ In the plan file (`.claude/tasks/<slug>.md`):
 
 ### Task board state machine
 
-Source `${CLAUDE_PLUGIN_ROOT}/scripts/task_board_lib.sh` (see `skills/orchestrate/SKILL.md` § "Task board integration"):
+Source `${CLAUDE_SKILL_DIR}/scripts/task-board-lib.sh` (a per-skill wrapper that resolves the plugin-wide library; see `skills/orchestrate/SKILL.md` § "Task board integration"):
 
 1. **Spawn T1:** create with `status = "pending"`, `depends_on = []`. Claim → `in_progress`.
 2. **After T1 completes:** set `status = "completed"`, run `kbg_recompute_blocked`.

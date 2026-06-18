@@ -22,13 +22,13 @@ The dispatcher is the **deterministic** half of the coordination contract. The l
 **Usage:**
 ```bash
 # Render a human-readable wave plan (default; safe):
-python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml
+bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml"
 
 # Emit a machine-readable plan (for `/team-build --spec` consumption):
-python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml --emit-plan
+bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --emit-plan
 
 # Run command-typed stages in wave order (deterministic chain half):
-python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml --execute
+bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --execute
 ```
 
 **What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (or `/team-build` consuming the plan) dispatches them per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (ADR 0002) forbids. P2.4 ships the spec-rendering half; future work would wire `/team-build --spec` to consume the rendered plan.
@@ -199,7 +199,7 @@ The chain is a DAG in the board: `A → B → F → D`. Each edge is `depends_on
 
 ### Task board integration
 
-Source `${CLAUDE_PLUGIN_ROOT}/scripts/task_board_lib.sh` for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
+Source `${CLAUDE_SKILL_DIR}/scripts/task-board-lib.sh` (a per-skill wrapper that resolves the plugin-wide library) for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
 
 - **Spawn Step A:** create the task with `status = "pending"` and `depends_on = []`. After claiming, set `task.status = "in_progress"` and write the board.
 - **Spawn Step B:** create the task with `depends_on = ["A-task-id"]`. `kbg_recompute_blocked` will set `status = "blocked"` and `blocked_by = ["A-task-id"]` until A completes. Once A is marked `completed`, recompute unblocks B to `pending`; the lead then sets `status = "in_progress"` when spawning the validator.

@@ -28,8 +28,8 @@ If you need the standalone script outside a Claude Code session, run from the re
 
 ```bash
 # from repo root:
-bash skills/decommission/scripts/witness.sh sign --namespace=assert-presence <slug>
-bash skills/decommission/scripts/witness.sh verify --namespace=assert-presence
+bash skills/assert-presence/scripts/witness.sh sign --namespace=assert-presence <slug>
+bash skills/assert-presence/scripts/witness.sh verify --namespace=assert-presence
 ```
 
 ## Quick start
@@ -38,10 +38,10 @@ From inside any project's repo root — no setup step required, sign auto-inits 
 
 ```bash
 # when an agent reports a concrete change worth pinning:
-bash ${CLAUDE_SKILL_DIR}/../decommission/scripts/witness.sh sign --namespace=assert-presence <slug>
+bash "${CLAUDE_SKILL_DIR}/scripts/witness.sh" sign --namespace=assert-presence <slug>
 
 # verify (run in CI, pre-commit, or scheduled cron):
-bash ${CLAUDE_SKILL_DIR}/../decommission/scripts/witness.sh verify --namespace=assert-presence
+bash "${CLAUDE_SKILL_DIR}/scripts/witness.sh" verify --namespace=assert-presence
 ```
 
 `witness.sh sign` opens `$EDITOR` on `.witness/assert-presence-<slug>.txt`. Fill in assertions, save, exit — script signs and writes `.sig`.

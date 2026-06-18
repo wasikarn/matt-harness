@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.70] — 2026-06-18
+
+Make skill-body bundled-script references strictly official-compliant: eliminate the last cross-sibling `${CLAUDE_SKILL_DIR}/../` traversals and all `${CLAUDE_PLUGIN_ROOT}` references in skill-body prose by routing every skill through its own per-skill wrapper script.
+
+### Fixed
+
+- **Cross-sibling skill script references now resolve without traversing sibling directories.** Skills that executed helpers owned by other skills (`skills/{create-jira-bug,create-jira-story}` → `skills/acli/scripts/md2adf.py`; `skills/assert-presence` → `skills/decommission/scripts/witness.sh`) previously told the model to use `${CLAUDE_SKILL_DIR}/../acli/...` or `${CLAUDE_SKILL_DIR}/../decommission/...`. Each consuming skill now ships its own wrapper under `scripts/` that resolves the plugin root from the wrapper's own path and delegates to the sibling script. The skill body only ever references `${CLAUDE_SKILL_DIR}/scripts/<wrapper>`.
+- **Top-level `scripts/` helpers are no longer referenced directly from skill-body prose.** `skills/{types-first,orchestrate,progressive-refine}` now source `${CLAUDE_SKILL_DIR}/scripts/task-board-lib.sh`; `skills/orchestrate` runs `${CLAUDE_SKILL_DIR}/scripts/dispatch.sh`; `skills/ideate` runs `${CLAUDE_SKILL_DIR}/scripts/convergence.sh`; `skills/{ship-change,review-pr}` run `${CLAUDE_SKILL_DIR}/scripts/run-acceptance.sh`; `skills/article-mine` runs `${CLAUDE_SKILL_DIR}/scripts/memory-lint.sh`. Each wrapper resolves the real script via `BASH_SOURCE[0]:-$0` path computation, so it works whether the wrapper is executed or sourced and whether the shell is bash or zsh.
+- **Removed the remaining `${CLAUDE_PLUGIN_ROOT}` references from skill-body prose.** The variable is documented to expand in hook shell commands and command bash-injection contexts, not in plain skill-body prose. `skills/harness-audit/SKILL.md` now describes plugin resolution without naming the variable.
+
+### Why not just use `${CLAUDE_PLUGIN_ROOT}` everywhere?
+
+Official docs do not guarantee `${CLAUDE_PLUGIN_ROOT}` expansion in skill-body markdown or in skill-body bash blocks. The wrapper approach keeps every skill self-contained under `${CLAUDE_SKILL_DIR}` (which *is* documented to expand in skill bodies) and removes any assumption about which runtime contexts expand which variable.
+
 ## [0.2.69] — 2026-06-18
 
 Second full-fleet portability sweep: clean up the remaining runtime surfaces that still referenced repo-relative paths or sibling markdown links, which break when the plugin runs **in another project**.
