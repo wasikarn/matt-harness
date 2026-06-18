@@ -5,6 +5,19 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.76] — 2026-06-18
+
+Fix an existing `audit.sh` repo-root auto-detection bug that only surfaced when the script was invoked from a foreign project CWD without an explicit repo-root argument.
+
+### Fixed
+
+- **`skills/harness-audit/scripts/audit.sh`** was resolving its own directory 4 levels up (`.../.../.../..`) instead of 3, landing one directory above the kbg-harness root. It worked only because callers historically passed an explicit repo root. Now defaults correctly to the plugin root.
+- **`commands/kbg-help.md`** removed the trailing `.` from the self-audit shortcut so it does not pass the foreign CWD as the repo root.
+
+### Verified
+
+- End-to-end smoke tests from `/tmp/kbg-foreign-test-...` pass for `/wave-status`, `/pre-ship-verify`, `/ship-task`, `/pre-flight-plan-linter`, `/ideate-search`, `/team-cleanup`, `/validate-and-fix`, `/dismiss-stale`, `/kbg-help` validation shortcuts, and same-skill surfaces (`harness-nav`, `harness-coverage`, `harness-health`, `recursive-improve`, `inventory`, `memory-lint`, `usage-monitor`).
+
 ## [0.2.75] — 2026-06-18
 
 Default per-skill audit wrappers to the plugin root when called without arguments, and remove the trailing `.` repo-root convention from skill prose.

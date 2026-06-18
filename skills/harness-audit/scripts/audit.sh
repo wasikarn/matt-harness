@@ -22,7 +22,7 @@ while [ $# -gt 0 ]; do
     *) [ -z "$REPO_ROOT" ] && REPO_ROOT="$1"; shift ;;
   esac
 done
-REPO_ROOT="${REPO_ROOT:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
+REPO_ROOT="${REPO_ROOT:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
 # Layout: dotfiles nests the harness under claude/; the extracted kbg-harness
 # plugin repo is flat (agents/, skills/, … at the root). Resolve CLAUDE_DIR to
 # whichever holds the fleet so one audit.sh serves both checkouts.
