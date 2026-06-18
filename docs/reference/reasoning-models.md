@@ -126,6 +126,33 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
 | leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking/probe |
 
+## Mapping models to Claude Code workflow patterns
+
+The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
+kbg does **not** auto-route tasks through these models (that would be an
+unattended model-router — excluded by the autonomy invariant per [ADR 0002](../adr/0002-autonomy-invariant.md)).
+Instead, each existing kbg skill already applies one or more models as a framing
+lens. Use this table when you know the workflow pattern you are in and want the
+named handle for the lens the relevant kbg surface already uses.
+
+The six patterns below mirror the CC Workflow vocabulary documented in
+`skills/orchestrate/reference.md §Dynamic-workflow pattern vocabulary`.
+They are read-only framing labels, not dispatch instructions.
+
+| Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
+|---|---|---|---|
+| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `kbg:triage`, `kbg:clarify-first` |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:probe`, `kbg:research-brief`, `kbg:article-mine` |
+| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:critical-eval`, `commands/debug-debate`, `kbg:review-pr` |
+| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `kbg:ideate`, `kbg:adr`, `/feature-dev` scoping |
+| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:adr` (Pugh Matrix), `/debug-debate` |
+| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `/validate-and-fix` |
+
+**Usage rule:** if a task already clearly matches a kbg surface, just use that
+surface — don't invoke a model name separately. The model names are useful when
+you want to explain *why* a surface is shaped the way it is, combine multiple
+lenses explicitly, or teach the harness's reasoning to someone new.
+
 ## Status definitions
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
