@@ -95,7 +95,7 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 **Goal:** detect tasks stuck in `in_progress` with no recent heartbeat and reset them to `pending` so another agent can claim them.
 
 **Actions (per plan):**
-1. Acquire the board lock via `task_board_lib.py` (or `scripts/locks/lock-claim.sh` on the plan directory), or use atomic read/write discipline.
+1. Acquire the board lock via `task_board_lib.py` (or `${KBG_PLUGIN_ROOT}/scripts/locks/lock-claim.sh` on the plan directory), or use atomic read/write discipline.
    - On lock failure, log a warning and skip this plan.
 2. Read `board.json`.
 3. For each task with `status == "in_progress"`:

@@ -118,5 +118,5 @@ If the user passed `--fix`:
 
 - **F10 plan approval filter** — `commands/team-build.md` Step 5. The lead applies the same filter manually; this command is the machine pre-check.
 - **Plan file structure** — `commands/team-plan.md` § Step 3. The linter enforces the table and list shapes defined there.
-- **Linter script** — `scripts/plan-linter.py`. Contains the parsing logic, cycle detection, and F10 heuristics.
+- **Linter script** — `${KBG_PLUGIN_ROOT}/scripts/plan-linter.py`. Contains the parsing logic, cycle detection, and F10 heuristics.
 - **Validation chain** — `skills/orchestrate/SKILL.md` § Validation chain. Every acceptance criterion maps to a validation command; the linter checks that mapping exists.

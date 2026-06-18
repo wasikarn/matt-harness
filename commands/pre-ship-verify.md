@@ -38,7 +38,7 @@ Deterministic gate: run the acceptance contract and report pass/fail before any 
 
 ## Phase 2: Execute
 
-**Goal**: Run `scripts/evals/run-acceptance.py` and capture structured results.
+**Goal**: Run `${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py` and capture structured results.
 
 **Actions**:
 1. Run:
