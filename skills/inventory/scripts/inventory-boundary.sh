@@ -359,3 +359,20 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 
 XREF4
 fi
+
+# Reference docs cross-link (added 2026-06-18).
+# Points at the non-loadable reasoning-models catalog and its vendored
+# thinking-skills library so BOUNDARY.md readers can find the L3 reference
+# surface without adding a new invokable skill.
+if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
+  cat <<'XREF5'
+
+---
+
+## Reference docs
+
+- **[Reasoning-models catalog](../../docs/reference/reasoning-models.md)** — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each. Use the Bash recipes in that file to read the full upstream SKILL.md files from any project CWD.
+- **[Vendored thinking-skills library](../../docs/reference/thinking-skills/README.md)** — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
+
+XREF5
+fi

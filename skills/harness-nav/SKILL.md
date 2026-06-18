@@ -64,6 +64,25 @@ ls "${KBG_PLUGIN_ROOT}/skills/<name>/SKILL.md" 2>/dev/null && echo "skill exists
 ls "${KBG_PLUGIN_ROOT}/agents/<name>.md" 2>/dev/null && echo "agent exists" || echo "not found"
 ```
 
+### 6. Mine the vendored reasoning-models reference library
+
+The plugin ships 39 mental-model write-ups under `docs/reference/thinking-skills/` as a read-only reference library. These are **not** invokable skills — they are scaffolds the existing kbg surfaces already apply. Use these recipes to look up a named model or search by keyword.
+
+```bash
+# Read the kbg application catalog (which surface applies which model)
+cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
+
+# List all 39 vendored mental models
+find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
+  | sed 's|.*/skills/||; s|/SKILL.md||' | sort
+
+# Read a specific model by its upstream directory name
+cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md"
+
+# Search vendored model bodies for a keyword
+grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills/*/SKILL.md
+```
+
 ---
 
 ## Decision tree

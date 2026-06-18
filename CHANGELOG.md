@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.79] — 2026-06-18
+
+Make the vendored cc-thinking-skills reference library directly reachable from any project CWD without adding a new invokable skill.
+
+### Changed
+
+- **`docs/reference/reasoning-models.md`** now contains a unified 39-row index with `kbg status` (`applied` / `considered` / `rejected`) and portable Bash recipes to read the upstream SKILL.md files from any CWD.
+- **`skills/harness-nav/SKILL.md`** adds a “Mine the vendored reasoning-models reference library” recipe section using `${KBG_PLUGIN_ROOT}`.
+- **`BOUNDARY.md`** regenerated with a new “Reference docs” cross-reference (XREF5 in `skills/inventory/scripts/inventory-boundary.sh`) pointing to `docs/reference/reasoning-models.md` and `docs/reference/thinking-skills/README.md`.
+
 ## [0.2.76] — 2026-06-18
 
 Fix an existing `audit.sh` repo-root auto-detection bug that only surfaced when the script was invoked from a foreign project CWD without an explicit repo-root argument.

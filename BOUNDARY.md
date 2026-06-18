@@ -199,7 +199,7 @@ _Personals/kbg-harness_
 | STAFF-ENGINEER | Organization-scale technical lead register: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. |
 
 ---
-_Generated: 2026-06-18T10:16:13Z_
+_Generated: 2026-06-18T10:28:32Z_
 
 ---
 
@@ -367,4 +367,12 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
 | "validation failed but it says done" | `/validate-and-fix` | F7 gate + re-validator |
 | "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
+
+
+---
+
+## Reference docs
+
+- **[Reasoning-models catalog](../../docs/reference/reasoning-models.md)** — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each. Use the Bash recipes in that file to read the full upstream SKILL.md files from any project CWD.
+- **[Vendored thinking-skills library](../../docs/reference/thinking-skills/README.md)** — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
 
