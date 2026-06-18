@@ -195,11 +195,11 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| SENIOR-DEV | Senior-engineering lead register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to STAFF-ENGINEER when ownership, cross-team boundaries, or long-term consequences matter. |
-| STAFF-ENGINEER | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when SENIOR-DEV escalates. |
+| SENIOR-ENGINEER | Senior-engineering register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to STAFF-ENGINEER when ownership, cross-team boundaries, or long-term consequences matter. |
+| STAFF-ENGINEER | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when SENIOR-ENGINEER escalates. |
 
 ---
-_Generated: 2026-06-18T10:58:34Z_
+_Generated: 2026-06-18T11:29:27Z_
 
 ---
 
@@ -291,7 +291,7 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `skills/` — 38 workflow skills
 - `commands/` — 21 slash commands
 - `hooks/` — 43 hook scripts
-- `output-styles/` — 1 SENIOR-DEV
+- `output-styles/` — 1 SENIOR-ENGINEER
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context
