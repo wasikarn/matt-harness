@@ -198,7 +198,7 @@ _Personals/kbg-harness_
 | SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
 
 ---
-_Generated: 2026-06-18T03:13:58Z_
+_Generated: 2026-06-18T03:18:01Z_
 
 ---
 
@@ -294,16 +294,16 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context
-- **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (plugin.json v0.1.3)
+- **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash tests/hooks/runners/test-critical-hooks.sh` (201/0 expected)
+- **Tests:** `bash tests/hooks/runners/test-critical-hooks.sh` (expect 0 failures)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
-- `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (26 I = schema-rot INFO, non-blocking)
+- `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (INFO findings are non-blocking)
 - `claude plugin validate --strict .` — exit 0
-- `bash tests/hooks/runners/test-critical-hooks.sh` — 201/0 expected
+- `bash tests/hooks/runners/test-critical-hooks.sh` — expect 0 failures
 - `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` — exit 0
 
 ---
