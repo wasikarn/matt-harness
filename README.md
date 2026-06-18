@@ -5,7 +5,7 @@
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 39 workflow skills, 21 slash commands, and 43 governance
+It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 43 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
@@ -96,7 +96,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | Component | Count | How to Use |
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
-| **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Skills** | 38 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
 | **Hooks** | 43 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
 | **Output Style** | 1 | `SENIOR-DEV` — direct senior engineering lead register |
