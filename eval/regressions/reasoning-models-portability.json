@@ -28,14 +28,15 @@
       "task": "Verify the Bash recipes work from a project CWD that is not the plugin cache or repo root",
       "skill": "script",
       "context": {
-        "command": "set -euo pipefail\nroot=$PWD\ntmp=$(mktemp -d)\ncd \"$tmp\"\nexport KBG_PLUGIN_ROOT=\"$root\"\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\necho \"foreign_cwd=true\"\necho \"count=$(find \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills\" -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')\"\necho \"first_heading=$(awk '/^# /{print; exit}' \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md\")\"\nrm -rf \"$tmp\"",
+        "command": "set -euo pipefail\nrepo_root=$PWD\n# Prefer the real plugin cache if installed, else fall back to the repo root.\ncache_root=$(ls -d ~/.claude/plugins/cache/kobig/kbg/* 2>/dev/null | sort -V | tail -1 || true)\nif [ -n \"$cache_root\" ] && [ -d \"$cache_root/docs/reference/thinking-skills/skills\" ]; then\n  root=\"$cache_root\"\n  echo \"using=plugin_cache\"\nelse\n  root=\"$repo_root\"\n  echo \"using=repo_root\"\nfi\ntmp=$(mktemp -d)\ncd \"$tmp\"\nexport KBG_PLUGIN_ROOT=\"$root\"\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\necho \"foreign_cwd=true\"\necho \"count=$(find \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills\" -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')\"\necho \"first_heading=$(awk '/^# /{print; exit}' \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md\")\"\nnav_json=$(python3 \"${KBG_PLUGIN_ROOT}/skills/harness-nav/scripts/nav.py\" --json \"mental models\")\nnav_refs=$(echo \"$nav_json\" | python3 -c \"import sys,json; print(sum(1 for m in json.load(sys.stdin).get('matches',[]) if m.get('kind')=='reference'))\")\nif [ \"$nav_refs\" -gt 0 ]; then\n  echo \"nav_has_reference=true\"\nelse\n  echo \"nav_has_reference=false\"\n  exit 1\nfi\nrm -rf \"$tmp\"",
         "timeout": 30
       },
       "success_criteria": [
         "command exits 0",
         "output contains foreign_cwd=true",
         "output contains count=39",
-        "output contains first_heading=# systems thinking"
+        "output contains first_heading=# systems thinking",
+        "output contains nav_has_reference=true"
       ],
       "expected_failure": false,
       "failure_pattern": "reasoning-models access path breaks when the user's project CWD is not the plugin root",
