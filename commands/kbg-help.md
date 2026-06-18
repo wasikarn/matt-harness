@@ -77,9 +77,9 @@ Skipping step 1 or 2 causes stale cache loads and `harness-audit` will CRIT-flag
 
 Run these from any project CWD because `${KBG_PLUGIN_ROOT}` resolves to the plugin cache:
 
-- Skills: `ls "${KBG_PLUGIN_ROOT}/skills" | sed '/^_lib$/d'` or `grep -r "^name:" "${KBG_PLUGIN_ROOT}"/skills/*/SKILL.md`
-- Commands: `ls "${KBG_PLUGIN_ROOT}"/commands/*.md | xargs -n1 basename | sed 's|\.md||'`
-- Agents: `ls "${KBG_PLUGIN_ROOT}"/agents/*.md | xargs -n1 basename | sed 's|\.md||'`
-- Hooks: `jq '.hooks[].name' "${KBG_PLUGIN_ROOT}"/hooks/hooks.json`
+- Skills: `ls "${KBG_PLUGIN_ROOT}/skills" | sed '/^_lib$/d'` or `grep -r "^name:" "${KBG_PLUGIN_ROOT}/skills"/*/SKILL.md`
+- Commands: `ls "${KBG_PLUGIN_ROOT}/commands"/*.md | xargs -n1 basename | sed 's|\.md||'`
+- Agents: `ls "${KBG_PLUGIN_ROOT}/agents"/*.md | xargs -n1 basename | sed 's|\.md||'`
+- Hooks: `jq '.hooks[].name' "${KBG_PLUGIN_ROOT}/hooks/hooks.json"`
 
 For deeper discovery, run `kbg:harness-nav`.

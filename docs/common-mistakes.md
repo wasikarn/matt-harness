@@ -36,7 +36,7 @@ The orchestrate skill's routing table (`skills/orchestrate/SKILL.md` § Procedur
 **Self-check:**
 
 ```bash
-grep -L "## Cross-role boundaries" agents/*.md
+grep -L "## Cross-role boundaries" "${KBG_PLUGIN_ROOT}/agents"/*.md
 ```
 
 Any file that appears in the output is missing the boundary guard.
@@ -56,7 +56,7 @@ The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead
 **Self-check:**
 
 ```bash
-grep -r "file finder\|search codebase\|where is" commands/ skills/*/SKILL.md agents/*.md | grep -v "code-explorer\|research-brief"
+grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "code-explorer\|research-brief"
 ```
 
 If the grep finds a command or agent whose description overlaps with an existing specialist, it is a candidate for consolidation.
@@ -80,8 +80,9 @@ If the grep finds a command or agent whose description overlaps with an existing
 **Self-check:**
 
 ```bash
-grep -l "tools:.*Edit\|tools:.*Write" agents/code-reviewer.md agents/security-reviewer.md agents/code-explorer.md agents/code-architect.md agents/comment-analyzer.md agents/pr-test-analyzer.md agents/silent-failure-hunter.md 2>/dev/null
-grep -c "VALIDATOR-BASH" hooks/gates/validator-bash-guard.sh
+grep -l "tools:.*Edit\|tools:.*Write" \
+  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-explorer,code-architect,comment-analyzer,pr-test-analyzer,silent-failure-hunter}.md 2>/dev/null
+grep -c "VALIDATOR-BASH" "${KBG_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh"
 ```
 
 The first grep should return no files. The second grep should return a non-zero count (the hook contains the validator class regex and deny patterns).
@@ -108,8 +109,8 @@ The orchestrator's verification step (`/team-build` Step 6) greps for these obse
 **Self-check:**
 
 ```bash
-grep -c "## Done-when" skills/orchestrate/SKILL.md
-grep -L "Done-when" commands/team-build.md commands/validate-and-fix.md
+grep -c "## Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
+grep -L "Done-when" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/validate-and-fix.md"
 ```
 
 The first count should be > 0. The second grep should return nothing — both commands embed the F9 template that contains Done-when.

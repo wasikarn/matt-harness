@@ -69,7 +69,7 @@ Run these in the **Bash** tool. `${KBG_PLUGIN_ROOT}` is exported by
 : "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
 
 # List all 39 vendored mental models (directory names start with `thinking-`)
-find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
+find "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills" -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
 # Read a specific model. Use the exact `Upstream dir` value from the table below
@@ -79,7 +79,7 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKI
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
 
 # Search the vendored models for a keyword
-grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills/*/SKILL.md
+grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"/*/SKILL.md
 ```
 
 ## Unified 39-model index

@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.85-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.86-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,10 +9,9 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.84):** reasoning-models reference library (`docs/reference/thinking-skills/`)
-> vendored with full foreign-CWD portability, `kbg:harness-nav` now indexes reference docs by
-> friendly model names, audit check #42 guards the 39-model table, and plugin-delivered internal
-> doc recipes use `${KBG_PLUGIN_ROOT}` so they resolve from any project CWD.
+> **Newest additions (v0.2.86):** foreign-CWD portability sweep completed; all plugin-delivered internal
+> doc recipes now resolve via `${KBG_PLUGIN_ROOT}`, stale cross-references fixed, and remaining
+> relative self-check paths in `docs/common-mistakes.md` were converted.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
