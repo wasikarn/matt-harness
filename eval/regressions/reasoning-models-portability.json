@@ -81,6 +81,24 @@
       "fixed_by": "09d9447",
       "tags": ["reference", "portability"],
       "eval_type": "assertion"
+    },
+    {
+      "id": "reasoning-models-nav-surfaces-thinking-systems-by-name",
+      "task": "Verify harness-nav can surface a specific vendored model by its friendly catalog name",
+      "skill": "script",
+      "context": {
+        "command": "set -euo pipefail\nroot=$PWD\npython3 - \"$root\" <<'PY'\nimport json, subprocess, sys\n\nroot = sys.argv[1]\nnav_path = f'{root}/skills/harness-nav/scripts/nav.py'\nresult = subprocess.run(\n    ['python3', nav_path, '--json', 'systems thinking'],\n    capture_output=True, text=True, cwd=root\n)\nif result.returncode != 0 or not result.stdout:\n    print('nav_failed')\n    sys.exit(1)\n\ndata = json.loads(result.stdout)\nfound = any(\n    m.get('kind') == 'reference' and 'thinking-systems' in (m.get('path') or '')\n    for m in data.get('matches', [])\n)\nprint(f'found={found}')\nsys.exit(0 if found else 1)\nPY",
+        "timeout": 30
+      },
+      "success_criteria": [
+        "command exits 0",
+        "output contains found=true"
+      ],
+      "expected_failure": false,
+      "failure_pattern": "harness-nav no longer surfaces thinking-systems when queried by friendly model name",
+      "fixed_by": "09d9447",
+      "tags": ["reference", "harness-nav"],
+      "eval_type": "assertion"
     }
   ]
 }

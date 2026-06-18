@@ -42,6 +42,11 @@ gate — not from invoking a mental model. Same posture as the LLM-judge-circula
 (`CLAUDE.md` §LLM-judge-circularity): **use a model to structure thinking; never cite "I
 applied model X" as evidence the work is right.**
 
+> **Do not open this catalog unprompted.** Reasoning models are framing scaffolds, not a
+> checklist to prepend to every task. Apply one only when the task explicitly calls for that
+> lens; otherwise keep the catalog closed and rely on the existing kbg skills that already
+> embed the relevant frames.
+
 ## How to use
 
 Short-circuit rule (from their `thinking-model-router`): **if you already know the model,
