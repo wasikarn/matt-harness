@@ -66,7 +66,7 @@ Don't. Witnesses assert *permanent* absence. If you're A/B-testing a removal, us
 
 If `~/.ssh/witness_ed25519` is lost or compromised:
 
-1. Generate new key: `bash scripts/witness.sh init --namespace=decommission --force`
+1. Generate new key: `bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh init --namespace=decommission --force`
 2. Append the new pubkey to `.witness/allowed_signers` (don't remove the old line yet)
 3. Re-sign every witness: `for f in .witness/*.txt; do ssh-keygen -Y sign -f ~/.ssh/witness_ed25519 -n decommission "$f"; done`
 4. Commit, verify, then remove the old pubkey line
@@ -87,7 +87,7 @@ The skill ships scripts only — wiring the verify gate is per-repo. Recommended
 ```bash
 #!/usr/bin/env bash
 if [ -d .witness ]; then
-  bash skills/decommission/scripts/witness.sh verify --namespace=decommission || exit 1
+  bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission || exit 1
 fi
 ```
 
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           if [ -d .witness ]; then
-            bash skills/decommission/scripts/witness.sh verify --namespace=decommission
+            bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission
           fi
 ```
 
@@ -118,7 +118,7 @@ Caveats: `ABSENT_LAUNCHD` will always pass on Linux CI (no `launchctl`), `ABSENT
 For `ABSENT_LAUNCHD` and `ABSENT_PROCESS_MATCH`, only the host running the daemon can see the orphan. Run periodically via cron or launchd itself:
 
 ```cron
-0 9 * * 1  cd ~/repo && bash skills/decommission/scripts/witness.sh verify --namespace=decommission | logger -t decommission-verify
+0 9 * * 1  cd ~/repo && bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission | logger -t decommission-verify
 ```
 
 Weekly Monday-morning catch with output to syslog. Don't try to make this block anything — just surface drift.

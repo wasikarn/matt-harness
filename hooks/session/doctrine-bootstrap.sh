@@ -47,6 +47,14 @@ for name in METHODOLOGY RTK ACLI DBGATE; do
 done
 [ -n "$doctrine" ] || exit 0
 
+# Runtime-resolved catalog pointer. ${CLAUDE_PLUGIN_ROOT} (here $ROOT) expands ONLY in the
+# hook shell — never in skill/command/doctrine prose the model reads (code.claude.com/docs/en/
+# plugins-reference § Environment variables). So this is the one place the absolute,
+# version-proof cache path can be handed to the model: a bare/relative `docs/...` link in
+# injected doctrine resolves against the user's project CWD and breaks when the plugin runs
+# in another repo. The path points at the installed plugin copy (cache), not the working tree.
+doctrine+="Reasoning-models catalog — the named mental models kbg already applies (honesty caveat: none is a proven accuracy boost; one measurably hurt accuracy). To open it from any project, Read this absolute path in the installed plugin: $ROOT/docs/reference/reasoning-models.md — the 39 verbatim-vendored thinking-skill files live under $ROOT/docs/reference/thinking-skills/."$'\n'
+
 # JSON-escape via python3 (already required by other hooks). Bail safe if absent.
 ctx="$(printf '%s' "$doctrine" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)" || exit 0
 [ -n "$ctx" ] || exit 0

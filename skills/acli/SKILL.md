@@ -45,7 +45,7 @@ acli jira workitem search --jql "..." --json     # parse | --csv export | --web 
 
 # 2. INSPECT
 acli jira workitem view KEY-123 --fields summary,comment   # *all / *navigable / -field
-acli jira workitem view KEY-123 --json | python3 scripts/adf2md.py   # readable card, ~80% fewer tokens than raw JSON
+acli jira workitem view KEY-123 --json | python3 ${CLAUDE_SKILL_DIR}/${CLAUDE_SKILL_DIR}/scripts/adf2md.py   # readable card, ~80% fewer tokens than raw JSON
 
 # 3. CREATE
 acli jira workitem create --summary "X" --project TEAM --type Task --assignee @me
@@ -56,14 +56,14 @@ acli jira workitem transition --key KEY-1 --list   # discover valid statuses FIR
 acli jira workitem transition --jql "project = TEAM AND status = 'To Do'" --status "In Progress" --yes
 acli jira workitem edit --key "KEY-1,KEY-2" --summary "..." --labels a,b
 # ⚠️ edit --description REPLACES the whole description. To add/change without
-#    losing the original, append safely: bash scripts/acli-edit.sh KEY notes.md
+#    losing the original, append safely: bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY notes.md
 acli jira workitem comment create --key KEY-1 --body "..."
 acli jira workitem assign --key KEY-1 --assignee @me       # @me | default | email
 ```
 
 `@me` self-assign, `default` project default. `--generate-json` scaffolds any complex create/edit/link input. ⚠️ `assign --assignee` resolves `@me`/`default`/**email** only — a raw **accountId silently UNassigns** (acli prints "unassigned" and clears it). For accountId / privacy-hidden emails, see [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp).
 
-**Description format:** Jira `description`/comment `body` is ADF. Flags (`--description`/`--body`) accept plain text (auto-wrapped); `--from-json` needs a full ADF object. Confluence body is storage-format XHTML instead. Don't hand-write ADF — write Markdown and run `python3 scripts/md2adf.py desc.md`; read it back with `scripts/adf2md.py` (inverse). Rules + GOOD/BAD → [REFERENCE.md](REFERENCE.md) "Description & body formats" + [examples/](examples/). **Acceptance Criteria are the crown jewel** — keep them plain (no field/enum/API names) and cover error + boundary + regression, not just the happy path: rubric + worked GOOD/BAD → [examples/README.md](examples/README.md).
+**Description format:** Jira `description`/comment `body` is ADF. Flags (`--description`/`--body`) accept plain text (auto-wrapped); `--from-json` needs a full ADF object. Confluence body is storage-format XHTML instead. Don't hand-write ADF — write Markdown and run `python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md`; read it back with `${CLAUDE_SKILL_DIR}/scripts/adf2md.py` (inverse). Rules + GOOD/BAD → `REFERENCE.md` "Description & body formats" + `examples/`. **Acceptance Criteria are the crown jewel** — keep them plain (no field/enum/API names) and cover error + boundary + regression, not just the happy path: rubric + worked GOOD/BAD → `examples/README.md`.
 
 ## Bulk-mutation safety
 
@@ -77,8 +77,8 @@ Mutating bulk ops (`edit`, `transition`, `assign`, `delete`, `clone`, `link crea
 
 `create`/`create-bulk` are outward-facing too — but unlike the mutations above they have no JQL set to preview, so preview the **payload itself** before firing.
 
-1. **Render what you're about to send.** For a `--from-json` create, round-trip it first: `python3 scripts/md2adf.py desc.md -s "..." -p TP -t Bug > /tmp/wi.json && python3 scripts/adf2md.py /tmp/wi.json` prints a readable card — `(new) <type>`, project, labels, and the full description. Eyeball it, *then* `acli jira workitem create --from-json /tmp/wi.json`.
-2. **For `create-bulk`**, `--generate-json` first (or render one row) and read it back before the batch — a bad template multiplies across every row. ⚠️ `create-bulk --from-json` **rejects rich-markdown descriptions** (headings/code fences/backticks/newlines) → ✗ "request body is missing or invalid". Pattern that works: bulk-create with **short placeholder** bodies, then set the real description per ticket with `bash scripts/acli-set-desc.sh KEY desc.md` (verified TP-558..566).
+1. **Render what you're about to send.** For a `--from-json` create, round-trip it first: `python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md -s "..." -p TP -t Bug > /tmp/wi.json && python3 ${CLAUDE_SKILL_DIR}/${CLAUDE_SKILL_DIR}/scripts/adf2md.py /tmp/wi.json` prints a readable card — `(new) <type>`, project, labels, and the full description. Eyeball it, *then* `acli jira workitem create --from-json /tmp/wi.json`.
+2. **For `create-bulk`**, `--generate-json` first (or render one row) and read it back before the batch — a bad template multiplies across every row. ⚠️ `create-bulk --from-json` **rejects rich-markdown descriptions** (headings/code fences/backticks/newlines) → ✗ "request body is missing or invalid". Pattern that works: bulk-create with **short placeholder** bodies, then set the real description per ticket with `bash ${CLAUDE_SKILL_DIR}/scripts/acli-set-desc.sh KEY desc.md` (verified TP-558..566).
 3. **Resolve metadata, don't hardcode it.** Project/type/priority/labels/assignee must match the target project; `--generate-json` emits the schema the project actually accepts — scaffold from it when unsure of a type or field. The templates ship `projectKey:"TP"` as a personal default — swap it (or pass `-p`) for any other project. On an unknown project/type/field acli fails: fix it, never strip the field and retry (Rule 12).
 
 ## Confluence / admin / rovodev
@@ -91,7 +91,7 @@ acli admin user deactivate ...                             # org user lifecycle 
 acli rovodev auth login && acli rovodev run                # AI coding agent (beta, separate token)
 ```
 
-Full command tree, every flag, and JSON schemas → [REFERENCE.md](REFERENCE.md).
+Full command tree, every flag, and JSON schemas → `REFERENCE.md`.
 
 ## When acli can't (fall back to the Atlassian MCP)
 

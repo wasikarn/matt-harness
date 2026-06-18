@@ -34,12 +34,12 @@ Five templates, each derived from real TP work items and standardized on ADF hea
 Derived from TP-418, 447, 455, 457, 460, 461.
 
 ```bash
-acli jira workitem create --from-json examples/bug-template.json
+acli jira workitem create --from-json ${CLAUDE_SKILL_DIR}/examples/bug-template.json
 ```
 
 Or write the report in Markdown (easier than editing ADF JSON) and convert:
 ```bash
-python3 scripts/md2adf.py mybug.md -s "[OTP] เปลี่ยนภาษาแล้วเด้งกลับ" -p TP -t Bug > /tmp/wi.json
+python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py mybug.md -s "[OTP] เปลี่ยนภาษาแล้วเด้งกลับ" -p TP -t Bug > /tmp/wi.json
 acli jira workitem create --from-json /tmp/wi.json
 ```
 
@@ -60,7 +60,7 @@ acli jira workitem create --from-json /tmp/wi.json
 User-centric work item. Derived from Atlassian [user stories guidance](https://www.atlassian.com/agile/project-management/user-stories) ("As a [user], I want [goal], so that [benefit]" — non-technical, end-user perspective).
 
 ```bash
-acli jira workitem create --from-json examples/story-template.json
+acli jira workitem create --from-json ${CLAUDE_SKILL_DIR}/examples/story-template.json
 ```
 
 | Section | When | Content |
@@ -77,7 +77,7 @@ acli jira workitem create --from-json examples/story-template.json
 Implementation work. Derived from TP-466, 467, 473, 479.
 
 ```bash
-acli jira workitem create --from-json examples/task-template.json
+acli jira workitem create --from-json ${CLAUDE_SKILL_DIR}/examples/task-template.json
 ```
 
 | Section | When | Content |
@@ -94,7 +94,7 @@ acli jira workitem create --from-json examples/task-template.json
 High-level initiative that spans multiple sprints. Derived from Atlassian agile guidance ("large body of work, broken into smaller stories, scope flexes with feedback").
 
 ```bash
-acli jira workitem create --from-json examples/epic-template.json
+acli jira workitem create --from-json ${CLAUDE_SKILL_DIR}/examples/epic-template.json
 ```
 
 | Section | When | Content |
@@ -114,7 +114,7 @@ A slice of a parent. **Must have a parent** — sub-tasks cannot be top-level. D
 
 ```bash
 # parent set in the JSON via "parentIssueId", or pass --parent on the CLI
-acli jira workitem create --from-json examples/subtask-template.json
+acli jira workitem create --from-json ${CLAUDE_SKILL_DIR}/examples/subtask-template.json
 ```
 
 | Section | When | Content |

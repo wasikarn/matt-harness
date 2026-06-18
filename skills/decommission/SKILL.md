@@ -24,8 +24,8 @@ If you need the standalone script outside a Claude Code session, run from the re
 
 ```bash
 # from repo root:
-bash skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
-bash skills/decommission/scripts/witness.sh verify --namespace=decommission
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh sign --namespace=decommission <slug>
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission
 ```
 
 Three states with distinct lifetimes:
@@ -42,8 +42,8 @@ From inside any project's repo root — no setup step required, sign auto-inits 
 
 **Standalone** (from repo root):
 ```bash
-bash skills/decommission/scripts/witness.sh sign --namespace=decommission <slug>
-bash skills/decommission/scripts/witness.sh verify --namespace=decommission
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh sign --namespace=decommission <slug>
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission
 ```
 
 `witness.sh sign` opens `$EDITOR` on `.witness/<slug>.txt`. Fill in assertions, save, exit — script signs and writes `.witness/<slug>.txt.sig`. Commit both files.
@@ -72,7 +72,7 @@ Required header comments — verify enforces presence:
 # rollback: <how to restore if needed>
 ```
 
-See [REFERENCE.md](REFERENCE.md) for edge cases (TOCTOU, path expansion, false positives) and verify-gate wiring (pre-commit, CI, scheduled). See [EXAMPLES.md](EXAMPLES.md) for worked scenarios.
+See `REFERENCE.md` for edge cases (TOCTOU, path expansion, false positives) and verify-gate wiring (pre-commit, CI, scheduled). See `EXAMPLES.md` for worked scenarios.
 
 ## Workflow
 

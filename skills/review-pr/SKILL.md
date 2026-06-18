@@ -149,7 +149,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
    **Acceptance-contract check** (only if the task locked one via `kbg:accept-task`): look for `.scratch/<slug>/ACCEPTANCE.md`. If absent, skip this silently. If present, **run machine-checkable criteria first**, then cross-check findings:
-   1. **Machine layer:** Run `python3 scripts/evals/run-acceptance.py <slug>` (or invoke `/pre-ship-verify <slug>`). Read `acceptance-results.json`.
+   1. **Machine layer:** Run `python3 ${CLAUDE_SKILL_DIR}/../../scripts/evals/run-acceptance.py <slug>` (or invoke `/pre-ship-verify <slug>`). Read `acceptance-results.json`.
       - Any `failed` or `blocked` criteria → treat as **Critical [acceptance-gap]** regardless of review findings. The contract is broken.
       - Skipped criteria (prose/manual) → proceed to human layer below.
    2. **Human layer:** Cross-check each Critical/Important review finding against the locked `## Criteria`:

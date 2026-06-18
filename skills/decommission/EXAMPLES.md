@@ -28,7 +28,7 @@ Aftermath:
 ### Decommission with witness
 
 ```bash
-bash skills/decommission/scripts/witness.sh sign --namespace=decommission indexer-worker
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh sign --namespace=decommission indexer-worker
 ```
 
 Editor opens — fill in:
@@ -58,7 +58,7 @@ Save, exit. Script runs `ssh-keygen -Y sign` → produces `.witness/indexer-work
 Then:
 
 ```bash
-bash skills/decommission/scripts/witness.sh verify --namespace=decommission
+bash ${CLAUDE_SKILL_DIR}/scripts/witness.sh verify --namespace=decommission
 ```
 
 **On day 0** (decommission day): verify fails immediately because launchd is still loaded and the symlinks still exist. Forces you to actually clean up all three layers:
@@ -118,7 +118,7 @@ Note: there's no `ABSENT_JSON_KEY` directive in v1 grammar. For settings.json, e
 - Add a custom `ABSENT_PATH` to a file you control that mirrors the setting, OR
 - Use `ABSENT_PROCESS_MATCH: prompt-logger` to catch the running symptom
 
-(Adding a JSON-aware assertion type is a deliberate v2 decision — see [REFERENCE.md](REFERENCE.md) on assertion grammar evolution.)
+(Adding a JSON-aware assertion type is a deliberate v2 decision — see `REFERENCE.md` on assertion grammar evolution.)
 
 ## What these scenarios share
 

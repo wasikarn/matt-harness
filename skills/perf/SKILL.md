@@ -63,4 +63,4 @@ Done.
 - `/fix-bug` — performance issue caused by functional bug
 - `/deep-dive` — bottleneck requires architectural redesign
 
-**Named models** (cc-thinking-skills): profile → find the one bottleneck → fix that is *theory-of-constraints*; the ">50% improvement or discard" rule is the *scientific method*'s falsification gate. Catalog: [`docs/reference/reasoning-models.md`](../../docs/reference/reasoning-models.md).
+**Named models** (cc-thinking-skills): profile → find the one bottleneck → fix that is *theory-of-constraints*; the ">50% improvement or discard" rule is the *scientific method*'s falsification gate. Catalog: `docs/reference/reasoning-models.md` (absolute path injected each session).

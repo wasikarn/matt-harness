@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.68] — 2026-06-18
+
+Make the vendored `thinking-skills` / `reasoning-models` references actually resolvable when the plugin runs **in another project**. A workflow (parallel official-docs verification + full repo reference inventory + adversarial skeptic) confirmed the root cause: `${CLAUDE_PLUGIN_ROOT}` expands **only in hook shell commands** — never in skill/command/doctrine prose the model reads — and the `Read` tool resolves relative paths against the *user's* CWD, not the plugin cache. So every `../../docs/reference/reasoning-models.md` link (and the bare path in `METHODOLOGY.md`) was a broken `Read` target for anyone but the owner dogfooding inside the repo. The cache path is version-pinned (`.../kbg/<version>/`), so hardcoding an absolute path is not an option either.
+
+### Fixed
+
+- **`doctrine-bootstrap.sh` now injects the resolved absolute catalog path each session (keystone).** `${CLAUDE_PLUGIN_ROOT}` does expand in the hook shell, so the hook appends one pointer line carrying the concrete absolute path to `docs/reference/reasoning-models.md` and the `docs/reference/thinking-skills/` tree. This is the one always-on reference that resolves from any CWD and survives every version bump. Verified end-to-end: a foreign-CWD hook run injects a `Read`-able absolute path.
+- **Demoted 6 broken markdown links to honest in-repo location prose** in `METHODOLOGY.md` and `skills/{adr,critical-eval,orchestrate,perf,probe}/SKILL.md` + `commands/fix-bug.md`. The mental-model names were already stated inline, so the clickable `../../docs/...` link (which never resolved when installed elsewhere) is replaced with the bare `docs/reference/reasoning-models.md` code-span; the always-injected absolute path is how the model actually opens it.
+- **Fixed `${CLAUDE_SKILL_DIR}`-relative bundled-script calls across 10 user-facing skill surfaces.** A full sweep found the same portability defect in executable paths: `skills/{create-jira-bug,create-jira-story,acli,decommission,assert-presence,orchestrate,ideate,review-pr,ship-change/reference}` and `skills/acli/{REFERENCE,examples}`. The skill body now uses `${CLAUDE_SKILL_DIR}` (and `../` / `../../` where the script lives in a sibling skill or top-level `scripts/`) so `python3`/`bash` invocations resolve against the installed plugin cache from any project CWD. The standalone "run from the repo clone" blocks in `decommission` and `assert-presence` are intentionally left repo-relative for raw-terminal use outside Claude Code.
+- **Documented the command/harness-maintenance class as by-design.** Commands and harness-maintenance surfaces (e.g. `/kbg-help`, `/team-cleanup`, `/pre-ship-verify`, `kbg:harness-audit`) still use repo-relative paths because there is no official portable expansion in command prose (`${CLAUDE_PLUGIN_ROOT}` is hook-shell-only, and no `${CLAUDE_COMMAND_DIR}` exists). They are intended to operate with the working tree set to the `kbg` repo root, so their relative references are correct, not bugs.
+
+### Rejected
+
+- **Flattening the 39 `SKILL.md` files to plain `.md`** — churns the verbatim-vendored tree and destroys the clean re-sync / MIT-license-hygiene property (pinned commit `0313ee0`) to "fix" a reference-resolution problem that has nothing to do with file format.
+- **A thin index skill** — adds a fleet surface for reference text the upstream's own eval shows gives zero accuracy benefit, re-introducing the "looks invokable" confusion the deliberate `docs/` placement avoids.
+
 ## [0.2.67] — 2026-06-18
 
 Final pass of the count-drift sweep: refresh the last stale current-fleet snapshots and stop the `harness-audit` sample output from re-drifting.

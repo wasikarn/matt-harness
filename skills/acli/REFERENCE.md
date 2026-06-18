@@ -81,7 +81,7 @@ acli jira workitem create-bulk --generate-json
 ```
 Flags: `--from-csv`, `--from-json`, `--generate-json`, `--ignore-errors`, `--yes`.
 
-> ⚠️ **`create-bulk --from-json` rejects rich-markdown descriptions** (headings / code fences / backticks / newlines) → ✗ `The request body is missing or invalid.` Verified workaround (TP-558..566): bulk-create with **short placeholder** descriptions, then set the real ADF body per ticket — `bash scripts/acli-set-desc.sh KEY desc.md` (or loop `edit --from-json {issues:[KEY],description:<md2adf>}`). Never paste long-form Markdown into a bulk create.
+> ⚠️ **`create-bulk --from-json` rejects rich-markdown descriptions** (headings / code fences / backticks / newlines) → ✗ `The request body is missing or invalid.` Verified workaround (TP-558..566): bulk-create with **short placeholder** descriptions, then set the real ADF body per ticket — `bash ${CLAUDE_SKILL_DIR}/scripts/acli-set-desc.sh KEY desc.md` (or loop `edit --from-json {issues:[KEY],description:<md2adf>}`). Never paste long-form Markdown into a bulk create.
 
 ### search
 ```bash
@@ -112,9 +112,9 @@ Flags: `-k/--key`, `--jql`, `--filter`, `-s/--summary`, `-d/--description`, `--d
 > ⚠️ **`--description` REPLACES the whole description — it does not append.** Verified by create+delete: a naive `edit --description "X"` wipes all existing content (0 original sections survive). To **add**, **change**, or **remove one section** while keeping the rest, you must read-modify-write the ADF (all three verified e2e — append/edit/remove a section, original untouched):
 > ```bash
 > # one-step helpers (preserve original; written for read-modify-write):
-> bash scripts/acli-edit.sh KEY notes.md                  # append Markdown (or: KEY - < notes.md)
-> bash scripts/acli-edit.sh KEY --remove-section "HEADING" # drop a section by exact heading (incl. nested)
-> bash scripts/acli-edit.sh KEY --replace-section "HEADING" new.md # replace a section in place
+> bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY notes.md                  # append Markdown (or: KEY - < notes.md)
+> bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY --remove-section "HEADING" # drop a section by exact heading (incl. nested)
+> bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY --replace-section "HEADING" new.md # replace a section in place
 >
 > # manual read-modify-write (for surgical in-place edits):
 > acli jira workitem view KEY --fields description --json   # grab .fields.description (ADF)
@@ -254,18 +254,18 @@ ADF skeleton (verified via `--generate-json`): `{ type:"doc", version:1, content
 
 Don't hand-write ADF. Write Markdown and convert:
 ```bash
-python3 scripts/md2adf.py desc.md                       # → ADF doc object (stdout)
-python3 scripts/md2adf.py desc.md -s "Summary" -p TP -t Bug > /tmp/wi.json
+python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md                       # → ADF doc object (stdout)
+python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md -s "Summary" -p TP -t Bug > /tmp/wi.json
 acli jira workitem create --from-json /tmp/wi.json      # --from-json takes a FILE PATH, not stdin ('-' fails)
 ```
-Supports `#`/`##`/`###`, ordered/bullet/task lists, `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `[text](url)`, `` ``` `` code blocks, `>` blockquotes, `---` rules. Nested lists flatten to top-level — use H3 sub-headings + flat bullets for scannable grouping instead. See [scripts/md2adf.py](scripts/md2adf.py).
+Supports `#`/`##`/`###`, ordered/bullet/task lists, `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `[text](url)`, `` ``` `` code blocks, `>` blockquotes, `---` rules. Nested lists flatten to top-level — use H3 sub-headings + flat bullets for scannable grouping instead. See `scripts/md2adf.py`.
 
-To read back, [scripts/adf2md.py](scripts/adf2md.py) is the inverse — pipe `view --json` through it for a readable work-item card at ~80% fewer tokens than raw JSON:
+To read back, `scripts/adf2md.py` is the inverse — pipe `view --json` through it for a readable work-item card at ~80% fewer tokens than raw JSON:
 ```bash
-acli jira workitem view KEY --json | python3 scripts/adf2md.py
+acli jira workitem view KEY --json | python3 ${CLAUDE_SKILL_DIR}/scripts/adf2md.py
 ```
 
-Working GOOD/BAD inputs → [examples/](examples/).
+Working GOOD/BAD inputs → `examples/`.
 
 ## Output & scripting cheatsheet
 
@@ -280,15 +280,15 @@ Working GOOD/BAD inputs → [examples/](examples/).
 | Skip confirm prompt | `-y/--yes` (mutating bulk ops) |
 | Continue past failures | `--ignore-errors` (read the summary after!) |
 | Read body/desc from file | `--from-file` / `--body-file` / `--description-file` |
-| Markdown → ADF for `--from-json` | `python3 scripts/md2adf.py desc.md` |
-| Read a work item cheaply (ADF → md) | `acli ... view KEY --json \| python3 scripts/adf2md.py` (~80% fewer tokens) |
-| Create from Markdown in one step | `bash scripts/acli-new.sh desc.md -s "..." -p TP -t Bug` |
-| Append to a description (no loss) | `bash scripts/acli-edit.sh KEY notes.md` |
-| Remove a description section | `bash scripts/acli-edit.sh KEY --remove-section "HEADING"` |
-| Replace a section in place | `bash scripts/acli-edit.sh KEY --replace-section "HEADING" new.md` |
-| **Replace** the whole description from Markdown | `bash scripts/acli-set-desc.sh KEY desc.md [--dry-run]` (overwrites; for the bulk placeholder→body flow) |
-| List a JQL/key set as a table | `bash scripts/acli-ls.sh --jql "project = TP AND statusCategory != Done"` (or `--key TP-1,TP-2`) |
-| Render a set as readable cards | loop `view KEY --json \| python3 scripts/adf2md.py` (adf2md also accepts a JSON array) |
+| Markdown → ADF for `--from-json` | `python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md` |
+| Read a work item cheaply (ADF → md) | `acli ... view KEY --json \| python3 ${CLAUDE_SKILL_DIR}/scripts/adf2md.py` (~80% fewer tokens) |
+| Create from Markdown in one step | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-new.sh desc.md -s "..." -p TP -t Bug` |
+| Append to a description (no loss) | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY notes.md` |
+| Remove a description section | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY --remove-section "HEADING"` |
+| Replace a section in place | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-edit.sh KEY --replace-section "HEADING" new.md` |
+| **Replace** the whole description from Markdown | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-set-desc.sh KEY desc.md [--dry-run]` (overwrites; for the bulk placeholder→body flow) |
+| List a JQL/key set as a table | `bash ${CLAUDE_SKILL_DIR}/scripts/acli-ls.sh --jql "project = TP AND statusCategory != Done"` (or `--key TP-1,TP-2`) |
+| Render a set as readable cards | loop `view KEY --json \| python3 ${CLAUDE_SKILL_DIR}/scripts/adf2md.py` (adf2md also accepts a JSON array) |
 | Relate N items in one shot | `acli jira workitem link create --from-csv links.csv` (header `out,in,type`) |
 
-ADF = Atlassian Document Format (Jira rich text); storage format = Confluence XHTML. Full rules + GOOD/BAD inputs: see **Description & body formats** above and [examples/](examples/).
+ADF = Atlassian Document Format (Jira rich text); storage format = Confluence XHTML. Full rules + GOOD/BAD inputs: see **Description & body formats** above and `examples/`.

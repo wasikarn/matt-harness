@@ -22,13 +22,13 @@ The dispatcher is the **deterministic** half of the coordination contract. The l
 **Usage:**
 ```bash
 # Render a human-readable wave plan (default; safe):
-python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml
+python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml
 
 # Emit a machine-readable plan (for `/team-build --spec` consumption):
-python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml --emit-plan
+python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml --emit-plan
 
 # Run command-typed stages in wave order (deterministic chain half):
-python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml --execute
+python3 ${CLAUDE_SKILL_DIR}/../../scripts/orchestrate-dispatch.py ${CLAUDE_SKILL_DIR}/examples/ship-merge.yml --execute
 ```
 
 **What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (or `/team-build` consuming the plan) dispatches them per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (ADR 0002) forbids. P2.4 ships the spec-rendering half; future work would wire `/team-build --spec` to consume the rendered plan.
@@ -50,7 +50,7 @@ python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.y
      - `Revise — remove or add items (Recommended when dependencies are misordered or scope is off)`
      - `Reject — keep as plan only (Recommended when user only asked for prioritization, not execution)`
    - **If `AskUserQuestion` is denied** (session in `dontAsk` mode, or headless `-p` — the tool is *not* permission-exempt, the runtime can refuse it): fall back to the **same** question + three options rendered as numbered prose, and wait for an explicit reply. Denial is **not** approval — never fail open. If no user can answer (background / headless run), **stop at plan-only**; do not dispatch any write-capable agent.
-   - **Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:` (denylist), for agent tool grants. See [`docs/agent-tool-patterns.md`](../../docs/agent-tool-patterns.md) for the convention. The "agent holds Bash" classification above is reading the `tools:` line, not the runtime default.
+   - **Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:` (denylist), for agent tool grants. See `docs/agent-tool-patterns.md` for the convention. The "agent holds Bash" classification above is reading the `tools:` line, not the runtime default.
    - Gate on each agent's **actual `tools:` grant, not this name list** — if the fleet changes, a hardcoded list silently drifts and fails open; re-check the grant before dispatch.
    - Give each agent a **done-when**: "`<observable output>` in `<location>`, or confirmed via `<command>`" (Rule 4) — not a topic. Parallel when independent, sequential when one feeds the next.
 5. **Verify results, then combine into whole.** Before integrating any sub-agent output:
@@ -180,7 +180,7 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 **Why these are doctrine, not preference:** the alternative is the lead editing `SKILL.md` while a teammate is also editing it (silent conflict), the lead burning Opus tokens on routine implementation (cost cliff), or the lead dropping plan-mode mid-`/team-build` because a teammate's question felt "faster to answer inline" (chain breaks). Each rule exists because the failure mode is real and observable.
 
-**Cross-references:** this doctrine is the runtime contract that `/team-build` (commands/team-build.md) assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
+**Cross-references:** this doctrine is the runtime contract that `/team-build` assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
 
 ## Validation chain (builder → validator → fix → re-validator)
 
@@ -470,4 +470,4 @@ Every agent dispatched here holds Bash or Edit/Write → present the plan, get o
 - **Rule 12 (Fail loud):** report the full allocation including what was dropped and why; no silent de-scoping.
 - **Rule 13 (Orchestrate, don't solo):** decompose → distribute pieces → verify results → combine into whole.
 
-**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog: [`docs/reference/reasoning-models.md`](../../docs/reference/reasoning-models.md).
+**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog: `docs/reference/reasoning-models.md` (absolute path injected each session).
