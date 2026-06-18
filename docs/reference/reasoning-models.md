@@ -70,48 +70,48 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills
 
 | Model | kbg status | kbg home | How it shows up |
 |---|---|---|---|
-| systems-thinking | applied | skills/probe | the probe lens itself (Adam Bender, *Software Ecology*) |
-| first-principles | applied | skills/probe (Root Why) | reframe stated reason → root constraint |
+| systems-thinking | applied | skills/probe | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
+| feedback-loops | applied | skills/probe | named step: mark loop as reinforcing or balancing |
+| first-principles | applied | skills/probe (Root Why) | probe one level deeper than the user's stated reason |
 | second-order | applied | skills/probe (What-if) | 10x / fail / nothing consequence branches |
-| pre-mortem | applied | skills/probe, agents/silent-failure-hunter | if this is wrong, what breaks first? + detection-latency rating |
-| five-whys-plus | applied | skills/probe | constructive root-why, one level deeper |
-| thought-experiment | applied | skills/probe, skills/ideate frames | counterfactual branches; extreme-zero / extreme-infinite |
-| reversibility | applied | skills/adr, skills/probe, orchestrate L5, ADR 0002 | hard to reverse? is a first-class gate |
-| debiasing | applied | skills/probe (anti-self-deception) | confirmation-bias / forced disconfirming-evidence step |
-| socratic | applied | skills/clarify-first | names the method and its "Socratic Trap" failure mode |
-| scientific-method | applied | commands/fix-bug, skills/perf | repro → hypothesize → falsify; perf's ">50% or discard" gate |
+| pre-mortem | applied | skills/probe | catastrophic-failure branch: what breaks first + detection + rollback |
+| five-whys-plus | applied | skills/probe | Root Why probing; upstream name is five-whys-plus |
+| thought-experiment | applied | skills/probe, skills/ideate | extreme-zero / extreme-infinite counterfactual frames |
+| inversion | applied | skills/ideate | named ideate frame: ask the OPPOSITE question |
+| reversibility | applied | skills/adr, skills/probe, ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
+| debiasing | applied | skills/probe | Check yourself — anti-self-deception step |
+| socratic | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
+| scientific-method | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | applied | skills/perf | profile → find the one bottleneck → fix that |
-| via-negativa | applied | skills/decommission, skills/memory-trim, decay-cadence | improve by removing, not adding |
-| red-team | applied | skills/critical-eval, agents/silent-failure-hunter, debug-debate Skeptic | institutionalized adversarial review |
-| steel-manning | applied | debug-debate Synthesizer, skills/critical-eval | charitable alternative-coverage ("why dismissed — evidence or preference?") |
-| model-router | applied | METHODOLOGY routing index, skills/orchestrate, skills/ideate | the dispatch layer *is* a router of approaches |
-| model-selection | applied | METHODOLOGY routing index, skills/orchestrate, skills/ideate | the dispatch layer *is* a router of approaches |
-| opportunity-cost | applied | skills/orchestrate (frozen-bid test), skills/ideate cost gate | is the spawn worth more than doing it inline? |
-| bayesian | applied | commands/fix-bug, skills/incident | rank hypotheses by likelihood, re-rank on evidence |
-| probabilistic | applied | commands/fix-bug, skills/incident | rank hypotheses by likelihood, re-rank on evidence |
-| bounded-rationality | applied | skills/orchestrate (pick-the-matrix) | satisfice under constraints, don't optimize / false precision |
-| margin-of-safety | applied | agent depth caps, structural-judge token headroom | "1 layer below the hard cap" |
-| circle-of-competence | applied | every agent's "defer to X" boundary; METHODOLOGY routing confidence | stay in lane, escalate on no-match |
-| map-territory | applied | METHODOLOGY Rule 8 (read before write); orchestrate stale-context-at-spawn | the doc ≠ the running system |
-| jobs-to-be-done | applied | agents/product-analyst | named user-story-vs-JTBD tradeoff |
-| occams-razor | applied | METHODOLOGY Rule 2; skills/orchestrate (frozen-bid test) | minimum that works; discard speculative branches early |
-| ooda | considered | — | incident/perf/hotfix are phase pipelines; relabeling as OODA buys nothing the phases don't already give |
-| cynefin | considered | — | triage classifies severity/scope, not problem domain (clear/complicated/complex/chaotic) |
-| regret-minimization | considered | — | no kbg anchor; pure vocabulary |
-| kepner-tregoe | considered | — | no kbg anchor; pure vocabulary |
-| triz | considered | — | no kbg anchor; pure vocabulary |
-| archetypes | considered | — | no kbg anchor; pure vocabulary ("systems-archetypes") |
-| effectuation | considered | — | no kbg anchor; pure vocabulary |
-| dual-process | considered | — | no kbg anchor; pure vocabulary |
-| fermi-estimation | considered | — | no kbg anchor; pure vocabulary |
-| lindy-effect | considered | — | no kbg anchor; pure vocabulary |
-| inversion | considered | — | for risk work, pre-mortem is the richer tool; use inversion only for quick failure-mode enumeration |
+| red-team | applied | skills/critical-eval, commands/debug-debate | Skeptic role: argue AGAINST and find risks |
+| steel-manning | applied | skills/critical-eval, commands/debug-debate | Synthesizer: evaluate both sides; unconsidered alternatives |
+| model-router | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-selection | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-combination | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
+| opportunity-cost | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
+| circle-of-competence | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
+| jobs-to-be-done | applied | agents/product-analyst | named tradeoff: user story vs job-to-be-done |
+| bayesian | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
+| probabilistic | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
+| bounded-rationality | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
+| margin-of-safety | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
+| occams-razor | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
+| map-territory | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
+| via-negativa | considered | skills/decommission, skills/memory-trim | removal-first practice; model name not used |
+| ooda | considered | skills/incident, skills/hotfix | incident phases are observe-orient-decide-act shaped, but not relabeled |
+| cynefin | considered | skills/triage | triage classifies severity/scope, not problem domain |
+| regret-minimization | considered | — | no kbg anchor |
+| kepner-tregoe | considered | — | no kbg anchor |
+| triz | considered | — | no kbg anchor |
+| archetypes | considered | — | no kbg anchor |
+| effectuation | considered | — | no kbg anchor |
+| dual-process | considered | — | no kbg anchor |
+| fermi-estimation | considered | — | no kbg anchor |
+| lindy-effect | considered | — | no kbg anchor |
 | leverage-points | considered | — | no direct anchor beyond systems-thinking/probe |
-| feedback-loops | rejected | skills/probe | referenced as *framing* only — never as license for a closed model-judges-model loop (ADR 0002) |
-| model-combination | rejected | METHODOLOGY routing index, skills/orchestrate, skills/ideate | referenced as *framing* only — never as license for a closed model-judges-model loop (ADR 0002) |
 
 ## Status definitions
 
-- **applied** — kbg has a concrete surface (skill, command, agent, or doctrine rule) that uses this model; the model is not just vocabulary.
-- **considered** — the model is a valid lens but kbg already covers the same ground with a stronger surface, or it has no anchor beyond vocabulary.
+- **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
+- **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
 - **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant ([ADR 0002](../adr/0002-autonomy-invariant.md)). It may still appear as *framing* inside an applied surface.

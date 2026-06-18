@@ -199,7 +199,7 @@ _Personals/kbg-harness_
 | STAFF-ENGINEER | Organization-scale technical lead register: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. |
 
 ---
-_Generated: 2026-06-18T10:28:32Z_
+_Generated: 2026-06-18T10:41:19Z_
 
 ---
 
