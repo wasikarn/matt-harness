@@ -169,7 +169,7 @@ if triggered:
     block = (
         f"**{n} sensor{'s' if n != 1 else ''} haven't fired:**\n"
         + "\n".join(f"- {p}" for p in parts)
-        + "\nDismiss: /dismiss-stale | Audit: bash \"${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh\" \"${KBG_PLUGIN_ROOT}\""
+        + "\nDismiss: /dismiss-stale | Audit: bash \"${CLAUDE_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh\" \"${CLAUDE_PLUGIN_ROOT}\""
     )
 else:
     block = ""

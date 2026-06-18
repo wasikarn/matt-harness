@@ -24,7 +24,7 @@ SUMMARY=$(printf '%s' "$RESULT" | jq -r \
 LABEL="degraded"
 [ "$EXIT_CODE" -eq 2 ] && LABEL="BROKEN"
 
-printf '{"additionalContext":"⚠️ MCP health %s — %s. Run: python3 \"${KBG_PLUGIN_ROOT}/scripts/auth-health-check.py\""}\n' \
+printf '{"additionalContext":"⚠️ MCP health %s — %s. Run: python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/auth-health-check.py\""}\n' \
   "$LABEL" "$SUMMARY"
 
 ( journal_append "$HOOK_ID" "mcp_health_warning" \

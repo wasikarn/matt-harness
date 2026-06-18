@@ -2,8 +2,7 @@
 name: assert-presence
 description: "assert-presence"
 disable-model-invocation: true
-disable-model-invocation-reason: "machinery primitive (also user-invocable: false) — invoked by hooks/CI, not by user or model"
-user-invocable: false
+disable-model-invocation-reason: "machinery primitive — invoked by hooks/CI, not by user or model"
 ---
 
 # Assert Presence
@@ -27,9 +26,9 @@ This skill is delivered via the `kbg@kobig` plugin. No manual symlink needed.
 If you need the standalone script outside a Claude Code session, run from the repo clone:
 
 ```bash
-# from any CWD (requires KBG_PLUGIN_ROOT):
-bash "${KBG_PLUGIN_ROOT}/skills/assert-presence/scripts/witness.sh" sign --namespace=assert-presence <slug>
-bash "${KBG_PLUGIN_ROOT}/skills/assert-presence/scripts/witness.sh" verify --namespace=assert-presence
+# from any CWD (requires CLAUDE_SKILL_DIR, set by the Claude Code session):
+bash "${CLAUDE_SKILL_DIR}/scripts/witness.sh" sign --namespace=assert-presence <slug>
+bash "${CLAUDE_SKILL_DIR}/scripts/witness.sh" verify --namespace=assert-presence
 ```
 
 ## Quick start

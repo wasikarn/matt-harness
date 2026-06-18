@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.90] — 2026-06-18
+
+Fifth sweep: use official `${CLAUDE_PLUGIN_ROOT}` inside hook contexts, drop unofficial skill/command frontmatter fields, and regenerate BOUNDARY.md.
+
+### Fixed
+
+- `hooks/maintenance/mcp-session-watchdog.sh:27`, `hooks/maintenance/notify-sensor-staleness.sh:172`, and `hooks/session/ideate-memory-capture.sh:10` now reference `${CLAUDE_PLUGIN_ROOT}` instead of `${KBG_PLUGIN_ROOT}` in user-facing hook output. `${KBG_PLUGIN_ROOT}` is exported by `command-root-anchor.sh` into `CLAUDE_ENV_FILE` for the Bash tool; `${CLAUDE_PLUGIN_ROOT}` is the official variable available in hook environment.
+- `skills/assert-presence/SKILL.md` standalone example now uses `${CLAUDE_SKILL_DIR}` (the official intra-skill variable) and drops the misleading "requires KBG_PLUGIN_ROOT" note.
+
+### Changed
+
+- Removed unofficial frontmatter fields that passed validation but are not in the vendor schema: `user-invocable: false` from `skills/assert-presence/SKILL.md` and `skills/decommission/SKILL.md`; `context: fork` + `agent: backend-engineer` from `skills/backend-dev/SKILL.md`; `context: fork` + `agent: researcher` from `skills/research-brief/SKILL.md`; `license: MIT` from `skills/ideate/SKILL.md`; `version: 3.0.0` / `license: MIT` / `compatibility: claude-code opencode` / `allowed-tools:` from `skills/tech-humanize/SKILL.md`.
+- Regenerated `BOUNDARY.md` from current fleet.
+
 ## [0.2.89] — 2026-06-18
 
 Fourth cross-component path-sweep: correct stale hook subdir references, outdated script examples, and CHANGELOG paths after the flat-layout cutover.

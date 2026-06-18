@@ -62,7 +62,7 @@ jobs:
           # (not a "repo" subdirectory) because is_plugin_delivered()
           # looks for skills/<name>/SKILL.md under the cache version dir.
           mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg"
-          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.2.89"
+          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.2.90"
 
       - name: seed memory store for memory-trim evals
         run: |
