@@ -67,6 +67,19 @@ def read_first_comment(path: Path) -> str:
     return ""
 
 
+def read_first_heading(path: Path) -> str:
+    """First markdown H1 heading line, stripped of '#'."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped.startswith("# "):
+                    return stripped.lstrip("# ").strip()
+    except OSError:
+        pass
+    return ""
+
+
 def scan_skills() -> list[dict]:
     results = []
     skills_dir = ROOT / "skills"
@@ -147,6 +160,39 @@ def scan_hooks() -> list[dict]:
     return results
 
 
+def scan_reference() -> list[dict]:
+    """Index read-only reference docs under docs/reference/ (not invokable skills)."""
+    results = []
+    ref_dir = ROOT / "docs" / "reference"
+    if not ref_dir.is_dir():
+        return results
+    # Top-level reference pages and one-level nested READMEs/indexes only.
+    # Nested subdirs expose their README/index entry point; extra files like
+    # UPSTREAM-README.md are reachable from that entry point and don't need
+    # their own nav row.
+    candidates = (
+        sorted(ref_dir.glob("*.md"))
+        + sorted(ref_dir.glob("*/README.md"))
+        + sorted(ref_dir.glob("*/index.md"))
+    )
+    for f in candidates:
+        heading = read_first_heading(f)
+        if not heading:
+            continue
+        # For nested README/index files, surface the directory name (e.g.
+        # docs/reference/thinking-skills/README.md -> "thinking-skills").
+        name = f.stem
+        if f.parent != ref_dir:
+            name = f.parent.name
+        results.append({
+            "kind": "reference",
+            "name": name,
+            "description": heading,
+            "path": str(f.relative_to(ROOT)),
+        })
+    return results
+
+
 def main() -> int:
     args = sys.argv[1:]
     as_json = False
@@ -168,12 +214,16 @@ def main() -> int:
         "audit": ["auditor", "auditing"],
         "memory": ["trim", "lint"],
         "team": ["teammate", "agents"],
+        "mental": ["reasoning", "thinking"],
+        "model": ["models"],
+        "models": ["model"],
+        "reference": ["docs"],
     }
     for word, alts in synonyms.items():
         if word in query_tokens:
             query_tokens.update(alts)
 
-    all_items = scan_skills() + scan_commands() + scan_agents() + scan_hooks()
+    all_items = scan_skills() + scan_commands() + scan_agents() + scan_hooks() + scan_reference()
     scored = []
     for item in all_items:
         text = f"{item['name']} {item['description']}"

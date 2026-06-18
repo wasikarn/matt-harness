@@ -1584,6 +1584,20 @@ if [ -f "$BBW" ] && [ -f "$DEG" ]; then
   fi
 fi
 
+# 42. Reasoning-models index drift — the unified 39-model table in
+# docs/reference/reasoning-models.md must list one row for every vendored
+# thinking-*/SKILL.md file under docs/reference/thinking-skills/skills/.
+# A mismatch means a model was added/removed without updating the catalog.
+RM_INDEX="$CLAUDE_DIR/docs/reference/reasoning-models.md"
+RM_SKILLS_DIR="$CLAUDE_DIR/docs/reference/thinking-skills/skills"
+if [ -f "$RM_INDEX" ] && [ -d "$RM_SKILLS_DIR" ]; then
+  _rm_rows=$(awk '/^## Unified 39-model index/{f=1; next} f && /^\| / && !/^\|[-—| ]+\|/ && !/^\| Model \|/{c++} END{print c+0}' "$RM_INDEX")
+  _rm_files=$(safe_count find "$RM_SKILLS_DIR" -maxdepth 2 -name 'SKILL.md' -type f)
+  if [ "${_rm_rows:-0}" -ne "${_rm_files:-0}" ]; then
+    warn "reasoning-models index drift: table lists $_rm_rows models but thinking-skills/skills/ holds $_rm_files SKILL.md files"
+  fi
+fi
+
 # ── summary ──────────────────────────────────────────────────────────
 
 echo ""

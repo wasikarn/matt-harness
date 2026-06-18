@@ -1,0 +1,27 @@
+{
+  "dataset_name": "reasoning-models-portability",
+  "description": "Guard against foreign-CWD breakage and discovery loss for the vendored cc-thinking-skills reference library.",
+  "evals": [
+    {
+      "id": "reasoning-models-portability-access-path",
+      "task": "Verify the vendored thinking-skills library is reachable from any project CWD via KBG_PLUGIN_ROOT and that harness-nav surfaces it",
+      "skill": "script",
+      "context": {
+        "command": "set -euo pipefail\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\necho \"count=$(find \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills\" -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')\"\necho \"first_heading=$(awk '/^# /{print; exit}' \"${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md\")\"\nnav_json=$(python3 \"${KBG_PLUGIN_ROOT}/skills/harness-nav/scripts/nav.py\" --json \"mental models\")\nnav_refs=$(echo \"$nav_json\" | python3 -c \"import sys,json; print(sum(1 for m in json.load(sys.stdin).get('matches',[]) if m.get('kind')=='reference'))\")\nif [ \"$nav_refs\" -gt 0 ]; then\n  echo \"nav_has_reference=true\"\nelse\n  echo \"nav_has_reference=false\"\n  exit 1\nfi",
+        "env": {"KBG_PLUGIN_ROOT": "."},
+        "timeout": 30
+      },
+      "success_criteria": [
+        "command exits 0",
+        "output contains count=39",
+        "output contains first_heading=# systems thinking",
+        "output contains nav_has_reference=true"
+      ],
+      "expected_failure": false,
+      "failure_pattern": "reasoning-models access path is broken from a foreign CWD or harness-nav no longer surfaces reference docs",
+      "fixed_by": "09d9447",
+      "tags": ["reference", "portability", "harness-nav"],
+      "eval_type": "assertion"
+    }
+  ]
+}

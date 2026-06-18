@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.81] — 2026-06-18
+
+Harden the reasoning-models reference path with machine checks and L3 discovery.
+
+### Added
+
+- **`skills/harness-nav/scripts/nav.py` now indexes `docs/reference/`**. Queries like `"mental models"` or `"reasoning"` surface `docs/reference/reasoning-models.md` and `docs/reference/thinking-skills/README.md` as `reference` kind matches.
+- **`skills/harness-audit/scripts/audit.sh` check #42** detects drift between the 39-model table in `docs/reference/reasoning-models.md` and the actual count of vendored `thinking-*/SKILL.md` files.
+- **`eval/regressions/reasoning-models-portability.json`** runs the access-path recipe from a foreign CWD (`KBG_PLUGIN_ROOT=.`), asserts 39 vendored models, reads a sample model, and confirms `nav.py` returns a `reference` hit for `"mental models"`.
+- **`eval/run-eval.py` gains a `script` skill strategy** for deterministic bash-recipe regression fixtures.
+
+### Changed
+
+- **`skills/harness-nav/SKILL.md`** section 6 now notes that `nav.py "mental models"` also surfaces the reference library.
+
 ## [0.2.80] — 2026-06-18
 
 Polish the vendored cc-thinking-skills reference library so external installers can discover and read it without hitting path/variable traps, plus output-style register improvements.

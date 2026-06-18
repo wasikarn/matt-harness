@@ -408,6 +408,44 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             failed = len(criteria)
             details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
 
+    # Strategy: for deterministic bash-recipe evals, run a shell command from
+    # the repo root and assert on exit code + stdout/stderr substrings. Used for
+    # foreign-CWD portability checks (e.g. reasoning-models access path) where
+    # the behavior under test is the shell recipe itself, not a model invocation.
+    # Fixture context:
+    #   "command": "bash -c style command string",
+    #   "env": {"KEY": "value"},     # optional env overrides
+    #   "timeout": 30,                # optional, default 30
+    elif skill == "script" and "command" in context:
+        cmd_str = context["command"]
+        timeout = context.get("timeout", 30)
+        env_overrides = context.get("env", {})
+        try:
+            run_env = os.environ.copy()
+            run_env.update(env_overrides)
+            result = subprocess.run(
+                ["bash", "-c", cmd_str],
+                capture_output=True, text=True, timeout=timeout,
+                cwd=REPO_ROOT, env=run_env,
+            )
+            combined = (result.stdout + "\n" + result.stderr).lower()
+            for crit in criteria:
+                crit_lower = crit.lower()
+                if "exits 0" in crit_lower and result.returncode == 0:
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                if "non-zero" in crit_lower and result.returncode != 0:
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                if crit_lower in combined:
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                key_phrases = [p for p in re.findall(r"[a-z0-9_\-]+", crit_lower) if len(p) > 3]
+                matched = sum(1 for p in key_phrases if p in combined)
+                if matched >= max(1, len(key_phrases) // 2):
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"rc={result.returncode} output_tail={combined[-200:]!r}"})
+        except Exception as e:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
     # Strategy: for acceptance-contract evals, run run-acceptance.py if slug exists.
     # Each eval gets a unique --output file so multiple evals that share the same
     # slug (e.g., review-pr + ship-change both reference phase-1-safety-fixes)

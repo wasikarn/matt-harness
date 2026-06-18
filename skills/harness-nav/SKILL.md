@@ -70,6 +70,13 @@ The plugin ships 39 mental-model write-ups under `docs/reference/thinking-skills
 
 > **Read-tool warning:** do not paste a `${KBG_PLUGIN_ROOT}` path into the `Read` tool. The variable expands only in shell context; `Read` will silently fail. Use `Bash` with the recipes below.
 
+You can also surface these reference pages through the smart miner (§1):
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "mental models"
+python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "reasoning models"
+```
+
 ```bash
 # Guard: the variable is only available after a successful SessionStart hook
 : "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
