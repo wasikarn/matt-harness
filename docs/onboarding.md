@@ -9,13 +9,13 @@ in-context, no scroll.
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
 29 subagents, 38 skills, 21 commands, governance hooks, and mandatory doctrine
-injection. See [`CONTEXT.md`](../CONTEXT.md) for the bounded-context model.
+injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
 
 ## The 4 doctrine files (read in this order)
 
 1. [`METHODOLOGY.md`](../METHODOLOGY.md) — 13-rule behavioral doctrine. **Start here.**
-2. [`CONTEXT.md`](../CONTEXT.md) — domain language + the **autonomy invariant** (no L3/L4 loops).
-3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — irreversible decision record for L2-only.
+2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
+3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — irreversible decision record for the autonomy invariant (no L3/L4 loops).
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
 
 The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
@@ -49,7 +49,7 @@ unattended loop, the answer is "out of scope by design," not "amend ADR."
 
 Read this file's first three sections. If you have 5 more minutes, skim
 [`METHODOLOGY.md`](../METHODOLOGY.md). If you have 10 more, read
-[`CONTEXT.md`](../CONTEXT.md) §"Autonomy invariant" + ADR 0002 rejected-alternatives table.
+[`DOMAINS.md`](../DOMAINS.md) and [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) §"Rejected alternatives".
 
 ## What we've shipped recently (2026-06-12)
 

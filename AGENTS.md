@@ -12,4 +12,4 @@ Canonical five-role vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`,
 
 ### Domain docs
 
-Single-context layout. `CONTEXT.md` at the repo root, ADRs under `docs/adr/`. See `docs/agents/domain.md`.
+Single-context layout. `DOMAINS.md` at the repo root, ADRs under `docs/adr/`. See `docs/agents/domain.md`.

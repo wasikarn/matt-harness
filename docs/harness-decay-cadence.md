@@ -58,7 +58,7 @@ can verify its own work now." The maker≠checker separation exists for
 **vouchability and independence** — a fresh-context checker catches what the
 maker cannot see — not because the model is too weak to check. That is exactly
 the boundary METHODOLOGY Rule 4's fresh-context-verification principle and the
-autonomy invariant (`CONTEXT.md` §Invariants) protect. Collapsing the checker into the maker is the
+autonomy invariant ([`docs/adr/0002-autonomy-invariant.md`](0002-autonomy-invariant.md)) protect. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no

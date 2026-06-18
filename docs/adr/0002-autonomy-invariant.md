@@ -40,7 +40,7 @@ remove the human from the iteration**, with the human acting only as
 occasional reviewer.
 
 That assumption is the contested point. The harness already had a partial
-policy before 2026-06-11 (`CONTEXT.md` §Invariants named the invariant in
+policy before 2026-06-11 (`CONTEXT.md` §Invariants — later renamed to `DOMAINS.md` — named the invariant in
 prose, `recursive-improve/SKILL.md` had `disable-model-invocation: true`,
 `METHODOLOGY.md` Rule 4 had the fresh-context verification sentence). The
 round-1 / round-2 audits (PRs #11–#14) added 10 doc-edit tickets but never
@@ -57,7 +57,7 @@ drill-down (5-agent pipeline, 2026-06-12) found:
 
 The decision needs to be ADR-canonical so future contributors can find it
 without reading all 5 surfaces, and so it can be cross-referenced from
-`CONTEXT.md` and `harness-decay-cadence.md` (the two docs that name the
+`DOMAINS.md` and `harness-decay-cadence.md` (the two docs that name the
 invariant in prose).
 
 ## Decision
@@ -78,7 +78,7 @@ reproduced verbatim from `CONTEXT.md:46-56`:
 
 Implementation (5 surfaces, all required):
 
-1. **Canonical home** — `CONTEXT.md:46-56` (this ADR cross-references it).
+1. **Canonical home** — this ADR (the invariant was previously in `CONTEXT.md` §Invariants before that file was renamed to `DOMAINS.md`).
 2. **Doctrinal reinforcement** — `METHODOLOGY.md:67` (Rule 4 verification
    sentence + "every loop terminates at a human gate; the doctrine is
    the gate" corollary).
@@ -143,7 +143,7 @@ human gate at Step 3 is the load-bearing single point of enforcement.
   is composed of bounded steps, not cumulative state.
 - **Honest plugin delivery.** `kbg-harness` is a personal harness with
   the owner as the only user. The doctrine is mandatory (per
-  `CONTEXT.md:40-44`); there is no anonymous-user surface to defend.
+  `DOMAINS.md`); there is no anonymous-user surface to defend.
   The invariant is the load-bearing guarantee that "the operator's
   judgment is always the final reviewer", which is what makes a personal
   harness defensible at all.
@@ -158,7 +158,7 @@ human gate at Step 3 is the load-bearing single point of enforcement.
   harness's target — the operator is the bound, not the budget.
 
 - **Multi-machine continuity requires operator attention per machine.**
-  The cross-machine state is the git repo itself (per `CONTEXT.md` and
+  The cross-machine state is the git repo itself (per `DOMAINS.md` and
   ADR 0001 §Consequences), not an active loop. Every machine that
   pulls a new commit gets the latest harness, but no machine runs an
   unattended improvement cycle.
@@ -236,7 +236,7 @@ taste.
   outright — it is the agent-slop self-rewriter, the failure mode
   this harness was designed to prevent. Rejection is not
   capability-bounded; it is principle-bounded. (The principle:
-  "the loop can't tell the difference" — see CONTEXT.md §Invariants.)
+  "the loop can't tell the difference" — see this ADR §Decision.)
 
 - **Evo-style meta loop that rewrites the optimize loop.** From
   *Self-Evolving Autoresearch Workflow Loops*. Would require lifting
@@ -269,7 +269,7 @@ taste.
   operator, not a scorer.
 
 - **Lifting the invariant "when models improve".** The most likely
-  future challenge. Explicitly rejected in CONTEXT.md:52-54: "deliberate
+  future challenge. Explicitly rejected in this ADR §Decision: "deliberate
   **judgment-preservation** choice — not a capability gap to be closed
   as models improve". A model that can "verify its own work" still
   cannot vouch for the operator's intent. The invariant is independent
@@ -302,7 +302,7 @@ backlog gap.
 | 2 | **Agentic Loops From ReAct to Loop Engineering** | Trigger + verifiable goal; autonomy tiers (L1→L10); multi-agent orchestration. | **Trigger + verifiable goal convention** (`ACCEPTANCE.md`) + **multi-agent orchestration via `orchestrate` skill** with human gate. | Autonomy tiers exist in vocabulary (L1–L5 in `orchestrate/reference.md`) but harness-internal loops are locked at L2. Multi-agent orchestration is present but gated. |
 | 3 | **AI is eating the AI Engineering Loop** | Continuous eval loop: traces → dataset → eval → ship. Full automation possible but warned against (agent slop). | **`run-baseline-eval.py`** for A/B probes + **human-gated `recursive-improve`** for harness changes. | The article itself warns that full automation = agent slop. The harness takes the warning seriously and stops at L2. |
 | 4 | **How to Build a Self-Improving Loop** | Done = verified; write → run checks → fix → repeat up to 5 times (Ralph Wiggum cadence). | **`recursive-improve` 6-step cycle** with 5-iteration cap as context-exhaustion backstop, NOT primary gate. | The Ralph cadence treats the scorer as the gate; the harness treats the operator as the gate. The 5-iteration cap is a backstop, not a completion signal. |
-| 5 | **Loop Engineering Isn't What You Think** | Comprehension debt, cognitive surrender; read what the loop ships. | **Autonomy invariant** (`CONTEXT.md:46-56`, `METHODOLOGY.md:67`) — every change is human-reviewed before it ships, preventing comprehension debt by construction. | The article warns that loops make comprehension debt grow faster; the harness prevents it by forbidding unattended shipping. |
+| 5 | **Loop Engineering Isn't What You Think** | Comprehension debt, cognitive surrender; read what the loop ships. | **Autonomy invariant** (this ADR §Decision, `METHODOLOGY.md:67`) — every change is human-reviewed before it ships, preventing comprehension debt by construction. | The article warns that loops make comprehension debt grow faster; the harness prevents it by forbidding unattended shipping. |
 | 6 | **Loop engineering the 14-step roadmap** | Replace yourself as prompter; 4-condition test before building. | **Operator remains the prompter** via `recursive-improve`'s mandatory Step 3 gate; 4-condition test not mechanized but operator judgment serves the same filter. | The harness does not seek to replace the operator; it amplifies the operator. The 4-condition test (cost, frequency, verifiability, reversibility) is advisory doctrine. |
 | 7 | **Loop Engineering (Addy)** | 5 pieces + memory: automations (heartbeat), worktrees, skills, plugins, sub-agents. | **Automations delegated to host** (`/loop`, `/schedule`, `CronCreate` documented in `orchestrate/reference.md` L5); **worktrees, skills, sub-agents** are present and load-bearing. | The heartbeat is host-provided; the plugin documents routing but does not wire harness-internal loops to it. |
 | 8 | **Loops What Every AI Engineer Needs to Know** | Loop = program prompting model; model as subroutine; token-cost awareness. | **Model-as-subroutine is foreclosed** (L3/L4 rejection). **Token-cost awareness** is doctrine (`METHODOLOGY` Rule 6, `orchestrate/reference.md`) but not enforced. | The model is not a subroutine in this harness; it is a co-worker that stops for human approval. |
@@ -369,10 +369,10 @@ The invariant is enforced by 3 pillars:
    truthy-typo regression guard). This pillar is non-negotiable: the
    check is in CI.
 
-2. **Doctrinal** — 4 docs cross-reference the invariant
-   (`CONTEXT.md:46-56`, `METHODOLOGY.md:67`,
+2. **Doctrinal** — 4 surfaces cross-reference the invariant
+   (this ADR §Decision, `METHODOLOGY.md:67`,
    `recursive-improve/SKILL.md:17-23`,
-   `harness-decay-cadence.md:54-67`). Each doc uses the wording
+   `harness-decay-cadence.md:54-67`). Each surface uses the wording
    preserved in §Decision above (or a paraphrase that retains the
    "judgment-preservation" rationale). Drift between docs is bounded
    by §Decision as the canonical text.

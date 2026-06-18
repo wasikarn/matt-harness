@@ -16,7 +16,7 @@ harness eyes (nudge telemetry, the review-pr marker, the verification journal); 
 the hand — but a hand the human always holds.
 
 **The autonomy invariant (load-bearing — do not soften):** there is **no** autonomous,
-multi-iteration, unattended mode. It is canonically homed in `CONTEXT.md` §Invariants, which
+multi-iteration, unattended mode. It is canonically homed in [`docs/adr/0002-autonomy-invariant.md`](../../docs/adr/0002-autonomy-invariant.md), which
 deliberately rejects an autonomous repair loop in this repo ("config repo, no app substrate …
 all risk, no target"). This skill
 honors that: every iteration stops at an `AskUserQuestion` gate before any mutation, and the
@@ -179,7 +179,7 @@ recursive-improve — iteration <N> report
 - **Treating the gate as a formality.** "We can fix this" is not authorization. The Step 3
   `AskUserQuestion` is mandatory; denial is not approval; never fail open into execution.
 - **Reintroducing autonomy.** Any wording or behavior that runs multiple iterations unattended
-  violates the autonomy invariant (`CONTEXT.md` §Invariants). The cap is a backstop, not a license
+  violates the autonomy invariant ([`docs/adr/0002-autonomy-invariant.md`](../../docs/adr/0002-autonomy-invariant.md)). The cap is a backstop, not a license
   to batch-run without gates.
 - **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"
   is a hypothesis until the reader/audit confirms it. Flat delta = did not help.
