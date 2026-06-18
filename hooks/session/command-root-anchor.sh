@@ -23,4 +23,8 @@ ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 [ -n "$ROOT" ] || exit 0
 [ -n "${CLAUDE_ENV_FILE:-}" ] || exit 0
 
+# Normalize: strip trailing slash so command prose can always use
+# "${KBG_PLUGIN_ROOT}/scripts/..." without producing double slashes.
+ROOT="${ROOT%/}"
+
 printf 'export KBG_PLUGIN_ROOT=%s\n' "$ROOT" >> "$CLAUDE_ENV_FILE"

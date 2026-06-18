@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.73] — 2026-06-18
+
+Normalize `KBG_PLUGIN_ROOT` to remove its trailing slash so command references render cleanly as `${KBG_PLUGIN_ROOT}/scripts/...`.
+
+### Fixed
+
+- **`hooks/session/command-root-anchor.sh`** now strips the trailing `/` from `${CLAUDE_PLUGIN_ROOT}` before exporting `KBG_PLUGIN_ROOT`. Prevents double slashes in command paths.
+
 ## [0.2.72] — 2026-06-18
 
 Qualify the remaining command prose references to bundled scripts with `${KBG_PLUGIN_ROOT}` so no command file implies a repo-root CWD.
