@@ -49,7 +49,7 @@
       "task": "Verify harness-nav can find every vendored model by its catalog row name",
       "skill": "script",
       "context": {
-        "command": "set -euo pipefail\nroot=$PWD\nnav=\"${root}/skills/harness-nav/scripts/nav.py\"\nindex=\"${root}/docs/reference/reasoning-models.md\"\nmissing=0\nrows=$(awk '/^## Unified 39-model index/{f=1; next} f && /^\\| / && !/^\\|[-—| ]+\\|/ && !/ Model / {print $2}' \"$index\")\nfor row in $rows; do\n  # Row names are kebab-case; turn them into a natural-language query\n  query=$(echo \"$row\" | tr '-' ' ')\n  expected=\"thinking-${row}\"\n  # Special-case the one upstream directory that reverses the word order\n  if [ \"$row\" = \"systems-thinking\" ]; then\n    expected=\"thinking-systems\"\n  fi\n  found=$(python3 \"$nav\" --json \"$query\" | python3 -c \"import sys,json; data=json.load(sys.stdin); print('true' if any(m.get('kind')=='reference' and '${expected}' in (m.get('path') or '') for m in data.get('matches',[])) else 'false')\")\n  if [ \"$found\" != \"true\" ]; then\n    echo \"missing=${row}\"\n    missing=$((missing + 1))\n  fi\ndone\necho \"missing_count=${missing}\"\n[ \"$missing\" -eq 0 ]",
+        "command": "set -euo pipefail\nroot=$PWD\nnav=\"${root}/skills/harness-nav/scripts/nav.py\"\nindex=\"${root}/docs/reference/reasoning-models.md\"\npython3 - \"$root\" \"$nav\" \"$index\" <<'PY'\nimport json, re, subprocess, sys\n\ndef _model_to_dir(row):\n    if row.endswith('-thinking'):\n        return 'thinking-' + row[:-9]\n    return 'thinking-' + row\n\nroot, nav_path, index_path = sys.argv[1:4]\nwith open(index_path) as f:\n    text = f.read()\nstart = text.find('## Unified 39-model index')\nend = text.find('## Status definitions')\nif start == -1 or end == -1:\n    print('table_not_found')\n    sys.exit(1)\n\nrows = []\nfor line in text[start:end].splitlines():\n    line = line.strip()\n    if not line.startswith('|') or line.lstrip().startswith('|---') or ' Model ' in line:\n        continue\n    parts = [p.strip() for p in line.split('|')[1:-1]]\n    if parts and re.fullmatch(r'[a-z0-9][a-z0-9-]*', parts[0]):\n        rows.append(parts[0])\n\nmissing = 0\nfor row in rows:\n    expected = _model_to_dir(row)\n    query = row.replace('-', ' ')\n    result = subprocess.run(\n        ['python3', nav_path, '--json', query],\n        capture_output=True, text=True, cwd=root\n    )\n    data = json.loads(result.stdout) if result.stdout else {'matches': []}\n    found = any(\n        m.get('kind') == 'reference' and expected in (m.get('path') or '')\n        for m in data.get('matches', [])\n    )\n    if not found:\n        print(f'missing={row}')\n        missing += 1\n\nprint(f'missing_count={missing}')\nsys.exit(0 if missing == 0 else 1)\nPY",
         "timeout": 60
       },
       "success_criteria": [
@@ -60,6 +60,26 @@
       "failure_pattern": "harness-nav cannot discover one or more vendored mental models by catalog row name",
       "fixed_by": "09d9447",
       "tags": ["reference", "harness-nav"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "reasoning-models-recipe-reads-all-39-from-foreign-cwd",
+      "task": "Verify every vendored SKILL.md file is readable via the catalog's KBG_PLUGIN_ROOT recipe from a project CWD that is not the plugin root",
+      "skill": "script",
+      "context": {
+        "command": "set -euo pipefail\nrepo_root=$PWD\n# Prefer the real plugin cache if installed, else fall back to the repo root.\ncache_root=$(ls -d ~/.claude/plugins/cache/kobig/kbg/* 2>/dev/null | sort -V | tail -1 || true)\nif [ -n \"$cache_root\" ] && [ -d \"$cache_root/docs/reference/thinking-skills/skills\" ]; then\n  root=\"$cache_root\"\n  echo \"using=plugin_cache\"\nelse\n  root=\"$repo_root\"\n  echo \"using=repo_root\"\nfi\ntmp=$(mktemp -d)\ncd \"$tmp\"\nexport KBG_PLUGIN_ROOT=\"$root\"\n: \"${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set}\"\npython3 - \"$root\" \"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md\" <<'PY'\nimport os, re, sys\n\nroot, index_path = sys.argv[1:3]\nwith open(index_path) as f:\n    text = f.read()\n\nstart = text.find('## Unified 39-model index')\nend = text.find('## Status definitions')\nif start == -1 or end == -1:\n    print('table_not_found')\n    sys.exit(1)\n\nrows = []\nfor line in text[start:end].splitlines():\n    line = line.strip()\n    if not line.startswith('|') or line.lstrip().startswith('|---') or ' Model ' in line:\n        continue\n    parts = [p.strip().strip('`') for p in line.split('|')[1:-1]]\n    if len(parts) >= 2 and re.fullmatch(r'[a-z0-9][a-z0-9-]*', parts[0]) and re.fullmatch(r'thinking-[a-z0-9-]+', parts[1]):\n        rows.append((parts[0], parts[1]))\n\nseen = 0\nmissing = 0\nbad_heading = 0\nfor row, upstream in rows:\n    file_path = f'{root}/docs/reference/thinking-skills/skills/{upstream}/SKILL.md'\n    if not os.path.isfile(file_path):\n        print(f'missing_file={upstream}')\n        missing += 1\n        continue\n    with open(file_path) as f:\n        heading = ''\n        for line in f:\n            if line.startswith('# '):\n                heading = line[2:].strip()\n                break\n    if not heading:\n        print(f'empty_heading={upstream}')\n        bad_heading += 1\n    seen += 1\n\nprint(f'seen={seen}')\nprint(f'missing={missing}')\nprint(f'bad_heading={bad_heading}')\nsys.exit(0 if seen == 39 and missing == 0 else 1)\nPY\nrm -rf \"$tmp\"",
+        "timeout": 60
+      },
+      "success_criteria": [
+        "command exits 0",
+        "output contains using=plugin_cache",
+        "output contains seen=39",
+        "output contains missing=0"
+      ],
+      "expected_failure": false,
+      "failure_pattern": "one or more vendored thinking-skill files cannot be read from a foreign CWD via the catalog's upstream-dir recipe",
+      "fixed_by": "09d9447",
+      "tags": ["reference", "portability"],
       "eval_type": "assertion"
     }
   ]
