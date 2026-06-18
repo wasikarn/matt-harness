@@ -63,14 +63,15 @@ Run these in the **Bash** tool. `${KBG_PLUGIN_ROOT}` is exported by
 # Guard: the variable is only available after a successful SessionStart hook
 : "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
 
-# List all 39 vendored mental models
+# List all 39 vendored mental models (directory names start with `thinking-`)
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model by its upstream directory name.
-# Note: the row name (e.g. "systems-thinking") may differ from the upstream
-# directory name (e.g. "thinking-systems"). Use the list above to get the exact name.
-cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md"
+# Read a specific model. Use the exact directory name from the list above,
+# which always starts with `thinking-`. Do not strip the prefix.
+cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKILL.md"
+# Example — read the systems-thinking vendored file (upstream dir is `thinking-systems`):
+cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
 
 # Search the vendored models for a keyword
 grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills/*/SKILL.md

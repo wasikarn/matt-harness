@@ -371,8 +371,10 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Reference docs
 
-- **[Reasoning-models catalog](../../docs/reference/reasoning-models.md)** — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each. Use the Bash recipes in that file to read the full upstream SKILL.md files from any project CWD.
-- **[Vendored thinking-skills library](../../docs/reference/thinking-skills/README.md)** — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
+These files live in the plugin cache, not the project CWD. Read them via Bash with `KBG_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
+
+- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each.
+- **Vendored thinking-skills library** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/README.md"` — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
 
 XREF5
 fi

@@ -84,14 +84,15 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "reasoning models"
 # Read the kbg application catalog (which surface applies which model)
 cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
 
-# List all 39 vendored mental models
+# List all 39 vendored mental models (directory names start with `thinking-`)
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model by its upstream directory name.
-# Note: the catalog row name (e.g. "systems-thinking") may differ from the
-# upstream directory name (e.g. "thinking-systems"). Use the list above.
-cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md"
+# Read a specific model. Use the exact directory name from the list above,
+# which always starts with `thinking-`. Do not strip the prefix.
+cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKILL.md"
+# Example — read the systems-thinking vendored file (upstream dir is `thinking-systems`):
+cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
 
 # Search vendored model bodies for a keyword
 grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills/*/SKILL.md

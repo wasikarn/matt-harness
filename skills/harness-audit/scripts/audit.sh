@@ -1596,6 +1596,19 @@ if [ -f "$RM_INDEX" ] && [ -d "$RM_SKILLS_DIR" ]; then
   if [ "${_rm_rows:-0}" -ne "${_rm_files:-0}" ]; then
     warn "reasoning-models index drift: table lists $_rm_rows models but thinking-skills/skills/ holds $_rm_files SKILL.md files"
   fi
+
+  # Also verify the catalog row names match the vendored directory names (modulo
+  # the `thinking-` prefix). A simple count can hide a rename/add/delete that
+  # keeps the total at 39 but mismatches entries.
+  _row_set=$(mktemp)
+  _dir_set=$(mktemp)
+  awk '/^## Unified 39-model index/{f=1; next} f && /^\| / && !/^\|[-—| ]+\|/ && !/^\| Model \|/ {gsub(/^[[:space:]]*\|[[:space:]]*/,""); print $1}' "$RM_INDEX" | tr '[:upper:]' '[:lower:]' | sed 's/^thinking-//' | sort -u > "$_row_set"
+  find "$RM_SKILLS_DIR" -maxdepth 1 -type d -name 'thinking-*' | sed 's|.*/||; s/^thinking-//; tr '[:upper:]' '[:lower:]' | sort -u > "$_dir_set"
+  _rm_diff=$(diff "$_row_set" "$_dir_set" | tr '\n' ' ' | cut -c1-240 || true)
+  if [ -n "$_rm_diff" ]; then
+    warn "reasoning-models name mismatch between catalog rows and vendored dirs (after stripping thinking- prefix): $_rm_diff"
+  fi
+  rm -f "$_row_set" "$_dir_set"
 fi
 
 # ── summary ──────────────────────────────────────────────────────────

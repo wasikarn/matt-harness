@@ -244,6 +244,8 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md
 
 ## Documentation
 
+When the plugin is installed, internal docs live in the plugin cache and must be read via Bash with `KBG_PLUGIN_ROOT` (see [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) for examples). Relative markdown links below resolve only from the repo root.
+
 - [`docs/onboarding.md`](docs/onboarding.md) — 10-minute cold-start
 - [`METHODOLOGY.md`](METHODOLOGY.md) — 13-rule behavioral doctrine
 - [`CONTEXT.md`](CONTEXT.md) — Domain language, bounded contexts, autonomy invariant
@@ -251,7 +253,7 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md
 - [`BOUNDARY.md`](BOUNDARY.md) — Auto-regenerated cross-context inventory
 - [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) — 39 vendored mental models (cc-thinking-skills) and where kbg already applies them
 - [`CHANGELOG.md`](CHANGELOG.md) — Release notes
-- [`docs/adr/`](docs/adr/) — Architecture decision records (start with ADR 0001 and 0002)
+- [`docs/adr/`](docs/adr/) — Architecture decision records (start with ADR 0001 and ADR 0002)
 
 ---
 
