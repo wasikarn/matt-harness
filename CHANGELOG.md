@@ -33,6 +33,52 @@ Surface consolidation to cut adopter cognitive load **without** adding a router.
 - **Recorded a `noun-verb` naming rule for new `harness-*` surfaces** in `CLAUDE.md` (reuse an existing verb before coining one; new surfaces only — no fleet rename).
 - **Refreshed `BOUNDARY.md` and `README.md` counts; softened volatile annotations.** Module Boundaries counts synced to the live fleet (29 agents / 38 skills / 21 commands / 43 hooks); README skills 39 → 38; and hardcoded `plugin.json v0.1.3` / `201/0 expected` / `26 I` annotations replaced with source-of-truth pointers and non-numeric expectations so they stop re-drifting.
 
+## [0.2.65] — 2026-06-18
+
+Machine-check a doctrine-gate sync seam and fix a latent audit abort.
+
+### Added
+
+- **Audit #41 — doctrine-gate seam check.** `block-bash-doctrine-write.sh` and `doctrine-edit-gate.sh` hardcode the same doctrine-file set in two encodings (a factored regex vs a flat case-glob) joined only by a comment; drift would reopen the Bash-redirect bypass for any file guarded by one gate but not the other. The check normalizes both to a sorted basename set and WARNs on drift; the `doctrine-seam-repo` fixture goes red if it is reverted.
+
+### Fixed
+
+- **Latent `set -e` + `diff` abort in audit #37/#41.** `$(diff …)` exits 1 on differences, aborting the check before its `warn` fires; guarded with `|| true`. (#38/#40 run their diffs in `if` conditions and were never at risk.)
+
+## [0.2.64] — 2026-06-18
+
+Make the SessionEnd `ideate` hooks and memory capture parse JSONL transcripts correctly.
+
+### Fixed
+
+- **JSONL transcript parsing in SessionEnd ideate hooks.** Replaced jq-only `.messages[]` filters with a Python parser that handles JSONL event streams and nested `message.content` arrays, counting both `ideate` / `kbg:ideate` Skill calls and `/ideate` slash commands.
+- **Convergence no longer forces an Ollama call on every SessionEnd.** The broken counter mis-fired on sessions with no ideate calls; the early-exit now works.
+- **Memory capture falls back to the parent assistant message**, so slash-triggered ideate runs still extract a problem statement.
+
+### Added
+
+- **Dynamic critical-hooks tests** for JSONL `ideate` and `kbg:ideate` transcripts.
+
+## [0.2.63] — 2026-06-18
+
+`SENIOR-DEV` output-style polish from a panel review.
+
+### Changed
+
+- **Reframed negative voice rules as positive directives**, relaxed the one-reason rule, and added rules for owning uncertainty, disagreeing on the idea (not the person), and stating assumptions over multi-question intake. Kept the silent pre-send self-check.
+
+### Removed
+
+- **Dropped the unsupported `force-for-plugin` flag** from `output-styles/SENIOR-DEV.md` (added in `v0.2.59`, not a recognized output-style field).
+
+## [0.2.62] — 2026-06-18
+
+`SENIOR-DEV` warmth and direct-address calibration.
+
+### Changed
+
+- **Tightened the opening role and added direct-address + warmth-calibration rules** (neutral for errors and bad news, concise for success, no forced enthusiasm), keeping the anti-AI-tell guidance and the self-check.
+
 ## [0.2.61] — 2026-06-18
 
 Fix SessionEnd hook cancellations by capping unbounded I/O inside `ideate-convergence-capture` and moving `ideate-memory-capture` reindex off the SessionEnd critical path.
