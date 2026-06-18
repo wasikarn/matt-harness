@@ -24,6 +24,8 @@ The command takes a task ID and an optional plan slug. If the plan slug is omitt
    - Else: scan `.claude/tasks/*/board.json` for `tasks[<task-id>]`. If exactly one board contains the task, use its directory. Otherwise refuse: `"Task <task-id> found in N plans; pass plan-slug to disambiguate."`
 2. **Acquire lock:**
    ```python
+   import os, sys
+   sys.path.insert(0, os.environ["KBG_PLUGIN_ROOT"])
    from scripts.task_board_lib import lock_acquire, board_read
    lock_acquire(plan_dir, timeout=10)
    ```
@@ -316,5 +318,5 @@ The `/validate-and-fix` invocation is complete when:
 - **F8 lead doctrine** — `skills/orchestrate/SKILL.md` § Lead-coordinator doctrine. The lead dispatches reviewers; teammates do the reviewing.
 - **F8.5 bounded fan-out** — `skills/orchestrate/SKILL.md` § Bounded fan-out. This command's sequential nature is the single-task version of that cap.
 - **F7 TaskCompleted gate** — `hooks/lifecycle/task-lifecycle.sh` and `/team-build` Step 7. `/validate-and-fix` is the per-task manual invocation of the same quality gate.
-- **Task board I/O** — `scripts/task_board_lib.py`. `board_read`, `board_write`, `lock_acquire`, `lock_release`.
+- **Task board I/O** — `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.py`. `board_read`, `board_write`, `lock_acquire`, `lock_release`.
 - **METHODOLOGY:** Rule 4 (goal-driven) — every reviewer gets exact criteria, not a topic. Rule 12 (fail loud) — reject stops and asks; no silent override. Rule 13 (orchestrate) — the chain is `addBlockedBy` in the runtime, not advisory.

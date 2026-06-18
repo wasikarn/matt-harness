@@ -92,7 +92,7 @@ The `post-edit-test` hook fires asynchronously after every Edit/Write. If it log
 
 **Manual check**:
 ```bash
-python3 scripts/evals/run-acceptance.py <slug>
+python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug>
 ```
 Must exit GREEN (all machine criteria met) or AMBER (only prose criteria remain, confirm manually).
 

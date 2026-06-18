@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.71] — 2026-06-18
+
+Make command-level bundled-script references portable when the plugin runs in a foreign project. Commands have no official `${CLAUDE_COMMAND_DIR}` variable, so this release adds a SessionStart hook that exports `${KBG_PLUGIN_ROOT}` into the session via `CLAUDE_ENV_FILE`.
+
+### Fixed
+
+- **Command bash blocks no longer rely on repo-relative script paths.** `/wave-status`, `/team-cleanup`, `/validate-and-fix`, `/pre-ship-verify`, `/ship-task`, `/pre-flight-plan-linter`, `/ideate-search`, `/kbg-help`, and `/dismiss-stale` now reference bundled helpers through `${KBG_PLUGIN_ROOT}`.
+- **`/wave-status` switched from `${CLAUDE_PLUGIN_ROOT}` to `${KBG_PLUGIN_ROOT}`.** The new variable is the dedicated, session-exported bridge; command prose should not depend on the hook-only `${CLAUDE_PLUGIN_ROOT}` expansion.
+- **`/dismiss-stale` no longer requires `cd <repo-root>`.** The stale-set computation reads `hooks/sensors.json` and `skills/harness-audit/scripts/audit.sh` from `${KBG_PLUGIN_ROOT}`.
+- **`/kbg-help` validation shortcuts are now CWD-agnostic.** All `git-hooks/`, `scripts/`, `tests/`, `skills/`, and `eval/` invocations use `${KBG_PLUGIN_ROOT}`-qualified paths.
+
+### Added
+
+- **`hooks/session/command-root-anchor.sh`** — matcher-less SessionStart hook that appends `export KBG_PLUGIN_ROOT=<plugin-cache>` to `CLAUDE_ENV_FILE`. Registered in `hooks/hooks.json`.
+
 ## [0.2.70] — 2026-06-18
 
 Make skill-body bundled-script references strictly official-compliant: eliminate the last cross-sibling `${CLAUDE_SKILL_DIR}/../` traversals and all `${CLAUDE_PLUGIN_ROOT}` references in skill-body prose by routing every skill through its own per-skill wrapper script.

@@ -53,7 +53,7 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 **Goal:** remove expired mkdir-based locks for each target plan.
 
 **Actions (per plan in `PLAN_LIST`):**
-1. Run `bash scripts/locks/lock-reap.sh --team=<slug> [--dry-run]`.
+1. Run `bash "${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh" --team=<slug> [--dry-run]`.
    - If `DRY_RUN` is true, append `--dry-run` to the invocation.
    - Capture stdout (list of broken locks or "No stale locks found").
 2. Log the result via `journal_append`:
@@ -154,7 +154,7 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 **Goal:** run the mailbox reaper for each plan's team context.
 
 **Actions (per plan):**
-1. Run `bash scripts/mailbox/mailbox-reap.sh --team=<slug>`.
+1. Run `bash "${KBG_PLUGIN_ROOT}/scripts/mailbox/mailbox-reap.sh" --team=<slug>`.
    - The script defaults to `--unread-days=7` and `--archive-days=30`.
    - Capture the numeric reap count from stdout.
 2. Log via `journal_append`:
@@ -268,8 +268,8 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 
 ## Cross-references
 
-- **Task board library** — `scripts/task_board_lib.py` provides `board_read()`, `board_write()`, `heartbeat_read_all()`, `lock_acquire()`, `lock_release()`, and `recompute_blocked()`. Use it for atomic board mutations.
-- **Lock reaper** — `scripts/locks/lock-reap.sh` breaks expired locks and logs via `journal_append`.
-- **Mailbox reaper** — `scripts/mailbox/mailbox-reap.sh` removes old unread and archived messages.
+- **Task board library** — `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.py` provides `board_read()`, `board_write()`, `heartbeat_read_all()`, `lock_acquire()`, `lock_release()`, and `recompute_blocked()`. Use it for atomic board mutations.
+- **Lock reaper** — `"${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh"` breaks expired locks and logs via `journal_append`.
+- **Mailbox reaper** — `"${KBG_PLUGIN_ROOT}/scripts/mailbox/mailbox-reap.sh"` removes old unread and archived messages.
 - **Governance journal** — `hooks/_lib.sh:journal_append` (and `hooks/_lib.py`) is the single emission point. Every destructive action in this command MUST log through it.
 - **METHODOLOGY:** Rule 12 (fail loud) — missing plan, missing board, or lock timeout are surfaced as errors in the summary, not silently ignored. Rule 2 (simplicity first) — this command is a linear pipeline (2-7) with a single dry-run fork; no speculative abstraction layers.

@@ -36,12 +36,11 @@ Without dismissal, every session the operator is re-paged with the same stale-se
 Run the following single `python3` invocation. It mirrors the Q3 severity gate from `hooks/maintenance/notify-sensor-staleness.sh` (the hook's `enforcement_roles`, `advisory_roles`, `is_stale`, `is_must_fire_stale`, and `triggered` definitions are duplicated verbatim). Output is JSON on stdout:
 
 ```bash
-cd <repo-root>  # the kbg-harness checkout
 python3 - <<'PY'
 import datetime as dt, hashlib, json, os, subprocess, sys
 import platform
 
-REPO_ROOT = os.getcwd()
+REPO_ROOT = os.environ["KBG_PLUGIN_ROOT"]
 SENSORS_JSON = os.path.join(REPO_ROOT, "hooks", "sensors.json")
 AUDIT_SH = os.path.join(REPO_ROOT, "skills", "harness-audit", "scripts", "audit.sh")
 
@@ -244,7 +243,7 @@ Exit 0. The dismissal is now effective on the next SessionStart.
 ## Cross-references
 
 - `hooks/maintenance/notify-sensor-staleness.sh` — the SessionStart hook this command is the symmetric partner to. The Q3 gate (the `is_stale` / `is_must_fire_stale` / role-set definitions) MUST be kept in sync with Step 1 — drift is machine-checked by `harness-audit` check #38.
-- `hooks/sensors.json` — the sensor registry (Wave 1 deliverable) whose `fallback_role` + `max_silent_days` fields feed the Q3 gate.
-- `skills/harness-audit/scripts/audit.sh --staleness-only` — the AUDIT-1 deliverable whose output drives both the hook and this command's stale-set computation.
+- `${KBG_PLUGIN_ROOT}/hooks/sensors.json` — the sensor registry (Wave 1 deliverable) whose `fallback_role` + `max_silent_days` fields feed the Q3 gate.
+- `${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh --staleness-only` — the AUDIT-1 deliverable whose output drives both the hook and this command's stale-set computation.
 - `docs/research/sensor-staleness-notifier-design.md` §4 — the design doc this command implements.
 - `.claude/tasks/sensor-fire-notification.md` CMD-1 — the plan row that authorizes this work.

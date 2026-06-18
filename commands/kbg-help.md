@@ -30,7 +30,7 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 | Full current inventory of every surface | `BOUNDARY.md` (auto-generated) — or the recipes under "Full inventory" below |
 | Read-only governance journal / verdicts / silent sensors | `kbg:harness-health` |
 | 12-cell coverage decay grid (quarter-end) | `kbg:harness-coverage` |
-| Fleet audit (manifests, schema, staleness) | `bash skills/harness-audit/scripts/audit.sh .` |
+| Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
 
 ## Context tiers
 
@@ -42,15 +42,15 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 
 ## Validation shortcuts
 
-Run from the repo root:
+These validation commands resolve paths from `${KBG_PLUGIN_ROOT}` and work from any CWD:
 
 ```bash
-bash git-hooks/pre-commit                    # commit-time: syntax/lint + audit + affected evals
-bash scripts/run-gauntlet.sh                 # push-time: full parallel gauntlet
-bash scripts/run-gauntlet.sh --fast          # skip the slow critical-hooks suite
-bash tests/hooks/runners/test-critical-hooks.sh      # safety suite only
-bash skills/harness-audit/scripts/audit.sh . # self-audit only
-python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
+bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + audit + affected evals
+bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: full parallel gauntlet
+bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh" --fast          # skip the slow critical-hooks suite
+bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"      # safety suite only
+bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" . # self-audit only
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset eval/datasets/ --regression --gate
 ```
 
 ## Update the plugin after surface changes

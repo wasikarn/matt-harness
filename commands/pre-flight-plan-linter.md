@@ -29,10 +29,10 @@ Run the plan linter on a `.claude/tasks/<slug>.md` file before `/team-build` con
 Invoke the linter script from the repo root:
 
 ```bash
-python3 scripts/plan-linter.py <plan_file> [--strict] [--fix] [--json]
+python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" <plan_file> [--strict] [--fix] [--json]
 ```
 
-**Do not** run the linter from a subdirectory; `scripts/plan-linter.py` resolves relative to the repo root.
+The linter path is resolved from `${KBG_PLUGIN_ROOT}`, so it works from any project CWD.
 
 ---
 

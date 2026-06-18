@@ -32,7 +32,7 @@ Read the task board for a plan and report real-time execution status: current wa
 
 ## Step 2 — Read the board
 
-Run a Python one-liner with `PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"` to import `scripts.task_board_lib` and call `board_read(plan_dir)` where `plan_dir` is the directory containing `board.json`.
+Run a Python one-liner with `PYTHONPATH="${KBG_PLUGIN_ROOT}"` to import `scripts.task_board_lib` and call `board_read(plan_dir)` where `plan_dir` is the directory containing `board.json`.
 
 If `board_read` raises `FileNotFoundError` or `ValueError`, report the error verbatim and stop.
 
@@ -40,7 +40,7 @@ If `board_read` raises `FileNotFoundError` or `ValueError`, report the error ver
 
 ## Step 3 — Compute status report
 
-Run the following analysis against the board payload. Write a small Python helper script under `.scratch/wave-status.py` (create `.scratch/` if needed) and execute it with `PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"`. The script imports `scripts.task_board_lib` from the plugin root.
+Run the following analysis against the board payload. Write a small Python helper script under `.scratch/wave-status.py` (create `.scratch/` if needed) and execute it with `PYTHONPATH="${KBG_PLUGIN_ROOT}"`. The script imports `scripts.task_board_lib` from the plugin root.
 
 ### 3a. Wave breakdown
 
@@ -50,7 +50,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Add plugin root to path so task_board_lib can be imported
-sys.path.insert(0, os.environ["CLAUDE_PLUGIN_ROOT"])
+sys.path.insert(0, os.environ["KBG_PLUGIN_ROOT"])
 from scripts.task_board_lib import board_read, heartbeat_read_all
 
 plan_dir = sys.argv[1]
@@ -235,7 +235,7 @@ If `--watch` is passed:
    - Sleep 30 seconds
    - Repeat until interrupted
 3. Wrap the loop in a `try/except KeyboardInterrupt` so Ctrl+C prints "Watch stopped." and exits 0.
-4. Run the script with `PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 .scratch/wave-status.py <plan_dir>`.
+4. Run the script with `PYTHONPATH="${KBG_PLUGIN_ROOT}" python3 .scratch/wave-status.py <plan_dir>`.
 5. If the runtime environment blocks `time.sleep`, print the report once and tell the user: "Watch mode unavailable in this runtime; re-run /wave-status manually for updates."
 
 ---
@@ -306,7 +306,7 @@ ETA: 42m (3/6 done)
 
 ## Cross-references
 
-- `${CLAUDE_PLUGIN_ROOT}/scripts/task_board_lib.py` — `board_read()`, `heartbeat_read_all()`, board schema
+- `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.py` — `board_read()`, `heartbeat_read_all()`, board schema
 - `commands/team-build.md` — writes the board and heartbeats this command reads
 - `commands/team-plan.md` — produces the plan file that seeds the board
-- `${CLAUDE_PLUGIN_ROOT}/scripts/locks/lock-query.sh` — per-resource lock query (used here for broad scan fallback)
+- `${KBG_PLUGIN_ROOT}/scripts/locks/lock-query.sh` — per-resource lock query (used here for broad scan fallback)

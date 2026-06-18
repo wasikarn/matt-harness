@@ -25,9 +25,9 @@ search helper and return the ranked results exactly as-is.
 1. Extract the query text from the command invocation (everything after `/ideate-search`).
 2. Run:
    ```bash
-   python3 scripts/ideate-memory.py search "<query>"
+   python3 "${KBG_PLUGIN_ROOT}/scripts/ideate-memory.py" search "<query>"
    ```
-   from the repository root.
+   The path resolves from `${KBG_PLUGIN_ROOT}`.
 3. Return the output to the user verbatim.
 
 ## What this command does NOT do
