@@ -195,11 +195,11 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
-| STAFF-ENGINEER | Organization-scale technical lead register: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. |
+| SENIOR-DEV | Senior-engineering lead register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to STAFF-ENGINEER when ownership, cross-team boundaries, or long-term consequences matter. |
+| STAFF-ENGINEER | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when SENIOR-DEV escalates. |
 
 ---
-_Generated: 2026-06-18T10:41:19Z_
+_Generated: 2026-06-18T10:54:29Z_
 
 ---
 
