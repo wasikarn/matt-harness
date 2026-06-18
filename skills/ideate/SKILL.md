@@ -15,7 +15,7 @@ number three, in the awkward middle nobody walks into. This skill
 makes the model walk there.
 
 This skill operationalises the algorithm in
-[`docs/research/kbg-vs-adhd.md`](../../docs/research/kbg-vs-adhd.md)
+`docs/research/kbg-vs-adhd.md`
 — read that first for the port decisions and the eval-rigor
 limitation.
 
@@ -193,7 +193,7 @@ For the problem P:
 Source for the algorithm shape: upstream
 `/tmp/adhd-repo/skills/adhd/SKILL.md:47-82` and
 `/tmp/adhd-repo/src/engine.ts:28-36, 61-101`. The
-[`docs/research/kbg-vs-adhd.md`](../../docs/research/kbg-vs-adhd.md)
+`docs/research/kbg-vs-adhd.md`
 doc records the port decisions (deterministic frame pick replacing
 `Math.random()`, no zod, parse-failure surface-not-swallow).
 
@@ -481,24 +481,24 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
 
 ## Cross-references
 
-- **Why this exists** — [`docs/research/kbg-vs-adhd.md`](../../docs/research/kbg-vs-adhd.md)
+- **Why this exists** — `docs/research/kbg-vs-adhd.md`
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
-  [`skills/orchestrate/SKILL.md:420-427`](../../skills/orchestrate/SKILL.md)
+  `skills/orchestrate/SKILL.md:420-427`
   sets the peak-concurrent cap at 5 agents per wave. The 2-wave
   structure in this skill is engineered to fit that cap exactly.
 - **Fresh-context critic pattern** —
-  [`agents/inferential-structural-judge.md`](../../agents/inferential-structural-judge.md)
+  `agents/inferential-structural-judge.md`
   is the kbg-native precedent for the same-model-critic-circularity
   caveat. Score + cluster + deepen are engineered to be
   re-pointable at a fresh-context critic.
 - **Methodology on maker ≠ checker** —
-  [`METHODOLOGY.md:74`](../../METHODOLOGY.md) — the implementer
+  `METHODOLOGY.md:74` — the implementer
   agreeing with its own work is not proof; the verifying agent
   must be given fresh context.
 - **Bounded-agent-spawning precedent** —
-  [`memory/bounded-agent-spawning.md`](../../.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/bounded-agent-spawning.md)
+  `memory/bounded-agent-spawning.md`
   — the 2026-06-12 44→105-agent failure mode this skill's 2-wave
   cap is designed to prevent.
 - **Regression fixture (PR2)** —
@@ -507,7 +507,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   the fixture.
 - **Eval rigor limitation (explicit)** — this skill ports
   faithfully from an n=1 upstream demo. The
-  [`docs/research/kbg-vs-adhd.md`](../../docs/research/kbg-vs-adhd.md)
+  `docs/research/kbg-vs-adhd.md`
   §"Eval rigor limitation" section is the load-bearing
   disclaimer: treat this as a structured brainstorming tool, not
   a quality-validated generator.

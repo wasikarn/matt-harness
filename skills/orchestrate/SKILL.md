@@ -103,7 +103,7 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 **Why both layers matter:** `addBlockedBy` enforces the chain order; the 4-step merge enforces the cross-validator reconciliation. Either alone is incomplete — chain-only means parallel validators never reconcile, merge-only means the chain has no enforcement.
 
-### Anti-patterns (also see [reference.md § Anti-patterns](reference.md#anti-patterns-distribution-mistakes))
+### Anti-patterns (also see `reference.md § Anti-patterns`)
 
 - **Don't use `TaskCreate` for trivial single-task dispatch (Rule 2).** A 1-file, 1-behavior change goes inline; the chain is overhead.
 - **Don't use `addBlockedBy` for ordering that should be inline in one prompt.** If agent A's output feeds agent B *as a string*, that's one prompt with two paragraphs, not a chain.
@@ -199,7 +199,7 @@ The chain is a DAG in the board: `A → B → F → D`. Each edge is `depends_on
 
 ### Task board integration
 
-Use `scripts/task_board_lib.sh` for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
+Source `${CLAUDE_PLUGIN_ROOT}/scripts/task_board_lib.sh` for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
 
 - **Spawn Step A:** create the task with `status = "pending"` and `depends_on = []`. After claiming, set `task.status = "in_progress"` and write the board.
 - **Spawn Step B:** create the task with `depends_on = ["A-task-id"]`. `kbg_recompute_blocked` will set `status = "blocked"` and `blocked_by = ["A-task-id"]` until A completes. Once A is marked `completed`, recompute unblocks B to `pending`; the lead then sets `status = "in_progress"` when spawning the validator.
@@ -445,7 +445,7 @@ If ALL of these hold, **execute inline immediately** and skip all orchestration 
 
 "Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 7).
 
-Full routing tables, agent fleet mapping, scripted execution details, and delegation guardrail: [reference.md](reference.md)
+Full routing tables, agent fleet mapping, scripted execution details, and delegation guardrail: `reference.md`
 
 ## Example
 

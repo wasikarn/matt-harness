@@ -39,4 +39,4 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 | 4 → 3 | `kbg:review-pr` again | After `/address-review` fixes |
 | 4 → 5 | `/ship-merge` | After all threads resolved + CI green |
 
-See [reference.md](reference.md) for: full Phase 1–5 procedures, precondition gates, and failure modes to avoid.
+See `reference.md` for: full Phase 1–5 procedures, precondition gates, and failure modes to avoid.

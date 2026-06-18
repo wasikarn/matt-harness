@@ -58,4 +58,4 @@ Infer from user input or ask explicitly.
 | 4 → 5 | `gh run watch` + repro against prod | After merge |
 | 5 → 6 | Tell user to schedule `/post-mortem` | After verify passes |
 
-See [reference.md](reference.md) for: full Phase 0–6 procedures, output format (ledger), anti-patterns, and METHODOLOGY alignment.
+See `reference.md` for: full Phase 0–6 procedures, output format (ledger), anti-patterns, and METHODOLOGY alignment.

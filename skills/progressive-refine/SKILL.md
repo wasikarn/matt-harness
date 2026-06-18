@@ -474,7 +474,7 @@ Spawn **gated**.
 
 Progressive refinement is a sequential chain. Each pass is a task in the board with `depends_on` the previous pass. The board makes the ordering observable and resumable across sessions.
 
-Use `scripts/task_board_lib.sh` for all state transitions, per `skills/orchestrate/SKILL.md` § Task board integration.
+Source `${CLAUDE_PLUGIN_ROOT}/scripts/task_board_lib.sh` for all state transitions, per `skills/orchestrate/SKILL.md` § Task board integration.
 
 ### Chain structure
 

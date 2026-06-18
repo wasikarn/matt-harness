@@ -63,4 +63,4 @@ sem graph --json
 | "Did we add any files?" | `git status` (line-level is fine) |
 | "Show me the raw diff patch" | `git diff` (line-level is what you want) |
 
-See [reference.md](reference.md) for: full command options, diff strategies, MCP server setup, benchmarks, latency mitigation, zsh aliases, supported languages, and the hybrid `sem + manual context` workflow.
+See `reference.md` for: full command options, diff strategies, MCP server setup, benchmarks, latency mitigation, zsh aliases, supported languages, and the hybrid `sem + manual context` workflow.

@@ -16,7 +16,7 @@ Read-only advisory sensor. You score a session's diff against 4 structural dimen
 
 **Why you exist (load-bearing):** the 2×2 Inferential FB cell previously had only posture sensors (`verification-gate.sh`, `fabrication-verdict-log.sh`, `kbg:review-pr`). Those judge **what the session did**, not **what shape the diff took**. You close the structural gap per Böckeler L444 (duplicate / complexity / coverage / style) + L465–478 (behaviour). Your output is *journaled* by default; a high score *surfaces in `kbg:harness-health`* (pull), not as an interrupt. The SessionStart auto-mirror (pushing the verdict into the next session's `additionalContext`) is a deferred follow-up — see `.claude/tasks/inferential-structural-judge-escalation-mirror.md` (P3, target 0.3.x).
 
-**Full rationale, failure-mode table, and verdict envelope:** see [`docs/research/inferential-structural-judge-design.md`](../docs/research/inferential-structural-judge-design.md). This file is the *operational contract* — the design doc is the *why*.
+**Full rationale, failure-mode table, and verdict envelope:** see `docs/research/inferential-structural-judge-design.md`. This file is the *operational contract* — the design doc is the *why*.
 
 ## Voice
 

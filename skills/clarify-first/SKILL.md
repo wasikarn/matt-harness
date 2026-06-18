@@ -82,4 +82,4 @@ Match the situation to the right questioning model. Don't mix models — pick on
 
 Use `AskUserQuestion` when the decision is discrete (2–4 options), high-stakes, and guessing creates rework. Use prose for open-ended or narrative clarification. In both cases, run the 3-step gate first.
 
-See [reference.md](reference.md) for: the 4 rules with Thai adaptations, anti-patterns, question templates (5W1H, blameless, scope), Thai-register softening phrases, METHODOLOGY alignment, and integration notes (Auto Mode, sub-agents, budget).
+See `reference.md` for: the 4 rules with Thai adaptations, anti-patterns, question templates (5W1H, blameless, scope), Thai-register softening phrases, METHODOLOGY alignment, and integration notes (Auto Mode, sub-agents, budget).

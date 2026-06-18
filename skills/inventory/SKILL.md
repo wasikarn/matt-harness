@@ -59,7 +59,7 @@ _~/.claude_
 
 Empty subdirs are skipped silently. No artifacts → no section.
 
-Reference: [description extraction, boundary map, witness details](reference.md)
+Reference: `reference.md` (description extraction, boundary map, witness details)
 
 ## When this skill pays back
 

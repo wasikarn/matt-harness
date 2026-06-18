@@ -90,7 +90,7 @@ If the article surfaces a **new transferable rule** that isn't already in memory
 
 - Write a new `<name>.md` memory file in the store (one fact per file; frontmatter per the memory format).
 - Add a one-line pointer in `MEMORY.md` under the correct section.
-- Run `python3 skills/memory-lint/scripts/memory-lint.py <memory-store-dir>` and require 0 findings before commit.
+- Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/memory-lint/scripts/memory-lint.py <memory-store-dir>` and require 0 findings before commit.
 
 If the article is **already covered** by an existing memory entry, **do not write a duplicate** — append a dated update note to the existing entry instead.
 

@@ -80,9 +80,9 @@ The 2026-06-12 audit spec (D9) flagged "~7x token cost warning unaddressed." Own
 
 ## Cross-references
 
-- **[2026-06-12 audit spec, D9](../../.scratch/audit-2026-06-12/SPEC.md)** — originating finding, deferred from the original 4+1-phase audit epic.
-- **[2026-06-12 revalidation delta, D9](../../.scratch/article-revalidation-2026-06-12/delta-vs-REPORT-v2.md)** — vendor v2.1.139/145 verification.
-- **[ADR 0002 — Autonomy invariant](../../docs/adr/0002-autonomy-invariant.md)** — the L2-only constraint that rules out the gating alternatives.
-- **[session-summary hook](../../hooks/session/session-summary.sh)** — structural precedent; D9 mirrors the best-effort, exit-0, opt-out pattern.
-- **[F6 agent-tool-patterns](../../docs/agent-tool-patterns.md)** — the `tools:` allowlist convention that D9 doesn't disturb (this skill is read-only by default).
-- **[Phase 4a — agent-voice-extension](../../docs/agent-voice-extension.md)** — sibling F5-extension doc; both are F-series follow-ons from the 2026-06-12 audit.
+- **2026-06-12 audit spec, D9** — originating finding, deferred from the original 4+1-phase audit epic.
+- **2026-06-12 revalidation delta, D9** — vendor v2.1.139/145 verification.
+- **ADR 0002 — Autonomy invariant** — the L2-only constraint that rules out the gating alternatives.
+- **session-summary hook** — structural precedent; D9 mirrors the best-effort, exit-0, opt-out pattern.
+- **F6 agent-tool-patterns** — the `tools:` allowlist convention that D9 doesn't disturb (this skill is read-only by default).
+- **Phase 4a — agent-voice-extension** — sibling F5-extension doc; both are F-series follow-ons from the 2026-06-12 audit.
