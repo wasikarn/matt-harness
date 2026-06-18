@@ -96,7 +96,7 @@ If L3 confirms no coverage, do the task inline. Don't invent a new skill invocat
 | Full 9-step loop from scratch | `/ship-task` |
 | Address PR review feedback | `/address-review` |
 | Multi-agent team orchestration | `/team-plan` + `/team-build` |
-| Harness self-audit (schema / manifest) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" .` |
+| Harness self-audit (schema / manifest) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
 | Governance journal / sensor staleness | `kbg:harness-health` |
 | Research external library or approach | `kbg:research-brief` |
 | Clarify scope before coding | `kbg:clarify-first` |

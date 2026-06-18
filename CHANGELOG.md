@@ -5,6 +5,15 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.75] — 2026-06-18
+
+Default per-skill audit wrappers to the plugin root when called without arguments, and remove the trailing `.` repo-root convention from skill prose.
+
+### Fixed
+
+- **`skills/{harness-health,harness-nav,recursive-improve}/scripts/audit.sh`** now default to the plugin root if called with no arguments, instead of passing through `.` and resolving against the operator's CWD.
+- **`skills/harness-health/SKILL.md`** and **`skills/harness-nav/SKILL.md`** no longer tell the operator to pass `.` to the audit wrapper.
+
 ## [0.2.74] — 2026-06-18
 
 Full same-skill portability sweep: every in-skill executable reference now resolves from `${CLAUDE_SKILL_DIR}`, and cross-skill / top-level helpers route through per-skill wrappers.

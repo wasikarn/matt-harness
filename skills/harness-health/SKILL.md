@@ -38,7 +38,7 @@ bullet) and §3 (verdict schema).
   full context).
 - **Fleet-level audit** (schema/manifest drift, plugin-cache
   freshness, tool-grant scoping) → use `harness-audit`
-  (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" .`).
+  (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`).
 - **Security posture** → defer to `security-auditor` agent.
 - **The underlying scoring engine** itself → this skill *surfaces*
   verdicts, it does not *produce* them. To re-run or re-score, invoke

@@ -8,4 +8,7 @@ __src="${BASH_SOURCE[0]:-$0}"
 __dir="$(cd "$(dirname "$__src")" && pwd)"
 __root="$(cd "${__dir}/../../.." && pwd)"
 
-exec bash "${__root}/skills/harness-audit/scripts/audit.sh" "$@"
+# Default to the plugin root when called without arguments, so the audit
+# works from any project CWD rather than resolving '.' against the operator's
+# current directory.
+exec bash "${__root}/skills/harness-audit/scripts/audit.sh" "${@:-${__root}}"
