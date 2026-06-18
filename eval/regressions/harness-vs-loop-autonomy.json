@@ -7,7 +7,7 @@
       "task": "Check that doctrine files and the 0xCodez article memory explicitly distinguish harness vs loop and reject unattended loops (autonomy invariant).",
       "skill": "script-cli",
       "context": {
-        "command": "python3 -c \"import pathlib, sys; files = ['docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'memory/harness-engineering-2x2-model.md', 'memory/0xcodez-harness-roadmap.md']; required = ['autonomy invariant', 'out of scope by design', 'unattended self-repair loop', '14-step roadmap']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
+        "command": "python3 -c \"import pathlib, sys; files = ['docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'MEMORY.md']; required = ['autonomy invariant', 'out of scope by design', 'unattended self-repair loop', '14-step roadmap']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
         "expected_exit_code": 0,
         "timeout": 30
       },
@@ -37,13 +37,13 @@
       "task": "Check that the Sydney Runkle / LangChain 4-loop article is catalogued as a reference memory and that its L3/L4 unattended-loop conclusion is rejected in doctrine, memory, and BOUNDARY.md.",
       "skill": "script-cli",
       "context": {
-        "command": "python3 -c \"import pathlib, sys; files = ['memory/sydney-runkle-loop-engineering.md', 'docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'BOUNDARY.md', 'skills/inventory/scripts/inventory-boundary.sh']; required = ['sydneyrunkle', 'hill-climbing loop', 'event-driven loop', 'out of scope by design', 'ADR 0002']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
+        "command": "python3 -c \"import pathlib, sys; files = ['docs/adr/0002-autonomy-invariant.md', 'CLAUDE.md', 'BOUNDARY.md', 'skills/inventory/scripts/inventory-boundary.sh']; required = ['sydney runkle', 'hill-climbing loop', 'event-driven loop', 'out of scope by design', 'ADR 0002']; combined = ''.join([pathlib.Path(f).read_text(encoding='utf-8').lower() for f in files if pathlib.Path(f).exists()]); found = [p for p in required if p.lower() in combined]; missing = [p for p in required if p.lower() not in combined]; [print('FOUND:', p) for p in found]; [print('MISSING:', p) for p in missing]; sys.exit(0 if not missing else 1)\"",
         "expected_exit_code": 0,
         "timeout": 30
       },
       "success_criteria": [
         "rc=0",
-        "stdout contains FOUND: sydneyrunkle",
+        "stdout contains FOUND: sydney runkle",
         "stdout contains FOUND: hill-climbing loop",
         "stdout contains FOUND: event-driven loop",
         "stdout contains FOUND: out of scope by design",

@@ -4,7 +4,7 @@ One append-only JSONL stream at `~/.claude/governance-events.jsonl` replaces the
 scatter of bespoke per-hook TSV logs. This file is the **language-agnostic
 contract** every producer honors: bash hooks emit via `journal_append` (in
 `_lib.sh`); python hooks build the same dict with `json.dumps`. The consumer
-(`claude/scripts/governance/governance-summary.py`) reads this shape. Change the shape here
+(`scripts/governance/governance-summary.py`) reads this shape. Change the shape here
 first, then update producers and consumer together.
 
 ## Envelope (nested)
@@ -84,7 +84,7 @@ events and is a superset of the `review_finding.fields` shape, plus
 human-readability, NOT used for cross-event linkage), `decision` (the user
 choice), and `rejected_reason` (the SCRUTINIZE justification). The per-line
 shape is: `{local_id, file, line, tier, disposition, decision, agent,
-rejected_reason, summary}` (9 fields). The journaler (`claude/scripts/pr/review-pr-journal.py`) validates `tier`, `disposition`, `decision` against the
+rejected_reason, summary}` (9 fields). The journaler (`scripts/pr/review-pr-journal.py`) validates `tier`, `disposition`, `decision` against the
 enums above and surfaces a `WARNING` on stderr for a miss — but does NOT block
 the emit (Q3=a "silent FYI, never unwinds" — the journaler is best-effort, not
 a submit gate).

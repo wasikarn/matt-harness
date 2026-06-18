@@ -53,7 +53,7 @@ stages:
   - id: merge-reports
     type: command
     depends_on: [review-fanout]
-    command: "python scripts/merge-review-reports.py .scratch/review-pr/"
+    command: "python3 \"${KBG_PLUGIN_ROOT}/scripts/merge-review-reports.py\" .scratch/review-pr/"
     done_when: "merged-report.json exists and the 4-step merge (Reports / Conflict Resolution / Priority / Action Plan) completed"
 
   - id: fix-loop

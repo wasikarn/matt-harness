@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.87-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.88-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,7 +9,7 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.87):** foreign-CWD portability sweep completed; all plugin-delivered internal
+> **Newest additions (v0.2.88):** foreign-CWD portability sweep completed; all plugin-delivered internal
 > doc recipes now resolve via `${KBG_PLUGIN_ROOT}`, stale cross-references fixed, and remaining
 > relative self-check paths in `docs/common-mistakes.md` were converted.
 

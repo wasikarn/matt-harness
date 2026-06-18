@@ -162,7 +162,7 @@ def main():
             log.write(f"{ts}\t{session_id}\t{file_path}\t{finding}\n")
 
     # Structured governance event stream — one nested-envelope event per finding.
-    # Matches claude/hooks/JOURNAL-SCHEMA.md; source=legacy_security_hook marks
+    # Matches hooks/JOURNAL-SCHEMA.md; source=legacy_security_hook marks
     # this as the python producer migrated from the old flat shape (B1 / audit #6).
     with open(EVENTS, "a", encoding="utf-8") as events:
         for finding in findings:

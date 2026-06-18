@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """recursive-improve-observe — the Observe step of the human-gated improvement
-ritual (harness-recursive-improvement Phase 4, claude/skills/recursive-improve).
+ritual (harness-recursive-improvement Phase 4, skills/recursive-improve).
 
 Reads the governance journal's `verification_summary` events (emitted by
 `verification-gate.sh` at SessionEnd — the one session-scopable verification
@@ -105,7 +105,7 @@ def _ints(fields):
 def check_stall(projects_dir=None, threshold_min=DEFAULT_STALL_THRESHOLD_MIN):
     """Return a stall posture dict for the observe step.
 
-    Wraps scripts/loop-status.py (the wedged-Bash / stale-ScheduleWakeup detector
+    Wraps scripts/governance/loop-status.py (the wedged-Bash / stale-ScheduleWakeup detector
     ported from affaan-m/ECC, 2026-05-30) and reduces its output to a single
     operator-facing signal. Always returns a dict; never raises. `stalled` is True
     only when loop-status flagged AT LEAST ONE signal AND its oldest flag is past

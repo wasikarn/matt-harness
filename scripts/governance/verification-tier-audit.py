@@ -4,7 +4,7 @@ verification_tier rubric.
 
 For each feature it gathers evidence — a `.scratch/<feature>/verification-trail.md`
 (authoritative if present), an `ACCEPTANCE.md`, eval files under a matching
-`skills/<feature>/` (or `claude/skills/<feature>/` in dotfiles layout), and references in `tests/hooks/runners/` (or `claude/hooks/tests/` in dotfiles layout) — then assigns
+`skills/<feature>/` (or `claude/skills/<feature>/` in dotfiles layout), and references in `tests/hooks/runners/` (or `claude/hooks/tests/` in dotfiles layout) — kbg-harness uses the flat layout — then assigns
 one `verification_tier`:
 
     tdd-provenance | analyzer-pass | no-trail
@@ -66,7 +66,7 @@ def _has_eval_evidence(skill_dir, root):
 
     Supports both the flat kbg-harness layout (evals live under
     tests/evals/skills/<feature>/) and the nested dotfiles layout
-    (claude/skills/<feature>/evals/).
+    (claude/skills/<feature>/evals/ in dotfiles layout).
     """
     if not skill_dir.is_dir():
         return False
@@ -84,7 +84,7 @@ def _referenced_in_hook_tests(root, names):
     """True if any hook-test runner mentions one of the feature's names.
 
     Supports both the flat kbg-harness layout (tests/hooks/runners/) and the
-    nested dotfiles layout (claude/hooks/tests/).
+    nested dotfiles layout (claude/hooks/tests/) as fallback.
     """
     tests_dir = root / "tests" / "hooks" / "runners"
     if not tests_dir.is_dir():
@@ -115,7 +115,9 @@ def grade(feature, root):
         (root / ".scratch" / n for n in scratch_names if (root / ".scratch" / n).is_dir()),
         None,
     )
-    skill_dir = root / "claude" / "skills" / feature
+    skill_dir = root / "skills" / feature
+    if not skill_dir.is_dir():
+        skill_dir = root / "claude" / "skills" / feature
 
     notes = []
     declared = _read_trail_tier(scratch_dir) if scratch_dir else None

@@ -3,7 +3,7 @@
 review-pr-journal-pre-emit-validator — pre-emit gate for /review-pr journaler.
 
 This is Layer 2 of the two-layer design in `hooks/JOURNAL-SCHEMA.md`. The
-journaler (`scripts/review-pr-journal.py`) is Layer 1: best-effort
+journaler (`scripts/pr/review-pr-journal.py`) is Layer 1: best-effort
 emitter that WARNINGs on enum-miss but emits anyway (Q3=a "silent FYI,
 never unwinds"). The validator is Layer 2: a pre-emit check that runs
 BEFORE the journaler and EXITS 2 if any finding carries an enum-miss,
@@ -50,7 +50,7 @@ import sys
 from pathlib import Path
 
 # Import the journaler's enum regexes — single source of truth.
-# The journaler is `scripts/review-pr-journal.py` (hyphenated, exact filename
+# The journaler is `scripts/pr/review-pr-journal.py` (hyphenated, exact filename
 # = its import name on Python ≥3); we import the module by the same name.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import importlib

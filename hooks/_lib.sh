@@ -166,7 +166,7 @@ hook_audit_log() {
 
 # journal_append <hook_id> <event_name> <fields_json>
 # Append one nested-envelope event to the governance evidence journal
-# (~/.claude/governance-events.jsonl). Contract: claude/hooks/JOURNAL-SCHEMA.md.
+# (~/.claude/governance-events.jsonl). Contract: hooks/JOURNAL-SCHEMA.md.
 # Bash producers call this; python producers build the same dict via json.dumps.
 #   - exit 2 (fail-loud) if jq is missing — never a silent drop
 #   - deny-list redaction over fields keys + string values BEFORE write
@@ -239,7 +239,7 @@ print(int(n.timestamp()*1000), n.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z", uuid
     exit 2
   fi
   # Phase II (C1 Evidence Journal): echo the minted id on stdout so callers
-  # that link events (e.g. the review-pr journaler in `claude/scripts/`) can
+  # that link events (e.g. the review-pr journaler in `scripts/pr/`) can
   # capture the finding id and reference it as a later verdict's `subject_id`.
   # Existing callers that ignore stdout are unaffected; `$(journal_append ...)`
   # captures cleanly on one line.
@@ -273,7 +273,7 @@ _sensor_heartbeat() {
 # The python module prints the minted id on stdout (Phase II linkage);
 # the bash shim must propagate that same id so `$(...)` captures cleanly.
 # sys.path.insert(0, libdir) is required because _lib.py is repo-local
-# (claude/hooks/), not pip-installed. CLAUDE_SESSION_ID propagation matches
+# (hooks/), not pip-installed. CLAUDE_SESSION_ID propagation matches
 # _lib.py's `os.environ.get("CLAUDE_SESSION_ID", "no-sid")` precedence.
 _journal_append_py() {
   local hook_id="$1" event="$2" fields_json="$3"

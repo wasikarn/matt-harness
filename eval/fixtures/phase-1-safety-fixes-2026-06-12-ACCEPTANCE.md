@@ -13,13 +13,13 @@
 The single biggest latent safety gap: 7 validator-class agents (`code-reviewer`, `code-explorer`, `code-architect`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`) hold `Bash`. The `orchestrate` skill gates Bash-holding dispatch behind `AskUserQuestion` (per `skills/orchestrate/SKILL.md:16-23`), but a direct `Task` spawn with `Bash` granted is unconstrained. Behavioral hook (deny mutation patterns) over `disallowedTools: [Bash]` — preserves read-only inspection (`git diff`, `git log`, `npm test`, `pytest`) the validators need.
 
 **Acceptance:**
-- [x] New file `hooks/validator-bash-guard.sh` exists, `bash -n` clean, executable bit set.
+- [x] New file `hooks/gates/validator-bash-guard.sh` exists, `bash -n` clean, executable bit set.
 - [x] Logic: reads `tool_input.command` from stdin JSON via `_lib.sh`; reads `agent_type` (vendor-confirmed field in PreToolUse input when fired inside a subagent — see `https://code.claude.com/docs/en/hooks#common-input-fields`).
 - [x] If `agent_type` ∉ validator list → exit 0, no decision (fail-open for main-thread / non-validator agents; user has already approved).
 - [x] If command matches one of 11 deny patterns (`git\s+(push|reset\s+--hard|clean\s+-fd)`, `rm\s+`, `sed\s+-i`, `>\s*[^\s|;&]+\s*$`, `mv\s+.*\s+/`, `chmod\s+`, `chown\s+`, `:\(\)\s*\{.*:\|.*\}`, `\bcurl\s+.*-X\s+(POST|PUT|DELETE|PATCH)`, `\bnpm\s+(publish|uninstall)`, `\bpip\s+uninstall`) AND `agent_type` in validator list → `hook_decision deny "VALIDATOR-BASH: <agent_type> attempted mutation: <command>"` (helper emits JSON + exits 0 per codebase convention — `_lib.sh:18`).
 - [x] If `agent_type` is validator but command matches one of the 7 allow-prefixes (`git diff|log|show|status`, `ls|cat|head|tail|wc|grep|rg|find|jq`, `node -p`, `python3 -c "..."`, `npm test`, `pytest`, `cargo test`, `go test`) → exit 0, no decision (fast path; deny patterns are checked first to avoid bypass).
 - [x] Registered in `hooks/hooks.json` PreToolUse Bash matcher (appended to the 5-hook matcher at `hooks.json:74-99`; preserves existing matcher order — `secret-read-guard`, `block-dangerous-git`, `block-bash-doctrine-write`, `block-alias-shadowing`, then new `validator-bash-guard`).
-- [x] 6/6 test fixtures added to `hooks/tests/test-critical-hooks.sh` covering: (a) `code-reviewer` + `git diff HEAD` → `permissionDecision: "none"`, (b) `code-reviewer` + `git push origin main` → `permissionDecision: "deny"`, (c) `code-reviewer` + `rm -rf /tmp/foo` → `permissionDecision: "deny"`, (d) `backend-engineer` + `git push origin feature` → `permissionDecision: "none"` (writer not gated), (e) `code-reviewer` + `npm test` → `permissionDecision: "none"`, (f) `code-reviewer` + `sed -i 's/x/y/' file` → `permissionDecision: "deny"`. **All tests assert on `hookSpecificOutput.permissionDecision` (not exit code) per `test-critical-hooks.sh:14-15` contract.**
+- [x] 6/6 test fixtures added to `tests/hooks/runners/test-critical-hooks.sh` covering: (a) `code-reviewer` + `git diff HEAD` → `permissionDecision: "none"`, (b) `code-reviewer` + `git push origin main` → `permissionDecision: "deny"`, (c) `code-reviewer` + `rm -rf /tmp/foo` → `permissionDecision: "deny"`, (d) `backend-engineer` + `git push origin feature` → `permissionDecision: "none"` (writer not gated), (e) `code-reviewer` + `npm test` → `permissionDecision: "none"`, (f) `code-reviewer` + `sed -i 's/x/y/' file` → `permissionDecision: "deny"`. **All tests assert on `hookSpecificOutput.permissionDecision` (not exit code) per `test-critical-hooks.sh:14-15` contract.**
 - [x] Manual smoke: `claude --agent code-reviewer` → `git push` returns `permissionDecision: "deny"` with the VALIDATOR-BASH reason.
 
 ### FIX-F2 — `orchestrate` validation chain section (capability, REPORT §3 F2)
@@ -77,7 +77,7 @@ Verified 2026-06-12: `agents/researcher.md` is 9.7K, heavy web-search agent miss
 
 - [x] `bash skills/harness-audit/scripts/audit.sh /Users/kobig/Codes/Personals/kbg-harness` → exit 0, findings ≤ baseline (re-capture baseline first; current 31 checks baseline).
 - [x] `claude plugin validate --strict .` → exit 0.
-- [x] `bash hooks/tests/test-critical-hooks.sh` → all pass (existing N + 6 new fixtures for F1).
+- [x] `bash tests/hooks/runners/test-critical-hooks.sh` → all pass (existing N + 6 new fixtures for F1).
 - [x] Per-fix `bash -n` parses; manual invocation of `validator-bash-guard.sh` against the 6 fixtures matches the AC.
 - [x] Fresh-context adversarial pass: 1 verifier agent (kbg:code-reviewer role) per fix, fresh context, no access to my reasoning — confirms the new hook/check behaves per AC.
 

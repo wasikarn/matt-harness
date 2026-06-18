@@ -24,7 +24,7 @@ description: Run the audit script, fan out 2 review lenses, then evaluate.
 stages:
   - id: audit
     type: command
-    command: "bash skills/harness-audit/scripts/audit.sh ."
+    command: "bash \"${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh\" \"${KBG_PLUGIN_ROOT}\""
     done_when: "audit exits 0 OR audit exits non-zero with structured findings JSON"
 
   - id: review-fanout
@@ -48,5 +48,5 @@ stages:
   - id: evaluate
     type: command
     depends_on: [review-fanout]
-    command: "python eval/run-eval.py --dataset eval/datasets/"
+    command: "python3 \"${KBG_PLUGIN_ROOT}/eval/run-eval.py\" --dataset \"${KBG_PLUGIN_ROOT}/eval/datasets/\" --regression --gate"
     done_when: "eval exits 0 (all dataset graders pass) OR exits 1 with structured failure list"

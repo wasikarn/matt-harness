@@ -35,7 +35,7 @@ TAB_STREAMS = {
 }
 JSONL_STREAMS = ["governance-events.jsonl"]  # structured nested-envelope journal
 
-# Event registry — claude/hooks/JOURNAL-SCHEMA.md is the SSOT; this set must
+# Event registry — hooks/JOURNAL-SCHEMA.md is the SSOT; this set must
 # mirror its table. The two can drift (markdown vs code), but the cost is bounded:
 # an event not listed here is WARNED, never dropped — the taxonomy is open so a
 # new producer can ship before the registry is updated. That warn-on-unknown is

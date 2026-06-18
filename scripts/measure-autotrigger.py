@@ -22,7 +22,7 @@ Two probe findings that killed the prototype's method:
 
 Denominator rule: auto-rate is only meaningful for skills the model CAN invoke.
 Skills/commands with `disable-model-invocation: true` (assert-presence,
-decommission, and all claude/commands/*) can only be manual — they are reported
+decommission, and all commands/*) can only be manual — they are reported
 separately, never counted as auto-trigger failures.
 
 Per-turn segmentation survives for ONE thing: nudge efficacy. A skill-nudge

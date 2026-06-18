@@ -55,7 +55,7 @@ printf '%s\t%s\t%s\t%s\n' "$TS" "$SID" "$SRC" "$FILE" >> "$LOG"
 # Dual-write the same event into the structured evidence journal (JSONL). The
 # governance digest dedups TSV+JSONL on (hook, ts_second, path) — JSONL wins —
 # so this counts once during migration. Fields built via jq so a path with
-# quotes/backslashes can't corrupt the envelope. See claude/hooks/JOURNAL-SCHEMA.md.
+# quotes/backslashes can't corrupt the envelope. See hooks/JOURNAL-SCHEMA.md.
 # Routes through the Python module (single emission point) — _journal_append_py
 # is a 1-call-per-emit shim in _lib.sh:185. The shim's source="journal_append"
 # is consumer-stable (governance-summary.py ingests regardless of which language

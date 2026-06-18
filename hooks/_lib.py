@@ -2,7 +2,7 @@
 """
 _lib — shared protocol helpers for Claude Code hooks. The single Python
 emission point for the governance evidence journal; mirrors _lib.sh:journal_append
-byte-for-byte. Contract: claude/hooks/JOURNAL-SCHEMA.md.
+byte-for-byte. Contract: hooks/JOURNAL-SCHEMA.md.
 
 Envelope literal stamped by journal_append():
   {id, ts, session, hook, event, source: "journal_append", fields}
