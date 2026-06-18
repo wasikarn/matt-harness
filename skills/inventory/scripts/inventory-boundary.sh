@@ -269,10 +269,10 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 When spawning a teammate (via `/team-build` or any agent-team dispatch), inject these shared conventions so teammates load the same module map + verification recipe.
 
 ### Module Boundaries
-- `agents/` — 27 senior-specialist agents
-- `skills/` — 28 workflow skills
-- `commands/` — 11 slash commands
-- `hooks/` — 38 hook scripts
+- `agents/` — 29 senior-specialist agents
+- `skills/` — 38 workflow skills
+- `commands/` — 21 slash commands
+- `hooks/` — 43 hook scripts
 - `output-styles/` — 1 SENIOR-DEV
 - `eval/` — dataset + regression + CI gate (Phase 1)
 

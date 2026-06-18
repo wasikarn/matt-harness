@@ -198,7 +198,7 @@ _Personals/kbg-harness_
 | SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
 
 ---
-_Generated: 2026-06-18T02:28:39Z_
+_Generated: 2026-06-18T03:13:58Z_
 
 ---
 
@@ -286,10 +286,10 @@ Canonical file patterns per agent. Assign each file to exactly one agent in a `/
 When spawning a teammate (via `/team-build` or any agent-team dispatch), inject these shared conventions so teammates load the same module map + verification recipe.
 
 ### Module Boundaries
-- `agents/` — 27 senior-specialist agents
-- `skills/` — 28 workflow skills
-- `commands/` — 11 slash commands
-- `hooks/` — 38 hook scripts
+- `agents/` — 29 senior-specialist agents
+- `skills/` — 38 workflow skills
+- `commands/` — 21 slash commands
+- `hooks/` — 43 hook scripts
 - `output-styles/` — 1 SENIOR-DEV
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
