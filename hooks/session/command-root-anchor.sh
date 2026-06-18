@@ -27,4 +27,6 @@ ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 # "${KBG_PLUGIN_ROOT}/scripts/..." without producing double slashes.
 ROOT="${ROOT%/}"
 
-printf 'export KBG_PLUGIN_ROOT=%s\n' "$ROOT" >> "$CLAUDE_ENV_FILE"
+# Quote the path so spaces/special characters in the plugin cache path do not
+# break tokenization when CLAUDE_ENV_FILE is sourced.
+printf 'export KBG_PLUGIN_ROOT="%s"\n' "$ROOT" >> "$CLAUDE_ENV_FILE"

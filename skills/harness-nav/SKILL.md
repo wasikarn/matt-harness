@@ -68,7 +68,12 @@ ls "${KBG_PLUGIN_ROOT}/agents/<name>.md" 2>/dev/null && echo "agent exists" || e
 
 The plugin ships 39 mental-model write-ups under `docs/reference/thinking-skills/` as a read-only reference library. These are **not** invokable skills — they are scaffolds the existing kbg surfaces already apply. Use these recipes to look up a named model or search by keyword.
 
+> **Read-tool warning:** do not paste a `${KBG_PLUGIN_ROOT}` path into the `Read` tool. The variable expands only in shell context; `Read` will silently fail. Use `Bash` with the recipes below.
+
 ```bash
+# Guard: the variable is only available after a successful SessionStart hook
+: "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
+
 # Read the kbg application catalog (which surface applies which model)
 cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
 
@@ -76,7 +81,9 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model by its upstream directory name
+# Read a specific model by its upstream directory name.
+# Note: the catalog row name (e.g. "systems-thinking") may differ from the
+# upstream directory name (e.g. "thinking-systems"). Use the list above.
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md"
 
 # Search vendored model bodies for a keyword

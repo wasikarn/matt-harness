@@ -13,11 +13,15 @@ The named-model vocabulary and taxonomy are from
 [**cc-thinking-skills**](https://github.com/tjboudreaux/cc-thinking-skills) by TJ Boudreaux
 (MIT, © 2025) — 39 mental-model skills for Claude Code.
 
-The full skill files are **vendored verbatim** as a common-references library at
-[`thinking-skills/`](thinking-skills/) (commit `0313ee0`, MIT `LICENSE` retained). They are
+The full skill files are **vendored verbatim** as a common-references library under
+`docs/reference/thinking-skills/` (commit `0313ee0`, MIT `LICENSE` retained). They are
 stored under `docs/` deliberately — they are reference material, **not** invokable kbg
-skills (see [`thinking-skills/README.md`](thinking-skills/README.md)). Read a model's full
-write-up there; use the table below to find which kbg surface already applies it.
+skills. Read a model's full write-up there; use the table below to find which kbg surface
+already applies it.
+
+> **Path note:** all internal paths below are shown as code-spans, not markdown links,
+> because this file is read from the plugin cache and relative links would resolve against
+> the user's project CWD, not the cache. Use the Bash recipes in the next section.
 
 ## The honesty caveat — read this first
 
@@ -46,8 +50,9 @@ is doing something and you want the named handle for it (to combine lenses, to e
 move, or to teach the harness's reasoning to someone new).
 
 To read the full upstream write-up for any model, run the Bash recipes in the next section.
-Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path — the variable expands
-only in shell context.
+**Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path** — the variable expands
+only in shell context. The recipes also guard against the variable being unset, which happens
+before restart or if `hooks/session/command-root-anchor.sh` did not run.
 
 ## Reading a vendored model from any project CWD
 
@@ -55,11 +60,16 @@ Run these in the **Bash** tool. `${KBG_PLUGIN_ROOT}` is exported by
 `hooks/session/command-root-anchor.sh` on every SessionStart.
 
 ```bash
+# Guard: the variable is only available after a successful SessionStart hook
+: "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
+
 # List all 39 vendored mental models
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model by its upstream directory name
+# Read a specific model by its upstream directory name.
+# Note: the row name (e.g. "systems-thinking") may differ from the upstream
+# directory name (e.g. "thinking-systems"). Use the list above to get the exact name.
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md"
 
 # Search the vendored models for a keyword

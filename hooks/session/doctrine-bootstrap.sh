@@ -53,7 +53,7 @@ done
 # version-proof cache path can be handed to the model: a bare/relative `docs/...` link in
 # injected doctrine resolves against the user's project CWD and breaks when the plugin runs
 # in another repo. The path points at the installed plugin copy (cache), not the working tree.
-doctrine+="Reasoning-models catalog — the named mental models kbg already applies (honesty caveat: none is a proven accuracy boost; one measurably hurt accuracy). When a task explicitly calls for one of these frames, Read the absolute installed-plugin path below; do not open it unprompted. Path: $ROOT/docs/reference/reasoning-models.md — the 39 verbatim-vendored thinking-skill files live under $ROOT/docs/reference/thinking-skills/."$'\n'
+doctrine+="Reasoning-models catalog — the named mental models kbg already applies (honesty caveat: none is a proven accuracy boost; one measurably hurt accuracy). When a task explicitly calls for one of these frames, run Bash cat \\"$ROOT/docs/reference/reasoning-models.md\\"; do not open it unprompted. The file contains Bash-only recipes because \\${KBG_PLUGIN_ROOT} expands only in shell context. The 39 verbatim-vendored thinking-skill files live under $ROOT/docs/reference/thinking-skills/."$'\n'
 
 # JSON-escape via python3 (already required by other hooks). Bail safe if absent.
 ctx="$(printf '%s' "$doctrine" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)" || exit 0

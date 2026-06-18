@@ -249,6 +249,7 @@ bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md
 - [`CONTEXT.md`](CONTEXT.md) — Domain language, bounded contexts, autonomy invariant
 - [`CLAUDE.md`](CLAUDE.md) — Guidance for Claude Code instances working in this repo
 - [`BOUNDARY.md`](BOUNDARY.md) — Auto-regenerated cross-context inventory
+- [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) — 39 vendored mental models (cc-thinking-skills) and where kbg already applies them
 - [`CHANGELOG.md`](CHANGELOG.md) — Release notes
 - [`docs/adr/`](docs/adr/) — Architecture decision records (start with ADR 0001 and 0002)
 

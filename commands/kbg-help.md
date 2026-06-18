@@ -31,14 +31,15 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 | Read-only governance journal / verdicts / silent sensors | `kbg:harness-health` |
 | 12-cell coverage decay grid (quarter-end) | `kbg:harness-coverage` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
+| Mental-model reference library (39 cc-thinking-skills) | Read `docs/reference/reasoning-models.md` via the Bash recipes in that file, or run `kbg:harness-nav` and search for "reasoning-models" |
 
 ## Context tiers
 
 | Tier | What's resident | How to reach |
 |------|-----------------|--------------|
-| **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md | Injected every session automatically |
+| **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md + pointer to `docs/reference/reasoning-models.md` | Injected every session automatically |
 | **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship-task`) or skill-nudge keyword |
-| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) | `kbg:harness-nav` mines the inventory when you don't know the right surface |
+| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` | `kbg:harness-nav` mines the inventory when you don't know the right surface |
 
 ## Validation shortcuts
 

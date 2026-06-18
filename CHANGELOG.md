@@ -5,15 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
-## [0.2.79] — 2026-06-18
+## [0.2.80] — 2026-06-18
 
-Make the vendored cc-thinking-skills reference library directly reachable from any project CWD without adding a new invokable skill.
+Polish the vendored cc-thinking-skills reference library so external installers can discover and read it without hitting path/variable traps, plus output-style register improvements.
 
 ### Changed
 
-- **`docs/reference/reasoning-models.md`** now contains a unified 39-row index with `kbg status` (`applied` / `considered` / `rejected`) and portable Bash recipes to read the upstream SKILL.md files from any CWD.
-- **`skills/harness-nav/SKILL.md`** adds a “Mine the vendored reasoning-models reference library” recipe section using `${KBG_PLUGIN_ROOT}`.
-- **`BOUNDARY.md`** regenerated with a new “Reference docs” cross-reference (XREF5 in `skills/inventory/scripts/inventory-boundary.sh`) pointing to `docs/reference/reasoning-models.md` and `docs/reference/thinking-skills/README.md`.
+- **Default live-response register is now SENIOR-DEV; STAFF-ENGINEER is opt-in for cross-boundary decisions.** See `output-styles/senior-dev.md` and `output-styles/staff-engineer.md` for the escalation rules.
+
+### Fixed (reference docs)
+
+- **`docs/reference/reasoning-models.md`** now warns explicitly that `${KBG_PLUGIN_ROOT}` expands only in shell context — never paste it into the `Read` tool.
+- **`docs/reference/reasoning-models.md`** recipes now guard against an unset `KBG_PLUGIN_ROOT` and note that the catalog row name (e.g. `systems-thinking`) may differ from the upstream directory name (e.g. `thinking-systems`).
+- **`docs/reference/reasoning-models.md`** and **`docs/reference/thinking-skills/README.md`** no longer use relative markdown links that break from a foreign project CWD.
+- **`skills/harness-nav/SKILL.md`** reasoning-models recipe section repeats the Read-tool warning and the KBG_PLUGIN_ROOT guard.
+- **`commands/kbg-help.md`** now lists the reasoning-models reference library in the discovery table and updates the L1 context tier to include the doctrine pointer.
+- **`README.md`** adds `docs/reference/reasoning-models.md` to the Documentation section.
+- **`hooks/session/command-root-anchor.sh`** now quotes the exported path so spaces/special characters do not break tokenization.
+- **`hooks/session/doctrine-bootstrap.sh`** pointer explicitly tells the model to use Bash (not `Read`) to access the catalog, since the path contains a shell-only variable.
+- **`BOUNDARY.md`** regenerated to match the latest XREF content.
 
 ## [0.2.76] — 2026-06-18
 
