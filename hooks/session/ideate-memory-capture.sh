@@ -7,7 +7,7 @@
 # markdown file under ~/.claude/state/ideate-memory/ and updates the qmd index.
 #
 # The persisted files are later searchable via /ideate-search or directly with:
-#   python3 scripts/ideate-memory.py search "<query>"
+#   python3 "${KBG_PLUGIN_ROOT}/scripts/ideate-memory.py" search "<query>"
 #
 # Bypass:
 #   export CLAUDE_DISABLED_HOOKS=ideate-memory-capture

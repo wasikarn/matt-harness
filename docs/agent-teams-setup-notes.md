@@ -47,7 +47,7 @@ export CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-5-20250929
 
 **Verify it:**
 ```bash
-grep -E "^model:" agents/*.md | sort  # confirm 23 sonnet + 4 opus
+grep -E "^model:" "${KBG_PLUGIN_ROOT}/agents"/*.md | sort  # confirm 23 sonnet + 4 opus
 ```
 
 ---

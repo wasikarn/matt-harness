@@ -5,8 +5,8 @@ Scans skill, command, agent, and hook surfaces by description/frontmatter,
 ranks matches by keyword overlap, and emits a concise candidate list.
 
 Usage:
-    python3 skills/harness-nav/scripts/nav.py <keyword-or-phrase>
-    python3 skills/harness-nav/scripts/nav.py --json <keyword-or-phrase>
+    python3 "${KBG_PLUGIN_ROOT}/skills/harness-nav/scripts/nav.py" <keyword-or-phrase>
+    python3 "${KBG_PLUGIN_ROOT}/skills/harness-nav/scripts/nav.py" --json <keyword-or-phrase>
 
 Exit codes:
     0 — matches found (or query is empty and usage printed)

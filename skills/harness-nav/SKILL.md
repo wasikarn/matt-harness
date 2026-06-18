@@ -85,7 +85,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/nav.py" "reasoning models"
 cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
 
 # List all 39 vendored mental models (directory names start with `thinking-`)
-find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
+find "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills" -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
 # Read a specific model. Use the exact `Upstream dir` value from the table in

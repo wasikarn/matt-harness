@@ -26,7 +26,7 @@ hold. That is the trigger to re-measure.
 ## Cadence
 
 1. **Surface candidates** — run the audits that already exist; add no new tool:
-   - `harness-audit` (`bash skills/harness-audit/scripts/audit.sh [<root>]`) for fleet
+   - `harness-audit` (`bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" ["${KBG_PLUGIN_ROOT}"]`) for fleet
      health and dead / unloadable components;
    - `inventory` (`skills/inventory`) + a `BOUNDARY.md` drift snapshot it can
      emit and you commit — to catch a component that silently appeared or vanished;

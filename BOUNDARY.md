@@ -199,7 +199,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-18T11:41:46Z_
+_Generated: 2026-06-18T14:47:00Z_
 
 ---
 
@@ -290,22 +290,22 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `agents/` — 29 senior-specialist agents
 - `skills/` — 38 workflow skills
 - `commands/` — 21 slash commands
-- `hooks/` — 43 hook scripts
+- `hooks/` — 44 hook scripts
 - `output-styles/` — 1 senior-eng
 - `eval/` — dataset + regression + CI gate (Phase 1)
 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash tests/hooks/runners/test-critical-hooks.sh` (expect 0 failures)
+- **Tests:** `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` (expect 0 failures)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
-- `bash skills/harness-audit/scripts/audit.sh .` — 0C/0W expected (INFO findings are non-blocking)
-- `claude plugin validate --strict .` — exit 0
-- `bash tests/hooks/runners/test-critical-hooks.sh` — expect 0 failures
-- `python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate` — exit 0
+- `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
+- `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
+- `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` — expect 0 failures
+- `python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate` — exit 0
 
 ---
 
