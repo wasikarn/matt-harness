@@ -223,7 +223,7 @@ Behavior:
 
 (For the full 24-persona table, see the agents' own `description:` fields — always preloaded.)
 
-**Naming the reasoning, not just the route.** The index above picks *who* acts; for *how* to reason — the named mental models (first-principles, pre-mortem, reversibility, red-team, scientific-method, via-negativa…) that kbg skills already apply — see the catalog `docs/reference/reasoning-models.md` — the doctrine hook injects its absolute installed-plugin path into every session, so Read that path (a bare relative link does not resolve when the plugin runs in another project). It is a reference, not new skills: the models are framing scaffolds, **not** a proven accuracy boost (their own eval shows zero hold up; one measurably hurt).
+**Naming the reasoning, not just the route.** The index above picks *who* acts; for *how* to reason — the named mental models (first-principles, pre-mortem, reversibility, red-team, scientific-method, via-negativa…) that kbg skills already apply — see the catalog via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`. The doctrine hook injects the pointer each session. It is a reference, not a set of skills: the models are framing scaffolds, **not** a proven accuracy boost (their own eval shows zero hold up; one measurably hurt). To find which existing kbg surface applies a model, run `kbg:harness-nav` and search for the model name.
 
 **Routing Confidence** — judgment calls must be surfaced, not hidden:
 

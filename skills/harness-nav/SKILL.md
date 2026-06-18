@@ -88,8 +88,8 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"
 find "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills -maxdepth 2 -name SKILL.md \
   | sed 's|.*/skills/||; s|/SKILL.md||' | sort
 
-# Read a specific model. Use the exact directory name from the list above,
-# which always starts with `thinking-`. Do not strip the prefix.
+# Read a specific model. Use the exact `Upstream dir` value from the table in
+# reasoning-models.md (it always starts with `thinking-`). Do not strip the prefix.
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKILL.md"
 # Example — read the systems-thinking vendored file (upstream dir is `thinking-systems`):
 cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
