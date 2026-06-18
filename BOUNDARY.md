@@ -196,9 +196,10 @@ _Personals/kbg-harness_
 | Style | Description |
 |---|---|
 | SENIOR-DEV | Plugin-default senior-engineering lead register: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. |
+| STAFF-ENGINEER | Organization-scale technical lead register: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. |
 
 ---
-_Generated: 2026-06-18T03:18:01Z_
+_Generated: 2026-06-18T10:16:13Z_
 
 ---
 
