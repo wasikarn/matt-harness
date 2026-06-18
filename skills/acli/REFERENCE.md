@@ -258,9 +258,9 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md                       # �
 python3 ${CLAUDE_SKILL_DIR}/scripts/md2adf.py desc.md -s "Summary" -p TP -t Bug > /tmp/wi.json
 acli jira workitem create --from-json /tmp/wi.json      # --from-json takes a FILE PATH, not stdin ('-' fails)
 ```
-Supports `#`/`##`/`###`, ordered/bullet/task lists, `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `[text](url)`, `` ``` `` code blocks, `>` blockquotes, `---` rules. Nested lists flatten to top-level — use H3 sub-headings + flat bullets for scannable grouping instead. See `scripts/md2adf.py`.
+Supports `#`/`##`/`###`, ordered/bullet/task lists, `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `[text](url)`, `` ``` `` code blocks, `>` blockquotes, `---` rules. Nested lists flatten to top-level — use H3 sub-headings + flat bullets for scannable grouping instead. See `cat "${CLAUDE_SKILL_DIR}/scripts/md2adf.py"`.
 
-To read back, `scripts/adf2md.py` is the inverse — pipe `view --json` through it for a readable work-item card at ~80% fewer tokens than raw JSON:
+To read back, `cat "${CLAUDE_SKILL_DIR}/scripts/adf2md.py"` shows the inverse — pipe `view --json` through it for a readable work-item card at ~80% fewer tokens than raw JSON:
 ```bash
 acli jira workitem view KEY --json | python3 ${CLAUDE_SKILL_DIR}/scripts/adf2md.py
 ```

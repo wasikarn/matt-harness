@@ -55,7 +55,7 @@ This guide covers the eight most common failure modes when running multi-agent b
 
 1. Check file ownership uniqueness with the plan linter:
    ```bash
-   python3 scripts/plan-linter.py .claude/tasks/health-endpoint.md
+   python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/health-endpoint.md
    ```
    Look for the error: `File '<path>' owned by multiple tasks: ...`
 
@@ -66,7 +66,7 @@ This guide covers the eight most common failure modes when running multi-agent b
 **Prevention:** Enforce single-owner-per-file at plan time. The plan linter's `_check_file_ownership()` (in `scripts/plan-linter.py`) blocks any plan where a file appears in more than one task's `Files` column. Run the linter before `/team-build`:
 
 ```bash
-python3 scripts/plan-linter.py .claude/tasks/health-endpoint.md --strict
+python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/health-endpoint.md --strict
 ```
 
 The F9 spawn-prompt template also requires `## FILES YOU OWN` — a teammate with a single-file boundary cannot conflict with another teammate that owns a different file.
@@ -116,7 +116,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 2. Run the plan linter to check team-member count:
    ```bash
-   python3 scripts/plan-linter.py .claude/tasks/health-endpoint.md
+   python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/health-endpoint.md
    ```
    The linter errors if team members are outside 3-5.
 
@@ -142,7 +142,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 3. For deterministic replay, use `--spec` (future P2.4 enhancement). The dispatcher renders the wave plan from a YAML spec:
    ```bash
-   python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml --emit-plan
+   python3 "${KBG_PLUGIN_ROOT}/scripts/orchestrate-dispatch.py" "${KBG_PLUGIN_ROOT}/skills/orchestrate/examples/ship-merge.yml" --emit-plan
    ```
 
 **Prevention:** Always run `/team-build` in a fresh Claude Code session. The plan file decouples state from session context; do not carry planning context into execution context. The lead's Step 4 soft-warn gate reminds you if you forget.
@@ -218,11 +218,11 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 1. Run the lock reaper for the plan's team:
    ```bash
-   bash scripts/locks/lock-reap.sh --team=health-endpoint --dry-run
+   bash "${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh" --team=health-endpoint --dry-run
    ```
    This previews which locks are broken (expired). If the output looks correct, remove `--dry-run`:
    ```bash
-   bash scripts/locks/lock-reap.sh --team=health-endpoint
+   bash "${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh" --team=health-endpoint
    ```
    The script breaks expired locks, logs via `journal_append`, and removes the lock directory.
 
@@ -247,15 +247,15 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 | Goal | Command |
 |------|---------|
 | Check build status | `/wave-status health-endpoint` |
-| Pre-flight plan check | `python3 scripts/plan-linter.py .claude/tasks/health-endpoint.md --strict` |
+| Pre-flight plan check | `python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/health-endpoint.md --strict` |
 | Validate a completed task | `/validate-and-fix API-1 health-endpoint` |
 | Clean up stale artifacts | `/team-cleanup health-endpoint --dry-run` |
-| Reap expired locks | `bash scripts/locks/lock-reap.sh --team=health-endpoint` |
+| Reap expired locks | `bash "${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh" --team=health-endpoint` |
 | Disable one hook | `export CLAUDE_DISABLED_HOOKS=hook-name` |
 | Disable all hooks | `export CLAUDE_HOOK_PROFILE=off` |
 | Downgrade F7 to log-only | `export KBG_ENFORCE_TASK_COMPLETED=0` |
 | View today's task events | `tail ~/.claude/team-events/$(date -u +%Y-%m-%d).jsonl` |
-| Render a spec plan | `python3 scripts/orchestrate-dispatch.py skills/orchestrate/examples/ship-merge.yml --emit-plan` |
+| Render a spec plan | `python3 "${KBG_PLUGIN_ROOT}/scripts/orchestrate-dispatch.py" "${KBG_PLUGIN_ROOT}/skills/orchestrate/examples/ship-merge.yml" --emit-plan` |
 
 ---
 

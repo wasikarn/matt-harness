@@ -27,9 +27,9 @@ This skill is delivered via the `kbg@kobig` plugin. No manual symlink needed.
 If you need the standalone script outside a Claude Code session, run from the repo clone:
 
 ```bash
-# from repo root:
-bash skills/assert-presence/scripts/witness.sh sign --namespace=assert-presence <slug>
-bash skills/assert-presence/scripts/witness.sh verify --namespace=assert-presence
+# from any CWD (requires KBG_PLUGIN_ROOT):
+bash "${KBG_PLUGIN_ROOT}/skills/assert-presence/scripts/witness.sh" sign --namespace=assert-presence <slug>
+bash "${KBG_PLUGIN_ROOT}/skills/assert-presence/scripts/witness.sh" verify --namespace=assert-presence
 ```
 
 ## Quick start

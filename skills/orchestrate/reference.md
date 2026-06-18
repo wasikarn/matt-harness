@@ -88,7 +88,7 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 
 The top rung: work that runs **unattended and recurring** — handed to `/schedule` (remote cron routine), `/loop` (in-session interval), or `CronCreate` — instead of you re-running it each cycle. L4 is unattended but one-shot; L5 is unattended **and** repeating.
 
-L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant ([`docs/adr/0002-autonomy-invariant.md`](../../docs/adr/0002-autonomy-invariant.md)) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
+L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (ADR 0002 — read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
 
 **Route here only when ALL hold:**
 

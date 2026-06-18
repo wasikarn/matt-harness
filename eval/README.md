@@ -34,21 +34,21 @@ eval/
 ## Usage
 
 ```bash
-# Run all datasets
-python3 eval/run-eval.py --dataset eval/datasets/
+# Run all datasets (works from any CWD when KBG_PLUGIN_ROOT is exported)
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/"
 
 # Run only regressions (fast smoke test)
-python3 eval/run-eval.py --regression
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --regression
 
 # Gate mode: exit non-zero on failure (for CI)
-python3 eval/run-eval.py --dataset eval/datasets/ --gate
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --gate
 ```
 
 ## Adding a Dataset
 
 1. Create `eval/datasets/<name>.json` matching the schema in `SCHEMA.md`.
 2. Add at least 3 cases per dataset.
-3. Run `python3 eval/run-eval.py --dataset eval/datasets/ --gate` to verify.
+3. Run `python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --gate` to verify.
 
 ## Adding a Regression Fixture
 

@@ -130,7 +130,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per [ADR 0002](../adr/0002-autonomy-invariant.md)).
+unattended model-router — excluded by the autonomy invariant per ADR 0002; read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
@@ -157,4 +157,4 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant ([ADR 0002](../adr/0002-autonomy-invariant.md)). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (read ADR 0002 in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`). It may still appear as *framing* inside an applied surface.

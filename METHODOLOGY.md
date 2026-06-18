@@ -81,7 +81,7 @@ When a loop *verifies*, its stop-signal must reduce to an objective check — a 
 - Test output showing red→green (exit code + diff).
 - Type-checker / linter output showing zero new errors.
 - Fresh-context adversarial review by a sub-agent (`code-reviewer`, `security-reviewer`, or `silent-failure-hunter`) with no access to the implementer's reasoning.
-- Deterministic acceptance-runner results (`scripts/evals/run-acceptance.py`) against a locked `ACCEPTANCE.md` contract. The runner returns **distinct exit codes for PASS(0) / FAIL(1) / INVOCATION(2) / PARSE(3) / BLOCK(4)** — a BLOCKed criterion is not a PASSed one (fix for the scoreboard-collapse anti-cheat gap, SYNTHESIS row #15).
+- Deterministic acceptance-runner results (`python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py"`) against a locked `ACCEPTANCE.md` contract. The runner returns **distinct exit codes for PASS(0) / FAIL(1) / INVOCATION(2) / PARSE(3) / BLOCK(4)** — a BLOCKed criterion is not a PASSed one (fix for the scoreboard-collapse anti-cheat gap, SYNTHESIS row #15).
 Store proof artifacts in `.scratch/<slug>/proofs/` so reviewers can inspect them without re-running the full session.
 
 **Sub-rule: Comprehension debt ceiling.** Before proposing new candidates, check
@@ -92,14 +92,14 @@ queue is drained. Codifies "what stays manual" into a quantified, machine-checka
 signal so the operator iterates on top of *reviewed* state, not stacked-up unread
 findings. (SYNTHESIS #41, spec §4.4.)
 
-**Sub-rule: Acceptance criteria are the upper bound on what the test gate can prove.** (Böckeler, [harness-engineering 2026-04](https://martinfowler.com/articles/harness-engineering.html) L448: *"Correctness is outside any sensor's remit if the human didn't clearly specify what they wanted in the first place."*) A green test run is a *necessary not sufficient* gate when the same agent that wrote the code also wrote the tests; the ceiling is the quality of the locked `ACCEPTANCE.md` (see `kbg:accept-task` → `commands/pre-ship-verify.md`). Improving the test gate (mutation testing, property-based tests, sandbox) closes part of the gap; **raising acceptance-criteria quality closes the upper bound**. Default to writing the spec first, then the test, then the code — and treat a vague `ACCEPTANCE.md` as a build-blocker, not a fix-it-later.
+**Sub-rule: Acceptance criteria are the upper bound on what the test gate can prove.** (Böckeler, [harness-engineering 2026-04](https://martinfowler.com/articles/harness-engineering.html) L448: *"Correctness is outside any sensor's remit if the human didn't clearly specify what they wanted in the first place."*) A green test run is a *necessary not sufficient* gate when the same agent that wrote the code also wrote the tests; the ceiling is the quality of the locked `ACCEPTANCE.md` (see `kbg:accept-task` → read via Bash: `cat "${KBG_PLUGIN_ROOT}/commands/pre-ship-verify.md"`). Improving the test gate (mutation testing, property-based tests, sandbox) closes part of the gap; **raising acceptance-criteria quality closes the upper bound**. Default to writing the spec first, then the test, then the code — and treat a vague `ACCEPTANCE.md` as a build-blocker, not a fix-it-later.
 
 **Sub-rule: TaskCompleted enforcement is opt-OUT, not opt-IN.** The F7
-test-claim gate in `hooks/lifecycle/task-lifecycle.sh` is always ON by default — it
+test-claim gate in `"${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"` is always ON by default — it
 blocks a TaskCompleted event that claims test execution ("pytest" / "npm test" /
 etc.) without a `validation_command:` field. The gate preserves the
 "test-claim-without-evidence" anti-pattern from sneaking through teammate
-chains (12 tests in `tests/hooks/runners/test-critical-hooks.sh` lock this behavior).
+chains (12 tests in `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` lock this behavior).
 Operators may opt **out** of L3 enforcement on a per-session basis via
 `KBG_ENFORCE_TASK_COMPLETED=0` — this downgrades F7 to log-only for that
 session (the event is still journaled, but no exit 2 is sent). Use case:
@@ -110,7 +110,7 @@ the default is L3-enforced; setting the env var to "0" is the only way to
 get L2 advisory. The naming asymmetry vs. the "ceiling" sub-rule above is
 intentional: a ceiling is a hard upper bound, an enforcement toggle is a
 default-on safety check. (SYNTHESIS #13, P2.3, eval fixture:
-`eval/regressions/task-completed-enforcement.json`.)
+`cat "${KBG_PLUGIN_ROOT}/eval/regressions/task-completed-enforcement.json"`.)
 
 ## 5. Use the Model Only for Judgment Calls
 
@@ -128,7 +128,7 @@ default-on safety check. (SYNTHESIS #13, P2.3, eval fixture:
 - 30,000 tokens per session.
 - Summarize and restart on approach.
 - Surface the breach. Do not silently overrun.
-- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the [`subagent-token-cost-awareness`](.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md) audit row to Present — see commit `7194037`.)
+- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the `subagent-token-cost-awareness` audit row to Present — read the SYNTHESIS in Bash: `cat "${KBG_PLUGIN_ROOT}/.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md"`; see commit `7194037`.)
 
 **Model-era caveat (1M-context models — Fable 5 / Opus 4.8+).** The budgets above are a deliberate **cost ceiling**, not a context-exhaustion guard. Two corrections on a modern backend: (1) **Do not surface a remaining-context countdown to the model as a wrap-up trigger** — at 1M context it provokes premature "let me start a new session / summarize / trim my work" (Fable 5 prompting guidance); "restart on approach" is a cost choice, not a capability need. (2) Tune reasoning *depth* with `effort` (`high`/`xhigh`), not by prompting around the token budget (Opus 4.8 — `effort` is the depth dial; prompting around it just makes the model reason shallower while pretending otherwise). Keep the cost discipline; drop the context-anxiety framing.
 

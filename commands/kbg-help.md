@@ -51,7 +51,7 @@ bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: f
 bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh" --fast          # skip the slow critical-hooks suite
 bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"      # safety suite only
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
-python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset eval/datasets/ --regression --gate
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate
 ```
 
 ## Update the plugin after surface changes
@@ -60,7 +60,7 @@ If you add/modify/remove any skill, command, agent, hook, output-style, or theme
 
 1. Bump version in `.claude-plugin/plugin.json` **and** `.claude-plugin/marketplace.json`
 2. Update description counts in both manifests (only when adding/removing)
-3. `claude plugin validate --strict .`
+3. `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"`
 4. Commit + push
 5. `claude plugin update kbg@kobig`
 6. Restart Claude Code

@@ -59,7 +59,7 @@ When the trigger fires, the hook emits a single `hookSpecificOutput.additionalCo
 **N sensors haven't fired:**
 - [enforcement] block-dangerous-git (silent 23d, threshold 1d), secret-scan (silent 8d, threshold 1d), ...
 - [advisory] iron-rule-reminder (silent 12d, threshold 7d), skill-nudge (silent 9d, threshold 7d), orchestrator-nudge (silent 8d, threshold 7d)
-Dismiss: /dismiss-stale | Audit: bash skills/harness-audit/scripts/audit.sh .
+Dismiss: /dismiss-stale | Audit: bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"
 ```
 
 When the trigger does *not* fire, the hook is silent. It **never** emits a `permissionDecision`, **never** calls `AskUserQuestion`, **never** aborts the session. The block is informational — the operator decides whether to investigate.

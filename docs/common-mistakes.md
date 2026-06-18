@@ -133,15 +133,15 @@ The first count should be > 0. The second grep should return nothing — both co
 The plan linter (`scripts/plan-linter.py`) can also pre-check a plan before `/team-build` is invoked:
 
 ```bash
-python3 scripts/plan-linter.py .claude/tasks/<slug>.md --strict
+python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md --strict
 ```
 
 **Self-check:**
 
 ```bash
-grep -c "plan approval filter\|F10" commands/team-build.md
-grep -c "TaskCompleted\|F7" hooks/lifecycle/task-lifecycle.sh
-grep -c "B → V1 → F → V2\|validation chain" commands/validate-and-fix.md
+grep -c "plan approval filter\|F10" "${KBG_PLUGIN_ROOT}/commands/team-build.md"
+grep -c "TaskCompleted\|F7" "${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"
+grep -c "B → V1 → F → V2\|validation chain" "${KBG_PLUGIN_ROOT}/commands/validate-and-fix.md"
 ```
 
 All three counts should be non-zero. If any is zero, that gate is missing from the documented surface.

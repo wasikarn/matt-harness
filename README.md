@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.84-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.85-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -11,8 +11,8 @@ no manual wiring: components auto-discover from the plugin cache.
 
 > **Newest additions (v0.2.84):** reasoning-models reference library (`docs/reference/thinking-skills/`)
 > vendored with full foreign-CWD portability, `kbg:harness-nav` now indexes reference docs by
-> friendly model names, audit check #42 guards the 39-model table, and all internal doc recipes
-> use `${KBG_PLUGIN_ROOT}` so they resolve from any project CWD.
+> friendly model names, audit check #42 guards the 39-model table, and plugin-delivered internal
+> doc recipes use `${KBG_PLUGIN_ROOT}` so they resolve from any project CWD.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -209,20 +209,20 @@ at startup. A missing `/ideate-search` almost always means the restart step was 
 ### Validation (run before any commit touching hooks, skills, agents, commands, or manifests)
 
 ```bash
-# Plugin manifest strict validation
-claude plugin validate --strict .
+# Plugin manifest strict validation (works from any project CWD when KBG_PLUGIN_ROOT is exported)
+claude plugin validate --strict "${KBG_PLUGIN_ROOT}"
 
 # Critical-hooks smoke tests
-bash tests/hooks/runners/test-critical-hooks.sh
+bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"
 
 # Harness self-audit (must be 0 Critical / 0 Warnings)
-bash skills/harness-audit/scripts/audit.sh .
+bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"
 
 # Eval harness (dataset + regression fixtures)
-python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
+python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate
 
 # Or run the full parallel gauntlet
-bash scripts/run-gauntlet.sh
+bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"
 ```
 
 ### Adding Components
@@ -238,7 +238,7 @@ After any addition: bump both manifest versions → validate → commit → push
 ### Regenerate the Capability Map
 
 ```bash
-bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md
+bash "${KBG_PLUGIN_ROOT}/skills/inventory/scripts/inventory-boundary.sh" --repo-only > "${KBG_PLUGIN_ROOT}/BOUNDARY.md"
 ```
 
 ---
