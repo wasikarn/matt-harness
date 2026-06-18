@@ -5,6 +5,34 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.67] — 2026-06-18
+
+Final pass of the count-drift sweep: refresh the last stale current-fleet snapshots and stop the `harness-audit` sample output from re-drifting.
+
+### Fixed
+
+- **Three stale current-fleet snapshots refreshed.** `docs/onboarding.md` (27/26/8 → 29/38/21) and `docs/agent-teams-setup-notes.md` (28/37/18 → 29/38/21) stated outdated agent/skill/command counts.
+- **`harness-audit` sample output no longer hardcodes a fleet snapshot.** The skill's `## Output` example read `Fleet: 27 agents, 26 skills, ...`; replaced with `<n>` placeholders, since the skill computes the real counts live and a hardcoded snapshot in its own doc only re-drifts. (Same fix class as the softened volatile annotations in `v0.2.66`.) Left untouched: `CHANGELOG`, ADR/voice point-in-time records, eval fixtures, and prose examples — those are history or different meanings, not current-fleet claims.
+
+## [0.2.66] — 2026-06-18
+
+Surface consolidation to cut adopter cognitive load **without** adding a router. A two-workflow analysis (redundancy map + routing-technique research, each with an adversarial doctrine review) confirmed the "middle surface that routes" already exists as a flat tier (`orchestrate` / `triage` / `harness-nav` / `/kbg-help`); the work was to unify and de-duplicate, not build a dispatcher. An explicit routing tree / BST / router-agent was rejected (90 surfaces, not the ~1,000 where flat description-routing degrades; a model that routes-then-acts edges into the ADR 0002 self-gate).
+
+### Removed
+
+- **Deleted the duplicate `kbg-help` skill.** `skills/kbg-help/SKILL.md` was a same-name content twin of the `/kbg-help` command (both a read-only "reference card", differing only "Detailed" vs "Quick" — a distinction no natural-language trigger encodes). The command survives as the user-typed front door. Skill count 39 → 38.
+
+### Added
+
+- **Audit check #20.5 — duplicate-surface detector.** Flags two surfaces that share a `name:` and a near-identical description (≥ 0.85 ratio or a ≥ 60-char identical run) — the recurrence guard for the `kbg-help`-style dup. False-positive-free on intentional skill↔command twins like `ideate`, whose descriptions differ (ratio 0.06). The 1,536-char description-truncation check already existed (`audit.sh` `DESC_MAX`), so it was not re-added.
+
+### Changed
+
+- **`/kbg-help` rewritten as a 6-stage entry-point card.** Replaced the hand-maintained (already-stale) surface tables with a DEFINE / PLAN / BUILD / VERIFY / REVIEW / SHIP entry-point map that points at the auto-generated `BOUNDARY.md` tables, so the card can no longer drift from the real fleet.
+- **Sharpened 12 description collisions that mis-route.** `security-auditor` skill vs `security-reviewer` agent (standalone audit vs in-`review-pr` panel flag); the four name-only skills (`7-agent-pattern`, `task-sizing`, `types-first`, `progressive-refine`) lifted body triggers into frontmatter; `research-brief` vs `/deep-dive`; `technical-writer` "API docs" → narrative usage guides (OpenAPI/SDK reference defers to `api-doc-specialist`, including the body section); `harness-health` vs `harness-coverage` staleness split; `critical-eval` vs `silent-failure-hunter`; jira `create-*` → `atlassian:*` pointers; and the `ship-change` vs `/ship-task` fork contradiction. No surfaces merged — these are genuine layer / twin / aspect distinctions.
+- **Recorded a `noun-verb` naming rule for new `harness-*` surfaces** in `CLAUDE.md` (reuse an existing verb before coining one; new surfaces only — no fleet rename).
+- **Refreshed `BOUNDARY.md` and `README.md` counts; softened volatile annotations.** Module Boundaries counts synced to the live fleet (29 agents / 38 skills / 21 commands / 43 hooks); README skills 39 → 38; and hardcoded `plugin.json v0.1.3` / `201/0 expected` / `26 I` annotations replaced with source-of-truth pointers and non-numeric expectations so they stop re-drifting.
+
 ## [0.2.61] — 2026-06-18
 
 Fix SessionEnd hook cancellations by capping unbounded I/O inside `ideate-convergence-capture` and moving `ideate-memory-capture` reindex off the SessionEnd critical path.
