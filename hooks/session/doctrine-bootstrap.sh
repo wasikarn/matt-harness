@@ -60,3 +60,4 @@ ctx="$(printf '%s' "$doctrine" | python3 -c 'import json,sys; print(json.dumps(s
 [ -n "$ctx" ] || exit 0
 
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$ctx"
+exit 0

@@ -70,7 +70,7 @@ source "$(dirname "$0")/../_lib.sh" || {
     echo "[task-lifecycle] ERROR: cannot source _lib.sh" >&2
     exit 1
 }
-set -e
+set -o pipefail
 hook_init "$HOOK_ID" || exit 0
 
 # Extract event name from stdin JSON (vendor canonical: hook_event_name field).
