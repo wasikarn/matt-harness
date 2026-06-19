@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.110] — 2026-06-20
+
+### Fixed
+
+- **METHODOLOGY §13 teardown rule was imprecise** — it said "stop the subagent"
+  without noting that `TaskStop` only stops a *still-running* task. A foreground
+  `Agent` spawn returns synchronously and has already reaped when you read it, so
+  `TaskStop` on its `agentId` errors `No task found` (harmless, but recurring
+  noise). Added a "Stop only what is still running" clause: teardown applies to
+  `run_in_background` / teammate-mode agents that persist; check `TaskList` first
+  and never `TaskStop` an agent that already returned. No surface count change.
+
 ## [0.2.109] — 2026-06-20
 
 Refactored `kbg:tech-humanize` to official Claude Code skill best practices, and
