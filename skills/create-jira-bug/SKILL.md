@@ -1,6 +1,6 @@
 ---
 name: create-jira-bug
-description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', or wants a structured Thai bug ticket with reproduction steps, impact, and Given/When/Then AC. Creates directly — it does not search for duplicates first. Don't use for: de-duping/triaging against existing issues before filing (use atlassian:triage-issue), bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
+description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'ออก ticket bug', or wants a structured Thai bug ticket with reproduction steps, impact, and Given/When/Then AC. Creates directly — it does not search for duplicates first. Don't use for: de-duping/triaging against existing issues before filing (use atlassian:triage-issue), bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
 ---
 
 # Create Jira Bug
