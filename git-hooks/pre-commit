@@ -6,6 +6,7 @@
 # (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
+#      *.sh / *.py        → no hardcoded /Users/<name> home paths (use $HOME/~)
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
@@ -50,6 +51,16 @@ run_syntax_layer() {
       if [[ "$f" == *.json ]]; then
         if ! jq -e . "$f" >/dev/null 2>&1; then
           echo "  invalid JSON: $f" >&2
+          rc=1
+        fi
+      fi
+
+      # Scripts only (.sh/.py): no hardcoded /Users/<name> home paths — use
+      # $HOME/~ ($HOME always resolves in a script; config/docs aren't checked).
+      if [[ "$f" == *.sh || "$f" == *.py ]]; then
+        if grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" >/dev/null 2>&1; then
+          echo "  hardcoded home path in $f — use \$HOME or ~:" >&2
+          grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" | sed 's/^/    /' >&2
           rc=1
         fi
       fi
