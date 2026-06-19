@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.95] — 2026-06-19
+
+Staff-eng + official-docs-verified fine-tune of team/orchestration surfaces. Thai triggers added; model-selection contradiction resolved; `disable-model-invocation` criterion applied per surface; no auto-prepend; no new machinery.
+
+### Changed
+
+- **All team/orchestration surfaces now carry Thai trigger phrases.** `/team-plan`, `/team-build`, `/team-cleanup`, `/validate-and-fix`, `/pre-flight-plan-linter`, `/wave-status`, `/debug-debate`, `kbg:orchestrate`, and `kbg:7-agent-pattern` descriptions now include Thai tokens (`สร้างทีม`, `รันแผนทีม`, `ล้างทีม`, `ตรวจงาน`, `ตรวจแผน`, `wave ไหนแล้ว`, `ถกเถียง`, `จัดสรรงาน`, `ทีม 7 คน`, …) alongside English, so Thai team/orchestrate requests route to the kbg surfaces instead of bypassing them.
+- **Single source of truth for teammate model selection.** `agents/{backend-engineer,code-architect,frontend-engineer,security-reviewer}.md` now declare `model: sonnet`, matching the F8 cost-split doctrine and the command spawn prompts. The redundant `model: "sonnet"` lines were removed from `/team-build`, `/validate-and-fix`, and `/debug-debate` body spawn instructions.
+- **`disable-model-invocation` applied per surface, not as a blanket.** Removed the flag from `/team-plan`, `/team-build`, `/validate-and-fix`, and `/pre-flight-plan-linter` — they are confirmation-gated in-flow and the model should reach them on explicit Thai/English requests. Kept the flag on `/team-cleanup` (destructive teardown, matches the recorded criterion). `recursive-improve` untouched (ADR 0002).
+- **`/wave-status` description fixed.** It now notes the temporary `.scratch/` helper write instead of claiming strict read-only.
+
+### Fixed
+
+- **`scripts/orchestrate-dispatch.py` docstring** referenced non-existent `_orchestrate_loader.py` / `_orchestrate_planner.py` / `_orchestrate_executor.py`; now points to the real `orchestrate/{loader,planner,executor}` modules.
+- **`scripts/orchestrate/planner.py` dead code removed.** The `wave_overflow` branch in `build_plan()` was unreachable because `resolve_waves()` already clamps top-level waves to `max_per_wave`.
+
 ## [0.2.94] — 2026-06-19
 
 Staff-eng + official-docs-verified fine-tune of the three Atlassian skills (`acli`, `create-jira-bug`, `create-jira-story`). MCP tool references checked against the live Atlassian MCP schema; AC default reconciled with the canonical wording authority. No auto-prepend; no new machinery.

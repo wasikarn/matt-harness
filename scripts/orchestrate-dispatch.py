@@ -89,9 +89,9 @@ Exit codes
 
 Sub-modules
 -----------
-    _orchestrate_loader.py   — load_spec, SpecValidationError, validate_spec
-    _orchestrate_planner.py  — resolve_waves, build_plan, print_plan_human
-    _orchestrate_executor.py — execute_command_stage, run_execute
+    orchestrate.loader   — load_spec, SpecValidationError, validate_spec
+    orchestrate.planner  — resolve_waves, build_plan, print_plan_human
+    orchestrate.executor — execute_command_stage, run_execute
 """
 
 from __future__ import annotations

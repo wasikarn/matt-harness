@@ -105,19 +105,7 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
             for i, wave in enumerate(waves)
         ],
     }
-    # Top-level wave overflow (a wave with more top-level stages than the cap)
     for wave in plan["waves"]:
-        if len(wave["stage_ids"]) > max_per_wave:
-            plan["f8_5_overflow_warnings"].append({
-                "kind": "wave_overflow",
-                "wave_index": wave["index"],
-                "stage_count": len(wave["stage_ids"]),
-                "max_per_wave": max_per_wave,
-                "message": (
-                    f"Wave {wave['index']} has {len(wave['stage_ids'])} top-level stages, "
-                    f"exceeding F8.5 cap of {max_per_wave}. Lead must split or accept explicitly."
-                ),
-            })
         for stage in wave["stages"]:
             stype = stage.get("type")
             if stype == "parallel":

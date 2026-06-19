@@ -1,9 +1,7 @@
 ---
 name: team-build
-description: "Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, then run post-build validation. Use after /team-plan completes, or when user says 'team build: <slug>', 'execute the plan'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev)."
+description: "Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, then run post-build validation. Use after /team-plan completes, or when the user says 'team build: <slug>', 'execute the plan', 'สร้างทีม', 'รันแผนทีม', 'สร้างตามแผน', or 'build ทีม'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev)."
 argument-hint: "Path to plan file (e.g. .claude/tasks/health-endpoint.md)"
-disable-model-invocation: true
-disable-model-invocation-reason: "spawns agent waves (large cost) — the user must initiate"
 ---
 
 # /team-build — Multi-agent feature execution
@@ -90,7 +88,6 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
    - `Done-when` — the validation commands that prove this task's acceptance criteria pass
 2. **Spawn the teammate** with `Task` tool:
    - `subagent_type: <plan's "Assigned To" column>`
-   - `model: "sonnet"` (per F8 cost split; override only if the task is Opus-shaped — security audit, cross-system synthesis)
    - `prompt: <the F9 template, fully filled>`
 3. **Wait for the wave to complete.** The runtime enforces `addBlockedBy` chains; you don't need to poll.
 4. **Verify the wave's outputs** against their acceptance criteria BEFORE starting the next wave:

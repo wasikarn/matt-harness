@@ -1,9 +1,7 @@
 ---
 name: validate-and-fix
-description: "Run the builder-validator-fix-revalidator quality chain on a single completed task. Use after a teammate claims a task is done but you want independent validation before merging. Don't use for: pre-execution plan validation (use /team-build's F10 gate), post-build whole-project validation (use /pre-ship-verify), or tasks without a plan file (use /feature-dev for single-file work)."
+description: "Run the builder-validator-fix-revalidator quality chain on a single completed task. Use after a teammate claims a task is done but you want independent validation before merging, or when the user says 'validate and fix', 'ตรวจสอบและแก้', 'validate งาน', 'ตรวจงาน', or 'ตรวจซ้ำ'. Don't use for: pre-execution plan validation (use /team-build's F10 gate), post-build whole-project validation (use /pre-ship-verify), or tasks without a plan file (use /feature-dev for single-file work)."
 argument-hint: "Task ID (e.g. API-1) and optional plan slug"
-disable-model-invocation: true
-disable-model-invocation-reason: "spawns builder/validator/fix agents and mutates"
 ---
 
 # /validate-and-fix — Builder-validator chain for a single task
@@ -86,7 +84,7 @@ The command takes a task ID and an optional plan slug. If the plan slug is omitt
    - [ ] criteria_check references the specific criterion text from the plan
    ```
 
-2. Spawn `code-reviewer` with `model: "sonnet"` (review is read-only; Opus is unnecessary).
+2. Spawn `code-reviewer` (review is read-only; the agent default is Sonnet per F8).
 3. Wait for completion. Parse the verdict from the reviewer's output.
 4. If the reviewer returns an **unparseable verdict** (missing verdict field, or value not in {pass, minor, reject}), treat as `reject` and include the raw output in `findings`.
 
@@ -224,7 +222,7 @@ The command takes a task ID and an optional plan slug. If the plan slug is omitt
    - [ ] No new P0 issues introduced
    ```
 
-3. Spawn reviewer with `model: "sonnet"`.
+3. Spawn reviewer with the agent's default model.
 4. Wait for completion. Parse verdict. Unparseable verdicts are treated as `reject`.
 
 **Verdict handling + board update:**

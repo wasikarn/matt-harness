@@ -2,7 +2,7 @@
 name: code-architect
 description: "Senior architect for actionable blueprints. Spawn when designing non-trivial features needing committed architecture — analyzes existing patterns, picks one approach with file paths, interfaces, data flows, and phased build sequence. Don't use for: refactoring existing architecture (defer to backend-engineer), task breakdown without depth (use kbg:orchestrate), or single-file changes."
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash
-model: opus
+model: sonnet
 effort: xhigh
 color: green
 ---

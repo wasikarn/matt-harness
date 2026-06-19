@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.94-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.95-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,12 +9,15 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.94):** staff-eng + official-docs-verified fine-tune of the Atlassian skills
-> (`acli`, `create-jira-bug`, `create-jira-story`). Corrected the MCP fallback examples against the real
-> Atlassian MCP schema (`editJiraIssue`/`lookupJiraAccountId` now show their required `cloudId`/`issueIdOrKey`/
-> `searchString` args), and switched the create-jira AC templates to a **plain checklist default** (Given/When/Then
-> kept as the escape hatch) to match the canonical AC-wording authority they cite. (v0.2.93: thinking-skills
-> passive surfacing; v0.2.91–92: Atlassian model-invokable + Thai triggers — see CHANGELOG.)
+> **Newest additions (v0.2.95):** staff-eng + official-docs-verified fine-tune of team/orchestration surfaces.
+> Added Thai trigger phrases to all team commands (`/team-plan`, `/team-build`, `/team-cleanup`, `/validate-and-fix`,
+> `/pre-flight-plan-linter`, `/wave-status`, `/debug-debate`) and the two orchestration skills (`kbg:orchestrate`,
+> `kbg:7-agent-pattern`). Resolved the `sonnet`/`opus` model contradiction in teammate agent definitions vs.
+> command spawn prompts by making agent files the single source of truth (`model: sonnet`). Removed
+> `disable-model-invocation` from team-plan/team-build/validate-and-fix/pre-flight-plan-linter (their in-flow
+> gates make them model-reachable now); kept it on `/team-cleanup` as destructive teardown. Also fixed the
+> `wave-status` read-only overstatement and dead `wave_overflow` code in `scripts/orchestrate/planner.py`.
+> (v0.2.94: Atlassian fine-tune; v0.2.93: thinking-skills surfacing — see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

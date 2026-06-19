@@ -1,6 +1,6 @@
 ---
 name: debug-debate
-description: "Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', or when teammates disagree on architecture. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate)."
+description: "Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', 'debug debate', 'debate', 'ถกเถียง', 'ประชุมถก', or 'debate ทีม'. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate)."
 argument-hint: "Debate topic or question"
 ---
 
@@ -175,7 +175,6 @@ None — isolated debate. You do NOT see other agents' arguments.
 
 **Spawn each agent** with `Task` tool:
 - `subagent_type: <selected agent type>`
-- `model: "sonnet"`
 - `prompt: <the role-specific F9 template, fully filled with the topic>`
 
 **Wait for all agents to return.** Track timebox per agent. If any agent exceeds `--timebox`, surface a timeout note and use whatever partial results they produced.
@@ -271,7 +270,6 @@ Save the consensus matrix as a markdown report with these headers:
 - Ask the user which specific point needs deeper analysis.
 - Spawn a **targeted follow-up agent** with the F9 template:
   - `subagent_type:` `deep-dive` or `diagnose` (depending on the point — architectural gaps → `deep-dive`, failure-mode concerns → `diagnose`)
-  - `model: "sonnet"`
   - Prompt includes:
     - The specific point to analyze
     - The original debate topic
