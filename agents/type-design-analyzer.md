@@ -5,8 +5,6 @@ model: sonnet
 effort: high
 color: purple
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
-skills:
-  - review-pr
 memory: user
 ---
 

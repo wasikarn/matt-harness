@@ -5,8 +5,6 @@ tools: Glob, Grep, Read, Bash
 model: sonnet
 effort: high
 color: red
-skills:
-  - review-pr
 memory: user
 ---
 

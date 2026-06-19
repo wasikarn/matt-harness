@@ -5,8 +5,6 @@ model: sonnet
 effort: xhigh
 color: red
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
-skills:
-  - security-auditor
 memory: user
 ---
 
