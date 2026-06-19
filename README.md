@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.103-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.104-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,8 +9,8 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 45 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.103):** official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher (the `.*` is required per the [CC hook docs](https://code.claude.com/docs/en/hooks); the old pattern matched only via unanchored regex), `set -e` → `set -uo pipefail` on the last two non-conforming hooks (closes a lock-leak / enforcement-skip footgun in `task-lifecycle.sh`), and an explicit `exit 0` after doctrine injection.
-> (v0.2.102: dropped vestigial `skills:` from the 3 read-only reviewers; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set; v0.2.100: `agent-spawn-gate.sh` guards one-shot Agent spawns that block session exit. See CHANGELOG.)
+> **Newest additions (v0.2.104):** two guards from a `/insights` friction review — `/address-review` now asserts the working branch matches the PR's `headRefName` before editing (no more fixes landing on the wrong worktree), and the `pre-commit` gate blocks hardcoded `/Users/<name>` home paths in staged `*.sh`/`*.py` scripts (use `$HOME`/`~`; config + docs exempt).
+> (v0.2.103: official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher, `set -e` → `set -uo pipefail` on the last two non-conforming hooks; v0.2.102: dropped vestigial `skills:` from the 3 read-only reviewers; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

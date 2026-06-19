@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.104] — 2026-06-19
+
+Two guards against recurring friction surfaced by a `/insights` usage review: wrong-worktree review application and hardcoded home paths in committed scripts.
+
+### Added
+
+- **`git-hooks/pre-commit` hardcoded-path guard.** Staged `*.sh`/`*.py` files are rejected if they contain a literal `/Users/<name>/` home path (use `$HOME`/`~`). Config (`*.json`, plists, rc files) and docs stay exempt — absolute paths are legitimate there. 0 existing script violations, so it adds clean. Mirrored in the dotfiles repo's pre-commit.
+
+### Fixed
+
+- **`/address-review` wrong-branch application.** Phase 1 now asserts `git rev-parse --abbrev-ref HEAD == headRefName` and STOPs on mismatch, preventing review fixes from landing on the wrong worktree (the `fix/TP-582`-while-addressing-`feature/TP-650` failure mode).
+
 ## [0.2.103] — 2026-06-19
 
 Official-docs conformance pass on the hook layer (5-agent read-only audit of the 47 hook files + 52 scripts). No new surfaces; manifest hook count unchanged at 45.
