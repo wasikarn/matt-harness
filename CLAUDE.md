@@ -79,7 +79,7 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 The 2×2 cell most at risk of a covert failure is **inferential FB**: a "smart" sensor that uses the same model class to judge work the model just produced. Three failure modes:
 
 1. **Shared blind spots.** A judge inherits the generator's blind spots. A model that mis-diagnoses a bug cannot catch itself mis-diagnosing that bug.
-2. **Self-confirming verdicts.** Inferential-FB sensors on a "happy path" of similar-generation-then-judge sessions can quietly converge to "everything is fine."
+2. **Self-confirming verdicts.** Inferential-FB sensors on a "happy path" of similar-generation-then-judge sessions can quietly converge to "everything is fine." (Human-facing version: a session asked to grade its own work is invested and leans *yes*; a fresh-context reviewer has nothing to defend — that's why maker≠checker runs in a separate context, not as a politely-worded self-check.)
 3. **Covert L4 loop.** A `permissionDecision: deny` from an inferential-FB sensor is a model-driven mutation gate — the autonomy invariant (ADR 0002) forbids it.
 
 **kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The critical-hooks suite + the audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
