@@ -153,6 +153,15 @@
         ]
       },
       {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/agent-spawn-gate.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "WebFetch|WebSearch",
         "hooks": [
           {

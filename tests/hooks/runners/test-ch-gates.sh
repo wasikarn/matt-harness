@@ -112,6 +112,18 @@ check gates/validator-bash-guard.sh deny "code-reviewer + eval \"rm -rf\""      
 check gates/validator-bash-guard.sh deny "code-reviewer + python3 -c interpreter"    "$(validator_bash_event 'code-reviewer' 'python3 -c "import os"')"
 check gates/validator-bash-guard.sh deny "code-reviewer + node -e interpreter"       "$(validator_bash_event 'code-reviewer' 'node -e "x"')"
 
+# --- agent-spawn-gate: ask on ad-hoc one-shot Agent spawns, allow team workflows ---
+check gates/agent-spawn-gate.sh none "non-Agent tool passes through" "$(bash_event 'git status')"
+check gates/agent-spawn-gate.sh none "allows /team-build Agent spawn" "$(agent_event 'team-build wave 1' 'Spawn backend-engineer for /team-build plan_slug: api-rewrite task_id: T-1')"
+check gates/agent-spawn-gate.sh none "allows /team-plan Agent spawn" "$(agent_event 'team-plan lead' 'Plan decomposition for /team-plan with plan_slug: api-rewrite')"
+check gates/agent-spawn-gate.sh none "allows orchestrate workflow spawn" "$(agent_event 'orchestrate dispatcher' 'Run orchestrate-dispatch.py for workflow fan-out plan_slug: api-rewrite task_id: T-2')"
+check gates/agent-spawn-gate.sh ask  "asks on blueprint Agent spawn" "$(agent_event 'blueprint agent' 'Staff engineer blueprint agent for API redesign')"
+check gates/agent-spawn-gate.sh ask  "asks on audit Agent spawn" "$(agent_event 'audit agent' 'Run a security audit pass over the repo')"
+check gates/agent-spawn-gate.sh ask  "asks on research map Agent spawn" "$(agent_event 'research map' 'Research and map the dependency graph')"
+check gates/agent-spawn-gate.sh ask  "asks on read-and-summarize Agent spawn" "$(agent_event 'summarize' 'Read and summarize eval/run-eval.py')"
+check gates/agent-spawn-gate.sh ask  "asks on background Agent spawn" "$(agent_event 'background task' 'Monitor build status' true)"
+check gates/agent-spawn-gate.sh ask  "asks on generic Agent spawn" "$(agent_event 'generic helper' 'Help me think through this')"
+
 # --- task-lifecycle.sh F7: TaskCompleted test-claim gate.
 #     Vendor convention (verified 2026-06-12): TaskCompleted uses exit 2 + stderr
 #     feedback, NOT exit 0 + JSON `permissionDecision` (that is PreToolUse).

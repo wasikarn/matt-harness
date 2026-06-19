@@ -60,6 +60,7 @@ validator_bash_event()    { printf '{"tool_name":"Bash","agent_type":%s,"tool_in
 main_thread_bash_event()  { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
 write_event()    { printf '{"tool_name":"Write","tool_input":{"file_path":%s,"content":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
 edit_new_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s,"new_string":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
+agent_event() { jq -n --arg desc "$1" --arg prompt "$2" --argjson bg "${3:-false}" '{tool_name:"Agent",tool_input:{description:$desc,prompt:$prompt,run_in_background:$bg}}'; }
 task_event() { jq -n --arg id "$1" --arg subj "$2" --arg desc "$3" '{hook_event_name:"TaskCompleted",task_id:$id,task_subject:$subj,task_description:$desc}'; }
 teammate_idle_event() { jq -n '{hook_event_name:"TeammateIdle"}'; }
 task_created_event() { jq -n --arg id "$1" --arg subj "$2" --arg desc "$3" '{hook_event_name:"TaskCreated",task_id:$id,task_subject:$subj,task_description:$desc}'; }

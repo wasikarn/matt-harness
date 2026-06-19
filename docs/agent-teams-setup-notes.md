@@ -119,6 +119,12 @@ claude --agent code-explorer -- "List the 5 most recently modified files in this
 
 Subagents spawned via the Agent tool are **persistent teammates** when teammate mode is enabled. They do **not** self-terminate when their task finishes. If you spawn a one-shot agent for a blueprint, audit, or research map, stop it after consuming its output. For multi-agent builds, `/team-build` Step 8 handles teardown; for ad-hoc `Agent` spawns, the parent session is responsible. Otherwise the next session exit will prompt "Background work is running" and block until you manually dismiss the idle teammate.
 
+### Hard rule: do not spawn without a stop plan
+
+- **If you cannot stop the agent in the same turn, do not spawn it.** Use inline Read, Bash, or python3 for bounded read-only work instead.
+- **Ad-hoc `Agent` spawns now trigger `agent-spawn-gate.sh`.** The PreToolUse gate asks for confirmation on any Agent spawn that does not look like an approved team workflow (`/team-build`, `/team-plan`, etc.). You can opt out for a session with `export CLAUDE_DISABLED_HOOKS=agent-spawn-gate`.
+- **To clear a stuck idle teammate now:** dismiss the "Background work is running" dialog with **Exit anyway**.
+
 ---
 
 ## See also

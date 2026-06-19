@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.99-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.100-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,10 +9,10 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.99):** regression eval fixtures that machine-check description quality for all 88 plugin surfaces.
-> `eval/scripts/check-description-quality.py` locks the v0.2.97 fine-tune: every agent/command/skill description must carry a Thai trigger,
-> positive/negative routing clauses, stay under 1,024 characters, and document a reason when `disable-model-invocation: true`.
-> (v0.2.98: one-shot subagent teardown doctrine patch; v0.2.97: Thai-trigger fine-tune across all surfaces; see CHANGELOG.)
+> **Newest additions (v0.2.100):** PreToolUse gate `agent-spawn-gate.sh` prevents ad-hoc one-shot Agent spawns that block session exit.
+> Any `Agent` tool call that does not look like an approved team workflow (`/team-build`, `/team-plan`, orchestrate with `plan_slug:` / `task_id:`) now asks for confirmation,
+> and METHODOLOGY.md §13 now carries the hard rule: "If you cannot stop the subagent in the same turn, do not spawn it."
+> (v0.2.99: description-quality regression eval fixtures; v0.2.98: teardown doctrine patch; see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.100] — 2026-06-19
+
+PreToolUse enforcement gate to stop ad-hoc one-shot Agent spawns from blocking session exit. One new hook + tests + doctrine/doc/memory updates.
+
+### Added
+
+- **`hooks/gates/agent-spawn-gate.sh`.** PreToolUse gate on the `Agent` tool. Allows team workflows (`/team-build`, `/team-plan`, orchestrate with `plan_slug:` / `task_id:`) to pass through. Asks for confirmation on bounded read-only patterns ("blueprint", "audit", "research", "map", "read and summarize", "check this", etc.), backgrounded agents, and generic ad-hoc spawns. Bypass: `export CLAUDE_DISABLED_HOOKS=agent-spawn-gate`.
+- **`tests/hooks/runners/test-ch-gates.sh` coverage.** Ten new assertions for the gate: allow-list for team workflows, ask-list for one-shot patterns, background-agent default, and generic-spawn default.
+
+### Changed
+
+- **`METHODOLOGY.md` §13 hard rule.** Added: "If you cannot deterministically stop the subagent in the same turn, do not spawn it. Use inline Read, Bash, or python3 instead."
+- **`docs/agent-teams-setup-notes.md` teardown note.** Added a "Hard rule: do not spawn without a stop plan" subsection explaining the gate and the **Exit anyway** escape hatch.
+
+---
+
 ## [0.2.99] — 2026-06-19
 
 Regression eval fixtures to lock the v0.2.97 surface-description quality contract. No new plugin surfaces; manifest description counts unchanged.
