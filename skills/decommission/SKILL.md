@@ -89,3 +89,5 @@ See `REFERENCE.md` for edge cases (TOCTOU, path expansion, false positives) and 
 - **Rotting witnesses** — if a component is intentionally re-introduced, `git rm` the witness file in the same commit. Don't comment it out.
 - **Skipping the `rollback:` line** — without rollback notes, you'll forget how to restore six months later.
 - **Witness without verify gate** — sign-and-forget is theatre. The skill's value is in the gate.
+
+**Named model** (cc-thinking-skills): asserting *absence* as a first-class state is *via-negativa* (improve by removal, then prove the removal stuck). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

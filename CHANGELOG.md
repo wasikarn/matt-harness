@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.93] — 2026-06-19
+
+Strengthen passive surfacing of the cc-thinking-skills reasoning models — no auto-prepend, verified against official Claude Code docs (skill bodies load only on invocation; `docs/` is not auto-discovered; the catalog stays a Bash-recipe reference).
+
+### Changed
+
+- Standardized the "Named models" footers in `skills/{perf,orchestrate,adr}/SKILL.md` and `commands/fix-bug.md` to carry the honesty-caveat nod ("Catalog + honesty caveat: …") — all 6 footers now point at the catalog *and* its caveat (was 2/6). `probe`/`critical-eval` were already canonical.
+- Added honest "Named model" footers to `skills/decommission/SKILL.md` + `skills/memory-trim/SKILL.md` (*via-negativa*) and `skills/incident/SKILL.md` (*ooda*) — skills that already embody the frame but never named it. Flipped those rows in `docs/reference/reasoning-models.md` from "considered" to "applied" to match the catalog's own status definition (the model name now appears in-surface).
+
+### Deliberately not done
+
+- **No footer repositioning.** The whole skill body loads on invocation (official docs), so moving a footer up buys zero visibility — only churn. Surfacing was strengthened via caveat-consistency + honest coverage instead.
+- **Skipped** hotfix (OODA framing lives in its `reference.md`, not SKILL.md), triage (cynefin fit is hedged by the catalog itself), clarify-first (socratic already named inline), and ideate (inversion already named inline as 1 of 15 frames) — to avoid the "name a model on every skill" anti-pattern.
+
 ## [0.2.92] — 2026-06-19
 
 Atlassian skills get Thai trigger phrases so Thai requests route to the Thai PO/QA templates.

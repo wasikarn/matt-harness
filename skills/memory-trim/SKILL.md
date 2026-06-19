@@ -47,3 +47,5 @@ For the underlying rubric and first-application precedent, see `[[project_memory
 - **Trust Class B blindly** — the "pointer carries detail" proxy is heuristic. Always scan the BEFORE/AFTER in dry-run.
 - **Skip the dry-run** — `--yes` exists for CI/scripts; humans should always see the plan first.
 - **Trim in a single session** — A3 caps at <2KB. If the plan proposes more, defer to a follow-up session.
+
+**Named model** (cc-thinking-skills): trimming the store down rather than adding to it is *via-negativa* (subtractive health, reversible by `mv`). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

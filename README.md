@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.92-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.93-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,11 +9,12 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.92):** the Atlassian skills (`acli`, `create-jira-bug`, `create-jira-story`)
-> are now model-invokable and carry Thai trigger phrases, so a Thai request like `สร้างบั๊ก` routes to the
-> Thai PO/QA template instead of a raw MCP call. `disable-model-invocation` was lifted from every skill
-> except `recursive-improve` (the lone autonomy-invariant flag); single-ticket creation is now guarded by an
-> in-flow preview-and-confirm step rather than by hiding the skill from model context.
+> **Newest additions (v0.2.93):** strengthened *passive* surfacing of the cc-thinking-skills reasoning
+> models — all 6 "Named models" skill footers now carry the honesty-caveat nod, and three skills that
+> already embody a frame but never named it gained honest footers (`decommission`/`memory-trim` → *via-negativa*,
+> `incident` → *ooda*). No auto-prepend: skill bodies load only on invocation, so the frames surface when the
+> relevant skill fires, never prepended to every task. (v0.2.91–92: Atlassian skills made model-invokable with
+> Thai trigger phrases — see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

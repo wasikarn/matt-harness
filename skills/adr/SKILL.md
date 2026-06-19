@@ -68,4 +68,4 @@ Done.
 - `/deep-dive` — research before the decision
 - `/feature-dev` — implementing the accepted ADR
 - `kbg:migrate` — when an ADR leads to deprecation and migration
-- read the catalog via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — the "hard to reverse?" gate is the *reversibility* (Type-1/Type-2) model
+- read the catalog (with its honesty caveat) via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — the "hard to reverse?" gate is the *reversibility* (Type-1/Type-2) model

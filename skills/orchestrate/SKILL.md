@@ -470,4 +470,4 @@ Every agent dispatched here holds Bash or Edit/Write → present the plan, get o
 - **Rule 12 (Fail loud):** report the full allocation including what was dropped and why; no silent de-scoping.
 - **Rule 13 (Orchestrate, don't solo):** decompose → distribute pieces → verify results → combine into whole.
 
-**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

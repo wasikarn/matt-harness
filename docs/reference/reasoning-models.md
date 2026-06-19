@@ -113,8 +113,8 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | margin-of-safety | `thinking-margin-of-safety` | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
 | map-territory | `thinking-map-territory` | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
-| via-negativa | `thinking-via-negativa` | considered | skills/decommission, skills/memory-trim | removal-first practice; model name not used |
-| ooda | `thinking-ooda` | considered | skills/incident, skills/hotfix | incident phases are observe-orient-decide-act shaped, but not relabeled |
+| via-negativa | `thinking-via-negativa` | applied | skills/decommission, skills/memory-trim | named in footer: removal/absence as via-negativa |
+| ooda | `thinking-ooda` | applied | skills/incident, skills/hotfix | named in incident footer (detect→assess→mitigate→monitor); hotfix inherits via handoff |
 | cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
 | regret-minimization | `thinking-regret-minimization` | considered | — | no kbg anchor |
 | kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
