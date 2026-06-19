@@ -11,12 +11,19 @@ decisions).
 ## The five rungs
 
 ```
-Recognize → Frame → Test assumptions → Estimate risk → Decide & commit
+Recognize → Frame → Test assumptions → Estimate risk → Decide, commit & follow through
 ```
 
 The ladder is sequential but not one-way. A bad frame forces you back to re-recognize
 the decision; an untested assumption forces you back to reframe; weak commitment
 forces you back to values.
+
+> **Thai training note.** This wording matches the Slingshot Group “Judgment
+Ladder : บันได 5 ขั้น ในการตัดสินใจอย่างมีประสิทธิผล” material. Rung 1 is
+framed as *recognizing that you are deciding, not just following duty* (รู้ตัวว่า
+กำลังต้อง “ตัดสินใจ” ไม่ใช่แค่ “ทำตามหน้าที่”). Rung 5 explicitly adds
+follow-through — measuring and tracking progress — because a decision without a
+feedback loop decays.
 
 ## 1. Recognize the decision
 
@@ -74,9 +81,10 @@ Express uncertainty explicitly and value consequences, not just list them.
 
 **Quick question:** "What is the 90% confidence interval, and would we bet money on it?"
 
-## 5. Decide and commit
+## 5. Decide, commit, and follow through
 
-Choose, document trade-offs, align stakeholders, and set a revisit trigger.
+Choose, document trade-offs, align stakeholders, set a revisit trigger, and build the
+feedback loop that makes the decision accountable.
 
 | Checkpoint | Failure mode |
 |---|---|
@@ -84,8 +92,16 @@ Choose, document trade-offs, align stakeholders, and set a revisit trigger.
 | Trade-offs acknowledged | Sunk-cost commitment |
 | Stakeholders with veto power buy in | Soft commitment — agreement in the room, no action |
 | Revisit trigger defined | No feedback loop, never learning if the decision was right |
+| Progress metric and check-in defined | Decision decays because no one tracks it |
+| Sunk-cost guard applied | Continuing because of past investment, not future value |
 
-**Quick question:** "What signal would tell us this was the wrong choice, and when would we see it?"
+**Quick questions:**
+- "What signal would tell us this was the wrong choice, and when would we see it?"
+- "How will we measure progress and track this decision after it is made?"
+- "If we had not already started, would we start today?" (Sunk Cost guard)
+- "Is the way the problem is stated driving the answer?" (Framing guard)
+- "What was the first number or story we anchored on?" (Anchoring guard)
+- "What evidence would prove our preferred option wrong?" (Confirmation guard)
 
 ## Decision record template
 
@@ -120,11 +136,14 @@ Rejected options:
 - ... (reason)
 Trade-offs accepted: ...
 
-## Commitment
+## Commitment & follow-through
 - Action owner: ...
 - Due date: ...
 - First reversible step: ...
+- Progress metric: ...
+- Next check-in date: ...
 - Revisit trigger: ...
+- Sunk-cost / anchoring / framing / confirmation guards: ...
 ```
 
 ## Proportionality rule
@@ -164,20 +183,33 @@ The five rungs map to the six elements of the Decision Quality chain
 | Frame | Appropriate Frame + Clear Values & Trade-offs |
 | Test assumptions | Reliable Information |
 | Estimate risk | Sound Reasoning + Creative Alternatives |
-| Decide & commit | Commitment to Action |
+| Decide, commit & follow through | Commitment to Action |
 
 Use the ladder to walk a team through the process, then cross-check against the
 DQ chain to see if any element is weak.
+
+## The Slingshot four-bias guard
+
+The Slingshot Group “Decision Bias” slide highlights four biases that map
+cleanly onto the ladder. Use them as a cross-check at the rung where each one
+is most dangerous.
+
+| Bias | Threatened rung | Slingshot-style guard | English counter |
+|---|---|---|---|
+| **Framing Bias** (อคติจากการถูกตีกรอบ) | Frame | เรามองปัญหานี้แคบไปไหม? มีมุมมองอื่นที่ควรมองอีกหรือเปล่า? | List stakeholder perspectives; separate constraints from preferences |
+| **Anchoring Bias** (อคติจากการยึดติด) | Frame / Estimate risk | ตัวเลข/ข้อมูล/ทางเลือกแรกที่เรายึดไว้ถูกทดสอบแล้วหรือยัง? | Ask for 90% CI; remove the favorite option and re-solve |
+| **Confirmation Bias** (อคติจากการมั่นใจใจ) | Test assumptions | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? | Assign a devil’s advocate; seek disconfirming evidence |
+| **Sunk Cost Bias** (ลดติดจากสิ่งที่ลงทุนไปแล้ว) | Decide, commit & follow through | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? | Set kill criteria; ask if you would start today from blank slate |
 
 ## Common biases by rung
 
 | Rung | Bias to watch | Counter |
 |---|---|---|
 | Recognize | Problem substitution, urgency bias | Write the decision statement before discussing solutions |
-| Frame | Narrow framing, anchoring, solution bias | Force a third option before comparing A vs B |
+| Frame | Narrow framing, anchoring, solution bias, framing bias | Force a third option before comparing A vs B |
 | Test assumptions | Confirmation bias, availability bias, overconfidence | Assign a devil’s advocate; ask what would prove you wrong |
 | Estimate risk | Planning fallacy, base-rate neglect, false precision | Use 90% confidence intervals and reference-class forecasting |
-| Decide & commit | Sunk-cost fallacy, groupthink, soft commitment | Set kill criteria and action owners before leaving the room |
+| Decide, commit & follow through | Sunk-cost fallacy, groupthink, soft commitment | Set kill criteria and action owners before leaving the room |
 
 ## kbg surfaces
 

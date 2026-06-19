@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.105-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.106-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,7 +9,7 @@ It adds 29 specialist agents, 39 workflow skills, 21 slash commands, and 45 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.105):** `kbg:decide` — a Judgment Ladder skill for consequential decisions, plus a reference doc at `docs/reference/judgment-ladder.md`. It walks through recognize → frame → test assumptions → estimate risk → decide & commit, with proportionality rules so you don't over-climb trivial choices.
+> **Newest additions (v0.2.106):** `kbg:decide` — Judgment Ladder skill now includes follow-through (measure, track progress, revisit) and the Slingshot four-bias guard (sunk cost, anchoring, framing, confirmation). Reference doc updated at `docs/reference/judgment-ladder.md`.
 > (v0.2.103: official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher, `set -e` → `set -uo pipefail` on the last two non-conforming hooks; v0.2.102: dropped vestigial `skills:` from the 3 read-only reviewers; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute

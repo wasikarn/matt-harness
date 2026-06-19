@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.106] — 2026-06-19
+
+Hardened the `kbg:decide` Judgment Ladder skill and reference doc with insights
+from the Slingshot Group training material: explicit follow-through and a focused
+four-bias guard.
+
+### Changed
+
+- **`kbg:decide` Rung 5 now reads “Decide, commit, and follow through.”** Adds
+  progress measurement, tracking, and check-in questions to prevent “soft
+  commitment” and decision decay.
+- **`kbg:decide` four-bias guard.** Cross-checks the Slingshot Decision Bias set
+  at their natural rungs: Framing/Anchoring at Frame, Confirmation at Test
+  Assumptions, Sunk Cost at Decide & Commit. Includes Thai phrasing from the
+  source slides.
+- **`docs/reference/judgment-ladder.md`.** Updated rung 5, decision-record
+  template, and added a dedicated “Slingshot four-bias guard” section with Thai
+  labels and English counters.
+- **Manifest description.** Notes the follow-through and four-bias guard in
+  the `decide` skill summary.
+
 ## [0.2.105] — 2026-06-19
 
 Added a structured decision-making skill and reference doc to help the harness and

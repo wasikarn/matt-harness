@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Use when walking through a consequential, analyzable decision using the Judgment Ladder: recognize the decision, frame the problem, gather and test assumptions, estimate risks and uncertainties, decide and commit. Also fires on Thai requests like 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ'. Don't use for chaotic/time-pressed situations, choices already dictated by policy or constraint, or after the decision has already been committed and only documentation is needed (use kbg:adr)."
+description: "Use when walking through a consequential, analyzable decision using the Judgment Ladder: recognize the decision, frame the problem, gather and test assumptions, estimate risks and uncertainties, decide, commit, and follow through. Also fires on Thai requests like 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ'. Don't use for chaotic/time-pressed situations, choices already dictated by policy or constraint, or after the decision has already been committed and only documentation is needed (use kbg:adr)."
 ---
 
 # Decide
@@ -8,6 +8,8 @@ description: "Use when walking through a consequential, analyzable decision usin
 Apply the **Judgment Ladder** — a compressed Decision Quality process — to a consequential choice before committing. The ladder is a reasoning scaffold, not a proof. It slows you down just enough to surface the real decision, the hidden assumptions, and the risks that usually get skipped.
 
 The five rungs are sequential but iterative: a bad frame sends you back to re-recognize the decision; a failed assumption test sends you back to reframe; weak commitment sends you back to values.
+
+> **Thai framing note.** This ladder matches the Slingshot Group “Judgment Ladder : บันได 5 ขั้น ในการตัดสินใจอย่างมีประสิทธิผล” material. Rung 1 emphasizes recognizing that you are *deciding*, not just *following duty* (รู้ตัวว่ากำลังต้อง “ตัดสินใจ” ไม่ใช่แค่ “ทำตามหน้าที่”). Rung 5 explicitly adds follow-through — measuring, tracking progress, and revisiting — because a decision without a feedback loop decays.
 
 ## When to use
 
@@ -77,9 +79,9 @@ Express uncertainty explicitly and value consequences, not just list them.
 
 **Stop if:** you only have point estimates, or the risks are listed but not estimated.
 
-### 5. Decide and commit
+### 5. Decide, commit, and follow through
 
-Choose, document the trade-offs, align stakeholders, and set a revisit trigger.
+Choose, document the trade-offs, align stakeholders, set a revisit trigger, and build the feedback loop that makes the decision accountable.
 
 - Which option best satisfies the frame?
 - What trade-offs are we explicitly accepting?
@@ -87,8 +89,15 @@ Choose, document the trade-offs, align stakeholders, and set a revisit trigger.
 - Do the people who must execute buy in?
 - What is the smallest reversible first step?
 - What signal would tell us this was the wrong choice, and when would we see it?
+- How will we measure progress and track the decision after it is made?
 
-**Stop if:** there is no written decision, no action owner, or no revisit trigger.
+**Slingshot-style four-bias guard at this stage:**
+- **Sunk Cost** — If we had not already started, would we start today? What is the kill criteria?
+- **Anchoring** — What was the first number / first story / first option we anchored on? Has it been re-examined?
+- **Framing** — Is the way the problem is stated driving the answer? Would a different stakeholder phrase it differently?
+- **Confirmation** — What evidence would prove our preferred option wrong? Have we actually looked for it?
+
+**Stop if:** there is no written decision, no action owner, no revisit trigger, or no follow-up metric.
 
 ## Output format
 
@@ -109,9 +118,16 @@ Decision:
   - Rejected options + why
   - Trade-offs accepted
   - Revisit trigger
-Commitment check:
+Commitment & follow-through:
   - Action owners + due dates
   - First reversible step
+  - Progress metric
+  - Next check-in date
+Four-bias guard:
+  - Sunk Cost check: ...
+  - Anchoring check: ...
+  - Framing check: ...
+  - Confirmation check: ...
 ```
 
 ## Proportionality rule
@@ -137,7 +153,21 @@ Do not climb every rung for every choice.
 - **False precision** — giving point estimates when ranges are more honest.
 - **Soft commitment** — agreement in the room, no action afterward.
 - **No revisit trigger** — never learning whether the decision was good.
+- **No follow-through** — deciding and walking away without metrics or progress tracking.
 - **Ladder abuse** — applying all 5 rungs to a two-way-door choice, causing unnecessary delay.
+
+## The Slingshot four-bias guard at every rung
+
+Use these four biases as a cross-check while climbing. They are not the only
+biases that matter, but they are the ones most likely to flip a rung.
+
+| Rung | Bias | Quick guard |
+|---|---|---|
+| **Recognize** | **Urgency / duty bias** | รู้ตัวว่ากำลังต้อง “ตัดสินใจ” ไม่ใช่แค่ “ทำตามหน้าที่” |
+| **Frame** | **Framing Bias** | เรามองปัญหานี้แคบไปไหม? มีมุมมองอื่นที่ควรมองอีกหรือเปล่า? |
+| **Frame / Estimate risk** | **Anchoring Bias** | ตัวเลข/ข้อมูล/ทางเลือกแรกที่เรายึดไว้ ถูกทดสอบแล้วหรือยัง? |
+| **Test assumptions** | **Confirmation Bias** | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? หาหลักฐานที่ refute ตัวเองบ้างหรือยัง? |
+| **Decide, commit, follow through** | **Sunk Cost Bias** | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? kill criteria คืออะไร? |
 
 ## Related
 
@@ -155,5 +185,5 @@ Do not climb every rung for every choice.
 
 - **Rule 1 (Think before coding):** use the ladder before implementation choices.
 - **Rule 7 (Surface conflicts, don't average):** the contradiction step in framing and the disconfirmation step in testing assumptions are mandatory.
-- **Rule 4 (Goal-driven):** every ladder ends with a revisit trigger, not an eternal decree.
+- **Rule 4 (Goal-driven):** every ladder ends with a revisit trigger and a follow-through metric, not an eternal decree.
 - **Rule 2 (Simplicity first):** if the ladder reveals the decision is premature, the recommendation is "defer — gather X first."
