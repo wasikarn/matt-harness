@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.96] — 2026-06-19
+
+Staff-eng + official-docs-verified fine-tune of the remaining skill fleet. Frontmatter-only changes; no body edits, no agent/tool changes, no `disable-model-invocation` changes. No auto-prepend; no new machinery.
+
+### Changed
+
+- **Rewrote 9 placeholder skill descriptions.** `kbg:adr`, `kbg:assert-presence`, `kbg:decommission`, `kbg:harness-audit`, `kbg:inventory`, `kbg:memory-lint`, `kbg:memory-trim`, `kbg:probe`, and `kbg:semantic-code` now carry real, routed descriptions with positive-side trigger clauses and negation clauses instead of single-word placeholders.
+- **Thai triggers added to 20 more skills.** `kbg:clarify-first`, `kbg:incident`, `kbg:hotfix`, `kbg:triage`, `kbg:backend-dev`, `kbg:accept-task`, `kbg:article-mine`, `kbg:critical-eval`, `kbg:migrate`, `kbg:perf`, `kbg:research-brief`, `kbg:review-pr`, `kbg:security-auditor`, `kbg:ship-change`, `kbg:task-sizing`, `kbg:types-first`, plus the read-only reporters `kbg:harness-coverage`, `kbg:harness-health`, `kbg:harness-nav`, and `kbg:usage-monitor`. All descriptions remain under 1,024 characters.
+- **`kbg:backend-dev` description trimmed** to match the actual TDD body workflow (no invented agents or workflows).
+
+### Fixed
+
+- **Regenerated `BOUNDARY.md`** so the inventory snapshot matches the current fleet.
+
 ## [0.2.95] — 2026-06-19
 
 Staff-eng + official-docs-verified fine-tune of team/orchestration surfaces. Thai triggers added; model-selection contradiction resolved; `disable-model-invocation` criterion applied per surface; no auto-prepend; no new machinery.

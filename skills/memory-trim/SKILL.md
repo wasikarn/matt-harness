@@ -1,6 +1,6 @@
 ---
 name: memory-trim
-description: "memory-trim"
+description: "Mechanically archive verbose or closed memory entries while keeping the memory store under its 200-line/25KB load cap. Uses reversible moves, never rm. Use when MEMORY.md is bloated or after a big session. Also fires on Thai requests like 'memory trim', 'ย่อ memory', 'archive memory'. Don't use for: semantic memory review, deleting memory permanently, or harness-wide health checks (kbg:harness-audit)."
 ---
 
 # Memory-Trim

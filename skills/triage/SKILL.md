@@ -1,6 +1,6 @@
 ---
 name: triage
-description: "Single-issue triage: classify a bug, feature request, or task by severity, scope, and owner. Use when the user dumps a single issue and you need to decide whether to route it to /feature-dev, /fix-bug, /deep-dive, or kbg:orchestrate. Don't use for: prioritizing a batch (use kbg:orchestrate), or building a feature (use /feature-dev)."
+description: "Single-issue triage: classify a bug, feature request, or task by severity, scope, and owner. Use when the user dumps a single issue and you need to decide whether to route it to /feature-dev, /fix-bug, /deep-dive, or kbg:orchestrate. Also fires on Thai routing requests like 'triage', 'จัดลำดับ', 'ประเมิน priority', 'นี่ควรทำอะไร'. Don't use for: prioritizing a batch (use kbg:orchestrate), or building a feature (use /feature-dev)."
 ---
 
 # Triage

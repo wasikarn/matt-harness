@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "harness-audit"
+description: "Run a deterministic health check across the kbg-harness Claude Code plugin ecosystem. Detects manifest drift, stale cache, version mismatches, and structural rot before they become silent failures. Also fires on Thai requests like 'audit harness', 'ตรวจ harness', 'health check ปลั๊กอิน'. Don't use for: general repo lint, security audits (kbg:security-auditor), or per-session governance drill-down (kbg:harness-health)."
 ---
 
 # Skill Audit

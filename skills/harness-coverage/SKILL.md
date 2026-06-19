@@ -1,6 +1,6 @@
 ---
 name: harness-coverage
-description: "Read-only harness-coverage report: renders the 2x2x3 (12-cell) grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold and the intentional-gap cell `inf-fb-behaviour` flagged. Use when the operator wants to know which cells are populated, stale, or empty, wants a quarter-end decay measurement, or a 12-row table view of the journal. Don't use for: per-session drill-down or a verdict stream (use `kbg:harness-health`), or per-sensor fire-rate (read the journal)."
+description: "Read-only harness-coverage report: renders the 2x2x3 (12-cell) grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold and the intentional-gap cell `inf-fb-behaviour` flagged. Use when the operator wants to know which cells are populated, stale, or empty, wants a quarter-end decay measurement, or a 12-row table view of the journal. Also fires on Thai coverage queries like 'harness coverage', 'ตาราง 12 cell', 'decay'. Don't use for: per-session drill-down or a verdict stream (use `kbg:harness-health`), or per-sensor fire-rate (read the journal)."
 ---
 
 # Skill: harness-coverage

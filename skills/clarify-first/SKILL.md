@@ -1,6 +1,6 @@
 ---
 name: clarify-first
-description: "Ask the structured 3-step question (analyze, recommend, ask) BEFORE dispatching write-capable agents or starting multi-file changes where a wrong assumption wastes work. Trigger when a task is named but scope is unstated — 'fix the bug', 'refactor X', 'add Y', 'make it faster' with no file/metric/layer; or it spans subsystems with no clear boundary. Don't use for: explicit file paths, single-value changes, read-only requests, or rhetorical questions."
+description: "Ask the structured 3-step question (analyze, recommend, ask) BEFORE dispatching write-capable agents or starting multi-file changes where a wrong assumption wastes work. Trigger when a task is named but scope is unstated — 'fix the bug', 'refactor X', 'add Y', 'make it faster' with no file/metric/layer; or it spans subsystems with no clear boundary. Also fires on Thai scope-gap requests like 'clarify ก่อน', 'ถามก่อนเริ่ม', 'scope ยังไงดี', 'ยังไม่ชัดเจน'. Don't use for: explicit file paths, single-value changes, read-only requests, or rhetorical questions."
 ---
 
 # Clarify-First

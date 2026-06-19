@@ -1,6 +1,6 @@
 ---
 name: types-first
-description: "Contract-before-dependent-task discipline: when Task B depends on Task A, A must emit a machine-verifiable contract (TypeScript/Python/Rust types, OpenAPI/GraphQL schema, DB migration) before B starts. Use when sequencing parallel work, designing interfaces/schemas/DTOs that cross module boundaries, or wiring a types-first wave in /team-plan. Don't use for: encapsulation review of existing types (use type-design-analyzer agent) or implementation (use kbg:backend-dev)."
+description: "Contract-before-dependent-task discipline: when Task B depends on Task A, A must emit a machine-verifiable contract (TypeScript/Python/Rust types, OpenAPI/GraphQL schema, DB migration) before B starts. Use when sequencing parallel work, designing interfaces/schemas/DTOs that cross module boundaries, or wiring a types-first wave in /team-plan. Also fires on Thai contract-first requests like 'types first', 'contract ก่อน', 'interface ก่อน', 'schema ก่อน'. Don't use for: encapsulation review of existing types (use type-design-analyzer agent) or implementation (use kbg:backend-dev)."
 ---
 
 # types-first

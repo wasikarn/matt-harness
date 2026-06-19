@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.95-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.96-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,15 +9,15 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.95):** staff-eng + official-docs-verified fine-tune of team/orchestration surfaces.
-> Added Thai trigger phrases to all team commands (`/team-plan`, `/team-build`, `/team-cleanup`, `/validate-and-fix`,
-> `/pre-flight-plan-linter`, `/wave-status`, `/debug-debate`) and the two orchestration skills (`kbg:orchestrate`,
-> `kbg:7-agent-pattern`). Resolved the `sonnet`/`opus` model contradiction in teammate agent definitions vs.
-> command spawn prompts by making agent files the single source of truth (`model: sonnet`). Removed
-> `disable-model-invocation` from team-plan/team-build/validate-and-fix/pre-flight-plan-linter (their in-flow
-> gates make them model-reachable now); kept it on `/team-cleanup` as destructive teardown. Also fixed the
-> `wave-status` read-only overstatement and dead `wave_overflow` code in `scripts/orchestrate/planner.py`.
-> (v0.2.94: Atlassian fine-tune; v0.2.93: thinking-skills surfacing — see CHANGELOG.)
+> **Newest additions (v0.2.96):** staff-eng + official-docs-verified fine-tune of the remaining skill fleet.
+> Rewrote 9 placeholder skill descriptions (`kbg:adr`, `kbg:assert-presence`, `kbg:decommission`, `kbg:harness-audit`,
+> `kbg:inventory`, `kbg:memory-lint`, `kbg:memory-trim`, `kbg:probe`, `kbg:semantic-code`) and added Thai trigger
+> phrases to 20 more skills (`kbg:clarify-first`, `kbg:incident`, `kbg:hotfix`, `kbg:triage`, `kbg:backend-dev`,
+> `kbg:accept-task`, `kbg:article-mine`, `kbg:critical-eval`, `kbg:migrate`, `kbg:perf`, `kbg:research-brief`,
+> `kbg:review-pr`, `kbg:security-auditor`, `kbg:ship-change`, `kbg:task-sizing`, `kbg:types-first`, plus the four
+> read-only reporters `kbg:harness-coverage`, `kbg:harness-health`, `kbg:harness-nav`, `kbg:usage-monitor`).
+> Descriptions now stay under 1,024 chars and pass the positive-side trigger-pattern audit. Regenerated BOUNDARY.md.
+> (v0.2.95: team/orchestrate fine-tune; v0.2.94: Atlassian fine-tune; see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

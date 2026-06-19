@@ -1,6 +1,6 @@
 ---
 name: memory-lint
-description: "memory-lint"
+description: "Deterministic bookkeeping check for the memory store: catch dangling [[links]], orphaned facts, and index drift. Use after writing, editing, or removing memories. Also fires on Thai requests like 'memory lint', 'ตรวจ memory', 'เช็คลิงก์ memory'. Don't use for: writing a memory (just write it), semantic content review, or harness ecosystem health (kbg:harness-audit)."
 ---
 
 # memory-lint

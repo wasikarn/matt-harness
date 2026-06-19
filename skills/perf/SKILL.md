@@ -1,6 +1,6 @@
 ---
 name: perf
-description: "Performance regressions and bottlenecks. Trigger on latency spikes, throughput drops, memory leaks/growth, CPU saturation, slow queries, cache misses/CI, cold starts, resolver/ETL timeouts, or reported slowness. Don't use for: production outages (kbg:incident/kbg:hotfix), functional bugs without perf symptoms (/fix-bug), architectural redesigns (/deep-dive, code-architect), or capacity planning."
+description: "Performance regressions and bottlenecks. Trigger on latency spikes, throughput drops, memory leaks/growth, CPU saturation, slow queries, cache misses/CI, cold starts, resolver/ETL timeouts, or reported slowness. Also fires on Thai perf requests like 'perf', 'ช้า', 'memory leak', 'CPU สูง', 'query ช้า'. Don't use for: production outages (kbg:incident/kbg:hotfix), functional bugs without perf symptoms (/fix-bug), architectural redesigns (/deep-dive, code-architect), or capacity planning."
 ---
 
 # Perf

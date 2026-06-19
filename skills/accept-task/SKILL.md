@@ -1,6 +1,6 @@
 ---
 name: accept-task
-description: "Lock a machine-checkable acceptance contract before any non-trivial task. Use when starting multi-file changes, schema migrations, or before dispatching write-capable agents; write `.scratch/<slug>/ACCEPTANCE.md` with criteria + start SHA. Use when user says 'lock acceptance', 'define acceptance criteria', or 'what does done look like'. Don't use for trivial single-file edits, read-only analysis, or existing contracts."
+description: "Lock a machine-checkable acceptance contract before any non-trivial task. Use when starting multi-file changes, schema migrations, or before dispatching write-capable agents; write `.scratch/<slug>/ACCEPTANCE.md` with criteria + start SHA. Use when user says 'lock acceptance', 'define acceptance criteria', or 'what does done look like'. Also fires on Thai contract requests like 'เขียน acceptance', 'เกณฑ์สำเร็จ', 'done คืออะไร'. Don't use for trivial single-file edits, read-only analysis, or existing contracts."
 ---
 
 # Accept Task

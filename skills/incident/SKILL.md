@@ -1,6 +1,6 @@
 ---
 name: incident
-description: "Manage a live production incident end-to-end — detect, assess, mitigate, communicate, resolve, and handoff. Use when alerts fire, monitors show red, users report widespread issues, or error rates spike. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (use security-reviewer first), or post-incident documentation (use /post-mortem after resolution)."
+description: "Manage a live production incident end-to-end — detect, assess, mitigate, communicate, resolve, and handoff. Use when alerts fire, monitors show red, users report widespread issues, or error rates spike. Also fires on Thai incident requests like 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (use security-reviewer first), or post-incident documentation (use /post-mortem after resolution)."
 ---
 
 # Incident
