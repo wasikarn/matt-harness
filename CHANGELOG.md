@@ -5,6 +5,17 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.98] — 2026-06-19
+
+Staff-eng doctrine patch: close the one-shot subagent teardown gap. No new surfaces; only METHODOLOGY.md + docs/agent-teams-setup-notes.md + memory.
+
+### Added
+
+- **`METHODOLOGY.md` §13 teardown rule.** Any ad-hoc `Agent` spawn for a bounded read-only pass (blueprint, audit, research map) must be stopped by the parent session after consuming the result. `/team-build` Step 8 already covers multi-agent builds; this rule covers one-off subagent dispatches.
+- **`docs/agent-teams-setup-notes.md` teardown note.** Explains that persistent teammates do not self-terminate, and that idle one-shot agents block session exit with "Background work is running".
+
+---
+
 ## [0.2.97] — 2026-06-19
 
 Staff-eng + official-docs-verified fine-tune across all agent, command, and skill surfaces. Frontmatter `description:` changes only; no body edits, no agent tool/model/effort/color changes, no `disable-model-invocation` changes.

@@ -199,7 +199,7 @@ Behavior:
 - Default: decompose → distribute → verify → combine. Serial-only drops overview and bottlenecks throughput.
 - Same specialist ≠ singleton — fan out N disjoint instances (e.g. `backend-engineer` A + B) when work splits cleanly; parallel mutations need `isolation: worktree` or serialized merge.
 - **Inline subagent = senior specialist, every time.** Generic-purpose is fallback for no-persona-match work — not a substitute for `security-reviewer` / `backend-engineer` / `frontend-engineer` / `devops-engineer` / `test-engineer` / `code-reviewer` / `code-architect` / `code-explorer` when the domain matches. Multi-context audits belong in `orchestrate`, not a single inline subagent.
-- Retries: cap at 1 per piece. On second failure, escalate to the user — don't let an agent invent recovery.
+- **One-shot subagent must be torn down by its parent.** If you spawn a subagent for a bounded read-only pass (blueprint, audit, research map) and consume its output inline, stop it before you continue — persistent teammates do not self-terminate. `/team-build` Step 8 already handles multi-agent builds; the parent session owns teardown for any ad-hoc `Agent` spawn that is not part of a team workflow. Leaving it idle creates a "Background work is running" blocker on the next exit.
 - Applies to code, research, analysis, writing, multi-step work.
 
 **Routing index** — the trigger phrases below are a fast lookup *into* the agents' own `description:` fields (always preloaded, carry the full triggers and "defer to X" boundaries). When work's keywords match, route to that agent. When they don't, **ask, don't silently solo** (see Routing Confidence).

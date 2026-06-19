@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.97-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.98-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,12 +9,11 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.97):** staff-eng + official-docs-verified fine-tune across all agent, command, and skill surfaces.
-> Added Thai trigger tokens to all 29 agents and all 21 commands, fixed the `recursive-improve` placeholder description,
-> and added Thai triggers to the three remaining skills (`kbg:ideate`, `kbg:progressive-refine`, `kbg:recursive-improve`).
-> All descriptions now stay under 1,024 chars and carry positive-side + negation trigger clauses per the audit contract.
-> Regenerated BOUNDARY.md.
-> (v0.2.96: remaining skill fleet fine-tune; v0.2.95: team/orchestrate fine-tune; v0.2.94: Atlassian fine-tune; see CHANGELOG.)
+> **Newest additions (v0.2.98):** staff-eng + official-docs-verified doctrine patch for one-shot subagent teardown.
+> Added a `METHODOLOGY.md` rule requiring the parent session to stop any ad-hoc `Agent` spawn after consuming its output,
+> plus a teardown note in `docs/agent-teams-setup-notes.md` explaining why persistent teammates do not self-terminate.
+> This prevents idle blueprint/audit subagents from blocking session exit with "Background work is running".
+> (v0.2.97: all agents/commands/skills Thai-trigger fine-tune; v0.2.96: remaining skill fleet fine-tune; see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

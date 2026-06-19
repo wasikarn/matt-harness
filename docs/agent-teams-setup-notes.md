@@ -115,6 +115,12 @@ claude --agent code-explorer -- "List the 5 most recently modified files in this
 
 ---
 
+## Teardown note
+
+Subagents spawned via the Agent tool are **persistent teammates** when teammate mode is enabled. They do **not** self-terminate when their task finishes. If you spawn a one-shot agent for a blueprint, audit, or research map, stop it after consuming its output. For multi-agent builds, `/team-build` Step 8 handles teardown; for ad-hoc `Agent` spawns, the parent session is responsible. Otherwise the next session exit will prompt "Background work is running" and block until you manually dismiss the idle teammate.
+
+---
+
 ## See also
 
 - `docs/adr/0002-autonomy-invariant.md` — why the harness stays at L2 (human-gated) and does not attempt L3/L4 autonomous loops
