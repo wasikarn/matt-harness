@@ -19,8 +19,8 @@ The five rungs are sequential but iterative: a bad frame sends you back to re-re
 
 ## When NOT to use
 
-- **Chaotic / time-pressed situations** — stabilize first, then loop. Use `kbg:incident`, `kbg:hotfix`, or `thinking-ooda`.
-- **Domain is complex and unknowable** — probe with experiments before estimating. Use `thinking-cynefin` to classify the domain first.
+- **Chaotic / time-pressed situations** — stabilize first, then loop. Use `kbg:incident` or `kbg:hotfix`. If no kbg surface fits, fall back to an OODA-loop prompt from the vendored thinking-skills reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not to a loadable `kbg:` surface.
+- **Domain is complex and unknowable** — probe with experiments before estimating. Use `kbg:probe` to map the domain; Cynefin is available as a vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-cynefin/`), not as a kbg surface.
 - **Answer is already dictated** — if policy, architecture, or a hard constraint makes the choice, say so instead of running the ladder.
 - **Decision is already made and only needs recording** — use `kbg:adr` for the decision record.
 - **Trivial / low-stakes / reversible choices** — a 2-minute gut check is enough.
@@ -130,6 +130,22 @@ Four-bias guard:
   - Confirmation check: ...
 ```
 
+## Applying `kbg:decide` to software engineering
+
+Most code decisions are reversible operational choices, not strategic commitments. Use this skill inside a boundary that is already set — by architecture charter, by `kbg:strategize`, or by a hard constraint.
+
+| Coding decision | Why `kbg:decide` fits | What to watch |
+|---|---|---|
+| Library / framework A vs. B inside an approved stack | Trade-offs are analyzable; revert costs days | Anchoring on the first benchmark; confirmation from one blog post |
+| REST vs. gRPC, cursor vs. offset pagination, sync vs. async | Known options with clear constraints | Framing the problem around the technology, not the user flow |
+| Deploy strategy: canary, blue-green, feature-flag rollout | Reversible if instrumentation is in place | False precision on risk; no revisit trigger |
+| Refactor sequence: which module first, how big a slice | High uncertainty but reversible in hours | Sunk-cost attachment to old code; soft commitment |
+
+**Combined flow:**
+1. If the choice is hard to reverse (architecture, platform, org structure), run `kbg:strategize` first to set the guiding policy.
+2. Inside that policy, use `kbg:decide` for the reversible implementation choices.
+3. Record the committed decision in `kbg:adr`.
+
 ## Proportionality rule
 
 Do not climb every rung for every choice.
@@ -175,11 +191,9 @@ biases that matter, but they are the ones most likely to flip a rung.
 - `kbg:probe` — read-only systems-thinking analysis before the ladder
 - `kbg:clarify-first` — when the decision itself is still ambiguous
 - `kbg:critical-eval` — stress-test the reasoning in a decision or ADR
-- `thinking-cynefin` — classify the domain before choosing the process
-- `thinking-ooda` — high-speed counterpart for dynamic situations
-- `thinking-pre-mortem` — run rungs 3–4 in failure mode before committing
-- `thinking-debiasing` — counter the biases that corrupt each rung
-- `thinking-bounded-rationality` — when to satisfice instead of optimizing
+- `kbg:strategize` — upstream skill for irreversible / long-horizon commitments
+
+> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
 
 ## METHODOLOGY alignment
 

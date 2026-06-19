@@ -1,6 +1,6 @@
 ---
 name: technical-writer
-description: "Senior technical writer for READMEs, ADRs, runbooks, narrative API usage guides, onboarding guides, and changelog prose. Use when creating docs from scratch, rewriting stale docs, or turning tribal knowledge into reference material, or when the user says 'technical writer', 'documentation', 'runbook', 'เขียนเอกสาร', 'รันเวิก'. Don't use for: OpenAPI/SDK contract reference & developer-portal content (defer to api-doc-specialist), code review (defer to code-reviewer), security audit docs (defer to security-reviewer), or one-line inline comments (defer to the engineer who wrote the code)."
+description: "Senior technical writer for READMEs, ADRs, runbooks, narrative API usage guides, onboarding guides, and changelog prose. Use when creating docs from scratch, rewriting stale docs, or turning tribal knowledge into reference material, or when the user says 'technical writer', 'documentation', 'runbook', 'เขียนเอกสาร', 'รันบุ๊ก'. Don't use for: OpenAPI/SDK contract reference & developer-portal content (defer to api-doc-specialist), code review (defer to code-reviewer), security audit docs (defer to security-reviewer), or one-line inline comments (defer to the engineer who wrote the code)."
 model: sonnet
 effort: high
 color: pink

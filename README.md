@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.107-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.108-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,8 +9,8 @@ It adds 29 specialist agents, 40 workflow skills, 21 slash commands, and 45 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.107):** `kbg:strategize` — new strategic-judgment skill for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Reference doc at `docs/reference/strategic-judgment.md`.
-> (v0.2.106: `kbg:decide` gained follow-through + the Slingshot four-bias guard; v0.2.103: official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher, `set -e` → `set -uo pipefail` on the last two non-conforming hooks; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set. See CHANGELOG.)
+> **Newest additions (v0.2.108):** Fine-tuned `kbg:decide` and `kbg:strategize`: Slingshot Thai bias labels aligned to source slides, non-loadable `thinking-*` references clarified as vendored references, and dedicated coding-application sections added to both skills and reference docs.
+> (v0.2.107: `kbg:strategize` strategic-judgment skill; v0.2.106: `kbg:decide` follow-through + Slingshot four-bias guard. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

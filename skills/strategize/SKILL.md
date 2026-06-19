@@ -1,6 +1,6 @@
 ---
 name: strategize
-description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity: diagnose the situation, choose a guiding policy, design coherent actions, surface real options and adaptive commitment points, red-team the strategy, then commit to the strategy loop. Also fires on Thai requests like 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use thinking-ooda), or choices already dictated by policy or constraint."
+description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity: diagnose the situation, choose a guiding policy, design coherent actions, surface real options and adaptive commitment points, red-team the strategy, then commit to the strategy loop. Also fires on Thai requests like 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use kbg:incident or kbg:hotfix), or choices already dictated by policy or constraint."
 ---
 
 # Strategize
@@ -21,7 +21,7 @@ Strategic judgment differs from operational decision-making. `kbg:decide` climbs
 ## When NOT to use
 
 - **Operational / analyzable decisions** — trade-offs are clear, data can answer the question, reversibility is high. Use `kbg:decide`.
-- **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident`, `kbg:hotfix`, or `thinking-ooda`.
+- **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident` or `kbg:hotfix`. For pure high-speed pattern-matching when no kbg surface fits, prompt an OODA loop from the vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not from a loadable `kbg:` surface.
 - **Answer already dictated** — if architecture charter, policy, or a hard constraint removes choice, say so instead of running the strategy loop.
 - **Pure research or intelligence gathering** — use `kbg:research-brief` or `kbg:probe` first; feed their output into `kbg:strategize`.
 - **Execution planning only** — use `kbg:ship-task` or `kbg:adr` once the strategy is set.
@@ -147,6 +147,24 @@ Respond with these sections, calibrated to the stakes. For small-stakes strategi
 - Review cadence and triggers
 - Next test, not just next task
 
+## Applying `kbg:strategize` to software engineering
+
+Use this skill when a technical commitment is large, long-lived, or hard to reverse. Do not use it for day-to-day implementation trade-offs; those belong in `kbg:decide`.
+
+| Strategic technical bet | Why `kbg:strategize` fits | Typical real options |
+|---|---|---|
+| Monolith → services / modularization | Hard to reverse; changes team topology and deploy cadence | Pilot extraction of one bounded context first; clear rollback criteria |
+| Primary database / storage technology | Lock-in spans years; migration is expensive | Spike + PoC with production-like load; stage gate before full migration |
+| Language / runtime / framework commitment | Ecosystem, hiring, and training follow the choice | Prototype in a non-critical service; explicit sunset criteria |
+| Build vs. buy / outsource vs. in-house | Alters capabilities and management systems for years | Trial with one team or one workflow; contract exit clauses |
+| Auth / payment / compliance platform | Deep integration creates switching cost | Adapter layer + phased cutover; keep a parallel fallback |
+| Team topology (squads vs. platform teams) | Hard to reverse; changes communication architecture | Run a temporary platform crew; measure cognitive load before scaling |
+
+**Combined flow:**
+1. `kbg:strategize` sets the guiding policy and boundaries (e.g., "extract services only where deploy independence pays back the operational cost").
+2. `kbg:decide` climbs the Judgment Ladder for each implementation choice inside that policy (e.g., "which service boundary first?").
+3. `kbg:adr` records the committed decision and the loop that keeps it honest.
+
 ## Failure modes
 
 - **Strategy-as-goal.** "Be number one in X" is not a strategy; it lacks diagnosis, policy, and coherent action.
@@ -162,7 +180,5 @@ Respond with these sections, calibrated to the stakes. For small-stakes strategi
 - `kbg:probe` — deep investigation of a slice of the situation before diagnosing.
 - `kbg:research-brief` — external and competitive intelligence to feed diagnosis.
 - `kbg:article-mine` — mine a strategy article or book chapter for doctrine.
-- `thinking-cynefin` — classify the domain before applying the strategy loop.
-- `thinking-second-order` — surface consequences beyond the first action.
-- `thinking-red-team` — adversarial lens for the red-team step.
-- `thinking-systems` — map reinforcing and balancing loops in the competitive or organizational system.
+
+> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

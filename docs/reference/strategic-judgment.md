@@ -11,7 +11,7 @@ Use it when the diagnosis is contested, the rivals adapt, the resources are cons
 | Goal-setting | A destination without a diagnosis or policy | — |
 | Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
 | Execution planning | Sequencing tasks after the strategy is set | `kbg:ship-task`, `kbg:adr` |
-| Chaos response | Stabilize first, decide fast | `kbg:incident`, `thinking-ooda` |
+| Chaos response | Stabilize first, decide fast | `kbg:incident`, `kbg:hotfix` |
 | Research | Gathering intelligence before committing | `kbg:research-brief`, `kbg:probe` |
 
 ## Core model: Rumelt's kernel
@@ -112,6 +112,23 @@ The harness applies this reference through the `kbg:strategize` skill, which wal
 | The question is "which of these known options is best?" | `kbg:decide` |
 | The question is "what game are we playing, and how do we win it?" | `kbg:strategize` |
 
+## Strategic judgment in software engineering
+
+Software strategy is not about picking technologies. It is about choosing commitments that shape what the organization can build, how fast, and at what cost — and then designing actions that reinforce each other.
+
+| Strategic bet | Diagnosis question | Guiding policy shape | Coherent actions |
+| --- | --- | --- | --- |
+| Monolith → services | Where does deploy independence actually pay back its operational cost? | Extract only where coupling blocks business speed; keep the rest modular-but-monolithic | Bounded-context pilot; platform tooling; team-topology pilot; metrics |
+| Database / storage choice | What access patterns and consistency requirements do we actually have? | Match storage to workload; abstract the choice behind an owned interface | Spike on production-like load; migration stage gates; operator runbooks |
+| Build vs. buy (auth, billing, CRM, etc.) | Is this capability core to our differentiation? | Build what differentiates; buy what is table-stakes | Integration-adapter design; contract exit clauses; data-portability tests |
+| Team topology | What is the limiting factor: cognitive load, coordination cost, or skill depth? | Organize teams around the flow of value they can independently deliver | Platform-crew pilot; SLO-based handoff; revisit after two quarters |
+| Language / framework commitment | What ecosystem, hiring market, and runtime constraints bind us? | Standardize on one primary stack; allow escape hatches for proven needs | Prototype in a non-critical service; training pipeline; deprecation policy |
+
+**Mapping to the kbg flow:**
+1. `kbg:strategize` answers "what game are we playing and how do we win it?" and produces a guiding policy.
+2. `kbg:decide` answers "which known option is best?" inside that policy.
+3. `kbg:adr` records the commitment, the tripwires, and the loop that revisits it.
+
 ## Related kbg surfaces
 
 - `kbg:decide` — Judgment Ladder for operational/consequential choices
@@ -119,7 +136,5 @@ The harness applies this reference through the `kbg:strategize` skill, which wal
 - `kbg:probe` — deep investigation of a slice before diagnosing
 - `kbg:research-brief` — external and competitive intelligence
 - `kbg:article-mine` — mine a strategy article or book chapter for doctrine
-- `thinking-cynefin` — classify the domain before choosing the loop
-- `thinking-second-order` — surface consequences beyond the first action
-- `thinking-red-team` — adversarial lens
-- `thinking-systems` — map feedback loops in the competitive or organizational system
+
+> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

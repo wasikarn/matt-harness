@@ -172,6 +172,23 @@ The ladder is not universal. Match the process to the domain:
 | Complex / emergent | Partially | Probe first, then sense, then respond |
 | Chaotic / crisis | No | Stabilize first; OODA / recognition-primed decisions |
 
+## Using the ladder in software engineering
+
+Use the ladder for **implementation and design choices inside an established architecture**, not for architecture-level bets. The latter belong in `kbg:strategize` first.
+
+| Coding decision | Rung to stress | Typical bias trap |
+|---|---|---|
+| Library / framework choice | Frame + Test assumptions | Anchoring on the first HN post; confirmation from one benchmark |
+| API contract / data model | Frame | Narrow framing around current schema; missing consumer perspective |
+| Deploy / rollout strategy | Estimate risk + Commit | False precision on downtime; soft commitment without rollback owner |
+| Refactor scope and sequence | Recognize + Commit | Sunk-cost attachment to old code; no revisit trigger |
+| Hotfix vs. proper fix | Recognize | Treating an incident as a normal decision; use `kbg:incident` instead |
+
+**Quick coding flow:**
+1. Is the decision hard to reverse or long-lived? → `kbg:strategize`.
+2. Is it reversible within days and analyzable? → climb the ladder with `kbg:decide`.
+3. Is the answer already committed and only needs a record? → `kbg:adr`.
+
 ## Connection to Decision Quality
 
 The five rungs map to the six elements of the Decision Quality chain
@@ -198,8 +215,8 @@ is most dangerous.
 |---|---|---|---|
 | **Framing Bias** (อคติจากการถูกตีกรอบ) | Frame | เรามองปัญหานี้แคบไปไหม? มีมุมมองอื่นที่ควรมองอีกหรือเปล่า? | List stakeholder perspectives; separate constraints from preferences |
 | **Anchoring Bias** (อคติจากการยึดติด) | Frame / Estimate risk | ตัวเลข/ข้อมูล/ทางเลือกแรกที่เรายึดไว้ถูกทดสอบแล้วหรือยัง? | Ask for 90% CI; remove the favorite option and re-solve |
-| **Confirmation Bias** (อคติจากการมั่นใจใจ) | Test assumptions | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? | Assign a devil’s advocate; seek disconfirming evidence |
-| **Sunk Cost Bias** (ลดติดจากสิ่งที่ลงทุนไปแล้ว) | Decide, commit & follow through | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? | Set kill criteria; ask if you would start today from blank slate |
+| **Confirmation Bias** (อคติจากการมีธงในใจ) | Test assumptions | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? | Assign a devil’s advocate; seek disconfirming evidence |
+| **Sunk Cost Bias** (อคติจากสิ่งที่ลงทุนไปแล้ว) | Decide, commit & follow through | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? | Set kill criteria; ask if you would start today from blank slate |
 
 ## Common biases by rung
 
@@ -218,11 +235,9 @@ is most dangerous.
 - `kbg:probe` — systems-thinking analysis before the ladder
 - `kbg:clarify-first` — when the decision itself is still ambiguous
 - `kbg:critical-eval` — stress-test reasoning in a decision or ADR
-- `thinking-cynefin` — classify the domain before choosing the process
-- `thinking-ooda` — high-speed counterpart for dynamic situations
-- `thinking-pre-mortem` — run risk estimation in failure mode before committing
-- `thinking-debiasing` — counter the biases that corrupt each rung
-- `thinking-bounded-rationality` — when to satisfice instead of optimizing
+- `kbg:strategize` — upstream skill for irreversible / long-horizon commitments
+
+> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
 
 ## References
 

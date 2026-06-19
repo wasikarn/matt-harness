@@ -5,6 +5,42 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.108] — 2026-06-20
+
+Fine-tuned the `kbg:decide` and `kbg:strategize` skills and their reference docs for
+Slingshot-label fidelity, official-docs surface hygiene, and practical coding use.
+
+### Changed
+
+- **`kbg:decide` and `docs/reference/judgment-ladder.md`.**
+  - Slingshot Thai bias labels: Sunk Cost Bias = `อคติจากสิ่งที่ลงทุนไปแล้ว`;
+    Confirmation Bias corrected to `อคติจากการมีธงในใจ` (the idiomatic "flag in
+    mind" = a predetermined answer — the prior `รังในใจ` was a mis-transcription).
+  - Replaced references to non-loadable `thinking-*` surfaces with explicit notes
+    that Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality are vendored
+    thinking references under `docs/reference/thinking-skills/`, not kbg surfaces —
+    and corrected the cited paths to the real `thinking-<topic>/` dir names.
+  - Added a coding-application section mapping the Judgment Ladder to library
+    choices, API/data-model decisions, deploy strategies, refactor scopes, and
+    hotfix handling.
+
+- **`kbg:strategize` and `docs/reference/strategic-judgment.md`.**
+  - Replaced `thinking-ooda` / `thinking-*` references with kbg surfaces and vendored
+    reference notes, matching the loadable-surface contract — including the
+    frontmatter `description` and the "kbg surface" table, which had pointed the
+    model at the non-loadable `thinking-ooda` (now `kbg:incident` / `kbg:hotfix`).
+  - Added a coding-application section with architecture/platform/team-topology
+    examples (monolith→services, database choice, build vs. buy, language/runtime,
+    team topology) and a clear flow: `strategize` → `decide` → `adr`.
+
+- **Thai-text correctness sweep (plugin-wide).** `agents/technical-writer.md`
+  trigger `รันเวิก` → `รันบุ๊ก` (the runbook transliteration was garbled);
+  `skills/tech-humanize/SKILL.md` `แคว้นกatalunya` → `แคว้น Catalunya` (Thai/Latin
+  mojibake, in both the before and after example).
+
+- **Plugin manifests and README.** Version badge and newest-additions callout
+  updated; no new component counts.
+
 ## [0.2.107] — 2026-06-19
 
 Added a dedicated strategic-judgment skill and reference doc for irreversible

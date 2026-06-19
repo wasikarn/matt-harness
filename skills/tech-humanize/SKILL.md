@@ -119,10 +119,10 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 **Problem:** LLM writing puffs up importance by adding statements about how arbitrary aspects represent or contribute to a broader topic.
 
 **Before:**
-> สถาบันสถิติแคว้นกatalunya ก่อตั้งขึ้นอย่างเป็นทางการในปี 1989 marking a pivotal moment in the evolution of regional statistics in Spain นอกจากนี้ยังเป็นส่วนหนึ่งของ a broader movement across Spain to decentralize administrative functions
+> สถาบันสถิติแคว้น Catalunya ก่อตั้งขึ้นอย่างเป็นทางการในปี 1989 marking a pivotal moment in the evolution of regional statistics in Spain นอกจากนี้ยังเป็นส่วนหนึ่งของ a broader movement across Spain to decentralize administrative functions
 
 **After:**
-> สถาบันสถิติแคว้นกatalunya ก่อตั้งปี 1989 เพื่อเก็บและตีพิมพ์สถิติระดับภูมิภาคแยกจากสำนักงานสถิติแห่งชาติสเปน
+> สถาบันสถิติแคว้น Catalunya ก่อตั้งปี 1989 เพื่อเก็บและตีพิมพ์สถิติระดับภูมิภาคแยกจากสำนักงานสถิติแห่งชาติสเปน
 
 
 ### 2. Undue Emphasis on Notability and Media Coverage
