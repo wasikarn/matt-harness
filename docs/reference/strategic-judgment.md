@@ -1,0 +1,125 @@
+# Strategic judgment
+
+**Strategic judgment** is the discipline of choosing under ambiguity when commitments are hard to reverse and the payoff horizon is long. It is not the same as operational decision-making, long-term planning, or goal-setting.
+
+Use it when the diagnosis is contested, the rivals adapt, the resources are constrained, and undoing the choice later would be costly or impossible. For analyzable, reversible choices, use `kbg:decide` and the Judgment Ladder instead.
+
+## What strategic judgment is not
+
+| Not strategic judgment | What it actually is | kbg surface |
+| --- | --- | --- |
+| Goal-setting | A destination without a diagnosis or policy | — |
+| Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
+| Execution planning | Sequencing tasks after the strategy is set | `kbg:ship-task`, `kbg:adr` |
+| Chaos response | Stabilize first, decide fast | `kbg:incident`, `thinking-ooda` |
+| Research | Gathering intelligence before committing | `kbg:research-brief`, `kbg:probe` |
+
+## Core model: Rumelt's kernel
+
+Richard Rumelt (*Good Strategy Bad Strategy*) reduces good strategy to three elements:
+
+1. **Diagnosis** — a simplified explanation of the nature of the challenge.
+2. **Guiding policy** — the overall approach chosen to cope with the obstacles identified by the diagnosis.
+3. **Coherent actions** — steps that coordinate with each other to carry out the guiding policy.
+
+The kernel is iterative. A weak diagnosis produces a vague policy; incoherent actions reveal a weak policy. The loop runs until the three elements fit.
+
+## Five strategic choices (Lafley & Martin)
+
+A. G. Lafley and Roger Martin (*Playing to Win*) frame strategy as five interlocking choices:
+
+| Choice | Question | Failure mode |
+| --- | --- | --- |
+| Winning aspiration | What does winning mean? | Aimless activity or borrowed ambition |
+| Where to play | In which markets, segments, geographies, or domains? | Trying to be everywhere |
+| How to win | What is our competitive advantage there? | No unique answer |
+| Capabilities | What abilities must we possess? | Capability gap ignored |
+| Management systems | What systems support and measure those capabilities? | Capabilities starved of support |
+
+The five choices and Rumelt's kernel map to each other: aspiration and where/how to play shape the guiding policy; capabilities and systems shape the coherent actions.
+
+## Integrative thinking (Martin)
+
+Roger Martin's integrative thinking asks you to hold two opposing models of the problem, understand the tension, and generate a creative resolution that preserves what is best in both. It is the opposite of either/or thinking.
+
+| Step | Action |
+| --- | --- |
+| Salience | Identify the factors that matter in each model |
+| Causality | Trace how each model explains outcomes |
+| Architecture | See the models as whole structures, not isolated facts |
+| Resolution | Generate a new model that incorporates the best of both |
+
+Use this when the diagnosis splits into two camps (e.g., "build vs. buy", "centralize vs. decentralize", "fast vs. safe") and neither camp is obviously wrong.
+
+## Real options and adaptive commitment
+
+Strategic commitments differ in reversibility. Good strategy preserves optionality where uncertainty is high and commits firmly where delay is costly.
+
+| Commitment type | When to use | Example |
+| --- | --- | --- |
+| Irreversible bet | Uncertainty is low; delay is costly | Building a factory, signing an exclusive partnership |
+| Reversible probe | Uncertainty is high; information is cheap | A/B test, pilot market, prototype architecture |
+| Stage gate | Commit in tranches, conditioned on signals | Product launch in phases, regional rollout |
+| Adaptive commitment | Pre-decide responses to future signals | "If metric X drops below Y for two quarters, exit market Z" |
+
+The discipline is to **buy information before buying irreversibility**. Premature lock-in is the most common strategic error.
+
+## Strategic red-team
+
+A strategy red-team is not optimism control; it is a search for load-bearing assumptions and second-order effects that the strategy loop must revisit.
+
+| Question | What it surfaces |
+| --- | --- |
+| What would prove the diagnosis wrong? | Brittle diagnosis |
+| What would make the guiding policy irrelevant? | External shock or competitor move |
+| Which assumption, if false, collapses the coherent actions? | Hidden load-bearing belief |
+| What would a competent rival do in response? | Competitive dynamics |
+| What would a reckless rival do? | Tail-risk disruption |
+| What second-order effects ripple inside the org? | Internal friction, misalignment, perverse incentives |
+| Where are we confusing ambition with evidence? | Overconfidence and planning fallacy |
+
+## Superforecasting discipline (Tetlock)
+
+Philip Tetlock's research on expert political judgment and superforecasting adds a calibration discipline to strategic estimates:
+
+- **Decompose** the big question into smaller, answerable sub-questions.
+- **Take the external view** first: what is the base rate for events like this?
+- **Update** incrementally as evidence arrives; avoid premature closure.
+- **Express uncertainty** as probabilities with confidence intervals, not binary claims.
+- **Score** forecasts later to calibrate future judgment.
+
+This is not a substitute for the Rumelt/Martin framework, but it sharpens the estimate step inside the strategy loop.
+
+## kbg-native scaffold: `kbg:strategize`
+
+The harness applies this reference through the `kbg:strategize` skill, which walks six steps:
+
+1. Diagnose the situation
+2. Choose the guiding policy
+3. Design coherent actions
+4. Map irreversibilities and real options
+5. Red-team the strategy
+6. Commit to the strategy loop
+
+## When to reach for `kbg:strategize` vs. `kbg:decide`
+
+| Signal | Reach for |
+| --- | --- |
+| The choice is analyzable, reversible, and time-pressured | `kbg:decide` |
+| The commitment is large, long-lived, and hard to reverse | `kbg:strategize` |
+| The diagnosis is contested and the best option is not computable | `kbg:strategize` |
+| Rivals, markets, or stakeholders will adapt in response | `kbg:strategize` |
+| The question is "which of these known options is best?" | `kbg:decide` |
+| The question is "what game are we playing, and how do we win it?" | `kbg:strategize` |
+
+## Related kbg surfaces
+
+- `kbg:decide` — Judgment Ladder for operational/consequential choices
+- `kbg:adr` — record a committed decision once the strategy is set
+- `kbg:probe` — deep investigation of a slice before diagnosing
+- `kbg:research-brief` — external and competitive intelligence
+- `kbg:article-mine` — mine a strategy article or book chapter for doctrine
+- `thinking-cynefin` — classify the domain before choosing the loop
+- `thinking-second-order` — surface consequences beyond the first action
+- `thinking-red-team` — adversarial lens
+- `thinking-systems` — map feedback loops in the competitive or organizational system

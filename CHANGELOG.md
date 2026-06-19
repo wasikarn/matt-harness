@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.107] — 2026-06-19
+
+Added a dedicated strategic-judgment skill and reference doc for irreversible
+commitments under ambiguity, keeping `kbg:decide` focused on analyzable choices.
+
+### Added
+
+- **`kbg:strategize` skill.** Applies a six-step strategic-judgment loop: diagnose
+  the situation (Rumelt), choose a guiding policy, design coherent actions, map
+  irreversibilities and real options, red-team the strategy, and commit to a
+  strategy loop. Includes Thai trigger phrasing for "วางกลยุทธ์" / "กลยุทธ์" /
+  "strategic judgment" / "ตัดสินใจเชิงกลยุทธ์".
+- **`docs/reference/strategic-judgment.md`.** Standalone reference covering
+  Rumelt's kernel, Lafley/Martin's five strategic choices, integrative thinking,
+  real options / adaptive commitment, strategic red-team, and superforecasting
+  discipline, plus a comparison table for when to use `kbg:strategize` vs.
+  `kbg:decide`.
+- **`docs/reference/reasoning-models.md` scaffold pointer.** New row in the
+  kbg-native reasoning scaffolds table for `strategic-judgment` → `kbg:strategize`,
+  and updated the `judgment-ladder` row to mention follow-through.
+
+### Changed
+
+- **README and plugin manifest counts.** Skill count refreshed 39 → 40.
+- **Manifest description.** Notes the new `strategize` skill in the skill summary.
+
 ## [0.2.106] — 2026-06-19
 
 Hardened the `kbg:decide` Judgment Ladder skill and reference doc with insights

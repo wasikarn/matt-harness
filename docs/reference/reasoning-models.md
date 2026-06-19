@@ -134,7 +134,8 @@ cc-thinking-skills models. These are kbg-native processes, not part of the upstr
 
 | Scaffold | kbg surface | What it adds |
 | --- | --- | --- |
-| **judgment-ladder** | `kbg:decide` + `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide \& commit. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
+| **judgment-ladder** | `kbg:decide` + `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide, commit, and follow through. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
+| **strategic-judgment** | `kbg:strategize` + `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
 
 Read the full scaffold with Bash:
 
