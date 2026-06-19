@@ -1,0 +1,94 @@
+{
+  "dataset_name": "agent-spawn-gate-incident",
+  "description": "Regression guard for the 2026-06-19 incident where an ad-hoc one-shot Agent spawn (staff engineer for bounded read-only eval work) created persistent idle teammates that blocked session exit with 'Background work is running'. agent-spawn-gate.sh must emit permissionDecision: 'ask' for such spawns so the operator confirms intent and teardown plan.",
+  "evals": [
+    {
+      "id": "agent-spawn-gate-incident-ask",
+      "task": "Run agent-spawn-gate.sh with the exact incident payload: an Agent tool call whose description says 'staff engineer implementing regression eval fixtures'. The hook must ask for confirmation, not pass through silently.",
+      "skill": "hook-script",
+      "context": {
+        "hook_path": "hooks/gates/agent-spawn-gate.sh",
+        "stdin": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "description": "Staff engineer implementing regression eval fixtures for all plugin surfaces",
+            "prompt": "You are a staff engineer implementing regression eval fixtures for kbg-harness surface description quality. Work in /Users/kobig/Codes/Personals/kbg-harness. Goal: Add machine-checkable eval coverage...",
+            "run_in_background": false
+          }
+        },
+        "expected_decision": "ask",
+        "must_contain": ["persistent teammates", "stop it after consuming"]
+      },
+      "success_criteria": [
+        "Output contains hookSpecificOutput.permissionDecision equal to ask",
+        "Output contains the reason text about persistent teammates",
+        "Output contains the reason text about stopping the agent"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 200,
+      "tags": ["agent-spawn-gate", "regression", "incident", "guardrails"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "ad-hoc-agent-spawn-allowed-silently",
+      "fixed_by": "5da4881 + hooks/gates/agent-spawn-gate.sh"
+    },
+    {
+      "id": "agent-spawn-gate-team-build-allowed",
+      "task": "Run agent-spawn-gate.sh with a /team-build workflow payload. The hook must pass through (no block) because team workflows already have their own approval gates.",
+      "skill": "hook-script",
+      "context": {
+        "hook_path": "hooks/gates/agent-spawn-gate.sh",
+        "stdin": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "description": "/team-build spawn backend-engineer for plan_slug: api-rewrite task_id: T-1",
+            "prompt": "Spawn backend-engineer to implement the API rewrite task as part of /team-build workflow.",
+            "run_in_background": false
+          }
+        },
+        "expected_decision": "none",
+        "must_contain": []
+      },
+      "success_criteria": [
+        "Output contains hookSpecificOutput.permissionDecision equal to none",
+        "Output contains the reason text about approved team workflow"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 200,
+      "tags": ["agent-spawn-gate", "regression", "team-workflow", "allow-list"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "team-build-agent-spawn-falsely-gated",
+      "fixed_by": "5da4881 + hooks/gates/agent-spawn-gate.sh"
+    },
+    {
+      "id": "agent-spawn-gate-background-ask",
+      "task": "Run agent-spawn-gate.sh with a background Agent spawn. Background teammates are especially likely to be forgotten and block exit, so the hook must ask.",
+      "skill": "hook-script",
+      "context": {
+        "hook_path": "hooks/gates/agent-spawn-gate.sh",
+        "stdin": {
+          "tool_name": "Agent",
+          "tool_input": {
+            "description": "Monitor build status",
+            "prompt": "Keep an eye on the CI build and notify when it finishes.",
+            "run_in_background": true
+          }
+        },
+        "expected_decision": "ask",
+        "must_contain": ["Background teammates"]
+      },
+      "success_criteria": [
+        "Output contains hookSpecificOutput.permissionDecision equal to ask",
+        "Output contains the reason text about background teammates"
+      ],
+      "expected_duration_seconds": 5,
+      "expected_tokens": 200,
+      "tags": ["agent-spawn-gate", "regression", "background-agent", "guardrails"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "background-agent-spawn-allowed-silently",
+      "fixed_by": "5da4881 + hooks/gates/agent-spawn-gate.sh"
+    }
+  ]
+}
