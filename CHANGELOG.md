@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.99] — 2026-06-19
+
+Regression eval fixtures to lock the v0.2.97 surface-description quality contract. No new plugin surfaces; manifest description counts unchanged.
+
+### Added
+
+- **`eval/scripts/check-description-quality.py`.** Deterministic grader that scans all 88 `agents/*.md`, `commands/*.md`, and `skills/*/SKILL.md` files, parses YAML frontmatter, and verifies: description length ≤ 1,024 characters; at least one Thai trigger token; a positive trigger clause (`Use when`, `Trigger when`, etc.); a negative scope clause (`Don't use for`, etc.); and a non-empty `disable-model-invocation-reason` whenever `disable-model-invocation: true`.
+- **`eval/datasets/description-quality.json`.** Three assertion evals wired into `run-eval.py` as `skill: description-quality`, gating the grader script's per-category `RESULT:` lines.
+- **`eval/run-eval.py` description-quality handler.** Runs the grader script, matches each success criterion against the explicit `RESULT: <criterion>: PASS` output, and treats exit code 0 as a clean run.
+
+---
+
 ## [0.2.98] — 2026-06-19
 
 Staff-eng doctrine patch: close the one-shot subagent teardown gap. No new surfaces; only METHODOLOGY.md + docs/agent-teams-setup-notes.md + memory.

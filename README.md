@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.98-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.99-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,11 +9,10 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.98):** staff-eng + official-docs-verified doctrine patch for one-shot subagent teardown.
-> Added a `METHODOLOGY.md` rule requiring the parent session to stop any ad-hoc `Agent` spawn after consuming its output,
-> plus a teardown note in `docs/agent-teams-setup-notes.md` explaining why persistent teammates do not self-terminate.
-> This prevents idle blueprint/audit subagents from blocking session exit with "Background work is running".
-> (v0.2.97: all agents/commands/skills Thai-trigger fine-tune; v0.2.96: remaining skill fleet fine-tune; see CHANGELOG.)
+> **Newest additions (v0.2.99):** regression eval fixtures that machine-check description quality for all 88 plugin surfaces.
+> `eval/scripts/check-description-quality.py` locks the v0.2.97 fine-tune: every agent/command/skill description must carry a Thai trigger,
+> positive/negative routing clauses, stay under 1,024 characters, and document a reason when `disable-model-invocation: true`.
+> (v0.2.98: one-shot subagent teardown doctrine patch; v0.2.97: Thai-trigger fine-tune across all surfaces; see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

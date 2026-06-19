@@ -408,6 +408,31 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
             failed = len(criteria)
             details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
 
+    # Strategy: for description-quality evals, run the deterministic
+    # check-description-quality.py grader and match each success criterion
+    # against its explicit RESULT: <criterion>: PASS line.
+    elif skill == "description-quality":
+        repo = context.get("repo_root", str(REPO_ROOT))
+        script_path = EVAL_DIR / "scripts" / "check-description-quality.py"
+        try:
+            r = subprocess.run(
+                [sys.executable, str(script_path), repo],
+                capture_output=True, text=True, timeout=60, cwd=str(REPO_ROOT),
+            )
+            stdout = r.stdout + r.stderr
+            for crit in criteria:
+                crit_lower = crit.lower()
+                if "exits 0" in crit_lower and r.returncode == 0:
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                # Match "RESULT: <criterion text>: PASS" (case-insensitive, multiline)
+                escaped = re.escape(crit)
+                if re.search(rf"(?im)^RESULT:\s*{escaped}\s*:\s*PASS\s*$", stdout):
+                    passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
+                failed += 1; details.append({"criterion": crit, "status": "failed", "note": f"rc={r.returncode} output_tail={stdout[-200:]!r}"})
+        except Exception as e:
+            failed = len(criteria)
+            details = [{"criterion": c, "status": "error", "error": str(e)} for c in criteria]
+
     # Strategy: for deterministic bash-recipe evals, run a shell command from
     # the repo root and assert on exit code + stdout/stderr substrings. Used for
     # foreign-CWD portability checks (e.g. reasoning-models access path) where

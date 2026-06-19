@@ -1,0 +1,56 @@
+{
+  "dataset_name": "description-quality",
+  "description": "Machine-check the v0.2.97 surface description-quality contract for all agents, commands, and skills.",
+  "evals": [
+    {
+      "id": "description-quality-descriptions",
+      "task": "Verify every surface description is under 1024 characters, contains a Thai trigger, and has both positive and negative routing clauses",
+      "skill": "description-quality",
+      "context": {
+        "repo_root": "."
+      },
+      "success_criteria": [
+        "All surfaces have Thai triggers",
+        "All descriptions are under 1024 characters",
+        "All surfaces have positive trigger clause",
+        "All surfaces have negative scope clause",
+        "Script exits 0"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 200,
+      "tags": ["description-quality", "regression"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "description-quality-dmi-reasons",
+      "task": "Verify every surface flagged with disable-model-invocation: true documents a non-empty reason",
+      "skill": "description-quality",
+      "context": {
+        "repo_root": "."
+      },
+      "success_criteria": [
+        "All disable-model-invocation flags have reasons",
+        "Script exits 0"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 200,
+      "tags": ["description-quality", "regression", "safety"],
+      "eval_type": "assertion"
+    },
+    {
+      "id": "description-quality-exit",
+      "task": "Verify the description-quality grader itself exits cleanly on the current repo",
+      "skill": "description-quality",
+      "context": {
+        "repo_root": "."
+      },
+      "success_criteria": [
+        "Script exits 0"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 200,
+      "tags": ["description-quality", "regression"],
+      "eval_type": "assertion"
+    }
+  ]
+}
