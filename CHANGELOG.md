@@ -5,6 +5,46 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.103] — 2026-06-19
+
+Official-docs conformance pass on the hook layer (5-agent read-only audit of the 47 hook files + 52 scripts). No new surfaces; manifest hook count unchanged at 45.
+
+### Fixed
+
+- **`hooks/hooks.json` MCP matcher.** `mcp__*` → `mcp__.*`. Per the [official hook docs](https://code.claude.com/docs/en/hooks), a matcher containing a special char is an unanchored JS regex and the `.*` is required to match `mcp__<server>__<tool>`; the old `mcp__*` matched only by accident of unanchored search and would break silently if matchers were ever anchored.
+- **`set -e` → `set -uo pipefail` in `hooks/gates/agent-spawn-gate.sh` and `hooks/lifecycle/task-lifecycle.sh`.** These were the last two hooks violating the documented hook convention (CLAUDE.md § error-handling). In `task-lifecycle.sh`, `set -e` was a latent footgun: a bare-command failure (log append, board write) could abort before the F7 `exit 2` enforcement and skip `kbg_lock_release`, leaking a lock.
+- **`hooks/session/doctrine-bootstrap.sh` trailing `exit 0`.** Explicit `exit 0` after the final `additionalContext` printf so a transient printf failure can't discard doctrine injection.
+
+### Docs
+
+- **`README.md` refresh.** Version badge → 0.2.103; corrected hook count 44 → 45 (stale since `agent-spawn-gate` landed at v0.2.100); newest-additions callout updated for v0.2.101–103.
+
+---
+
+## [0.2.102] — 2026-06-19
+
+Dropped a vestigial `skills:` scaffold field from the three read-only reviewer agents. No new surfaces; manifest counts unchanged.
+
+### Fixed
+
+- **Removed `skills:` frontmatter from `code-reviewer`, `security-reviewer`, and `type-design-analyzer`.** The field was uniform scaffold residue (`code-reviewer`/`type-design-analyzer` pointed at their own parent orchestrator `review-pr`). Per official CC docs, `skills:` preloads skill content into the subagent at startup — it does NOT grant tools — so read-only enforcement was never affected (the `tools:` allowlist is the wall); removing it also clears a cosmetic `Write, Edit` registry display that correlated with the preload link.
+
+---
+
+## [0.2.101] — 2026-06-19
+
+Trimmed an over-broad tool grant on the `code-reviewer` agent and named the self-grading bias in doctrine. No new surfaces; manifest counts unchanged.
+
+### Fixed
+
+- **`agents/code-reviewer.md` tool allowlist.** `Glob, Grep, Read, WebFetch, WebSearch, Bash` → `Glob, Grep, Read, Bash` — dropped the unused web tools to match the 4-tool read-only set already specified in `docs/agent-tool-patterns.md`.
+
+### Changed
+
+- **`CLAUDE.md` § LLM-judge-circularity.** Added the human-facing framing of self-confirming verdicts: a session asked to grade its own work is invested and leans *yes*, while a fresh-context reviewer has nothing to defend — the reason maker≠checker runs in a separate context, not as a politely-worded self-check.
+
+---
+
 ## [0.2.100] — 2026-06-19
 
 PreToolUse enforcement gate to stop ad-hoc one-shot Agent spawns from blocking session exit. One new hook + tests + doctrine/doc/memory updates.
