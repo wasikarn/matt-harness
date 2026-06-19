@@ -5,7 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
-## [0.2.108] — 2026-06-20
+## [0.2.109] — 2026-06-20
+
+Refactored `kbg:tech-humanize` to official Claude Code skill best practices, and
+fixed the "output still reads AI" effectiveness gap found by a maker≠checker test.
+
+### Changed
+
+- **`kbg:tech-humanize` progressive-disclosure refactor.** SKILL.md slimmed
+  **596 → 119 lines** to clear the official ≤500-line cap
+  (code.claude.com/docs/en/skills line 313: "Keep `SKILL.md` under 500 lines.
+  Move detailed reference material to separate files"). The 30 universal patterns
+  (full problem + worked before/after) and the detection guidance moved to a new
+  bundled `patterns-universal.md`; SKILL.md keeps a compact 30-row scan cue-sheet
+  and a "load when" pointer to the catalog. Net always-loaded context for the skill
+  drops ~40KB → ~14KB; the full catalog loads only when a fix needs the worked
+  example. `patterns-thai.md` / `examples.md` / `references.md` unchanged.
+
+### Added
+
+- **The Grit Gate (`kbg:tech-humanize`).** A mandatory gate, placed before the
+  pattern scan: deletion alone lands text in the "safe middle," which a skeptical
+  reader still scores ~30/100 AI. Every rewrite must also (1) surface concrete
+  grit (ticket/PR refs, file names, the real cause, real numbers) and (2) commit
+  to a point of view where the genre allows. Hard boundary: never fabricate grit,
+  and never polish a hollow source into a confidently-empty paragraph — say so or
+  ask for the specifics instead. Closes the gap surfaced by a maker≠checker test
+  (a fresh humanizer + a fresh critic) where cleaned output still read machine-written.
 
 Fine-tuned the `kbg:decide` and `kbg:strategize` skills and their reference docs for
 Slingshot-label fidelity, official-docs surface hygiene, and practical coding use.

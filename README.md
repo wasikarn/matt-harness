@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.108-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.109-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,8 +9,8 @@ It adds 29 specialist agents, 40 workflow skills, 21 slash commands, and 45 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.108):** Fine-tuned `kbg:decide` and `kbg:strategize`: Slingshot Thai bias labels aligned to source slides, non-loadable `thinking-*` references clarified as vendored references, and dedicated coding-application sections added to both skills and reference docs.
-> (v0.2.107: `kbg:strategize` strategic-judgment skill; v0.2.106: `kbg:decide` follow-through + Slingshot four-bias guard. See CHANGELOG.)
+> **Newest additions (v0.2.109):** Refactored `kbg:tech-humanize` for official skill best practices — SKILL.md slimmed 596→119 lines (under the docs' 500-line cap) via progressive disclosure: the 30 universal patterns moved to a bundled `patterns-universal.md`, leaving a compact scan cue-sheet inline. Added the **Grit Gate** (surface concrete specifics + commit to a POV; don't fake grit or polish a hollow source) to fix output that read "clean but still AI."
+> (v0.2.108: `kbg:decide`/`kbg:strategize` vendored-path + Thai-label correctness; v0.2.107: `kbg:strategize` skill. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
