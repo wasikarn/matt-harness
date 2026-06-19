@@ -1,18 +1,16 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.100-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.103-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 governance
+It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 45 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.100):** PreToolUse gate `agent-spawn-gate.sh` prevents ad-hoc one-shot Agent spawns that block session exit.
-> Any `Agent` tool call that does not look like an approved team workflow (`/team-build`, `/team-plan`, orchestrate with `plan_slug:` / `task_id:`) now asks for confirmation,
-> and METHODOLOGY.md §13 now carries the hard rule: "If you cannot stop the subagent in the same turn, do not spawn it."
-> (v0.2.99: description-quality regression eval fixtures; v0.2.98: teardown doctrine patch; see CHANGELOG.)
+> **Newest additions (v0.2.103):** official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher (the `.*` is required per the [CC hook docs](https://code.claude.com/docs/en/hooks); the old pattern matched only via unanchored regex), `set -e` → `set -uo pipefail` on the last two non-conforming hooks (closes a lock-leak / enforcement-skip footgun in `task-lifecycle.sh`), and an explicit `exit 0` after doctrine injection.
+> (v0.2.102: dropped vestigial `skills:` from the 3 read-only reviewers; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set; v0.2.100: `agent-spawn-gate.sh` guards one-shot Agent spawns that block session exit. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -99,7 +97,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 38 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
-| **Hooks** | 44 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
+| **Hooks** | 45 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -133,7 +131,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 
 ## Governance Hooks
 
-44 hook scripts fire on 14 lifecycle events. They are split into four cells:
+45 hook scripts fire on 14 lifecycle events. They are split into four cells:
 
 | | Feedforward (before the act) | Feedback (after the act) |
 |---|---|---|
