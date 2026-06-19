@@ -1,9 +1,9 @@
 ---
 name: post-mortem
-description: "Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead)."
-argument-hint: "Optional bug ID, Jira key, or summary"
+description: "Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report', or when the user says 'เขียน post-mortem', 'บันทึกบั๊ก', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead)."
+argument-hint: Optional bug ID, Jira key, or summary
 disable-model-invocation: true
-disable-model-invocation-reason: "writes a canonical doc (and optional tracker post) — user decides to record"
+disable-model-invocation-reason: writes a canonical doc (and optional tracker post) — user decides to record
 ---
 
 # Post-Mortem

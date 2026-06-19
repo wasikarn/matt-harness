@@ -1,9 +1,9 @@
 ---
 name: address-review
-description: "Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge)."
-argument-hint: "Optional PR number"
+description: "Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge)."
+argument-hint: Optional PR number
 disable-model-invocation: true
-disable-model-invocation-reason: "external write — posts replies to GitHub PR review threads"
+disable-model-invocation-reason: external write — posts replies to GitHub PR review threads
 ---
 
 # Address Review

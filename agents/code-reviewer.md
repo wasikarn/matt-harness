@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Senior code-quality reviewer for bugs and guideline compliance. Spawn after writing/modifying code, before commit or PR — reviews unstaged git diff by default. Don't use for: security (defer to security-reviewer), test coverage (defer to pr-test-analyzer), error-handling (defer to silent-failure-hunter), or comment accuracy (defer to comment-analyzer). Owns general bug + convention review."
+description: "Senior code-quality reviewer for bugs and guideline compliance. Use after writing/modifying code, before commit or PR — reviews unstaged git diff by default, or when the user says 'รีวิวโค้ด', 'code review', 'ตรวจโค้ด'. Don't use for: security (defer to security-reviewer), test coverage (defer to pr-test-analyzer), error-handling (defer to silent-failure-hunter), or comment accuracy (defer to comment-analyzer). Owns general bug + convention review."
 tools: Glob, Grep, Read, WebFetch, WebSearch, Bash
 model: sonnet
 effort: high

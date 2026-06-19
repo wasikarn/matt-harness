@@ -1,6 +1,6 @@
 ---
 name: kbg-help
-description: "Quick reference card for kbg-harness skills, commands, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-health). One-shot display, read-only."
+description: "Quick reference card for kbg-harness skills, commands, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands', or when the user says 'ช่วยเหลือ', 'มีอะไรบ้าง', 'ใช้ kbg ยังไง'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-health). One-shot display, read-only."
 ---
 
 # /kbg-help — kbg-harness quick reference

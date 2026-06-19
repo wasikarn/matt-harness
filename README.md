@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.96-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.97-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,15 +9,12 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.96):** staff-eng + official-docs-verified fine-tune of the remaining skill fleet.
-> Rewrote 9 placeholder skill descriptions (`kbg:adr`, `kbg:assert-presence`, `kbg:decommission`, `kbg:harness-audit`,
-> `kbg:inventory`, `kbg:memory-lint`, `kbg:memory-trim`, `kbg:probe`, `kbg:semantic-code`) and added Thai trigger
-> phrases to 20 more skills (`kbg:clarify-first`, `kbg:incident`, `kbg:hotfix`, `kbg:triage`, `kbg:backend-dev`,
-> `kbg:accept-task`, `kbg:article-mine`, `kbg:critical-eval`, `kbg:migrate`, `kbg:perf`, `kbg:research-brief`,
-> `kbg:review-pr`, `kbg:security-auditor`, `kbg:ship-change`, `kbg:task-sizing`, `kbg:types-first`, plus the four
-> read-only reporters `kbg:harness-coverage`, `kbg:harness-health`, `kbg:harness-nav`, `kbg:usage-monitor`).
-> Descriptions now stay under 1,024 chars and pass the positive-side trigger-pattern audit. Regenerated BOUNDARY.md.
-> (v0.2.95: team/orchestrate fine-tune; v0.2.94: Atlassian fine-tune; see CHANGELOG.)
+> **Newest additions (v0.2.97):** staff-eng + official-docs-verified fine-tune across all agent, command, and skill surfaces.
+> Added Thai trigger tokens to all 29 agents and all 21 commands, fixed the `recursive-improve` placeholder description,
+> and added Thai triggers to the three remaining skills (`kbg:ideate`, `kbg:progressive-refine`, `kbg:recursive-improve`).
+> All descriptions now stay under 1,024 chars and carry positive-side + negation trigger clauses per the audit contract.
+> Regenerated BOUNDARY.md.
+> (v0.2.96: remaining skill fleet fine-tune; v0.2.95: team/orchestrate fine-tune; v0.2.94: Atlassian fine-tune; see CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.

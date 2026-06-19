@@ -1,6 +1,6 @@
 ---
 name: finops-engineer
-description: "Senior FinOps engineer for cloud cost optimization, reserved-instance planning, and spend governance. Spawn when cloud bills spike unexpectedly, when rightsizing instances, or when designing cost-aware architecture. Don't use for: general infrastructure provisioning (defer to devops-engineer), application performance tuning (defer to backend-engineer), or security audit (defer to security-reviewer)."
+description: "Senior FinOps engineer for cloud cost optimization, reserved-instance planning, and spend governance. Use when cloud bills spike unexpectedly, when rightsizing instances, or when designing cost-aware architecture, or when the user says 'FinOps', 'cloud cost', 'ลดต้นทุน'. Don't use for: general infrastructure provisioning (defer to devops-engineer), application performance tuning (defer to backend-engineer), or security audit (defer to security-reviewer)."
 model: sonnet
 effort: medium
 color: yellow

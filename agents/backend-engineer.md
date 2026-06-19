@@ -1,6 +1,6 @@
 ---
 name: backend-engineer
-description: "Senior backend engineer for API design, data integrity, server-side implementation, and schema/migration work. Spawn when implementing or reviewing backend code, database changes, or service-side refactoring. Don't use for: auth/secrets (defer to security-reviewer), UI rendering (defer to frontend-engineer), infrastructure/CI/CD (defer to devops-engineer), or test strategy (defer to test-engineer). Owns backend-side data integrity and contract stability."
+description: "Senior backend engineer for API design, data integrity, server-side implementation, and schema/migration work. Use when implementing or reviewing backend code, database changes, or service-side refactoring, or when the user says 'backend', 'API', 'ฐานข้อมูล'. Don't use for: auth/secrets (defer to security-reviewer), UI rendering (defer to frontend-engineer), infrastructure/CI/CD (defer to devops-engineer), or test strategy (defer to test-engineer). Owns backend-side data integrity and contract stability."
 model: sonnet
 effort: xhigh
 skills:

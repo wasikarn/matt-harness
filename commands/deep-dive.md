@@ -1,9 +1,9 @@
 ---
 name: deep-dive
-description: "Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when user says 'research this', 'deep dive on X', 'compare Z approaches', or any open-ended exploration. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (spawn code-architect)."
-argument-hint: "Optional topic or question"
+description: "Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when user says 'research this', 'deep dive on X', 'compare Z approaches', or any open-ended exploration, or when the user says 'วิจัย', 'deep dive', 'ศึกษา'. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (spawn code-architect)."
+argument-hint: Optional topic or question
 disable-model-invocation: true
-disable-model-invocation-reason: "research-brief is the model-invokable twin — the command is the user-only entry, so the model has exactly one auto-path to this work, not two"
+disable-model-invocation-reason: research-brief is the model-invokable twin — the command is the user-only entry, so the model has exactly one auto-path to this work, not two
 ---
 
 # Deep Dive

@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.97] — 2026-06-19
+
+Staff-eng + official-docs-verified fine-tune across all agent, command, and skill surfaces. Frontmatter `description:` changes only; no body edits, no agent tool/model/effort/color changes, no `disable-model-invocation` changes.
+
+### Changed
+
+- **Thai trigger tokens added to all 29 agents.** Every agent description now includes single-quoted Thai tokens (e.g., `ออกแบบระบบ`, `รีวิวโค้ด`, `ตรวจความปลอดภัย`, `ประสบการณ์ผู้ใช้`) alongside English trigger phrases, so Thai requests route to kbg agents instead of bypassing them.
+- **Thai trigger tokens added to all 21 commands.** Every command description now includes Thai tokens (e.g., `สร้างทีม`, `แก้บั๊ก`, `ปล่อยเวอร์ชัน`, `ตรวจก่อนส่ง`) alongside English triggers.
+- **Thai trigger tokens added to the remaining skills.** `kbg:ideate`, `kbg:progressive-refine`, and `kbg:recursive-improve` descriptions now carry Thai tokens.
+- **Agent positive trigger phrasing standardized.** Descriptions use `Use when … / Use before … / Use after …` clauses so they satisfy the same positive-side trigger-pattern contract as skills.
+
+### Fixed
+
+- **`recursive-improve` placeholder description** replaced with a real routed description that explains the bounded human-gated harness-improvement loop; `disable-model-invocation: true` and its recorded ADR-0002 reason are preserved.
+- **`kbg:harness-audit` description** now carries an explicit `Use when …` positive trigger clause instead of only `Also fires on …`.
+- **Regenerated `BOUNDARY.md`** to match the current fleet state.
+
 ## [0.2.96] — 2026-06-19
 
 Staff-eng + official-docs-verified fine-tune of the remaining skill fleet. Frontmatter-only changes; no body edits, no agent/tool changes, no `disable-model-invocation` changes. No auto-prepend; no new machinery.

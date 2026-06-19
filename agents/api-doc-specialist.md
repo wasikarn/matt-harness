@@ -1,6 +1,6 @@
 ---
 name: api-doc-specialist
-description: "Senior API documentation specialist for OpenAPI specs, SDK references, and developer-portal content. Spawn when generating or updating API contract docs, designing endpoint naming, or building integration guides. Don't use for: user-facing product docs (defer to technical-writer), frontend component docs (defer to frontend-engineer), or internal runbooks (defer to technical-writer). Owns the contract between your API and its consumers."
+description: "Senior API documentation specialist for OpenAPI specs, SDK references, and developer-portal content. Use when generating or updating API contract docs, designing endpoint naming, or building integration guides, or when the user says 'เอกสาร API', 'OpenAPI', 'API docs'. Don't use for: user-facing product docs (defer to technical-writer), frontend component docs (defer to frontend-engineer), or internal runbooks (defer to technical-writer). Owns the contract between your API and its consumers."
 model: sonnet
 effort: medium
 color: cyan

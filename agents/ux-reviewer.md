@@ -1,6 +1,6 @@
 ---
 name: ux-reviewer
-description: "Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Spawn when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code."
+description: "Senior UX and interaction reviewer for user journeys, accessibility, cognitive load, and form/task flow. Use when evaluating UI/UX implementations, reviewing from the user's perspective, or auditing accessibility gaps, or when the user says 'UX review', 'user journey', 'ประสบการณ์ผู้ใช้'. Don't use for: visual design polish (defer to frontend-engineer), frontend component code review (defer to frontend-engineer), or performance optimization (defer to backend-engineer/frontend-engineer). Owns the UX layer between design and code."
 model: sonnet
 effort: medium
 color: pink

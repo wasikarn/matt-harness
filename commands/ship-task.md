@@ -1,8 +1,8 @@
 ---
 name: ship-task
-description: "9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration."
+description: "9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate, or when the user says 'ทำงานใหม่', 'ship task', 'เริ่มต้นทำงาน'. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration."
 disable-model-invocation: true
-disable-model-invocation-reason: "irreversible external and spawns agents — full ship loop ending in merge"
+disable-model-invocation-reason: irreversible external and spawns agents — full ship loop ending in merge
 ---
 
 # Ship Task — 9-Step Senior Engineer Loop

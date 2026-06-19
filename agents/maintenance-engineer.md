@@ -1,6 +1,6 @@
 ---
 name: maintenance-engineer
-description: "Senior legacy and technical-debt engineer for refactoring, deprecation, framework upgrades, and modernization. Spawn when removing dead code, upgrading dependencies, migrating architecture, or quantifying technical debt. Don't use for: new features (defer to backend-engineer/frontend-engineer), greenfield architecture (defer to code-architect), or CI/CD changes (defer to devops-engineer). Owns post-delivery code health."
+description: "Senior legacy and technical-debt engineer for refactoring, deprecation, framework upgrades, and modernization. Use when removing dead code, upgrading dependencies, migrating architecture, or quantifying technical debt, or when the user says 'technical debt', 'refactor', 'ล้างหนี้เทคนิค'. Don't use for: new features (defer to backend-engineer/frontend-engineer), greenfield architecture (defer to code-architect), or CI/CD changes (defer to devops-engineer). Owns post-delivery code health."
 model: sonnet
 effort: high
 color: blue

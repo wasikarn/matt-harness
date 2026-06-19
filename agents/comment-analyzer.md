@@ -1,6 +1,6 @@
 ---
 name: comment-analyzer
-description: "Senior comment & docstring auditor for accuracy and value. Spawn after adding/modifying documentation comments, before PR finalization, or when checking comment accuracy. Don't use for: general code review (defer to code-reviewer), or stripping comments wholesale (this agent assesses value, doesn't delete). Owns comment accuracy + maintainability."
+description: "Senior comment & docstring auditor for accuracy and value. Use after adding/modifying documentation comments, before PR finalization, or when checking comment accuracy, or when the user says 'ตรวจคอมเมนต์', 'comment audit', 'docstring'. Don't use for: general code review (defer to code-reviewer), or stripping comments wholesale (this agent assesses value, doesn't delete). Owns comment accuracy + maintainability."
 model: sonnet
 effort: low
 tools: Read, Grep, Glob, Bash

@@ -1,6 +1,6 @@
 ---
 name: compliance-engineer
-description: "Senior compliance/privacy engineer for GDPR, SOC2, HIPAA, and audit-readiness. Spawn when designing data retention, mapping controls to frameworks, or preparing audit evidence. Don't use for: threat modeling or vulnerability scanning (defer to security-reviewer), production code implementation (defer to backend/frontend-engineer), or infrastructure deployment (defer to devops-engineer)."
+description: "Senior compliance/privacy engineer for GDPR, SOC2, HIPAA, and audit-readiness. Use when designing data retention, mapping controls to frameworks, or preparing audit evidence, or when the user says 'compliance', 'GDPR', 'SOC2', 'คอมพลายเอนซ์', 'กฎหมายข้อมูล'. Don't use for: threat modeling or vulnerability scanning (defer to security-reviewer), production code implementation (defer to backend/frontend-engineer), or infrastructure deployment (defer to devops-engineer)."
 model: sonnet
 effort: high
 color: orange

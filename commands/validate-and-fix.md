@@ -1,7 +1,7 @@
 ---
 name: validate-and-fix
 description: "Run the builder-validator-fix-revalidator quality chain on a single completed task. Use after a teammate claims a task is done but you want independent validation before merging, or when the user says 'validate and fix', 'ตรวจสอบและแก้', 'validate งาน', 'ตรวจงาน', or 'ตรวจซ้ำ'. Don't use for: pre-execution plan validation (use /team-build's F10 gate), post-build whole-project validation (use /pre-ship-verify), or tasks without a plan file (use /feature-dev for single-file work)."
-argument-hint: "Task ID (e.g. API-1) and optional plan slug"
+argument-hint: Task ID (e.g. API-1) and optional plan slug
 ---
 
 # /validate-and-fix — Builder-validator chain for a single task

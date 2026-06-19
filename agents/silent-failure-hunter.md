@@ -1,6 +1,6 @@
 ---
 name: silent-failure-hunter
-description: "Senior auditor of error-handling and fallback CODE paths, plus adversarial plan-skeptic on multi-role merges. Spawn after error-handling changes (new catches, modified blocks, fallback logic) or when a merged plan needs a skeptic against it. Don't use for: stress-testing prose reasoning / ADRs / RFCs (use kbg:critical-eval), writing error handling from scratch (defer to backend-engineer/frontend-engineer), or general code review (defer to code-reviewer)."
+description: "Senior auditor of error-handling and fallback CODE paths, plus adversarial plan-skeptic on multi-role merges. Use after error-handling changes (new catches, modified blocks, fallback logic) or when a merged plan needs a skeptic against it, or when the user says 'silent failure', 'error handling', 'catch block', 'ข้อผิดพลาดเงียบ', 'catch'. Don't use for: stress-testing prose reasoning / ADRs / RFCs (use kbg:critical-eval), writing error handling from scratch (defer to backend-engineer/frontend-engineer), or general code review (defer to code-reviewer)."
 model: sonnet
 effort: high
 tools: Read, Grep, Glob, Bash

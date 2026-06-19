@@ -1,6 +1,6 @@
 ---
 name: code-simplifier
-description: "Senior post-implementation code simplifier for clarity and conventions without changing behavior. Spawn after coding tasks land when code works but is verbose or hard to read. Don't use for: bug review (use code-reviewer), architecture design (use code-architect), or whole-codebase refactoring (defer to maintenance-engineer). Owns clarity-preserving simplification."
+description: "Senior post-implementation code simplifier for clarity and conventions without changing behavior. Use after coding tasks land when code works but is verbose or hard to read, or when the user says 'ลดความซับซ้อน', 'simplify code', 'ทำให้โค้ดอ่านง่าย'. Don't use for: bug review (use code-reviewer), architecture design (use code-architect), or whole-codebase refactoring (defer to maintenance-engineer). Owns clarity-preserving simplification."
 model: sonnet
 effort: medium
 color: green

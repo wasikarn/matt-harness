@@ -1,6 +1,6 @@
 ---
 name: pr-test-analyzer
-description: "Senior PR test-coverage analyzer. Spawn after PR open/update or before ready-for-review to surface untested critical paths. Don't use for: writing tests (defer to test-engineer), or chasing line-coverage % (rates by behavioral criticality 1–10, not coverage %). Owns regression-risk visibility before merge."
+description: "Senior PR test-coverage analyzer. Use after PR open/update or before ready-for-review to surface untested critical paths, or when the user says 'test coverage', 'PR test', 'ตรวจสอบการทดสอบ'. Don't use for: writing tests (defer to test-engineer), or chasing line-coverage % (rates by behavioral criticality 1–10, not coverage %). Owns regression-risk visibility before merge."
 model: sonnet
 effort: high
 tools: Read, Grep, Glob, Bash

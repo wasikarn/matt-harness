@@ -1,10 +1,7 @@
 ---
 name: inferential-structural-judge
-description: "Inferential-FB sensor that judges the session's diff against 4 structural dimensions: over_engineering, arch_drift, test_pattern, doctrine_conformance. Invoked by the SessionEnd hook (HOOK-1) once per session; journals a verdict to ~/.claude/governance-events.jsonl with event=inferential_structural_verdict per docs/research/inferential-structural-judge-design.md §3. Advisory only — journal-only verdict, never blocks, never mutates code (autonomy invariant, ADR 0002 §L115). Score 1-3 = silent accept; 4-6 = flag (surfaces in kbg:harness-health); 7-10 = escalate (surfaced prominently in kbg:harness-health). Cost ceiling: ~4k tokens/session; if session is already at ≥ 25k tokens, the hook skips and journals skipped:budget. Hard cap of 50 files in the diff (truncated=true beyond). Use when: SessionEnd lifecycle fires and the session touched ≥ 1 file. Don't use for: deep PR review (use kbg:review-pr), security audit (defer to security-reviewer), test coverage (defer to pr-test-analyzer), or live diff review (defer to code-reviewer)."
-tools:
-  - Read
-  - Grep
-  - Bash
+description: "Session-end inferential-FB sensor that scores a session's diff on over_engineering, arch_drift, test_pattern, and doctrine_conformance. Use when the SessionEnd hook fires and the session touched files, or when the user says 'ตัดสินโครงสร้าง', 'structural judge', 'verdict'. Journals an advisory verdict to governance-events.jsonl; never blocks or mutates code. Don't use for: deep PR review (use kbg:review-pr), security audit (defer to security-reviewer), test coverage (defer to pr-test-analyzer), or live diff review (defer to code-reviewer)."
+tools: Read, Grep, Bash
 model: sonnet
 effort: high
 color: yellow

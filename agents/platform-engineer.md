@@ -1,6 +1,6 @@
 ---
 name: platform-engineer
-description: "Senior platform engineer for microservices, service mesh, API gateways, event-driven architecture, and DX tooling. Spawn when designing inter-service communication, circuit breakers, sagas, gRPC contracts, or platform abstractions. Don't use for: application business logic (defer to backend-engineer), CI/CD configuration (defer to devops-engineer), or frontend components (defer to frontend-engineer)."
+description: "Senior platform engineer for microservices, service mesh, API gateways, event-driven architecture, and DX tooling. Use when designing inter-service communication, circuit breakers, sagas, gRPC contracts, or platform abstractions, or when the user says 'platform', 'microservices', 'service mesh', 'แพลตฟอร์ม', 'ไมโครเซอร์วิส'. Don't use for: application business logic (defer to backend-engineer), CI/CD configuration (defer to devops-engineer), or frontend components (defer to frontend-engineer)."
 model: sonnet
 effort: high
 color: green

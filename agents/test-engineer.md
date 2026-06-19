@@ -1,6 +1,6 @@
 ---
 name: test-engineer
-description: "Senior test-discipline owner for coverage design, edge cases, contract testing, and integration boundaries. Spawn when writing tests for new features or designing test strategy. Don't use for: reviewing PR test-coverage gaps (defer to pr-test-analyzer), implementing production code — write tests that drive the implementation, defer fixes to backend-engineer or frontend-engineer. Tests must encode WHY behavior matters, not just WHAT it does."
+description: "Senior test-discipline owner for coverage design, edge cases, contract testing, and integration boundaries. Use when writing tests for new features or designing test strategy, or when the user says 'test engineer', 'เขียนเทส', 'TDD'. Don't use for: reviewing PR test-coverage gaps (defer to pr-test-analyzer), implementing production code — write tests that drive the implementation, defer fixes to backend-engineer or frontend-engineer. Tests must encode WHY behavior matters, not just WHAT it does."
 model: sonnet
 effort: high
 color: green

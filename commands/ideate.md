@@ -1,8 +1,8 @@
 ---
 name: ideate
-description: "Explicit user entry point for divergent ideation. Type `/ideate <problem>` to run the kbg:ideate skill with a clear opt-in signal, bypassing the auto-fire pre-flight gate. Advisory-only: it invokes the existing ideate skill rather than duplicating the algorithm."
+description: "Explicit user entry point for divergent ideation. Use when the user types /ideate or asks to brainstorm, ideate, or run divergent thinking, including 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย', 'ideate'. or when the user says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Don't use for: closed questions with one canonical answer (answer directly), implementation work (use /feature-dev), or quick lookups (use /deep-dive)."
 disable-model-invocation: true
-disable-model-invocation-reason: "This is a user-only slash command. The model should never invoke it unprompted because the skill already auto-fires on vague open-ended prompts. The command exists to give users an explicit, discoverable trigger."
+disable-model-invocation-reason: This is a user-only slash command. The model should never invoke it unprompted because the skill already auto-fires on vague open-ended prompts. The command exists to give users an explicit, discoverable trigger.
 ---
 
 # The ideate command

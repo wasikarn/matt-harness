@@ -1,7 +1,7 @@
 ---
 name: pre-flight-plan-linter
 description: "Validate a /team-plan artifact before /team-build consumes it. Catches structural errors, missing validation commands, cyclic dependencies, overlapping file ownership, and F10 plan-approval risks. Use after /team-plan finishes and before /team-build starts, or when the user says 'lint the plan', 'pre-flight', 'ตรวจแผน', 'lint แผน', or 'เช็กแผน'. Don't use for: single-file work (no plan file needed), or plans you already started building (use /wave-status instead)."
-argument-hint: "Path to plan markdown file"
+argument-hint: Path to plan markdown file
 ---
 
 # /pre-flight-plan-linter — Pre-flight plan validator

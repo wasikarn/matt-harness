@@ -1,8 +1,8 @@
 ---
 name: recursive-improve
-description: "recursive-improve"
+description: "Bounded human-gated harness-improvement loop: read the harness's own health signals, propose the highest-leverage fix, and apply it only after explicit operator approval. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. or when the user says 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /feature-dev), external tool research (use kbg:article-mine), or any unattended loop."
 disable-model-invocation: true
-disable-model-invocation-reason: "LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion"
+disable-model-invocation-reason: LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---
 
 # Recursive Improve

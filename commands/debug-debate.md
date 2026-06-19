@@ -1,7 +1,7 @@
 ---
 name: debug-debate
-description: "Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', 'debug debate', 'debate', 'ถกเถียง', 'ประชุมถก', or 'debate ทีม'. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate)."
-argument-hint: "Debate topic or question"
+description: "Resolve a technical disagreement by spawning parallel debate agents: Advocate, Skeptic, and Synthesizer debate the topic in isolation, then the lead produces a consensus matrix with ranked risks. Use when the user asks 'which is better', 'should we use X or Y', 'debug debate', 'debate', 'ถกเถียง', 'ประชุมถก', or 'debate ทีม'. or when the user says 'ถกเถียง', 'debate', 'ประชุมถก'. Don't use for: implementation work (use /feature-dev), research (use /deep-dive), or prioritization (use kbg:orchestrate)."
+argument-hint: Debate topic or question
 ---
 
 # /debug-debate — Parallel technical debate
