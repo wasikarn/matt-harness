@@ -2,7 +2,7 @@
 
 ## Issue 1: md2adf.py ไม่ handle nested lists ถูกต้อง
 
-**Severity:** Medium  
+**Severity:** By design (documented limitation)  
 **Impact:** Description ใน Jira ที่มี nested list (bullet list ข้างใน ordered list) จะถูก flatten เป็น sibling lists แทนที่จะเป็น child lists  
 **Affected files:**
 - `skills/acli/scripts/md2adf.py`
@@ -20,8 +20,8 @@ Markdown input:
 Expected ADF: `orderedList > listItem > bulletList`  
 Actual ADF: `orderedList` และ `bulletList` เป็น sibling (`listItem` ไม่มี `bulletList` เป็น child)
 
-**Workaround:**
-เขียน ADF JSON ด้วยมือโดยใส่ `bulletList` เป็น child ของ `listItem` โดยตรง ไม่ผ่าน `md2adf.py`
+**Workaround (by design):**
+ใช้ H3 sub-heading + flat bullets แทน nested list (ตามที่ `md2adf.py` docstring + acli REFERENCE แนะนำ) การ flatten เป็นพฤติกรรมที่ตั้งใจ ไม่ใช่ bug ที่ต้องแก้
 
 ---
 
@@ -54,5 +54,5 @@ acli jira workitem edit --from-json file.json --yes
 
 ## Reported
 - **Date:** 2026-06-15
-- **Reporter:** BIG-TATHEP / Claude Code session
+- **Reporter:** wasikarn / Claude Code session
 - **Context:** ปัญหาพบขณะ update Jira ticket TP-643 description ด้วย acli skill

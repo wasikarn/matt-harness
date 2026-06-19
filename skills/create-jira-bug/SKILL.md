@@ -1,6 +1,6 @@
 ---
 name: create-jira-bug
-description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'ออก ticket bug', or wants a structured Thai bug ticket with reproduction steps, impact, and Given/When/Then AC. Creates directly — it does not search for duplicates first. Don't use for: de-duping/triaging against existing issues before filing (use atlassian:triage-issue), bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
+description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'ออก ticket bug', or wants a structured Thai bug ticket with reproduction steps, impact, and plain checklist AC (Given/When/Then only for complex cases). Creates directly — it does not search for duplicates first. Don't use for: de-duping/triaging against existing issues before filing (use atlassian:triage-issue), bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
 ---
 
 # Create Jira Bug
@@ -77,23 +77,15 @@ Write the description in **Thai** using this structure:
 
 ## 🧪 เกณฑ์การยอมรับการแก้ไข (Acceptance Criteria) — สำหรับ QA
 
-**AC1 — ยืนยันว่าแก้แล้ว (Fix verified)**
-
-* กำหนดให้: [precondition]
-* เมื่อ: [reproduction action]
-* ผลลัพธ์: [now-correct outcome]
-
-**AC2 — ตรวจ Regression**
-
-* กำหนดให้: [unaffected flow]
-* เมื่อ: [normal action]
-* ผลลัพธ์: [unchanged behavior]
+* **ยืนยันว่าแก้แล้ว:** [precondition] → [action] → [now-correct outcome]
+* **ตรวจ Regression:** [unaffected flow] → ทำงานแบบเดิม ไม่กระทบ *(Regression check)*
 ```
 
 **AC rules (no engineering terms):**
 - Use plain business nouns ("เครดิตจากคูปอง", "ยอดคงเหลือ", "วันหมดอายุ")
 - Use baht amounts/day counts ("500 บาท", "หมดอายุ 30 วัน")
 - ❌ column names, enum values, API paths, DB references
+- Default form: **checklist** — แต่ละ AC บรรทัดเดียว ตรวจ "ผ่าน/ไม่ผ่าน" ได้. ใช้ Given/When/Then (กำหนดให้/เมื่อ/ผลลัพธ์) เฉพาะพฤติกรรมซับซ้อนจริง ๆ — escape hatch ไม่ใช่ default
 - Minimum 2 ACs: fix verification + regression check
 - Full GOOD/BAD examples and register guidance: `skills/acli/examples/README.md` § Acceptance Criteria.
 
@@ -110,7 +102,7 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 | **Labels** | `bug` + 1-2 domain tags (billing, refund, credit, player). Do NOT auto-add PO/QA labels. |
 | **Environment** | Native Jira field. Set to prod/staging/local. Wrap in ADF for MCP fallback (see Step 5). |
 | **Affects versions** | Only if user gives a valid version; validate or omit. |
-| **Assignee** | Leave unassigned by default. Only set if user explicitly names one; resolve via `mcp__plugin_atlassian_atlassian__lookupJiraAccountId`. |
+| **Assignee** | Leave unassigned by default. Only set if user explicitly names one; resolve via `mcp__plugin_atlassian_atlassian__lookupJiraAccountId` (pass `cloudId` + `searchString`), then set `assignee_account_id`. |
 
 ## Step 4 — Preview and confirm
 
@@ -159,7 +151,7 @@ additional_fields: {
   "environment": { "version": 1, "type": "doc", "content": [
     { "type": "paragraph", "content": [{ "type": "text", "text": "prod" }] }
   ]},
-  "versions": [{ "name": <version> }]   // omit if unvalidated
+  "versions": [{ "name": <version> }]   // Affects Version/s, NOT fixVersions (Fix Version/s) — different Jira fields; omit if unvalidated
 }
 # assignee_account_id: OMIT by default. Include ONLY if user named an assignee.
 ```

@@ -107,7 +107,7 @@ acli jira workitem edit --generate-json   # then --from-json
 ```
 Flags: `-k/--key`, `--jql`, `--filter`, `-s/--summary`, `-d/--description`, `--description-file`, `-t/--type`, `-a/--assignee`, `--remove-assignee`, `-l/--labels`, `--remove-labels`, `--from-json`, `--generate-json`, `--ignore-errors`, `-y/--yes`, `--json`.
 
-> ⚠️ **`edit` can't do everything.** It has **no `parent` field** and `--from-json` rejects a `parent` key — re-parenting / setting an Epic parent on an *existing* issue needs the MCP (`editJiraIssue fields:{parent:{key:"…"}}`; `--parent`/`parentIssueId` work only at *create* time for sub-tasks). `--from-json` also rejects `fixVersions` and `update` as `unknown field`. See SKILL.md "When acli can't".
+> ⚠️ **`edit` can't do everything.** It has **no `parent` field** and `--from-json` rejects a `parent` key — re-parenting / setting an Epic parent on an *existing* issue needs the MCP (`editJiraIssue cloudId:<id> issueIdOrKey:"<KEY>" fields:{parent:{key:"…"}}`; `--parent`/`parentIssueId` work only at *create* time for sub-tasks). `--from-json` also rejects `fixVersions` and `update` as `unknown field`. See SKILL.md "When acli can't".
 
 > ⚠️ **`--description` REPLACES the whole description — it does not append.** Verified by create+delete: a naive `edit --description "X"` wipes all existing content (0 original sections survive). To **add**, **change**, or **remove one section** while keeping the rest, you must read-modify-write the ADF (all three verified e2e — append/edit/remove a section, original untouched):
 > ```bash
@@ -138,7 +138,7 @@ acli jira workitem assign --from-file issues.txt --remove-assignee --json
 ```
 Flags: `-k/--key`, `--jql`, `--filter`, `-f/--from-file`, `-a/--assignee`, `--remove-assignee`, `--ignore-errors`, `-y/--yes`, `--json`.
 
-> ⚠️ **`--assignee` resolves `@me` | `default` | EMAIL only.** A raw **accountId silently UNassigns** — acli reports "successfully unassigned" and clears the field (verified). Many users hide their email (privacy), so `reporter/assignee.emailAddress` is null and there's no email to pass. Then assign via the Atlassian MCP: `editJiraIssue fields:{assignee:{accountId:"…"}}` (resolve the id with `lookupJiraAccountId`).
+> ⚠️ **`--assignee` resolves `@me` | `default` | EMAIL only.** A raw **accountId silently UNassigns** — acli reports "successfully unassigned" and clears the field (verified). Many users hide their email (privacy), so `reporter/assignee.emailAddress` is null and there's no email to pass. Then assign via the Atlassian MCP: `editJiraIssue cloudId:<id> issueIdOrKey:"<KEY>" fields:{assignee:{accountId:"…"}}` (resolve the id with `lookupJiraAccountId cloudId:<id> searchString:"<name|email>"`).
 
 ### comment
 ```bash

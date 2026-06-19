@@ -5,9 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
-## [0.2.93] — 2026-06-19
+## [0.2.94] — 2026-06-19
 
-Strengthen passive surfacing of the cc-thinking-skills reasoning models — no auto-prepend, verified against official Claude Code docs (skill bodies load only on invocation; `docs/` is not auto-discovered; the catalog stays a Bash-recipe reference).
+Staff-eng + official-docs-verified fine-tune of the three Atlassian skills (`acli`, `create-jira-bug`, `create-jira-story`). MCP tool references checked against the live Atlassian MCP schema; AC default reconciled with the canonical wording authority. No auto-prepend; no new machinery.
+
+### Fixed
+
+- **MCP fallback examples were under-specified.** `editJiraIssue` examples in `skills/acli/SKILL.md` + `REFERENCE.md` showed only `fields:{…}`, omitting the schema-required `cloudId` + `issueIdOrKey`; `lookupJiraAccountId` was referenced without its required `cloudId` + `searchString`. All now show the required args (verified against the loaded MCP schemas). The create-jira tables also connect the lookup step to the `assignee_account_id` field it feeds.
+- **`versions` vs `fixVersions` footgun.** Added a one-line clarifier in `create-jira-bug` that the MCP `versions` field is Affects Version/s (intended) — NOT `fixVersions` (Fix Version/s) — so the two correct-but-distinct Jira fields aren't "harmonized" into a bug later. (No field change — the existing value was correct.)
+- **`skills/acli/ISSUES.md`** Issue 1 (md2adf nested-list flattening) was mislabeled "Medium bug" while the script docstring + eval treat the flattening as by-design; reclassified to "By design (documented limitation)" with the H3-subheading workaround. Stale reporter `BIG-TATHEP` → `wasikarn`.
+
+### Changed
+
+- **AC default is now a plain checklist** in both create-jira templates (Given/When/Then kept as the escape hatch for genuinely complex behavior). The templates previously hardcoded GWT, contradicting `skills/acli/examples/README.md` — the AC-wording authority both skills cite, which states the checklist is the default. Descriptions updated to match. (Owner-confirmed direction.)
+
+ — no auto-prepend, verified against official Claude Code docs (skill bodies load only on invocation; `docs/` is not auto-discovered; the catalog stays a Bash-recipe reference).
 
 ### Changed
 

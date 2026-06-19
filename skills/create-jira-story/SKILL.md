@@ -1,6 +1,6 @@
 ---
 name: create-jira-story
-description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create story', 'new Jira story', 'write a story', 'สร้าง story', 'เปิด story', 'เขียน story', 'ออก story', or wants a structured Thai Story with business reason, scope, and Given/When/Then AC. Don't use for: converting a whole spec / Confluence page into a backlog of epics + tickets (use atlassian:spec-to-backlog), bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
+description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create story', 'new Jira story', 'write a story', 'สร้าง story', 'เปิด story', 'เขียน story', 'ออก story', or wants a structured Thai Story with business reason, scope, and plain checklist AC (Given/When/Then only for complex cases). Don't use for: converting a whole spec / Confluence page into a backlog of epics + tickets (use atlassian:spec-to-backlog), bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
 ---
 
 # Create Jira Story
@@ -63,13 +63,8 @@ Write the description in **Thai** using this structure:
 
 ## 🧪 เกณฑ์การยอมรับ (Acceptance Criteria) — สำหรับ QA
 
-**AC1 — [Short title]**
-
-* กำหนดให้: [precondition]
-* เมื่อ: [action]
-* ผลลัพธ์: [expected outcome]
-
-**AC2 — [Short title]**
+* **[หัวข้อสั้น]:** [precondition] → [action] → [expected outcome]
+* **[หัวข้อสั้น]:** [error / boundary / regression case] → [outcome] *(error / boundary / Regression check)*
 ...
 
 ---
@@ -81,6 +76,7 @@ Write the description in **Thai** using this structure:
 - Use plain business nouns ("เครดิตจากคูปอง", "ยอดคงเหลือ", "วันหมดอายุ")
 - Use baht amounts/day counts ("500 บาท", "หมดอายุ 30 วัน")
 - ❌ column names, enum values, API paths, DB references
+- Default form: **checklist** — แต่ละ AC บรรทัดเดียว ตรวจ "ผ่าน/ไม่ผ่าน" ได้. ใช้ Given/When/Then (กำหนดให้/เมื่อ/ผลลัพธ์) เฉพาะพฤติกรรมซับซ้อนจริง ๆ — escape hatch ไม่ใช่ default
 - Minimum 3 ACs: happy path, error/edge case, regression/permission
 - Full GOOD/BAD examples and register guidance: `skills/acli/examples/README.md` § Acceptance Criteria.
 
@@ -101,7 +97,7 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 | **Issue type** | `Story` (or Task if user asks). Confirm via `mcp__plugin_atlassian_atlassian__getJiraProjectIssueTypesMetadata` if create rejects. |
 | **Priority** | `Medium` unless user specifies otherwise. |
 | **Labels** | 1-2 domain tags (billing, refund, credit, player). Do NOT auto-add PO/QA labels. |
-| **Assignee** | Leave unassigned by default. Only set if user explicitly names one; resolve via `mcp__plugin_atlassian_atlassian__lookupJiraAccountId`. |
+| **Assignee** | Leave unassigned by default. Only set if user explicitly names one; resolve via `mcp__plugin_atlassian_atlassian__lookupJiraAccountId` (pass `cloudId` + `searchString`), then set `assignee_account_id`. |
 
 ## Step 4 — Preview and confirm
 
