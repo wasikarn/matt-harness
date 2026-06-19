@@ -1,8 +1,6 @@
 ---
 name: assert-presence
 description: "assert-presence"
-disable-model-invocation: true
-disable-model-invocation-reason: "machinery primitive — invoked by hooks/CI, not by user or model"
 ---
 
 # Assert Presence

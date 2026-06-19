@@ -1,8 +1,6 @@
 ---
 name: create-jira-bug
 description: "Create a single Jira Bug using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create bug', 'report a bug', 'file a Jira bug', or wants a structured Thai bug ticket with reproduction steps, impact, and Given/When/Then AC. Creates directly — it does not search for duplicates first. Don't use for: de-duping/triaging against existing issues before filing (use atlassian:triage-issue), bulk bug creation (use acli), editing an existing bug (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
-disable-model-invocation: true
-disable-model-invocation-reason: "external Jira write — the model must not auto-create tickets"
 ---
 
 # Create Jira Bug
@@ -116,7 +114,7 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 ## Step 4 — Preview and confirm
 
-Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create on the user's go-ahead. (The `disable-model-invocation` flag already prevents the model from auto-creating — this is review-and-proceed, not a second hard gate.)
+Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create **only on the user's explicit go-ahead**. This preview-and-confirm step is the safeguard against an unwanted ticket — never write to Jira before it.
 
 ## Step 5 — Create the issue
 

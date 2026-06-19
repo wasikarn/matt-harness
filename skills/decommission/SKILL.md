@@ -1,8 +1,6 @@
 ---
 name: decommission
 description: "decommission"
-disable-model-invocation: true
-disable-model-invocation-reason: "destructive — removes code and signs ABSENT assertions"
 ---
 
 # Decommission

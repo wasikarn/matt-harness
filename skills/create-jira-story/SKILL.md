@@ -1,8 +1,6 @@
 ---
 name: create-jira-story
 description: "Create a single Jira Story using the team's Thai PO/QA-readable template. Tries acli first, falls back to Atlassian MCP when acli is unavailable or cannot set a required field. Use when the user says 'create story', 'new Jira story', 'write a story', or wants a structured Thai Story with business reason, scope, and Given/When/Then AC. Don't use for: converting a whole spec / Confluence page into a backlog of epics + tickets (use atlassian:spec-to-backlog), bugs (use create-jira-bug), bulk story creation (use acli), editing an existing story (use acli), or technical tasks without PO-facing AC."
-disable-model-invocation: true
-disable-model-invocation-reason: "external Jira write — the model must not auto-create tickets"
 ---
 
 # Create Jira Story
@@ -107,7 +105,7 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 ## Step 4 — Preview and confirm
 
-Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create on the user's go-ahead. (The `disable-model-invocation` flag already prevents the model from auto-creating — this is review-and-proceed, not a second hard gate.)
+Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create **only on the user's explicit go-ahead**. This preview-and-confirm step is the safeguard against an unwanted ticket — never write to Jira before it.
 
 ## Step 5 — Create the issue
 

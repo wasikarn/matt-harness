@@ -1,8 +1,6 @@
 ---
 name: ship-change
 description: "Orchestrate an already-scoped change through classify → implement → review → address → merge (no explore/clarify discovery front-end). Use when the change is understood or already mid-flight and needs guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Don't use for: a blank-slate task needing discovery first (use /ship-task), one-line fixes, or pure research/exploration."
-disable-model-invocation: true
-disable-model-invocation-reason: "orchestrates the full lifecycle ending in merge (external) — sequences self-gating mutations"
 ---
 
 # Ship Change

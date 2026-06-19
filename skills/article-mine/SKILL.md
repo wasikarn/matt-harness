@@ -1,8 +1,6 @@
 ---
 name: article-mine
 description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
-disable-model-invocation: true
-disable-model-invocation-reason: "5-agent fan-out plus ships doctrine in-session (cost and writes)"
 ---
 
 # Article Mine
@@ -137,7 +135,7 @@ If `unverified` is non-empty, **do not** push — surface the unverified claims 
 - **Confusing "source = trusted" with "claims about source = trusted."** A local file's *existence* is Trusted-tier; what the file *says* is Verify-tier — the author can be wrong, outdated, or misread.
 - **Mining a 5%-overlap article as if it were novel.** Check the catalog (`MEMORY.md`) first. If the topic exists, the work is *verify the existing verdict* (sometimes the article's claim is the inverse of the prior verdict — flag it), not "discover something new."
 - **Writing a duplicate memory entry** because the new framing *feels* different. If a memory `<name>.md` already covers it, append a dated note and explain the new angle, don't create a sibling.
-- **Forgetting the `disable-model-invocation: true` gate.** This skill dispatches write-capable agents (`general-purpose` inherits `Bash`/`Edit`/`Write`) and writes memory + commits. Auto-invoking it on any URL in chat would create a side-effect storm. The `description` is for human scanning — the gate keeps it manual.
+- **Auto-firing this heavy skill on a bare URL.** This skill dispatches write-capable agents (`general-purpose` inherits `Bash`/`Edit`/`Write`) and writes memory + commits. Invoke it deliberately on an explicit "mine this" intent — not as a reflex on any URL pasted in chat, which would create a side-effect storm.
 - **Treating the verdict record as the whole artifact.** The record is the audit trail. The real deliverable is the canon change (or the explicit decision not to change canon). If no doctrine moved, the verdict is "no action" — say so, don't pad.
 - **Punting the commit to "next session."** This skill's whole point is closing the loop in-session. If the verdict is MINE and the change is real, commit + push before reporting back.
 - **Halt-on-fail ignored:** if a Critical claim is unverified and the verdict would flip, **HALT**. Don't ship a confident-sounding digest with a quietly-omitted unverified claim.
@@ -167,12 +165,11 @@ If `unverified` is non-empty, **do not** push — surface the unverified claims 
 ### Project conventions
 
 - Skill lives in `skills/article-mine/SKILL.md`; delivered via the `kbg@kobig` plugin (no symlink needed).
-- This is a **manual-invocation** skill — `disable-model-invocation: true`. The `description` line is for human scanning in `/skills`, not for auto-trigger.
+- The `description` triggers are deliberately narrow (explicit "mine this" / "extract lessons" intents) — this is a heavy, write-capable skill, so it should not fire on a bare URL in chat.
 - There is no ledger file — record verdicts in the memory store (`MEMORY.md` is the catalog; see Step 4).
 - Commit prefix: `feat(article-mine):` for the first commit, then `docs(article-mine):` / `fix(article-mine):` for follow-ups, per the kbg commit convention.
 
 ### Anti-collision guards (do not change without good reason)
 
 - The 5-lens split (synthesis / apply / gaps / suggestions / security) is the **only** stable shape. Don't reduce to 3 (loses Gaps vs Suggestions distinction). Don't expand to 7+ (lenses blur, no marginal value per the 5-vs-10 lesson).
-- The `disable-model-invocation: true` gate is load-bearing — see Failure Modes.
 - The HALT-on-Critical-unverified-claim gate is load-bearing — see Failure Modes and Rule 12.
