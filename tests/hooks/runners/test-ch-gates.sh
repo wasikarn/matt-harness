@@ -123,6 +123,7 @@ check gates/agent-spawn-gate.sh ask  "asks on research map Agent spawn" "$(agent
 check gates/agent-spawn-gate.sh ask  "asks on read-and-summarize Agent spawn" "$(agent_event 'summarize' 'Read and summarize eval/run-eval.py')"
 check gates/agent-spawn-gate.sh ask  "asks on background Agent spawn" "$(agent_event 'background task' 'Monitor build status' true)"
 check gates/agent-spawn-gate.sh ask  "asks on generic Agent spawn" "$(agent_event 'generic helper' 'Help me think through this')"
+check gates/agent-spawn-gate.sh ask  "asks on bare description-only Agent spawn" "$(agent_event 'helper' '')"
 
 # --- task-lifecycle.sh F7: TaskCompleted test-claim gate.
 #     Vendor convention (verified 2026-06-12): TaskCompleted uses exit 2 + stderr
