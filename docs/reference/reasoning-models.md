@@ -126,6 +126,22 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
 | leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking/probe |
 
+## kbg-native reasoning scaffolds
+
+The kbg-harness ships its own structured-reasoning scaffolds alongside the vendored
+cc-thinking-skills models. These are kbg-native processes, not part of the upstream
+39-model catalog, and are invoked as kbg skills or read as reference docs.
+
+| Scaffold | kbg surface | What it adds |
+| --- | --- | --- |
+| **judgment-ladder** | `kbg:decide` + `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide \& commit. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
+
+Read the full scaffold with Bash:
+
+```bash
+cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
+```
+
 ## Mapping models to Claude Code workflow patterns
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.

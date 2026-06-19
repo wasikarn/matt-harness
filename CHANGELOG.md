@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.105] — 2026-06-19
+
+Added a structured decision-making skill and reference doc to help the harness and
+its users walk consequential choices before committing.
+
+### Added
+
+- **`kbg:decide` skill.** Applies the Judgment Ladder — a compressed Decision
+  Quality process — across five rungs: recognize the decision, frame the problem,
+  gather and test assumptions, estimate risk and uncertainties, decide and commit.
+  Includes a proportionality rule so low-stakes reversible choices don't get
+  over-climbed, and explicit redirection to `kbg:adr`, `kbg:probe`, `thinking-cynefin`,
+  and `thinking-ooda` when those lenses fit better.
+- **`docs/reference/judgment-ladder.md`.** Standalone reference with rung-by-rung
+  checkpoints, failure modes, a decision record template, and connections to the
+  Decision Quality chain and kbg thinking skills.
+- **`docs/reference/reasoning-models.md` scaffold pointer.** New "kbg-native
+  reasoning scaffolds" section pointing to `kbg:decide` and the judgment-ladder
+  reference.
+
+### Changed
+
+- **README and plugin manifest counts.** Skill count refreshed 38 → 39.
+
 ## [0.2.104] — 2026-06-19
 
 Two guards against recurring friction surfaced by a `/insights` usage review: wrong-worktree review application and hardcoded home paths in committed scripts.

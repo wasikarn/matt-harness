@@ -1,15 +1,15 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.104-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.105-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 45 governance
+It adds 29 specialist agents, 39 workflow skills, 21 slash commands, and 45 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.104):** two guards from a `/insights` friction review — `/address-review` now asserts the working branch matches the PR's `headRefName` before editing (no more fixes landing on the wrong worktree), and the `pre-commit` gate blocks hardcoded `/Users/<name>` home paths in staged `*.sh`/`*.py` scripts (use `$HOME`/`~`; config + docs exempt).
+> **Newest additions (v0.2.105):** `kbg:decide` — a Judgment Ladder skill for consequential decisions, plus a reference doc at `docs/reference/judgment-ladder.md`. It walks through recognize → frame → test assumptions → estimate risk → decide & commit, with proportionality rules so you don't over-climb trivial choices.
 > (v0.2.103: official-docs conformance pass on hooks — `mcp__*` → `mcp__.*` matcher, `set -e` → `set -uo pipefail` on the last two non-conforming hooks; v0.2.102: dropped vestigial `skills:` from the 3 read-only reviewers; v0.2.101: trimmed `code-reviewer` to a 4-tool read-only set. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
@@ -95,7 +95,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | Component | Count | How to Use |
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
-| **Skills** | 38 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
 | **Hooks** | 45 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |

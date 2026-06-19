@@ -1608,6 +1608,11 @@ with open(index_path) as fh:
             continue
         if not in_index:
             continue
+        # Stop parsing when we leave the index section; downstream tables are
+        # commentary/mapping tables, not part of the 39-model catalog.
+        if line.startswith('## '):
+            in_index = False
+            continue
         if not line.startswith('|') or line.lstrip().startswith('|--') or ' Model ' in line:
             continue
         row = line.split('|')[1].strip().lower()
