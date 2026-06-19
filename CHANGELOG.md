@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.2.92] — 2026-06-19
+
+Atlassian skills get Thai trigger phrases so Thai requests route to the Thai PO/QA templates.
+
+### Changed
+
+- `skills/create-jira-bug/SKILL.md`, `skills/create-jira-story/SKILL.md`, and `skills/acli/SKILL.md` descriptions now carry Thai trigger phrases (`สร้างบั๊ก`, `แจ้งบั๊ก`, `เปิดบั๊ก`, `สร้าง story`, `เปิด story`, `ย้ายสถานะหลายตัว`, …) alongside the English ones, so a Thai request matches the Thai-template skill instead of an English-triggered `atlassian:*` plugin skill or a raw MCP `createJiraIssue` call. Skill bodies unchanged (already mature). Regenerated BOUNDARY.md.
+
+## [0.2.91] — 2026-06-19
+
+Removed `disable-model-invocation` from every skill except `recursive-improve`, so the model can route to the Jira-creation templates instead of bypassing them.
+
+### Changed
+
+- Dropped `disable-model-invocation: true` from `adr`, `article-mine`, `assert-presence`, `create-jira-bug`, `create-jira-story`, `decommission`, `migrate`, and `ship-change`. The flag also drops a skill's `description` from model context, so the create-jira skills were invisible to the model — it bypassed the Thai PO/QA templates and called raw MCP `createJiraIssue` directly. Single-ticket creation now relies on its in-flow preview-and-confirm step as the safeguard.
+- `recursive-improve` keeps the flag (autonomy invariant, audit #32 / ADR 0002); `ideate` stays `disable-model-invocation: false` (audit-required).
+- Updated now-stale prose in the affected skills and the `acli` cross-reference; regenerated BOUNDARY.md (8 skills `manual` → `auto`).
+
 ## [0.2.90] — 2026-06-18
 
 Fifth sweep: use official `${CLAUDE_PLUGIN_ROOT}` inside hook contexts, drop unofficial skill/command frontmatter fields, and regenerate BOUNDARY.md.

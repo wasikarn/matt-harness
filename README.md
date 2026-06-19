@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.90-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.92-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,9 +9,11 @@ It adds 29 specialist agents, 38 workflow skills, 21 slash commands, and 44 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.90):** foreign-CWD portability sweep completed; all plugin-delivered internal
-> doc recipes now resolve via `${KBG_PLUGIN_ROOT}`, stale cross-references fixed, and remaining
-> relative self-check paths in `docs/common-mistakes.md` were converted.
+> **Newest additions (v0.2.92):** the Atlassian skills (`acli`, `create-jira-bug`, `create-jira-story`)
+> are now model-invokable and carry Thai trigger phrases, so a Thai request like `สร้างบั๊ก` routes to the
+> Thai PO/QA template instead of a raw MCP call. `disable-model-invocation` was lifted from every skill
+> except `recursive-improve` (the lone autonomy-invariant flag); single-ticket creation is now guarded by an
+> in-flow preview-and-confirm step rather than by hiding the skill from model context.
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
