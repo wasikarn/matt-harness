@@ -1075,8 +1075,14 @@ fi
 RI_SKILL="$CLAUDE_DIR/skills/recursive-improve/SKILL.md"
 ADR0002="$CLAUDE_DIR/docs/adr/0002-autonomy-invariant.md"
 if [ -f "$RI_SKILL" ]; then
-  # Surface 3: present skill must carry the flag in its frontmatter (first 20 lines).
-  if ! head -20 "$RI_SKILL" | grep -qF "disable-model-invocation: true"; then
+  # Surface 3: present skill must carry the flag in its FRONTMATTER. Read it via
+  # fm_get (which parses ONLY the `---` block) rather than the old `head -20 |
+  # grep -qF` — the exact phrase "disable-model-invocation: true" also appears in
+  # the skill's PROSE (the autonomy-invariant paragraph + the L3 note), so both a
+  # line-window grep AND a naive grep-anywhere could pass with the real frontmatter
+  # flag deleted. fm_get is frontmatter-anchored AND line-count-independent (a
+  # docstring rewrite that pushes the flag past line 20 can no longer break it).
+  if [ "$(fm_get "$RI_SKILL" "disable-model-invocation" --block | tr -d ' ')" != "true" ]; then
     crit "skills/recursive-improve/SKILL.md: missing 'disable-model-invocation: true' in frontmatter (autonomy invariant regressed — see CONTEXT.md §Invariants + ADR 0002)"
   fi
 elif [ -f "$ADR0002" ]; then
@@ -1647,6 +1653,84 @@ PY
   fi
 else
   warn "reasoning-models reference docs missing from plugin cache: $RM_INDEX or $RM_SKILLS_DIR"
+fi
+
+# 43. L3 cage integrity (ADR 0003) — the cage-denylist + its guard are the single
+# code-level bound on an unattended L3 run. If the cage is empty/missing, the guard
+# is gone, or the cage stops covering a load-bearing safety surface, the loop could
+# edit its own gates/audit/gauntlet and escape. Gated on ADR 0003 presence (other
+# plugin repos + the audit fixtures don't declare L3, so the whole block is skipped).
+# CRIT, not WARN: a holed cage is one model-version from a self-rewriting loop.
+ADR0003="$CLAUDE_DIR/docs/adr/0003-l3-bounded-autonomy.md"
+CAGE="$CLAUDE_DIR/scripts/l3-cage.txt"
+GUARD="$CLAUDE_DIR/scripts/l3-loop-guard.py"
+if [ -f "$ADR0003" ]; then
+  # 43a: cage file present + non-empty (after stripping comments/blanks).
+  if [ ! -f "$CAGE" ]; then
+    crit "L3 cage missing: scripts/l3-cage.txt absent but ADR 0003 declares L3 (the loop would run uncaged — ADR 0003 §Three rails)"
+  elif [ -z "$(grep -vE '^[[:space:]]*(#|$)' "$CAGE")" ]; then
+    crit "L3 cage empty: scripts/l3-cage.txt has no entries — a deny-by-default cage with nothing in it denies nothing (fail-closed expects entries)"
+  else
+    # 43b: cage must cover the load-bearing anchors. A new gate hook is auto-covered
+    # by hooks/** etc., so this is a small FIXED anchor set, not a per-file list.
+    _missing=""
+    while IFS= read -r _anchor; do
+      [ -n "$_anchor" ] || continue
+      grep -qxF "$_anchor" "$CAGE" || _missing="$_missing $_anchor"
+    done <<'CAGE_ANCHORS'
+scripts/l3-cage.txt
+scripts/l3-loop-guard.py
+hooks/**
+tests/hooks/runners/**
+skills/harness-audit/scripts/audit.sh
+skills/_lib/**
+scripts/run-gauntlet.sh
+eval/run-eval.py
+docs/adr/**
+CLAUDE.md
+METHODOLOGY.md
+.git/config
+.git/hooks/**
+git-hooks/**
+.claude-plugin/plugin.json
+.claude-plugin/marketplace.json
+CAGE_ANCHORS
+    if [ -n "$_missing" ]; then
+      crit "L3 cage incomplete: scripts/l3-cage.txt is missing required safety anchor(s):$_missing (the loop could edit these to escape — ADR 0003 §Cage redesign)"
+    fi
+  fi
+  # 43c: guard present, compiles, and its self-check passes (the matcher + fail-closed posture).
+  if [ ! -f "$GUARD" ]; then
+    crit "L3 guard missing: scripts/l3-loop-guard.py absent but ADR 0003 declares L3 (no code-level enforcer of the caps/cage)"
+  elif command -v python3 >/dev/null 2>&1; then
+    if ! python3 -m py_compile "$GUARD" 2>/dev/null; then
+      crit "L3 guard broken: scripts/l3-loop-guard.py does not compile (py_compile failed)"
+    elif ! python3 "$GUARD" selftest >/dev/null 2>&1; then
+      crit "L3 guard selftest FAILED: scripts/l3-loop-guard.py selftest non-zero (cage matcher or fail-closed posture regressed)"
+    fi
+  fi
+fi
+
+# 44. L3 push-gate + git wiring (ADR 0003) — Gate 2 (push stays human-gated) is
+# enforced by the l3-push-gate.sh PreToolUse hook; the git-hook gauntlet that runs
+# the in-loop check is wired via core.hooksPath=git-hooks. A removed push-gate or a
+# redirected hooksPath silently disables Gate 2 / the gauntlet. Gated on ADR 0003.
+if [ -f "$ADR0003" ]; then
+  PUSHGATE="$CLAUDE_DIR/hooks/gates/l3-push-gate.sh"
+  HOOKSJSON="$CLAUDE_DIR/hooks/hooks.json"
+  if [ ! -f "$PUSHGATE" ]; then
+    crit "L3 push-gate missing: hooks/gates/l3-push-gate.sh absent but ADR 0003 declares L3 (Gate 2 unenforced — the loop could push its own batch)"
+  elif [ -f "$HOOKSJSON" ] && ! grep -qF 'l3-push-gate.sh' "$HOOKSJSON"; then
+    crit "L3 push-gate not registered: hooks/gates/l3-push-gate.sh exists but is not wired in hooks/hooks.json (the gate never fires)"
+  fi
+  # hooksPath sub-check: only when auditing the actual git working tree (skip for
+  # the plugin cache, which has no .git, and for non-kbg repos without git-hooks/).
+  if [ -d "$CLAUDE_DIR/git-hooks" ] && git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    _hp=$(git -C "$CLAUDE_DIR" config --local core.hooksPath 2>/dev/null || true)
+    if [ "$_hp" != "git-hooks" ]; then
+      crit "L3 git wiring: core.hooksPath is '${_hp:-<unset>}', expected 'git-hooks' — the gauntlet (pre-commit/pre-push) is bypassed (ADR 0003 §B computational push gate)"
+    fi
+  fi
 fi
 
 # ── summary ──────────────────────────────────────────────────────────

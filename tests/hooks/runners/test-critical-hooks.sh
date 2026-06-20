@@ -33,6 +33,7 @@ SUITES=(
   test-ch-orphaned-runners.sh
   test-ch-ideate-fanout.sh
   test-ch-ideate-session-end.sh
+  test-ch-l3.sh
 )
 
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/test-critical-hooks.XXXXXX")

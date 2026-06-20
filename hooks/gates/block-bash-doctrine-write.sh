@@ -35,9 +35,12 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 
 # Doctrine basenames (same set as doctrine-edit-gate Edit/Write hook).
 # METHODOLOGY.md (2026-05-20, audit H2), ACLI.md + DBGATE.md (2026-06-10, gate-coverage
-# closure) — all load-bearing
-# via CLAUDE.md @import chain. Keep aligned with doctrine-edit-gate.
-DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK|ACLI|DBGATE)\.md|settings\.json|\.mcp\.json|mcp-servers\.json'
+# closure) — all load-bearing via CLAUDE.md @import chain. The three governance ADRs
+# (0001 delivery path, 0002 autonomy invariant, 0003 L3 bounded-autonomy) added
+# 2026-06-21: ADR 0003 is the autonomy architecture keystone — an unguarded
+# Bash-redirect rewrite of it would silently move the autonomy boundary.
+# Keep aligned with doctrine-edit-gate (audit #41 seam asserts the two sets match).
+DOCTRINE_NAMES='(CLAUDE|METHODOLOGY|RTK|ACLI|DBGATE)\.md|settings\.json|\.mcp\.json|mcp-servers\.json|0001-personal-harness-as-plugin\.md|0002-autonomy-invariant\.md|0003-l3-bounded-autonomy\.md'
 
 # Doctrine path: either dotfiles repo claude/, runtime .claude/, or the extracted kbg-harness/ source root.
 # Match doctrine files at the root OR nested inside claude/.claude/kbg-harness directories.

@@ -13,9 +13,11 @@
 # No bare "*" globs: every entry is a "/**" dir-prefix or a literal path, so the
 # matcher is unambiguous and errs toward over-denying, never under-denying.
 
-# --- this cage + its guard (self-reference: editing the cage IS a caged Act) ---
+# --- this cage + its guard + the Gate-2 review-view generator (self-reference:
+#     editing the cage / a tampered run-report could mislead the reviewer) ---
 scripts/l3-cage.txt
 scripts/l3-loop-guard.py
+scripts/l3-run-report.sh
 
 # --- all governance hooks (gates, advisory, lifecycle, session, post-tool,
 #     maintenance, _lib.sh/_lib.py, hooks.json, sensors.json) ---

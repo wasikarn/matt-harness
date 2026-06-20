@@ -31,6 +31,17 @@ hook_init() {
   PROFILE="${CLAUDE_HOOK_PROFILE:-standard}"
   DISABLED="${CLAUDE_DISABLED_HOOKS:-}"
 
+  # L3 immunity (ADR 0003): during an authorized L3 run, the unattended loop must
+  # NOT be able to disarm gates via CLAUDE_HOOK_PROFILE=off / CLAUDE_DISABLED_HOOKS.
+  # When the L3 flag is on, force every hook live regardless of those bypass vars.
+  # The flag is OFF by default → zero effect on normal sessions. (l3-loop-guard
+  # check-act ALSO denies any candidate command that sets these vars; this is the
+  # runtime backstop for the case a command slips past the loop's pre-Act check.)
+  if [ "${KBG_AUTONOMY_L3:-}" = "1" ]; then
+    PROFILE="standard"
+    DISABLED=""
+  fi
+
   if [ "${HOOK_HONOR_PROFILE_OFF:-1}" = "1" ] && [ "$PROFILE" = "off" ]; then
     return 1
   fi

@@ -123,6 +123,10 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/l3-push-gate.sh\""
           }
         ]
       },

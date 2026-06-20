@@ -48,6 +48,7 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `review_finding` | `/review-pr` (Phase II) | `file`, `line`, `tier`, `agent`, `summary` |
 | `verification_verdict` | `/review-pr` (Phase II) | `subject_id`, `disposition`, `tier`, `decision`, `rejected_reason` |
 | `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
+| `l3_cycle` | `recursive-improve --auto` (ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks` |
 
 `review_finding` + `verification_verdict` are the Phase-II ground-truth pair: the
 former is the per-finding evidence (file/line/tier/agent/summary), the latter is
@@ -76,6 +77,17 @@ degrading | timeout`. Derivation (first match wins, in `verification-gate.sh`):
 per-trail `verification_status` markers and wall-clock correlation that are out
 of scope for the F4 fix. The field is additive; the consumer can introduce the
 other enum values later without a schema break.
+
+`l3_cycle` is the per-cycle record of an L3 bounded-autonomy run (`recursive-improve
+--auto`, ADR 0003). `run_id` (a uuid minted at launch) is the **correlation key**:
+every cycle of one unattended run shares it, so `scripts/l3-run-report.sh <run-id>`
+reconstructs the whole run (cycles, green/red/skipped outcomes, files touched) from
+the append-only journal at Gate-2 review time — the journal is the durable audit
+trail of what the loop did while the operator was away, not write-only. `outcome`
+is `green` (gauntlet passed, committed local), `red` (gauntlet failed, reset to the
+pre-cycle tag), or `skipped` (the candidate hit a caged path / tamper at `check-act`).
+The loop NEVER pushes (the `l3-push-gate` hook enforces it), so there is no
+`l3_cycle` event for a push — the batch ships only after the human Gate-2 review.
 
 `findings.jsonl` (the on-disk per-line shape `/review-pr` writes, sibling of
 `rejected.md` / `ledger.md` in `.scratch/review-pr-<ts>/`) is the source of these
