@@ -4,11 +4,12 @@
   "evals": [
     {
       "id": "ideate-frames-table-complete",
-      "task": "Verify that skills/ideate/SKILL.md contains all 15 frame names in the Frames table. The 15 frames are the load-bearing variety guarantee: hardware-eyes, regulator, ten-year-old, adversary, biology, logistics, game-design, markets, inversion, extreme-zero, extreme-infinite, remove-assumption, speedrunner, ant-colony, ops-3am. If any frame is dropped, the picker loses coverage and the ideation output converges to a narrower set of vantages.",
+      "task": "Verify that skills/ideate/ (SKILL.md body + references/frames.md) contains all 15 frame names. As of v0.2.113 the 15-row Frames table lives in references/frames.md (extracted to keep SKILL.md under the 500-line budget); a few frame names also appear in the SKILL.md body. The 15 frames are the load-bearing variety guarantee: hardware-eyes, regulator, ten-year-old, adversary, biology, logistics, game-design, markets, inversion, extreme-zero, extreme-infinite, remove-assumption, speedrunner, ant-colony, ops-3am. If any frame is dropped, the picker loses coverage and the ideation output converges to a narrower set of vantages.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "skills/ideate/SKILL.md",
+          "skills/ideate/references/frames.md"
         ],
         "required_phrases": [
           "hardware-eyes",
