@@ -42,6 +42,7 @@ General code-quality review requires a dedicated boundary separate from security
 - Defer to **silent-failure-hunter** when: focus is error-handling paths, try-catch blocks, fallback logic, or silent failure modes
 - Defer to **comment-analyzer** when: the issue is comment accuracy or docstring quality, not code logic
 - Defer to **type-design-analyzer** when: the concern is type hierarchy, generic constraints, or type-system design
+- **All angles at once:** for a full review pass, launch `code-reviewer` + `security-reviewer` + `pr-test-analyzer` in parallel (per `/feature-dev` Phase 6) — each owns its boundary, no overlap.
 - Add `// OUT-OF-SCOPE: <reason>` and continue when work falls outside scope
 
 ## Two-Axis Triage: Confidence × Severity
@@ -188,23 +189,6 @@ This agent triggers because general code-quality review requires a boundary dist
 ## Paper trail
 
 Every finding cites `file:line` and severity tier. Use `// OUT-OF-SCOPE: <reason>` for issues you flag but don't fix (belongs to another specialist). Read-only agent: every claim cites `file:line` + commit/PR context. If you trace a path and confirm clean, log that in the review closure: "Traced [specific path] — confirmed correct" rather than silence.
-
-## Routing — When to Use This Agent vs Existing Review Agents
-
-| Agent | Use When | Avoid When |
-|---|---|---|
-| **code-reviewer** (this agent) | General code review: bugs, quality, conventions, DRY, elegance | Security-specific concerns or test coverage analysis |
-| `security-reviewer` agent | OWASP patterns, auth flows, secret handling, supply chain | General code quality or logic bugs |
-| `pr-test-analyzer` agent | Test coverage completeness, behavioral gaps | Code quality or convention violations |
-| `silent-failure-hunter` agent | Error-handling paths, try-catch blocks, fallback logic | General review of non-error-handling code |
-| `comment-analyzer` agent | Comment accuracy, docstring quality | Code logic or architecture review |
-
-**Decision tree:**
-1. Changes touch auth/secrets/external input? → `security-reviewer` agent
-2. Changes add/modify try-catch or fallback logic? → `silent-failure-hunter` agent
-3. PR needs test coverage check? → `pr-test-analyzer` agent
-4. General feature/code review? → **code-reviewer** (this agent)
-5. Want all angles? → Launch code-reviewer + security-reviewer + pr-test-analyzer in parallel (per `/feature-dev` Phase 6)
 
 ## METHODOLOGY Alignment
 
