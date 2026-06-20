@@ -51,127 +51,44 @@ Pick the agent that best matches the domain of the topic (e.g. `platform-enginee
 
 **Goal:** dispatch all debate agents simultaneously. They are read-only (analysis, no Edit/Write/Bash) → **no AskUserQuestion gate required** per `skills/orchestrate/SKILL.md` § Ungated dispatch.
 
-**For each assigned agent, build a spawn prompt using the F9 template** (adapted for debate roles):
-
-### Advocate spawn prompt
+**For each assigned agent, fill this F9 debate template.** Only the title, **What**, **Focus**, and **Position** change per role — the rest is shared:
 
 ```
-# Task: Advocate — Argue FOR the preferred option
+# Task: <role> — <one-line mandate>
 
 ## What
-Produce a structured argument FOR the first/default option in the debate topic.
+<role-specific deliverable, from the table below>
 
 ## Where
 Debate topic: "<topic>"
 
 ## Focus
-Correctness, maintainability, and team-velocity benefits. Argue from first principles and cite real patterns where possible.
+<role-specific lens, from the table below>
 
 ## Deliverable
 A structured argument with the four required fields.
 
 ## FILES YOU OWN
-None — this is an analysis task. Read-only exploration of docs/codebase is permitted if relevant.
+None — analysis task. Read-only exploration of docs/codebase permitted if relevant.
 
 ## UPSTREAM CONTRACTS
 None — isolated debate. You do NOT see other agents' arguments.
 
 ## Done-when
-- [ ] `position` is filled (FOR)
+- [ ] `position` is filled (<position>)
 - [ ] `key_points[]` has ≥3 points with reasoning and citations (file:line, doc URL, or commit sha)
 - [ ] `risks[]` has ≥2 risks with severity (high/medium/low) and mitigation note
 - [ ] `recommendation` is actionable and specific
 ```
 
-### Skeptic spawn prompt
+**Per-role fill** — active roles by `--agents`: `2` → A+B · `3` → A+B+C · `4` → A+B+C+D:
 
-```
-# Task: Skeptic — Argue AGAINST and find risks
-
-## What
-Produce a structured argument AGAINST the first/default option in the debate topic. Find edge cases, hidden costs, and failure modes.
-
-## Where
-Debate topic: "<topic>"
-
-## Focus
-Risk discovery, operational failure modes, security implications, and hidden long-term costs. Be deliberately contrarian.
-
-## Deliverable
-A structured argument with the four required fields.
-
-## FILES YOU OWN
-None — this is an analysis task. Read-only exploration of docs/codebase is permitted if relevant.
-
-## UPSTREAM CONTRACTS
-None — isolated debate. You do NOT see other agents' arguments.
-
-## Done-when
-- [ ] `position` is filled (AGAINST)
-- [ ] `key_points[]` has ≥3 points with reasoning and citations (file:line, doc URL, or commit sha)
-- [ ] `risks[]` has ≥2 risks with severity (high/medium/low) and mitigation note
-- [ ] `recommendation` is actionable and specific
-```
-
-### Synthesizer spawn prompt (if `--agents` ≥ 3)
-
-```
-# Task: Synthesizer — Evaluate both sides and propose a hybrid
-
-## What
-Produce a structured evaluation of BOTH sides of the debate topic, then propose a hybrid or ranked recommendation.
-
-## Where
-Debate topic: "<topic>"
-
-## Focus
-Balanced evaluation, trade-off analysis, and a concrete recommendation that acknowledges when a hybrid or phased approach is better than picking a single winner.
-
-## Deliverable
-A structured argument with the four required fields.
-
-## FILES YOU OWN
-None — this is an analysis task. Read-only exploration of docs/codebase is permitted if relevant.
-
-## UPSTREAM CONTRACTS
-None — isolated debate. You do NOT see other agents' arguments.
-
-## Done-when
-- [ ] `position` is filled (HYBRID or RANKED)
-- [ ] `key_points[]` has ≥3 points with reasoning and citations (file:line, doc URL, or commit sha)
-- [ ] `risks[]` has ≥2 risks with severity (high/medium/low) and mitigation note
-- [ ] `recommendation` is actionable and specific
-```
-
-### Cost Analyst spawn prompt (if `--agents` = 4)
-
-```
-# Task: Cost Analyst — Analyze cost/performance implications
-
-## What
-Produce a structured cost and performance analysis of the options in the debate topic.
-
-## Where
-Debate topic: "<topic>"
-
-## Focus
-Infrastructure cost, query performance, operational overhead, and scalability economics. Quantify where possible; flag uncertainties explicitly.
-
-## Deliverable
-A structured argument with the four required fields.
-
-## FILES YOU OWN
-None — this is an analysis task. Read-only exploration of docs/codebase is permitted if relevant.
-
-## UPSTREAM CONTRACTS
-None — isolated debate. You do NOT see other agents' arguments.
-
-## Done-when
-- [ ] `position` is filled (COST-OPTIMIZED or PERFORMANCE-OPTIMIZED)
-- [ ] `key_points[]` has ≥3 points with reasoning and citations (file:line, doc URL, or commit sha)
-- [ ] `risks[]` has ≥2 risks with severity (high/medium/low) and mitigation note
-- [ ] `recommendation` is actionable and specific
-```
+| Role | `position` | What | Focus |
+|---|---|---|---|
+| **A — Advocate** | `FOR` | Argument FOR the first/default option | Correctness, maintainability, team-velocity; argue from first principles and cite real patterns |
+| **B — Skeptic** | `AGAINST` | Argument AGAINST the first/default option; find edge cases, hidden costs, failure modes | Risk discovery, operational failure modes, security, hidden long-term cost; deliberately contrarian |
+| **C — Synthesizer** | `HYBRID` or `RANKED` | Evaluation of BOTH sides, then a hybrid or ranked recommendation | Balanced trade-off analysis; when a hybrid/phased approach beats picking one winner |
+| **D — Cost Analyst** | `COST-OPTIMIZED` or `PERFORMANCE-OPTIMIZED` | Cost + performance analysis of the options | Infra cost, query perf, ops overhead, scalability economics; quantify, flag uncertainties |
 
 **Spawn each agent** with `Task` tool:
 - `subagent_type: <selected agent type>`
