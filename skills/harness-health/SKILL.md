@@ -1,6 +1,6 @@
 ---
 name: harness-health
-description: "Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts > 7 in 30 days', or 'silent-sensor count'. Also fires on Thai health queries like 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ'. Don't use for: the 12-cell decay grid / which cells are empty (use kbg:harness-coverage), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine."
+description: "Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts over 7 in 30 days', or 'silent-sensor count'. Also fires on Thai health queries like 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ'. Don't use for: the 12-cell decay grid / which cells are empty (use kbg:harness-coverage), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine."
 ---
 
 # Skill: harness-health

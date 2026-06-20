@@ -1,6 +1,6 @@
 ---
 name: usage-monitor
-description: "Read-only cost and subagent usage summary for the current session. Use when the user asks about session cost, token burn, cost breakdown by agent, or suspects nested-team token amplification. Reads the SessionEnd capture at `~/.claude/usage/<slug>.jsonl`; L2 read-only, no gates. Also fires on Thai cost queries like 'cost', 'token burn', 'ใช้เท่าไร', 'subagent กิน token'. Don't use for: real-time cost gating (none exists), cross-session aggregation, or OTEL/OTLP export (not implemented)."
+description: "Read-only cost and subagent usage summary for the current session. Use when the user asks about session cost, token burn, cost breakdown by agent, or suspects nested-team token amplification. Reads the SessionEnd capture at `~/.claude/usage/{slug}.jsonl`; L2 read-only, no gates. Also fires on Thai cost queries like 'cost', 'token burn', 'ใช้เท่าไร', 'subagent กิน token'. Don't use for: real-time cost gating (none exists), cross-session aggregation, or OTEL/OTLP export (not implemented)."
 ---
 
 # Usage monitor
