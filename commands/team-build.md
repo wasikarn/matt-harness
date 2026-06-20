@@ -79,6 +79,7 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 
 1. **Build the spawn prompt for each task in the wave using the F9 template** (in `skills/orchestrate/SKILL.md` § Spawn-prompt template):
    - `What` — from the task's `Description` column
+   - `Why` — *optional.* One clause of task intent (the feature goal or ADR it serves); omit when the `Description` already makes it self-evident
    - `Where` — from the task's `Files` column
    - `Focus` — the implicit dimension (correctness / minimal-blast / API-stability / etc.) — make it explicit
    - `Deliverable` — from the task's `Criteria` column (a thing a reviewer can grep for)

@@ -121,6 +121,9 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 ## What
 <one sentence: the concrete artifact to produce>
 
+## Why (omit if self-evident)
+<one clause: the goal or decision this task serves, so an ambiguity resolves toward intent, not literally>
+
 ## Where
 <directory or file paths, scope boundary>
 
@@ -155,6 +158,7 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 **Why this shape works:**
 
 - **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the teammate guesses (usually wrong).
+- **Why** — *optional; omit when self-evident.* One clause of intent (the goal or ADR the task serves) so the teammate resolves an ambiguous edge case toward the goal instead of guessing. METHODOLOGY's "give the reason" sub-rule applied to the spawn prompt — never pad a task whose What already implies its why.
 - **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the teammate) arbitrates cross-boundary edits.
 - **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the teammate either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
 - **Files + Criteria + Constraints** — the testable contract. "Make the code work" is not a criterion. "`POST /health` returns `{"status":"ok","db":"ping","uptime_s":N}` with HTTP 200" is.
