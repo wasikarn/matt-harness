@@ -5,8 +5,17 @@
 - **Decider**: Owner
 - **Scope**: Cross-references the 10 SYNTHESIS audit items that are
   deferred (not shipped, not on the roadmap) because shipping them
-  would require either amending ADR 0002 (forbidden) or depending on
-  vendor primitives the harness cannot lift.
+  would require a **superseding ADR** (ADR 0002's *principle* is irreversible,
+  but its *architecture* is revisable via an explicit human-gated ADR — as
+  [ADR 0003](0003-l3-bounded-autonomy.md) did for L3) or depending on vendor
+  primitives the harness cannot lift. **These rows stay deferred even under
+  ADR 0003**: L3 is a *bounded, opt-in, local-only, push-gated,
+  computationally-gated* loop — it still does not provide the model-as-gate,
+  run-until-true, or auto-PR autonomy these rows require. (ADR 0003's own L3
+  enforcement machinery — `l3-loop-guard.py`, the cage-denylist, audit checks
+  #43+ — ships in a later, gauntlet-gated build slice; until then
+  `KBG_AUTONOMY_L3` is inert. See [ADR 0003](0003-l3-bounded-autonomy.md)
+  §Implementation status.)
 
 ## Context
 

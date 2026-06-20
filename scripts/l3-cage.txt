@@ -1,0 +1,61 @@
+# === L3 cage denylist (ADR 0003) ===
+# The L3 self-improvement loop (recursive-improve --auto) may NOT edit any path
+# matching an entry below. An Act targeting a caged path is DENIED at the
+# pre-Act check, before it lands — the loop cannot edit the cage to escape it.
+#
+# deny-by-default: this is the *known safety surface*. Audit check #43
+# (cage-complete) verifies this list covers every file the gauntlet relies on;
+# if a new safety file appears that no entry matches, #43 CRITs.
+#
+# Syntax (kept deliberately dumb — see l3-loop-guard.py:is_caged):
+#   - "<dir>/**"  → the directory and everything under it, any depth
+#   - "<path>"    → that exact repo-relative path
+# No bare "*" globs: every entry is a "/**" dir-prefix or a literal path, so the
+# matcher is unambiguous and errs toward over-denying, never under-denying.
+
+# --- this cage + its guard (self-reference: editing the cage IS a caged Act) ---
+scripts/l3-cage.txt
+scripts/l3-loop-guard.py
+
+# --- all governance hooks (gates, advisory, lifecycle, session, post-tool,
+#     maintenance, _lib.sh/_lib.py, hooks.json, sensors.json) ---
+hooks/**
+
+# --- critical-hooks test runners (the computational-FB enforcement suite) ---
+tests/hooks/runners/**
+
+# --- the self-audit (whole file — not just #32/#34/#41) + its shared libs ---
+skills/harness-audit/scripts/audit.sh
+skills/_lib/**
+
+# --- the gauntlet entrypoint + every validator it transitively invokes ---
+scripts/run-gauntlet.sh
+eval/run-eval.py
+scripts/evals/**
+scripts/select-affected-fixtures.py
+scripts/orchestrate-dispatch.py
+scripts/plan_linter/**
+
+# --- the eval regression corpus the gauntlet grades against ---
+eval/datasets/**
+
+# --- governance ADRs (decision records, incl. this L3 ADR) ---
+docs/adr/**
+
+# --- L1 doctrine + governance prose ---
+CLAUDE.md
+METHODOLOGY.md
+RTK.md
+ACLI.md
+DBGATE.md
+CONTEXT.md
+DOMAINS.md
+
+# --- git wiring (a hooksPath redirect or a tampered hook disables the gauntlet) ---
+.git/config
+.git/hooks/**
+git-hooks/**
+
+# --- plugin manifests (version + component-count integrity) ---
+.claude-plugin/plugin.json
+.claude-plugin/marketplace.json

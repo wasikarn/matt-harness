@@ -188,9 +188,12 @@ There is no support SLA; versions are pre-`1.0.0`.
 `ACLI`, and `DBGATE` context in every session, plus the `senior-eng` output style.
 There is no opt-out flag.
 
-3. **Autonomy invariant (ADR 0002).** No autonomous or unattended self-repair loops.
-`kbg:recursive-improve` carries `disable-model-invocation: true` so the model cannot
-self-start it; every improvement iteration stops at a human approval gate.
+3. **Autonomy invariant (ADR 0002 → ADR 0003).** **Default (L2):** no autonomous or
+unattended self-repair loops; every improvement iteration stops at a human approval gate.
+**L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a bounded loop runs unattended within an
+owner-approved run, commits local-only, and is gated at *push* not per mutation
+([ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)). Either way `kbg:recursive-improve` keeps
+`disable-model-invocation: true` so the model cannot self-start it, and L4 stays rejected.
 
 4. **Single branch model.** The repo uses `develop` only. No feature branches.
 
@@ -235,7 +238,7 @@ kbg-harness/
 └── README.md             # This file
 ```
 
-**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) for why there are no autonomous-loop primitives.
+**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) / [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) for the autonomy stance (L2 default, opt-in L3 bounded loop, no self-launching cron/`/loop` primitives).
 
 ---
 

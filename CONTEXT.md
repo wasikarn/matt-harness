@@ -47,19 +47,28 @@ the steady state going forward.
 - **No bundled MCP/LSP servers.** Hooks that depend on `rtk` / `qmd` /
   `memory-lint` / `code-review-graph` must degrade gracefully when those tools
   are absent.
-- **Autonomy is human-gated (the autonomy invariant).** No autonomous or
-  unattended self-repair loop, and no multi-iteration loop that runs without
-  a human gate between iterations. Every self-improvement iteration stops at
-  a human `AskUserQuestion` gate before any mutation, and `recursive-improve`
-  stays `disable-model-invocation: true` so the model cannot self-start it
-  ("config repo, no app substrate … all risk, no target"). The gate is a
-  deliberate **judgment-preservation** choice — not a capability gap to be
-  closed as models improve; the same loop machinery preserves or destroys
-  engineering judgment depending on operator intent, and the loop can't tell
-  the difference. This is the canonical home for the invariant that
-  `recursive-improve` cites.
+- **Autonomy is human-gated (the autonomy invariant).** **Default (L2):** no
+  autonomous or unattended self-repair loop, and no multi-iteration loop that
+  runs without a human gate between iterations — every self-improvement
+  iteration stops at a human `AskUserQuestion` gate before any mutation.
+  **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a *bounded* unattended
+  self-repair loop may run within an owner-approved run — but it still cannot
+  self-start (`recursive-improve` stays `disable-model-invocation: true`),
+  commits **local-only**, and is **human-gated at push**, not per mutation
+  (ADR 0003). Either way the model cannot self-launch the loop, and **L4** (no
+  human gate at all) stays rejected. The gate is a deliberate
+  **judgment-preservation** choice — not a capability gap to be closed as
+  models improve; the same loop machinery preserves or destroys engineering
+  judgment depending on operator intent, and the loop can't tell the
+  difference. L3 keeps that judgment at the irreversible (push) boundary; it
+  relaxes only the per-mutation gate on reversible local commits. This is the
+  canonical home for the invariant that `recursive-improve` cites.
 
-  **See [ADR 0002](docs/adr/0002-autonomy-invariant.md) for the irreversible decision record** (rejected alternatives, 5 implementation surfaces, 3 verification pillars, and the "will not be reopened on a capability argument" clause).
+  **See [ADR 0002](docs/adr/0002-autonomy-invariant.md)** for the L2-era
+  decision record (rejected alternatives, 5 implementation surfaces, 3
+  verification pillars) and **[ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)**
+  for the L3 supersession (the two-gate model + the standing-consent
+  reconciliation).
 
 ## Components
 

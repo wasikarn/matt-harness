@@ -1,8 +1,19 @@
 # ADR 0002: Autonomy invariant — no autonomous or unattended self-repair loop
 
-- **Status**: Accepted
+- **Status**: Accepted — **superseded for architecture** by [ADR 0003](0003-l3-bounded-autonomy.md) (2026-06-21). Preserved append-only as the canonical record of the L2 era.
 - **Date**: 2026-06-12
 - **Decider**: Owner
+
+> **⚠ STATUS UPDATE (2026-06-21) — superseded for architecture by [ADR 0003](0003-l3-bounded-autonomy.md).**
+> This ADR remains the canonical record of the **L2 era** and its reasoning; it is preserved **append-only**, not
+> rewritten. ADR 0003 adopts **L3 bounded autonomy** (opt-in, `KBG_AUTONOMY_L3=1`, **default OFF**). **What changed:**
+> the human gate moves from *per-mutation* to *per-run-approval + per-push*. **What did NOT change:** the load-bearing
+> *principle* — operator judgment is the load-bearing input — which ADR 0003 preserves at the irreversible (push)
+> boundary, plus **no model-as-gate** and **no model self-start**. A running L3 loop — **once the L3 machinery ships and the operator explicitly sets `KBG_AUTONOMY_L3=1`** — is therefore **not** a silent
+> violation of this record; it is the explicit, recorded successor decision (until then the flag is inert and L2 is in force). ADR 0003 §Reconciliation answers this
+> ADR's §Rejected "standing consent" rejection directly. The word "irreversible" below is true of the **principle**,
+> not of the **architecture**: the architecture was revised by a deliberate, human-gated ADR — exactly the mechanism
+> §Verification requires.
 
 ## Context
 
@@ -61,6 +72,8 @@ without reading all 5 surfaces, and so it can be cross-referenced from
 invariant in prose).
 
 ## Decision
+
+> **⚠ Superseded for architecture by [ADR 0003](0003-l3-bounded-autonomy.md) (2026-06-21).** The decision below is preserved as the **L2-era** canonical record; it is **no longer the current architecture**. The harness now adopts opt-in **L3 bounded autonomy** (`KBG_AUTONOMY_L3=1`, default OFF). Read this section as history — see the STATUS UPDATE banner at the top of this file and ADR 0003 for the current stance.
 
 Adopt **L2 (hooked, with human gate)** as the harness's *only* loop
 architecture. The harness **MUST NOT** ship L3 or L4 loops. The invariant,

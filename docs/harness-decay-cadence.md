@@ -66,7 +66,7 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See [ADR 0002](0002-autonomy-invariant.md) for the rationale** — the autonomy invariant is irreversible, the "never auto-prune" guard is its concrete expression in decay reasoning, and the 5-iteration soft cap in `recursive-improve/SKILL.md:127` is a context-exhaustion backstop (not the primary gate).
+**See [ADR 0002](0002-autonomy-invariant.md)** (the L2-era rationale) **and [ADR 0003](0003-l3-bounded-autonomy.md)** (the L3 supersession) — the autonomy invariant's *principle* is irreversible (operator judgment is load-bearing; never auto-prune a verifier), but its *architecture* was deliberately superseded L2→L3 by ADR 0003. The "never auto-prune" guard is its concrete expression in decay reasoning and holds under L3 unchanged (the loop never auto-deletes components; the cage forbids it). The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 

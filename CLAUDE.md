@@ -25,7 +25,7 @@ Skipping step 1 or 2 causes the plugin cache to stale-load the old version, and 
 
 ### Context hierarchy (L1 / L2 / L3)
 
-kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical Agent" L1/L2/L3 cache model:
+kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical Agent" L1/L2/L3 cache model. **(These context tiers are unrelated to the autonomy levels L2/L3 in [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) — same letters, different axis: tiers = doctrine residency; autonomy levels = how far the human is from the mutation loop.)**
 
 | Tier | What | When |
 |------|------|------|
@@ -41,11 +41,11 @@ kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical
 
 **Do not** add speculative configurability to doctrine files — this is a personal harness, not a product. METHODOLOGY Rule 2: "No speculative configurability."
 
-### The autonomy invariant (load-bearing, ADR 0002)
+### The autonomy invariant (load-bearing, ADR 0002 → superseded by ADR 0003)
 
-No autonomous or unattended self-repair loop. Every self-improvement iteration stops at a human `AskUserQuestion` gate before any mutation. `recursive-improve/SKILL.md` carries `disable-model-invocation: true` so the model cannot self-start it.
+**Default (L2):** no autonomous or unattended self-repair loop; every self-improvement iteration stops at a human `AskUserQuestion` gate before any mutation. **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF, [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)):** a *bounded* unattended loop runs within an owner-approved run — commits local-only, human-gated at *push* not per mutation. Either way `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` so the model cannot self-start it.
 
-**Implications for development:** if a feature requires an unattended loop, cron trigger, or model-as-own-gate, the answer is **"out of scope by design"** — do not amend ADR 0002. The autonomy invariant is a judgment-preservation choice, not a capability gap.
+**Implications for development:** a *bounded, opt-in, local-only, push-gated* loop is now in scope (L3). Still **out of scope by design**: a self-*launching* loop (cron / `/loop` / `CronCreate` / Evo meta-loop), a **model-as-gate** (the in-loop check must stay computational), and **L4** (no human gate at all). Changing the autonomy architecture requires a new superseding ADR (the ADR 0003 mechanism) — not a flag flip, and never a loop self-edit. The invariant's *principle* (operator judgment is load-bearing) is preserved; only the *per-mutation gate* relaxed to *per-batch + push*.
 
 ### Hook architecture (two conventions)
 

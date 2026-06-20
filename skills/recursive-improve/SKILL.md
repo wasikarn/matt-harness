@@ -1,6 +1,6 @@
 ---
 name: recursive-improve
-description: "Bounded human-gated harness-improvement loop: read the harness's own health signals, propose the highest-leverage fix, and apply it only after explicit operator approval. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /feature-dev), external tool research (use kbg:article-mine), or any unattended loop."
+description: "Bounded human-gated harness-improvement loop: read the harness's own health signals, propose the highest-leverage fix, and apply it only after explicit operator approval. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /feature-dev), external tool research (use kbg:article-mine), or any self-launching / scheduled loop (the bounded L3 --auto mode is human-launched and push-gated, not self-starting)."
 disable-model-invocation: true
 disable-model-invocation-reason: LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---
@@ -15,14 +15,19 @@ This is the convergence step of harness-recursive-improvement (Phase 4). Phases 
 harness eyes (nudge telemetry, the review-pr marker, the verification journal); this skill is
 the hand — but a hand the human always holds.
 
-**The autonomy invariant (load-bearing — do not soften):** there is **no** autonomous,
-multi-iteration, unattended mode. The canonical home is ADR 0002 — read in Bash:
-`cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"` — which
-deliberately rejects an autonomous repair loop in this repo ("config repo, no app substrate …
-all risk, no target"). This skill
-honors that: every iteration stops at an `AskUserQuestion` gate before any mutation, and the
-skill is `disable-model-invocation: true` so the model cannot self-start it. The human is the
-loop's real stop condition; the iteration cap is only a context-exhaustion backstop.
+**The autonomy invariant (load-bearing — do not soften):** **Default (L2):** there is **no**
+autonomous, multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion`
+gate before any mutation. **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a `--auto` mode runs
+bounded cycles unattended *within an owner-approved run* — it commits **local-only**, is
+human-gated at **push** (not per mutation), and its in-loop check is the computational gauntlet,
+never a model-as-gate. The canonical homes are ADR 0002 (L2 era) and **ADR 0003** (the L3
+supersession) — read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounded-autonomy.md"`.
+Either way the skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
+and **L4** (no human gate at all) stays rejected. The human is the loop's real stop condition —
+at the per-mutation gate (L2) or at launch + pre-push review (L3); the iteration cap is a
+context-exhaustion backstop. (The `--auto` loop machinery — `scripts/l3-loop-guard.py`, the
+cage-denylist, the push-gate — ships in the L3 build slice; until then the flag is unset and only
+the L2 path below runs.)
 
 **When to use:** the user explicitly asks to improve / fix / audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
@@ -179,9 +184,12 @@ recursive-improve — iteration <N> report
   anchor each candidate to a reader gap, an audit finding, or a `file:line`.
 - **Treating the gate as a formality.** "We can fix this" is not authorization. The Step 3
   `AskUserQuestion` is mandatory; denial is not approval; never fail open into execution.
-- **Reintroducing autonomy.** Any wording or behavior that runs multiple iterations unattended
-  violates the autonomy invariant (read ADR 0002 in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`). The cap is a backstop, not a license
-  to batch-run without gates.
+- **Reintroducing L4 autonomy.** L3 `--auto` runs bounded cycles unattended *by design* (ADR 0003)
+  — that is sanctioned. What violates the invariant: a loop that **self-starts** (drops
+  `disable-model-invocation`), uses a **model as its in-loop gate**, **pushes** without the Gate-2
+  human review, or runs **without the `KBG_AUTONOMY_L3` flag + caps**. Read ADR 0003 in Bash:
+  `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounded-autonomy.md"`. The caps are the bound, not a
+  license to remove the launch + push gates.
 - **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"
   is a hypothesis until the reader/audit confirms it. Flat delta = did not help.
 - **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask
@@ -206,4 +214,4 @@ recursive-improve — iteration <N> report
   (kept minimal per Rule 2 — revisit only if a durable per-iteration history is actually needed).
 - **Origin & locked decisions:** `.scratch/harness-recursive-improvement/phase-4-recursive-loop.md`
   (metric = `verification_summary` gaps + harness-audit findings; cap = 5; rollback = surface + ask).
-  The autonomous-vs-human-gated question is resolved: **human-gated.**
+  The autonomous-vs-human-gated question is resolved: **human-gated at the per-mutation gate (L2 default), or at launch + pre-push review (L3 opt-in, ADR 0003)** — never model-gated, never self-launching.
