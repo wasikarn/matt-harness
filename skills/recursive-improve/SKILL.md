@@ -66,7 +66,8 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
   verification signal (the metric for THIS session may itself be stale), so the
   gaps table below is not trustworthy. The script does NOT auto-pause
   (`recursive-improve-observe.py:check_stall` returns a posture dict, never
-  raises — ADR 0002 forbids autonomous action). Suggested action strings are
+  raises — the in-loop gate stays computational, never a model self-deciding;
+  ADR 0002 principle, preserved under ADR 0003 L3). Suggested action strings are
   advisory; the operator decides.
 - **Debt-ceiling gate (SYNTHESIS #41 / spec §4.4):** if the `comprehension debt
   ledger` section reports `DEBT-CEILING BREACHED` (debt_count > `KBG_DEBT_CEILING`,
