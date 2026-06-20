@@ -7,8 +7,8 @@ Implement the backend task described by the user.
 
 ## Workflow
 
-1. **Write tests first** — create a failing test before any implementation. Verify it fails (Red).
+1. **Write tests first** — create a failing test before any implementation. Verify it fails (Red). For REST endpoint/contract work, consult `references/rest-api-design.md` before settling the API surface.
 2. **Minimal implementation** — write the smallest code that makes the test pass (Green).
 3. **Verify with real execution** — run the test suite, linter, and type checker. Fix errors immediately.
-4. **Flag architecture concerns** — document at least 1–3 architecture concerns in an `ARCHITECTURE_CONCERNS.md` file. Focus on: production readiness (logging structure, error handling, monitoring), data integrity (idempotency, historical immutability, FK constraints), and performance (Redis TTL, middleware overhead, index usage).
+4. **Flag architecture concerns** — document at least 1–3 architecture concerns in an `ARCHITECTURE_CONCERNS.md` file (template: `references/architecture-concerns-template.md`). Focus on: production readiness (logging structure, error handling, monitoring), data integrity (idempotency, historical immutability, FK constraints), and performance (Redis TTL, middleware overhead, index usage).
 5. **Refactor** — clean up duplication, improve naming, extract helpers. Re-run tests after each change.

@@ -165,7 +165,7 @@ sem also reads `.gitattributes` patterns (`diff=` and `linguist-language=`) as f
 
 ---
 
-## Zsh aliases (defined in `zsh/sem.zsh`)
+## Zsh aliases (paste into your own ~/.zshrc or a sourced dotfile)
 
 | Alias | Command |
 |-------|---------|

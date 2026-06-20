@@ -404,6 +404,6 @@ How to read this:
   view; `harness-health` is the *per-sensor / per-event* view.
 - **Future deliverable:** `eval/regressions/harness-coverage.json`
   (FIX-1, wave 4) — 30-session synthetic journal + expected
-  grid. The skill's `evals/evals.json` (this file) is the
-  *hand-curated* eval coverage; the regression fixture is the
-  *deterministic* coverage.
+  grid. The hand-curated eval coverage lives at
+  `tests/evals/skills/harness-coverage/evals.json`; the regression
+  fixture above is the *deterministic* coverage.

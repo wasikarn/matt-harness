@@ -121,7 +121,7 @@ user can search past ideate runs with:
 
 This is a read-only, local-memory feature. It does not influence the
 ideation algorithm; it only makes prior runs recallable. The companion script
-`scripts/ideate-memory.py` owns `init`, `capture`, `index`, `search`, and
+`${KBG_PLUGIN_ROOT}/scripts/ideate-memory.py` owns `init`, `capture`, `index`, `search`, and
 `status`.
 
 ## 2-wave fan-out (load-bearing)

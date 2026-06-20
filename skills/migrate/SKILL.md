@@ -67,7 +67,7 @@ Move from old to new without breaking production. Migration is risk management f
 
 ## METHODOLOGY
 
-- **Rule 1:** Think before coding. Phase 0 exists because most migration failures start with "we'll figure it out as we go."
+- **Rule 1:** Think before coding. The Gate step (1) exists because most migration failures start with "we'll figure it out as we go."
 - **Rule 2:** Strangler over big-bang.
 - **Rule 3:** One caller at a time. Don't refactor the whole module while migrating it.
 - **Rule 10:** Each phase ends with go/no-go.
@@ -78,5 +78,5 @@ Move from old to new without breaking production. Migration is risk management f
 - `/feature-dev` — greenfield work
 - `/fix-bug` — regression during migration
 - `kbg:hotfix` — if migration causes outage
-- `/deep-dive` — when Phase 0 answers 'unknown'
+- `/deep-dive` — when a Gate question answers 'unknown'
 - `decommission` skill — for zombie code, not migration targets

@@ -30,8 +30,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    printf 'pr=%s\nts=%s\n' "${PR_NUMBER:-}" "$(date -u +%s)" \
      > "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-active"
    ```
-2. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
-3. **Determine dispatch mode:**
+3. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
+4. **Determine dispatch mode:**
    - If user passed `parallel` keyword → mark for parallel dispatch in Phase 4.
    - If user passed `sequential` keyword → mark for sequential.
    - If **neither** keyword passed → **Analyze**: count routed agents (Phase 3), diff size (`git diff --stat`), file types touched.
@@ -39,7 +39,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **AskUserQuestion** single-select: "Phase 1: [N] agents routed, diff = [files changed / lines changed], auth-heavy = [yes/no]. My recommendation: [Parallel / Sequential]. Confirm dispatch mode?"
      - `Parallel (Recommended when diff is medium and no auth changes; fastest wall-clock time)` — agents are independent
      - `Sequential (Recommended when diff is auth-heavy or the user wants lower cognitive load)` — one complete report at a time
-4. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
+5. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
 
 ---
 

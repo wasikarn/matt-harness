@@ -43,7 +43,7 @@ Done.
 
 ## Security Incident Override
 
-If the incident involves unauthorized access, data exfiltration, or any security breach: **STOP.** Do not classify severity here. Do not apply the 8-step procedure below. Redirect to `security-reviewer` immediately. Once security-reviewer clears forensic steps, return to this procedure for infrastructure recovery only.
+If the incident involves unauthorized access, data exfiltration, or any security breach: **STOP.** Do not classify severity here. Do not apply the 8-step procedure above. Redirect to `security-reviewer` immediately. Once security-reviewer clears forensic steps, return to this procedure for infrastructure recovery only.
 
 ## Severity
 
