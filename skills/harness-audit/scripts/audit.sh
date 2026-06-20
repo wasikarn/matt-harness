@@ -1686,9 +1686,17 @@ skills/harness-audit/scripts/audit.sh
 skills/_lib/**
 scripts/run-gauntlet.sh
 eval/run-eval.py
+scripts/evals/**
+scripts/plan_linter/**
+eval/datasets/**
 docs/adr/**
 CLAUDE.md
 METHODOLOGY.md
+RTK.md
+ACLI.md
+DBGATE.md
+CONTEXT.md
+DOMAINS.md
 .git/config
 .git/hooks/**
 git-hooks/**

@@ -87,22 +87,32 @@ per-mutation inspection recoverable after the fact.
    human-started run, **never self-launching**.
 
 Caps are enforced **in code** (`scripts/l3-loop-guard.py`), not prose:
-`--max-runs` (**default 3**), `--max-cost`, `--max-duration`, `--fail-streak`,
-`--dirty-abort`. `KBG_AUTONOMY_L3` is captured at process start and **immutable
-for the run** (the loop cannot self-elevate scope mid-run).
+`--max-runs` (**default 3**), `--max-duration`, `--fail-streak`, `--dirty-abort`.
+`KBG_AUTONOMY_L3` is captured at process start and **immutable for the run** (the
+loop cannot self-elevate scope mid-run).
 
-### Implementation status (live today vs. shipped in the L3 build slice)
+> **`--max-cost` — deferred to Slice 2 (conscious deviation, 2026-06-21).** The
+> build plan listed `--max-cost` as a Slice-1 cap, but a plain script has no honest
+> local token-cost signal and fabricating one would violate METHODOLOGY (no fake
+> metrics). `--max-runs` + `--max-duration` are the hard, locally-observable bounds
+> and bound a run regardless of cost; real cost-drift estimation ships with the
+> Slice-2 learning engine, where the plan's cost-drift PORT already lives.
+> `scripts/l3-loop-guard.py` records this rationale in-file.
 
-This ADR records an **accepted decision**; the enforcement machinery ships in a
-**separate, gauntlet-gated build slice** (Slice 1), *after* this doctrine slice.
-Until that machinery lands and is green:
+### Implementation status (flag OFF == L2 until the ship slice)
 
-- `scripts/l3-loop-guard.py`, the cage-denylist data, the computational
-  push-gate, the `--auto` body, and audit checks **#43+** **do not yet exist**.
-- `KBG_AUTONOMY_L3` stays **unset** and `recursive-improve --auto` **refuses to
-  run** — the harness behaves exactly as the L2 record describes.
-- Today's enforcement points are audit **#32** (model-can't-self-start) and
-  **#41** (doctrine-gate seam). The L3-specific checks are deferred to Slice 1.
+This ADR records an **accepted decision**. The enforcement machinery was built in a
+**separate, gauntlet-gated slice** (Slice 1) *after* this doctrine slice, and is
+**committed locally and gauntlet-green** (2026-06-21): `scripts/l3-loop-guard.py`,
+the cage-denylist, the computational push-gate, the `--auto` body, and audit checks
+**#43/#44** (plus **#45**, reviewer read-only). It is **not yet shipped to the
+plugin cache**.
+
+- `KBG_AUTONOMY_L3` stays **unset** by default, so `recursive-improve --auto`
+  **refuses to run** and the harness behaves exactly as the L2 record describes —
+  the flag is inert until the operator sets it on a shipped, green cage.
+- Enforcement points: audit **#32** (model-can't-self-start), **#41** (doctrine-gate
+  seam), and the L3 checks **#43/#44**.
 
 **Hardening-before-enable:** the entire cage (denylist + guard + push-gate +
 profile-off immunity + flag immutability + all new audit checks + tests) must be
