@@ -26,6 +26,7 @@ cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
 - [Governance Hooks](#governance-hooks)
 - [Optional Integrations](#optional-integrations)
 - [Important Caveats](#important-caveats)
+- [Repository Structure](#repository-structure)
 - [Development](#development)
 - [Documentation](#documentation)
 - [License](#license)
@@ -199,6 +200,41 @@ self-start it; every improvement iteration stops at a human approval gate.
 
 6. **Restart is required.** Commands, skills, and hooks are loaded into the plugin cache
 at startup. A missing `/ideate-search` almost always means the restart step was skipped.
+
+---
+
+## Repository Structure
+
+Directory-level layout. The auto-generated `BOUNDARY.md` is the **file-level** capability map (kept current by `inventory-boundary.sh`), so this stays high-level and stable.
+
+```text
+kbg-harness/
+├── .claude-plugin/       # Plugin + marketplace manifests (plugin.json, marketplace.json)
+├── agents/               # 29 senior-specialist subagents (one .md each, flat)
+├── skills/               # 40 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
+├── commands/             # 21 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
+├── hooks/                # Governance hooks across 14 lifecycle events, grouped by role:
+│   ├── gates/            #   PreToolUse deny/ask gates           (computational feedforward)
+│   ├── advisory/         #   journal-only sensors                (inferential feedback — never block)
+│   ├── lifecycle/        #   TaskCompleted / Stop enforcement
+│   ├── session/          #   SessionStart doctrine injection + capture
+│   ├── post-tool/        #   PostToolUse audits
+│   ├── maintenance/      #   periodic upkeep
+│   └── hooks.json        #   registry (which script fires on which event)
+├── output-styles/        # Live-response registers (senior-eng default, staff-eng opt-in)
+├── themes/               # Terminal themes
+├── scripts/              # Orchestration + health + eval-support scripts (no LLM dispatch — see ADR 0002)
+├── eval/                 # Eval harness: datasets/ + regressions/ + run-eval.py (the "build" gate)
+├── tests/                # Critical-hooks suite + skill/_lib tests
+├── git-hooks/            # pre-commit (fast) + pre-push (full parallel gauntlet)
+├── docs/                 # Governance docs, grouped: adr/ reference/ research/ agents/ skill-template/
+├── METHODOLOGY.md RTK.md ACLI.md DBGATE.md   # L1 doctrine — always injected every session (no manual copy)
+├── CLAUDE.md             # Project instructions (architecture requiring multi-file reading)
+├── BOUNDARY.md           # Auto-generated capability map (regenerate after surface changes)
+└── README.md             # This file
+```
+
+**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) for why there are no autonomous-loop primitives.
 
 ---
 
