@@ -77,4 +77,26 @@ ncheck() {
 }
 for id in 32 34 41 43 44; do ncheck "$id"; done
 
+# --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
+# (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
+# Runs the REAL audit.sh against a fixture that gates #43 on (fake ADR 0003 + real guard
+# so 43a/43c stay clean) with a cage that is the real cage MINUS one required anchor.)
+CF="$FIXTURE/cage43"; mkdir -p "$CF/docs/adr" "$CF/scripts" "$CF/agents"
+printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CF/agents/x.md"  # satisfy audit's fleet guard
+printf '# adr0003 — gate #43 on\n' > "$CF/docs/adr/0003-l3-bounded-autonomy.md"
+cp "$REPO/scripts/l3-loop-guard.py" "$CF/scripts/l3-loop-guard.py"
+/usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$CF/scripts/l3-cage.txt"  # holed
+HOLED=$(bash "$AUDIT" "$CF" 2>&1)
+if printf '%s\n' "$HOLED" | /usr/bin/grep -q 'cage incomplete' && printf '%s\n' "$HOLED" | /usr/bin/grep -qF 'CONTEXT.md'; then
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43b" "CRITs on holed cage (names missing anchor)"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43b" "did NOT CRIT on holed cage"
+fi
+cp "$REPO/scripts/l3-cage.txt" "$CF/scripts/l3-cage.txt"  # full cage = control
+if bash "$AUDIT" "$CF" 2>&1 | /usr/bin/grep -q 'cage incomplete'; then
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43b" "false-positive on complete cage"
+else
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43b" "silent on complete cage"
+fi
+
 report
