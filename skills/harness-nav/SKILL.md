@@ -98,6 +98,25 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/S
 grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}"/docs/reference/thinking-skills/skills/*/SKILL.md
 ```
 
+**Orphan frames — reference-only (no kbg skill applies these).** The 9 models below have no host
+kbg surface, so nothing surfaces them at decision-time. Their vendored `SKILL.md` carries the full
+runnable procedure — reach for one when its situation matches, then read+apply it with the recipe
+above (`cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<dir>/SKILL.md"`). These are
+structured-thinking scaffolds, **not** an accuracy boost — see the honesty caveat in
+`reasoning-models.md` before leaning on one.
+
+| Frame (`<dir>`) | Reach for it when… |
+|---|---|
+| `thinking-regret-minimization` | an irreversible, life/career-shaped choice — minimize long-run regret |
+| `thinking-kepner-tregoe` | structured root-cause via IS / IS-NOT when five-whys isn't enough |
+| `thinking-fermi-estimation` | a rough-order numeric estimate from first principles, no direct data |
+| `thinking-triz` | an engineering/design contradiction — you need both conflicting properties |
+| `thinking-archetypes` | a recurring system-behaviour pattern you want to name |
+| `thinking-effectuation` | starting from means-at-hand when the goal is still fuzzy |
+| `thinking-dual-process` | checking whether you're in fast (System 1) vs slow (System 2) thinking |
+| `thinking-lindy-effect` | judging the durability / expected lifespan of a tech or idea |
+| `thinking-leverage-points` | finding the highest-impact intervention point (see also `kbg:probe` / systems-thinking) |
+
 ---
 
 ## Decision tree

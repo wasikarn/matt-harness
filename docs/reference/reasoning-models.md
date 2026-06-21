@@ -54,6 +54,13 @@ just apply it — don't route.** This catalog is for the reverse direction — w
 is doing something and you want the named handle for it (to combine lenses, to explain a
 move, or to teach the harness's reasoning to someone new).
 
+**Which scaffold for which situation?** That router is the METHODOLOGY scaffold menu ("Reach for a
+reasoning scaffold when the call is hard," added v0.3.5) — `clarify-first` / `probe` / `decide` /
+`strategize` / `critical-eval` / `doubt-driven`, split by reversibility. This catalog and its
+tables below (model→home, workflow-pattern→models) are **reference**, not a competing
+situation-router; for the 9 reference-only frames that no kbg skill applies, the on-demand path is
+`kbg:harness-nav` §6.
+
 To read the full upstream write-up for any model, run the Bash recipes in the next section.
 **Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path** — the variable expands
 only in shell context. The recipes also guard against the variable being unset, which happens

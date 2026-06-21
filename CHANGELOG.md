@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.6] — 2026-06-21
+
+Thinking-catalog on-demand discoverability — surface the 9 orphan mental-model frames on the
+path that's designed to be opened, after a 3-agent grilling debate + Team-Lead zoom-out ruled
+against building a new surface.
+
+### Changed
+
+- **`harness-nav` §6 now lists the 9 orphan thinking-frames** (regret-minimization, kepner-tregoe,
+  fermi-estimation, triz, archetypes, effectuation, dual-process, lindy-effect, leverage-points)
+  with a one-line "reach for it when…" + the `cat` recipe to their vendored SKILL.md. These are
+  the models no kbg skill embeds — previously reachable only by reading all 39 catalog rows. The
+  other ~30 stay reachable via their host skills + the v0.3.5 METHODOLOGY scaffold menu.
+  Reference-only scaffolds, not an accuracy boost (the catalog's honesty caveat still governs).
+- **`reasoning-models.md` "How to use"** now names the canonical "which scaffold when" router (the
+  v0.3.5 METHODOLOGY menu) and marks this catalog + its tables as *reference*, not a competing
+  situation-router — anti-drift against the three-overlapping-tables smell.
+
+### Not done (recorded)
+
+- **`kbg:think` apply-engine skill — rejected.** A skill whose job is "pick the framework for you"
+  is a model-as-router (ADR 0002 — the line is *who picks the lens*, not *who presses go*); its
+  description would collide with probe/decide/ideate/critical-eval (the v0.3.5 trigger-collision
+  smell); and the upstream eval gives it no accuracy to gain.
+- **A new "situation → framework" table — rejected** as redundant: `harness-nav` already routes to
+  the catalog on-demand, and a third table in a "do not open unprompted" file doesn't raise the
+  consult rate.
+- **Consolidating the thinking + decide surfaces — rejected.** They're layered by axis
+  (person / scaffold / model-name / discovery), not redundant; merging loses useful distinctions.
+
 ## [0.3.5] — 2026-06-21
 
 Decision-doctrine clarity — the thinking/deciding surface was structurally sound,
