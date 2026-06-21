@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.1] — 2026-06-21
+
+Post-L3 cleanup bundle: kill one dead feature, guard one duplication seam, fix
+stale script paths. Reviewed by a 3-lens senior panel before ship.
+
+### Removed
+
+- **`usage-monitor` feature deleted (build-to-delete).** Its capture hook never
+  worked — it ran `jq '.messages[]'` against a JSONL transcript, so it always
+  returned `[]` (the sibling ideate hooks fixed this exact bug in `b449e9d`;
+  usage-monitor missed the batch). Opt-in and off by default, it never delivered
+  data, so it was never missed. Removed the skill, the `usage-monitor-capture.sh`
+  SessionEnd hook, the `sensors.json` entry, the eval dataset + test, and the prose
+  references. **Skill count 40 → 39**; hook event count unchanged at 14 (the
+  SessionEnd event retains its other hooks).
+
+### Added
+
+- **Audit check #46 — `task-board-lib.sh` sync-seam guard.** Three skills
+  (`orchestrate`, `types-first`, `progressive-refine`) ship a byte-identical copy
+  of `scripts/task-board-lib.sh` (a skill's `scripts/` must be self-contained in
+  the plugin cache — no cross-skill sourcing). They were synced by hand with no
+  machine-check, so one could drift silently. #46 compares every copy against the
+  first with `cmp` (POSIX, no BSD/GNU hash split) and WARNs on divergence — same
+  class as the #37-#40 sync-seam checks. Covered by `test-ch-task-board-lib.sh`.
+
+### Fixed
+
+- **3 stale `$HOME/.claude/scripts/pr/` path references** → `${KBG_PLUGIN_ROOT}/scripts/pr/`
+  in `recursive-improve/SKILL.md` (L3 Observe reader) and `review-pr/SKILL.md`
+  (journal validator + writer). The v0.2.68 portability sweep missed these; they
+  pointed at the pre-plugin-extraction home-dir location.
+
 ## [0.2.110] — 2026-06-20
 
 ### Fixed

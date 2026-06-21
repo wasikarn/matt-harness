@@ -54,7 +54,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 ### 1. Observe — gather signals (read-only)
 
 - Run the verification-posture reader:
-  `python3 "$HOME/.claude/scripts/pr/recursive-improve-observe.py"`
+  `python3 "${KBG_PLUGIN_ROOT}/scripts/pr/recursive-improve-observe.py"`
   → prints three sections, in this order:
     1. **loop posture** (wedged-Bash / stale-ScheduleWakeup from `loop-status.py`)
     2. **comprehension debt ledger** (open_prs + unverified_changes + unreviewed_audit_findings)

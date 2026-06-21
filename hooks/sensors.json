@@ -4,7 +4,7 @@
   "_provenance": {
     "authored": "2026-06-17",
     "authored_by": "LEAD-D (code-architect) on sensor-fire-notification plan",
-    "derived_from": "hooks/hooks.json — 43 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 58 total kbg registrations across 14 lifecycle events.",
+    "derived_from": "hooks/hooks.json — 42 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 57 total kbg registrations across 14 lifecycle events.",
     "hand_curated": true,
     "no_env_var_defaults": "Per METHODOLOGY Rule 2 (no speculative configurability). All values are explicit; not sourced from $KBG_* env vars."
   },
@@ -241,15 +241,6 @@
       "name": "task-lifecycle",
       "should_fire_when": "TaskCompleted:*",
       "max_silent_days": 7,
-      "fallback_role": "inferential-FB",
-      "must_fire_in_session": false,
-      "enabled": true
-    },
-    {
-      "name": "usage-monitor-capture",
-      "observable": false,
-      "should_fire_when": "SessionEnd:*",
-      "max_silent_days": 30,
       "fallback_role": "inferential-FB",
       "must_fire_in_session": false,
       "enabled": true

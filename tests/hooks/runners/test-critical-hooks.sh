@@ -35,6 +35,7 @@ SUITES=(
   test-ch-ideate-session-end.sh
   test-ch-l3.sh
   test-ch-agent-readonly.sh
+  test-ch-task-board-lib.sh
 )
 
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/test-critical-hooks.XXXXXX")

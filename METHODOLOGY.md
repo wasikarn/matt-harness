@@ -128,7 +128,6 @@ default-on safety check. (SYNTHESIS #13, P2.3, eval fixture:
 - 30,000 tokens per session.
 - Summarize and restart on approach.
 - Surface the breach. Do not silently overrun.
-- **Track cost. Use `skills/usage-monitor` to summarize subagent token burn before ship.** (Ships the `subagent-token-cost-awareness` audit row to Present — read the SYNTHESIS in Bash: `cat "${KBG_PLUGIN_ROOT}/.scratch/harness-loop-audit-2026-06-12/SYNTHESIS.md"`; see commit `7194037`.)
 
 **Model-era caveat (1M-context models — Fable 5 / Opus 4.8+).** The budgets above are a deliberate **cost ceiling**, not a context-exhaustion guard. Two corrections on a modern backend: (1) **Do not surface a remaining-context countdown to the model as a wrap-up trigger** — at 1M context it provokes premature "let me start a new session / summarize / trim my work" (Fable 5 prompting guidance); "restart on approach" is a cost choice, not a capability need. (2) Tune reasoning *depth* with `effort` (`high`/`xhigh`), not by prompting around the token budget (Opus 4.8 — `effort` is the depth dial; prompting around it just makes the model reason shallower while pretending otherwise). Keep the cost discipline; drop the context-anxiety framing.
 

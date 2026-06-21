@@ -22,8 +22,7 @@ eval/
 │   ├── ship-change.json
 │   ├── task-sizing.json
 │   ├── triage.json
-│   ├── types-first.json
-│   └── usage-monitor.json
+│   └── types-first.json
 ├── fixtures/              # Expected outputs / assertions
 │   └── acceptance-pass.json
 ├── regressions/           # Known failure patterns that must not recur
