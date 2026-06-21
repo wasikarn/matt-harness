@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.3] — 2026-06-21
+
+Fix the stale `sensors.json` `_provenance` hook counts — the root cause of the
+README count drift. A `jq` census + harness-audit established the real numbers.
+
+### Fixed
+
+- **`sensors.json` `_provenance` corrected: "42 unique / 57 total" → "45 / 60".**
+  The field is hand-curated with no machine-check, so it drifted from `hooks.json`
+  as hooks were added — and it had propagated the wrong "42" into the README and
+  misled a verification agent into reporting "57". Verified authoritative counts:
+  **45 unique hook scripts**, **60 registrations** across 14 lifecycle events,
+  **35 tracked as sensors** (PreToolUse gates, `_lib` helpers, and capture scripts
+  are intentionally untracked — no staleness contract). Added a `recounted` note.
+  Metadata-only — no runtime-behavior change.
+
 ## [0.3.2] — 2026-06-21
 
 ECC structure comparison → two clarity renames. A 6-agent workflow drilled

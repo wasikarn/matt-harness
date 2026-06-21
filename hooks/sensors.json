@@ -4,7 +4,8 @@
   "_provenance": {
     "authored": "2026-06-17",
     "authored_by": "LEAD-D (code-architect) on sensor-fire-notification plan",
-    "derived_from": "hooks/hooks.json — 42 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 57 total kbg registrations across 14 lifecycle events.",
+    "recounted": "2026-06-21 — corrected stale 42/57 → 45/60 (jq census on hooks.json + harness-audit; the originals had drifted as hooks were added). 35 of the 45 scripts are tracked as sensors below; PreToolUse gates, _lib helpers, and capture scripts are intentionally untracked (no staleness contract).",
+    "derived_from": "hooks/hooks.json — 45 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 60 total kbg registrations across 14 lifecycle events.",
     "hand_curated": true,
     "no_env_var_defaults": "Per METHODOLOGY Rule 2 (no speculative configurability). All values are explicit; not sourced from $KBG_* env vars."
   },
