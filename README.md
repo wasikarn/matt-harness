@@ -5,7 +5,7 @@
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 39 workflow skills, 22 slash commands, and 42 governance
+It adds 29 specialist agents, 39 workflow skills, 22 slash commands, and 45 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
@@ -98,7 +98,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 22 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
-| **Hooks** | 42 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
+| **Hooks** | 45 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (35 tracked as sensors) |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -132,7 +132,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 
 ## Governance Hooks
 
-45 hook scripts fire on 14 lifecycle events. They are split into four cells:
+45 hook scripts fire on 14 lifecycle events (60 registrations total; 35 tracked as sensors for staleness). They are split into four cells:
 
 | | Feedforward (before the act) | Feedback (after the act) |
 |---|---|---|
