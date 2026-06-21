@@ -102,6 +102,70 @@ self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
   honest local token-cost signal, and faking one violates the no-fake-metrics
   rule. Slice-1 hard caps are `--max-runs` + `--max-duration`.
 
+## [0.2.118] — 2026-06-20
+
+### Added
+
+- **`/context` working-frame loader + `contexts/` dir.** Loads a dev / review /
+  research working-frame on demand so a session can adopt a role's lens without
+  hand-assembling the context each time.
+
+## [0.2.117] — 2026-06-20
+
+### Added
+
+- **Lifecycle agent-lens in `/kbg-help`.** The 29-agent fleet is now presented
+  organized by engineering stage, so the right specialist is discoverable from
+  where you are in the workflow rather than from an alphabetical list.
+
+## [0.2.116] — 2026-06-20
+
+### Added
+
+- **Optional `## Why` slot on the F9 dispatch template** (BMAD article-mine,
+  MINE 1). BMAD's "story = context package" framing surfaced one missing element:
+  a place to state *why* a dispatched task matters. The other 4 context-package
+  elements were already in F9. Optional, not mandated.
+
+## [0.2.115] — 2026-06-20
+
+### Changed
+
+- **`code-reviewer` routing deduped** into a single Cross-role boundaries section
+  (agent spec 216 → 200 lines). Same routing, stated once.
+
+## [0.2.114] — 2026-06-20
+
+### Changed
+
+- **`debug-debate` spawn fences collapsed** — 4 near-identical agent-spawn blocks
+  folded into one template + a table (command 338 → 255 lines).
+
+## [0.2.113] — 2026-06-20
+
+### Changed
+
+- **`ideate` frames table extracted** to `references/frames.md`, bringing
+  `SKILL.md` 512 → 496 lines (back under the official 500-line skill cap).
+
+## [0.2.112] — 2026-06-20
+
+### Fixed
+
+- **XML-tag-shaped placeholders stripped** from 3 skill descriptions (surfaced by
+  a skill-creator audit) — they could be misread as literal markup by the router.
+
+## [0.2.111] — 2026-06-20
+
+### Changed
+
+- **Best-practices sweep of the skill fleet** (48-agent review of all 40 skills;
+  narrow yield — most were already optimal). The two structural outliers fixed:
+  `progressive-refine/SKILL.md` 754 → 174 lines (progressive-disclosure split) and
+  `task-sizing` logic moved from inline Python into `scripts/`. Plus 10 correctness
+  one-liners across descriptions, including a `ship-change` description↔eval
+  mismatch.
+
 ## [0.2.110] — 2026-06-20
 
 ### Fixed
