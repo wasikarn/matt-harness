@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.5] — 2026-06-21
+
+Decision-doctrine clarity — the thinking/deciding surface was structurally sound,
+but the always-resident menu that points into it was incomplete and one trigger
+collided. Two surgical fixes; no refactor (an inventory pass + an adversarial
+clarity-critic agreed the scaffolds themselves are clean).
+
+### Changed
+
+- **Scaffold "reach for" menu relocated + completed.** The only always-resident
+  decision menu lived in the global `~/.claude/CLAUDE.md` as a 4-item line that
+  tagged `probe` as "(decision)" while omitting the purpose-built decision skills
+  (`decide`/`strategize`). Moved the complete, **reversibility-split** menu into
+  `METHODOLOGY.md` (kbg L1, co-located with the agent-routing index, loaded exactly
+  when those skills exist); the global line is now generic and points to it (no
+  longer dangles in non-kbg projects). Closes the discovery gap for free — the L1
+  menu is the discovery path the harness's own data shows works.
+- **`probe` no longer collides with `decide` on a Thai trigger.** Both fired on
+  `'วิเคราะห์ตัดสินใจ'` ("analyze-decide") with no tiebreak → coin-flip routing
+  between read-only analysis and the full Judgment Ladder. Dropped the token from
+  `probe` (it keeps `'probe'`/`'ถาม why'`/`'what if'`); `decide` owns the decision verb.
+
+### Not done (recorded)
+
+- **Audit trigger-token collision guard — rejected after verification.** A check for
+  surfaces sharing a trigger token can't be made precise without an allowlist of
+  intentional pairs: `team-plan`/`team-build` and the `deep-dive`/`researcher`/
+  `research-brief` tier legitimately share Thai triggers with dissimilar
+  descriptions, so a similarity gate flags them too. An allowlist is the speculative
+  config the harness rejects (Rule 2); the one real accidental collision is fixed
+  directly above. Other shared triggers flagged to the owner, not auto-changed.
+
 ## [0.3.4] — 2026-06-21
 
 Observability + learning — three ECC concept-gaps closed within kbg's invariants

@@ -226,6 +226,17 @@ Behavior:
 
 **Naming the reasoning, not just the route.** The index above picks *who* acts; for *how* to reason — the named mental models (first-principles, pre-mortem, reversibility, red-team, scientific-method, via-negativa…) that kbg skills already apply — see the catalog via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`. The doctrine hook injects the pointer each session. It is a reference, not a set of skills: the models are framing scaffolds, **not** a proven accuracy boost (their own eval shows zero hold up; one measurably hurt). To find which existing kbg surface applies a model, run `kbg:harness-nav` and search for the model name.
 
+**Reach for a reasoning scaffold when the call is hard** — the catalog above is reference; these are the *live* kbg skills, chosen by the situation. The axis the Staff loop implies is **reversibility**:
+
+| Situation | Reach for |
+|---|---|
+| scope vague / assumptions unstated — ask before building | `clarify-first` |
+| read-only systems analysis of a design choice before committing | `probe` |
+| an analyzable, **reversible** choice worth a Judgment-Ladder pass | `decide` |
+| an **irreversible** / long-horizon commitment under contested diagnosis | `strategize` |
+| audit existing reasoning (plan, ADR, RFC) for hidden assumptions | `critical-eval` |
+| disprove a confident output in fresh context before committing | `doubt-driven` (external skill) |
+
 **Routing Confidence** — judgment calls must be surfaced, not hidden:
 
 - **High** — keywords match a trigger phrase verbatim. Route inline.
