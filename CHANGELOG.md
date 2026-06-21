@@ -240,6 +240,14 @@ Slingshot-label fidelity, official-docs surface hygiene, and practical coding us
 - **Plugin manifests and README.** Version badge and newest-additions callout
   updated; no new component counts.
 
+## [0.2.108] — 2026-06-20
+
+### Fixed
+
+- **`kbg:decide` / `kbg:strategize` reference correctness** — corrected
+  vendored-path and non-loadable-surface references, plus a plugin-wide Thai
+  typo sweep.
+
 ## [0.2.107] — 2026-06-19
 
 Added a dedicated strategic-judgment skill and reference doc for irreversible
@@ -475,6 +483,13 @@ Staff-eng + official-docs-verified fine-tune of the three Atlassian skills (`acl
 - **No footer repositioning.** The whole skill body loads on invocation (official docs), so moving a footer up buys zero visibility — only churn. Surfacing was strengthened via caveat-consistency + honest coverage instead.
 - **Skipped** hotfix (OODA framing lives in its `reference.md`, not SKILL.md), triage (cynefin fit is hedged by the catalog itself), clarify-first (socratic already named inline), and ideate (inversion already named inline as 1 of 15 frames) — to avoid the "name a model on every skill" anti-pattern.
 
+## [0.2.93] — 2026-06-19
+
+### Changed
+
+- **Strengthened passive surfacing of the vendored thinking-skills** in skill
+  docs — discoverable on demand without auto-loading them into context.
+
 ## [0.2.92] — 2026-06-19
 
 Atlassian skills get Thai trigger phrases so Thai requests route to the Thai PO/QA templates.
@@ -519,6 +534,56 @@ Fourth cross-component path-sweep: correct stale hook subdir references, outdate
 - `scripts/orchestrate-dispatch.py` and `scripts/evals/run-acceptance.py` docstring usage examples use `python3` instead of `python`.
 - `CHANGELOG.md` historical references updated: `hooks/tests/test-critical-hooks.sh` → `tests/hooks/runners/test-critical-hooks.sh`, `scripts/verification-tier-audit.py` → `scripts/governance/verification-tier-audit.py`, `scripts/review-pr-journal-pre-emit-validator.py` → `scripts/pr/review-pr-journal-pre-emit-validator.py`, `scripts/governance-summary.py` → `scripts/governance/governance-summary.py`.
 
+## [0.2.88] — 2026-06-18
+
+### Fixed
+
+- **Third foreign-CWD portability sweep** — stale cross-component refs,
+  foreign-CWD doc examples, memory-dependent evals, and the verification-tier
+  path corrected.
+
+## [0.2.87] — 2026-06-18
+
+### Fixed
+
+- **Foreign-CWD sweep continued** — added the missing `merge-review-reports.py`
+  and corrected manifest counts.
+
+## [0.2.86] — 2026-06-18
+
+### Fixed
+
+- **Foreign-CWD recipe portability completed** — quoting normalized; README
+  newest-additions refreshed.
+
+## [0.2.85] — 2026-06-18
+
+### Changed
+
+- **Internal doc recipes converted to `${KBG_PLUGIN_ROOT}`** for foreign-CWD
+  portability; fixed stale review-pr hook paths.
+
+## [0.2.84] — 2026-06-18
+
+### Changed
+
+- **Reasoning-models reference hardened** for discoverability + foreign-CWD
+  portability (reference / audit / eval / help surfaces).
+
+## [0.2.83] — 2026-06-18
+
+### Changed
+
+- **Output styles renamed** `SENIOR-ENGINEER` / `STAFF-ENGINEER` →
+  `senior-eng` / `staff-eng`.
+
+## [0.2.82] — 2026-06-18
+
+### Changed
+
+- **Cache-invalidation bump** (no functional change) — force-refresh a stale
+  plugin cache.
+
 ## [0.2.81] — 2026-06-18
 
 Harden the reasoning-models reference path with machine checks and L3 discovery.
@@ -553,6 +618,24 @@ Polish the vendored cc-thinking-skills reference library so external installers 
 - **`hooks/session/command-root-anchor.sh`** now quotes the exported path so spaces/special characters do not break tokenization.
 - **`hooks/session/doctrine-bootstrap.sh`** pointer explicitly tells the model to use Bash (not `Read`) to access the catalog, since the path contains a shell-only variable.
 - **`BOUNDARY.md`** regenerated to match the latest XREF content.
+
+## [0.2.79] — 2026-06-18
+
+### Added
+
+- **Unified 39-model reasoning index**, reachable from any CWD.
+
+## [0.2.78] — 2026-06-18
+
+### Changed
+
+- **`staff-eng` register guards added** from the output-style drill-down.
+
+## [0.2.77] — 2026-06-18
+
+### Added
+
+- **`staff-eng` output style added and made the default** live-response register.
 
 ## [0.2.76] — 2026-06-18
 
@@ -765,6 +848,116 @@ Output-style hardening + audit alignment. Renames `TECH-LEAD-THAI` to `SENIOR-DE
 - **Audit `VALID_TOOLS` was stale.** Replaced the hardcoded allowlist with the grantable agent tool surface from the official docs and removed deprecated/internal-only tokens (`MultiEdit`, `BashOutput`, `KillShell`, `SlashCommand`, `TodoWrite`, `Task` alias). (`v0.2.58`)
 - **Audit `hooks.json` schema was type-naive.** Check #31.4 now branches required-field validation by hook type (`command`/`http`/`mcp`/`agent`/`prompt`) and warns on unknown types. (`v0.2.58`)
 
+## [0.2.58] — 2026-06-18
+
+### Fixed
+
+- **`audit.sh` aligned with the official Claude Code docs.**
+
+## [0.2.57] — 2026-06-17
+
+### Changed
+
+- **Output style `TECH-LEAD-THAI` renamed → `SENIOR-DEV`**; Thai register dropped.
+
+## [0.2.56] — 2026-06-17
+
+### Added
+
+- **6 model-era doctrine follow-ups** shipped from the Fable 5 / Opus 4.8
+  prompting drill-down.
+
+## [0.2.55] — 2026-06-17
+
+### Fixed
+
+- **Escalation-mirror doc-vs-reality gap closed** + a latent block-scalar parse
+  bug fixed.
+
+## [0.2.54] — 2026-06-17
+
+### Added
+
+- **2 more sync-seam guards** — dismiss-stale Q3 thresholds + the fan-out band.
+
+## [0.2.53] — 2026-06-17
+
+### Added
+
+- **3 sync-seam guards** against silent drift; fixed live DOMAINS.md drift.
+
+## [0.2.52] — 2026-06-17
+
+### Fixed
+
+- **dismiss-stale Q3 `is_stale` mirror** synced with the observable guard.
+
+## [0.2.51] — 2026-06-17
+
+### Added
+
+- **4 legacy TSV loggers mirrored** into the governance journal.
+
+## [0.2.50] — 2026-06-17
+
+### Fixed
+
+- **False 'silent never' staleness alarms stopped** for non-journaling sensors.
+
+## [0.2.49] — 2026-06-17
+
+### Fixed
+
+- **`kbg:article-mine` SKILL.md localized** to the kbg layout.
+
+## [0.2.48] — 2026-06-17
+
+### Fixed
+
+- **task-lifecycle F7 stderr** stale user-facing path corrected.
+
+## [0.2.47] — 2026-06-17
+
+### Fixed
+
+- **Stale flat hook-path citations swept** (docs / scripts / eval) + team-build
+  B3 hardening.
+
+## [0.2.46] — 2026-06-17
+
+### Added
+
+- **Vendored cc-thinking-skills** as common-references + a cross-ref hygiene
+  refactor.
+
+## [0.2.45] — 2026-06-17
+
+### Added
+
+- **Sydney Runkle "Loop Engineering" cataloged**; the L3/L4 rejection locked into
+  BOUNDARY.md + a regression fixture.
+
+## [0.2.44] — 2026-06-17
+
+### Fixed
+
+- **Audit guarded against a missing `~/.claude/skills`** in the command-group
+  pipeline, so `set -e` reaches the Summary.
+
+## [0.2.43] — 2026-06-17
+
+### Fixed
+
+- **`set -e` safety on audit process substitutions** so the audit reaches its
+  Summary under CI.
+
+## [0.2.42] — 2026-06-17
+
+### Added
+
+- **0xCodez harness-roadmap memory** + a BOUNDARY XREF block +
+  harness-vs-loop-autonomy regression fixture.
+
 ## [0.2.41] — 2026-06-17
 
 Reliability + safety sweep. Closes findings from the 2026-06-17 multi-agent audit.
@@ -801,51 +994,299 @@ Reliability + safety sweep. Closes findings from the 2026-06-17 multi-agent audi
   regenerated `BOUNDARY.md`, corrected `hooks/sensors.json` provenance to 43 unique scripts
   / 58 registrations, and bumped both plugin manifests to 0.2.41. (`v0.2.41`)
 
-## [0.1.2] — 2026-06-11
-
-Patch release — surfaces two post-`0.1.1` fixes as a clean release line. No new features, no
-breaking changes.
-
-### Fixed
-
-- **G15 (P0): harness-audit cache-version hardcode.** `audit.sh:70` hardcoded `0.1.0` as the
-  default plugin-cache path. When the cache bumped to `0.1.1/` (or any future `0.x.y/`), the
-  hardcoded default pointed at a missing directory, silently setting `PLUGIN_ACTIVE=0` and
-  disabling the F1 plugin-aware bypass — surfacing **61 false-positive CRITs** on `audit.sh`
-  (the very thing the F1 rework in `0.1.1` was meant to fix). Now resolves the cache version
-  dynamically via `ls | sort -V | tail -1`. (`846452a`)
+## [0.2.40] — 2026-06-17
 
 ### Added
 
-- **CI: `.github/workflows/validate.yml`** — runs `claude plugin validate --strict .` on every
-  push and PR to `main` and `develop`. Catches schema / manifest drift before publish; pairs
-  with the existing pre-commit harness-audit + critical-hooks gates. (`9f704f0`)
+- **Shared error-handling contract (`err.sh`)** adopted + inventory/usage-monitor scripts migrated to it; `audit.sh` set-e safety + empty-dir fleet counts; actionable inferential-FB journals; smarter harness-nav L3 miner.
 
-### Patched (2026-06-11, post-release)
+## [0.2.39] — 2026-06-17
 
-Three commits landed after `0.1.2` was tagged. They are non-functional (no runtime change, no
-manifest drift, no version bump) — included here for archaeology and so a future reader of
-`orchestrate` / `critical-eval` / `article-mine` / `acli` can trace why the descriptions differ
-from the pattern in earlier versions. The auto-trigger re-measure (window 2026-05-25→now,
-scope `kobig`) confirmed **no regression**: custom auto-rate flat at 38% (76/199), all-skills
-auto-rate flat at 46% (131/286).
+### Added
 
-- **Description trim cycle (4 skills).** All 26/26 kbg-harness skills now under the 700-char
-  UI truncation threshold. Body content byte-identical; only `description:` lines touched.
-  - `orchestrate`: 978 → 685 chars (`38c1c40`)
-  - `critical-eval`: 802 → 686 chars (`38c1c40`)
-  - `article-mine`: 713 → 642 chars (`3d03444`)
-  - `acli`: 703 → 628 chars (`3d03444`)
-  - All sibling cross-refs + all quoted trigger phrases + all negative-scope examples
-    preserved verbatim. Watch-out: `acli`'s "ALWAYS trigger" + "ANY" are load-bearing safety
-    signals for bulk-mutation — do not strip in any future trim.
+- **`skills/_lib/err.sh` shared error-handling contract** introduced; first inventory/usage-monitor scripts migrated onto it.
 
-- **measure-autotrigger: opt-in plugin-cache fallback.** Post-cutover (commit `962bfce`),
-  `kbg-harness/skills` and `kbg-harness/commands` no longer live under a `claude/` subdir,
-  so the `--repo-root` lookup misses. Added `--use-plugin-cache-fallback` flag (default off,
-  explicit opt-in to avoid silent data drift for unrelated repos) that walks
-  `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
-  Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
+## [0.2.38] — 2026-06-17
+
+### Changed
+
+- **Official-docs audit drift fixes** in `audit.sh`.
+
+## [0.2.37] — 2026-06-17
+
+### Changed
+
+- **Relocated test / eval / benchmark artifacts** into the `tests/` tree.
+
+## [0.2.36] — 2026-06-17
+
+### Changed
+
+- **Moved harness-audit test fixtures out of component dirs** so fake files stop shipping into the plugin cache.
+
+## [0.2.35] — 2026-06-17
+
+### Added
+
+- **`/ideate-search`** — qmd-backed recall of past ideate runs.
+
+## [0.2.34] — 2026-06-17
+
+### Fixed
+
+- **ideate-convergence** switched to local Ollama `all-minilm` embeddings; fixed the jq invocation count.
+
+## [0.2.33] — 2026-06-17
+
+### Changed
+
+- **Cache-invalidation bump** for the `/ideate` command + convergence hook.
+
+## [0.2.32] — 2026-06-17
+
+### Changed
+
+- **Cache-invalidation bump** after the ideate-rotate backtick fix.
+
+## [0.2.31] — 2026-06-17
+
+### Added
+
+- **ideate ADHD fine-tunes** — SessionStart frame rotation, daily budget counter, standalone CLI.
+
+## [0.2.30] — 2026-06-17
+
+### Added
+
+- **`ideate-critic` fresh-context agent** + ideate-quality eval dataset + regression contract.
+
+## [0.2.29] — 2026-06-17
+
+### Added
+
+- **`kbg-help` skill + `/kbg-help` command** as the quick-reference surface.
+
+## [0.2.28] — 2026-06-17
+
+### Added
+
+- **`kbg:ideate`** — 15-frame parallel divergent-ideation L2 skill (ported from ADHD).
+
+## [0.2.27] — 2026-06-17
+
+### Changed
+
+- **Dedicated CI job for the critical-hooks suite** + halved journal minting.
+
+## [0.2.26] — 2026-06-16
+
+### Fixed
+
+- **Missing teammate-teardown step added** — `/team-build` no longer leaves idle teammates after a build.
+
+## [0.2.25] — 2026-06-16
+
+### Changed
+
+- **5-surface ceremony/blanket dig — 11 fixes**, including a governance check that had gone dark (audit globs missed relocated hook subdirs).
+
+## [0.2.24] — 2026-06-16
+
+### Changed
+
+- **Demoted the always-on plugin-cache I1** to a context line + un-rotted 2 orphaned fixture tests.
+
+## [0.2.23] — 2026-06-16
+
+### Changed
+
+- **Retired ceremony + blanket patterns** found in the 4-agent dig (incl. the #31.1 canonical-sections boilerplate trap).
+
+## [0.2.22] — 2026-06-16
+
+### Changed
+
+- **Acted on the grill-with-docs challenge** of the disable-model-invocation criterion.
+
+## [0.2.21] — 2026-06-16
+
+### Changed
+
+- **`disable-model-invocation` made a per-surface criterion**, not a blanket flag.
+
+## [0.2.20] — 2026-06-16
+
+### Fixed
+
+- **De-escalated `acli` + `security-auditor` descriptions** (cleared #33 I2/I3).
+
+## [0.2.19] — 2026-06-16
+
+### Fixed
+
+- **Cleared all 5 residual backlog items** from the whole-repo dig.
+
+## [0.2.18] — 2026-06-16
+
+### Fixed
+
+- **Closed 3 unguarded autonomy-invariant surfaces** + the #32 deleted-skill hole.
+
+## [0.2.17] — 2026-06-16
+
+### Fixed
+
+- **WARN-tier cleanup** from the whole-repo dig.
+
+## [0.2.16] — 2026-06-16
+
+### Fixed
+
+- **Closed 5 CRIT enforcement-gate bypasses** found in the whole-repo adversarial dig (git global-opt, db comment+newline, validator quote-glue, jq fail-open, run-acceptance file-skip).
+
+## [0.2.15] — 2026-06-16
+
+### Fixed
+
+- **Resolved all 4 flagged items from the fan-out audit** — F8.4 advisory, panel opt-out, fixtures, '3-5 teammates' clarified as peak concurrent.
+
+## [0.2.14] — 2026-06-16
+
+### Fixed
+
+- **4 real defects in the min-3/max-5 dispatcher** (adversarial audit).
+
+## [0.2.13] — 2026-06-16
+
+### Fixed
+
+- **F8.4 min-3 floor** — panel opt-out + wave-band clarification.
+
+## [0.2.12] — 2026-06-16
+
+### Added
+
+- **Collapsed the fan-out band to min 3 / max 5** (F8.4 + F8.5).
+
+## [0.2.11] — 2026-06-16
+
+### Changed
+
+- **Reconciled METHODOLOGY Rule 6 for the model era** + audit #33 flags over-forceful skill imperatives.
+
+## [0.2.10] — 2026-06-16
+
+### Changed
+
+- **Trimmed 4 skill descriptions** under the 500-char injection-audit threshold.
+
+## [0.2.9] — 2026-06-16
+
+### Changed
+
+- **Async bypass-audit-log + mtime cache** for memory-lint-check (perf).
+
+## [0.2.8] — 2026-06-16
+
+### Changed
+
+- **Restored `+x` perms, fixed Pyright** findings.
+
+## [0.2.7] — 2026-06-16
+
+### Changed
+
+- **Reorganized the flat `hooks/` dir into 6 categorical subdirs.**
+
+## [0.2.6] — 2026-06-16
+
+### Added
+
+- **Extended `_sensor_heartbeat`** to computational-FB + inferential-FF always-on hooks.
+
+## [0.2.5] — 2026-06-16
+
+### Added
+
+- **`_sensor_heartbeat`** for active-coverage journal events.
+
+## [0.2.4] — 2026-06-16
+
+### Added
+
+- **Wave-3 gap closure** — doctrine, advisory hooks, `harness-coverage` 12-cell grid + `inferential-structural-judge`.
+
+## [0.2.2] — 2026-06-15
+
+### Added
+
+- **Vertical Agent L1/L2/L3 gap closure** applied (the context-tier model).
+
+## [0.2.1] — 2026-06-15
+
+### Added
+
+- **9-step-loop gaps closed** — post-edit-test hook + review-state gate + `/ship-task`.
+
+## [0.2.0] — 2026-06-15
+
+### Added
+
+- **Silent-sensors gap closed** via the SessionStart staleness notifier.
+
+## [0.1.18] — 2026-06-15
+
+### Fixed
+
+- **`clarify-first` trigger rewritten** to fire on pre-dispatch ambiguity.
+
+## [0.1.17] — 2026-06-15
+
+### Fixed
+
+- **create-jira: acli-first + MCP fallback**, aligned with ACLI.md doctrine.
+
+## [0.1.16] — 2026-06-15
+
+### Added
+
+- **`create-jira-bug` + `create-jira-story`** templates (Thai PO/QA format).
+
+## [0.1.15] — 2026-06-15
+
+### Changed
+
+- **Trimmed 8 watchlist skills under 120 tok**; agent `tools:` kept as a comma scalar per official docs.
+
+## [0.1.14] — 2026-06-15
+
+### Fixed
+
+- **Option-2 drill-down** — trimmed skills, fixed cross-refs, hardened YAML, aligned CLAUDE.md with official docs.
+
+## [0.1.13] — 2026-06-15
+
+### Fixed
+
+- **Restored routing accuracy** + command-frontmatter audit hardening.
+
+## [0.1.12] — 2026-06-15
+
+### Changed
+
+- **Converted 6 skills to name-only** (recursive-improve, adr, task-sizing, probe, progressive-refine, semantic-code).
+
+## [0.1.11] — 2026-06-15
+
+### Changed
+
+- **Trimmed 23 agent + 5 command descriptions to ≤480 chars**; converted 8 skills to name-only.
+
+## [0.1.10] — 2026-06-15
+
+### Changed
+
+- **Trimmed 14 skill descriptions to ≤120 tok.**
 
 ## [0.1.9] — 2026-06-12
 
@@ -2187,6 +2628,64 @@ The 13-commit delta is small for the surface area covered because most
 work is config + doc + script (no large refactors; no new agents or
 skills added in P2.x — they re-use the existing `recursive-improve`
 and `orchestrate` skills as the seam for new discipline).
+
+## [0.1.3] — 2026-06-12
+
+### Changed
+
+- **Cache-invalidation bump** (0.1.2 → 0.1.3) to ship `/pre-ship-verify`.
+
+## [0.1.2] — 2026-06-11
+
+Patch release — surfaces two post-`0.1.1` fixes as a clean release line. No new features, no
+breaking changes.
+
+### Fixed
+
+- **G15 (P0): harness-audit cache-version hardcode.** `audit.sh:70` hardcoded `0.1.0` as the
+  default plugin-cache path. When the cache bumped to `0.1.1/` (or any future `0.x.y/`), the
+  hardcoded default pointed at a missing directory, silently setting `PLUGIN_ACTIVE=0` and
+  disabling the F1 plugin-aware bypass — surfacing **61 false-positive CRITs** on `audit.sh`
+  (the very thing the F1 rework in `0.1.1` was meant to fix). Now resolves the cache version
+  dynamically via `ls | sort -V | tail -1`. (`846452a`)
+
+### Added
+
+- **CI: `.github/workflows/validate.yml`** — runs `claude plugin validate --strict .` on every
+  push and PR to `main` and `develop`. Catches schema / manifest drift before publish; pairs
+  with the existing pre-commit harness-audit + critical-hooks gates. (`9f704f0`)
+
+### Patched (2026-06-11, post-release)
+
+Three commits landed after `0.1.2` was tagged. They are non-functional (no runtime change, no
+manifest drift, no version bump) — included here for archaeology and so a future reader of
+`orchestrate` / `critical-eval` / `article-mine` / `acli` can trace why the descriptions differ
+from the pattern in earlier versions. The auto-trigger re-measure (window 2026-05-25→now,
+scope `kobig`) confirmed **no regression**: custom auto-rate flat at 38% (76/199), all-skills
+auto-rate flat at 46% (131/286).
+
+- **Description trim cycle (4 skills).** All 26/26 kbg-harness skills now under the 700-char
+  UI truncation threshold. Body content byte-identical; only `description:` lines touched.
+  - `orchestrate`: 978 → 685 chars (`38c1c40`)
+  - `critical-eval`: 802 → 686 chars (`38c1c40`)
+  - `article-mine`: 713 → 642 chars (`3d03444`)
+  - `acli`: 703 → 628 chars (`3d03444`)
+  - All sibling cross-refs + all quoted trigger phrases + all negative-scope examples
+    preserved verbatim. Watch-out: `acli`'s "ALWAYS trigger" + "ANY" are load-bearing safety
+    signals for bulk-mutation — do not strip in any future trim.
+
+- **measure-autotrigger: opt-in plugin-cache fallback.** Post-cutover (commit `962bfce`),
+  `kbg-harness/skills` and `kbg-harness/commands` no longer live under a `claude/` subdir,
+  so the `--repo-root` lookup misses. Added `--use-plugin-cache-fallback` flag (default off,
+  explicit opt-in to avoid silent data drift for unrelated repos) that walks
+  `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
+  Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
+
+## [0.1.1] — 2026-06-11
+
+### Fixed
+
+- **Bumped skill count 25 → 26** + version 0.1.0 → 0.1.1.
 
 ## [0.1.0] — 2026-06-10
 
