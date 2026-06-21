@@ -38,6 +38,19 @@ GOPT='((-c|-C|--git-dir|--work-tree|--namespace|--super-prefix|--config-env)[=[:
 # Use command grep to bypass potential ugrep/claude wrapper that breaks backtracking
 _GREP="command grep"
 
+# L3 rollback carve-out (ADR 0003). The bounded-autonomy loop rolls back a failed
+# cycle with `git reset --hard <l3-precycle-RID-ITER tag>`. This gate otherwise
+# blanket-denies `git reset --hard` (DANGEROUS_PATTERNS below), which would block
+# the loop's own rollback. Allow ONLY that exact command: FULL-ANCHORED (^...$ so
+# no `;`/`&&` compound can ride along on an early exit) and ONLY during an
+# authorized L3 run (KBG_AUTONOMY_L3=1). The target is restricted to the
+# `l3-precycle-` tag prefix the loop itself mints. Every other `git reset --hard`
+# (different target, compound command, or flag off) falls through to the deny.
+L3_ROLLBACK_FULL='^[[:space:]]*git[[:space:]]+reset[[:space:]]+--hard[[:space:]]+(refs/tags/)?l3-precycle-[A-Za-z0-9_.-]+[[:space:]]*$'
+if [ "${KBG_AUTONOMY_L3:-}" = "1" ] && printf '%s\n' "$STRIPPED" | $_GREP -qE "$L3_ROLLBACK_FULL"; then
+  exit 0
+fi
+
 # Space-delimited force flag pattern — prevents matching -f inside branch names like fix/ or followup-spec.
 # Right-anchored with ([[:space:]]|$) so trailing-position flags (e.g. `git push origin main --force`) match.
 FORCE_FLAG_PAT='([[:space:]]--force([[:space:]]|$)|[[:space:]]-f([[:space:]]|$)|[[:space:]]--force-with-lease([[:space:]]|$))'

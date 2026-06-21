@@ -2,6 +2,7 @@
 # test-ch-l3.sh — L3 bounded-autonomy machinery (ADR 0003):
 #   - l3-push-gate.sh  (Gate 2: deny push/merge/hooksPath while unreviewed)
 #   - _lib.sh L3 immunity (profile-off / disabled-hooks can't disarm gates under L3)
+#   - block-dangerous-git.sh (L3 rollback carve-out: allow `reset --hard <l3-precycle>` under flag)
 #   - l3-loop-guard.py (caps + cage, fail-closed, flag-immutable)
 #   - audit check-numbering stability (#32/#34/#41/#43/#44 must not drift)
 # shellcheck disable=SC1090,SC2034,SC2086
@@ -34,6 +35,23 @@ pcheck "KBG_AUTONOMY_L3=1"                            none "L3 active: allow loc
 # Immunity: profile=off must NOT disarm the push-gate during an L3 run.
 pcheck "KBG_AUTONOMY_L3=1 CLAUDE_HOOK_PROFILE=off"    deny "immunity: profile=off can't bypass under L3"    "git push origin develop"
 pcheck "KBG_AUTONOMY_L3=1 CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass under L3" "git push origin develop"
+
+# --- block-dangerous-git: L3 rollback carve-out (ADR 0003) ---
+# The loop rolls back a failed cycle with `git reset --hard <l3-precycle-* tag>`.
+# block-dangerous-git blanket-denies `git reset --hard`; the carve-out allows ONLY
+# that exact command, full-anchored, and ONLY under KBG_AUTONOMY_L3=1.
+# dgcheck <env> <want> <label> <command>
+dgcheck() {
+  local env="$1" want="$2" label="$3" cmd="$4" out got
+  out=$(printf '%s' "$(bash_event "$cmd")" | env $env bash "$HOOKS/gates/block-dangerous-git.sh" 2>/dev/null)
+  if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "block-dangerous-git" "$label"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "block-dangerous-git" "$label" "$want" "$got"; fi
+}
+dgcheck "KBG_AUTONOMY_L3=1"      none "L3 rollback: allow reset --hard <l3-precycle tag>"   "git reset --hard l3-precycle-run1-1"
+dgcheck "KBG_AUTONOMY_L3=1"      deny "L3 on: deny reset --hard to a non-precycle ref"      "git reset --hard HEAD~3"
+dgcheck "-u KBG_AUTONOMY_L3"     deny "flag off: deny reset --hard even to l3-precycle tag" "git reset --hard l3-precycle-run1-1"
+dgcheck "KBG_AUTONOMY_L3=1"      deny "carve-out can't ride a compound (force-push appended)" "git reset --hard l3-precycle-run1-1 && git push --force origin main"
 
 # --- l3-loop-guard.py: caps + cage, fail-closed, flag-immutable ---
 # Run the guard inline so the exit code is captured in gcheck's own scope (a
