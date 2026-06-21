@@ -19,7 +19,8 @@ The map below is the answer to "where does a new X go?" — and the reason kbg d
 | rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `docs/adr/` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
 | contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/context` command; add a frame = add a file here |
 | scripts / tooling | `scripts/` + per-skill `scripts/` | Callers hardcode paths; rename = update all callers + cache cycle |
-| tests / examples (fixtures) | `tests/` + `eval/` (datasets, fixtures, regressions) | The gauntlet wires these |
+| tests / fixtures | `tests/` + `eval/` (datasets, fixtures, regressions) | The gauntlet wires these |
+| examples (project starters) | `examples/` (project-type `*-CLAUDE.md` starters) | Reference only — not a plugin surface, not auto-loaded |
 | prompts | the agent/skill/command `.md` files themselves; F9 spawn template in `docs/agent-teams-setup-notes.md` | The prompt *is* the surface file — no separate `prompts/` dir |
 | mcp-configs | — | **Deliberate non-goal** (no bundled MCP/LSP; per-machine config lives in `~/.claude/settings*.json`) |
 
