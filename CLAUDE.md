@@ -8,6 +8,21 @@ A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobi
 
 The repo contains 6 auto-discovered component directories (`agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`) plus doctrine files (`METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`) and supporting infrastructure (eval harness, audit scripts, governance journal schema).
 
+### Where each concern lives
+
+The map below is the answer to "where does a new X go?" — and the reason kbg does **not** restructure into a generic category tree (e.g. ECC's `agents/skills/contexts/commands/rules/hooks/scripts/tests/examples/mcp-configs/assets/prompts` taxonomy, built for a ~270-skill, 9-harness, multi-author repo). At kbg's scale (single harness, single author) the concerns already have correct homes; several names are loader-fixed and one whole category is a deliberate non-goal.
+
+| Concern | Home | Constraint |
+|---|---|---|
+| agents / skills / commands / hooks | `agents/` `skills/` `commands/` `hooks/` | **Fixed names** — the plugin loader discovers them by exact string; never rename |
+| output styles / themes (assets) | `output-styles/` `themes/` | Fixed plugin dirs — these *are* kbg's "assets" |
+| rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `docs/adr/` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
+| contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/context` command; add a frame = add a file here |
+| scripts / tooling | `scripts/` + per-skill `scripts/` | Callers hardcode paths; rename = update all callers + cache cycle |
+| tests / examples (fixtures) | `tests/` + `eval/` (datasets, fixtures, regressions) | The gauntlet wires these |
+| prompts | the agent/skill/command `.md` files themselves; F9 spawn template in `docs/agent-teams-setup-notes.md` | The prompt *is* the surface file — no separate `prompts/` dir |
+| mcp-configs | — | **Deliberate non-goal** (no bundled MCP/LSP; per-machine config lives in `~/.claude/settings*.json`) |
+
 ## Architecture requiring multi-file reading
 
 ### Plugin delivery model (the "single path")

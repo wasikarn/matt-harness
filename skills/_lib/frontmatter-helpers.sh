@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fm.sh — shared frontmatter helpers for harness-audit + inventory scripts.
+# frontmatter-helpers.sh — shared frontmatter helpers for harness-audit + inventory scripts.
 #
 # Sourced (not executed) by the 3 callers; this file defines functions and
 # exports one constant. All parsers read the YAML frontmatter block between

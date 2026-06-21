@@ -5,7 +5,7 @@
 # Never blocks (advisory only, exit 0). Prevents post-hoc rationalisation.
 # shellcheck disable=SC2034
 HOOK_HONOR_PROFILE_OFF=1
-HOOK_ID="hypothesis-precommit"
+HOOK_ID="hypothesis-gate"
 source "$(dirname "$0")/../_lib.sh" || exit 0
 hook_init "$HOOK_ID" || exit 0
 

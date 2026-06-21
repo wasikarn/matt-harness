@@ -294,7 +294,7 @@
       "enabled": true
     },
     {
-      "name": "hypothesis-precommit",
+      "name": "hypothesis-gate",
       "should_fire_when": "UserPromptSubmit:*(investigation keywords)",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",

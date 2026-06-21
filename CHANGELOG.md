@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.2] — 2026-06-21
+
+ECC structure comparison → two clarity renames. A 6-agent workflow drilled
+`affaan-m/ECC` live via `gh` and ran an advocate/skeptic/synthesizer debate on
+adopting ECC's 12-category layout. Verdict: **reject the restructure** (ECC's
+taxonomy is built for a ~270-skill, 9-harness, multi-author repo; kbg already
+homes every concern at its single-harness scale, and 6 dirs are loader-fixed),
+**adopt 2 file renames** that fix real confusion, reject 3 that were churn
+without a proven navigational failure.
+
+### Changed
+
+- **`hooks/advisory/hypothesis-precommit.sh` → `hypothesis-gate.sh`.** The old
+  name was a false cognate with the real `git-hooks/pre-commit` lifecycle hook —
+  but this one fires on `UserPromptSubmit` for investigation prompts, not on git
+  commit. It already self-identified as `[hypothesis-gate]` in its output and
+  `hypothesis_gate_fired` in its journal events; the filename and `HOOK_ID` now
+  match. Updated `hooks.json`, `sensors.json`, and the manifest descriptions.
+- **`skills/_lib/fm.sh` → `frontmatter-helpers.sh`.** `source ../../_lib/fm.sh`
+  was opaque at the call site; the full name is self-documenting (`err.sh` stays —
+  it maps to a universal shell convention `fm` lacks). Updated the `source` lines
+  + `shellcheck source=` directives in `audit.sh`, `inventory.sh`, and
+  `inventory-boundary.sh`. Function names (`fm_get`/`fm_has`/…) unchanged.
+
+### Added
+
+- **CLAUDE.md "Where each concern lives" map.** Documents `contexts/` as a
+  first-class category (previously undocumented) and records why kbg does not
+  restructure into a generic category tree — the documentation-over-restructure
+  takeaway from the ECC comparison.
+
 ## [0.3.1] — 2026-06-21
 
 Post-L3 cleanup bundle: kill one dead feature, guard one duplication seam, fix

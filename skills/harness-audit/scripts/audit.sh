@@ -127,8 +127,8 @@ PY
 fi
 
 # Source the shared libraries.
-# shellcheck source=../../_lib/fm.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/fm.sh"
+# shellcheck source=../../_lib/frontmatter-helpers.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/frontmatter-helpers.sh"
 # shellcheck source=../../_lib/err.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
 
@@ -216,7 +216,7 @@ crit() { CRIT_COUNT=$((CRIT_COUNT + 1)); echo "  CRIT F${CRIT_COUNT}: $1"; }
 warn() { WARN_COUNT=$((WARN_COUNT + 1)); echo "  WARN W${WARN_COUNT}: $1"; }
 info() { INFO_COUNT=$((INFO_COUNT + 1)); echo "  INFO I${INFO_COUNT}: $1"; }
 
-# ── helpers (fm_get / fm_has / SKIP_SCAFFOLD_GLOB come from _lib/fm.sh) ──
+# ── helpers (fm_get / fm_has / SKIP_SCAFFOLD_GLOB come from _lib/frontmatter-helpers.sh) ──
 
 # Run a find-like command and return its match count; if the starting directory
 # is missing (find exits 1) we still get "0" instead of tripping set -e/pipefail.

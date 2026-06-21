@@ -7,8 +7,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source the shared libraries.
-# shellcheck source=../../_lib/fm.sh
-. "$SCRIPT_DIR/../../_lib/fm.sh"
+# shellcheck source=../../_lib/frontmatter-helpers.sh
+. "$SCRIPT_DIR/../../_lib/frontmatter-helpers.sh"
 # shellcheck source=../../_lib/err.sh
 . "$SCRIPT_DIR/../../_lib/err.sh"
 

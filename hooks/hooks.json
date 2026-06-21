@@ -337,7 +337,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/hypothesis-precommit.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/hypothesis-gate.sh\""
           }
         ]
       },
