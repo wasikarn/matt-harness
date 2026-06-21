@@ -9,8 +9,8 @@
 # Governance: docs/adr/0002-addendum-passive-capture.md. Contract: the schema at
 # skills/learn/CANDIDATE-SCHEMA.md (queue path, row shape, secret-scrub).
 #
-# Default-OFF: enable with `export KBG_LEARN_CAPTURE=1`.
-# Bypass (when enabled): export CLAUDE_DISABLED_HOOKS=learn-capture
+# Default-ON: disable with `export KBG_LEARN_CAPTURE=0` (opt-out).
+# Bypass: export CLAUDE_DISABLED_HOOKS=learn-capture
 #
 # Failure mode: silent. Always exit 0; never block SessionEnd.
 
@@ -18,8 +18,10 @@ HOOK_ID="learn-capture"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
-# Default-OFF gate (the conscious opt-in; ADR 0002 addendum).
-[ "${KBG_LEARN_CAPTURE:-0}" = "1" ] || exit 0
+# Default-ON gate; opt out with KBG_LEARN_CAPTURE=0 (ADR 0002 addendum). Capture is
+# advisory (out-of-repo queue, secret-scrubbed, never gates) so on-by-default is within
+# the addendum's "capture is automatic" envelope — APPLY stays human-gated in kbg:learn.
+[ "${KBG_LEARN_CAPTURE:-1}" = "0" ] && exit 0
 
 # Hard deps: degrade to a silent no-op if absent (no bundled deps).
 command -v jq      >/dev/null 2>&1 || exit 0

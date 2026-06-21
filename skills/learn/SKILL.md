@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping/lint (use kbg:memory-lint / kbg:memory-trim), or unprompted auto-*apply* (writing memory is operator-initiated + AskUserQuestion-gated only). A default-OFF SessionEnd hook (learn-capture, KBG_LEARN_CAPTURE=1) may passively STAGE candidates to an out-of-repo queue, but nothing is written without your approval in this skill."
+description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping/lint (use kbg:memory-lint / kbg:memory-trim), or unprompted auto-*apply* (writing memory is operator-initiated + AskUserQuestion-gated only). A default-ON SessionEnd hook (learn-capture, opt out with KBG_LEARN_CAPTURE=0) passively STAGES candidates to an out-of-repo queue, but nothing is written without your approval in this skill."
 ---
 
 # Skill: learn
@@ -17,8 +17,8 @@ notices what belongs in it.
 
 ## Autonomy posture (load-bearing)
 
-- **Capture is passive + opt-in; APPLY is operator-gated.** A default-OFF SessionEnd hook
-  (`learn-capture`, enable with `KBG_LEARN_CAPTURE=1`) may passively *stage* candidates to an
+- **Capture is passive (default-ON); APPLY is operator-gated.** A SessionEnd hook
+  (`learn-capture`, default-ON — opt out with `KBG_LEARN_CAPTURE=0`) passively *stages* candidates to an
   out-of-repo queue (journal-only, never the repo, never a `permissionDecision`). But this skill
   is still the **only** path that WRITES memory, and only after the `AskUserQuestion` gate. The
   autonomy invariant is preserved by capture-never-applies + the gate below — see

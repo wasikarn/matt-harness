@@ -2,7 +2,7 @@
 
 The single contract that `hooks/session/learn-capture.sh` (writer),
 `scripts/read-candidates.sh` (reader), and `kbg:learn` Step 0 (consumer) all cite.
-Passive capture is **default-OFF** (`KBG_LEARN_CAPTURE=1` to enable) and **advisory-only**
+Passive capture is **default-ON** (opt out with `KBG_LEARN_CAPTURE=0`) and **advisory-only**
 — it journals + queues, never mutates the repo, never gates. See
 [`docs/adr/0002-addendum-passive-capture.md`](../../docs/adr/0002-addendum-passive-capture.md).
 

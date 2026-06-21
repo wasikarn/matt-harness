@@ -31,11 +31,27 @@ forbids. We lift the left half and replace the gate with **human-at-the-gate** (
 
 | Property | This addendum's posture | Enforced by |
 |---|---|---|
-| Default state | OFF (`KBG_LEARN_CAPTURE=1` to opt in) | `learn-capture.sh` early-exit |
+| Default state | **ON** (opt out with `KBG_LEARN_CAPTURE=0`) — flipped v0.3.9; see "Default flip" below | `learn-capture.sh` early-exit |
 | Repo writes | NEVER (queue is out-of-repo at `~/.claude/projects/<slug>/memory/_candidates/`) | path is outside any repo + outside the L3 cage |
 | permissionDecision | NEVER emitted (journal + queue only, exit 0 always) | audit **#47** (CRIT) + critical-hooks suite |
 | Confidence | ORDERING signal only — no value ever triggers an action | audit **#47** (CRIT) on any `confidence >= …` gate |
 | APPLY | human-gated (`kbg:learn` `AskUserQuestion`, or L3 push Gate-2) | unchanged from ADR 0002 |
+
+## Default flip — ON (v0.3.9, 2026-06-21)
+
+Shipped default-**OFF** (v0.3.7), flipped default-**ON** (opt-out) at the owner's request.
+This does **not** touch the invariant: it is APPLY that must stay human-gated, and APPLY is
+unchanged (`kbg:learn`'s `AskUserQuestion`). CAPTURE was designed to be automatic from the start
+(see "CAPTURE is automatic (passive)" above); OFF was **rollout conservatism**, not an invariant
+requirement. The flip is also more coherent with *why* the feature exists — the owner forgets to
+run `kbg:learn`, so they would equally forget to `export KBG_LEARN_CAPTURE=1`; a default the user
+must remember reproduces the exact failure mode the feature addresses.
+
+**Scope (owner decision):** default-ON applies to **all projects** the kbg plugin is active in,
+not just kbg-harness — captured corrections/preferences from any repo land in that repo's
+out-of-repo queue. Mitigations: secret-scrub (whole-row drop), out-of-repo plaintext on the
+owner's own machine, APPLY still gated. Opt out per-shell/session with `KBG_LEARN_CAPTURE=0`, or
+per-hook with `CLAUDE_DISABLED_HOOKS=learn-capture`. Reversible (one-line gate flip).
 
 ## The relaxation this records (honesty)
 

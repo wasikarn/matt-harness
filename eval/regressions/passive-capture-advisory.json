@@ -1,6 +1,6 @@
 {
   "dataset_name": "passive-capture-advisory",
-  "description": "Guards the autonomy posture of the passive learning-capture feature (ADR 0002 addendum, v0.3.7). learn-capture.sh is a default-OFF, advisory-only computational-FB sensor: it journals + queues candidates out-of-repo, but must NEVER emit a permissionDecision (it does not gate SessionEnd) and confidence must NEVER appear in a gating comparison (it is an ordering signal only — ECC's model-as-gate is what kbg rejects). These are static source assertions, independent of any session state. If any regresses, the capture half has drifted toward the ECC apply half the addendum forecloses.",
+  "description": "Guards the autonomy posture of the passive learning-capture feature (ADR 0002 addendum, v0.3.7). learn-capture.sh is a default-ON (opt-out), advisory-only computational-FB sensor: it journals + queues candidates out-of-repo, but must NEVER emit a permissionDecision (it does not gate SessionEnd) and confidence must NEVER appear in a gating comparison (it is an ordering signal only — ECC's model-as-gate is what kbg rejects). These are static source assertions, independent of any session state. If any regresses, the capture half has drifted toward the ECC apply half the addendum forecloses.",
   "evals": [
     {
       "id": "sensors_registered_computational_fb",

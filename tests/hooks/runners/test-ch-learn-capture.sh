@@ -30,13 +30,20 @@ run_capture() {  # run_capture <proj-dir> <transcript-rel> <flag-on:1|0>
 queue_of() { echo "$1/memory/_candidates/queue.jsonl"; }
 count_rows() { [ -f "$1" ] && /usr/bin/grep -c . "$1" 2>/dev/null || echo 0; }
 
-# ── 1. OFF (default) → exit 0, no queue written ──────────────────────
+# ── 1. explicit OPT-OUT (KBG_LEARN_CAPTURE=0) → exit 0, no queue written ──
 P1="$FIXTURE/p1"; mkdir -p "$P1"
 printf '%s\n' '{"type":"user","message":{"role":"user","content":"no, use ripgrep not grep"}}' > "$P1/t.jsonl"
 RC=0
-printf '%s' "{\"transcript_path\":\"$P1/t.jsonl\",\"session_id\":\"s\"}" | bash "$CAP" >/dev/null 2>&1 || RC=$?
-[ "$RC" -eq 0 ];                       lcheck $? "OFF: exit 0"
-[ ! -f "$(queue_of "$P1")" ];         lcheck $? "OFF: no queue file written"
+printf '%s' "{\"transcript_path\":\"$P1/t.jsonl\",\"session_id\":\"s\"}" | env KBG_LEARN_CAPTURE=0 bash "$CAP" >/dev/null 2>&1 || RC=$?
+[ "$RC" -eq 0 ];                       lcheck $? "opt-out (=0): exit 0"
+[ ! -f "$(queue_of "$P1")" ];         lcheck $? "opt-out (=0): no queue file written"
+
+# ── 1b. DEFAULT (unset) → ON → captures (the v0.3.9 default flip) ─────
+P1B="$FIXTURE/p1b"; mkdir -p "$P1B"
+printf '%s\n' '{"type":"user","message":{"role":"user","content":"no, use ripgrep not grep"}}' > "$P1B/t.jsonl"
+RC=0
+printf '%s' "{\"transcript_path\":\"$P1B/t.jsonl\",\"session_id\":\"s\"}" | bash "$CAP" >/dev/null 2>&1 || RC=$?
+{ [ "$RC" -eq 0 ] && [ "$(count_rows "$(queue_of "$P1B")")" -eq 1 ]; }; lcheck $? "default (unset): ON → captures 1 row"
 
 # ── 2. ON + a real correction → exactly 1 row, kind=correction ───────
 P2="$FIXTURE/p2"; mkdir -p "$P2"

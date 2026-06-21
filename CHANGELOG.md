@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.9] — 2026-06-21
+
+Passive learning-capture is now **default-ON** (opt out with `KBG_LEARN_CAPTURE=0`). Owner request.
+
+### Changed
+
+- **`hooks/session/learn-capture.sh`** — gate flipped from opt-in (`KBG_LEARN_CAPTURE=1`) to
+  opt-out (`KBG_LEARN_CAPTURE=0`). Does **not** touch the autonomy invariant: APPLY stays
+  human-gated (`kbg:learn`); CAPTURE was designed automatic from the start — OFF was rollout
+  conservatism. More coherent with the feature's purpose (you forget `kbg:learn`, so you'd forget
+  the flag too). **Scope:** default-ON applies to **all projects** the plugin is active in;
+  captures are secret-scrubbed, out-of-repo, apply-gated. Per-shell opt-out `KBG_LEARN_CAPTURE=0`;
+  per-hook `CLAUDE_DISABLED_HOOKS=learn-capture`. See
+  [ADR 0002 addendum](docs/adr/0002-addendum-passive-capture.md) "Default flip".
+- `test-ch-learn-capture.sh` gains a default-ON capture case; the off case now sets `=0` explicitly.
+
 ## [0.3.8] — 2026-06-21
 
 Passive learning-capture **Phase 2** — fold two L3-loop guards into
