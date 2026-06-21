@@ -108,6 +108,16 @@ the cage-denylist, the computational push-gate, the `--auto` body, and audit che
 **#43/#44** (plus **#45**, reviewer read-only). It is **not yet shipped to the
 plugin cache**.
 
+> **Slice-1 live dry-run (2026-06-22) — found + fixed at v0.3.10.** The
+> "gauntlet-green" above was only ever measured with the flag **OFF**. The first
+> real `--auto` dry-run (flag ON) surfaced two blocking defects: (1) the in-loop
+> gauntlet gate **failed under `KBG_AUTONOMY_L3=1`** — disable-mechanism tests
+> broke on `_lib.sh` L3 immunity, so every cycle went red and the loop could never
+> keep a commit; (2) the loop's `git reset --hard <l3-precycle>` rollback was
+> denied by `block-dangerous-git`. Both fixed at v0.3.10 (hermetic test baseline in
+> `test-critical-hooks.sh` + a full-anchored, flag-scoped rollback carve-out in
+> `block-dangerous-git.sh`); critical-hooks is now **433/0 under the flag**.
+
 - `KBG_AUTONOMY_L3` stays **unset** by default, so `recursive-improve --auto`
   **refuses to run** and the harness behaves exactly as the L2 record describes —
   the flag is inert until the operator sets it on a shipped, green cage.

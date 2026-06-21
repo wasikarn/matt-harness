@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.10] — 2026-06-22
+
+First real L3 `--auto` dry-run (ADR 0003 Slice-1 acceptance) found the in-loop gate was never
+runnable under the flag — the prior "gauntlet-green" was only ever measured flag-OFF. Two blocking fixes.
+
+### Fixed
+
+- **`tests/hooks/runners/test-critical-hooks.sh`** — scrub `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE`
+  for a hermetic baseline. Under the flag, `_lib.sh` L3-immunity neutralizes the disable mechanisms,
+  so 5 disable/flag-off assertions (gates, orphaned-runners, l3) failed → the in-loop gauntlet gate
+  went red every cycle → the loop could never keep a commit. Now **433/0 under the flag**; flag-ON
+  cases set the flag per-test.
+- **`hooks/gates/block-dangerous-git.sh`** — full-anchored, flag-scoped carve-out allowing the loop's
+  `git reset --hard <l3-precycle-* tag>` rollback (previously blanket-denied, blocking the loop's own
+  red-cycle rollback). No compound command can ride the early exit; every other `git reset --hard`
+  stays denied. +4 tests in `test-ch-l3.sh`.
+
 ## [0.3.9] — 2026-06-21
 
 Passive learning-capture is now **default-ON** (opt out with `KBG_LEARN_CAPTURE=0`). Owner request.
