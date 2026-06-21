@@ -1154,8 +1154,8 @@ done
 # it only inspects the file itself, not the references the contract
 # might name (URLs / external sources can't be checked from here).
 # Sub-check 31.2 — plugin.json / marketplace.json: emit info if the
-# `version` field is older than KBG_PLUGIN_VERSION_MAX_AGE_DAYS
-# (default 30) AND has no sibling `last_reviewed:` / `last_reviewed_reason:`
+# `version` field is older than 30 days (hardcoded in _check_plugin_version
+# below) AND has no sibling `last_reviewed:` / `last_reviewed_reason:`
 # justification. Emit crit if the file does not parse as JSON or
 # `version` is missing. Defense in depth: claude plugin validate
 # already enforces the JSON shape, but a missing `version` is the
@@ -1164,7 +1164,7 @@ done
 # decay-cadence §Permission re-audit, the kbg-harness equivalent is
 # a `## Permission re-audit` section with a `last_permission_review:
 # YYYY-MM-DD` marker in `docs/harness-decay-cadence.md`. Emit info if
-# the marker is older than KBG_PERM_REAUDIT_MAX_AGE_DAYS (default 90,
+# the marker is older than 90 days (PERM_MAX_AGE, hardcoded;
 # quarterly cadence). (The plugin.json `last_permission_review_sha`
 # equivalent was named in the original doc-comment but never
 # implemented — doc trimmed in round-2 audit reconcile 2026-06-12

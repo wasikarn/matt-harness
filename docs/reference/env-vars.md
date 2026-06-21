@@ -40,7 +40,6 @@ Claude Code injects (`CLAUDE_PLUGIN_ROOT`, `CLAUDE_SKILL_DIR`, `CLAUDE_PROJECT_D
 |---|---|---|---|
 | `KBG_ENFORCE_TASK_COMPLETED` | `1` | `=0` downgrades the F7 TaskCompleted gate to log-only for the session. | `task-lifecycle.sh`, `run-eval.py` |
 | `KBG_EVAL_MAX_AGE_DAYS` | `180` | Eval-fixture staleness threshold. | `audit.sh`, `run-eval.py` |
-| `KBG_PERM_REAUDIT_MAX_AGE_DAYS` | `90` | `last_permission_review:` marker staleness threshold (decay cadence). | `audit.sh` |
 
 ## Ideate cluster
 
@@ -69,10 +68,3 @@ Claude Code injects (`CLAUDE_PLUGIN_ROOT`, `CLAUDE_SKILL_DIR`, `CLAUDE_PROJECT_D
   `CLAUDE_PLUGIN_ROOT`, re-exported into `CLAUDE_ENV_FILE` by `command-root-anchor.sh` so docs and
   scripts resolve the plugin root from any working directory (the vendor var is only set inside hook
   shells). ~483 references; treat as fixed infrastructure.
-
-## Inactive / ghost references (no live code reader — cleanup candidates)
-
-- **`KBG_USAGE_MONITOR`** — referenced in docs/memory only; no `.sh`/`.py` reads it. The dead
-  usage-monitor is parked pending a live-transcript schema check (see the `refactor-survey` memory).
-- **`KBG_PLUGIN_VERSION_MAX_AGE_DAYS`** — appears only in an `audit.sh` comment, not wired as an
-  actual read. Either wire it or drop the comment.
