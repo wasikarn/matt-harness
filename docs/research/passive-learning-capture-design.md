@@ -1,7 +1,8 @@
 # Passive Learning-Capture — Maximal-Bounded design
 
-> **Status:** ✅ BUILT (Phase 1 shipped v0.3.7, 2026-06-21). Owner chose **Build** on the §9.3
-> build-vs-hold call ("I forget often"). Phase 2 (L3-guard fold-in, §6) still deferred.
+> **Status:** ✅ SHIPPED & DEFAULT-ON. Phase 1 v0.3.7, Phase 2 (§6) v0.3.8, default-ON flip
+> (opt-out `KBG_LEARN_CAPTURE=0`) v0.3.9 — all 2026-06-21. Owner chose **Build** on the §9.3
+> build-vs-hold call ("I forget often"), then **default-ON, all projects**.
 > **Date:** 2026-06-21 · **Decider:** Owner · **Operating point:** Maximal-bounded (locked).
 > **Rev 2 (2026-06-21):** revised after an **independent maker≠checker audit** (5 senior reviewers +
 > 1 adversarial verifier, fresh context). 0 blockers; **6 majors folded in below** — incl. the two
@@ -128,10 +129,13 @@ Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, wit
    - **YAGNI case (against):** it adds 2 hooks + 2 scripts + schema + audit #47 + ADR addendum + a doctrine reversal, for a single-author harness where `kbg:learn` already does this on demand. If you reliably run kbg:learn at session end anyway, passive capture is overhead.
    - **The deciding question:** *do you actually forget to run kbg:learn?* If yes → build (the drain-nudge is the whole point). If no → hold; the feature is YAGNI.
    - **DECISION (2026-06-21):** Owner answered "I forget often" → **BUILD**. Phase 1 shipped v0.3.7
-     (capture hook default-OFF, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, ADR 0002
+     (capture hook, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, ADR 0002
      addendum, 2 eval fixtures, 12-test sub-suite). Independent code review post-build: 0 Critical,
      all 6 invariants verified, 1 Major + 4 Minor folded (drain-nudge `_lib` bypass, cap/rotate
      open-row protection, precision tightening, emit-before-record). Gauntlet 4/4.
+     **Default flipped OFF→ON at v0.3.9** (opt-out `KBG_LEARN_CAPTURE=0`, all projects) — within the
+     ADR 0002 addendum's "capture is automatic" envelope; APPLY stays human-gated. See the addendum
+     "Default flip" section. (Phase 1 originally shipped default-OFF gate `:-0`; v0.3.9 gate is `:-1`.)
 
 ## 10. Audit → fix traceability (Rev 2)
 
