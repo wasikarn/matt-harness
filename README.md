@@ -1,16 +1,16 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.3.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.4-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 39 workflow skills, 22 slash commands, and 45 governance
+It adds 29 specialist agents, 40 workflow skills, 22 slash commands, and 46 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.3.2):** ECC structure comparison → 2 clarity renames (`hypothesis-precommit.sh` → `hypothesis-gate.sh`, `_lib/fm.sh` → `frontmatter-helpers.sh`), a CLAUDE.md "Where each concern lives" map, and `examples/` project-type CLAUDE.md starters. The 12-category restructure was rejected — kbg already homes every concern at its single-harness scale.
-> (v0.3.1: deleted the dead `usage-monitor` feature + audit check #46 for the `task-board-lib.sh` seam. v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
+> **Newest additions (v0.3.4):** observability + learning — three ECC concept-gaps closed within kbg's invariants: `kbg:learn` (human-gated session-pattern capture → memory), a `cost-capture` SessionEnd hook + `kbg:harness-health --cost` (honest token telemetry — the measurement half of METHODOLOGY Rule 6), and a read-only MCP inventory (`auth-health-check.py --mcp`).
+> (v0.3.2-0.3.3: ECC structure comparison → 2 clarity renames + `examples/` starters + a hook-count reconciliation. v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -96,9 +96,9 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | Component | Count | How to Use |
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
-| **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Skills** | 40 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 22 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
-| **Hooks** | 45 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (35 tracked as sensors) |
+| **Hooks** | 46 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (36 tracked as sensors) |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -126,13 +126,14 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | `kbg:orchestrate` | Build a multi-agent plan with a hard fan-out cap |
 | `kbg:types-first` | Define contracts before parallel implementation |
 | `kbg:recursive-improve` | Self-improvement loop — always stops at a human `AskUserQuestion` gate |
+| `kbg:learn` | Capture durable session learnings → memory, gated by an `AskUserQuestion` approval |
 | `kbg:harness-audit` | Run the harness self-audit on demand |
 
 ---
 
 ## Governance Hooks
 
-45 hook scripts fire on 14 lifecycle events (60 registrations total; 35 tracked as sensors for staleness). They are split into four cells:
+46 hook scripts fire on 14 lifecycle events (61 registrations total; 36 tracked as sensors for staleness). They are split into four cells:
 
 | | Feedforward (before the act) | Feedback (after the act) |
 |---|---|---|
@@ -214,7 +215,7 @@ Directory-level layout. The auto-generated `BOUNDARY.md` is the **file-level** c
 kbg-harness/
 ├── .claude-plugin/       # Plugin + marketplace manifests (plugin.json, marketplace.json)
 ├── agents/               # 29 senior-specialist subagents (one .md each, flat)
-├── skills/               # 39 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
+├── skills/               # 40 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
 ├── commands/             # 22 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
 ├── hooks/                # Governance hooks across 14 lifecycle events, grouped by role:
 │   ├── gates/            #   PreToolUse deny/ask gates           (computational feedforward)

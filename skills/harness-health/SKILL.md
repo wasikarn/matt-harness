@@ -1,6 +1,6 @@
 ---
 name: harness-health
-description: "Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts over 7 in 30 days', or 'silent-sensor count'. Also fires on Thai health queries like 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ'. Don't use for: the 12-cell decay grid / which cells are empty (use kbg:harness-coverage), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine."
+description: "Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts over 7 in 30 days', or 'silent-sensor count', or 'token usage / cost this session'. Also fires on Thai health queries like 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ', 'ใช้ token เท่าไหร่'. Don't use for: the 12-cell decay grid / which cells are empty (use kbg:harness-coverage), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine."
 ---
 
 # Skill: harness-health
@@ -62,6 +62,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --staleness
 # L553 mitigation: verdict count + fired-event count per sensor
 python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --dual-fire-count
 
+# per-session token usage (from the cost-capture SessionEnd hook; tokens only, no $)
+python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --cost
+
 # JSON for downstream tooling
 python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" --json --last 10
 
@@ -82,6 +85,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py"
 | `--event-type` | `verdict`/`skipped`/`all` | `all` | filter by `event` field |
 | `--staleness` | bool | false | show per-sensor staleness (last_fired, days_silent, fire_count) from the registry |
 | `--dual-fire-count` | bool | false | L553 mitigation: show verdict_count + fired_event_count + last_verdict_score per sensor |
+| `--cost` | bool | false | per-session token usage from `cost_capture` events (messages + total/input/output/cache; tokens only, no $) |
 | `--journal PATH` | path | `~/.claude/governance-events.jsonl` | override journal path |
 | `--sensors PATH` | path | `hooks/sensors.json` | override sensor registry path |
 | `--json` | bool | false | emit machine-readable JSON instead of markdown tables |

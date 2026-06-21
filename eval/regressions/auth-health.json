@@ -41,6 +41,28 @@
       "expected_failure": false,
       "failure_pattern": "auth-health-broken-state-misclassified",
       "fixed_by": "P2.5 (scripts/auth-health-check.py ship)"
+    },
+    {
+      "id": "auth-health-mcp-inventory-names-only",
+      "task": "Verify that `auth-health-check.py --mcp --json` inventories configured MCP servers but NEVER prints an env-var VALUE — only the key name. The fixture writes a temp ~/.claude.json with one server whose env block holds a fake secret, runs the inventory with HOME pointed at the temp dir, and asserts: exit 0, the server name is listed, the env KEY NAME is listed, and the secret VALUE does not appear. This is the security contract of the inventory — leaking a value would turn a help command into a secret-exfiltration surface. Distinguishing: if the code printed env values, leaks_value flips to True and the eval fails.",
+      "skill": "script-cli",
+      "context": {
+        "command": "python3 -c \"\nimport json, os, subprocess, sys, tempfile, shutil\nfrom pathlib import Path\ntmp_home = Path(tempfile.mkdtemp(prefix='mcp-inv-'))\nsecret = 'SUPERSECRETVALUE123'\ncfg = {'mcpServers': {'fakesrv': {'command': 'echo', 'args': ['hi'], 'env': {'FAKE_API_KEY': secret}}}}\n(tmp_home / '.claude.json').write_text(json.dumps(cfg))\nenv = os.environ.copy(); env['HOME'] = str(tmp_home)\ntry:\n    r = subprocess.run([sys.executable, 'scripts/auth-health-check.py', '--mcp', '--json'], capture_output=True, text=True, env=env, cwd='.')\n    out = r.stdout\n    print('rc=' + str(r.returncode))\n    print('has_server=' + str('fakesrv' in out))\n    print('has_keyname=' + str('FAKE_API_KEY' in out))\n    print('leaks_value=' + str(secret in out))\nexcept Exception as e:\n    print('error=' + str(e))\nfinally:\n    shutil.rmtree(tmp_home, ignore_errors=True)\n\"",
+        "timeout": 15
+      },
+      "success_criteria": [
+        "stdout contains rc=0",
+        "stdout contains has_server=True",
+        "stdout contains has_keyname=True",
+        "stdout contains leaks_value=False"
+      ],
+      "expected_duration_seconds": 10,
+      "expected_tokens": 400,
+      "tags": ["auth-health", "mcp-inventory", "security", "regression", "v0-3-4"],
+      "eval_type": "assertion",
+      "expected_failure": false,
+      "failure_pattern": "auth-health-mcp-inventory-leaks-value",
+      "fixed_by": "v0.3.4 (Gap 3 — MCP inventory)"
     }
   ]
 }

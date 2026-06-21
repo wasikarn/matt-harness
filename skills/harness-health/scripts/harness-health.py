@@ -144,6 +144,33 @@ def render_dual_fire_count(sensors, journal):
               f"{ls if ls is not None else '(none)'} |")
 
 
+def render_cost(journal, args):
+    # Token usage from the cost-capture SessionEnd hook. Tokens only — no dollar
+    # estimate (no honest local price signal; see hooks/session/cost-capture.sh).
+    print("## Token usage (cost_capture)")
+    print(f"journal: {journal}\n")
+    rows = [e for e in load_journal(journal) if e.get("event") == "cost_capture"]
+    if args.last is not None:
+        rows = rows[-args.last:]
+    if not rows:
+        print("0 cost_capture events (the cost-capture SessionEnd hook journals one per session)")
+        return
+    print("| ts | session | messages | total | input | output | cache_write | cache_read |")
+    print("|---|---|---|---|---|---|---|---|")
+    grand = 0
+    for e in rows:
+        f = e.get("fields") or {}
+        t = f.get("total")
+        if isinstance(t, int):
+            grand += t
+        sid = (e.get("session") or "?")[:8]
+        print(f"| {e.get('ts','?')} | {sid} | {f.get('messages','?')} | {f.get('total','?')} "
+              f"| {f.get('input','?')} | {f.get('output','?')} | "
+              f"{f.get('cache_write','?')} | {f.get('cache_read','?')} |")
+    print(f"\n**Σ total tokens across {len(rows)} session(s): {grand:,}** "
+          f"(tokens only — no $ estimate)")
+
+
 def main():
     ap = argparse.ArgumentParser(prog="harness-health",
         description=("Read-only query surface over the governance journal. "
@@ -158,6 +185,8 @@ def main():
     ap.add_argument("--staleness", action="store_true", help="show per-sensor staleness + fire_count")
     ap.add_argument("--dual-fire-count", action="store_true",
                     help="L553 mitigation: verdict_count + fired_event_count per sensor")
+    ap.add_argument("--cost", action="store_true",
+                    help="show per-session token usage from cost_capture events (tokens only, no $)")
     ap.add_argument("--journal", default=DEFAULT_JOURNAL)
     ap.add_argument("--sensors", default=DEFAULT_SENSORS)
     ap.add_argument("--json", action="store_true", help="emit machine-readable JSON instead of markdown")
@@ -165,7 +194,7 @@ def main():
         ap.print_help(); return 0
     args = ap.parse_args()
 
-    wants_verdicts = not (args.staleness or args.dual_fire_count)
+    wants_verdicts = not (args.staleness or args.dual_fire_count or args.cost)
     if wants_verdicts and not os.path.isfile(args.journal):
         print(f"ERROR: journal not found: {args.journal}", file=sys.stderr); return 1
     if not wants_verdicts and not os.path.isfile(args.journal):
@@ -185,6 +214,7 @@ def main():
         return 0
     if args.staleness and sensors: render_staleness(sensors, args.journal); print()
     if args.dual_fire_count and sensors: render_dual_fire_count(sensors, args.journal); print()
+    if args.cost: render_cost(args.journal, args); print()
     if wants_verdicts: render_verdicts(filtered, args)
     return 0
 

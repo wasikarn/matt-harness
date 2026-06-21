@@ -330,6 +330,14 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/cost-capture.sh\""
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

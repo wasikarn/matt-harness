@@ -36,6 +36,7 @@ SUITES=(
   test-ch-l3.sh
   test-ch-agent-readonly.sh
   test-ch-task-board-lib.sh
+  test-ch-cost-capture.sh
 )
 
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/test-critical-hooks.XXXXXX")

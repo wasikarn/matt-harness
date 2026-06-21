@@ -9,6 +9,7 @@ import socket
 import subprocess
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any
 
 DEFAULT_MCP_TIMEOUT = 5  # seconds per MCP probe
@@ -31,6 +32,11 @@ def _load_mcp_config(repo_root: Path = _REPO_ROOT) -> list[dict[str, Any]]:
     """
     configs: list[dict[str, Any]] = []
     paths_to_check = [
+        # ~/.claude.json is the top-level CC user config and the most common
+        # home for user-defined `mcpServers` (settings.json often has none).
+        # Reading it here fixes both the inventory and the probe, which were
+        # blind to servers configured only in ~/.claude.json.
+        (Path.home() / ".claude.json", "user-global"),
         (Path.home() / ".claude" / "settings.json", "global"),
         (repo_root / ".mcp.json", "project"),
     ]
@@ -223,3 +229,56 @@ def check_mcp_servers(timeout: int = DEFAULT_MCP_TIMEOUT) -> dict[str, Any]:
         "servers": server_verdicts,
         "remediation": "Inspect the per-server `remediation` field for the broken/degraded entries." if (overall_broken or overall_degraded) else None,
     }
+
+
+def inventory_mcp_servers(repo_root: Path = _REPO_ROOT) -> dict[str, Any]:
+    """Read-only inventory of configured MCP servers — does NOT probe.
+
+    Answers "what MCP servers are configured, where, and what env keys do they
+    need?" for the "is my environment actually set up" question. SAFE TO PRINT:
+    reports env-var KEY NAMES and whether the config supplies a non-empty value,
+    but NEVER the value itself; for HTTP servers reports the host only (no path/
+    query, which can carry tokens). This is config-as-awareness, not bundling —
+    consistent with kbg's "no bundled MCP servers" non-goal (it inventories the
+    operator's own config, it ships nothing).
+
+    Returns: {name: 'mcp_inventory', count, servers: [{name, source, config_path,
+    transport, command, url_host, env_keys: [{name, value_present}]}]}.
+    """
+    configs = _load_mcp_config(repo_root)
+    servers: list[dict[str, Any]] = []
+    for s in configs:
+        cfg = s["config"]
+        if cfg.get("command"):
+            transport = "stdio"
+        elif cfg.get("url"):
+            transport = "http"
+        else:
+            transport = "unknown"
+        env = cfg.get("env") or {}
+        env_keys: list[dict[str, Any]] = []
+        if isinstance(env, dict):
+            for k, v in sorted(env.items()):
+                # value_present = config supplies a non-empty literal; a "${VAR}"
+                # placeholder counts as present-in-config (resolution is runtime).
+                env_keys.append({
+                    "name": str(k),
+                    "value_present": bool(isinstance(v, str) and v.strip()),
+                })
+        url_host = None
+        if transport == "http":
+            try:
+                url_host = urlparse(str(cfg.get("url"))).hostname
+            except (ValueError, TypeError):
+                url_host = None
+        servers.append({
+            "name": s["name"],
+            "source": s["source"],
+            "config_path": s.get("path", ""),
+            "transport": transport,
+            "command": cfg.get("command") if transport == "stdio" else None,
+            "url_host": url_host,
+            "env_keys": env_keys,
+        })
+    return {"name": "mcp_inventory", "count": len(servers), "servers": servers}
+

@@ -4,8 +4,8 @@
   "_provenance": {
     "authored": "2026-06-17",
     "authored_by": "LEAD-D (code-architect) on sensor-fire-notification plan",
-    "recounted": "2026-06-21 — corrected stale 42/57 → 45/60 (jq census on hooks.json + harness-audit; the originals had drifted as hooks were added). 35 of the 45 scripts are tracked as sensors below; PreToolUse gates, _lib helpers, and capture scripts are intentionally untracked (no staleness contract).",
-    "derived_from": "hooks/hooks.json — 45 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 60 total kbg registrations across 14 lifecycle events.",
+    "recounted": "2026-06-21 — corrected stale 42/57 → 45/60 (jq census on hooks.json + harness-audit). v0.3.4 added cost-capture → now 46/61, with 36 of 46 scripts tracked as sensors; ideate capture scripts, PreToolUse gates, and _lib helpers are intentionally untracked (no staleness contract).",
+    "derived_from": "hooks/hooks.json — 46 unique kbg hook scripts (excluding the external $SUPERSET_HOME_DIR/hooks/notify.sh), 61 total kbg registrations across 14 lifecycle events.",
     "hand_curated": true,
     "no_env_var_defaults": "Per METHODOLOGY Rule 2 (no speculative configurability). All values are explicit; not sourced from $KBG_* env vars."
   },
@@ -299,6 +299,14 @@
       "should_fire_when": "UserPromptSubmit:*(investigation keywords)",
       "max_silent_days": 7,
       "fallback_role": "inferential-FF",
+      "must_fire_in_session": false,
+      "enabled": true
+    },
+    {
+      "name": "cost-capture",
+      "should_fire_when": "SessionEnd:*",
+      "max_silent_days": 7,
+      "fallback_role": "computational-FB",
       "must_fire_in_session": false,
       "enabled": true
     }

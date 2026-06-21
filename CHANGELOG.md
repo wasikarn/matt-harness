@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.4] — 2026-06-21
+
+Observability + learning — three ECC concept-gaps closed within kbg's invariants
+(an adversarial gap-hunt found them; all three are mandated or enabled by kbg's own
+doctrine, not imported wholesale).
+
+### Added
+
+- **`kbg:learn` — human-gated session-pattern capture.** Mines the current session
+  transcript for durable, reusable learnings (operator corrections, stated
+  conventions, repeated workflows, decisions + rationale), filters out what the
+  repo/memory already records, and writes only operator-approved ones as `memory/`
+  files via an `AskUserQuestion` gate. The propose-only counterpart of
+  `recursive-improve` (that closes the loop on harness health; this one on what you
+  taught it this session). Operator-initiated only — **no** SessionEnd auto-mining;
+  unflagged so the model can reach it on "remember how we did this", with the gate
+  (not a user-only lockout) as the safety. **Skill count 39 → 40.**
+- **`cost-capture` SessionEnd hook + `kbg:harness-health --cost`.** Sums per-message
+  token usage from the transcript (deduped by message id) and journals a
+  `cost_capture` event; `--cost` reports per-session totals. Honest TOKEN counts
+  only — no dollar estimate (no honest local price signal, same reasoning as the L3
+  `--max-cost` deferral). The measurement half of METHODOLOGY Rule 6 + the Böckeler
+  2×2's "feedforward needs feedback" — kbg preached token discipline but never
+  measured spend (usage-monitor tried and failed on a wrong jq path). Count fields
+  are named to dodge the journal's secret-redactor (no "token" substring). **Hook
+  scripts 45 → 46; sensors 35 → 36; registrations 60 → 61.** Covered by
+  `test-ch-cost-capture.sh`.
+- **MCP inventory — `auth-health-check.py --mcp`.** Read-only list of configured MCP
+  servers (name, transport, env-var KEY NAMES — never values; HTTP host only). Also
+  fixes `_load_mcp_config`'s blindness to `~/.claude.json` (the common home for user
+  `mcpServers`), which improves the existing reachability probe too. A regression
+  eval guards the security contract (an env value must never leak into output).
+
 ## [0.3.3] — 2026-06-21
 
 Fix the stale `sensors.json` `_provenance` hook counts — the root cause of the

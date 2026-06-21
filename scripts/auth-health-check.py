@@ -97,7 +97,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent))
 
 from auth_health.gh import check_gh_auth, DEFAULT_GH_TIMEOUT
-from auth_health.mcp import check_mcp_servers, DEFAULT_MCP_TIMEOUT
+from auth_health.mcp import check_mcp_servers, inventory_mcp_servers, DEFAULT_MCP_TIMEOUT
 from auth_health.plugins import check_plugin_cache
 
 
@@ -173,6 +173,25 @@ def print_human(verdict: dict[str, Any]) -> None:
         print()
 
 
+def print_mcp_inventory(inv: dict[str, Any]) -> None:
+    """Print a human-readable read-only MCP inventory to stdout."""
+    print(f"# mcp-inventory: {inv['count']} server(s) configured")
+    print()
+    if not inv["servers"]:
+        print("  (none — checked ~/.claude/settings.json and .mcp.json)")
+        print()
+        return
+    for s in inv["servers"]:
+        loc = s.get("command") or s.get("url_host") or "?"
+        print(f"  • {s['name']} [{s['transport']}] ({s['source']}) → {loc}")
+        for e in s.get("env_keys", []):
+            mark = "value in config" if e["value_present"] else "UNSET in config"
+            print(f"      env: {e['name']} ({mark})")
+        if s.get("config_path"):
+            print(f"      config: {s['config_path']}")
+    print()
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -202,7 +221,21 @@ def main() -> int:
     parser.add_argument(
         "--no-plugins", action="store_true", help="Skip the plugin cache check.",
     )
+    parser.add_argument(
+        "--mcp", action="store_true",
+        help="Print a read-only inventory of configured MCP servers (names, transport, "
+             "env-key NAMES — never values) and exit 0. Does not probe or grade.",
+    )
     args = parser.parse_args()
+
+    # --mcp is an informational inventory, not a health verdict: print and exit 0.
+    if args.mcp:
+        inv = inventory_mcp_servers()
+        if args.json:
+            print(json.dumps(inv, indent=2))
+        else:
+            print_mcp_inventory(inv)
+        return 0
 
     checks: list[dict[str, Any]] = []
     if not args.no_gh:
