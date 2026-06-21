@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping/lint (use kbg:memory-lint / kbg:memory-trim), or unprompted auto-capture (this is operator-initiated only — there is NO SessionEnd auto-mining)."
+description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping/lint (use kbg:memory-lint / kbg:memory-trim), or unprompted auto-*apply* (writing memory is operator-initiated + AskUserQuestion-gated only). A default-OFF SessionEnd hook (learn-capture, KBG_LEARN_CAPTURE=1) may passively STAGE candidates to an out-of-repo queue, but nothing is written without your approval in this skill."
 ---
 
 # Skill: learn
@@ -17,8 +17,14 @@ notices what belongs in it.
 
 ## Autonomy posture (load-bearing)
 
-- **Operator-initiated only.** There is **no** SessionEnd auto-mining hook — the skill runs when
-  the operator asks. The autonomy invariant (ADR 0002/0003) is preserved by this + the gate below.
+- **Capture is passive + opt-in; APPLY is operator-gated.** A default-OFF SessionEnd hook
+  (`learn-capture`, enable with `KBG_LEARN_CAPTURE=1`) may passively *stage* candidates to an
+  out-of-repo queue (journal-only, never the repo, never a `permissionDecision`). But this skill
+  is still the **only** path that WRITES memory, and only after the `AskUserQuestion` gate. The
+  autonomy invariant is preserved by capture-never-applies + the gate below — see
+  [`docs/adr/0002-addendum-passive-capture.md`](../../docs/adr/0002-addendum-passive-capture.md)
+  (the conscious relaxation of the prior "no SessionEnd hook" stance) + the
+  [candidate schema](CANDIDATE-SCHEMA.md).
 - **Writes are gated.** Candidates are NEVER written silently. Every save passes an
   `AskUserQuestion` gate; the operator approves each one. Reject = nothing written.
 - **No flag, by design.** The skill is `disable-model-invocation`-free so the model can reach it
@@ -27,6 +33,19 @@ notices what belongs in it.
   which IS flagged because it is a *mutation loop* that must not self-start.)
 
 ## Procedure
+
+0. **Drain the candidate queue first (if passive capture is enabled).** Run
+   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/read-candidates.sh" --transcript "$(bash "${CLAUDE_SKILL_DIR}/scripts/find-transcript.sh")"`
+   to list staged candidates — one JSON object per line, already merged across sessions and ranked
+   by the **ordering-only** confidence ([`CANDIDATE-SCHEMA.md`](CANDIDATE-SCHEMA.md); the rank only
+   sorts the list — never treat it as a gate). Empty/exit-0 = nothing staged; proceed to Step 1.
+   - **When the queue holds rows from THIS session, Step 0 REPLACES Step 2's re-mine for those** —
+     do not double-surface. If you also mine in Step 2, hash-dedupe by `trigger`/`evidence` before
+     the gate so each learning appears once.
+   - Carry the queue candidates into the Step-3 filter and the Step-4 gate alongside any freshly
+     mined ones. After the gate, dispose each handled candidate by its `key` field:
+     `bash "${CLAUDE_PLUGIN_ROOT}/scripts/read-candidates.sh" --transcript "<path>" --archive "<key>" promoted|rejected`
+     so it leaves the open list (rejected rows are kept, re-openable, never `rm`).
 
 1. **Locate the transcript.** Run `bash "${CLAUDE_SKILL_DIR}/scripts/find-transcript.sh"` for the
    current project's latest `.jsonl`. If it fails, fall back to the transcript path the SessionStart

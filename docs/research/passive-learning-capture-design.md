@@ -1,6 +1,7 @@
 # Passive Learning-Capture — Maximal-Bounded design
 
-> **Status:** PLAN (not built). Design only — no code, no version bump yet.
+> **Status:** ✅ BUILT (Phase 1 shipped v0.3.7, 2026-06-21). Owner chose **Build** on the §9.3
+> build-vs-hold call ("I forget often"). Phase 2 (L3-guard fold-in, §6) still deferred.
 > **Date:** 2026-06-21 · **Decider:** Owner · **Operating point:** Maximal-bounded (locked).
 > **Rev 2 (2026-06-21):** revised after an **independent maker≠checker audit** (5 senior reviewers +
 > 1 adversarial verifier, fresh context). 0 blockers; **6 majors folded in below** — incl. the two
@@ -120,6 +121,11 @@ Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, wit
    - **Value case (for):** with the drain-nudge (#2) + precision floor (#3) folded in, capture closes the loop kbg:learn leaves open — corrections you'd otherwise forget by the time you next run kbg:learn get queued + resurfaced, with secrets scrubbed and garbage filtered.
    - **YAGNI case (against):** it adds 2 hooks + 2 scripts + schema + audit #47 + ADR addendum + a doctrine reversal, for a single-author harness where `kbg:learn` already does this on demand. If you reliably run kbg:learn at session end anyway, passive capture is overhead.
    - **The deciding question:** *do you actually forget to run kbg:learn?* If yes → build (the drain-nudge is the whole point). If no → hold; the feature is YAGNI.
+   - **DECISION (2026-06-21):** Owner answered "I forget often" → **BUILD**. Phase 1 shipped v0.3.7
+     (capture hook default-OFF, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, ADR 0002
+     addendum, 2 eval fixtures, 12-test sub-suite). Independent code review post-build: 0 Critical,
+     all 6 invariants verified, 1 Major + 4 Minor folded (drain-nudge `_lib` bypass, cap/rotate
+     open-row protection, precision tightening, emit-before-record). Gauntlet 4/4.
 
 ## 10. Audit → fix traceability (Rev 2)
 

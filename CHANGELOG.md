@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.7] — 2026-06-21
+
+Passive learning-capture (Phase 1) — the "เรียนรู้เองอัตโนมัติ" pillar at the owner-chosen
+**Maximal-bounded** point: adopt ECC's continuous-learning **capture half** (observe → queue),
+human-gate the **apply half**. Owner answered the §9.3 build-vs-hold call ("I forget to run
+kbg:learn") → BUILD. Governance: [ADR 0002 addendum](docs/adr/0002-addendum-passive-capture.md)
+(not a superseding ADR — the advisory-sensor architecture is unchanged).
+
+### Added
+
+- **`hooks/session/learn-capture.sh`** — SessionEnd advisory sensor (computational-FB),
+  **default-OFF** (`KBG_LEARN_CAPTURE=1`). Harvests operator corrections/preferences from the
+  transcript (role==user only, word-boundary patterns, quote/tag stripped) and **appends** JSONL
+  candidate rows to an **out-of-repo** queue. Never mutates the repo, never emits a
+  `permissionDecision`, secret-scrubs with whole-row drop, always exits 0.
+- **`hooks/session/learn-drain-nudge.sh`** — SessionStart hook that closes the loop: a one-line
+  nudge when ≥5 candidates have aged ≥7 days, hash-gated so it never re-nags the same set.
+- **`scripts/read-candidates.sh`** — shared reader: merges rows across sessions, computes an
+  **ordering-only** confidence, lists open candidates; `--archive` disposes + caps/rotates (keeps
+  all unreviewed rows).
+- **`skills/learn/CANDIDATE-SCHEMA.md`** — the writer/reader contract (queue path, row shape,
+  confidence formula, secret-scrub deny-list).
+- **`docs/adr/0002-addendum-passive-capture.md`**, **audit check #47** (CRIT: no
+  `permissionDecision`, no confidence-gate), 2 eval fixtures, `test-ch-learn-capture.sh` (12 tests).
+
+### Changed
+
+- **`skills/learn/SKILL.md`** — new **Step 0** drains the candidate queue before mining; the
+  "no SessionEnd auto-mining" autonomy-posture block was consciously relaxed (capture is passive +
+  opt-in; APPLY stays `AskUserQuestion`-gated here). Counts: 46→48 hook scripts, 61→63
+  registrations, 36→38 sensors.
+
 ## [0.3.6] — 2026-06-21
 
 Thinking-catalog on-demand discoverability — surface the 9 orphan mental-model frames on the

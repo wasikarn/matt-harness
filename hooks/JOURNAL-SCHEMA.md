@@ -49,6 +49,7 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `verification_verdict` | `/review-pr` (Phase II) | `subject_id`, `disposition`, `tier`, `decision`, `rejected_reason` |
 | `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
 | `l3_cycle` | `recursive-improve --auto` (ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks` |
+| `learning_candidates` | `learn-capture.sh` (SessionEnd, default-OFF; ADR 0002 addendum) | `queued`, `corrections`, `preferences`, `queue_total` — **counts only**, no secret-named fields (the redactor nukes any key containing token/secret/key/password/credential) |
 
 `review_finding` + `verification_verdict` are the Phase-II ground-truth pair: the
 former is the per-finding evidence (file/line/tier/agent/summary), the latter is

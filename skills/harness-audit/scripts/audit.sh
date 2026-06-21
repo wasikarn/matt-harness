@@ -1782,6 +1782,28 @@ for lib in "$CLAUDE_DIR/skills"/*/scripts/task-board-lib.sh; do
   fi
 done
 
+# 47. Passive learn-capture is advisory-only + confidence-never-gates (ADR 0002
+# addendum). Extends #34's pattern to the computational-FB capture path. The
+# learn-capture hook must NEVER emit a permissionDecision (it journals + queues,
+# never gates SessionEnd), and NEITHER the hook NOR skills/learn/SKILL.md may ever
+# compare a confidence value against a threshold to trigger an action — that would
+# be ECC's model-as-gate, which the addendum forbids (confidence is ordering-only).
+# Strip full-line comments first (a comment NAMING the rule is fine). Hermetic:
+# each leg skips cleanly if its file is absent.
+LC_HOOK="$CLAUDE_DIR/hooks/session/learn-capture.sh"
+LEARN_SKILL="$CLAUDE_DIR/skills/learn/SKILL.md"
+if [ -f "$LC_HOOK" ]; then
+  if grep -vE '^[[:space:]]*#' "$LC_HOOK" 2>/dev/null | grep -qE 'permissionDecision|hook_decision|kbg_permission_decision'; then
+    crit "autonomy invariant: learn-capture.sh emits a permissionDecision — passive capture must journal/queue, never gate (ADR 0002 addendum; same class as #34)"
+  fi
+fi
+for _f in "$LC_HOOK" "$LEARN_SKILL"; do
+  [ -f "$_f" ] || continue
+  if grep -vE '^[[:space:]]*#' "$_f" 2>/dev/null | grep -qE 'confidence *(>=|>|-ge|-gt) *0\.[0-9]'; then
+    crit "autonomy invariant: '${_f#"$CLAUDE_DIR"/}' gates on a confidence threshold — confidence is an ORDERING signal only, never an action trigger (ADR 0002 addendum; CANDIDATE-SCHEMA.md NON-NEGOTIABLE)"
+  fi
+done
+
 # ── summary ──────────────────────────────────────────────────────────
 
 echo ""

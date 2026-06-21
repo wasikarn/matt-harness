@@ -34,6 +34,14 @@
         ]
       },
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/learn-drain-nudge.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "startup",
         "hooks": [
           {
@@ -336,6 +344,15 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/cost-capture.sh\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session/learn-capture.sh\"",
+            "timeout": 25
           }
         ]
       }
