@@ -163,6 +163,7 @@ def cmd_precheck(args):
     start = st.get("start_epoch", now)
     runs = st.get("runs_done", 0)
     fails = st.get("fail_streak", 0)
+    flats = st.get("no_progress_streak", 0)
 
     if runs >= args.max_runs:
         _emit("STOP", f"max-runs reached ({runs}/{args.max_runs})")
@@ -170,6 +171,12 @@ def cmd_precheck(args):
         _emit("STOP", f"max-duration reached ({int(now - start)}s/{args.max_duration}s)")
     if fails >= args.fail_streak:
         _emit("STOP", f"fail-streak reached ({fails}/{args.fail_streak})")
+    # no-progress cap: K consecutive GREEN-but-flat cycles (no audit/gaps delta) =
+    # the loop is spinning without improving. A DIFFERENT signal from fail-streak
+    # (which counts reds). The flat? decision is a numeric delta the loop computes
+    # and passes via record-result --flat; the guard only counts (computational).
+    if args.max_flat and flats >= args.max_flat:
+        _emit("STOP", f"no-progress reached ({flats}/{args.max_flat} flat cycles)")
     if not args.no_dirty_abort:
         dirty, what = _git_dirty()
         if dirty:
@@ -177,6 +184,7 @@ def cmd_precheck(args):
 
     # CONTINUE: persist incremented state
     st.update({"start_epoch": start, "runs_done": runs + 1, "fail_streak": fails,
+               "no_progress_streak": flats,
                "run_id": st.get("run_id", args.run_id or "")})
     try:
         Path(args.state).write_text(json.dumps(st), encoding="utf-8")
@@ -191,15 +199,23 @@ def cmd_record_result(args):
     st = _load_state(args.state)
     if args.green:
         st["fail_streak"] = 0
+        # --flat = the cycle passed the gauntlet but moved no audit/gaps metric
+        # (the loop decides flat numerically; here we only track the streak). An
+        # improved green resets it; a red leaves it (fail-streak owns reds).
+        if args.flat:
+            st["no_progress_streak"] = st.get("no_progress_streak", 0) + 1
+        else:
+            st["no_progress_streak"] = 0
     else:
         st["fail_streak"] = st.get("fail_streak", 0) + 1
-    st.setdefault("results", []).append("green" if args.green else "red")
+    label = "red" if args.red else ("green-flat" if args.flat else "green")
+    st.setdefault("results", []).append(label)
     try:
         Path(args.state).write_text(json.dumps(st), encoding="utf-8")
     except OSError as e:
         _emit("STOP", f"cannot persist run state ({e}) — fail-closed")
-    _emit("CONTINUE", f"recorded {'green' if args.green else 'red'}",
-          fail_streak=st["fail_streak"])
+    _emit("CONTINUE", f"recorded {label}",
+          fail_streak=st["fail_streak"], no_progress_streak=st.get("no_progress_streak", 0))
 
 
 def cmd_selftest(_args):
@@ -232,6 +248,8 @@ def main():
     p_pre.add_argument("--max-runs", type=int, default=3)
     p_pre.add_argument("--max-duration", type=int, default=0, help="seconds; 0 = off")
     p_pre.add_argument("--fail-streak", type=int, default=2)
+    p_pre.add_argument("--max-flat", type=int, default=2,
+                       help="stop after K consecutive green-but-flat (no-progress) cycles; 0 = off")
     p_pre.add_argument("--no-dirty-abort", action="store_true")
     p_pre.set_defaults(func=cmd_precheck)
 
@@ -240,6 +258,8 @@ def main():
     g = p_rec.add_mutually_exclusive_group(required=True)
     g.add_argument("--green", action="store_true")
     g.add_argument("--red", action="store_true")
+    p_rec.add_argument("--flat", action="store_true",
+                       help="with --green: the cycle moved no audit/gaps metric (counts toward --max-flat)")
     p_rec.set_defaults(func=cmd_record_result)
 
     sub.add_parser("selftest", help="run the built-in matcher self-check").set_defaults(func=cmd_selftest)

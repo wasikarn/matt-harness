@@ -275,6 +275,30 @@ def compute_debt_ledger(evts, now=None, open_prs=None):
     }
 
 
+def read_learning_candidates():
+    """Read-only Route-B (ADR 0002 addendum): shell out to the single queue reader
+    scripts/read-candidates.sh (avoids the sync-seam audit #37-40 guards) and return
+    the open learning candidates, merged + confidence-ranked. NEVER writes the queue.
+    Returns [] on clean/empty, None if the reader is missing."""
+    script = Path(__file__).resolve().parent.parent / "read-candidates.sh"
+    if not script.exists():
+        return None
+    try:
+        out = subprocess.run(["bash", str(script)], capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    rows = []
+    for ln in out.stdout.splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            rows.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser(description="surface verification_summary gaps for the improvement ritual")
     ap.add_argument("--journal", default=JOURNAL_DEFAULT, help="governance journal path")
@@ -342,6 +366,23 @@ def main():
         print()
         # Surface the breach but DO NOT sys.exit(1) — observe is a sensor.
         # The SKILL.md Step 1 callout is the operator-facing pause signal.
+
+    # Learning-candidate queue (Route B, ADR 0002 addendum) — read-only. This is a
+    # DIFFERENT queue from the comprehension-debt ledger above: that one is "what
+    # stays manual"; this one is passively-captured operator corrections/preferences
+    # awaiting kbg:learn triage. In L3 --auto, a high-confidence row is an eligible
+    # candidate (one per cycle, applied gated at push); the loop READS, never writes
+    # the queue (the human drains it via kbg:learn). Default-OFF unless KBG_LEARN_CAPTURE=1.
+    cands = read_learning_candidates()
+    if cands:
+        print("learning-candidate queue (passive capture — kbg:learn to triage):")
+        print(f"  open:   {len(cands)} candidate(s)")
+        for c in cands[:3]:
+            trig = (c.get("trigger") or "").replace("\n", " ")[:60]
+            print(f"  - [{c.get('confidence', 0):.2f}] {c.get('kind', '?')}: {trig}")
+        if len(cands) > 3:
+            print(f"  … and {len(cands) - 3} more")
+        print()
 
     load_jsonl = _load_governance_reader()
     evts, n_corrupt, existed = load_jsonl(args.journal)

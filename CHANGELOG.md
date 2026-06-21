@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.3.8] — 2026-06-21
+
+Passive learning-capture **Phase 2** — fold two L3-loop guards into
+`recursive-improve --auto` (within ADR 0003: human-launched, push-gated, computational).
+Owner-scoped: build the goal-advancing pieces, **drop** the runaway-guard (active-hours/idle/
+cooldown) as a category mismatch — those guard a *self-launching daemon*; kbg's loop is
+human-launched and already bounded by `--max-runs` / `--max-duration` / `--fail-streak`.
+
+### Added
+
+- **No-progress cap (`--max-flat`, default 2)** in `scripts/l3-loop-guard.py` — ends an `--auto`
+  run after K consecutive **green-but-flat** cycles (gauntlet passes but no audit/`gaps` metric
+  moved). Distinct from `--fail-streak` (which counts reds). The `flat?` decision is a numeric
+  delta the loop computes; the guard only counts (computational, never a model verdict). Covered
+  by `test-ch-l3.sh` (no-progress STOP + improved-green reset).
+- **Route B — learning-candidate queue read** in `scripts/pr/recursive-improve-observe.py`: a
+  read-only "learning-candidate queue" section (shells out to `read-candidates.sh`, the single
+  reader). In `--auto`, a high-confidence captured correction/preference is an eligible candidate
+  (one per cycle, applied **gated at push**); the loop **reads, never writes** the queue — the
+  human drains it via `kbg:learn`. `l3_cycle` journal gains an optional `source: queue` field.
+
+### Changed
+
+- **`skills/recursive-improve/SKILL.md`** — documents the no-progress cap + Route B in the `--auto`
+  cycle; disambiguates the learning-candidate queue from the comprehension-debt "drain the queue".
+
 ## [0.3.7] — 2026-06-21
 
 Passive learning-capture (Phase 1) — the "เรียนรู้เองอัตโนมัติ" pillar at the owner-chosen

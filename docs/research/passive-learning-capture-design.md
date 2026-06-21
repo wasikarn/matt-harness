@@ -90,6 +90,12 @@ posture` block at :18-20). Standalone ADR 0004 is the alternative only if the ow
 
 ## 6. Phase 2 — L3-guard additions (from the loop drill, optional-after-core)
 
+> **Status:** ✅ SHIPPED v0.3.8 (2026-06-21), owner-scoped. Built: **#3 queue-read (Route B)** +
+> **no-progress cap (`--max-flat`)**. **Dropped: runaway-guard** (active-hours/idle/cooldown) — a
+> category mismatch: those gate a *self-launching daemon*; kbg's loop is human-launched + already
+> bounded by `--max-runs`/`--max-duration`/`--fail-streak`. retry-storm/cost-drift/merge-conflict
+> skipped (retry already capped; no merge inside the loop).
+
 Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, within ADR 0003):
 
 - **Runaway guard** ← `session-guardian.sh`: active-hours (overnight-aware) + per-run cooldown + idle, cheapest-first, **fail-open**.

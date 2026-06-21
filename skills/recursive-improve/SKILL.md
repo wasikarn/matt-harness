@@ -178,15 +178,31 @@ and **no push** inside the loop. Read the contract first: `cat "${KBG_PLUGIN_ROO
 
 **Caps (set at launch, immutable for the run):** `--max-runs N` (default **3** — a *reviewability*
 bound: you must hold the whole batch in working memory at Gate 2), `--max-duration S` (seconds; 0=off),
-`--fail-streak K` (default 2). The guard captures `KBG_AUTONOMY_L3` **once** at process start — the
+`--fail-streak K` (default 2), `--max-flat M` (default **2** — the *no-progress* cap: K consecutive
+GREEN-but-flat cycles end the run). The guard captures `KBG_AUTONOMY_L3` **once** at process start — the
 loop cannot re-export it to widen scope mid-run.
+
+**No-progress cap (`--max-flat`) — distinct from `--fail-streak`.** `--fail-streak` counts *reds*
+(gauntlet failures, rolled back). `--max-flat` counts *greens that moved no metric* — a cycle that
+passes the gauntlet but where the drift guard (Step 5) shows **flat delta** (audit finding count not
+down AND `gaps` not down). That `flat?` decision is a **numeric** comparison the loop computes from
+the Observe baseline (Step 1) vs the post-cycle re-read — never a model judging its own work — and
+passes to the guard via `record-result --flat`. A loop spinning out green-but-useless cycles stops
+at `M`, even though nothing is failing.
 
 **The cycle** — let `RID` = a uuid minted at launch, `STATE=.scratch/l3-runs/$RID/state.json`:
 
-1. **precheck** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" precheck --state "$STATE" --run-id "$RID" --max-runs N [--max-duration S] [--fail-streak K]`
-   - `decision: STOP` → end the run (a cap tripped, or the flag is off); go to **At run end**.
+1. **precheck** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" precheck --state "$STATE" --run-id "$RID" --max-runs N [--max-duration S] [--fail-streak K] [--max-flat M]`
+   - `decision: STOP` → end the run (a cap tripped — runs/duration/fail-streak/**no-progress** — or the flag is off); go to **At run end**.
    - `decision: CONTINUE` → proceed (the guard has incremented the run counter).
 2. **Observe + Propose ONE candidate** (Steps 1–2 above), scoped to **≤5 files / ≤200 lines**.
+   Record the Observe baseline numerics (audit C/W/I count + total `gaps`) for the flat-delta check at step 7.
+   **Route B (candidate source):** Observe also reads the **learning-candidate queue** (the
+   `recursive-improve-observe.py` "learning-candidate queue" section, read-only). A high-confidence
+   queue row (a captured operator correction/preference) is an **eligible candidate** alongside audit
+   findings — propose at most one per cycle. The loop **reads, never writes** the queue (the human
+   drains it via `kbg:learn`); it does not `--archive`. This is a DIFFERENT queue from the
+   comprehension-debt "drain the queue" gate at Step 1 above (that ledger = "what stays manual").
 3. **Tag the pre-cycle tree** (the revert anchor): `git tag "l3-precycle-$RID-$ITER"`.
 4. **check-act BEFORE writing** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" check-act <path>... --candidate-cmd "<the command/edit the candidate runs>"`
    - `decision: REVERT` → the candidate touches a caged path or tampers with a safety var. **Skip it**,
@@ -194,10 +210,15 @@ loop cannot re-export it to widen scope mid-run.
    - `decision: CONTINUE` → no caged path; apply it.
 5. **Apply the one candidate** (inline Edit/Write, or the matching senior agent).
 6. **In-loop gate (computational, never a model judging its own work):** `bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — exit 0 = green, nonzero = red.
-7. **record-result** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" record-result --state "$STATE" --green|--red`.
+7. **record-result** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" record-result --state "$STATE" --green|--red [--flat]`.
+   - On **green**, compute the flat-delta numerically: re-read Observe (audit C/W/I count + `gaps`)
+     and compare to the step-2 baseline. If **neither** decreased → pass `--flat` (counts toward
+     `--max-flat`); if any improved → omit `--flat` (resets the no-progress streak). This is the
+     drift guard (Step 5) as a computational signal, not a model verdict.
 8. **Keep or roll back:**
    - green → `git commit` **LOCAL only** (the `l3-push-gate` denies any push inside the run); journal
-     an `l3_cycle` event with `run_id` + `iteration` + `outcome: green`.
+     an `l3_cycle` event with `run_id` + `iteration` + `outcome: green` (+ `source: queue` when the
+     candidate came from the learning-candidate queue, so Gate-2 review can see it).
    - red → `git reset --hard "l3-precycle-$RID-$ITER"` (roll back to the tag); journal `l3_cycle` with
      `outcome: red` + the failing checks. The guard's `--fail-streak` ends the run after K consecutive reds.
 9. Loop back to step 1.

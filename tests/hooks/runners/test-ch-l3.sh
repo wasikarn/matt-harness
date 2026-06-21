@@ -65,6 +65,19 @@ if command -v python3 >/dev/null 2>&1; then
   gcheck STOP     10 "precheck refuses when flag off"       ""                     precheck --state "$FIXTURE/st1.json" --max-runs 1 --no-dirty-abort
   gcheck CONTINUE  0 "precheck CONTINUE on first cycle"     "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
   gcheck STOP     10 "precheck STOP when max-runs reached"  "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
+
+  # no-progress cap (--max-flat): 2 consecutive GREEN-but-flat cycles → STOP, even
+  # though nothing failed. Distinct from fail-streak (which counts reds).
+  gcheck CONTINUE  0 "precheck c1 (no-progress)"           "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat #1"                "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st3.json" --green --flat
+  gcheck CONTINUE  0 "precheck c2 (1 flat < cap)"          "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat #2"                "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st3.json" --green --flat
+  gcheck STOP     10 "precheck STOP at no-progress cap"    "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  # an IMPROVED green resets the no-progress streak (so a productive cycle clears it).
+  gcheck CONTINUE  0 "precheck c1 (reset path)"            "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat (streak=1)"        "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st4.json" --green --flat
+  gcheck CONTINUE  0 "record green-improved (resets)"      "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st4.json" --green
+  gcheck CONTINUE  0 "precheck continues after reset"      "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi
