@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.2-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -9,8 +9,8 @@ It adds 29 specialist agents, 39 workflow skills, 22 slash commands, and 42 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.3.1):** post-L3 cleanup — deleted the dead `usage-monitor` feature (broken capture, never delivered data), added audit check #46 guarding the `task-board-lib.sh` duplication seam, and fixed 3 stale script-path refs.
-> (v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
+> **Newest additions (v0.3.2):** ECC structure comparison → 2 clarity renames (`hypothesis-precommit.sh` → `hypothesis-gate.sh`, `_lib/fm.sh` → `frontmatter-helpers.sh`), a CLAUDE.md "Where each concern lives" map, and `examples/` project-type CLAUDE.md starters. The 12-category restructure was rejected — kbg already homes every concern at its single-harness scale.
+> (v0.3.1: deleted the dead `usage-monitor` feature + audit check #46 for the `task-board-lib.sh` seam. v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -232,13 +232,14 @@ kbg-harness/
 ├── tests/                # Critical-hooks suite + skill/_lib tests
 ├── git-hooks/            # pre-commit (fast) + pre-push (full parallel gauntlet)
 ├── docs/                 # Governance docs, grouped: adr/ reference/ research/ agents/ skill-template/
+├── examples/             # Project-type CLAUDE.md starters (reference only — not auto-loaded)
 ├── METHODOLOGY.md RTK.md ACLI.md DBGATE.md   # L1 doctrine — always injected every session (no manual copy)
 ├── CLAUDE.md             # Project instructions (architecture requiring multi-file reading)
 ├── BOUNDARY.md           # Auto-generated capability map (regenerate after surface changes)
 └── README.md             # This file
 ```
 
-**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) / [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) for the autonomy stance (L2 default, opt-in L3 bounded loop, no self-launching cron/`/loop` primitives).
+**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. The one ECC pattern recently adopted is `examples/` (project-type `*-CLAUDE.md` starters, [v0.3.2](CHANGELOG.md)). See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) / [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) for the autonomy stance (L2 default, opt-in L3 bounded loop, no self-launching cron/`/loop` primitives).
 
 ---
 
