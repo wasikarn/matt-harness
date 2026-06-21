@@ -129,7 +129,7 @@ Subagents spawned via the Agent tool are **persistent teammates** when teammate 
 
 ## See also
 
-- `docs/adr/0002-autonomy-invariant.md` — why the harness stays at L2 (human-gated) and does not attempt L3/L4 autonomous loops
+- `docs/adr/0002-autonomy-invariant.md` + `docs/adr/0003-l3-bounded-autonomy.md` — why the harness is human-gated (L2 default; L3 *bounded* opt-in, push-gated) and rejects L4 / self-launching loops
 - `commands/team-plan.md` — Step 1-3 of the 7-step pipeline
 - `commands/team-build.md` — Step 4-7, including the F10 plan approval filter
 - `skills/orchestrate/SKILL.md` — F9 spawn-prompt template and validation chain

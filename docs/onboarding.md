@@ -15,7 +15,7 @@ injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
 
 1. [`METHODOLOGY.md`](../METHODOLOGY.md) — 13-rule behavioral doctrine. **Start here.**
 2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
-3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — irreversible decision record for the autonomy invariant (no L3/L4 loops).
+3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — the autonomy invariant: the load-bearing *principle* + foreclosures (no L4, no self-launch, no model-as-gate). L3 *bounded* autonomy is the opt-in successor in [`ADR 0003`](adr/0003-l3-bounded-autonomy.md).
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
 
 The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
@@ -34,10 +34,14 @@ Other useful ones: `/kbg:fix-bug`, `/kbg:feature-dev`, `/kbg:team-plan`,
 
 ## The 1 thing to never do
 
-**Do not relax ADR 0002.** No autonomous loops, no L3/L4 model-as-gate, no
-self-improving-harness-via-PRs. The autonomy invariant is load-bearing — it
-preserves the operator's judgment over loop velocity. If a feature requires an
-unattended loop, the answer is "out of scope by design," not "amend ADR."
+**Do not relax the autonomy invariant.** No L4, no self-launching loops
+(cron / `/loop` / `CronCreate`), no model-as-gate, no self-improving-harness-via-PRs.
+The invariant is load-bearing — it preserves the operator's judgment over loop
+velocity. **L3 *bounded* autonomy IS in scope** (opt-in `KBG_AUTONOMY_L3`, default
+OFF, push-gated — [ADR 0003](adr/0003-l3-bounded-autonomy.md)); it was adopted by a
+deliberate *superseding ADR*, not a flag flip. So: change the architecture only
+through a new ADR (the 0003 mechanism); a self-launching / L4 / model-as-gate
+feature is "out of scope by design."
 
 ## Recurring cadences (read once, never re-derive)
 
