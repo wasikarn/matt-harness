@@ -38,6 +38,70 @@ stale script paths. Reviewed by a 3-lens senior panel before ship.
   (journal validator + writer). The v0.2.68 portability sweep missed these; they
   pointed at the pre-plugin-extraction home-dir location.
 
+## [0.3.0] — 2026-06-21
+
+L3 bounded autonomy. A deliberate **telos change**, not a capability argument:
+the human gate moves from *per-mutation* to *per-run-approval + per-push*, so a
+self-improvement loop can run unattended *within an owner-approved run*. Minor
+bump for the milestone. **`KBG_AUTONOMY_L3` is OFF by default → behavior is
+identical to L2 today**; the flag is inert until the operator opts in. ADR 0003
+supersedes ADR 0002's L2-only architecture (append-only; ADR 0002 stays the
+canonical L2 record). L4 (no human gate) stays rejected — changing the autonomy
+architecture requires a new superseding ADR, never a flag flip or a loop
+self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
+14 hook events). Commits `01dea6f`…`8f9eea1`.
+
+### Added
+
+- **ADR 0003 (`docs/adr/0003-l3-bounded-autonomy.md`)** — records the conscious
+  override of ADR 0002, the preserved principle (operator judgment is
+  load-bearing), the one real relaxation (gate per-batch + per-push, not per
+  mutation), the **two-gate model** (Gate 1 = launch approval; Gate 2 = pre-push
+  review; no per-cycle gate), and that ADR 0003 is itself reversible. ADR 0002
+  gains a top supersession banner (not a silent violation).
+- **The cage** — `scripts/l3-cage.txt` (deny-by-default path list the loop may
+  never edit: all gates, `audit.sh`, doctrine, `.git/config`, the cage itself) +
+  `scripts/l3-loop-guard.py` (the single code-level enforcer: caps + cage check,
+  fail-closed, flag captured immutable for the run, return contract
+  `{CONTINUE, SKIP, REVERT, STOP}`). Caps are enforced in code, not prose:
+  `--max-runs` (default 3, a reviewability bound), `--max-duration`,
+  `--fail-streak`, `--dirty-abort`.
+- **Gate 2 push gate** (`hooks/gates/l3-push-gate.sh`, flag-scoped) — under an
+  active L3 run with unreviewed commits, denies `git push` / `gh pr` /
+  `core.hooksPath` tampering; override only via explicit `KBG_L3_REVIEW_DONE=1`.
+  `_lib.sh` gains **L3 immunity**: profile-off / disabled-hooks can't disarm the
+  safety gates while the flag is set.
+- **`recursive-improve --auto` bounded-loop body** — Observe → Propose → Act →
+  in-loop gauntlet (computational, never model-as-gate) → keep-if-green /
+  `git reset` if-red → journal(run_id) → next. Commits **local, never pushes**.
+- **Audit checks #43 / #44 (CRIT)** cage-integrity + push-gate/hooksPath wiring,
+  **#45 (CRIT)** reviewer read-only invariant (maker≠checker regression guard),
+  and **#43b** cage-completeness against the full anchor set; **#32 hardened** to
+  frontmatter-anchored `fm_get` (prose-proof) so a SKILL.md docstring rewrite
+  can't silently disarm the "model can't self-start the loop" guard. New tests
+  `test-ch-l3.sh` (25 checks) + `test-ch-agent-readonly.sh`.
+- **Run-id audit trail** — `run_id` / `l3_cycle` correlation in the governance
+  journal (`hooks/JOURNAL-SCHEMA.md`) + `scripts/l3-run-report.sh` read-only
+  query view.
+
+### Changed
+
+- **The autonomy invariant relaxed for L3 only** — the per-mutation human gate
+  becomes per-batch + per-push. `recursive-improve` keeps
+  `disable-model-invocation: true` (guarded by audit #32), so the model still
+  cannot *self-start* the loop; the human launches `--auto` with
+  `KBG_AUTONOMY_L3=1`. Still out of scope by design: a self-*launching* loop
+  (cron / `/loop` / `CronCreate` / Evo meta-loop), a model-as-gate, and L4.
+  The 5 verbatim invariant copies (CONTEXT / CLAUDE.md / recursive-improve /
+  decay-cadence / README) updated together to the L2-default / L3-when-flagged
+  distinction.
+
+### Deferred
+
+- **`--max-cost`** to Slice 2 (the learning engine) — a plain script has no
+  honest local token-cost signal, and faking one violates the no-fake-metrics
+  rule. Slice-1 hard caps are `--max-runs` + `--max-duration`.
+
 ## [0.2.110] — 2026-06-20
 
 ### Fixed

@@ -240,5 +240,5 @@ Single-branch (`develop` only). Commit + push direct. No feature branches. See `
 
 - No public-marketplace publish, no CI release train (`.github/workflows/validate.yml` is a conformance gate, not a release train).
 - No bundled MCP/LSP servers.
-- No L3/L4 autonomy primitives (`/loop`, `CronCreate`, Evo meta-loop, Ollie flywheel).
+- No self-launching or L4 autonomy primitives (`/loop`, `CronCreate`, Evo meta-loop, Ollie flywheel, model-as-gate). L3 *bounded* autonomy is in scope (ADR 0003: opt-in `KBG_AUTONOMY_L3`, default OFF, human-launched + push-gated); only the self-launching / model-as-gate / L4 variants stay out — see the autonomy invariant section above.
 - No Option B (public-distributable) machinery.

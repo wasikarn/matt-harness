@@ -1,16 +1,16 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.2.110-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 40 workflow skills, 21 slash commands, and 45 governance
+It adds 29 specialist agents, 39 workflow skills, 22 slash commands, and 42 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.2.110):** METHODOLOGY §13 teardown rule made precise — `TaskStop` stops only a *still-running* task; a foreground `Agent` spawn reaps on return, so stopping it errors `No task found`. Check `TaskList` first; teardown applies to `run_in_background`/teammate-mode agents only.
-> (v0.2.109: `kbg:tech-humanize` progressive-disclosure refactor + Grit Gate; v0.2.108: `kbg:decide`/`kbg:strategize` correctness pass. See CHANGELOG.)
+> **Newest additions (v0.3.1):** post-L3 cleanup — deleted the dead `usage-monitor` feature (broken capture, never delivered data), added audit check #46 guarding the `task-board-lib.sh` duplication seam, and fixed 3 stale script-path refs.
+> (v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -96,9 +96,9 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | Component | Count | How to Use |
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
-| **Skills** | 40 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
-| **Commands** | 21 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
-| **Hooks** | 45 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
+| **Skills** | 39 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Commands** | 22 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
+| **Hooks** | 42 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -214,8 +214,8 @@ Directory-level layout. The auto-generated `BOUNDARY.md` is the **file-level** c
 kbg-harness/
 ├── .claude-plugin/       # Plugin + marketplace manifests (plugin.json, marketplace.json)
 ├── agents/               # 29 senior-specialist subagents (one .md each, flat)
-├── skills/               # 40 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
-├── commands/             # 21 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
+├── skills/               # 39 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
+├── commands/             # 22 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
 ├── hooks/                # Governance hooks across 14 lifecycle events, grouped by role:
 │   ├── gates/            #   PreToolUse deny/ask gates           (computational feedforward)
 │   ├── advisory/         #   journal-only sensors                (inferential feedback — never block)
