@@ -59,6 +59,11 @@ posture` block at :18-20). Standalone ADR 0004 is the alternative only if the ow
 
 ## 4. Components (Phase 1 — core capture + apply + drain)
 
+> **Note:** these rows record Phase 1 **as shipped at v0.3.7** — capture **default-OFF** (gate
+> `KBG_LEARN_CAPTURE:-0`). The default flipped **OFF→ON at v0.3.9** (gate is now `:-1`, opt-out
+> `KBG_LEARN_CAPTURE=0`); see §9.3 + the ADR 0002 addendum. Read the "default-OFF" mentions below as
+> the original design, not current behavior.
+
 | File | Change |
 |---|---|
 | **NEW** `hooks/session/learn-capture.sh` | matcher-less SessionEnd advisory sensor. `set -uo pipefail`; `source ../_lib.sh`; `hook_init` bypass; **`[ "${KBG_LEARN_CAPTURE:-0}" = "1" ] \|\| exit 0`** (default-OFF); jq+python3 dep-guard→exit 0; read `.transcript_path`/`.session_id` (copy `ideate-budget-capture.sh:23-28`); **`mkdir -p` the `_candidates` dir `\|\| exit 0`** (copy `ideate-budget-capture.sh:21` — AUDIT FIX, else first-run fails); slug from the transcript's parent dir (contract #2); **transcript-size budget guard: skip if >2 MB** (AUDIT FIX — bound the python walk); embedded python3 single pass reusing `event_content/extract_text` (`ideate-budget-capture.sh:47-79`); **HARVEST PRECISION (AUDIT FIX #3): only `role=="user"` turns, never assistant/attachment; word-boundary-anchored patterns**; secret-scrub per below; **append-only** write of JSONL rows (no in-hook cap/rotate — AUDIT FIX, kill-safe); **no confidence field**; `( journal_append learning_candidates {queued,kinds,queue_total} ) \|\| true`; **never `hook_decision`; exit 0 always** |
@@ -130,7 +135,7 @@ Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, wit
    - **The deciding question:** *do you actually forget to run kbg:learn?* If yes → build (the drain-nudge is the whole point). If no → hold; the feature is YAGNI.
    - **DECISION (2026-06-21):** Owner answered "I forget often" → **BUILD**. Phase 1 shipped v0.3.7
      (capture hook, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, ADR 0002
-     addendum, 2 eval fixtures, 12-test sub-suite). Independent code review post-build: 0 Critical,
+     addendum, 2 eval fixtures, 13-test sub-suite). Independent code review post-build: 0 Critical,
      all 6 invariants verified, 1 Major + 4 Minor folded (drain-nudge `_lib` bypass, cap/rotate
      open-row protection, precision tightening, emit-before-record). Gauntlet 4/4.
      **Default flipped OFF→ON at v0.3.9** (opt-out `KBG_LEARN_CAPTURE=0`, all projects) — within the
