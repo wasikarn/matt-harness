@@ -1,11 +1,14 @@
 # ADR 0004: L4 self-driving harness — autonomy within the cage floor
 
-- **Status**: **PROPOSED (draft, not accepted, not implemented)** — supersedes the *bounded-autonomy
-  architecture* of [ADR 0003](0003-l3-bounded-autonomy.md) and relaxes the *principle* of
+- **Status**: **Accepted (decision recorded 2026-06-22; NOT YET IMPLEMENTED — no L4 machinery exists,
+  all flags OFF)** — supersedes the *bounded-autonomy architecture* of
+  [ADR 0003](0003-l3-bounded-autonomy.md) and relaxes the *principle* of
   [ADR 0002](0002-autonomy-invariant.md). Neither prior ADR is deleted; both remain the record of
-  their eras. This ADR does not take effect until the owner flips it to **Accepted** and the
-  machinery ships behind the hardening-before-enable rule below.
-- **Date**: 2026-06-22
+  their eras. **Accepting the decision and enabling the machinery are separate gates** (see
+  §"Acceptance criteria"): this Accept records the telos decision only; nothing self-drives until the
+  full machinery ships gauntlet-green behind the hardening-before-enable rule and the owner sets
+  `KBG_AUTONOMY_L4=1`.
+- **Date**: 2026-06-22 (Accepted)
 - **Decider**: Owner
 - **Basis**: **telos, NOT capability.** (See §"The basis must be telos.")
 
@@ -191,9 +194,10 @@ not deferred.
 
 The Accept act and the first enable are **separate gates**:
 
-- **To Accept the *decision*** (owner flips Status): resolve the two remaining open sub-decisions below
-  (auto-push #2 is already decided — dropped); the ADR text carries the reworked-invariant list, the
-  exit condition, and this section. No code is required to Accept.
+- **To Accept the *decision*** (owner flips Status): the three sub-decisions below are all resolved
+  (auto-push #2 dropped; default `KBG_AUTONOMY_L4` OFF; cage retained); the ADR text carries the
+  reworked-invariant list, the exit condition, and this section. No code is required to Accept —
+  **done 2026-06-22.**
 - **To *enable* the machinery** (first `KBG_AUTONOMY_L4=1` run), per hardening-before-enable, all must
   hold and be **gauntlet-green under the flag** (the v0.3.10 lesson: measure green *with* the flag set,
   not only flag-OFF):
@@ -217,7 +221,7 @@ It **cannot** be reached or reverted by a flag flip, and — critically — **th
 author, edit, or accept its successor ADR** (the cage forbids `docs/adr/**`). The ratchet turns only
 by deliberate human decision. This is the property that keeps L4 from becoming self-perpetuating.
 
-## Open sub-decision (for the owner, before Accept)
+## Sub-decisions (all RESOLVED 2026-06-22)
 
 - **Auto-push (#2) — RESOLVED 2026-06-22: option (a), keep the push gate permanently (drop #2).** The
   owner chose to keep the human at the one irreversible, cross-repo boundary. L4 adopts #1 + #3 + #4; the
@@ -229,7 +233,8 @@ by deliberate human decision. This is the property that keeps L4 from becoming s
     #1/#3/#4 have run unattended for N cycles with zero bad ships, (ii) F1/F2/F3 closed, (iii) the
     cumulative cap exists. Until then the gate stays. Dropping #2 is the reversible default; re-adding it
     is the one-way door, so it takes a deliberate superseding decision, not a config change.
-- **Default state of `KBG_AUTONOMY_L4`** — recommended **OFF** (opt-in), like L3. Default-ON would
-  arm self-launch in every environment the plugin loads, including the owner's employer repos.
-- **The floor** — this draft *retains the cage*. Confirm, or open a separate ADR to remove it (not
-  recommended).
+- **Default state of `KBG_AUTONOMY_L4` — RESOLVED 2026-06-22: OFF (opt-in), like L3.** Default-ON would
+  arm self-launch in every environment the plugin loads, including the owner's employer repos; opt-in
+  keeps L4 dormant until the owner sets `KBG_AUTONOMY_L4=1` in a chosen environment.
+- **The floor — RESOLVED 2026-06-22: the cage is RETAINED.** Removing it would require its own
+  superseding ADR (strongly discouraged — it would make a runaway genuinely unrecoverable).
