@@ -90,11 +90,40 @@ if [ "${KBG_REVIEW_DONE:-}" = "1" ]; then
   hook_decision deny "autonomy run: KBG_REVIEW_DONE=1 is set but no maker≠checker kbg:review-pr pass (review_finding event) is in the recent audit trail — run kbg:review-pr on the batch first, THEN set KBG_REVIEW_DONE=1 (design §10, ADR 0004 Gate-2 strengthening)."
 fi
 
+# 2b. L5 auto-push ship-gate (ADR 0005, design §8.5, #35). With the human out of the
+#     push loop, a green-gauntlet batch may auto-push — BUT only to a destination
+#     whose host+org is in the configured allowlist (KBG_L5_SHIP_ALLOWLIST, default
+#     EMPTY → an un-configured install pushes NOWHERE), AND only after a green
+#     gauntlet (a recent l3_cycle green event). The model never authorizes the ship —
+#     this leg is purely computational. Deny on divergence / un-configured /
+#     unverified, fail-closed. Flag-OFF + L4 (KBG_REVIEW_DONE) behaviour is unchanged
+#     — this leg only fires when Gate 2 was NOT cleared. It ports the MECHANISM of the
+#     owner's cross-org push rule (origin-vs-destination divergence), never the named
+#     orgs — the portable substitute is the host+org allowlist, default empty.
+if printf '%s\n' "$STRIPPED" | $_GREP -qE "$PUSH_PAT"; then
+  _rem=$(printf '%s\n' "$STRIPPED" | awk '{for(i=1;i<=NF;i++) if($i=="push"){for(j=i+1;j<=NF;j++) if($j !~ /^-/){print $j; exit}}}')
+  _dest=""
+  if [ -n "$_rem" ] && command -v git >/dev/null 2>&1; then
+    _url=$(git remote get-url "$_rem" 2>/dev/null || true)
+    # ponytail: normalize ssh + https URLs to host:org (the first path segment).
+    _dest=$(printf '%s\n' "$_url" | sed -E 's#^(git@|ssh://git@|https?://|git://)##; s#\.git$##; s#^([^/:]+)[:/]([^/]+)/.*$#\1:\2#')
+  fi
+  _allow="${KBG_L5_SHIP_ALLOWLIST:-}"
+  _green=0
+  _jpath="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
+  if [ -f "$_jpath" ] && tail -n 500 "$_jpath" 2>/dev/null | $_GREP -q '"outcome":"green"'; then _green=1; fi
+  # Allow ONLY if dest is in the allowlist AND a green gauntlet is on record.
+  if [ -n "$_dest" ] && [ -n "$_allow" ] && [ "$_green" = "1" ]; then
+    case ",$_allow," in *",$_dest,"*) exit 0 ;; esac
+  fi
+  # Else fall through to the unreviewed-deny (divergence / un-configured / unverified).
+fi
+
 # 3. Unreviewed batch → deny ship / merge / gauntlet-disable.
 for pattern in "$PUSH_PAT" "$GH_PAT" "$HOOKSPATH_PAT"; do
   if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
     matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "(git|gh)[[:space:]][^#]*" | head -1 | xargs)
-    hook_decision deny "autonomy run, batch unreviewed: '$matched' is push-gated (ADR 0004 Gate 2). Review the run locally (kbg:review-pr on the batch), then export KBG_REVIEW_DONE=1 and retry."
+    hook_decision deny "autonomy run, batch unreviewed: '$matched' is push-gated (ADR 0004 Gate 2 / ADR 0005 L5 ship-gate). Review the run (kbg:review-pr → KBG_REVIEW_DONE=1) OR, under L5, auto-push only to an allowlisted host+org after a green gauntlet."
   fi
 done
 

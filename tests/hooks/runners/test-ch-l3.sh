@@ -395,6 +395,51 @@ if command -v python3 >/dev/null 2>&1; then
   else
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#32b" "silent on the clean launcher"
   fi
+
+  # --- Slice 4 / L5: auto-push ship-gate (ADR 0005, design §8.5, #35) ---
+  # Folded into l3-push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push
+  # ONLY to an allowlisted host+org (default EMPTY → un-configured pushes nowhere),
+  # AND only after a green gauntlet. Deny on divergence / un-configured / unverified.
+  # pcheck5 <cwd> <env> <want> <label> <cmd> — runs the gate with CWD=<cwd> (a fixture
+  # git repo with controlled remotes) so `git remote get-url` resolves hermetically.
+  L5FX="$FIXTURE/l5repo"; git init -q "$L5FX"
+  git -C "$L5FX" remote add origin git@github.com:wasikarn/kbg-harness.git
+  git -C "$L5FX" remote add divergent git@gitlab.com:otherorg/repo.git
+  GREENJ="$FIXTURE/greenjournal.jsonl"
+  printf '%s\n' '{"id":"g","ts":"2026-06-22T00:00:00Z","session":"s","hook":"recursive-improve","event":"l3_cycle","source":"journal_append","fields":{"outcome":"green","run_id":"r","iteration":1}}' > "$GREENJ"
+  pcheck5() {
+    local cwd="$1" env="$2" want="$3" label="$4" cmd="$5" out got
+    out=$(printf '%s' "$(bash_event "$cmd")" | ( cd "$cwd" && env $env bash "$HOOKS/gates/l3-push-gate.sh" ) 2>/dev/null)
+    if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
+    if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l5-ship-gate" "$label"
+    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l5-ship-gate" "$label" "$want" "$got"; fi
+  }
+  pcheck5 "$L5FX" "$ARMED_ENV CLAUDE_JOURNAL_PATH=$GREENJ"                      deny  "empty allowlist → deny (un-configured pushes nowhere)" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"  none  "allowlisted origin + green gauntlet → allow" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"  deny  "divergent remote → deny (cross-remote divergence)" "git push divergent develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$EMPTYJ"   deny  "no green gauntlet on record → deny (unverified)" "git push origin develop"
+
+  # --- audit #50: the L5 ship-gate leg must keep the empty-allowlist default + the
+  # divergence DENY + the green-gauntlet requirement (design §8.5, #35). Inject a
+  # regression (drop the empty-default) into a fixture copy + assert the CRIT. ---
+  PCF="$FIXTURE/push50"; mkdir -p "$PCF/hooks/gates" "$PCF/agents" "$PCF/docs/adr"
+  printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$PCF/agents/x.md"
+  printf '# adr0005\n' > "$PCF/docs/adr/0005-l5-auto-push.md"  # gate #50 on ADR 0005
+  cp "$REPO/hooks/gates/l3-push-gate.sh" "$PCF/hooks/gates/l3-push-gate.sh"
+  sed -i '' 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/l3-push-gate.sh" 2>/dev/null || sed -i 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/l3-push-gate.sh"
+  _p50=$(bash "$AUDIT" "$PCF" 2>&1)
+  if printf '%s\n' "$_p50" | /usr/bin/grep -q 'empty-default'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#50" "CRITs when the empty-allowlist default is removed"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#50" "did NOT CRIT on missing empty-default"
+  fi
+  cp "$REPO/hooks/gates/l3-push-gate.sh" "$PCF/hooks/gates/l3-push-gate.sh"
+  _p50k=$(bash "$AUDIT" "$PCF" 2>&1)
+  if printf '%s\n' "$_p50k" | /usr/bin/grep -qE 'audit #50:.*l3-push-gate|empty-default|allowlist-var|dest-resolution|green-gauntlet|allowlist-membership'; then
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#50" "false-positive on the clean ship-gate leg"
+  else
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#50" "silent on the clean ship-gate leg"
+  fi
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi
@@ -405,7 +450,7 @@ ncheck() {
   if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-numbering" "#${id} MISSING (load-bearing ID drifted)"; fi
 }
-for id in 32 34 41 43 44 48 49; do ncheck "$id"; done
+for id in 32 34 41 43 44 48 49 50; do ncheck "$id"; done
 
 # --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
