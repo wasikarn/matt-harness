@@ -1127,6 +1127,29 @@ surface 2 METHODOLOGY Rule 4|METHODOLOGY.md|every loop terminates at a human gat
 surface 4 decay-cadence|docs/harness-decay-cadence.md|autonomous self-rewriter
 AUTONOMY_SURFACES
 fi
+# 32b (additive, design §8 + #32): the caged, flag-gated launcher is the ONLY
+# sanctioned self-start. The recursive-improve frontmatter assertion above is
+# UNCHANGED + keeps firing — the OS scheduler (launchd), not the model, self-starts
+# the launcher, so disable-model-invocation: true is NOT contradicted. This leg ADDS:
+# (a) scripts/l4/launch.sh exists + reads the caged scheduler.conf + honors the
+# kill-file; (b) no unsanctioned self-start primitive (CronCreate / crontab) lurks in
+# hooks/ or scripts/ outside scripts/l4/**. Gated on ADR 0004 (L4 machinery).
+_ADR0004_32="$CLAUDE_DIR/docs/adr/0004-l4-autonomy.md"
+if [ -f "$_ADR0004_32" ]; then
+  _LAUNCH="$CLAUDE_DIR/scripts/l4/launch.sh"
+  if [ ! -f "$_LAUNCH" ]; then
+    crit "autonomy invariant (#32b): scripts/l4/launch.sh missing — the caged, flag-gated self-launch launcher is absent (design §8, ADR 0004 #1)"
+  else
+    _lsrc=$(grep -vE '^[[:space:]]*#' "$_LAUNCH" 2>/dev/null)
+    printf '%s\n' "$_lsrc" | grep -qF 'scheduler.conf' || crit "autonomy invariant (#32b): launch.sh does not read the caged scheduler.conf (design §8 — config only from the cage)"
+    printf '%s\n' "$_lsrc" | grep -qF 'KILLFILE' || crit "autonomy invariant (#32b): launch.sh does not honor the kill-file (design §8 kill-switch)"
+  fi
+  _strays=$(grep -rnE 'CronCreate|crontab' "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/scripts" 2>/dev/null \
+            | grep -vE 'scripts/l4/|:.*#|\.pyc' || true)
+  if [ -n "$_strays" ]; then
+    crit "autonomy invariant (#32b): unsanctioned self-start primitive (CronCreate/crontab) outside scripts/l4/ — the caged launcher is the sole sanctioned self-start (design §8): $_strays"
+  fi
+fi
 
 # 33. Skill description injection-risk + imperative-intensity scan.
 # Checks that no SKILL.md description: field contains prompt-injection patterns
@@ -1858,8 +1881,15 @@ if [ -f "$ADR0004" ]; then
   while IFS= read -r _f; do
     [ -f "$_f" ] || continue
     _base=$(basename "$_f")
-    case "$_base" in
-      _lib.sh|l3-push-gate.sh|l3-loop-guard.py) _newok=1 ;; *) _newok=0 ;; esac
+    # Sanctioned homes for a raw KBG_AUTONOMY literal: the helper bodies (_lib.sh,
+    # l3-loop-guard.py), the push-gate tamper list (l3-push-gate.sh), AND the L4
+    # self-launch launcher (scripts/l4/launch.sh) — which SETS the flag for the cycle
+    # (an arming SOURCE, not a read; it is the caged, flag-gated sole sanctioned
+    # self-start, design §8). Every OTHER arming read must route through autonomy_on().
+    case "$_f" in
+      */scripts/l4/launch.sh) _newok=1 ;;
+      *) case "$_base" in _lib.sh|l3-push-gate.sh|l3-loop-guard.py) _newok=1 ;; *) _newok=0 ;; esac ;;
+    esac
     _active=$(sed -E 's/#.*$//' "$_f" 2>/dev/null)
     if [ "$_newok" = "0" ] && printf '%s\n' "$_active" | grep -qE 'KBG_AUTONOMY([^_A-Z]|$)'; then
       _bad_new="$_bad_new $_f"

@@ -172,9 +172,14 @@ and **no push** inside the loop. Read the contract first: `cat "${KBG_PLUGIN_ROO
 **Preconditions (refuse the run unless ALL hold):**
 - `KBG_AUTONOMY=1` armed from the per-repo `.claude/settings.local.json` env block (the guard's
   `autonomy_on()` reads it once at process start; without it every guard subcommand returns `STOP`
-  and the loop refuses to run).
-- The operator **explicitly** invoked `recursive-improve --auto` (Gate 1). The skill stays
-  `disable-model-invocation: true`, so only a human launch reaches this mode — never the model unprompted.
+  and the loop refuses to run). An authorized autonomy run is EITHER human-launched (Gate 1, below)
+  OR launcher-started by `scripts/l4/launch.sh` (Slice 3, ADR 0004 #1 — the launchd self-launch sets
+  this same flag); both satisfy this precondition.
+- The operator **explicitly** invoked `recursive-improve --auto` (Gate 1), OR the run was started by
+  the caged `scripts/l4/launch.sh` launcher (the OS scheduler, not the model, self-starts it). The
+  skill stays `disable-model-invocation: true` — that flag is NOT contradicted by the launcher, because
+  a launchd plist (not the model) is what self-starts the shell script (audit #32 additively asserts
+  the launcher is the sole sanctioned self-start).
 - A clean working tree (the guard's `--dirty-abort` enforces it; `.scratch/` is exempt).
 
 **Caps (set at launch, immutable for the run):** `--max-runs N` (default **3** — a *reviewability*
@@ -220,7 +225,10 @@ at `M`, even though nothing is failing.
 8. **Keep or roll back:**
    - green → `git commit` **LOCAL only** (the `l3-push-gate` denies any push inside the run); journal
      an `l3_cycle` event with `run_id` + `iteration` + `outcome: green` (+ `source: queue` when the
-     candidate came from the learning-candidate queue, so Gate-2 review can see it).
+     candidate came from the learning-candidate queue, so Gate-2 review can see it). Add the git trailer
+     `L4-authored: yes` to every `--auto` commit message (a blank line then the trailer) so the
+     `scripts/l4/exit-tripwire.sh` post-push detector (ADR 0004 exit-trigger-2) can identify L4-authored
+     commits + CRIT if any touched a security gate.
    - red → `git reset --hard "l3-precycle-$RID-$ITER"` (roll back to the tag); journal `l3_cycle` with
      `outcome: red` + the failing checks. The guard's `--fail-streak` ends the run after K consecutive reds.
 9. Loop back to step 1.

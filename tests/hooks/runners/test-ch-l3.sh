@@ -334,6 +334,67 @@ if command -v python3 >/dev/null 2>&1; then
   else
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#49" "silent on the clean quality-gate"
   fi
+
+  # --- Slice 3: l4-launch.sh (self-launch, design §8, #31) + exit-tripwire (#32) ---
+  # Launcher: no scheduler.conf → abort (kill-switch); kill-file → abort; normal →
+  # arms the flag + surfaces R4 caps + invokes the cycle. lcheck <conf> <killfile>
+  # <want-cycle-ran: yes|no> <label>.
+  LFX="$FIXTURE/launch"; mkdir -p "$LFX"
+  LCONF="$LFX/scheduler.conf"; printf '{"interval_seconds":3600,"max_runs_per_window":6,"window_seconds":21600}' > "$LCONF"
+  LKILL="$LFX/kill"
+  lcheck() {
+    local conf="$1" kill="$2" want="$3" label="$4" out
+    out=$(env KBG_L4_CONF="$conf" KBG_L4_KILLFILE="$kill" KBG_LAUNCH_CMD="echo CYCLE_RAN" bash "$REPO/scripts/l4/launch.sh" 2>/dev/null)
+    local got="no"; printf '%s' "$out" | grep -q CYCLE_RAN && got="yes"
+    if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-launch" "$label"
+    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want cycle=%s, got=%s)\n' "l4-launch" "$label" "$want" "$got"; fi
+  }
+  lcheck "$LFX/nope.json" "$LKILL" no  "no scheduler.conf → abort (kill-switch active)"
+  : > "$LKILL"
+  lcheck "$LCONF" "$LKILL" no  "kill-file present → abort"
+  /bin/rm -f "$LKILL"
+  lcheck "$LCONF" "$LKILL" yes "normal → arms + drives ONE --auto cycle"
+
+  # exit-tripwire (#32): an L4-authored commit touching a security gate → CRIT;
+  # a non-security file → clean. Built in a temp git repo (no hooks fire here).
+  TG="$FIXTURE/tripwire"; git init -q "$TG"; git -C "$TG" config user.email t@t; git -C "$TG" config user.name t
+  mkdir -p "$TG/hooks/gates"; printf 'x' > "$TG/hooks/gates/x.sh"; git -C "$TG" add -A; git -C "$TG" commit -qm 'normal'
+  printf 'y' > "$TG/hooks/gates/x.sh"; git -C "$TG" add -A; git -C "$TG" commit -qm 'l4 sec-gate change'$'\n\n''L4-authored: yes'
+  _tw1=$( ( cd "$TG" && bash "$REPO/scripts/l4/exit-tripwire.sh" HEAD~1..HEAD ) 2>&1 ); _tw1rc=$?
+  if [ "$_tw1rc" -ne 0 ] && printf '%s\n' "$_tw1" | /usr/bin/grep -q 'CRIT'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "exit-tripwire" "L4-authored commit touching a security gate → CRIT"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "exit-tripwire" "did NOT CRIT on L4-authored sec-gate change"
+  fi
+  printf 'z' > "$TG/README.md"; git -C "$TG" add -A; git -C "$TG" commit -qm 'l4 doc change'$'\n\n''L4-authored: yes'
+  _tw2=$( ( cd "$TG" && bash "$REPO/scripts/l4/exit-tripwire.sh" HEAD~1..HEAD ) 2>&1 ); _tw2rc=$?
+  if [ "$_tw2rc" -eq 0 ] && printf '%s\n' "$_tw2" | /usr/bin/grep -q 'clean'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "exit-tripwire" "L4-authored commit touching a non-security file → clean"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "exit-tripwire" "false-positive on a non-security L4 commit"
+  fi
+
+  # --- audit #32b: the caged launcher is the sole sanctioned self-start (design §8,
+  # #32). Inject a regression (remove the kill-file check) into a fixture copy + assert
+  # the CRIT. Control: the clean launcher is silent. ---
+  LCF="$FIXTURE/launch32b"; mkdir -p "$LCF/scripts/l4" "$LCF/agents" "$LCF/docs/adr"
+  printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$LCF/agents/x.md"
+  printf '# adr0004\n' > "$LCF/docs/adr/0004-l4-autonomy.md"
+  cp "$REPO/scripts/l4/launch.sh" "$LCF/scripts/l4/launch.sh"
+  sed -i '' '/KILLFILE/d' "$LCF/scripts/l4/launch.sh" 2>/dev/null || sed -i '/KILLFILE/d' "$LCF/scripts/l4/launch.sh"
+  _l32=$(bash "$AUDIT" "$LCF" 2>&1)
+  if printf '%s\n' "$_l32" | /usr/bin/grep -q '#32b.*kill-file'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#32b" "CRITs when launch.sh drops the kill-file check"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#32b" "did NOT CRIT on missing kill-file check"
+  fi
+  cp "$REPO/scripts/l4/launch.sh" "$LCF/scripts/l4/launch.sh"
+  _l32k=$(bash "$AUDIT" "$LCF" 2>&1)
+  if printf '%s\n' "$_l32k" | /usr/bin/grep -qE '#32b.*kill-file|#32b.*scheduler'; then
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#32b" "false-positive on the clean launcher"
+  else
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#32b" "silent on the clean launcher"
+  fi
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi

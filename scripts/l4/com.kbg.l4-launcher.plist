@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- com.kbg.l4-launcher.plist — the launchd StartInterval plist for the L4 self-launch
+     launcher (design §8, ADR 0004 #1). INSTALL OUT-OF-BAND:
+       cp scripts/l4/com.kbg.l4-launcher.plist ~/Library/LaunchAgents/com.kbg.l4-launcher.plist
+       launchctl load ~/Library/LaunchAgents/com.kbg.l4-launcher.plist
+     Do NOT install it from inside an armed run — the l4-act-gate PreToolUse hook
+     denies writes/launchctl mutations to this path while KBG_AUTONOMY=1 (design §5
+     Act-layer gate). The install is the operator's one-time, out-of-band act; the
+     kill-switch is delete scheduler.conf OR drop the kill-file (~/.claude/kbg-l4-kill).
+
+     This template is caged via scripts/l4/** (the loop may not edit its own launch
+     cadence). Substitute REPO_HOME below with the kbg-harness checkout path before
+     installing. StartInterval is the cadence; R4's cumulative cap (scheduler.conf)
+     is the cross-run ceiling. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.kbg.l4-launcher</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>REPO_HOME/scripts/l4/launch.sh</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>REPO_HOME/.scratch/l4-launch.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>REPO_HOME/.scratch/l4-launch.err.log</string>
+  <key>WorkingDirectory</key>
+  <string>REPO_HOME</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>
