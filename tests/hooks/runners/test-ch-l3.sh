@@ -152,6 +152,29 @@ if command -v python3 >/dev/null 2>&1; then
   f4check "$F4GIT"      STOP 10 "F4: git CWD but not kbg → STOP"        precheck --state "$FIXTURE/f4b.json" --max-runs 1 --no-dirty-abort
   # F4 positive: the real kbg checkout → anchored, precheck proceeds.
   f4check "$REPO"       CONTINUE 0 "F4: kbg CWD → anchored, precheck proceeds" precheck --state "$FIXTURE/f4c.json" --max-runs 1 --no-dirty-abort
+
+  # R3 per-cycle cage re-assert (design §5 R3): the loop-guard's --assert-cage-intact
+  # shells `audit.sh --only 43` every cycle; a holed cage → STOP even when a later
+  # model verdict (Slice 2) is green. First exercise the per-check runner directly,
+  # then the guard integration (positive + fail-closed).
+  R3CF="$FIXTURE/r3cage"; mkdir -p "$R3CF/docs/adr" "$R3CF/scripts" "$R3CF/scripts/l4"
+  printf '# adr0003 — gate #43 on\n' > "$R3CF/docs/adr/0003-l3-bounded-autonomy.md"
+  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$R3CF/scripts/l3-cage.txt"  # holed
+  cp "$REPO/scripts/l4/cage-intact.sh" "$R3CF/scripts/l4/cage-intact.sh"  # the per-check runner the relay/`--only` shells
+  bash "$AUDIT" --only 43 "$R3CF" >/dev/null 2>&1; _r=$?
+  if [ "$_r" -ne 0 ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit --only 43" "holed cage → non-zero CRIT"; else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit --only 43" "holed cage did NOT CRIT"; fi
+  bash "$AUDIT" --only 43 "$REPO" >/dev/null 2>&1; _r=$?
+  if [ "$_r" -eq 0 ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit --only 43" "real repo → 0 (clean)"; else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (rc=%s)\n' "audit --only 43" "real repo did NOT exit 0" "$_r"; fi
+  bash "$AUDIT" --only 99 "$REPO" >/dev/null 2>&1; _r=$?
+  if [ "$_r" -eq 2 ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit --only 99" "unsupported id → exit 2"; else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (rc=%s)\n' "audit --only 99" "unsupported id did NOT exit 2" "$_r"; fi
+  # Guard integration: clean cage (CWD=$REPO) → CONTINUE; fail-closed (kbg fixture
+  # with no audit.sh) → STOP.
+  gcheck CONTINUE 0 "R3 --assert-cage-intact: clean cage → CONTINUE" "$ARMED_ENV" precheck --state "$FIXTURE/r3p.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
+  R3FC="$FIXTURE/r3fail"; mkdir -p "$R3FC/.claude-plugin" "$R3FC/scripts" "$R3FC/docs/adr"
+  printf '{"name":"kbg","version":"0.0.0"}' > "$R3FC/.claude-plugin/plugin.json"
+  printf '# adr0003\n' > "$R3FC/docs/adr/0003-l3-bounded-autonomy.md"
+  (cd "$R3FC" && git init -q)   # a kbg-sentinel git tree with NO audit.sh
+  f4check "$R3FC" STOP 10 "R3 --assert-cage-intact: audit.sh missing → STOP (fail-closed)" precheck --state "$FIXTURE/r3f.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi
@@ -168,10 +191,11 @@ for id in 32 34 41 43 44 48; do ncheck "$id"; done
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
 # Runs the REAL audit.sh against a fixture that gates #43 on (fake ADR 0003 + real guard
 # so 43a/43c stay clean) with a cage that is the real cage MINUS one required anchor.)
-CF="$FIXTURE/cage43"; mkdir -p "$CF/docs/adr" "$CF/scripts" "$CF/agents"
+CF="$FIXTURE/cage43"; mkdir -p "$CF/docs/adr" "$CF/scripts" "$CF/scripts/l4" "$CF/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CF/agents/x.md"  # satisfy audit's fleet guard
 printf '# adr0003 — gate #43 on\n' > "$CF/docs/adr/0003-l3-bounded-autonomy.md"
 cp "$REPO/scripts/l3-loop-guard.py" "$CF/scripts/l3-loop-guard.py"
+cp "$REPO/scripts/l4/cage-intact.sh" "$CF/scripts/l4/cage-intact.sh"  # #43 relays through this standalone
 /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$CF/scripts/l3-cage.txt"  # holed
 HOLED=$(bash "$AUDIT" "$CF" 2>&1)
 if printf '%s\n' "$HOLED" | /usr/bin/grep -q 'cage incomplete' && printf '%s\n' "$HOLED" | /usr/bin/grep -qF 'CONTEXT.md'; then
@@ -190,10 +214,11 @@ fi
 # directional (anchors⊆cage), so a cage-only L4 add would pass silently; #43d
 # checks the curated L4 anchors are in BOTH surfaces and emits a DISTINCT drift
 # message. Hole one L4 anchor (scripts/l4/**) from the cage → CRIT names it.
-CFD="$FIXTURE/cage43d"; mkdir -p "$CFD/docs/adr" "$CFD/scripts" "$CFD/agents"
+CFD="$FIXTURE/cage43d"; mkdir -p "$CFD/docs/adr" "$CFD/scripts" "$CFD/scripts/l4" "$CFD/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CFD/agents/x.md"
 printf '# adr0003 — gate #43 on\n' > "$CFD/docs/adr/0003-l3-bounded-autonomy.md"
 cp "$REPO/scripts/l3-loop-guard.py" "$CFD/scripts/l3-loop-guard.py"
+cp "$REPO/scripts/l4/cage-intact.sh" "$CFD/scripts/l4/cage-intact.sh"  # #43d relays through this standalone
 /usr/bin/grep -vxF 'scripts/l4/**' "$REPO/scripts/l3-cage.txt" > "$CFD/scripts/l3-cage.txt"  # L4 anchor holed from cage
 DRIFTED=$(bash "$AUDIT" "$CFD" 2>&1)
 if printf '%s\n' "$DRIFTED" | /usr/bin/grep -q 'cage↔anchor drift' && printf '%s\n' "$DRIFTED" | /usr/bin/grep -qF 'scripts/l4/**'; then

@@ -14,11 +14,14 @@ shopt -s globstar
 REPO_ROOT=""
 PLUGIN_CACHE_ARG=""
 STALENESS_ONLY=0
+ONLY_ID=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --plugin-cache) PLUGIN_CACHE_ARG="${2:-}"; shift 2 ;;
     --plugin-cache=*) PLUGIN_CACHE_ARG="${1#--plugin-cache=}"; shift ;;
     --staleness-only) STALENESS_ONLY=1; shift ;;
+    --only) ONLY_ID="${2:-}"; shift 2 ;;
+    --only=*) ONLY_ID="${1#--only=}"; shift ;;
     *) [ -z "$REPO_ROOT" ] && REPO_ROOT="$1"; shift ;;
   esac
 done
@@ -124,6 +127,24 @@ out.sort(key=lambda e: e["name"])
 print(json.dumps(out, separators=(",", ":")))
 PY
   exit 0
+fi
+
+# AUDIT-2: --only <id> — run exactly ONE check by id (design §5 R3). The per-check
+# runner the loop-guard's --assert-cage-intact shells every cycle to re-assert cage
+# completeness cheaply. Supported ids: 43 (cage-completeness → scripts/l4/cage-
+# intact.sh). Exits non-zero on CRIT, fail-closed. Extensible: add a case per id.
+# Unsupported id → exit 2 (honest about what's supported, not a silent fallthrough).
+if [ -n "$ONLY_ID" ]; then
+  case "$ONLY_ID" in
+    43)
+      bash "$REPO_ROOT/scripts/l4/cage-intact.sh" "$REPO_ROOT"
+      exit $?
+      ;;
+    *)
+      echo "audit --only: unsupported id '$ONLY_ID' (supported: 43)" >&2
+      exit 2
+      ;;
+  esac
 fi
 
 # Source the shared libraries.
@@ -1665,67 +1686,22 @@ ADR0003="$CLAUDE_DIR/docs/adr/0003-l3-bounded-autonomy.md"
 CAGE="$CLAUDE_DIR/scripts/l3-cage.txt"
 GUARD="$CLAUDE_DIR/scripts/l3-loop-guard.py"
 if [ -f "$ADR0003" ]; then
-  # 43a: cage file present + non-empty (after stripping comments/blanks).
-  if [ ! -f "$CAGE" ]; then
-    crit "L3 cage missing: scripts/l3-cage.txt absent but ADR 0003 declares L3 (the loop would run uncaged — ADR 0003 §Three rails)"
-  elif [ -z "$(grep -vE '^[[:space:]]*(#|$)' "$CAGE")" ]; then
-    crit "L3 cage empty: scripts/l3-cage.txt has no entries — a deny-by-default cage with nothing in it denies nothing (fail-closed expects entries)"
-  else
-    # 43b: cage must cover the load-bearing anchors. A new gate hook is auto-covered
-    # by hooks/** etc., so this is a small FIXED anchor set, not a per-file list.
-    # _CAGE_ANCHORS is the SINGLE source for the curated anchor set: #43b checks
-    # anchors⊆cage (directional), and #43d checks the L4 members are in BOTH
-    # surfaces (bidirectional — a one-sided add silently un-cages a path, design
-    # §5 F2/F3 blocker). Add a path here AND to scripts/l3-cage.txt in lockstep.
-    _CAGE_ANCHORS="scripts/l3-cage.txt
-scripts/l3-loop-guard.py
-hooks/**
-tests/hooks/runners/**
-skills/harness-audit/scripts/audit.sh
-skills/_lib/**
-scripts/run-gauntlet.sh
-eval/run-eval.py
-scripts/evals/**
-scripts/plan_linter/**
-eval/datasets/**
-eval/regressions/**
-tests/evals/**
-scripts/l4/**
-.claude/settings.local.json
-docs/adr/**
-CLAUDE.md
-METHODOLOGY.md
-RTK.md
-ACLI.md
-DBGATE.md
-CONTEXT.md
-DOMAINS.md
-.git/config
-.git/hooks/**
-git-hooks/**
-.claude-plugin/plugin.json
-.claude-plugin/marketplace.json"
-    _missing=""
-    while IFS= read -r _anchor; do
-      [ -n "$_anchor" ] || continue
-      grep -qxF "$_anchor" "$CAGE" || _missing="$_missing $_anchor"
-    done <<<"$_CAGE_ANCHORS"
-    if [ -n "$_missing" ]; then
-      crit "L3 cage incomplete: scripts/l3-cage.txt is missing required safety anchor(s):$_missing (the loop could edit these to escape — ADR 0003 §Cage redesign)"
-    fi
-    # 43d: L4 cage↔anchor lockstep (design §5 F2/F3 blocker). #43b is directional
-    # (anchors⊆cage), so a path added to the cage but missing from CAGE_ANCHORS
-    # passes SILENTLY — the exact F2/F3 partial-landing this slice exists to
-    # prevent. The L4 anchors (grading corpus + scheduler config + arming home)
-    # must appear in BOTH surfaces; bidirectional check over the curated L4 set.
-    for _a in 'eval/regressions/**' 'tests/evals/**' 'scripts/l4/**' '.claude/settings.local.json'; do
-      _ic=0; _ia=0
-      if grep -qxF "$_a" "$CAGE"; then _ic=1; fi
-      if printf '%s\n' "$_CAGE_ANCHORS" | grep -qxF "$_a"; then _ia=1; fi
-      if [ "$_ic$_ia" != "11" ]; then
-        crit "L4 cage↔anchor drift: '$_a' in cage:$_ic / anchors:$_ia — must be in BOTH scripts/l3-cage.txt and the #43 CAGE_ANCHORS set (design §5 F2/F3; a one-sided add silently un-cages a path)"
-      fi
-    done
+  # 43a/43b/43d: cage-completeness core (design §5 R3). The logic lives ONCE in
+  # scripts/l4/cage-intact.sh (the standalone) so the loop-guard's per-cycle
+  # --assert-cage-intact and this audit call the SAME implementation — no sync-seam
+  # for the curated anchor list. Relay the standalone's "CRIT: <msg>" lines through
+  # the audit's crit() so they count toward the audit's CRIT_COUNT + summary.
+  _cage_rc=0
+  _cage_out=$(bash "$CLAUDE_DIR/scripts/l4/cage-intact.sh" "$CLAUDE_DIR" 2>/dev/null) || _cage_rc=$?
+  if [ "$_cage_rc" -ne 0 ]; then
+    _relayed=0
+    while IFS= read -r _cline; do
+      case "$_cline" in
+        CRIT:\ *) crit "${_cline#CRIT: }"; _relayed=$((_relayed + 1)) ;;
+      esac
+    done <<<"$_cage_out"
+    # Fail-closed: the standalone exited non-zero but emitted no parseable CRIT.
+    [ "$_relayed" -gt 0 ] || crit "L3 cage-intact standalone exited rc=$_cage_rc with no CRIT message (design §5 R3 — the cage check failed opaquely)"
   fi
   # 43c: guard present, compiles, and its self-check passes (the matcher + fail-closed posture).
   if [ ! -f "$GUARD" ]; then

@@ -263,6 +263,21 @@ def cmd_precheck(args):
     if not ARMED_AT_START:
         _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
     _assert_repo_root()  # F4: anchor to the mutated tree + confirm it is kbg
+    # R3 (design §5 R3): re-assert cage completeness on the always-computational
+    # path every cycle by shelling `audit.sh --only 43` (the per-check runner).
+    # Fail-closed: a non-zero exit (CRIT) OR a shell-out error → STOP — a holed
+    # cage forces STOP even when a later model verdict (Slice 2) is green. #3
+    # cannot bypass it: the cage check is computational, not inferential.
+    if args.assert_cage_intact:
+        _audit = REPO_ROOT / "skills" / "harness-audit" / "scripts" / "audit.sh"
+        try:
+            r = subprocess.run(["bash", str(_audit), "--only", "43", str(REPO_ROOT)],
+                               capture_output=True, text=True)
+        except OSError as e:
+            _emit("STOP", f"R3 cage-intact check failed to run ({e}) — fail-closed (design §5 R3)")
+        if r.returncode != 0:
+            _detail = (r.stdout.strip() or r.stderr.strip())[:200]
+            _emit("STOP", f"R3 cage-intact check failed (rc={r.returncode}) — a holed cage or an unrunnable check forces STOP even when the model verdict is green (design §5 R3): {_detail}")
     st = _load_state(args.state)
     now = time.time()
     start = st.get("start_epoch", now)
@@ -414,6 +429,8 @@ def main():
     p_pre.add_argument("--max-flat", type=int, default=2,
                        help="stop after K consecutive green-but-flat (no-progress) cycles; 0 = off")
     p_pre.add_argument("--no-dirty-abort", action="store_true")
+    p_pre.add_argument("--assert-cage-intact", action="store_true",
+                       help="R3 (design §5 R3): re-assert cage completeness via `audit.sh --only 43` before authorizing the cycle; fail-closed (a CRIT or a shell-out error → STOP)")
     # R4 cumulative ceiling (design §5 R4): cross-run caps over a sliding window.
     p_pre.add_argument("--max-runs-per-window", type=int, default=0,
                        help="R4: stop after N launches in the last --window-seconds; 0 = off")
