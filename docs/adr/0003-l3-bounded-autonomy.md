@@ -3,6 +3,12 @@
 - **Status**: Accepted — supersedes the *L2-only architectural decision* of [ADR 0002](0002-autonomy-invariant.md). ADR 0002 remains the canonical record of the L2 era and its reasoning; this ADR does not delete or rewrite it.
 - **Date**: 2026-06-21
 - **Decider**: Owner
+- **Key-encoding addendum (2026-06-22, via [ADR 0005](0005-l5-auto-push.md))**: the `KBG_AUTONOMY_L3` env
+  key this ADR introduces is superseded by a **single on/off key `KBG_AUTONOMY` (`1` = armed, unset/`0` =
+  OFF)** — the per-level `_L3` / `_L4` / `_L5` names collapse into one (the level a run runs at is set by
+  the committed code, not the key value). The L3 *decision* recorded here is unchanged; only the env-var
+  representation changed. Migrated in code at Slice 0 (design §5 F1). The sibling `KBG_L3_REVIEW_DONE`
+  likewise collapses to `KBG_REVIEW_DONE` (the "L3" there is the same vestigial level-in-the-name).
 
 ## Context
 

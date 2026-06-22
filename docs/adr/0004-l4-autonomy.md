@@ -11,6 +11,12 @@
 - **Date**: 2026-06-22 (Accepted)
 - **Decider**: Owner
 - **Basis**: **telos, NOT capability.** (See §"The basis must be telos.")
+- **Key-encoding addendum (2026-06-22, via [ADR 0005](0005-l5-auto-push.md))**: every `KBG_AUTONOMY_L4`
+  reference below is, as of ADR 0005, the **single on/off key `KBG_AUTONOMY` (`1` = armed, unset/`0` =
+  OFF)** — the per-level `_L3` / `_L4` / `_L5` names collapse into one; the level a run runs at is set by
+  the committed slice code, not the key value. The L4 *decision* recorded here is unchanged; only the
+  env-var representation changed. Migrated in code at Slice 0 (design §5 F1). The sibling
+  `KBG_L3_REVIEW_DONE` likewise collapses to `KBG_REVIEW_DONE`.
 
 ## Context
 

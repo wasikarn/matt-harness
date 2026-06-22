@@ -78,22 +78,40 @@ at every stage; with `KBG_AUTONOMY_L4` unset, behaviour is byte-identical to tod
 Pure hardening: ships **zero** new capability, only makes the existing L3 floor fire under an L4-only
 flag. Must land first — it unblocks all three relaxations.
 
+> **Key-encoding (2026-06-22 owner decision):** the per-level env keys `KBG_AUTONOMY_L3` / `_L4` / `_L5`
+> are superseded by a **single on/off key `KBG_AUTONOMY` (`1` = armed, unset/`0` = OFF)**; this slice's F1
+> builds the single-key reader. Below, `L3` / `L4` / `L5` are **era-labels** (which committed-code
+> generation an armed run is), **not** separate key values — the level a run runs at is set by the
+> committed slice code, not the operator. Recorded as a key-encoding note in ADR 0003/0004; only the
+> representation changes, no prior decision. (Same change collapses the sibling `KBG_L3_REVIEW_DONE` →
+> `KBG_REVIEW_DONE` — the "L3" there is the same vestigial level-in-the-name; it is honored under L4/L5.)
+
 - **F1 — the inert-under-L4 gap (highest severity).** Four runtime enforcers hard-scope to
   `KBG_AUTONOMY_L3 == "1"` and go **inert** under an L4-only flag (L3 unset): `l3-push-gate.sh:32`
   (`exit 0` → Gate 2 vanishes), `_lib.sh:40` (immunity off → gates re-disarmable), `l3-loop-guard.py:57-58`
   (`L3_ACTIVE=False` → guard refuses to run), and **`block-dangerous-git.sh:50`** — the **4th site the
   ADR did not name** (rollback carve-out off → the loop wedges). **Fix:** a shared
-  `kbg_autonomy_active()` helper firing on `L3 OR L4`; sweep **every** `KBG_AUTONOMY_L3 == "1"` literal
-  across `hooks/` + `scripts/`, not only the three named; add `KBG_AUTONOMY_L4` to both tamper lists
-  (`l3-loop-guard.py:61-66` TAMPER_VARS + `l3-push-gate.sh:54` TAMPER_PAT). Flag still captured **once
-  at import** so the loop cannot self-elevate mid-run. **No auto-push carve-out** — the gate simply
-  also fires under L4.
+  `autonomy_on()` helper reading the **single `KBG_AUTONOMY` key (0/1)** — the per-level
+  `KBG_AUTONOMY_L3/L4` keys collapse into it (key-encoding note above). Sweep **every**
+  `KBG_AUTONOMY_L3 == "1"` literal across `hooks/` + `scripts/`, routing all through `autonomy_on()`; add
+  `KBG_AUTONOMY` to both tamper lists (`l3-loop-guard.py:61-66` TAMPER_VARS + `l3-push-gate.sh:54`
+  TAMPER_PAT). Key still captured **once at import** so the loop cannot self-elevate mid-run. **No
+  auto-push carve-out** — the gate simply also fires when armed. (Single key 0/1, **not** a `=3|4|5` level
+  value: the level is build-state, not an operator dial; if per-environment ceilings ever become real,
+  swapping 0/1 → a level scheme is a one-function change, because every read already routes through
+  `autonomy_on()`.)
 - **F2 — cage the grading corpus.** `l3-cage.txt:42` covers `eval/datasets/**` but not
   `eval/regressions/**` or `tests/evals/**` — the corpus #3 grades against. Add both to
   `l3-cage.txt` **and** the audit #43 `CAGE_ANCHORS` heredoc (`audit.sh:1680-1705`) in lockstep.
 - **F3 — define + cage the scheduler config.** No path exists. Define `scripts/l4/scheduler.conf`
   (the only sanctioned self-launch config) and cage `scripts/l4/**` in both surfaces, so the loop can
-  never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch).
+  never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch). **If
+  per-repo arming uses `.claude/settings.local.json`** (the legitimate per-environment home for
+  `KBG_AUTONOMY` — *never* user-global, which reaches every repo's hooks; see `docs/reference/env-vars.md`
+  §"Where to set them"), **cage `.claude/settings.local.json` too** — a settings file the loop can write is
+  the same self-elevation surface as the scheduler config (the loop must not arm itself by editing its own
+  settings). Outside-repo settings (`~/.claude/settings.json`) are covered by the §8 Act-layer gate, not
+  the cage.
 - **R3 — computational-every-cycle.** Audit #43-#47 run only post-hoc today. Add
   `l3-loop-guard.py precheck --assert-cage-intact` shelling a per-check runner so cage-completeness
   re-asserts inside the always-computational path each cycle; #3 cannot bypass it. **R3 is the single
@@ -122,9 +140,9 @@ flag. Must land first — it unblocks all three relaxations.
   *flag-OFF byte-identical* property the whole harness rides on (an OR-helper refactor is exactly what can
   regress it via empty-string truthiness / wrong default). Pair (b) with a critical-hooks test that runs a
   representative `git push` under no-flags and asserts the push-gate **exits 0** (does not deny). (c)
-  **Enforce the F1 enumeration:** grep `hooks/` + `scripts/` for any `KBG_AUTONOMY_L3` literal **not**
-  routed through `kbg_autonomy_active()` and CRIT — so F1 is machine-enforced, not enumerate-and-trust
-  (the count already moved 3→4; the enumeration is fragile).
+  **Enforce the F1 enumeration:** grep `hooks/` + `scripts/` for any raw `KBG_AUTONOMY` literal **not**
+  routed through `autonomy_on()` and CRIT — so F1 is machine-enforced, not enumerate-and-trust (collapsing
+  to one on/off key removes the `L3 OR L4 OR L5` disjunction that made the old per-level enumeration fragile).
 
 **Blockers to close in the same commit:** (1) `CAGE_ANCHORS` is a curated **subset** of `l3-cage.txt`,
 not a mirror, and #43's anchor check is **directional** (anchors ⊆ cage) — so a path added to the cage
