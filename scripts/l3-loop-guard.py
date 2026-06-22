@@ -54,6 +54,11 @@ from typing import NoReturn
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 CAGE_FILE = SCRIPT_DIR / "l3-cage.txt"
+# R4 cumulative-ceiling state (design §5 R4): a SEPARATE caged file so a
+# self-launcher that restarts repeatedly cannot reset its own cross-run ceiling.
+# Caged via scripts/l4/** — the loop may not Edit/Write it (check-act denies);
+# the guard's own bookkeeping write is not a loop candidate.
+WINDOW_STATE_FILE = SCRIPT_DIR / "l4" / ".window-state.json"
 
 def autonomy_on():
     """The single arming predicate (ADR 0004 single-key collapse + installer
@@ -181,6 +186,28 @@ def _load_state(path):
         return {}
 
 
+def _load_window(path):
+    """R4 window state: {launches:[ts...], wall:[[ts,sec]...]}. Empty on missing."""
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"launches": [], "wall": []}
+    if not isinstance(d, dict):
+        return {"launches": [], "wall": []}
+    d.setdefault("launches", [])
+    d.setdefault("wall", [])
+    return d
+
+
+def _save_window(path, data):
+    """Persist the R4 window state; fail-closed (STOP) if unwritable — an
+    un-persistable ceiling means the loop could re-launch unbounded."""
+    try:
+        Path(path).write_text(json.dumps(data), encoding="utf-8")
+    except OSError as e:
+        _emit("STOP", f"cannot persist R4 window state ({e}) — fail-closed (the cumulative ceiling must be writable)")
+
+
 def cmd_precheck(args):
     """Check caps BEFORE a cycle. On CONTINUE, increment the run counter."""
     if not ARMED_AT_START:
@@ -208,6 +235,28 @@ def cmd_precheck(args):
         dirty, what = _git_dirty()
         if dirty:
             _emit("STOP", f"dirty working tree (uncommitted: {what}) — --dirty-abort")
+
+    # R4 cumulative ceiling (design §5 R4): a self-launcher restarts repeatedly and
+    # never trips the per-run caps above. Cross-run caps over a sliding window,
+    # persisted in a SEPARATE caged file (scripts/l4/.window-state.json) the loop
+    # cannot reset. max-runs-per-window = launch count in the window; max-wall-per-
+    # window = total wall seconds (fed by record-result --wall-seconds). 0 = off.
+    if args.max_runs_per_window or args.max_wall_per_window:
+        if not args.window_seconds:
+            _emit("STOP", "R4 window cap set but --window-seconds is 0 — refuse an unbounded window")
+        wst = _load_window(args.window_state)
+        now_w = time.time()
+        launches = [t for t in wst.get("launches", []) if now_w - t <= args.window_seconds]
+        wall = [p for p in wst.get("wall", []) if now_w - p[0] <= args.window_seconds]
+        if args.max_runs_per_window and len(launches) >= args.max_runs_per_window:
+            _emit("STOP", f"R4 max-runs-per-window reached ({len(launches)}/{args.max_runs_per_window} launches in last {args.window_seconds}s)")
+        wall_sum = sum(p[1] for p in wall)
+        if args.max_wall_per_window and wall_sum >= args.max_wall_per_window:
+            _emit("STOP", f"R4 max-wall-per-window reached ({int(wall_sum)}s/{args.max_wall_per_window}s in last {args.window_seconds}s)")
+        # CONTINUE: record this launch (a STOP above never reaches here).
+        wst["launches"] = launches + [now_w]
+        wst["wall"] = wall
+        _save_window(args.window_state, wst)
 
     # CONTINUE: persist incremented state
     st.update({"start_epoch": start, "runs_done": runs + 1, "fail_streak": fails,
@@ -241,6 +290,17 @@ def cmd_record_result(args):
         Path(args.state).write_text(json.dumps(st), encoding="utf-8")
     except OSError as e:
         _emit("STOP", f"cannot persist run state ({e}) — fail-closed")
+    # R4 wall accounting (design §5 R4): record this cycle's wall seconds into the
+    # caged window state so the next precheck's --max-wall-per-window can see it.
+    # Optional + self-pruning; skipped unless the caller passes --wall-seconds > 0.
+    if args.wall_seconds and args.window_seconds:
+        wpath = args.window_state or str(WINDOW_STATE_FILE)
+        wst = _load_window(wpath)
+        now_w = time.time()
+        wall = [p for p in wst.get("wall", []) if now_w - p[0] <= args.window_seconds]
+        wall.append([now_w, args.wall_seconds])
+        wst["wall"] = wall
+        _save_window(wpath, wst)
     _emit("CONTINUE", f"recorded {label}",
           fail_streak=st["fail_streak"], no_progress_streak=st.get("no_progress_streak", 0))
 
@@ -302,6 +362,15 @@ def main():
     p_pre.add_argument("--max-flat", type=int, default=2,
                        help="stop after K consecutive green-but-flat (no-progress) cycles; 0 = off")
     p_pre.add_argument("--no-dirty-abort", action="store_true")
+    # R4 cumulative ceiling (design §5 R4): cross-run caps over a sliding window.
+    p_pre.add_argument("--max-runs-per-window", type=int, default=0,
+                       help="R4: stop after N launches in the last --window-seconds; 0 = off")
+    p_pre.add_argument("--max-wall-per-window", type=int, default=0,
+                       help="R4: stop after S cumulative wall seconds in the window (fed by record-result --wall-seconds); 0 = off")
+    p_pre.add_argument("--window-seconds", type=int, default=0,
+                       help="R4: the sliding-window size in seconds; required if either R4 cap is set")
+    p_pre.add_argument("--window-state", default=str(WINDOW_STATE_FILE),
+                       help="R4: path to the caged window-state JSON (default scripts/l4/.window-state.json)")
     p_pre.set_defaults(func=cmd_precheck)
 
     p_rec = sub.add_parser("record-result", help="record a cycle's gauntlet outcome")
@@ -311,6 +380,12 @@ def main():
     g.add_argument("--red", action="store_true")
     p_rec.add_argument("--flat", action="store_true",
                        help="with --green: the cycle moved no audit/gaps metric (counts toward --max-flat)")
+    p_rec.add_argument("--wall-seconds", type=int, default=0,
+                       help="R4: this cycle's wall seconds, recorded into the window state for --max-wall-per-window (0 = skip)")
+    p_rec.add_argument("--window-seconds", type=int, default=0,
+                       help="R4: sliding-window size for pruning --wall-seconds entries")
+    p_rec.add_argument("--window-state", default="",
+                       help="R4: window-state path (defaults to scripts/l4/.window-state.json)")
     p_rec.set_defaults(func=cmd_record_result)
 
     sub.add_parser("selftest", help="run the built-in matcher self-check").set_defaults(func=cmd_selftest)

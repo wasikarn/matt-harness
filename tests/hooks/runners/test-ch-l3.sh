@@ -116,6 +116,19 @@ if command -v python3 >/dev/null 2>&1; then
   gcheck CONTINUE  0 "record green-flat (streak=1)"        "$ARMED_ENV"    record-result --state "$FIXTURE/st4.json" --green --flat
   gcheck CONTINUE  0 "record green-improved (resets)"      "$ARMED_ENV"    record-result --state "$FIXTURE/st4.json" --green
   gcheck CONTINUE  0 "precheck continues after reset"      "$ARMED_ENV"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
+
+  # R4 cumulative ceiling (design §5 R4): cross-run caps over a sliding window,
+  # persisted in a SEPARATE caged file the loop cannot reset. Per-run caps stay;
+  # these bound a repeatedly-restarting self-launcher. max-runs-per-window allows N
+  # launches then STOPs; max-wall-per-window is fed by record-result --wall-seconds.
+  gcheck STOP     10 "R4 cap without --window-seconds → STOP" "$ARMED_ENV" precheck --state "$FIXTURE/r4c.json" --max-runs 9 --no-dirty-abort --max-runs-per-window 2 --window-seconds 0 --window-state "$FIXTURE/winC.json"
+  gcheck CONTINUE  0 "R4 c1 (under runs-per-window)"          "$ARMED_ENV" precheck --state "$FIXTURE/r4a.json" --max-runs 9 --no-dirty-abort --max-runs-per-window 2 --window-seconds 3600 --window-state "$FIXTURE/winA.json"
+  gcheck CONTINUE  0 "R4 c2 (1 launch < cap 2)"               "$ARMED_ENV" precheck --state "$FIXTURE/r4a.json" --max-runs 9 --no-dirty-abort --max-runs-per-window 2 --window-seconds 3600 --window-state "$FIXTURE/winA.json"
+  gcheck STOP     10 "R4 c3 STOP at runs-per-window (2)"      "$ARMED_ENV" precheck --state "$FIXTURE/r4a.json" --max-runs 9 --no-dirty-abort --max-runs-per-window 2 --window-seconds 3600 --window-state "$FIXTURE/winA.json"
+  gcheck CONTINUE  0 "R4 record wall 6s (#1)"                 "$ARMED_ENV" record-result --state "$FIXTURE/r4b.json" --green --wall-seconds 6 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
+  gcheck CONTINUE  0 "R4 precheck (wall 6s < 10)"             "$ARMED_ENV" precheck --state "$FIXTURE/r4b.json" --max-runs 9 --no-dirty-abort --max-wall-per-window 10 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
+  gcheck CONTINUE  0 "R4 record wall 6s (#2 → 12s)"           "$ARMED_ENV" record-result --state "$FIXTURE/r4b.json" --green --wall-seconds 6 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
+  gcheck STOP     10 "R4 precheck STOP at wall cap (10s)"     "$ARMED_ENV" precheck --state "$FIXTURE/r4b.json" --max-runs 9 --no-dirty-abort --max-wall-per-window 10 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi

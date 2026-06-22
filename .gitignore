@@ -20,3 +20,7 @@ skills/*/workspace/
 
 # Eval harness generated artifacts
 eval/results/
+
+# R4 cumulative-ceiling runtime state (design §5 R4) — per-machine, never ship a
+# stale window blob. Caged via scripts/l4/**; the guard writes it at runtime.
+scripts/l4/.window-state.json
