@@ -21,10 +21,23 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 
 | Key class | Settable where | Why |
 |---|---|---|
-| **Tuning** (`KBG_IDEATE_*`, `KBG_DEBT_*`, `KBG_EVAL_MAX_AGE_DAYS`, `KBG_LEARN_DRAIN_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (`~/.claude/settings.json` is a symlink into the dotfiles repo — that edit commits there.) |
+| **Tuning** (`KBG_IDEATE_*`, `KBG_DEBT_*`, `KBG_EVAL_MAX_AGE_DAYS`, `KBG_LEARN_DRAIN_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
 | **`KBG_AUTONOMY`** (autonomy arming) | **Per-repo `.claude/settings.local.json` ONLY — never user-global.** And the file must be **caged** (Slice 0). | User-global `env` reaches every repo's hooks → arms the self-modifying loop in employer/other repos, defeating the per-environment opt-in the ADRs rest on. A settings file the loop can write is a self-elevation surface (same class as the launchd plist). |
 | **`KBG_REVIEW_DONE`** (Gate-2 override) | **Never persisted in any settings file.** Shell transient, one push at a time. | It is a one-shot "I reviewed *this* batch" override; a persisted `=1` holds Gate 2 open permanently — the main push brake silently disabled. |
 | **`KBG_ENFORCE_TASK_COMPLETED`** | Defaults ON (safe); just don't persist `=0` user-global. | A global `=0` downgrades the F7 gate in every repo. |
+
+> **Read this before arming anything (esp. if you installed `kbg@kobig` and are not the author):**
+> - **`KBG_AUTONOMY` is the *future* single key (Slice-0 F1, unbuilt).** Today **no shipped code reads bare
+>   `KBG_AUTONOMY`** — the live key is `KBG_AUTONOMY_L3` (table below). Setting `KBG_AUTONOMY=1` arms
+>   **nothing** yet; the single-key collapse lands with the autonomy machinery, not before.
+> - **The autonomy loop self-improves the kbg-harness checkout *itself*** (`hooks/**`, `skills/`, `docs/adr/**`
+>   — its own audit findings), **not the repo you opened.** It is not a tool for improving *your* project.
+>   The whole "opt-in + owner's-tool/owner's-risk" safety basis (ADR 0004/0005) is **non-transferable** — it
+>   assumes the operator is the author working *in* the harness repo.
+> - The "never user-global / must be caged" rules above are **currently unenforced prose**, not a machine
+>   check. The in-plugin guards that make them real (repo-identity precondition, `autonomy_on()` user-global
+>   fail-safe-OFF, cross-remote ship-gate, settings-file caging) are **Slice-0/Slice-4 build preconditions** —
+>   see `docs/research/l4-machinery-design.md` §"External installers".
 
 ## Autonomy & safety flags (load-bearing — see the ADRs before changing)
 

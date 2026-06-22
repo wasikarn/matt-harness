@@ -306,3 +306,72 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
    **unchanged** (the OS, not the model, self-starts — see §8); #32 only *adds* an assertion that the
    caged, flag-gated launcher is the sole sanctioned self-start. The change is additive, not a loosening —
    confirm this framing.
+
+## 12. External installers (Slice-0/4 build preconditions)
+
+The plugin is publicly installable (`claude plugin install kbg@kobig`, the **single delivery path** the
+owner dogfoods, ADR 0001). A third party who installs it and sets the arming flag in **their own** repo on
+**their own** machine is a real operator class the autonomy design must fail safe for. A 32-agent
+fresh-context adversarial sweep (4 lenses → refute-by-default verify → synthesis, 2026-06-22) confirmed
+**9 real gaps** (18 refuted/downgraded). Verdict: the author's proposed **"default-OFF + repo-identity
+precondition"** is the right spine but **insufficient as stated** — it needs the additions below, **all
+in-plugin and self-contained** (none is the rejected Option-C of porting the owner's dotfiles guards).
+
+**Scope statement (the load-bearing precondition):** the L3/L4/L5 loop **self-improves the kbg-harness
+checkout *itself*** — every cage path is repo-relative to the harness (`hooks/**`, `skills/`,
+`docs/adr/**`), Observe reads `harness-audit`, candidates are the harness's own audit findings. It is **not**
+a tool for improving the repo the installer opened. The "opt-in + owner's-tool/owner's-risk" basis (ADR
+0004:156-158, 0005) is telos+ownership-based and **non-transferable** — it assumes the operator *is* the
+author working *in* the harness repo, with a single-author, git-recoverable, disposable non-safety surface.
+
+**What already protects a fresh install (verified):** default-OFF covers it entirely — flag unset ⇒ every
+guard subcommand STOPs, push-gate `exit 0`, immunity off (all 9 findings `covered_by_default_off`). A
+*flag-armed* installer is **also** stopped today, but **only incidentally**: the plugin cache has no `.git`
+(`~/.claude/plugins/cache/kobig/kbg/<ver>/`), so `_git_dirty()` fails closed → STOP. That protection is
+**silent and brittle** (no message; evaporates if a delivery path ever makes the cache a git repo, or once
+the REPO_ROOT bug below is fixed). It must be replaced by an affirmative guard.
+
+**Slice-0 build preconditions (land WITH the machinery, not after):**
+
+1. **Anchor `REPO_ROOT` to the *mutated* tree, fail-closed.** `l3-loop-guard.py:52-53` sets
+   `REPO_ROOT = SCRIPT_DIR.parent` (the cache), but the loop's `git tag/commit/reset` + `Edit/Write`
+   (`recursive-improve/SKILL.md`) run against session **CWD** = the installer's repo — so the cage and
+   dirty-abort guard the **wrong tree**. Derive `REPO_ROOT` from `git rev-parse --show-toplevel` of CWD;
+   STOP if that fails. *This is the bug that makes the repo-identity precondition real instead of incidental;
+   the §3 substrate plan (flag-predicate + TAMPER_VARS + R4 only) did not slate it.*
+2. **Affirmative, message-bearing repo-identity precondition.** Assert `REPO_ROOT` is the genuine
+   kbg-harness checkout (sentinel `.claude-plugin/plugin.json` with `name=="kbg"` **and** a git work-tree
+   whose remote matches the harness); else STOP with *"L3/L4/L5 self-improves the kbg-harness itself, not
+   your project — REPO_ROOT (`<path>`) is not a kbg-harness checkout."* Not an `is-this-KOBIG` test
+   (env-spoofable). Machine-enforce via a #48-class audit leg.
+3. **`autonomy_on()` treats *user-global* arming as fail-safe-OFF.** Route every `KBG_AUTONOMY` read through
+   the one helper (§5 F1); it reads the flag as armed **only** from a per-repo `.claude/settings.local.json`
+   in `CLAUDE_PROJECT_DIR` (a bare user-global `KBG_AUTONOMY=1` arms nothing). Ship **with** audit #48 (CRIT
+   on any raw `KBG_AUTONOMY` literal not routed through the helper). Today the "never user-global" rule is
+   unenforced prose.
+4. **Cage the arming home.** `scripts/l3-cage.txt` has **no** `.claude/settings*` entry today — add
+   `.claude/settings.local.json` to the cage **and** the #43 `CAGE_ANCHORS` heredoc in lockstep (closes the
+   §5 F3 self-author hole). (Outside-repo `~/.claude/settings.json` stays covered by the §8 Act-layer gate.)
+
+**Slice-4 build precondition (the cross-remote ship-gate):**
+
+5. **In-plugin cross-remote pre-push CRIT.** Under L5 the human leaves the push loop and the gauntlet —
+   which grades the **cache**, never the installer's working tree — becomes the sole ship authority. The
+   owner's cross-org hard_deny (`settings.json`) is **owner dotfiles, not plugin-delivered**. Build ADR 0005
+   §floor-2's prose as code: compare push-destination `host+org` vs `origin` `host+org`, **DENY on
+   divergence**, fail-closed; default to an **empty** allowlist so an un-configured installer auto-pushes
+   **nowhere**. This ports the owner's own *mechanism* (`settings.json` cross-org rule), **never** the
+   `wasikarn`/`100-Stars-Co` literals — the line between this (portable, in-plugin) and rejected Option-C.
+
+**Reject Option-C** (porting the owner's named-org deny-list / autoMode `hard_deny` into the plugin) as
+public-distributable drift (a stated non-goal). The portable substitute for each owner guard is its
+**mechanism, default-empty**: origin-vs-destination divergence (not the named orgs); repo-is-kbg (not
+is-this-KOBIG); per-repo-only arming (not the owner's `defaultMode`). Each fails closed when the installer
+has configured nothing.
+
+**Present-tense (ships before any machinery):** the only live installer footgun is documentation — bare
+`KBG_AUTONOMY` is read by **zero** shipped lines (every predicate keys on `KBG_AUTONOMY_L3`), yet
+`env-vars.md` presented it as the live arming knob. Fixed 2026-06-22 (`env-vars.md` §"Where to set them"
+note). Everything else here is **DESIGN-ONLY** (ADR 0004/0005 Accepted-not-Implemented; `audit.sh` has no
+#43-#48; `recursive-improve` keeps `disable-model-invocation: true`) — Slice-0/4 build preconditions, not
+shipped behavior.
