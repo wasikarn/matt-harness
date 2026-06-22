@@ -39,12 +39,19 @@ printf '{"permissions":{}}' > "$BARE_PROJ/.claude/settings.local.json"
 # but CLAUDE_PROJECT_DIR → a repo whose local settings do NOT carry the key.
 ARMED_ENV="KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR=$ARMED_PROJ"
 GLOBAL_ENV="KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR=$BARE_PROJ"
+# Gate-2 maker≠checker (#30): a fixture journal with a review_finding event (a
+# kbg:review-pr pass) + an empty one, so the push-gate's review-pr requirement can
+# be exercised hermetically (CLAUDE_JOURNAL_PATH overrides the real journal).
+REVJ="$FIXTURE/revjournal.jsonl"
+printf '%s\n' '{"id":"x","ts":"2026-06-22T00:00:00Z","session":"s","hook":"review-pr","event":"review_finding","source":"journal_append","fields":{}}' > "$REVJ"
+EMPTYJ="$FIXTURE/emptyjournal.jsonl"; : > "$EMPTYJ"
 
 # --- l3-push-gate: flag-scoped, Gate-2 enforcement (single-key autonomy_on) ---
 pcheck ""                                            none "inert when flag unset (normal session)"          "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny git push"    "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny gh pr merge" "gh pr merge 12"
-pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                none "armed + reviewed: allow git push"               "git push origin develop"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1 CLAUDE_JOURNAL_PATH=$REVJ"    none "armed + reviewed (review-pr pass journalled): allow git push" "git push origin develop"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1 CLAUDE_JOURNAL_PATH=$EMPTYJ"  deny "armed + KBG_REVIEW_DONE but no review-pr pass → deny (maker≠checker)" "git push origin develop"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed but inline-forged flag: deny"          "KBG_REVIEW_DONE=1 git push"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed: still deny hooksPath redirect"        "git config core.hooksPath /tmp/x"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed: deny ephemeral -c hooksPath"          "git -c core.hooksPath=/tmp/x config foo"
@@ -265,6 +272,68 @@ if command -v python3 >/dev/null 2>&1; then
   else
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#47b" "silent on the clean writer"
   fi
+
+  # --- Slice 2: l4-quality-gate (model-as-gate, design §7, #29) + audit #49 ---
+  # qcheck <result> <skill> <judge-cmd> <want-stdout> <want-exit> <label>
+  qcheck() {
+    local result="$1" skill="$2" jcmd="$3" want="$4" wexit="$5" label="$6" out got gx
+    out=$(env KBG_QUALITY_JUDGE_CMD="$jcmd" CLAUDE_JOURNAL_PATH="$EMPTYJ" bash "$REPO/scripts/l4/l4-quality-gate.sh" "$result" "$skill" 2>/dev/null); gx=$?
+    got=$(printf '%s' "$out" | tr -d '\n')
+    if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-quality-gate" "$label"
+    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "l4-quality-gate" "$label" "$want" "$wexit" "$got" "$gx"; fi
+  }
+  qcheck red    tech-humanize  "echo SHOULD_NOT_RUN" red      21 "red → red (never bless; judge not invoked)"
+  qcheck green  tech-humanize  "echo NOT_GOOD"       rollback 20 "green + NOT_GOOD → rollback (veto-green)"
+  qcheck green  tech-humanize  "echo GOOD"           green     0 "green + GOOD → green"
+  qcheck green  tech-humanize  "echo garbage"        rollback 20 "green + unparseable → rollback (fail-closed)"
+  qcheck green  tech-humanize  "false"               rollback 20 "green + judge errors → rollback (fail-closed)"
+  qcheck green  tech-humanize  "true"                rollback 20 "green + empty verdict → rollback (fail-closed)"
+  qcheck green  some-code-skill "echo GOOD"          rollback 20 "green + non-allowlisted skill → rollback (fail-closed)"
+  qcheck purple tech-humanize  "echo GOOD"           rollback 20 "unknown gauntlet result → rollback (fail-closed)"
+
+  # §10 non-circularity proof: a holed cage forces STOP (audit --only 43 CRITs) EVEN
+  # WHEN the model verdict is green — the cage check is computational + gates the model.
+  R3HOLE="$FIXTURE/r3hole"; mkdir -p "$R3HOLE/docs/adr" "$R3HOLE/scripts" "$R3HOLE/scripts/l4"
+  printf '# adr0003\n' > "$R3HOLE/docs/adr/0003-l3-bounded-autonomy.md"
+  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$R3HOLE/scripts/l3-cage.txt"
+  cp "$REPO/scripts/l4/cage-intact.sh" "$R3HOLE/scripts/l4/cage-intact.sh"
+  _holecrit=$(bash "$AUDIT" --only 43 "$R3HOLE" 2>&1); _holerc=$?
+  if [ "$_holerc" -ne 0 ] && printf '%s\n' "$_holecrit" | /usr/bin/grep -q 'cage incomplete'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-quality-gate" "§10: holed cage CRITs even when the model verdict is green"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "l4-quality-gate" "§10: holed cage did NOT CRIT (non-circularity regressed)"
+  fi
+
+  # --- audit #49: the quality-gate must be fail-closed + read-only (design §7, #30).
+  # Inject a regression into a fixture copy + assert the CRIT (tests the assertion's
+  # own failure mode). Control: the clean gate is silent. ---
+  QCF="$FIXTURE/qgate49"; mkdir -p "$QCF/scripts/l4" "$QCF/agents" "$QCF/docs/adr"
+  printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$QCF/agents/x.md"
+  printf '# adr0004\n' > "$QCF/docs/adr/0004-l4-autonomy.md"  # gate #49 on ADR 0004
+  cp "$REPO/scripts/l4/l4-quality-trial.txt" "$QCF/scripts/l4/l4-quality-trial.txt"
+  cp "$REPO/scripts/l4/l4-quality-gate.sh" "$QCF/scripts/l4/l4-quality-gate.sh"
+  sed -i '' 's/--allowedTools Read/--allowedTools Read,Write/' "$QCF/scripts/l4/l4-quality-gate.sh" 2>/dev/null || sed -i 's/--allowedTools Read/--allowedTools Read,Write/' "$QCF/scripts/l4/l4-quality-gate.sh"
+  _q49a=$(bash "$AUDIT" "$QCF" 2>&1)
+  if printf '%s\n' "$_q49a" | /usr/bin/grep -q 'judge-grants-mutation'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#49" "CRITs when the judge grants Write (read-only regressed)"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#49" "did NOT CRIT on judge-grants-Write"
+  fi
+  cp "$REPO/scripts/l4/l4-quality-gate.sh" "$QCF/scripts/l4/l4-quality-gate.sh"
+  sed -i '' '/RESULT" = "red"/d' "$QCF/scripts/l4/l4-quality-gate.sh" 2>/dev/null || sed -i '/RESULT" = "red"/d' "$QCF/scripts/l4/l4-quality-gate.sh"
+  _q49b=$(bash "$AUDIT" "$QCF" 2>&1)
+  if printf '%s\n' "$_q49b" | /usr/bin/grep -q 'red-shortcircuit'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#49" "CRITs when the red short-circuit is removed (veto-only regressed)"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#49" "did NOT CRIT on missing red short-circuit"
+  fi
+  cp "$REPO/scripts/l4/l4-quality-gate.sh" "$QCF/scripts/l4/l4-quality-gate.sh"
+  _q49k=$(bash "$AUDIT" "$QCF" 2>&1)
+  if printf '%s\n' "$_q49k" | /usr/bin/grep -qE 'judge-grants-mutation|red-shortcircuit|veto-green|read-only-judge|fail-closed-default'; then
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#49" "false-positive on the clean quality-gate"
+  else
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#49" "silent on the clean quality-gate"
+  fi
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi
@@ -275,7 +344,7 @@ ncheck() {
   if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-numbering" "#${id} MISSING (load-bearing ID drifted)"; fi
 }
-for id in 32 34 41 43 44 48; do ncheck "$id"; done
+for id in 32 34 41 43 44 48 49; do ncheck "$id"; done
 
 # --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.

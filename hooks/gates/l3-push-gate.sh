@@ -77,7 +77,17 @@ if [ "${KBG_REVIEW_DONE:-}" = "1" ]; then
   if printf '%s\n' "$STRIPPED" | $_GREP -qE "$HOOKSPATH_PAT"; then
     hook_decision deny "autonomy run: refusing to redirect git hooksPath — that disables the gauntlet. This is never part of a push, reviewed or not."
   fi
-  exit 0
+  # Gate-2 strengthening (design §10, #30): under an armed run, KBG_REVIEW_DONE=1 is
+  # honored ONLY if a maker≠checker kbg:review-pr pass is in the recent audit trail
+  # (a review_finding journal event). Without it, the review flag could be set with
+  # no actual fresh-context review — a rubber-stamp the quarterly decay sweep must be
+  # able to observe. The gate is armed-only (autonomy_on above), so normal sessions
+  # are unaffected.
+  _jpath="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
+  if [ -f "$_jpath" ] && tail -n 500 "$_jpath" 2>/dev/null | $_GREP -q 'review_finding'; then
+    exit 0
+  fi
+  hook_decision deny "autonomy run: KBG_REVIEW_DONE=1 is set but no maker≠checker kbg:review-pr pass (review_finding event) is in the recent audit trail — run kbg:review-pr on the batch first, THEN set KBG_REVIEW_DONE=1 (design §10, ADR 0004 Gate-2 strengthening)."
 fi
 
 # 3. Unreviewed batch → deny ship / merge / gauntlet-disable.
