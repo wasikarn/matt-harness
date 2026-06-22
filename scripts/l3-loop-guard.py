@@ -16,10 +16,11 @@ What this guard IS
 ------------------
 - The deterministic bound on an unattended run: max-runs, max-duration,
   fail-streak, dirty-tree abort, and the cage-denylist (scripts/l3-cage.txt).
-- Fail-CLOSED: an empty/missing cage, an unreadable state file, or the
-  KBG_AUTONOMY_L3 flag being unset all resolve to STOP/REVERT, never CONTINUE.
-- Flag-immutable: KBG_AUTONOMY_L3 is read ONCE at process start. The loop
-  cannot self-elevate scope by re-exporting it mid-run.
+- Fail-CLOSED: an empty/missing cage, an unreadable state file, or the autonomy
+  flag being unset all resolve to STOP/REVERT, never CONTINUE.
+- Flag-immutable: KBG_AUTONOMY is read ONCE at process start (via autonomy_on(),
+  armed only from a per-repo .claude/settings.local.json). The loop cannot
+  self-elevate scope by re-exporting it mid-run.
 
 What this guard IS NOT
 ----------------------
@@ -54,21 +55,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 CAGE_FILE = SCRIPT_DIR / "l3-cage.txt"
 
-# --- flag captured ONCE at import (immutable for the process, ADR 0003) ---
-_FLAG_AT_START = os.environ.get("KBG_AUTONOMY_L3", "")
-L3_ACTIVE = _FLAG_AT_START == "1"
-
-# Env vars whose appearance in a candidate command would disarm the safety layer.
-TAMPER_VARS = (
-    "KBG_AUTONOMY_L3",
-    "CLAUDE_HOOK_PROFILE",
-    "CLAUDE_DISABLED_HOOKS",
-    "KBG_L3_REVIEW_DONE",
-)
-
-EXIT = {"CONTINUE": 0, "SKIP": 0, "STOP": 10, "REVERT": 20}
-
-
 def autonomy_on():
     """The single arming predicate (ADR 0004 single-key collapse + installer
     fail-safe guard 3, design §5 F1). Armed iff BOTH hold:
@@ -79,8 +65,8 @@ def autonomy_on():
     NOTHING — only the per-repo local settings (gitignored, per-operator) does.
     Fail-closed for autonomy: absent/unreadable provenance → not armed. This is
     the Python half of the predicate; the bash half lives in hooks/_lib.sh.
-    Built in the F1 tracer slice; the loop-guard's own activation gate still
-    reads KBG_AUTONOMY_L3 until the F1-complete slice wires this in."""
+    Defined before the module-level capture so the flag is read ONCE at import
+    (immutable for the process — the loop cannot self-elevate mid-run)."""
     if os.environ.get("KBG_AUTONOMY", "") != "1":
         return False
     proj = os.environ.get("CLAUDE_PROJECT_DIR", "")
@@ -92,6 +78,21 @@ def autonomy_on():
     except (OSError, ValueError):
         return False
     return data.get("env", {}).get("KBG_AUTONOMY", "") == "1"
+
+
+# --- arming captured ONCE at import via autonomy_on() (immutable for the
+#     process, ADR 0003/0004 single-key). The loop cannot self-elevate mid-run. ---
+ARMED_AT_START = autonomy_on()
+
+# Env vars whose appearance in a candidate command would disarm the safety layer.
+TAMPER_VARS = (
+    "KBG_AUTONOMY",
+    "CLAUDE_HOOK_PROFILE",
+    "CLAUDE_DISABLED_HOOKS",
+    "KBG_REVIEW_DONE",
+)
+
+EXIT = {"CONTINUE": 0, "SKIP": 0, "STOP": 10, "REVERT": 20}
 
 
 def _emit(decision, reason="", **extra) -> NoReturn:
@@ -137,8 +138,8 @@ def is_caged(rel, globs):
 def cmd_check_act(args):
     """Deny if any target path is caged or outside the repo, or if the
     candidate command tampers with a safety env var."""
-    if not L3_ACTIVE:
-        _emit("STOP", "KBG_AUTONOMY_L3 is not set — L3 loop refuses to run")
+    if not ARMED_AT_START:
+        _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
     globs = load_cage()
     hits = []
     for p in args.paths:
@@ -182,8 +183,8 @@ def _load_state(path):
 
 def cmd_precheck(args):
     """Check caps BEFORE a cycle. On CONTINUE, increment the run counter."""
-    if not L3_ACTIVE:
-        _emit("STOP", "KBG_AUTONOMY_L3 is not set — L3 loop refuses to run")
+    if not ARMED_AT_START:
+        _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
     st = _load_state(args.state)
     now = time.time()
     start = st.get("start_epoch", now)

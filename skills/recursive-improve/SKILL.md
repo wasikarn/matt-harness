@@ -17,7 +17,7 @@ the hand — but a hand the human always holds.
 
 **The autonomy invariant (load-bearing — do not soften):** **Default (L2):** there is **no**
 autonomous, multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion`
-gate before any mutation. **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a `--auto` mode runs
+gate before any mutation. **L3 (opt-in, `KBG_AUTONOMY=1`, default OFF):** a `--auto` mode runs
 bounded cycles unattended *within an owner-approved run* — it commits **local-only**, is
 human-gated at **push** (not per mutation), and its in-loop check is the computational gauntlet,
 never a model-as-gate. The canonical homes are ADR 0002 (L2 era) and **ADR 0003** (the L3
@@ -28,7 +28,7 @@ at the per-mutation gate (L2) or at launch + pre-push review (L3); the iteration
 context-exhaustion backstop. (The `--auto` loop machinery — `scripts/l3-loop-guard.py`, the
 cage-denylist `scripts/l3-cage.txt`, and the `l3-push-gate` hook — now ships; see
 **§ Autonomous mode (L3 `--auto`)** below for the cycle. The flag stays OFF by default; with
-`KBG_AUTONOMY_L3` unset, only the L2 path below runs.)
+`KBG_AUTONOMY` unset, only the L2 path below runs.)
 
 **When to use:** the user explicitly asks to improve / fix / audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
@@ -170,8 +170,9 @@ applies one candidate per cycle); every **bound** is computational — `scripts/
 and **no push** inside the loop. Read the contract first: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounded-autonomy.md"`.
 
 **Preconditions (refuse the run unless ALL hold):**
-- `KBG_AUTONOMY_L3=1` in the environment (the guard reads it; without it every guard subcommand
-  returns `STOP` and the loop refuses to run).
+- `KBG_AUTONOMY=1` armed from the per-repo `.claude/settings.local.json` env block (the guard's
+  `autonomy_on()` reads it once at process start; without it every guard subcommand returns `STOP`
+  and the loop refuses to run).
 - The operator **explicitly** invoked `recursive-improve --auto` (Gate 1). The skill stays
   `disable-model-invocation: true`, so only a human launch reaches this mode — never the model unprompted.
 - A clean working tree (the guard's `--dirty-abort` enforces it; `.scratch/` is exempt).
@@ -179,7 +180,8 @@ and **no push** inside the loop. Read the contract first: `cat "${KBG_PLUGIN_ROO
 **Caps (set at launch, immutable for the run):** `--max-runs N` (default **3** — a *reviewability*
 bound: you must hold the whole batch in working memory at Gate 2), `--max-duration S` (seconds; 0=off),
 `--fail-streak K` (default 2), `--max-flat M` (default **2** — the *no-progress* cap: K consecutive
-GREEN-but-flat cycles end the run). The guard captures `KBG_AUTONOMY_L3` **once** at process start — the
+GREEN-but-flat cycles end the run). The guard captures `KBG_AUTONOMY` **once** at process start (via
+`autonomy_on()`) — the
 loop cannot re-export it to widen scope mid-run.
 
 **No-progress cap (`--max-flat`) — distinct from `--fail-streak`.** `--fail-streak` counts *reds*
@@ -227,7 +229,7 @@ at `M`, even though nothing is failing.
 - Emit `.scratch/l3-runs/$RID/session-audit-trail.md` — the review artifact: per cycle
   {proposed · files changed · gauntlet delta · keep/revert}. (`scripts/l3-run-report.sh "$RID"` re-renders it from the journal.)
 - **Surface the batch and STOP. Do not push.** The operator runs `kbg:review-pr` on the local batch;
-  only if satisfied do they `export KBG_L3_REVIEW_DONE=1` and push. Until then `l3-push-gate` denies it.
+  only if satisfied do they `export KBG_REVIEW_DONE=1` and push. Until then `l3-push-gate` denies it.
 - The loop never opens a PR and never proposes an ADR edit by writing one — a new ADR is the operator's
   to author (the cage denies `docs/adr/**`). The loop may *name* a needed ADR in the run report.
 
@@ -259,7 +261,7 @@ recursive-improve — iteration <N> report
 - **Reintroducing L4 autonomy.** L3 `--auto` runs bounded cycles unattended *by design* (ADR 0003)
   — that is sanctioned. What violates the invariant: a loop that **self-starts** (drops
   `disable-model-invocation`), uses a **model as its in-loop gate**, **pushes** without the Gate-2
-  human review, or runs **without the `KBG_AUTONOMY_L3` flag + caps**. Read ADR 0003 in Bash:
+  human review, or runs **without the `KBG_AUTONOMY` flag + caps**. Read ADR 0003 in Bash:
   `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounded-autonomy.md"`. The caps are the bound, not a
   license to remove the launch + push gates.
 - **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"

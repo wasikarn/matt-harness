@@ -56,10 +56,10 @@ pcheck "$GLOBAL_ENV"                                 none "user-global flag (no 
 pcheck "$ARMED_ENV CLAUDE_HOOK_PROFILE=off"          deny "immunity: profile=off can't bypass when armed"  "git push origin develop"
 pcheck "$ARMED_ENV CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass when armed" "git push origin develop"
 
-# --- block-dangerous-git: L3 rollback carve-out (ADR 0003) ---
+# --- block-dangerous-git: L3/L4 rollback carve-out (ADR 0003/0004) ---
 # The loop rolls back a failed cycle with `git reset --hard <l3-precycle-* tag>`.
 # block-dangerous-git blanket-denies `git reset --hard`; the carve-out allows ONLY
-# that exact command, full-anchored, and ONLY under KBG_AUTONOMY_L3=1.
+# that exact command, full-anchored, and ONLY when armed (autonomy_on).
 # dgcheck <env> <want> <label> <command>
 dgcheck() {
   local env="$1" want="$2" label="$3" cmd="$4" out got
@@ -68,10 +68,10 @@ dgcheck() {
   if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "block-dangerous-git" "$label"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "block-dangerous-git" "$label" "$want" "$got"; fi
 }
-dgcheck "KBG_AUTONOMY_L3=1"      none "L3 rollback: allow reset --hard <l3-precycle tag>"   "git reset --hard l3-precycle-run1-1"
-dgcheck "KBG_AUTONOMY_L3=1"      deny "L3 on: deny reset --hard to a non-precycle ref"      "git reset --hard HEAD~3"
-dgcheck "-u KBG_AUTONOMY_L3"     deny "flag off: deny reset --hard even to l3-precycle tag" "git reset --hard l3-precycle-run1-1"
-dgcheck "KBG_AUTONOMY_L3=1"      deny "carve-out can't ride a compound (force-push appended)" "git reset --hard l3-precycle-run1-1 && git push --force origin main"
+dgcheck "$ARMED_ENV"  none "rollback: allow reset --hard <l3-precycle tag> when armed"   "git reset --hard l3-precycle-run1-1"
+dgcheck "$ARMED_ENV"  deny "armed: deny reset --hard to a non-precycle ref"              "git reset --hard HEAD~3"
+dgcheck ""            deny "flag off: deny reset --hard even to l3-precycle tag"         "git reset --hard l3-precycle-run1-1"
+dgcheck "$ARMED_ENV"  deny "carve-out can't ride a compound (force-push appended)"       "git reset --hard l3-precycle-run1-1 && git push --force origin main"
 
 # --- l3-loop-guard.py: caps + cage, fail-closed, flag-immutable ---
 # Run the guard inline so the exit code is captured in gcheck's own scope (a
@@ -93,29 +93,29 @@ if command -v python3 >/dev/null 2>&1; then
 
   # check-act: flag off → STOP (refuses to run); caged path → REVERT; editable → CONTINUE; tamper → REVERT.
   gcheck STOP     10 "check-act refuses when flag off"      ""                     check-act "$REPO/hooks/x.sh"
-  gcheck REVERT   20 "check-act REVERTs on caged hooks/ path" "KBG_AUTONOMY_L3=1"   check-act "$REPO/hooks/_lib.sh"
-  gcheck REVERT   20 "check-act REVERTs on caged audit.sh"  "KBG_AUTONOMY_L3=1"     check-act "$AUDIT"
-  gcheck CONTINUE  0 "check-act allows an editable skill"   "KBG_AUTONOMY_L3=1"     check-act "$REPO/skills/recursive-improve/SKILL.md"
-  gcheck REVERT   20 "check-act REVERTs on tamper var"      "KBG_AUTONOMY_L3=1"     check-act "$REPO/README.md" --candidate-cmd "export KBG_AUTONOMY_L3=1"
-  gcheck REVERT   20 "check-act REVERTs path outside repo"  "KBG_AUTONOMY_L3=1"     check-act "/etc/hosts"
+  gcheck REVERT   20 "check-act REVERTs on caged hooks/ path" "$ARMED_ENV"   check-act "$REPO/hooks/_lib.sh"
+  gcheck REVERT   20 "check-act REVERTs on caged audit.sh"  "$ARMED_ENV"     check-act "$AUDIT"
+  gcheck CONTINUE  0 "check-act allows an editable skill"   "$ARMED_ENV"     check-act "$REPO/skills/recursive-improve/SKILL.md"
+  gcheck REVERT   20 "check-act REVERTs on tamper var"      "$ARMED_ENV"     check-act "$REPO/README.md" --candidate-cmd "export KBG_AUTONOMY=1"
+  gcheck REVERT   20 "check-act REVERTs path outside repo"  "$ARMED_ENV"     check-act "/etc/hosts"
 
   # precheck: flag off → STOP; max-runs cap → STOP after the budget.
   gcheck STOP     10 "precheck refuses when flag off"       ""                     precheck --state "$FIXTURE/st1.json" --max-runs 1 --no-dirty-abort
-  gcheck CONTINUE  0 "precheck CONTINUE on first cycle"     "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
-  gcheck STOP     10 "precheck STOP when max-runs reached"  "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
+  gcheck CONTINUE  0 "precheck CONTINUE on first cycle"     "$ARMED_ENV"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
+  gcheck STOP     10 "precheck STOP when max-runs reached"  "$ARMED_ENV"    precheck --state "$FIXTURE/st2.json" --max-runs 1 --no-dirty-abort
 
   # no-progress cap (--max-flat): 2 consecutive GREEN-but-flat cycles → STOP, even
   # though nothing failed. Distinct from fail-streak (which counts reds).
-  gcheck CONTINUE  0 "precheck c1 (no-progress)"           "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
-  gcheck CONTINUE  0 "record green-flat #1"                "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st3.json" --green --flat
-  gcheck CONTINUE  0 "precheck c2 (1 flat < cap)"          "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
-  gcheck CONTINUE  0 "record green-flat #2"                "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st3.json" --green --flat
-  gcheck STOP     10 "precheck STOP at no-progress cap"    "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  gcheck CONTINUE  0 "precheck c1 (no-progress)"           "$ARMED_ENV"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat #1"                "$ARMED_ENV"    record-result --state "$FIXTURE/st3.json" --green --flat
+  gcheck CONTINUE  0 "precheck c2 (1 flat < cap)"          "$ARMED_ENV"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat #2"                "$ARMED_ENV"    record-result --state "$FIXTURE/st3.json" --green --flat
+  gcheck STOP     10 "precheck STOP at no-progress cap"    "$ARMED_ENV"    precheck --state "$FIXTURE/st3.json" --max-runs 9 --max-flat 2 --no-dirty-abort
   # an IMPROVED green resets the no-progress streak (so a productive cycle clears it).
-  gcheck CONTINUE  0 "precheck c1 (reset path)"            "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
-  gcheck CONTINUE  0 "record green-flat (streak=1)"        "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st4.json" --green --flat
-  gcheck CONTINUE  0 "record green-improved (resets)"      "KBG_AUTONOMY_L3=1"    record-result --state "$FIXTURE/st4.json" --green
-  gcheck CONTINUE  0 "precheck continues after reset"      "KBG_AUTONOMY_L3=1"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
+  gcheck CONTINUE  0 "precheck c1 (reset path)"            "$ARMED_ENV"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
+  gcheck CONTINUE  0 "record green-flat (streak=1)"        "$ARMED_ENV"    record-result --state "$FIXTURE/st4.json" --green --flat
+  gcheck CONTINUE  0 "record green-improved (resets)"      "$ARMED_ENV"    record-result --state "$FIXTURE/st4.json" --green
+  gcheck CONTINUE  0 "precheck continues after reset"      "$ARMED_ENV"    precheck --state "$FIXTURE/st4.json" --max-runs 9 --max-flat 1 --no-dirty-abort
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi
@@ -126,7 +126,7 @@ ncheck() {
   if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-numbering" "#${id} MISSING (load-bearing ID drifted)"; fi
 }
-for id in 32 34 41 43 44; do ncheck "$id"; done
+for id in 32 34 41 43 44 48; do ncheck "$id"; done
 
 # --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
