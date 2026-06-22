@@ -45,6 +45,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import NoReturn
@@ -66,6 +67,31 @@ TAMPER_VARS = (
 )
 
 EXIT = {"CONTINUE": 0, "SKIP": 0, "STOP": 10, "REVERT": 20}
+
+
+def autonomy_on():
+    """The single arming predicate (ADR 0004 single-key collapse + installer
+    fail-safe guard 3, design §5 F1). Armed iff BOTH hold:
+      1. KBG_AUTONOMY=1 is in the process env.
+      2. That arming is confirmed by the per-repo settings file
+         $CLAUDE_PROJECT_DIR/.claude/settings.local.json (its env.KBG_AUTONOMY).
+    A bare USER-GLOBAL KBG_AUTONOMY=1 (which reaches every repo's hooks) arms
+    NOTHING — only the per-repo local settings (gitignored, per-operator) does.
+    Fail-closed for autonomy: absent/unreadable provenance → not armed. This is
+    the Python half of the predicate; the bash half lives in hooks/_lib.sh.
+    Built in the F1 tracer slice; the loop-guard's own activation gate still
+    reads KBG_AUTONOMY_L3 until the F1-complete slice wires this in."""
+    if os.environ.get("KBG_AUTONOMY", "") != "1":
+        return False
+    proj = os.environ.get("CLAUDE_PROJECT_DIR", "")
+    if not proj:
+        return False
+    home = Path(proj) / ".claude" / "settings.local.json"
+    try:
+        data = json.loads(home.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return data.get("env", {}).get("KBG_AUTONOMY", "") == "1"
 
 
 def _emit(decision, reason="", **extra) -> NoReturn:
@@ -230,6 +256,30 @@ def cmd_selftest(_args):
     assert not is_caged("skills/fix-bug/SKILL.md", globs)         # editable skill
     assert not is_caged("README.md", globs)                       # not in this subset
     assert not is_caged("hooksX/y.sh", globs)                     # prefix not a dir boundary
+
+    # autonomy_on() (design §5 F1, guard 3): per-repo arming honors; a user-global
+    # flag (env set but the per-repo file does not carry it) arms NOTHING; flag off
+    # never arms. Mutates os.environ only inside this subprocess; restored after.
+    _old_proj = os.environ.get("CLAUDE_PROJECT_DIR")
+    _old_flag = os.environ.get("KBG_AUTONOMY")
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / ".claude").mkdir()
+            sf = Path(td) / ".claude" / "settings.local.json"
+            os.environ["KBG_AUTONOMY"] = "1"
+            os.environ["CLAUDE_PROJECT_DIR"] = td
+            sf.write_text('{"env":{"KBG_AUTONOMY":"1"}}', encoding="utf-8")
+            assert autonomy_on() is True, "per-repo arming should arm"
+            sf.write_text('{"permissions":{}}', encoding="utf-8")
+            assert autonomy_on() is False, "user-global flag without per-repo confirm must NOT arm"
+            os.environ["KBG_AUTONOMY"] = "0"
+            assert autonomy_on() is False, "flag off must not arm"
+    finally:
+        for _k, _v in (("CLAUDE_PROJECT_DIR", _old_proj), ("KBG_AUTONOMY", _old_flag)):
+            if _v is None:
+                os.environ.pop(_k, None)
+            else:
+                os.environ[_k] = _v
     print("l3-loop-guard selftest: OK")
 
 

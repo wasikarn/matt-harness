@@ -14,7 +14,9 @@ GUARD="$REPO/scripts/l3-loop-guard.py"
 AUDIT="$REPO/skills/harness-audit/scripts/audit.sh"
 
 # pcheck <env-string> <want-decision> <label> <command>
-# Runs l3-push-gate.sh with the given env (e.g. "KBG_AUTONOMY_L3=1") on a Bash command.
+# Runs l3-push-gate.sh with the given env on a Bash command. The armed cases pass
+# KBG_AUTONOMY=1 + CLAUDE_PROJECT_DIR pointing at a per-repo arming fixture (the
+# only surface autonomy_on() honors — guard 3); a user-global flag arms nothing.
 pcheck() {
   local env="$1" want="$2" label="$3" cmd="$4" out got
   out=$(printf '%s' "$(bash_event "$cmd")" | env $env bash "$HOOKS/gates/l3-push-gate.sh" 2>/dev/null)
@@ -23,18 +25,36 @@ pcheck() {
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l3-push-gate" "$label" "$want" "$got"; fi
 }
 
-# --- l3-push-gate: flag-scoped, Gate-2 enforcement ---
-pcheck ""                                            none "inert when L3 unset (normal session)"          "git push origin develop"
-pcheck "KBG_AUTONOMY_L3=1"                            deny "L3 active + unreviewed: deny git push"          "git push origin develop"
-pcheck "KBG_AUTONOMY_L3=1"                            deny "L3 active + unreviewed: deny gh pr merge"        "gh pr merge 12"
-pcheck "KBG_AUTONOMY_L3=1 KBG_L3_REVIEW_DONE=1"       none "L3 active + reviewed: allow git push"           "git push origin develop"
-pcheck "KBG_AUTONOMY_L3=1 KBG_L3_REVIEW_DONE=1"       deny "reviewed but inline-forged flag: deny"          "KBG_L3_REVIEW_DONE=1 git push"
-pcheck "KBG_AUTONOMY_L3=1 KBG_L3_REVIEW_DONE=1"       deny "reviewed: still deny hooksPath redirect"        "git config core.hooksPath /tmp/x"
-pcheck "KBG_AUTONOMY_L3=1 KBG_L3_REVIEW_DONE=1"       deny "reviewed: deny ephemeral -c hooksPath"          "git -c core.hooksPath=/tmp/x config foo"
-pcheck "KBG_AUTONOMY_L3=1"                            none "L3 active: allow local commit (no push)"        "git commit -m wip"
-# Immunity: profile=off must NOT disarm the push-gate during an L3 run.
-pcheck "KBG_AUTONOMY_L3=1 CLAUDE_HOOK_PROFILE=off"    deny "immunity: profile=off can't bypass under L3"    "git push origin develop"
-pcheck "KBG_AUTONOMY_L3=1 CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass under L3" "git push origin develop"
+# --- per-repo arming fixtures (guard 3, design §5 F1) ---
+# autonomy_on() arms ONLY from a per-repo .claude/settings.local.json env block;
+# a user-global KBG_AUTONOMY=1 (env set but the per-repo file does not carry it)
+# arms NOTHING. ARMED_PROJ carries the arming key; BARE_PROJ does not (simulates a
+# user-global flag reaching a repo that did not arm locally).
+ARMED_PROJ="$FIXTURE/armproj"; mkdir -p "$ARMED_PROJ/.claude"
+printf '{"env":{"KBG_AUTONOMY":"1"}}' > "$ARMED_PROJ/.claude/settings.local.json"
+BARE_PROJ="$FIXTURE/bareproj"; mkdir -p "$BARE_PROJ/.claude"
+printf '{"permissions":{}}' > "$BARE_PROJ/.claude/settings.local.json"
+# Armed env = KBG_AUTONOMY=1 + CLAUDE_PROJECT_DIR → arming fixture (mirrors Claude
+# Code injecting the per-repo env block into the hook process). GLOBAL = env set
+# but CLAUDE_PROJECT_DIR → a repo whose local settings do NOT carry the key.
+ARMED_ENV="KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR=$ARMED_PROJ"
+GLOBAL_ENV="KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR=$BARE_PROJ"
+
+# --- l3-push-gate: flag-scoped, Gate-2 enforcement (single-key autonomy_on) ---
+pcheck ""                                            none "inert when flag unset (normal session)"          "git push origin develop"
+pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny git push"    "git push origin develop"
+pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny gh pr merge" "gh pr merge 12"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                none "armed + reviewed: allow git push"               "git push origin develop"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed but inline-forged flag: deny"          "KBG_REVIEW_DONE=1 git push"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed: still deny hooksPath redirect"        "git config core.hooksPath /tmp/x"
+pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed: deny ephemeral -c hooksPath"          "git -c core.hooksPath=/tmp/x config foo"
+pcheck "$ARMED_ENV"                                  none "armed: allow local commit (no push)"            "git commit -m wip"
+# Guard 3: a user-global flag (env=1 but the per-repo file does not carry it) arms
+# NOTHING — the push gate no-ops, exactly like a flag-unset session.
+pcheck "$GLOBAL_ENV"                                 none "user-global flag (no per-repo arming): arms nothing" "git push origin develop"
+# Immunity: profile=off / disabled-hooks must NOT disarm the push-gate while armed.
+pcheck "$ARMED_ENV CLAUDE_HOOK_PROFILE=off"          deny "immunity: profile=off can't bypass when armed"  "git push origin develop"
+pcheck "$ARMED_ENV CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass when armed" "git push origin develop"
 
 # --- block-dangerous-git: L3 rollback carve-out (ADR 0003) ---
 # The loop rolls back a failed cycle with `git reset --hard <l3-precycle-* tag>`.

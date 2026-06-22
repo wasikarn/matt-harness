@@ -20,6 +20,31 @@
 #   - audit log prefix: ts \t session-id, then caller's columns in order
 #   - DISABLED match: substring on ",$DISABLED," to avoid partial-id false matches
 
+# autonomy_on — the single arming predicate (ADR 0004 single-key collapse +
+# installer fail-safe guard 3, design §5 F1). Returns 0 (armed) iff BOTH hold:
+#   1. KBG_AUTONOMY=1 is in this process's env (read at call time = once per hook
+#      process; the loop cannot self-elevate mid-run by re-exporting it — the
+#      push-gate tamper check denies inline-setting during a run).
+#   2. That arming is confirmed by the per-repo settings file
+#      $CLAUDE_PROJECT_DIR/.claude/settings.local.json (its `env.KBG_AUTONOMY`).
+# A bare USER-GLOBAL KBG_AUTONOMY=1 (which would reach every repo's hooks) arms
+# NOTHING — only the per-repo LOCAL settings (gitignored, per-operator) does. A
+# checked-in .claude/settings.json arming is likewise not honored (it would arm
+# every clone of a public repo). Fail-closed for autonomy = do NOT arm when the
+# provenance file is absent/unreadable or jq is missing — an unreadable arming
+# home is treated as un-armed, never armed. Normal sessions (flag unset) hit the
+# first test and return before any file fork, so the flag-OFF path is byte-ident
+# to a plain env-string compare.
+autonomy_on() {
+  [ "${KBG_AUTONOMY:-}" = "1" ] || return 1
+  local home="${CLAUDE_PROJECT_DIR:-}/.claude/settings.local.json"
+  [ -f "$home" ] || return 1
+  command -v jq >/dev/null 2>&1 || return 1
+  local v
+  v=$(jq -r '.env.KBG_AUTONOMY // ""' "$home" 2>/dev/null) || return 1
+  [ "$v" = "1" ]
+}
+
 # hook_init sets TOOL / TOOL_INPUT / PROMPT as globals for CALLERS (the sourcing
 # hooks); shellcheck runs without -x so it can't see the cross-file use and flags
 # them SC2034. Same cross-file rationale as the per-hook disables (e.g.
@@ -31,13 +56,14 @@ hook_init() {
   PROFILE="${CLAUDE_HOOK_PROFILE:-standard}"
   DISABLED="${CLAUDE_DISABLED_HOOKS:-}"
 
-  # L3 immunity (ADR 0003): during an authorized L3 run, the unattended loop must
-  # NOT be able to disarm gates via CLAUDE_HOOK_PROFILE=off / CLAUDE_DISABLED_HOOKS.
-  # When the L3 flag is on, force every hook live regardless of those bypass vars.
-  # The flag is OFF by default → zero effect on normal sessions. (l3-loop-guard
-  # check-act ALSO denies any candidate command that sets these vars; this is the
-  # runtime backstop for the case a command slips past the loop's pre-Act check.)
-  if [ "${KBG_AUTONOMY_L3:-}" = "1" ]; then
+  # L3/L4 immunity (ADR 0003/0004): during an authorized autonomy run, the
+  # unattended loop must NOT be able to disarm gates via CLAUDE_HOOK_PROFILE=off /
+  # CLAUDE_DISABLED_HOOKS. When armed (single-key autonomy_on predicate, design §5
+  # F1), force every hook live regardless of those bypass vars. The flag is OFF by
+  # default → zero effect on normal sessions. (l3-loop-guard check-act ALSO denies
+  # any candidate command that sets these vars; this is the runtime backstop for
+  # the case a command slips past the loop's pre-Act check.)
+  if autonomy_on; then
     PROFILE="standard"
     DISABLED=""
   fi

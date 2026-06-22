@@ -16,15 +16,18 @@
 
 set -uo pipefail
 
-# Hermetic flag baseline (ADR 0003). This suite verifies hook correctness —
+# Hermetic flag baseline (ADR 0003/0004). This suite verifies hook correctness —
 # including the disable mechanisms (CLAUDE_HOOK_PROFILE=off, CLAUDE_DISABLED_HOOKS)
-# that _lib.sh deliberately NEUTRALIZES during an L3 run (KBG_AUTONOMY_L3=1 → L3
-# immunity). When the L3 loop runs this suite as its in-loop gate, the ambient
+# that _lib.sh deliberately NEUTRALIZES during an armed run (autonomy_on → L3/L4
+# immunity). When an autonomy loop runs this suite as its in-loop gate, the ambient
 # flag would make every disable / flag-off assertion fail (gates/orphaned-runners/
 # l3) — the gate could never go green, so the loop could never keep a commit.
-# Scrub the L3 vars so the suite always runs from a clean baseline; the flag-ON
-# cases (in test-ch-l3.sh) set the flag themselves, per-test.
-unset KBG_AUTONOMY_L3 KBG_L3_REVIEW_DONE
+# Scrub BOTH key generations so the suite always runs from a clean baseline: the
+# legacy per-level keys (KBG_AUTONOMY_L3 / KBG_L3_REVIEW_DONE) still read by the
+# loop-guard + rollback carve-out until the F1-complete slice, and the single-key
+# KBG_AUTONOMY / KBG_REVIEW_DONE now read by the push gate + immunity. The flag-ON
+# cases (in test-ch-l3.sh) set the flag + per-repo fixture themselves, per-test.
+unset KBG_AUTONOMY_L3 KBG_L3_REVIEW_DONE KBG_AUTONOMY KBG_REVIEW_DONE
 
 HOOKS_DIR="$(cd "$(dirname "$0")/../../../hooks" && pwd)"
 TESTS_DIR="$(dirname "$0")"
