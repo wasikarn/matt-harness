@@ -56,6 +56,37 @@ pcheck "$GLOBAL_ENV"                                 none "user-global flag (no 
 pcheck "$ARMED_ENV CLAUDE_HOOK_PROFILE=off"          deny "immunity: profile=off can't bypass when armed"  "git push origin develop"
 pcheck "$ARMED_ENV CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass when armed" "git push origin develop"
 
+# --- l4-act-gate: Act-layer self-launch guard (design §5 Act-layer gate + §8) ---
+# The launchd plist + kill-file live outside the repo; this PreToolUse gate DENIES
+# any write/launchctl mutation to them while armed. Real-DENY matrix (the Slice-3
+# hard precondition). write_event + actcheck/actwcheck mirror pcheck.
+write_event() { printf '{"tool_name":"Write","tool_input":{"file_path":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
+actcheck() {
+  local env="$1" want="$2" label="$3" cmd="$4" out got
+  out=$(printf '%s' "$(bash_event "$cmd")" | env $env bash "$HOOKS/gates/l4-act-gate.sh" 2>/dev/null)
+  if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-act-gate" "$label"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l4-act-gate" "$label" "$want" "$got"; fi
+}
+actwcheck() {
+  local env="$1" want="$2" label="$3" fp="$4" out got
+  out=$(printf '%s' "$(write_event "$fp")" | env $env bash "$HOOKS/gates/l4-act-gate.sh" 2>/dev/null)
+  if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-act-gate" "$label"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l4-act-gate" "$label" "$want" "$got"; fi
+}
+actcheck ""            none "inert when flag unset (normal session)"             "launchctl unload ~/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actcheck "$ARMED_ENV"  deny "armed: deny launchctl unload of the plist"         "launchctl unload ~/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actcheck "$ARMED_ENV"  deny "armed: deny launchctl bootstrap of the plist"      "launchctl bootstrap gui/501 ~/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actcheck "$ARMED_ENV"  none "armed: launchctl list (read) allowed"              "launchctl list"
+actcheck "$ARMED_ENV"  deny "armed: deny write redirection to the plist"        "echo x > ~/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actcheck "$ARMED_ENV"  deny "armed: deny rm of the kill-file"                   "rm ~/.claude/kbg-l4-kill"
+actcheck "$ARMED_ENV"  none "armed: cat the plist (read) allowed"               "cat ~/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actcheck "$ARMED_ENV"  none "armed: normal git commit (not an act-gate concern)" "git commit -m wip"
+actwcheck "$ARMED_ENV" deny "armed: Write the plist → deny"                     "$HOME/Library/LaunchAgents/com.kbg.l4-launcher.plist"
+actwcheck "$ARMED_ENV" deny "armed: Write the kill-file → deny"                 "$HOME/.claude/kbg-l4-kill"
+actwcheck "$ARMED_ENV" none "armed: Write a normal path → none"                 "/tmp/some-file"
+
 # --- block-dangerous-git: L3/L4 rollback carve-out (ADR 0003/0004) ---
 # The loop rolls back a failed cycle with `git reset --hard <l3-precycle-* tag>`.
 # block-dangerous-git blanket-denies `git reset --hard`; the carve-out allows ONLY
