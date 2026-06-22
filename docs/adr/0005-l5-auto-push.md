@@ -1,7 +1,8 @@
 # ADR 0005: L5 — auto-push/auto-merge (the human leaves the push loop)
 
-- **Status**: **Accepted (telos decision recorded 2026-06-22; NOT YET IMPLEMENTED — no machinery exists,
-  all flags OFF; enable still gated by §Acceptance criteria).** This ADR re-adds **relaxation #2 (auto-push
+- **Status**: **Accepted (telos decision recorded 2026-06-22) + IMPLEMENTED 2026-06-23 (Slice 4, issue
+  #35, shipped gauntlet-green on `develop`; `KBG_AUTONOMY` still OFF by default — flag-OFF byte-identical
+  to L2/L3/L4; enable still gated by §Acceptance criteria).** This ADR re-adds **relaxation #2 (auto-push
   / auto-merge)** that [ADR 0004](0004-l4-autonomy.md) dropped — the single touchpoint (Gate 2, the human
   push review) that ADR 0004 kept "permanently." It **supersedes ADR 0004's core sub-decision** ("keep the
   push gate permanently") and turns the autonomy ratchet one more notch. Per ADR 0004 §Reversibility, this

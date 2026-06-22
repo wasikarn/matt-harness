@@ -1,7 +1,8 @@
 # ADR 0004: L4 self-driving harness — autonomy within the cage floor
 
-- **Status**: **Accepted (decision recorded 2026-06-22; NOT YET IMPLEMENTED — no L4 machinery exists,
-  all flags OFF)** — supersedes the *bounded-autonomy architecture* of
+- **Status**: **Accepted (decision recorded 2026-06-22) + IMPLEMENTED 2026-06-23 (Slices 0–3 of the
+  5-slice build, issues #17–#33, shipped gauntlet-green on `develop`; `KBG_AUTONOMY` still OFF by
+  default — flag-OFF byte-identical to L2/L3)** — supersedes the *bounded-autonomy architecture* of
   [ADR 0003](0003-l3-bounded-autonomy.md) and relaxes the *principle* of
   [ADR 0002](0002-autonomy-invariant.md). Neither prior ADR is deleted; both remain the record of
   their eras. **Accepting the decision and enabling the machinery are separate gates** (see

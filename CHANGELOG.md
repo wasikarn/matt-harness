@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.0] — 2026-06-23
+
+The full **L4/L5 autonomy machinery** (ADRs 0004 + 0005, design `docs/research/l4-machinery-design.md`)
+is built — a 5-slice, gauntlet-gated, hardening-before-enable build tracked as issues #17–#35 (all
+closed). `KBG_AUTONOMY` stays OFF by default; flag-OFF behaviour is byte-identical to L2/L3. Arming an
+L4/L5 run is the owner's separate, later act.
+
+- **Slice 0 — predecessor hardening (#17–#23, #33):** the single-key `autonomy_on()` predicate
+  (one `KBG_AUTONOMY` key, per-repo `.claude/settings.local.json` only — a user-global flag arms
+  nothing); all four enforcers fire on it; the cage extended + a bidirectional drift audit (#43d);
+  R3 per-cycle cage re-assert via `audit.sh --only 43`; R4 cumulative caps + caged window-state; F4
+  installer fail-safe (REPO_ROOT anchor + repo-identity); the Act-layer gate; audits #48/#48d.
+- **Slice 1 — auto-apply/auto-inject (#27, #28):** `l4-auto-keep.py` — local-only, confidence-ORDERED
+  (never gated); audit #47b (no confidence comparison + no push/gh in the writer).
+- **Slice 2 — model-as-gate (#29, #30):** `l4-quality-gate.sh` — veto-only, fail-closed, read-only;
+  audit #49; Gate-2 strengthening (maker≠checker `review-pr` mandatory under armed).
+- **Slice 3 — self-launch (#31, #32):** `launch.sh` + a launchd plist — an in-cage scheduler replaces
+  Gate-1 (the OS, not the model, self-starts); audit #32b; the `exit-tripwire.sh` post-push detector.
+- **Slice 4 / L5 — auto-push ship-gate (#35):** folded into the push-gate as the L5 leg — green-
+  gauntlet auto-push only to an allowlisted host+org (default EMPTY → un-configured pushes nowhere),
+  cross-remote divergence DENY, model never authorizes; audit #50.
+
 ## [0.3.10] — 2026-06-22
 
 First real L3 `--auto` dry-run (ADR 0003 Slice-1 acceptance) found the in-loop gate was never

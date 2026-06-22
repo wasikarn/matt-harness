@@ -1,10 +1,11 @@
 # L4-push-gated machinery — buildable design (capability ≥ ECC)
 
-> **Status:** 🟡 DESIGN ONLY — not built, no L4 machinery exists, all flags OFF. This is the
-> implementation design that [ADR 0004](../adr/0004-l4-autonomy.md) (Accepted 2026-06-22) defers to a
-> "separate, staged, gauntlet-gated build." Accepting the ADR is the *decision*; this doc is the
-> *blueprint*. Nothing here ships until each slice is committed gauntlet-green behind the
-> hardening-before-enable rule and the owner sets `KBG_AUTONOMY_L4=1`.
+> **Status:** 🟢 BUILT 2026-06-23 — the full 5-slice L4/L5 machinery (Slices 0–4, issues #17–#35)
+> is implemented + gauntlet-green on `develop`. `KBG_AUTONOMY` stays OFF by default (flag-OFF
+> byte-identical to L2/L3); arming an L4/L5 run is the owner's separate, later act. This doc was
+> the *blueprint* [ADR 0004](../adr/0004-l4-autonomy.md) (Accepted 2026-06-22) deferred to a
+> "staged, gauntlet-gated build"; each slice shipped committed gauntlet-green behind the
+> hardening-before-enable rule (Slice N green before Slice N+1 starts).
 > **Date:** 2026-06-22 · **Decider:** Owner · **Operating point:** L4 push-gated (#1+#3+#4, auto-push
 > #2 dropped, Gate 2 + cage kept permanently).
 > **Provenance:** three workflows this session — (1) a 5-reader file-cited trace of ECC's running loop
