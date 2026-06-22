@@ -13,7 +13,7 @@
 > verdict **capability ≥ ECC = yes-with-fixes**, 23 findings confirmed (2 blocker / 7 major / 8 minor), 3
 > refuted. All file:line claims below were read on source; this revision folds in all 23 corrections — they
 > convert nine prose safety-obligations into named, gating deliverables and tighten four imprecise
-> framings, **without changing the architecture**. Per-slice blockers are recorded in §5–§8.
+> framings, **without changing the architecture**. Per-slice blockers are recorded in §5–§8.5.
 
 ## 1. Goal & the capability bar
 
@@ -73,7 +73,7 @@ lists already shipped for L3. Mapped on source:
 **Slice 0 hardening → #4 auto-inject → #3 model-gate → #1 self-launch.** The push gate (Gate 2) is ON
 at every stage; with `KBG_AUTONOMY_L4` unset, behaviour is byte-identical to today's L3/L2.
 
-## 5. Slice 0 — predecessor hardening (F1/F2/F3/R3/R4 + #48) · effort M
+## 5. Slice 0 — predecessor hardening (F1/F2/F3/F4/R3/R4 + #48) · effort M
 
 Pure hardening: ships **zero** new capability, only makes the existing L3 floor fire under an L4-only
 flag. Must land first — it unblocks all three relaxations.
@@ -99,19 +99,34 @@ flag. Must land first — it unblocks all three relaxations.
   auto-push carve-out** — the gate simply also fires when armed. (Single key 0/1, **not** a `=3|4|5` level
   value: the level is build-state, not an operator dial; if per-environment ceilings ever become real,
   swapping 0/1 → a level scheme is a one-function change, because every read already routes through
-  `autonomy_on()`.)
+  `autonomy_on()`.) **Installer fail-safe (guard 3):** `autonomy_on()` treats arming as real **only** from a
+  per-repo `.claude/settings.local.json` in `CLAUDE_PROJECT_DIR` — a bare *user-global* `KBG_AUTONOMY=1`
+  (which would reach every repo's hooks) arms **nothing**; #48(c) below CRITs any raw literal not routed
+  through the helper, so the never-user-global rule is machine-enforced, not prose.
 - **F2 — cage the grading corpus.** `l3-cage.txt:42` covers `eval/datasets/**` but not
   `eval/regressions/**` or `tests/evals/**` — the corpus #3 grades against. Add both to
   `l3-cage.txt` **and** the audit #43 `CAGE_ANCHORS` heredoc (`audit.sh:1680-1705`) in lockstep.
 - **F3 — define + cage the scheduler config.** No path exists. Define `scripts/l4/scheduler.conf`
   (the only sanctioned self-launch config) and cage `scripts/l4/**` in both surfaces, so the loop can
-  never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch). **If
-  per-repo arming uses `.claude/settings.local.json`** (the legitimate per-environment home for
-  `KBG_AUTONOMY` — *never* user-global, which reaches every repo's hooks; see `docs/reference/env-vars.md`
-  §"Where to set them"), **cage `.claude/settings.local.json` too** — a settings file the loop can write is
-  the same self-elevation surface as the scheduler config (the loop must not arm itself by editing its own
-  settings). Outside-repo settings (`~/.claude/settings.json`) are covered by the §8 Act-layer gate, not
-  the cage.
+  never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch). **Cage the
+  arming home (guard 4):** `.claude/settings.local.json` is the per-repo arming home (the legitimate
+  per-environment home for `KBG_AUTONOMY` — *never* user-global, which reaches every repo's hooks; see
+  `docs/reference/env-vars.md` §"Where to set them"). Add it to **both** `l3-cage.txt` and the #43
+  `CAGE_ANCHORS` heredoc in lockstep — a settings file the loop can write is the same self-elevation surface
+  as the scheduler config (the loop must not arm itself by editing its own settings). Outside-repo
+  `~/.claude/settings.json` is covered by the §8 Act-layer gate, not the cage.
+- **F4 — installer fail-safe: anchor `REPO_ROOT` + affirm repo-identity (guards 1+2).**
+  `l3-loop-guard.py:52-53` sets `REPO_ROOT = SCRIPT_DIR.parent` (the plugin cache), but the loop's
+  `git tag/commit/reset` + `Edit/Write` (`recursive-improve/SKILL.md`) run against session **CWD** = the
+  operator's repo — so the cage and dirty-abort guard the **wrong tree**. (a) Derive `REPO_ROOT` from
+  `git rev-parse --show-toplevel` of CWD and **STOP** if it fails; (b) affirmatively assert that tree is the
+  genuine kbg-harness checkout (sentinel `.claude-plugin/plugin.json` `name=="kbg"` **and** a work-tree whose
+  remote matches the harness) else STOP with *"L3/L4/L5 self-improves the kbg-harness itself, not your
+  project — REPO_ROOT (`<path>`) is not a kbg-harness checkout."* Not an `is-this-KOBIG` env test (spoofable).
+  This is what makes the repo-identity precondition **real** rather than incidental — today a flag-armed
+  installer is stopped only because the cache has no `.git` (`_git_dirty()` fails closed), which is silent and
+  evaporates once this bug is fixed. Machine-enforce via a #48-class audit leg; the §3 substrate plan
+  (flag-predicate + TAMPER_VARS + R4 only) did not slate it.
 - **R3 — computational-every-cycle.** Audit #43-#47 run only post-hoc today. Add
   `l3-loop-guard.py precheck --assert-cage-intact` shelling a per-check runner so cage-completeness
   re-asserts inside the always-computational path each cycle; #3 cannot bypass it. **R3 is the single
@@ -230,6 +245,11 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
   prose hardcoding `KBG_AUTONOMY_L3`) to "`KBG_AUTONOMY_L3=1` **OR** `KBG_AUTONOMY_L4=1` (an authorized
   autonomy run)" — the prose precondition is part of the L3-OR-L4 surface, not just the four runtime
   predicates, so the launcher's flag actually satisfies the loop's own gate.
+- **Installer precondition (Slice-0 F4 dependency).** Self-launch is the highest-risk amplifier of the
+  REPO_ROOT mis-anchor: an unattended loop with `REPO_ROOT` pointing at the cache while CWD is the
+  installer's repo would autonomously mutate the **wrong tree**, with no human in the launch loop to catch
+  it. §5 **F4** (anchor + repo-identity) is therefore a **hard precondition for Slice 3**, alongside the
+  Act-layer gate below.
 - **vs ECC:** matches "a run starts with no human invocation, on a cadence, surviving session exit";
   **exceeds** on the permanent push-gate (no auto-merge), the cage, a kill-file that defeats a
   self-reinstalling schedule, and the cumulative cap.
@@ -245,6 +265,25 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
   escape the kill-switch — model-discipline is not a cage. **(Substrate RESOLVED §11.1: launchd — the
   in-repo git-hook alternative was rejected as a false middle, so this Act-layer gate is *required*, not
   optional.)**
+
+## 8.5 Slice 4 — #2 auto-push ship-gate (L5, opt-in *beyond* L4) · effort M (LAST)
+
+[ADR 0005](../adr/0005-l5-auto-push.md) (Accepted) re-adopts auto-push **beyond** the L4 operating point in
+§1: the human leaves the push loop and the computational gauntlet becomes the sole ship authority. Build
+only after Slice 3 is gauntlet-green; the model stays **veto-only** (ADR 0005 — can force an extra rollback,
+never *authorize* a ship), so the ship-gate stays computational, never a model.
+
+- **Cross-remote ship-gate (guard 5).** With the human out of the push loop, the gauntlet grades the
+  **cache**, never the installer's working tree — so an in-plugin pre-push gate must own ship authority.
+  Compare push-destination `host+org` vs `origin` `host+org`, **DENY on divergence**, fail-closed, and
+  default to an **empty** allowlist so an un-configured installer auto-pushes **nowhere**. This ports the
+  owner's cross-org `settings.json` *mechanism* (origin-vs-destination divergence), **never** the
+  `wasikarn`/`100-Stars-Co` literals — the line between portable in-plugin and the rejected Option-C (§12).
+- **vs ECC:** matches ECC's auto-merge (stage 5) — but ECC's merge is gated by a computational conflict-free
+  git check, and kbg's ship is gated by the full gauntlet **plus** this cross-remote DENY; the model
+  authorizes neither.
+- **Blocker:** ship with a real-DENY test (push to a divergent `host+org` under `KBG_AUTONOMY=1` → DENY) +
+  a #48-class audit leg asserting the empty-allowlist default, in the same commit as the gate.
 
 ## 9. Capability verdict — where kbg ≥ ECC and < ECC (by design)
 
@@ -307,15 +346,16 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
    caged, flag-gated launcher is the sole sanctioned self-start. The change is additive, not a loosening —
    confirm this framing.
 
-## 12. External installers (Slice-0/4 build preconditions)
+## 12. External installers (scope + guard index)
 
 The plugin is publicly installable (`claude plugin install kbg@kobig`, the **single delivery path** the
 owner dogfoods, ADR 0001). A third party who installs it and sets the arming flag in **their own** repo on
 **their own** machine is a real operator class the autonomy design must fail safe for. A 32-agent
 fresh-context adversarial sweep (4 lenses → refute-by-default verify → synthesis, 2026-06-22) confirmed
 **9 real gaps** (18 refuted/downgraded). Verdict: the author's proposed **"default-OFF + repo-identity
-precondition"** is the right spine but **insufficient as stated** — it needs the additions below, **all
-in-plugin and self-contained** (none is the rejected Option-C of porting the owner's dotfiles guards).
+precondition"** is the right spine but **insufficient as stated** — it needs the 5 guards indexed below, now
+threaded into their slice homes (§5 F1/F3/F4, §8, §8.5), **all in-plugin and self-contained** (none is the
+rejected Option-C of porting the owner's dotfiles guards).
 
 **Scope statement (the load-bearing precondition):** the L3/L4/L5 loop **self-improves the kbg-harness
 checkout *itself*** — every cage path is repo-relative to the harness (`hooks/**`, `skills/`,
@@ -329,39 +369,19 @@ guard subcommand STOPs, push-gate `exit 0`, immunity off (all 9 findings `covere
 *flag-armed* installer is **also** stopped today, but **only incidentally**: the plugin cache has no `.git`
 (`~/.claude/plugins/cache/kobig/kbg/<ver>/`), so `_git_dirty()` fails closed → STOP. That protection is
 **silent and brittle** (no message; evaporates if a delivery path ever makes the cache a git repo, or once
-the REPO_ROOT bug below is fixed). It must be replaced by an affirmative guard.
+the REPO_ROOT bug (§5 F4) is fixed). It must be replaced by an affirmative guard.
 
-**Slice-0 build preconditions (land WITH the machinery, not after):**
+**The 5 guards — full spec now lives in the named slice (single source of truth); this is the index:**
 
-1. **Anchor `REPO_ROOT` to the *mutated* tree, fail-closed.** `l3-loop-guard.py:52-53` sets
-   `REPO_ROOT = SCRIPT_DIR.parent` (the cache), but the loop's `git tag/commit/reset` + `Edit/Write`
-   (`recursive-improve/SKILL.md`) run against session **CWD** = the installer's repo — so the cage and
-   dirty-abort guard the **wrong tree**. Derive `REPO_ROOT` from `git rev-parse --show-toplevel` of CWD;
-   STOP if that fails. *This is the bug that makes the repo-identity precondition real instead of incidental;
-   the §3 substrate plan (flag-predicate + TAMPER_VARS + R4 only) did not slate it.*
-2. **Affirmative, message-bearing repo-identity precondition.** Assert `REPO_ROOT` is the genuine
-   kbg-harness checkout (sentinel `.claude-plugin/plugin.json` with `name=="kbg"` **and** a git work-tree
-   whose remote matches the harness); else STOP with *"L3/L4/L5 self-improves the kbg-harness itself, not
-   your project — REPO_ROOT (`<path>`) is not a kbg-harness checkout."* Not an `is-this-KOBIG` test
-   (env-spoofable). Machine-enforce via a #48-class audit leg.
-3. **`autonomy_on()` treats *user-global* arming as fail-safe-OFF.** Route every `KBG_AUTONOMY` read through
-   the one helper (§5 F1); it reads the flag as armed **only** from a per-repo `.claude/settings.local.json`
-   in `CLAUDE_PROJECT_DIR` (a bare user-global `KBG_AUTONOMY=1` arms nothing). Ship **with** audit #48 (CRIT
-   on any raw `KBG_AUTONOMY` literal not routed through the helper). Today the "never user-global" rule is
-   unenforced prose.
-4. **Cage the arming home.** `scripts/l3-cage.txt` has **no** `.claude/settings*` entry today — add
-   `.claude/settings.local.json` to the cage **and** the #43 `CAGE_ANCHORS` heredoc in lockstep (closes the
-   §5 F3 self-author hole). (Outside-repo `~/.claude/settings.json` stays covered by the §8 Act-layer gate.)
+| # | Guard | Slice home | Fails closed un-configured |
+|---|---|---|---|
+| 1 | Anchor `REPO_ROOT` to the *mutated* tree (`git rev-parse --show-toplevel` of CWD), STOP on failure | §5 **F4** | yes — STOP |
+| 2 | Affirmative, message-bearing repo-identity precondition (is-this-kbg, not is-this-KOBIG) | §5 **F4** | yes — STOP |
+| 3 | `autonomy_on()` reads *user-global* arming as fail-safe-OFF (per-repo `.claude/settings.local.json` only) | §5 **F1** | yes — arms nothing |
+| 4 | Cage the arming home (`.claude/settings.local.json`), cage + `CAGE_ANCHORS` lockstep | §5 **F3** | n/a — cage entry |
+| 5 | In-plugin cross-remote pre-push CRIT (origin-vs-destination divergence, empty default allowlist) | §8.5 **Slice 4** | yes — pushes nowhere |
 
-**Slice-4 build precondition (the cross-remote ship-gate):**
-
-5. **In-plugin cross-remote pre-push CRIT.** Under L5 the human leaves the push loop and the gauntlet —
-   which grades the **cache**, never the installer's working tree — becomes the sole ship authority. The
-   owner's cross-org hard_deny (`settings.json`) is **owner dotfiles, not plugin-delivered**. Build ADR 0005
-   §floor-2's prose as code: compare push-destination `host+org` vs `origin` `host+org`, **DENY on
-   divergence**, fail-closed; default to an **empty** allowlist so an un-configured installer auto-pushes
-   **nowhere**. This ports the owner's own *mechanism* (`settings.json` cross-org rule), **never** the
-   `wasikarn`/`100-Stars-Co` literals — the line between this (portable, in-plugin) and rejected Option-C.
+Guards 1+2 also gate Slice 3 self-launch (§8) — an unattended loop amplifies the mis-anchor risk.
 
 **Reject Option-C** (porting the owner's named-org deny-list / autoMode `hard_deny` into the plugin) as
 public-distributable drift (a stated non-goal). The portable substitute for each owner guard is its
