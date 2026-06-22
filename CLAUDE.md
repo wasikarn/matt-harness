@@ -19,10 +19,40 @@ The map below is the answer to "where does a new X go?" — and the reason kbg d
 | rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `docs/adr/` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
 | contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/context` command; add a frame = add a file here |
 | scripts / tooling | `scripts/` + per-skill `scripts/` | Callers hardcode paths; rename = update all callers + cache cycle |
-| tests / fixtures | `tests/` + `eval/` (datasets, fixtures, regressions) | The gauntlet wires these |
+| tests / fixtures | `tests/` (shell/hook runners) + `eval/` (gate datasets+regressions) + `tests/evals/` (per-skill baseline) + `scripts/evals/` (eval scripts) | Four homes, **distinct callers** — see the eval/test boundary note below; do **not** consolidate |
 | examples (project starters) | `examples/` (project-type `*-CLAUDE.md` starters) | Reference only — not a plugin surface, not auto-loaded |
 | prompts | the agent/skill/command `.md` files themselves; F9 spawn template in `docs/agent-teams-setup-notes.md` | The prompt *is* the surface file — no separate `prompts/` dir |
 | mcp-configs | — | **Deliberate non-goal** (no bundled MCP/LSP; per-machine config lives in `~/.claude/settings*.json`) |
+
+#### ECC 12-category → kbg home (crosswalk)
+
+Arriving from ECC's generic tree? Each of its 12 categories already maps onto an existing kbg home — no restructure needed (the *why* is the intro paragraph above). This crosswalk lists the 12 in ECC's order so the map is scannable from that side.
+
+| ECC category | kbg home | Note |
+|---|---|---|
+| `agents` | `agents/` | 1:1 |
+| `skills` | `skills/` | 1:1 (+ `skills/_lib/` shared shell lib — no `SKILL.md`, not a surface) |
+| `contexts` | `contexts/` | 1:1 (loaded by `/context`) |
+| `commands` | `commands/` | 1:1 |
+| `rules` | root `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` + `docs/adr/` | no `rules/` dir — 4 files hardcoded in `doctrine-bootstrap.sh` |
+| `hooks` | `hooks/` + `hooks/hooks.json` | 1:1 (subdirs `gates/ session/ lifecycle/ …` are kbg convention) |
+| `scripts` | `scripts/` + per-skill `scripts/` | 1:1 |
+| `tests` | `tests/` + `eval/` + `tests/evals/` + `scripts/evals/` | four homes — see boundary note below |
+| `examples` | `examples/` | reference-only `*-CLAUDE.md` starters; not a plugin surface |
+| `mcp-configs` | — | deliberate non-goal (no bundled MCP/LSP) |
+| `assets` | `output-styles/` + `themes/` | these *are* kbg's assets |
+| `prompts` | the agent/skill/command `.md` itself | the prompt *is* the surface file — no `prompts/` dir |
+
+#### eval / test boundary (four homes, distinct callers — why they are not merged)
+
+The word "eval" repeats across three of these, but they are **distinct concerns with distinct callers** — the split tracks a real caller boundary, so they are deliberately **not** consolidated:
+
+- **`eval/`** — the deterministic **gate** harness. `eval/datasets/` + `eval/regressions/`, run by `eval/run-eval.py --regression --gate` (the pre-push gauntlet's eval layer). Fixture shape: `dataset → success_criteria`.
+- **`tests/evals/skills/<name>/evals.json`** — per-skill **baseline** benchmark (with-skill-vs-without). Consumed by `scripts/evals/run-baseline-eval.py`, `scripts/select-affected-fixtures.py`, audit #30 (`audit.sh:953`), and `scripts/governance/verification-tier-audit.py`. **Not** read by `run-eval.py`.
+- **`scripts/evals/`** — the eval **scripts** themselves (`run-baseline-eval.py`, `run-acceptance.py`, `harness-coverage.py`).
+- **`tests/`** — shell/hook **runners** (`tests/hooks/runners/*.sh`, `tests/skills/_lib/run-tests.sh`).
+
+Decision: document the boundary, don't merge — consolidating would conflate the gate and baseline corpora and rewire 4 callers for cosmetic de-duplication.
 
 ## Architecture requiring multi-file reading
 
