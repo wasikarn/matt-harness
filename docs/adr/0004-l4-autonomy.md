@@ -156,8 +156,10 @@ versus a product or a team tool. It is the owner's tool and the owner's risk to 
 Accepting this ADR requires reworking — **not** silently — the following, each currently load-bearing:
 
 - **audit #32** (recursive-improve `disable-model-invocation: true`, model-can't-self-start) — #1
-  self-launch contradicts it; #32 must be redesigned, not deleted, to still forbid self-start *outside*
-  an authorized L4 run.
+  self-launch does **not** contradict the frontmatter assertion: an **OS scheduler**, not the model,
+  self-starts the shell script, so `disable-model-invocation: true` stays correct and keeps firing. #32 is
+  reworked **additively** — the existing check is unchanged; #32 *adds* an assertion that the caged,
+  flag-gated launcher is the **only** sanctioned self-start (not loosened, not deleted).
 - **`l3-push-gate.sh` + `_lib.sh` L3 immunity + `l3-loop-guard.py` TAMPER_VARS — all are scoped to the
   `KBG_AUTONOMY_L3` flag and go *inert* under an L4 flag (audit-finding F1, the highest-severity gap).**
   The build must extend all three to fire on `L3 OR L4` and add `KBG_AUTONOMY_L4` to `TAMPER_VARS`, so an
@@ -210,8 +212,9 @@ The Accept act and the first enable are **separate gates**:
   3. **Predecessor fixes committed**: F1 (push gate + `_lib` immunity + `TAMPER_VARS` fire under L4 —
      deny, no carve-out), F2/F3 (cage + `CAGE_ANCHORS` extended), R3 (audit #43–#47 on the
      always-computational path), R4 (cumulative cap).
-  4. **Reworked audit checks assert the L4 contract**: redesigned #32 (forbids self-start *outside* an
-     authorized L4 run), the inverse of #47 (confidence may order an auto-keep only *inside* an L4 run),
+  4. **Reworked audit checks assert the L4 contract**: #32 reworked **additively** (frontmatter assertion
+     unchanged — the OS, not the model, self-starts; *adds* that the caged, flag-gated launcher is the only
+     sanctioned self-start), the inverse of #47 (confidence may order an auto-keep only *inside* an L4 run),
      #43 cage-completeness CRIT-green with the new anchors, and the new #48+ (gates fire under L4).
 
 ## Reversibility of this ADR
