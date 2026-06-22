@@ -224,9 +224,9 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
   any write / `launchctl` mutation to the plist or kill-file while `KBG_AUTONOMY_L4=1`, mirroring how
   `l3-push-gate.sh` denies push) is **built in Slice 0** (§5); #1 is **not buildable** until it ships
   gauntlet-green with a real-DENY test. Without it a self-launched loop could rewrite its own cadence and
-  escape the kill-switch — model-discipline is not a cage. **Note:** resolving open-decision #11.1 toward a
-  *git-hook-triggered launcher* (in-repo) would let the existing cage cover it and dissolve this gap
-  entirely — decide before building the Slice-0 gate.
+  escape the kill-switch — model-discipline is not a cage. **(Substrate RESOLVED §11.1: launchd — the
+  in-repo git-hook alternative was rejected as a false middle, so this Act-layer gate is *required*, not
+  optional.)**
 
 ## 9. Capability verdict — where kbg ≥ ECC and < ECC (by design)
 
@@ -273,11 +273,15 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
 
 ## 11. Open decisions (owner)
 
-1. **#1 self-launch substrate** — launchd plist on macOS is the proposed persistence mechanism; it is
-   the riskiest piece (the §8 outside-repo cage gap). Confirm launchd, or pick an alternative — a
-   **git-hook-triggered launcher would live inside the repo, so the existing cage already covers it and the
-   outside-repo gap dissolves entirely**. Resolve this **before the Slice-0 Act-layer gate**, since it
-   decides whether that gate is even needed.
+1. **#1 self-launch substrate — RESOLVED 2026-06-22: launchd plist** (`StartInterval` → `launch.sh`).
+   True cadence self-launch *is* the point of #1 (the human out of the *launch* loop) and the explicit
+   ≥-ECC bar. The in-repo git-hook alternative was **rejected**: a git hook fires on git *events*, not a
+   clock, so it cannot self-launch on a cadence and cannot cold-start with no session — a false middle,
+   neither real autonomy nor simpler than human launch. The out-of-repo plist surface is closed by the
+   **Slice-0 Act-layer gate** (§5/§8); the kill-switch stays in-repo (delete the caged `scheduler.conf`
+   entry). **Bounded by staging:** Slice 3 is LAST and optional — if the Act-layer gate proves too hot,
+   stop at Slice 2 and keep human Gate-1 launch. Consistent with the maximal-bounded posture: Gate 2 (push
+   review) is permanent, so even under self-launch the human holds the one irreversible boundary.
 2. **Build cadence** — build Slice 0 now (safe, flag-OFF byte-identical), or hold the whole build until
    the full design is reviewed end-to-end.
 3. **`disable-model-invocation` on `recursive-improve`** stays. Audit #32's frontmatter assertion is
