@@ -129,6 +129,29 @@ if command -v python3 >/dev/null 2>&1; then
   gcheck CONTINUE  0 "R4 precheck (wall 6s < 10)"             "$ARMED_ENV" precheck --state "$FIXTURE/r4b.json" --max-runs 9 --no-dirty-abort --max-wall-per-window 10 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
   gcheck CONTINUE  0 "R4 record wall 6s (#2 → 12s)"           "$ARMED_ENV" record-result --state "$FIXTURE/r4b.json" --green --wall-seconds 6 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
   gcheck STOP     10 "R4 precheck STOP at wall cap (10s)"     "$ARMED_ENV" precheck --state "$FIXTURE/r4b.json" --max-runs 9 --no-dirty-abort --max-wall-per-window 10 --window-seconds 3600 --window-state "$FIXTURE/winB.json"
+
+  # F4 installer fail-safe (design §5 F4 + §12 guards 1+2): the guard anchors
+  # REPO_ROOT to CWD's git toplevel + affirmatively asserts it is a kbg-harness
+  # checkout, so an unattended loop never mutates the wrong tree. Arming (per-repo
+  # .claude/settings.local.json via ARMED_ENV) is deliberately DECOUPLED from the
+  # mutated tree (CWD) — f4check runs the guard with CWD set to <dir>. An armed run
+  # in a non-kbg tree must STOP at the F4 gate, not proceed to mutate it.
+  # f4check <cwd> <want> <wexit> <label> <guard-args...>
+  f4check() {
+    local dir="$1" want="$2" wexit="$3" label="$4"; shift 4
+    local out gx got
+    out=$(cd "$dir" && env $ARMED_ENV python3 "$GUARD" "$@" 2>/dev/null); gx=$?
+    got=$(printf '%s' "$out" | jq -r '.decision // "none"' 2>/dev/null || echo "none")
+    if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l3-loop-guard" "$label"
+    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "l3-loop-guard" "$label" "$want" "$wexit" "$got" "$gx"; fi
+  }
+  # F4 negative: a non-git CWD → STOP (not a git working tree).
+  f4check "$BARE_PROJ"  STOP 10 "F4: non-git CWD → STOP"                precheck --state "$FIXTURE/f4a.json" --max-runs 1 --no-dirty-abort
+  # F4 negative: a git CWD with no kbg manifest → STOP (not a kbg-harness checkout).
+  F4GIT="$FIXTURE/f4git"; mkdir -p "$F4GIT"; git -C "$F4GIT" init -q
+  f4check "$F4GIT"      STOP 10 "F4: git CWD but not kbg → STOP"        precheck --state "$FIXTURE/f4b.json" --max-runs 1 --no-dirty-abort
+  # F4 positive: the real kbg checkout → anchored, precheck proceeds.
+  f4check "$REPO"       CONTINUE 0 "F4: kbg CWD → anchored, precheck proceeds" precheck --state "$FIXTURE/f4c.json" --max-runs 1 --no-dirty-abort
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi

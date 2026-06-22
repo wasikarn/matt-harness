@@ -52,6 +52,12 @@ from pathlib import Path
 from typing import NoReturn
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+# REPO_ROOT / CAGE_FILE / WINDOW_STATE_FILE are PLACEHOLDERS at import (the guard's
+# own home). _assert_repo_root() (design §5 F4) re-anchors them to the MUTATED tree
+# (CWD's git toplevel, confirmed to be a kbg-harness checkout) on every armed
+# invocation — an unattended loop must never mutate the wrong tree. Resolved in the
+# armed path (check-act / precheck), not at import, so a flag-off invocation STOPs
+# at the activation gate before any tree is touched.
 REPO_ROOT = SCRIPT_DIR.parent
 CAGE_FILE = SCRIPT_DIR / "l3-cage.txt"
 # R4 cumulative-ceiling state (design §5 R4): a SEPARATE caged file so a
@@ -59,6 +65,49 @@ CAGE_FILE = SCRIPT_DIR / "l3-cage.txt"
 # Caged via scripts/l4/** — the loop may not Edit/Write it (check-act denies);
 # the guard's own bookkeeping write is not a loop candidate.
 WINDOW_STATE_FILE = SCRIPT_DIR / "l4" / ".window-state.json"
+
+
+def _assert_repo_root():
+    """F4 installer fail-safe (design §5 F4 + §12 guards 1+2). Anchor REPO_ROOT to
+    the tree the loop actually mutates — CWD's `git rev-parse --show-toplevel` — and
+    affirmatively assert THAT tree is a genuine kbg-harness checkout. STOP if CWD is
+    not a git working tree, or if the tree is not kbg (sentinel .claude-plugin/
+    plugin.json name=='kbg', and where remotes exist at least one references
+    'kbg-harness' — org-agnostic, portable; never an is-this-KOBIG test). This
+    replaces the silent, brittle protection where a flag-armed installer was stopped
+    only because the plugin cache has no .git (_git_dirty failing closed). Guards
+    1+2 also gate Slice 3 self-launch — an unattended loop amplifies the mis-anchor."""
+    global REPO_ROOT, CAGE_FILE, WINDOW_STATE_FILE
+    cwd = os.getcwd()
+    try:
+        out = subprocess.run(["git", "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True, check=True, cwd=cwd).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        _emit("STOP", f"F4: CWD ({cwd}) is not a git working tree — autonomy self-improves a kbg-harness checkout, not a bare directory")
+    root = Path(out)
+    manifest = root / ".claude-plugin" / "plugin.json"
+    if not manifest.is_file():
+        _emit("STOP", f"F4: REPO_ROOT ({root}) is not a kbg-harness checkout — no .claude-plugin/plugin.json. L3/L4/L5 self-improves the kbg-harness itself, not your project.")
+    try:
+        mf = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        _emit("STOP", f"F4: REPO_ROOT ({root}) .claude-plugin/plugin.json unreadable — cannot confirm repo identity")
+    if mf.get("name") != "kbg":
+        _emit("STOP", f"F4: REPO_ROOT ({root}) plugin.json name='{mf.get('name')}' != 'kbg' — autonomy self-improves the kbg-harness checkout, not this project")
+    # Where remotes are configured, at least one should reference the kbg-harness
+    # repo (org-agnostic — any fork/clone of kbg-harness passes; an unrelated repo
+    # that happens to carry a name='kbg' manifest does not). A remote-less local
+    # checkout falls back to the sentinel alone.
+    try:
+        remotes = subprocess.run(["git", "-C", str(root), "remote", "-v"],
+                                 capture_output=True, text=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        remotes = ""
+    if remotes.strip() and "kbg-harness" not in remotes:
+        _emit("STOP", f"F4: REPO_ROOT ({root}) remotes do not reference kbg-harness — autonomy self-improves a kbg-harness checkout, not a same-named unrelated repo")
+    REPO_ROOT = root
+    CAGE_FILE = root / "scripts" / "l3-cage.txt"
+    WINDOW_STATE_FILE = root / "scripts" / "l4" / ".window-state.json"
 
 def autonomy_on():
     """The single arming predicate (ADR 0004 single-key collapse + installer
@@ -145,6 +194,7 @@ def cmd_check_act(args):
     candidate command tampers with a safety env var."""
     if not ARMED_AT_START:
         _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
+    _assert_repo_root()  # F4: anchor to the mutated tree + confirm it is kbg
     globs = load_cage()
     hits = []
     for p in args.paths:
@@ -212,6 +262,7 @@ def cmd_precheck(args):
     """Check caps BEFORE a cycle. On CONTINUE, increment the run counter."""
     if not ARMED_AT_START:
         _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
+    _assert_repo_root()  # F4: anchor to the mutated tree + confirm it is kbg
     st = _load_state(args.state)
     now = time.time()
     start = st.get("start_epoch", now)
@@ -244,7 +295,8 @@ def cmd_precheck(args):
     if args.max_runs_per_window or args.max_wall_per_window:
         if not args.window_seconds:
             _emit("STOP", "R4 window cap set but --window-seconds is 0 — refuse an unbounded window")
-        wst = _load_window(args.window_state)
+        wstate_path = args.window_state or str(WINDOW_STATE_FILE)
+        wst = _load_window(wstate_path)
         now_w = time.time()
         launches = [t for t in wst.get("launches", []) if now_w - t <= args.window_seconds]
         wall = [p for p in wst.get("wall", []) if now_w - p[0] <= args.window_seconds]
@@ -256,7 +308,7 @@ def cmd_precheck(args):
         # CONTINUE: record this launch (a STOP above never reaches here).
         wst["launches"] = launches + [now_w]
         wst["wall"] = wall
-        _save_window(args.window_state, wst)
+        _save_window(wstate_path, wst)
 
     # CONTINUE: persist incremented state
     st.update({"start_epoch": start, "runs_done": runs + 1, "fail_streak": fails,
@@ -369,8 +421,8 @@ def main():
                        help="R4: stop after S cumulative wall seconds in the window (fed by record-result --wall-seconds); 0 = off")
     p_pre.add_argument("--window-seconds", type=int, default=0,
                        help="R4: the sliding-window size in seconds; required if either R4 cap is set")
-    p_pre.add_argument("--window-state", default=str(WINDOW_STATE_FILE),
-                       help="R4: path to the caged window-state JSON (default scripts/l4/.window-state.json)")
+    p_pre.add_argument("--window-state", default="",
+                       help="R4: path to the caged window-state JSON (default <REPO_ROOT>/scripts/l4/.window-state.json — resolved after F4 anchoring)")
     p_pre.set_defaults(func=cmd_precheck)
 
     p_rec = sub.add_parser("record-result", help="record a cycle's gauntlet outcome")

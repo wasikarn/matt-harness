@@ -1877,6 +1877,22 @@ if [ -f "$ADR0004" ]; then
   done < <(find "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/scripts" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null)
   [ -z "$_bad_new" ] || crit "audit #48c: raw KBG_AUTONOMY literal outside autonomy_on() in:$_bad_new — every arming read must route through autonomy_on() (design §5 F1/#48c)"
   [ -z "$_bad_old" ] || crit "audit #48c: leftover legacy autonomy key(s) in active code:$_bad_old — the single-key collapse must be complete (KBG_AUTONOMY_L3/KBG_L3_REVIEW_DONE → KBG_AUTONOMY/KBG_REVIEW_DONE)"
+  # 48d: F4 installer fail-safe present (design §5 F4 + §12 guards 1+2). The guard
+  # MUST anchor REPO_ROOT to the mutated tree (git toplevel of CWD) + affirmatively
+  # assert repo-identity (.claude-plugin/plugin.json name=='kbg') — without it a
+  # flag-armed installer is stopped only by the silent, brittle cache-has-no-.git
+  # path, which evaporates the moment a delivery path makes the cache a git repo.
+  # Static grep over the guard source; a removed/renamed anchor → CRIT.
+  _GUARD48="$CLAUDE_DIR/scripts/l3-loop-guard.py"
+  if [ -f "$_GUARD48" ]; then
+    _gsrc=$(cat "$_GUARD48" 2>/dev/null)
+    _f4bad=""
+    printf '%s\n' "$_gsrc" | grep -qF '_assert_repo_root' || _f4bad="$_f4bad _assert_repo_root(def)"
+    printf '%s\n' "$_gsrc" | grep -qF 'show-toplevel'      || _f4bad="$_f4bad git-toplevel"
+    printf '%s\n' "$_gsrc" | grep -qF '.claude-plugin'     || _f4bad="$_f4bad plugin.json-sentinel"
+    printf '%s\n' "$_gsrc" | grep -qF '!= "kbg"'           || _f4bad="$_f4bad name==kbg-check"
+    [ -z "$_f4bad" ] || crit "audit #48d: l3-loop-guard.py F4 anchoring incomplete (missing:$_f4bad) — the installer fail-safe (REPO_ROOT anchor + repo-identity) must stay in place (design §5 F4)"
+  fi
 fi
 
 # ── summary ──────────────────────────────────────────────────────────
