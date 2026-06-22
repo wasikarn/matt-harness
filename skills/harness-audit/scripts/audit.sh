@@ -1673,12 +1673,11 @@ if [ -f "$ADR0003" ]; then
   else
     # 43b: cage must cover the load-bearing anchors. A new gate hook is auto-covered
     # by hooks/** etc., so this is a small FIXED anchor set, not a per-file list.
-    _missing=""
-    while IFS= read -r _anchor; do
-      [ -n "$_anchor" ] || continue
-      grep -qxF "$_anchor" "$CAGE" || _missing="$_missing $_anchor"
-    done <<'CAGE_ANCHORS'
-scripts/l3-cage.txt
+    # _CAGE_ANCHORS is the SINGLE source for the curated anchor set: #43b checks
+    # anchors⊆cage (directional), and #43d checks the L4 members are in BOTH
+    # surfaces (bidirectional — a one-sided add silently un-cages a path, design
+    # §5 F2/F3 blocker). Add a path here AND to scripts/l3-cage.txt in lockstep.
+    _CAGE_ANCHORS="scripts/l3-cage.txt
 scripts/l3-loop-guard.py
 hooks/**
 tests/hooks/runners/**
@@ -1689,6 +1688,10 @@ eval/run-eval.py
 scripts/evals/**
 scripts/plan_linter/**
 eval/datasets/**
+eval/regressions/**
+tests/evals/**
+scripts/l4/**
+.claude/settings.local.json
 docs/adr/**
 CLAUDE.md
 METHODOLOGY.md
@@ -1701,11 +1704,28 @@ DOMAINS.md
 .git/hooks/**
 git-hooks/**
 .claude-plugin/plugin.json
-.claude-plugin/marketplace.json
-CAGE_ANCHORS
+.claude-plugin/marketplace.json"
+    _missing=""
+    while IFS= read -r _anchor; do
+      [ -n "$_anchor" ] || continue
+      grep -qxF "$_anchor" "$CAGE" || _missing="$_missing $_anchor"
+    done <<<"$_CAGE_ANCHORS"
     if [ -n "$_missing" ]; then
       crit "L3 cage incomplete: scripts/l3-cage.txt is missing required safety anchor(s):$_missing (the loop could edit these to escape — ADR 0003 §Cage redesign)"
     fi
+    # 43d: L4 cage↔anchor lockstep (design §5 F2/F3 blocker). #43b is directional
+    # (anchors⊆cage), so a path added to the cage but missing from CAGE_ANCHORS
+    # passes SILENTLY — the exact F2/F3 partial-landing this slice exists to
+    # prevent. The L4 anchors (grading corpus + scheduler config + arming home)
+    # must appear in BOTH surfaces; bidirectional check over the curated L4 set.
+    for _a in 'eval/regressions/**' 'tests/evals/**' 'scripts/l4/**' '.claude/settings.local.json'; do
+      _ic=0; _ia=0
+      if grep -qxF "$_a" "$CAGE"; then _ic=1; fi
+      if printf '%s\n' "$_CAGE_ANCHORS" | grep -qxF "$_a"; then _ia=1; fi
+      if [ "$_ic$_ia" != "11" ]; then
+        crit "L4 cage↔anchor drift: '$_a' in cage:$_ic / anchors:$_ia — must be in BOTH scripts/l3-cage.txt and the #43 CAGE_ANCHORS set (design §5 F2/F3; a one-sided add silently un-cages a path)"
+      fi
+    done
   fi
   # 43c: guard present, compiles, and its self-check passes (the matcher + fail-closed posture).
   if [ ! -f "$GUARD" ]; then

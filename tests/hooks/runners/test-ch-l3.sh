@@ -150,4 +150,26 @@ else
   PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43b" "silent on complete cage"
 fi
 
+# --- audit #43d: L4 cage↔anchor lockstep (design §5 F2/F3 blocker). #43b is
+# directional (anchors⊆cage), so a cage-only L4 add would pass silently; #43d
+# checks the curated L4 anchors are in BOTH surfaces and emits a DISTINCT drift
+# message. Hole one L4 anchor (scripts/l4/**) from the cage → CRIT names it.
+CFD="$FIXTURE/cage43d"; mkdir -p "$CFD/docs/adr" "$CFD/scripts" "$CFD/agents"
+printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CFD/agents/x.md"
+printf '# adr0003 — gate #43 on\n' > "$CFD/docs/adr/0003-l3-bounded-autonomy.md"
+cp "$REPO/scripts/l3-loop-guard.py" "$CFD/scripts/l3-loop-guard.py"
+/usr/bin/grep -vxF 'scripts/l4/**' "$REPO/scripts/l3-cage.txt" > "$CFD/scripts/l3-cage.txt"  # L4 anchor holed from cage
+DRIFTED=$(bash "$AUDIT" "$CFD" 2>&1)
+if printf '%s\n' "$DRIFTED" | /usr/bin/grep -q 'cage↔anchor drift' && printf '%s\n' "$DRIFTED" | /usr/bin/grep -qF 'scripts/l4/**'; then
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43d" "CRITs on L4 anchor missing from cage (drift message)"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43d" "did NOT CRIT with drift message on holed L4 anchor"
+fi
+cp "$REPO/scripts/l3-cage.txt" "$CFD/scripts/l3-cage.txt"  # full cage = control
+if bash "$AUDIT" "$CFD" 2>&1 | /usr/bin/grep -q 'cage↔anchor drift'; then
+  FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43d" "false-positive drift on complete cage"
+else
+  PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43d" "silent on complete cage (no drift)"
+fi
+
 report

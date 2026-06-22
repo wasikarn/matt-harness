@@ -38,8 +38,12 @@ scripts/select-affected-fixtures.py
 scripts/orchestrate-dispatch.py
 scripts/plan_linter/**
 
-# --- the eval regression corpus the gauntlet grades against ---
+# --- the eval regression corpus the gauntlet grades against (F2, design §5):
+#     datasets + regressions + per-skill eval fixtures. A later model-gate (Slice
+#     2) scores against this corpus; the loop must never edit it. ---
 eval/datasets/**
+eval/regressions/**
+tests/evals/**
 
 # --- governance ADRs (decision records, incl. this L3 ADR) ---
 docs/adr/**
@@ -61,3 +65,17 @@ git-hooks/**
 # --- plugin manifests (version + component-count integrity) ---
 .claude-plugin/plugin.json
 .claude-plugin/marketplace.json
+
+# --- L4 self-launch surface (F3, design §5): the single sanctioned scheduler
+#     config + the launcher/quality-gate/auto-keep scripts that an L4 run drives.
+#     The loop must never edit its own launch cadence (kill-switch = delete the
+#     scheduler.conf entry, ADR 0004 §kill-switch). scripts/l4/** covers all of it. ---
+scripts/l4/**
+
+# --- the per-repo arming home (F3 guard 4, design §5): .claude/settings.local.json
+#     is the ONLY surface autonomy_on() honors for arming (guard 3). A settings
+#     file the loop can write is the same self-elevation surface as the scheduler
+#     config — the loop must not arm itself by editing its own settings. (The
+#     outside-repo ~/.claude/settings.json is covered by the §8 Act-layer gate,
+#     not the cage.) ---
+.claude/settings.local.json
