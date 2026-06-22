@@ -206,6 +206,65 @@ if command -v python3 >/dev/null 2>&1; then
   printf '# adr0003\n' > "$R3FC/docs/adr/0003-l3-bounded-autonomy.md"
   (cd "$R3FC" && git init -q)   # a kbg-sentinel git tree with NO audit.sh
   f4check "$R3FC" STOP 10 "R3 --assert-cage-intact: audit.sh missing → STOP (fail-closed)" precheck --state "$FIXTURE/r3f.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
+
+  # --- Slice 1: l4-auto-keep writer (design §6, #27) + check-act memory exemption ---
+  # check-act exempts the sanctioned out-of-repo memory dir (design §6: memory/ is
+  # uncaged). _memory_dir() derives from CLAUDE_PROJECT_DIR (=$ARMED_PROJ), so the
+  # test path must match that slug. Armed check-act on a memory-dir path → CONTINUE
+  # (not "outside repo"); a non-memory outside path → REVERT.
+  _memtest="$HOME/.claude/projects/$(printf '%s' "$ARMED_PROJ" | sed 's|/|-|g')/memory"
+  gcheck CONTINUE 0 "check-act exempts the memory dir" "$ARMED_ENV" check-act "$_memtest/some-learning.md"
+  gcheck REVERT   20 "check-act still denies a non-memory outside path" "$ARMED_ENV" check-act "/etc/hosts"
+
+  # Writer e2e: armed + a fixture queue → writes memory/<slug>.md + promotes; unarmed → no write.
+  WQ="$FIXTURE/keep"; mkdir -p "$WQ/memory/_candidates"
+  _qrow='{"ts":"2026-06-22T00:00:00Z","session_id":"s","project_slug":"x","kind":"preference","trigger":"always use trash not rm rf","evidence":"user said use trash not rm","seen_count":3,"first_seen":"2026-06-01","last_seen":"2026-06-22","scope":"repo","source":"learn-capture","status":"open"}'
+  printf '%s\n' "$_qrow" > "$WQ/memory/_candidates/queue.jsonl"
+  printf '[]\n' > "$WQ/transcript.jsonl"
+  env $ARMED_ENV python3 "$REPO/scripts/l4/l4-auto-keep.py" --transcript "$WQ/transcript.jsonl" >/dev/null 2>&1
+  if [ -f "$WQ/memory/always-use-trash-not-rm-rf.md" ] && [ "$(jq -r '.status' "$WQ/memory/_candidates/queue.jsonl" 2>/dev/null)" = "promoted" ]; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-auto-keep" "armed: writes memory + promotes the candidate"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "l4-auto-keep" "armed: did NOT write+promote"
+  fi
+  # Unarmed: reset the queue to open, remove the memory file, re-run unarmed → no write.
+  printf '%s\n' "$_qrow" > "$WQ/memory/_candidates/queue.jsonl"
+  rm -f "$WQ/memory/always-use-trash-not-rm-rf.md" "$WQ/memory/MEMORY.md"
+  env KBG_AUTONOMY=0 CLAUDE_PROJECT_DIR="$BARE_PROJ" python3 "$REPO/scripts/l4/l4-auto-keep.py" --transcript "$WQ/transcript.jsonl" >/dev/null 2>&1
+  if [ ! -f "$WQ/memory/always-use-trash-not-rm-rf.md" ] && [ "$(jq -r '.status' "$WQ/memory/_candidates/queue.jsonl" 2>/dev/null)" = "open" ]; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l4-auto-keep" "unarmed: no write, queue stays open (byte-identical)"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "l4-auto-keep" "unarmed: wrote anyway (autonomy gate regressed)"
+  fi
+
+  # --- audit #47b: the writer must have NO confidence comparison + NO git push/gh
+  # (design §6, #28 blocker-A/C). Inject each into a fixture copy + assert the audit
+  # CRITs (tests the assertion's own failure mode). Control: the clean writer is silent. ---
+  KCF="$FIXTURE/keep47b"; mkdir -p "$KCF/scripts/l4" "$KCF/agents"
+  printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$KCF/agents/x.md"  # satisfy the audit's fleet guard
+  cp "$REPO/scripts/l4/l4-auto-keep.py" "$KCF/scripts/l4/l4-auto-keep.py"
+  printf '\nif confidence >= 0.7: pass  # ponytail: injected for the #47b blocker-A test\n' >> "$KCF/scripts/l4/l4-auto-keep.py"
+  _dbgA=$(bash "$AUDIT" "$KCF" 2>&1)
+  if printf '%s\n' "$_dbgA" | /usr/bin/grep -q 'l4-auto-keep.py compares confidence'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#47b" "CRITs on a confidence comparison in the writer (blocker-A)"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#47b" "did NOT CRIT on confidence comparison (blocker-A)"
+  fi
+  cp "$REPO/scripts/l4/l4-auto-keep.py" "$KCF/scripts/l4/l4-auto-keep.py"
+  printf '\nsubprocess.run(["git","push","origin","develop"])  # ponytail: injected for the #47b blocker-C test\n' >> "$KCF/scripts/l4/l4-auto-keep.py"
+  _dbgC=$(bash "$AUDIT" "$KCF" 2>&1)
+  if printf '%s\n' "$_dbgC" | /usr/bin/grep -q 'l4-auto-keep.py shells a git push'; then
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#47b" "CRITs on a git push in the writer (blocker-C)"
+  else
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#47b" "did NOT CRIT on git push (blocker-C)"
+  fi
+  cp "$REPO/scripts/l4/l4-auto-keep.py" "$KCF/scripts/l4/l4-auto-keep.py"
+  _dbgK=$(bash "$AUDIT" "$KCF" 2>&1)
+  if printf '%s\n' "$_dbgK" | /usr/bin/grep -qE 'l4-auto-keep.py (compares confidence|shells a git push)'; then
+    FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#47b" "false-positive on the clean writer"
+  else
+    PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#47b" "silent on the clean writer"
+  fi
 else
   printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
 fi

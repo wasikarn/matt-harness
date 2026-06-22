@@ -189,15 +189,38 @@ def is_caged(rel, globs):
     return False
 
 
+def _memory_dir():
+    """The sanctioned out-of-repo memory dir the loop may write to (design §6:
+    memory/ is intentionally uncaged — the L4 auto-keep writer lives there).
+    Derived from CLAUDE_PROJECT_DIR, matching read-candidates.sh's fallback + the
+    l4-auto-keep writer. Paths under this dir are EXEMPT from check-act's
+    outside-repo denial (the loop must write memory there); every other outside-repo
+    path is still denied."""
+    proj = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    slug = proj.replace("/", "-")
+    return Path(os.path.expanduser("~/.claude/projects")) / slug / "memory"
+
+
 def cmd_check_act(args):
-    """Deny if any target path is caged or outside the repo, or if the
-    candidate command tampers with a safety env var."""
+    """Deny if any target path is caged or outside the repo (except the sanctioned
+    memory dir — design §6, uncaged), or if the candidate command tampers with a
+    safety env var."""
     if not ARMED_AT_START:
         _emit("STOP", "autonomy flag not armed (KBG_AUTONOMY=1 per-repo) — loop refuses to run")
     _assert_repo_root()  # F4: anchor to the mutated tree + confirm it is kbg
     globs = load_cage()
+    mem = _memory_dir()
     hits = []
     for p in args.paths:
+        try:
+            rp = Path(p).resolve()
+        except OSError:
+            rp = Path(p)
+        # Sanctioned memory dir: the loop must write memory here (design §6). Allow
+        # it — not a hit — even though it is outside the repo. Every other outside
+        # path is still denied.
+        if rp == mem or mem in rp.parents:
+            continue
         rel = _rel(p)
         if rel is None:
             hits.append(f"{p} (outside repo)")
