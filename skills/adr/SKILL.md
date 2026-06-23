@@ -1,6 +1,6 @@
 ---
 name: adr
-description: "Record architecture and design decisions future engineers need to understand. Use when making framework choices, data model changes, dependency introductions, or pattern retirements. Also fires on Thai requests like 'เขียน ADR', 'บันทึกการตัดสินใจ', 'ทำ decision record'. Don't use for trivial choices, documenting existing code, or decisions with only one viable option."
+description: "Record architecture and design decisions future engineers need to understand. Use when making framework choices, data model changes, dependency introductions, or pattern retirements. Thai: 'เขียน ADR', 'บันทึกการตัดสินใจ', 'ทำ decision record'. Don't use for trivial choices, documenting existing code, or decisions with only one viable option."
 ---
 
 # ADR

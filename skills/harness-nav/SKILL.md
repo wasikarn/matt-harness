@@ -1,6 +1,6 @@
 ---
 name: harness-nav
-description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Also fires on Thai discovery queries like 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health). Reach for it only when the skill-nudge hook didn't surface the match."
+description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Thai: 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health)."
 ---
 
 # Harness Navigation — L3 Escape Hatch

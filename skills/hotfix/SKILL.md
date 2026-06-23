@@ -1,6 +1,6 @@
 ---
 name: hotfix
-description: "Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Also fires on Thai hotfix requests like 'แก้ด่วน', 'production ด่วน', 'P0', 'ระบบพัง'. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices."
+description: "Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Thai: 'แก้ด่วน', 'production ด่วน', 'P0', 'ระบบพัง'. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices."
 ---
 
 # Hotfix

@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports, and running acli commands. Also fires on Thai bulk-op requests like 'ย้ายสถานะหลายตัว', 'แก้ label/assignee หลายรายการ', 'อัปเดตหลาย ticket', 'export JQL'. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-bug or kbg:create-jira-story instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
+description: "Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports. Thai: 'ย้ายสถานะหลายตัว', 'แก้ label/assignee หลายรายการ', 'อัปเดตหลาย ticket', 'export JQL'. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-ticket instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI
@@ -9,11 +9,10 @@ Drive Jira, Confluence, org admin, and Rovo Dev from the terminal. Auth-first, J
 
 **When to use:** the **default** path for all Jira/Confluence work — search, view, edit, transition, comment, link, clone, bulk ops, page/space ops, admin.
 
-> **Why this skill is model-invokable (no `disable-model-invocation`) despite doing bulk external Jira writes:** it is a *capability* the model uses to carry out tracker work the operator explicitly asked for — not an autonomous decision to mutate Jira. Every write is confirmation-gated in-flow (auth-first, JQL-driven, confirmation-gated) and runs through Bash with its own guards; gating the whole skill user-only would block the model from doing the bulk ops the operator requested. Single guided ticket *creation* routes to `create-jira-bug` / `create-jira-story`, which are likewise model-invokable and carry their own preview-and-confirm gate before any write.
+> **Why this skill is model-invokable (no `disable-model-invocation`) despite doing bulk external Jira writes:** it is a *capability* the model uses to carry out tracker work the operator explicitly asked for — not an autonomous decision to mutate Jira. Every write is confirmation-gated in-flow (auth-first, JQL-driven, confirmation-gated) and runs through Bash with its own guards; gating the whole skill user-only would block the model from doing the bulk ops the operator requested. Single guided ticket *creation* routes to `create-jira-ticket`, which is likewise model-invokable and carries its own preview-and-confirm gate before any write.
 
-**Prefer dedicated skills for structured single-ticket creation:**
-- `kbg:create-jira-bug` — single Bug with Thai PO/QA-readable reproduction/impact/AC template.
-- `kbg:create-jira-story` — single Story with Thai business-reason/scope/AC template.
+**Prefer the dedicated skill for structured single-ticket creation:**
+- `kbg:create-jira-ticket` — single Bug or Story with the Thai PO/QA-readable template (type-specific gather + template in on-demand references).
 
 **Atlassian MCP is the fallback, not the default** — use it only for the few things acli genuinely can't do (see [When acli can't](#when-acli-cant-fall-back-to-the-atlassian-mcp)). Not for git/gh or non-Atlassian trackers.
 

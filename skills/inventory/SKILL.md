@@ -1,6 +1,6 @@
 ---
 name: inventory
-description: "Show what Claude Code skills, agents, commands, and hooks are loadable from the current project and global layers. Use when exploring available capabilities or verifying what the kbg@kobig plugin delivered. Also fires on Thai requests like 'inventory', 'ดู skill ทั้งหมด', 'มี skill อะไรบ้าง'. Don't use for: capability routing when a skill is already known (use it directly) or governance health queries (kbg:harness-health)."
+description: "Show what Claude Code skills, agents, commands, and hooks are loadable from the current project and global layers. Use when exploring available capabilities or verifying what the kbg@kobig plugin delivered. Thai: 'inventory', 'ดู skill ทั้งหมด', 'มี skill อะไรบ้าง'. Don't use for: capability routing when a skill is already known (use it directly) or governance health queries (kbg:harness-health)."
 ---
 
 # Inventory

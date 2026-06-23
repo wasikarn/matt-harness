@@ -1,6 +1,6 @@
 ---
 name: ship-change
-description: "Orchestrate an already-scoped change through classify → implement → review → address → merge (no explore/clarify discovery front-end). Use when the change is understood and needs guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Also fires on Thai ship requests like 'ship change', 'พร้อม merge', 'ขึ้น production', 'deploy ตัวนี้'. Don't use for: a blank-slate task needing discovery first (use /ship-task), a change already mid-flight (jump straight to the relevant phase command, e.g. /fix-bug to continue or kbg:review-pr if ready for review), one-line fixes, or pure research/exploration."
+description: "Orchestrate an already-scoped change through classify → implement → review → address → merge. Use when the change is understood and needs guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Thai: 'ship change', 'พร้อม merge', 'ขึ้น production', 'deploy ตัวนี้'. Don't use for: a blank-slate task needing discovery first (use /ship-task), a change already mid-flight (jump straight to the relevant phase command, e.g. /fix-bug to continue or kbg:review-pr if ready for review), one-line fixes, or pure research/exploration."
 ---
 
 # Ship Change

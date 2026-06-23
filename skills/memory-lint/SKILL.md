@@ -1,6 +1,6 @@
 ---
 name: memory-lint
-description: "Deterministic bookkeeping check for the memory store: catch dangling [[links]], orphaned facts, and index drift. Use after writing, editing, or removing memories. Also fires on Thai requests like 'memory lint', 'ตรวจ memory', 'เช็คลิงก์ memory'. Don't use for: writing a memory (just write it), semantic content review, or harness ecosystem health (kbg:harness-audit)."
+description: "Deterministic bookkeeping check for the memory store: catch dangling [[links]], orphaned facts, and index drift. Use after writing, editing, or removing memories. Thai: 'memory lint', 'ตรวจ memory', 'เช็คลิงก์ memory'. Don't use for: writing a memory (just write it), semantic content review, or harness ecosystem health (kbg:harness-audit)."
 ---
 
 # memory-lint
@@ -30,17 +30,19 @@ Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`)
 
 ## Action mode (`--auto-archive`)
 
-Mechanical fold of verbose/closed entries, codified by the A3 rubric in [[project_memory_trim_session_2026_06_04]]:
+Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]). This is the **canonical home of the rubric** — [[memory-trim]] wraps this engine and points here instead of restating it.
 
 - **<2KB delta per session** — never collapse the whole store; trim only the worst
 - **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix
 - **Reversible** — every move is `mv` (never `rm`); collapsed pointers stay grep-able in `_archive/`
 
-| Class | Trigger | Action |
-|---|---|---|
-| **A — stale-superseded** | MEMORY.md pointer has `**SUPERSEDED**` marker + topic has 0 surviving inbound `[[wikilinks]]` | `mv <topic> _archive/<date>/` + collapse pointer to 1-line stub |
-| **B — near-budget-collapse** | MEMORY.md >80% cap + pointer ≥250 chars + topic >5KB + pointer ≥ 1.2x first paragraph | Replace pointer with ~80-char stub + add `supersedes:` note in topic |
-| **C — dangling-link-rewrite** | Surviving file's `[[wikilink]]` resolves to nothing or to `_archive/` | Rewrite `[[X]]` → `[[<ledger>]]` |
+| Class | Trigger | Action | Safety |
+|---|---|---|---|
+| **A — stale-superseded** | MEMORY.md pointer has `**SUPERSEDED**` marker + topic has 0 surviving inbound `[[wikilinks]]` | `mv <topic> _archive/<date>/` + collapse pointer to 1-line stub | Always safe (marker = user intent) |
+| **B — near-budget-collapse** | MEMORY.md >80% cap + pointer ≥250 chars + topic >5KB + pointer ≥ 1.2x first paragraph | Replace pointer with ~80-char stub + add `supersedes:` note in topic | Editorial; review each rewrite |
+| **C — dangling-link-rewrite** | Surviving file's `[[wikilink]]` resolves to nothing or to `_archive/` | Rewrite `[[X]]` → `[[<ledger>]]` | Mechanical when target is already-archived |
+
+> **Source of truth:** the thresholds above (≥250 chars, >5KB, ≥1.2×, 200L/25KB cap) are enforced in `scripts/memory-lint.py` (`class_a_candidates` / `class_b_candidates` / `class_c_candidates`). Update this table when the code changes — this prose mirrors the code, it does not define it.
 
 Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the prompt (use for CI/scripts). `--json` produces machine-readable output (mode-aware: detector JSON for plain lint, action-plan JSON for `--auto-archive --dry-run`).
 

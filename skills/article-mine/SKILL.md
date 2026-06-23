@@ -1,6 +1,6 @@
 ---
 name: article-mine
-description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Also fires on Thai requests like 'mine บทความ', 'สรุปบทความนี้', 'เอาบทความนี้มาใช้', 'วิเคราะห์บทความ'. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
+description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Thai: 'mine บทความ', 'สรุปบทความนี้', 'เอาบทความนี้มาใช้', 'วิเคราะห์บทความ'. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
 ---
 
 # Article Mine

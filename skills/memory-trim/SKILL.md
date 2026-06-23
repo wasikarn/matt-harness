@@ -1,15 +1,11 @@
 ---
 name: memory-trim
-description: "Mechanically archive verbose or closed memory entries while keeping the memory store under its 200-line/25KB load cap. Uses reversible moves, never rm. Use when MEMORY.md is bloated or after a big session. Also fires on Thai requests like 'memory trim', 'ย่อ memory', 'archive memory'. Don't use for: semantic memory review, deleting memory permanently, or harness-wide health checks (kbg:harness-audit)."
+description: "Mechanically archive verbose or closed memory entries while keeping the memory store under its 200-line/25KB load cap. Uses reversible moves, never rm. Use when MEMORY.md is bloated or after a big session. Thai: 'memory trim', 'ย่อ memory', 'archive memory'. Don't use for: semantic memory review, deleting memory permanently, or harness-wide health checks (kbg:harness-audit)."
 ---
 
 # Memory-Trim
 
-Mechanical fold of verbose/closed entries from `MEMORY.md` to keep the load cap (200L/25KB) healthy. Wraps `memory-lint --auto-archive` with the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]):
-
-- **<2KB delta per session** — never collapse the whole store; trim only the worst
-- **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix
-- **Reversible** — every move is `mv` (never `rm`); collapsed pointers stay grep-able in `_archive/`
+Mechanical fold of verbose/closed entries from `MEMORY.md` to keep the load cap (200L/25KB) healthy. Wraps `memory-lint --auto-archive` with the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]).
 
 ## Workflow
 
@@ -28,13 +24,9 @@ The script auto-derives the memory dir from cwd (`~/.claude/projects/<enc>/memor
 
 ## What gets proposed
 
-| Class | Trigger | Action | Safety |
-|---|---|---|---|
-| **A — stale-superseded** | MEMORY.md pointer has `**SUPERSEDED**` marker + topic has 0 surviving inbound `[[wikilinks]]` | `mv <topic> _archive/<date>/` + collapse pointer to 1-line stub | Always safe (marker = user intent) |
-| **B — near-budget-collapse** | MEMORY.md >80% cap + pointer ≥250 chars + topic >5KB + pointer ≥ 1.2x first paragraph | Replace pointer with ~80-char stub + add `supersedes:` note in topic | Editorial; review each rewrite |
-| **C — dangling-link-rewrite** | Surviving file's `[[wikilink]]` resolves to nothing or to `_archive/` | Rewrite `[[X]]` → `[[<ledger>]]` | Mechanical when target is already-archived |
+The engine classifies each candidate as **A — stale-superseded**, **B — near-budget-collapse**, or **C — dangling-link-rewrite** under the A3 session guardrails.
 
-For the underlying rubric and first-application precedent, see `[[project_memory_trim_session_2026_06_04]]` and `[[reference_memory_store_optimization]]` (the `_archive/` consolidation technique).
+The full rubric — guardrails, the A/B/C triggers, actions, and per-class safety notes — is the **single source in [[memory-lint]] action mode**, co-located with `scripts/memory-lint.py` that enforces the thresholds. Read it there before your first apply (and again if a class's trigger feels off — the prose mirrors the code). First-application precedent: [[project_memory_trim_session_2026_06_04]]; `_archive/` consolidation technique: [[reference_memory_store_optimization]].
 
 ## Related
 
@@ -43,9 +35,9 @@ For the underlying rubric and first-application precedent, see `[[project_memory
 
 ## Anti-patterns
 
-- **Run on first-time setup** — the store needs to grow before trim has signal. Wait until >80% cap.
+- **Run on first-time setup** — the store needs to grow before trim has signal. Wait until the store is near the load cap.
 - **Trust Class B blindly** — the "pointer carries detail" proxy is heuristic. Always scan the BEFORE/AFTER in dry-run.
 - **Skip the dry-run** — `--yes` exists for CI/scripts; humans should always see the plan first.
-- **Trim in a single session** — A3 caps at <2KB. If the plan proposes more, defer to a follow-up session.
+- **Trim in a single session** — A3 caps the per-session delta (see [[memory-lint]]). If the plan proposes more, defer to a follow-up session.
 
 **Named model** (cc-thinking-skills): trimming the store down rather than adding to it is *via-negativa* (subtractive health, reversible by `mv`). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

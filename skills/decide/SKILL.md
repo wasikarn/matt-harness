@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Use when walking through a consequential, analyzable decision using the Judgment Ladder: recognize the decision, frame the problem, gather and test assumptions, estimate risks and uncertainties, decide, commit, and follow through. Also fires on Thai requests like 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ'. Don't use for chaotic/time-pressed situations, choices already dictated by policy or constraint, or after the decision has already been committed and only documentation is needed (use kbg:adr)."
+description: "Use when walking through a consequential, analyzable decision using the Judgment Ladder. Thai: 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ'. Don't use for chaotic/time-pressed situations, choices already dictated by policy or constraint, or after the decision has already been committed and only documentation is needed (use kbg:adr)."
 ---
 
 # Decide

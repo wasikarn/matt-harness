@@ -1,6 +1,6 @@
 ---
 name: assert-presence
-description: "Encode a code or fix claim as a signed ed25519 presence witness so regressions fail loud. Use when an agent says 'I fixed it' and you want tamper-evident proof the fix still exists. Also fires on Thai requests like 'sign presence', 'assert ว่ามี', 'witness ว่าอยู่'. Don't use for: absence checks (use kbg:decommission), trivial one-liners, or when manual re-verification is enough."
+description: "Encode a code or fix claim as a signed ed25519 presence witness so regressions fail loud. Use when an agent says 'I fixed it' and you want tamper-evident proof the fix still exists. Thai: 'sign presence', 'assert ว่ามี', 'witness ว่าอยู่'. Don't use for: absence checks (use kbg:decommission), trivial one-liners, or when manual re-verification is enough."
 ---
 
 # Assert Presence

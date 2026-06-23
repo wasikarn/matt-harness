@@ -1,6 +1,6 @@
 ---
 name: semantic-code
-description: "Use the sem CLI to diff code at the entity level (function/class/method) instead of line level, with rename/move detection and token-budgeted context. Use when you need structural diff, context extraction, or semantic version control. Also fires on Thai requests like 'semantic code', 'sem diff', 'diff เป็น function'. Don't use for: plain git diff, line-level patch review, or when sem is not installed."
+description: "Use the sem CLI to diff code at the entity level (function/class/method) instead of line level, with rename/move detection and token-budgeted context. Use when you need structural diff, context extraction, or semantic version control. Thai: 'semantic code', 'sem diff', 'diff เป็น function'. Don't use for: plain git diff, line-level patch review, or when sem is not installed."
 ---
 
 # semantic-code — Semantic Version Control

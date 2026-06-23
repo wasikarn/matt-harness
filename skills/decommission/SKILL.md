@@ -1,6 +1,6 @@
 ---
 name: decommission
-description: "Assert and sign the complete absence of deprecated code, jobs, daemons, or symlinks so nothing keeps running in the dark. Use when retiring systems, deleting workers, removing launchd/cron jobs, or cleaning legacy hooks. Also fires on Thai requests like 'decommission', 'ลบให้หมด', 'witness ว่าหายไป'. Don't use for new features, presence checks (use kbg:assert-presence), or when you cannot verify absence across environments."
+description: "Assert and sign the complete absence of deprecated code, jobs, daemons, or symlinks so nothing keeps running in the dark. Use when retiring systems, deleting workers, removing launchd/cron jobs, or cleaning legacy hooks. Thai: 'decommission', 'ลบให้หมด', 'witness ว่าหายไป'. Don't use for new features, presence checks (use kbg:assert-presence), or when you cannot verify absence across environments."
 ---
 
 # Decommission

@@ -1,6 +1,6 @@
 ---
 name: strategize
-description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity: diagnose the situation, choose a guiding policy, design coherent actions, surface real options and adaptive commitment points, red-team the strategy, then commit to the strategy loop. Also fires on Thai requests like 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use kbg:incident or kbg:hotfix), or choices already dictated by policy or constraint."
+description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity. Thai: 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use kbg:incident or kbg:hotfix), or choices already dictated by policy or constraint."
 ---
 
 # Strategize

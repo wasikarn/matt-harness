@@ -1,4 +1,4 @@
-> **Single Thai Bug/Story creation:** prefer `kbg:create-jira-bug` and `kbg:create-jira-story` for conversational, guided PO/QA-readable tickets with human confirmation. This directory remains the reference for terminal, ADF, bulk, and automation workflows.
+> **Single Thai Bug/Story creation:** prefer `kbg:create-jira-ticket` for conversational, guided PO/QA-readable tickets with human confirmation. This directory remains the reference for terminal, ADF, bulk, and automation workflows.
 
 # acli examples — description & body formats
 
