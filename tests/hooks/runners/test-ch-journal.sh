@@ -160,3 +160,40 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s audit #29 negative test did not fire\n' "harness-audit"
 fi
 
+# (L) decision-provenance-nudge.sh is ADVISORY-ONLY — it journals decision_rationale
+# + nudges via additionalContext, and NEVER emits a permissionDecision. This is the
+# LLM-judge-circularity guard (CLAUDE.md §): a computational path-match nudge that
+# never decides can never become a model-driven mutation gate (autonomy invariant,
+# ADR 0002). Also pins the #31.1-avoidance: the threshold is the one-way-door class
+# only, so a benign edit is SILENT (no blanket firing that manufactures boilerplate).
+echo
+echo "--- C1 evidence journal: decision-provenance-nudge advisory invariant ---"
+DPN="$HOOKS/advisory/decision-provenance-nudge.sh"
+DPNJ="$FIXTURE/dpn.jsonl"; : > "$DPNJ"
+
+# L1: a caged path (hooks/_lib.sh, under hooks/**) -> NO permissionDecision in
+# output, additionalContext nudge present, and a decision_rationale event journaled
+# with the machine-provenance fields. jq -e '... // empty' yields nothing when the
+# key is absent, so an empty $PD means the advisory invariant holds.
+PDOUT=$(printf '{"tool_name":"Edit","tool_input":{"file_path":"%s/_lib.sh"},"session_id":"dpnL"}' "$HOOKS" | CLAUDE_JOURNAL_PATH="$DPNJ" bash "$DPN" 2>/dev/null)
+pd_dec=$(printf '%s' "$PDOUT" | jq -r '.hookSpecificOutput.permissionDecision // "<none>"' 2>/dev/null)
+pd_ctx=$(printf '%s' "$PDOUT" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null | /usr/bin/grep -c "decision-sizing triad")
+pd_dr=$(jq -r 'select(.event=="decision_rationale") | .fields.surface_touched' "$DPNJ" 2>/dev/null | head -1)
+pd_owd=$(jq -r 'select(.event=="decision_rationale") | .fields.one_way_door' "$DPNJ" 2>/dev/null | head -1)
+if [ "$pd_dec" = "<none>" ] && [ "$pd_ctx" = "1" ] && [ "$pd_dr" = "hooks/_lib.sh" ] && [ "$pd_owd" = "true" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s caged edit: no permissionDecision + nudge + decision_rationale\n' "decision-nudge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s caged: dec=%s ctx=%s dr=%s owd=%s\n' "decision-nudge" "$pd_dec" "$pd_ctx" "$pd_dr" "$pd_owd"
+fi
+
+# L2: a benign path -> SILENT (no output, no new journal line). Pins the narrow
+# threshold: routine edits do not trip the nudge (the #31.1 blanket-trap avoided).
+L2_BEFORE=$(wc -l < "$DPNJ" 2>/dev/null || echo 0)
+L2OUT=$(printf '{"tool_name":"Edit","tool_input":{"file_path":"/tmp/dpn-benign.txt"},"session_id":"dpnL"}' | CLAUDE_JOURNAL_PATH="$DPNJ" bash "$DPN" 2>/dev/null)
+L2_AFTER=$(wc -l < "$DPNJ" 2>/dev/null || echo 0)
+if [ -z "$L2OUT" ] && [ "$L2_BEFORE" = "$L2_AFTER" ]; then
+  PASS=$((PASS+1)); printf '  ✅ %-26s benign edit silent (no blanket fire)\n' "decision-nudge"
+else
+  FAIL=$((FAIL+1)); printf '  ❌ %-26s benign: out=[%s] lines %s->%s\n' "decision-nudge" "$L2OUT" "$L2_BEFORE" "$L2_AFTER"
+fi
+

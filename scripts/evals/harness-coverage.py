@@ -276,6 +276,13 @@ def _build_parser():
                    help=f"Governance journal path (default: {DEFAULT_JOURNAL_PATH})")
     p.add_argument("--sensors-path", type=Path, default=DEFAULT_SENSORS_PATH,
                    help=f"Sensor registry path (default: {DEFAULT_SENSORS_PATH})")
+    # ponytail: as-of override. The metric is wall-clock-relative (now-30d/now-60d
+    # windows); without a pin the eval is non-reproducible across run times. The
+    # eval runner passes the fixture's authored as-of (harness-coverage.json
+    # _meta.wall_clock_dependency / case_9) so the gate is deterministic. Real
+    # runs omit it and use live UTC now.
+    p.add_argument("--now", default=None,
+                   help="Override wall-clock 'now' (ISO 8601, e.g. 2026-06-15T17:08:11Z) for reproducible eval; default: live UTC now")
     return p
 
 
@@ -293,7 +300,14 @@ def main(argv=None):
     # approximate with `window_sessions` days (capped at 180). Prior
     # window is `[prev_cut_off, cut_off)` so drift is the true deltas.
     window_days = min(180, max(1, args.window_sessions))
-    now = datetime.now(timezone.utc)
+    if args.now:
+        # Accept a trailing Z (ISO 8601 UTC); fromisoformat needs +00:00.
+        now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
+        if now.tzinfo is None:
+            print("error: --now must include a timezone (trailing Z or offset)", file=sys.stderr)
+            return 1
+    else:
+        now = datetime.now(timezone.utc)
     cut_off = now - timedelta(days=window_days)
     prev_cut_off = cut_off - timedelta(days=window_days)
 

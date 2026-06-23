@@ -44,6 +44,7 @@ KNOWN_EVENTS = {
     "security_finding", "config_change", "fabrication_verdict",
     "bypass_audit", "review_finding", "verification_verdict",
     "verification_summary",
+    "decision_rationale",
 }
 
 # Streams that dual-write into governance-events.jsonl during migration (B1).

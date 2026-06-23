@@ -50,6 +50,7 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
 | `l3_cycle` | `recursive-improve --auto` (ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks`, optional `source` (`queue` when the candidate came from the learning-candidate queue — Route B, ADR 0002 addendum) |
 | `learning_candidates` | `learn-capture.sh` (SessionEnd, default-OFF; ADR 0002 addendum) | `queued`, `corrections`, `preferences`, `queue_total` — **counts only**, no secret-named fields (the redactor nukes any key containing token/secret/key/password/credential) |
+| `decision_rationale` | `decision-provenance-nudge.sh` (PreToolUse, advisory) | `surface_touched`, `consequential_class` (`caged`\|`doctrine`), `one_way_door` (bool) |
 
 `review_finding` + `verification_verdict` are the Phase-II ground-truth pair: the
 former is the per-finding evidence (file/line/tier/agent/summary), the latter is
@@ -89,6 +90,28 @@ is `green` (gauntlet passed, committed local), `red` (gauntlet failed, reset to 
 pre-cycle tag), or `skipped` (the candidate hit a caged path / tamper at `check-act`).
 The loop NEVER pushes (the `push-gate` hook enforces it), so there is no
 `l3_cycle` event for a push — the batch ships only after the human Gate-2 review.
+
+`decision_rationale` is the **machine-provenance half** of a decision-sizing
+record (the staff-engineer triad from METHODOLOGY Rule 1: one-way door / blast
+radius / riskiest assumption). `decision-provenance-nudge.sh` (PreToolUse,
+advisory) fires on a **consequential** edit — an in-repo caged path (read live
+from `scripts/cage.txt`, the single source, so this never drifts from the
+cage) or an out-of-repo doctrine basename — and journals this event with the
+three fields a hook can compute computationally (`surface_touched`,
+`consequential_class`, `one_way_door`). It also emits an `additionalContext`
+nudge asking the operator to record the **human-readable half** — the triad
+itself, in the response that accompanies the edit. The threshold is the
+one-way-door class only (narrow, not blanket), so it does not manufacture
+boilerplate on routine edits (the #31.1 trap). The hook is **advisory only**:
+it journals + nudges, it NEVER emits a `permissionDecision` — it has no
+permissionDecision field in its output at all. This is deliberate on two
+counts: (1) the gate↔evidence invariant below (a hook that journals must not
+also emit a decision); (2) LLM-judge-circularity — a path-match nudge that
+never decides can never become a model-driven mutation gate (autonomy
+invariant, ADR 0002). The critical-hooks test pins both: no
+`permissionDecision` in the output, and `decision_rationale` is a recognized
+event type. `source` is `journal_append`; the consumer treats it like any
+other event (it does not aggregate into a gate decision).
 
 `findings.jsonl` (the on-disk per-line shape `/review-pr` writes, sibling of
 `rejected.md` / `ledger.md` in `.scratch/review-pr-<ts>/`) is the source of these

@@ -5,6 +5,43 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.10] — 2026-06-23
+
+Closes the four deferred items from the v0.4.9 decision-sizing/responsibility-map
+build. No component count change (the new hook adds to an existing lifecycle event,
+not a new event type) — version bump only.
+
+- **Decision provenance (#9).** New advisory PreToolUse hook
+  `hooks/advisory/decision-provenance-nudge.sh`: on a consequential edit (an
+  in-repo caged path, read live from `scripts/cage.txt` so it never drifts from
+  the cage, or an out-of-repo doctrine basename) it journals a `decision_rationale`
+  provenance event and emits an `additionalContext` nudge to record the
+  decision-sizing triad (one-way door / blast radius / riskiest assumption). It
+  is **advisory only** — it never emits a `permissionDecision`, so it cannot
+  become a model-driven mutation gate (gate↔evidence invariant #29 +
+  LLM-judge-circularity guard, ADR 0002). Threshold is the one-way-door class
+  only (narrow, not blanket — avoids the #31.1 trap). Registered in `hooks.json`
+  (Edit|Write|MultiEdit). `decision_rationale` added to `JOURNAL-SCHEMA.md` +
+  the consumer `KNOWN_EVENTS`. Critical-hooks test pins no-`permissionDecision`
+  + benign-silent.
+- **docs-as-tests + ci-guard (#10).** Two new always-on gauntlet layers:
+  `tests/docs/run-doc-tests.sh` asserts the manifest description prose counts
+  (29 agents / 39 skills / 22 commands / 14 lifecycle events) match actual
+  component counts (closes the prose-count drift the audit's loadability check
+  misses); `tests/ci/run-ci-guard.sh` forbids fetch-and-exec in shipped scripts
+  and keeps `.github/workflows/validate.yml` a conformance gate (no release
+  train). Wired into `scripts/run-gauntlet.sh` (now 6 layers; the two new ones
+  stay on in `--fast`). `CLAUDE.md` + gauntlet header updated four→six.
+- **harness-coverage eval drift (#1).** The 12-cell metric is wall-clock-relative
+  (now-30d/now-60d windows); the regression fixture pinned `expected_grid` at a
+  fixed runtime but the runner passed no `--now`, so real-now drift made inf-fb
+  score 5/drift -5 vs expected 9/+2. Added the Wave-5/INT-1 as-of pin: `--now`
+  arg on `scripts/evals/harness-coverage.py` + `_meta.eval_as_of` in the fixture
+  + the runner passes it. Pinned runtime reproduces 9/+2 exactly; gate green.
+- **dotfiles single-source (#1).** The global `~/.claude/CLAUDE.md` (symlinked
+  into dotfiles) no longer duplicates the triad — it points to `METHODOLOGY.md`
+  Rule 1, the single source. (Committed in the dotfiles repo, separate.)
+
 ## [0.4.6] — 2026-06-23
 
 `/context` → `/frame` rename — the kbg working-frame loader was shadowing Claude

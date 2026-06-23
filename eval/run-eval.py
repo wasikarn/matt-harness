@@ -765,16 +765,24 @@ def run_harness_coverage_eval(eval_item: dict, verbose: bool) -> dict:
                 "regression_note": f"script not found at {script_path}",
             }
 
+        # Pin the wall-clock to the fixture's authored as-of (Wave 5 / INT-1).
+        # The metric's now-30d/now-60d windows are wall-clock-relative; without
+        # a pin the cell scores drift as the eval run-time moves away from
+        # authoring time (_meta.wall_clock_dependency). eval_as_of is the
+        # single source — the script reproduces the expected_grid exactly when
+        # run at this timestamp (verified: inf-fb cell_score_pct=9/drift=+2).
+        cmd = [
+            "python3", str(script_path),
+            "--format", "json",
+            "--journal-path", str(journal_path),
+            "--sensors-path", str(sensors_path),
+        ]
+        eval_as_of = eval_item.get("_meta", {}).get("eval_as_of")
+        if eval_as_of:
+            cmd += ["--now", eval_as_of]
+
         try:
-            proc = subprocess.run(
-                [
-                    "python3", str(script_path),
-                    "--format", "json",
-                    "--journal-path", str(journal_path),
-                    "--sensors-path", str(sensors_path),
-                ],
-                capture_output=True, text=True, timeout=30,
-            )
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         except subprocess.TimeoutExpired:
             return {
                 "id": eval_item.get("id", "harness-coverage"),

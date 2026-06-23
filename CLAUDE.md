@@ -203,12 +203,15 @@ bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_RO
 python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate
 ```
 
-The pre-push gauntlet runs four layers in parallel: plugin-validate, self-audit,
-critical-hooks suite, and the full eval gate. The critical-hooks suite itself
-runs its 10 sub-suites in parallel, and the eval gate runs fixtures concurrently
-via `"${KBG_PLUGIN_ROOT}/eval/run-eval.py" --workers` (default: min(8, CPU count)). The pre-commit hook
+The pre-push gauntlet runs six layers in parallel: plugin-validate, self-audit,
+docs-as-tests (manifest prose counts vs actual components), ci-guard (supply-chain
+static scan + validate.yml stays a conformance gate), the critical-hooks suite,
+and the full eval gate. The docs-as-tests + ci-guard layers are fast static suites
+that stay on in `--fast` (only the slow critical-hooks suite is skipped). The
+critical-hooks suite itself runs its sub-suites in parallel, and the eval gate
+runs fixtures concurrently via `"${KBG_PLUGIN_ROOT}/eval/run-eval.py" --workers` (default: min(8, CPU count)). The pre-commit hook
 runs syntax/lint checks, the self-audit, and affected eval fixtures in parallel.
-All four gauntlet layers must pass before any commit that touches hooks, skills,
+All gauntlet layers must pass before any commit that touches hooks, skills,
 agents, commands, or manifests.
 
 ### Running a single test

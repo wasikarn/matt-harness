@@ -6,12 +6,12 @@
 # number of failed layers.  Failures include the tail of the offending log.
 #
 # Usage:
-#   bash scripts/run-gauntlet.sh         # full gauntlet: validate + audit + hooks + eval
+#   bash scripts/run-gauntlet.sh         # full gauntlet: validate + audit + docs + ci + hooks + eval
 #   bash scripts/run-gauntlet.sh --fast  # skip the slow critical-hooks suite
 #
 # Exit codes:
 #   0 — all layers passed
-#   N — N layer(s) failed (1..4)
+#   N — N layer(s) failed (1..6)
 #   2 — bad invocation
 
 set -uo pipefail
@@ -72,6 +72,15 @@ run_layer() {
 
 run_layer "plugin-validate" "claude plugin validate --strict ."
 run_layer "audit" "bash skills/harness-audit/scripts/audit.sh ."
+
+# docs-as-tests + supply-chain guard: fast static suites, always-on (not
+# skipped in --fast — they are quick greps/counts, unlike the critical-hooks
+# suite). docs-as-tests pins manifest prose counts to actual component counts
+# (cache-invariant); ci-guard forbids fetch-and-exec in shipped scripts +
+# keeps validate.yml a conformance gate (no release train). See tests/docs/
+# and tests/ci/.
+run_layer "docs-as-tests" "bash tests/docs/run-doc-tests.sh"
+run_layer "ci-guard" "bash tests/ci/run-ci-guard.sh"
 
 if [ "$FAST" -eq 0 ]; then
   run_layer "critical-hooks" "bash tests/hooks/runners/test-critical-hooks.sh"
