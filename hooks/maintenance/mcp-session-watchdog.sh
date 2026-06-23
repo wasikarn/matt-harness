@@ -13,7 +13,7 @@ if ! command -v python3 >/dev/null 2>&1 || [ ! -f "$SCRIPT_DIR/auth-health-check
   exit 0
 fi
 
-RESULT=$(python3 "$SCRIPT_DIR/auth-health-check.py" --json 2>/dev/null) || true
+RESULT=$(python3 "$SCRIPT_DIR/auth-health-check.py" --json 2>/dev/null)
 EXIT_CODE=$?
 [ "$EXIT_CODE" -eq 0 ] && exit 0  # All healthy — silent pass
 

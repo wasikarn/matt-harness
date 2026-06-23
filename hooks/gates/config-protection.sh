@@ -72,7 +72,7 @@ case "$TOOL" in
     if command -v jq >/dev/null 2>&1; then
       _change=$(printf '%s' "$TOOL_INPUT" | jq -r '(.new_string // "") + " " + ((.edits // []) | map(.new_string // "") | join(" "))' 2>/dev/null)
       _relax='"?(off|none)"?|disable|eslint-disable|stylelint-disable|"rules"[[:space:]]*:[[:space:]]*\{\}|noImplicitAny|skipLibCheck|allowJs|ignorePatterns|--no-verify|:[[:space:]]*false'
-      printf '%s' "$_change" | grep -qiE "$_relax" || exit 0
+      printf '%s' "$_change" | command grep -qiE "$_relax" || exit 0
     fi
     ;;
 esac

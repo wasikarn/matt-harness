@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.4] — 2026-06-23
+
+Fix 3 real bugs surfaced (but deliberately left unchanged) by the v0.4.3 refactor
+agents — each a behavior change, now fixed:
+
+- hooks/maintenance/mcp-session-watchdog.sh: `RESULT=$(...) || true` masked the
+  python exit code so `EXIT_CODE=$?` was always 0 -> the `[ "$EXIT_CODE" -eq 0 ]`
+  early-exit always fired -> the degraded(1)/broken(2) MCP health warning was dead
+  code. Removed `|| true` (no `set -e` in the file; ends `exit 0`, so the
+  "non-blocking: exit 0 always" contract is preserved). Verified: EXIT_CODE now
+  captures the real 1/2.
+- hooks/post-tool/post-edit-test.sh: same `OUTPUT=$(... || true)` masked the
+  test-failure pipeline exit (under `set -o pipefail`) -> the "tests FAILED"
+  terminal notification never fired. Removed `|| true` (no `set -e`; ends exit 0).
+  Verified: EXIT_CODE now captures the pipeline non-zero.
+- hooks/gates/config-protection.sh:75: bare `grep -qiE` hit the repo `grep`->`rtk
+  grep` alias (a shell function), diverging from the `command grep` convention every
+  other gate uses (resists alias shadowing / wrapper backtracking). Changed to
+  `command grep -qiE` so the rule-relaxation detector runs real grep. The `_relax`
+  pattern itself is unchanged.
+
+Gauntlet green (validate/audit 0C0W/critical-hooks/eval). Bump 0.4.3 -> 0.4.4.
+
 ## [0.4.3] — 2026-06-23
 
 Staff-engineer refactor + perf pass across all hooks/scripts (2 waves, 6 agents on

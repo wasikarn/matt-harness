@@ -62,7 +62,7 @@ fi
 # No test framework detected — project has not opted in.
 [ -z "$TEST_CMD" ] && exit 0
 
-OUTPUT=$(eval "$TEST_CMD" 2>&1 | tail -20) || true
+OUTPUT=$(eval "$TEST_CMD" 2>&1 | tail -20)
 EXIT_CODE=$?
 
 printf '%s\t%s\t%s\texitcode=%s\t%s\n' "$TS" "$SID" "$FILE" "$EXIT_CODE" "${OUTPUT//$'\n'/ | }" >> "$LOG"
