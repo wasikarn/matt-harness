@@ -1,7 +1,9 @@
 # l4-quality-trial.txt — the allowlist for the L4 model-gate trial (design §7).
-# One low-stakes PROSE skill — the model-gate judges its clarity/quality. No code /
+# Low-stakes PROSE skills — the model-gate judges their clarity/quality. No code /
 # enforcement surface is ever in scope (a model blessing those is exactly the
 # autonomy-invariant line ADR 0002 forbids). Add a skill here ONLY after re-auditing
-# the gate's fail-closed + read-only posture (design §7 "Shortfall"). Caged via
-# scripts/l4/** — the loop may not edit its own trial scope.
+# the gate's fail-closed + read-only posture (design §7 "Shortfall"; each addition
+# is incremental + re-audited). Caged via scripts/l4/** — the loop may not edit its
+# own trial scope.
 tech-humanize
+create-jira-story
