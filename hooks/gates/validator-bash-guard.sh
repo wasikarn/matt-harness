@@ -59,6 +59,14 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 }
 [ -z "$COMMAND" ] && exit 0
 
+# Narrow read-only exception: `python3 -m pytest` is a common test invocation
+# that the generic `python3 -m` deny (arbitrary module execution) would
+# otherwise block. The module name is anchored so `python3 -m pip install`
+# still reaches the deny list.
+if printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)'; then
+  exit 0
+fi
+
 # P0: security fix — Deny list checked TWICE: first against the FULL
 # unstripped command (catches mutations hidden inside quotes, e.g.
 # bash -c 'git push origin main'), then against the stripped command.
@@ -70,7 +78,9 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # run arbitrary code in another language (eval, python -c/-m, bash/sh -c,
 # node -e, perl -e, ruby -e) are denied outright — they defeat shell-pattern
 # matching entirely and a read-only validator never needs them (it has Read/Grep).
-DENY_PATTERNS='(^|[[:space:];&|()`'\''"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(python3?|bash|sh|node|ruby|perl)[[:space:]]+[^-|;&[:space:]"][^|;&[:space:]]*\.(py|sh|js|rb|pl)([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
+read -r DENY_PATTERNS <<'REGEX'
+(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|&()]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(python3?|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|&()]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+REGEX
 
 # 1. Full-command deny check — catches quoted mutations that
 # hook_strip_quoted would strip away.
@@ -91,7 +101,7 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # P0: security fix — removed python3 -c, node -p, go build from the
 # allow-list because quote-stripping made them bypass vectors (any
 # payload inside quotes was invisible after hook_strip_quoted).
-ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]])'
+ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]]|python3[[:space:]]+-m[[:space:]]+pytest[[:space:]])'
 if printf '%s\n' "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES"; then
   exit 0
 fi
