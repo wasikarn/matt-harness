@@ -54,14 +54,18 @@ fi
 MAILBOX_BASE="${CLAUDE_MAILBOX_BASE:-$HOME/.claude/mailbox}"
 TEAM_DIR="$MAILBOX_BASE/$TEAM"
 
-# Parse a message file and emit msg_id, from, subject, type (tab-separated)
+# Parse a message file and emit msg_id, from, subject, type (tab-separated).
+# Capture the YAML frontmatter block once and extract 4 fields from it, instead
+# of re-reading the file 4 times. Behavior-identical: output is the same 4 TSV
+# fields in the same order with the same stripping rules.
 parse_msg() {
   local f="$1"
-  local msg_id from subject type
-  msg_id=$(sed -n '/^---$/,/^---$/p' "$f" | grep '^msg_id:' | head -n1 | sed 's/^msg_id:[[:space:]]*//;s/^"//;s/"$//')
-  from=$(sed -n '/^---$/,/^---$/p' "$f" | grep '^from:' | head -n1 | sed 's/^from:[[:space:]]*//;s/^"//;s/"$//')
-  subject=$(sed -n '/^---$/,/^---$/p' "$f" | grep '^subject:' | head -n1 | sed 's/^subject:[[:space:]]*//;s/^"//;s/"$//')
-  type=$(sed -n '/^---$/,/^---$/p' "$f" | grep '^type:' | head -n1 | sed 's/^type:[[:space:]]*//;s/^"//;s/"$//')
+  local msg_id from subject type frontmatter
+  frontmatter=$(sed -n '/^---$/,/^---$/p' "$f")
+  msg_id=$(printf '%s\n' "$frontmatter" | grep '^msg_id:' | head -n1 | sed 's/^msg_id:[[:space:]]*//;s/^"//;s/"$//')
+  from=$(printf '%s\n' "$frontmatter" | grep '^from:' | head -n1 | sed 's/^from:[[:space:]]*//;s/^"//;s/"$//')
+  subject=$(printf '%s\n' "$frontmatter" | grep '^subject:' | head -n1 | sed 's/^subject:[[:space:]]*//;s/^"//;s/"$//')
+  type=$(printf '%s\n' "$frontmatter" | grep '^type:' | head -n1 | sed 's/^type:[[:space:]]*//;s/^"//;s/"$//')
   printf '%s\t%s\t%s\t%s\n' "$msg_id" "$from" "$subject" "$type"
 }
 

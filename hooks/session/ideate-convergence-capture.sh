@@ -321,15 +321,24 @@ if [ -z "$PY_OUT" ] || ! printf '%s' "$PY_OUT" | jq -e . >/dev/null 2>&1; then
     exit 0
 fi
 
-INVOCATIONS=$(printf '%s' "$PY_OUT" | jq -r '.invocations // 0')
+# Extract all fields from PY_OUT in a single jq pass (one fork instead of five).
+# Each value is on its own line; IFS= read -r preserves it verbatim (no trimming).
+# EMBEDDING uses tojson so null → "null" and arrays → compact JSON, matching jq -c.
+{ IFS= read -r INVOCATIONS
+  IFS= read -r PROBLEM
+  IFS= read -r EMBEDDING
+  IFS= read -r CONVERGENCE_STATUS
+  IFS= read -r CONVERGENCE_REASON
+} < <(printf '%s' "$PY_OUT" | jq -r '
+    (.invocations // 0),
+    (.problem // "(no problem extracted)"),
+    (.embedding | tojson),
+    (.status // "unknown"),
+    (.reason // "")' 2>/dev/null)
 [ "$INVOCATIONS" -eq 0 ] 2>/dev/null && exit 0
 
 DATE=$(date -u +%Y-%m-%d)
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-PROBLEM=$(printf '%s' "$PY_OUT" | jq -r '.problem // "(no problem extracted)"')
-EMBEDDING=$(printf '%s' "$PY_OUT" | jq -c '.embedding')
-CONVERGENCE_STATUS=$(printf '%s' "$PY_OUT" | jq -r '.status // "unknown"')
-CONVERGENCE_REASON=$(printf '%s' "$PY_OUT" | jq -r '.reason // ""')
 
 jq -nc \
   --arg date "$DATE" \

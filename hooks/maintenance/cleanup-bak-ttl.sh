@@ -81,6 +81,9 @@ SCAN_ROOT="$HOME/.claude"
 # Actually +N is strict, so we want find's own cutoff, but mtime uses
 # 24h-aligned days and we want second-precision. So do the comparison
 # in awk after the find.
+# Hoist the OS check out of the per-file loop — uname -s is invariant within a
+# single run, so one fork replaces N. Same Darwin/GNU stat branching as before.
+OS=$(uname -s)
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   base=$(basename "$f")
@@ -96,7 +99,7 @@ while IFS= read -r f; do
   # failing over to `-c %s`. That multi-line value then embeds newlines in the
   # TSV row → one stale file becomes ~6 report lines → count is wildly wrong
   # (CI saw count=18 for 3 files). Branch size the same way mtime already does.
-  if [ "$(uname -s)" = "Darwin" ]; then
+  if [ "$OS" = "Darwin" ]; then
     MTIME=$(stat -f %m "$f" 2>/dev/null) || continue
     SIZE=$(stat -f %z "$f" 2>/dev/null)
   else

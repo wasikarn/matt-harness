@@ -114,7 +114,7 @@ def main():
     CODE_EXTS = (
         ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".rb", ".java",
         ".kt", ".swift", ".rs", ".php", ".c", ".cpp", ".h",
-        ".scala", ".clj", ".elm", ".elm", ".vue", ".svelte",
+        ".scala", ".clj", ".elm", ".vue", ".svelte",
     )
     if not file_path.endswith(CODE_EXTS):
         return

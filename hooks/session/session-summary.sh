@@ -20,9 +20,14 @@ SESSIONS_DIR="${HOME}/.claude/sessions"
 mkdir -p "$SESSIONS_DIR" 2>/dev/null
 SUMMARY_FILE="${SESSIONS_DIR}/${SLUG}.md"
 
-TRANSCRIPT=$(printf '%s\n' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
-REASON=$(printf '%s\n' "$INPUT" | jq -r '.reason // empty' 2>/dev/null)
-SESSION_ID_VAL=$(printf '%s\n' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+# Extract three fields from INPUT in a single jq pass (one fork instead of three).
+# // "" (not // empty) so each field always emits a line for read to capture;
+# IFS= read -r preserves verbatim (no trimming). Values are paths/IDs/short
+# reason strings — no embedded newlines — so line-per-field is safe.
+{ IFS= read -r TRANSCRIPT
+  IFS= read -r REASON
+  IFS= read -r SESSION_ID_VAL
+} < <(printf '%s\n' "$INPUT" | jq -r '.transcript_path // "", .reason // "", .session_id // ""' 2>/dev/null)
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 BRANCH=$(git -C "$CWD" rev-parse --abbrev-ref HEAD 2>/dev/null)

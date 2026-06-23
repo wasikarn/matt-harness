@@ -340,14 +340,6 @@ _journal_append_py() {
   # The subshell inherits it and python's stdout goes there. `$(...)`
   # captures only the subshell's stdout (which now holds python's
   # stderr), leaving python's actual stdout untouched on FD 7.
-  #
-  # F5 enforcement (Critical #2 from PR #2 review): if python exits
-  # non-zero and the captured stderr doesn't already carry the
-  # `[<hook_id>]` prefix, re-emit with the prefix. The python journaler
-  # is supposed to print `[hook_id] ERROR: ...` before `sys.exit(2)`,
-  # but a non-2 failure path (NameError, ImportError, OOM at rc=137,
-  # SIGSEGV at rc=139) bypasses the prefix and leaves the caller with
-  # a raw traceback. The shim is the contract enforcer, not a passthrough.
   local _py_stderr="" _py_rc=0
   exec 7>&1
   # Capture python's stderr only; python's stdout passes through to

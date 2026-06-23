@@ -213,6 +213,12 @@ def generate_benchmark(results: list[dict], skill_name: str, skill_path: Path, m
     with_tokens = [r["with_skill"]["tokens"] for r in results]
     without_tokens = [r["without_skill"]["tokens"] for r in results]
 
+    # Compute stats once per series; delta reuses the cached means.
+    with_time_stats = stats(with_times)
+    without_time_stats = stats(without_times)
+    with_token_stats = stats(with_tokens)
+    without_token_stats = stats(without_tokens)
+
     return {
         "metadata": {
             "skill_name": skill_name,
@@ -225,16 +231,16 @@ def generate_benchmark(results: list[dict], skill_name: str, skill_path: Path, m
         "runs": runs,
         "run_summary": {
             "with_skill": {
-                "time_seconds": stats(with_times),
-                "tokens": stats(with_tokens),
+                "time_seconds": with_time_stats,
+                "tokens": with_token_stats,
             },
             "without_skill": {
-                "time_seconds": stats(without_times),
-                "tokens": stats(without_tokens),
+                "time_seconds": without_time_stats,
+                "tokens": without_token_stats,
             },
             "delta": {
-                "time_seconds": f"{stats(with_times)['mean'] - stats(without_times)['mean']:+.1f}",
-                "tokens": f"{stats(with_tokens)['mean'] - stats(without_tokens)['mean']:+.0f}",
+                "time_seconds": f"{with_time_stats['mean'] - without_time_stats['mean']:+.1f}",
+                "tokens": f"{with_token_stats['mean'] - without_token_stats['mean']:+.0f}",
             },
         },
         "notes": [

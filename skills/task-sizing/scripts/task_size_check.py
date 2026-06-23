@@ -91,20 +91,33 @@ def main():
         sys.exit(1)
 
     total = len(tasks)
-    desc_lengths = [len(t.get('description', '')) for t in tasks]
+
+    # Precompute per-task stats once: description length + the three sizing
+    # counts (files/criteria/deps). Both the aggregate summary and the
+    # per-task flags loop below consume these, so the count arithmetic lives
+    # in one place rather than being re-derived in each loop.
+    per_task = []
+    desc_lengths = []
     files_counts = []
     criteria_counts = []
     deps_counts = []
     for t in tasks:
+        desc = t.get('description', '')
         files = t.get('files', '').strip()
         criteria = t.get('criteria', '').strip()
         deps = t.get('depends on', '').strip()
         files_n = 0 if files in ('', '(none)', '-') else len(files.split())
         criteria_n = 0 if criteria in ('', '(none)', '-') else len(criteria.split())
         deps_n = 0 if deps in ('', '-', 'none') else len([d for d in deps.split(',') if d.strip()])
+        desc_lengths.append(len(desc))
         files_counts.append(files_n)
         criteria_counts.append(criteria_n)
         deps_counts.append(deps_n)
+        # Carry the raw stripped files/criteria strings too: the flags loop's
+        # "no files + no criteria" check tests the raw strings (empty), not the
+        # counts (which also map '(none)'/'-' to 0).
+        per_task.append((t, t.get('task id', '?').strip(), desc,
+                         files, criteria, files_n, criteria_n, deps_n))
 
     waves = build_waves(tasks)
 
@@ -141,18 +154,10 @@ def main():
             label += "  ✅"
         print(label)
 
-    # Size flags
+    # Size flags — reuse the per-task stats precomputed above so the count
+    # arithmetic is not duplicated here.
     flags = 0
-    for t in tasks:
-        tid = t.get('task id', '?').strip()
-        desc = t.get('description', '')
-        files = t.get('files', '').strip()
-        criteria = t.get('criteria', '').strip()
-        deps = t.get('depends on', '').strip()
-        files_n = 0 if files in ('', '(none)', '-') else len(files.split())
-        criteria_n = 0 if criteria in ('', '(none)', '-') else len(criteria.split())
-        deps_n = 0 if deps in ('', '-', 'none') else len([d for d in deps.split(',') if d.strip()])
-
+    for t, tid, desc, files, criteria, files_n, criteria_n, deps_n in per_task:
         if len(desc) < 30:
             print(f"⚠️ {tid}: description < 30 chars — merge or drop")
             flags += 1

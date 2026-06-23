@@ -31,7 +31,7 @@ _sensor_heartbeat
 CWD="${CLAUDE_PROJECT_DIR:-$PWD}"
 ROOT=$(cd "$CWD" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -n "$ROOT" ] || exit 0
-ENC=$(printf '%s' "$ROOT" | sed 's|/|-|g')
+ENC=${ROOT//\//-}
 MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR" ] || exit 0          # project has no memory store → nothing to lint
 
