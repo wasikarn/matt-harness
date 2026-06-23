@@ -73,7 +73,7 @@
       "task": "harness-audit check #47 must exist and CRIT-guard both legs (no permissionDecision in the capture hook; no confidence gate in the hook or skills/learn/SKILL.md).",
       "skill": "script-cli",
       "context": {
-        "command": "python3 -c \"src=open('skills/harness-audit/scripts/audit.sh').read(); print('has_47='+str('# 47.' in src)); print('guards_lc='+str('learn-capture.sh' in src and 'confidence *' in src))\"",
+        "command": "python3 -c \"import glob; src=open('skills/harness-audit/scripts/audit.sh').read()+''.join(open(f).read() for f in sorted(glob.glob('skills/harness-audit/scripts/checks/*.sh'))); print('has_47='+str('# 47.' in src)); print('guards_lc='+str('learn-capture.sh' in src and 'confidence *' in src))\"",
         "expected_exit_code": 0,
         "timeout": 30
       },

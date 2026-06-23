@@ -42,7 +42,7 @@ acheck yes "$OUT_DRIFT" "task-board-lib.sh drift" "fires on diverged copy"
 acheck yes "$OUT_DRIFT" "zdrift"                   "names the diverged copy"
 
 # numbering stability — load-bearing ID must not drift
-if /usr/bin/grep -qE '^# 46\. ' "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#46" "#46 present"
+if /usr/bin/grep -qE '^# 46\. ' "$AUDIT" "$(dirname "$AUDIT")"/checks/*.sh 2>/dev/null; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#46" "#46 present"
 else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#46" "#46 MISSING (ID drifted)"; fi
 
 report

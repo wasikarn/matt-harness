@@ -19,6 +19,8 @@ Before implementing:
 
 **Sub-rule: State assumptions, don't extract internal reasoning.** Surface the assumptions behind a recommendation so the operator can inspect them. Do not ask the model to echo, explain, or introspect its own reasoning process — some backends refuse and fall back to a slower, lower-quality mode. If justification is needed, ask for a fresh post-hoc rationale instead.
 
+**Sub-rule: Size the decision before acting.** For non-trivial tasks, before building, run the three-question decision-sizing loop: (1) **One-way door?** — if reversing is expensive, surface the options and the fact that would flip the call; don't pick silently. (2) **Blast radius** — name what downstream breaks and what this couples to. (3) **Riskiest assumption** — state it and verify it before building on it. Match rigor to stakes; trivial/lookup tasks skip the loop. This is the heuristic the autonomy ADRs (0004/0005) already assume when they gate a mutation or a ship; making it a named sub-rule means the rule that decides whether *this* change is safe is owned doctrine, not an unversioned external file. For the scaffold that fits each reversibility situation, see §Routing below.
+
 **Sub-rule: Session resume boot sequence.** On returning to a task after any context break (session restart, /compact, /clear, handoff):
 1. Confirm working directory (`pwd`).
 2. Read recent git activity (`git log --oneline -5`).

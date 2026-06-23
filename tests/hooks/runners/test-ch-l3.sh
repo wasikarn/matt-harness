@@ -447,7 +447,7 @@ fi
 # --- audit check-numbering stability: the autonomy-load-bearing IDs must not drift ---
 ncheck() {
   local id="$1"
-  if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
+  if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT" "$(dirname "$AUDIT")"/checks/*.sh 2>/dev/null; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-numbering" "#${id} MISSING (load-bearing ID drifted)"; fi
 }
 for id in 32 34 41 43 44 48 49 50; do ncheck "$id"; done

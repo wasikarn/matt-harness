@@ -30,7 +30,7 @@ acheck no  "clean-reviewer"  "silent on read-only reviewer"
 acheck no  "writer-engineer" "exempts non-reviewer writer"
 
 # numbering stability — load-bearing ID must not drift
-if /usr/bin/grep -qE '^# 45\. ' "$AUDIT"; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#45" "#45 present"
+if /usr/bin/grep -qE '^# 45\. ' "$AUDIT" "$(dirname "$AUDIT")"/checks/*.sh 2>/dev/null; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#45" "#45 present"
 else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#45" "#45 MISSING (ID drifted)"; fi
 
 report
