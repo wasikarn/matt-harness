@@ -1,5 +1,5 @@
 #!/bin/bash
-# l3-run-report.sh <run-id> — re-render an L3 `--auto` run from the governance
+# run-report.sh <run-id> — re-render an L3 `--auto` run from the governance
 # journal (ADR 0003 §E). Read-only. The journal is the durable per-cycle record
 # (event=l3_cycle, fields.run_id + iteration + outcome); this is its query view,
 # the companion to the human-written .scratch/l3-runs/<id>/session-audit-trail.md
@@ -7,7 +7,7 @@
 set -uo pipefail
 
 RID="${1:-}"
-[ -n "$RID" ] || { echo "usage: l3-run-report.sh <run-id>" >&2; exit 2; }
+[ -n "$RID" ] || { echo "usage: run-report.sh <run-id>" >&2; exit 2; }
 
 JOURNAL="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
 command -v jq >/dev/null 2>&1 || { echo "jq not found — cannot query the journal" >&2; exit 1; }

@@ -54,9 +54,9 @@ lists already shipped for L3. Mapped on source:
 
 | Component | Path | Role | L4 change |
 |---|---|---|---|
-| Cage denylist | `scripts/l3-cage.txt` (1-63, 27 entries) | deny-by-default paths the `--auto` loop may never write | add F2/F3 anchors |
-| Loop guard | `scripts/l3-loop-guard.py` (1-273) | the single code-level enforcer: caps + cage matcher + `--max-flat`; never a model | flag predicate + TAMPER_VARS + R4 cap |
-| Push gate (Gate 2) | `hooks/gates/l3-push-gate.sh` (1-87) | denies push/merge of an unreviewed batch; `KBG_L3_REVIEW_DONE=1` is the human override | flag predicate + TAMPER_PAT |
+| Cage denylist | `scripts/cage.txt` (1-63, 27 entries) | deny-by-default paths the `--auto` loop may never write | add F2/F3 anchors |
+| Loop guard | `scripts/loop-guard.py` (1-273) | the single code-level enforcer: caps + cage matcher + `--max-flat`; never a model | flag predicate + TAMPER_VARS + R4 cap |
+| Push gate (Gate 2) | `hooks/gates/push-gate.sh` (1-87) | denies push/merge of an unreviewed batch; `KBG_L3_REVIEW_DONE=1` is the human override | flag predicate + TAMPER_PAT |
 | Hook immunity | `hooks/_lib.sh:34-43` | forces every hook live (defeats `CLAUDE_HOOK_PROFILE=off`) during an authorized run | flag predicate |
 | Rollback carve-out | `hooks/gates/block-dangerous-git.sh:41-52` | lets the loop `git reset --hard` its own pre-cycle tag | flag predicate (**4th F1 site — see §5**) |
 | Capture half | `hooks/session/learn-capture.sh` + `scripts/read-candidates.sh` | SessionEnd stages candidates to an out-of-repo queue; confidence is **ordering-only** | inversion point for #4 |
@@ -88,14 +88,14 @@ flag. Must land first — it unblocks all three relaxations.
 > `KBG_REVIEW_DONE` — the "L3" there is the same vestigial level-in-the-name; it is honored under L4/L5.)
 
 - **F1 — the inert-under-L4 gap (highest severity).** Four runtime enforcers hard-scope to
-  `KBG_AUTONOMY_L3 == "1"` and go **inert** under an L4-only flag (L3 unset): `l3-push-gate.sh:32`
-  (`exit 0` → Gate 2 vanishes), `_lib.sh:40` (immunity off → gates re-disarmable), `l3-loop-guard.py:57-58`
+  `KBG_AUTONOMY_L3 == "1"` and go **inert** under an L4-only flag (L3 unset): `push-gate.sh:32`
+  (`exit 0` → Gate 2 vanishes), `_lib.sh:40` (immunity off → gates re-disarmable), `loop-guard.py:57-58`
   (`L3_ACTIVE=False` → guard refuses to run), and **`block-dangerous-git.sh:50`** — the **4th site the
   ADR did not name** (rollback carve-out off → the loop wedges). **Fix:** a shared
   `autonomy_on()` helper reading the **single `KBG_AUTONOMY` key (0/1)** — the per-level
   `KBG_AUTONOMY_L3/L4` keys collapse into it (key-encoding note above). Sweep **every**
   `KBG_AUTONOMY_L3 == "1"` literal across `hooks/` + `scripts/`, routing all through `autonomy_on()`; add
-  `KBG_AUTONOMY` to both tamper lists (`l3-loop-guard.py:61-66` TAMPER_VARS + `l3-push-gate.sh:54`
+  `KBG_AUTONOMY` to both tamper lists (`loop-guard.py:61-66` TAMPER_VARS + `push-gate.sh:54`
   TAMPER_PAT). Key still captured **once at import** so the loop cannot self-elevate mid-run. **No
   auto-push carve-out** — the gate simply also fires when armed. (Single key 0/1, **not** a `=3|4|5` level
   value: the level is build-state, not an operator dial; if per-environment ceilings ever become real,
@@ -104,20 +104,20 @@ flag. Must land first — it unblocks all three relaxations.
   per-repo `.claude/settings.local.json` in `CLAUDE_PROJECT_DIR` — a bare *user-global* `KBG_AUTONOMY=1`
   (which would reach every repo's hooks) arms **nothing**; #48(c) below CRITs any raw literal not routed
   through the helper, so the never-user-global rule is machine-enforced, not prose.
-- **F2 — cage the grading corpus.** `l3-cage.txt:42` covers `eval/datasets/**` but not
+- **F2 — cage the grading corpus.** `cage.txt:42` covers `eval/datasets/**` but not
   `eval/regressions/**` or `tests/evals/**` — the corpus #3 grades against. Add both to
-  `l3-cage.txt` **and** the audit #43 `CAGE_ANCHORS` heredoc (`audit.sh:1680-1705`) in lockstep.
+  `cage.txt` **and** the audit #43 `CAGE_ANCHORS` heredoc (`audit.sh:1680-1705`) in lockstep.
 - **F3 — define + cage the scheduler config.** No path exists. Define `scripts/l4/scheduler.conf`
   (the only sanctioned self-launch config) and cage `scripts/l4/**` in both surfaces, so the loop can
   never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch). **Cage the
   arming home (guard 4):** `.claude/settings.local.json` is the per-repo arming home (the legitimate
   per-environment home for `KBG_AUTONOMY` — *never* user-global, which reaches every repo's hooks; see
-  `docs/reference/env-vars.md` §"Where to set them"). Add it to **both** `l3-cage.txt` and the #43
+  `docs/reference/env-vars.md` §"Where to set them"). Add it to **both** `cage.txt` and the #43
   `CAGE_ANCHORS` heredoc in lockstep — a settings file the loop can write is the same self-elevation surface
   as the scheduler config (the loop must not arm itself by editing its own settings). Outside-repo
   `~/.claude/settings.json` is covered by the §8 Act-layer gate, not the cage.
 - **F4 — installer fail-safe: anchor `REPO_ROOT` + affirm repo-identity (guards 1+2).**
-  `l3-loop-guard.py:52-53` sets `REPO_ROOT = SCRIPT_DIR.parent` (the plugin cache), but the loop's
+  `loop-guard.py:52-53` sets `REPO_ROOT = SCRIPT_DIR.parent` (the plugin cache), but the loop's
   `git tag/commit/reset` + `Edit/Write` (`recursive-improve/SKILL.md`) run against session **CWD** = the
   operator's repo — so the cage and dirty-abort guard the **wrong tree**. (a) Derive `REPO_ROOT` from
   `git rev-parse --show-toplevel` of CWD and **STOP** if it fails; (b) affirmatively assert that tree is the
@@ -129,7 +129,7 @@ flag. Must land first — it unblocks all three relaxations.
   evaporates once this bug is fixed. Machine-enforce via a #48-class audit leg; the §3 substrate plan
   (flag-predicate + TAMPER_VARS + R4 only) did not slate it.
 - **R3 — computational-every-cycle.** Audit #43-#47 run only post-hoc today. Add
-  `l3-loop-guard.py precheck --assert-cage-intact` shelling a per-check runner so cage-completeness
+  `loop-guard.py precheck --assert-cage-intact` shelling a per-check runner so cage-completeness
   re-asserts inside the always-computational path each cycle; #3 cannot bypass it. **R3 is the single
   mechanism that keeps #3 (Slice 2) non-circular — so it is a *named gating precondition for Slice 2*,
   not just "part of Slice 0" (see §10).**
@@ -138,7 +138,7 @@ flag. Must land first — it unblocks all three relaxations.
   extract #43's cage-completeness assertion into a standalone script both `audit.sh` and `precheck` call)
   that runs exactly the named check, preserves that check's skip/CRIT semantics, and exits non-zero on
   CRIT. R3 shells it every cycle, so it must **fail-CLOSED** — a shell-out error → STOP — and note that
-  #43 re-reads `l3-cage.txt`, making the per-cycle invocation self-referential (must not loop). Effort is
+  #43 re-reads `cage.txt`, making the per-cycle invocation self-referential (must not loop). Effort is
   non-trivial: `audit.sh` is a monolith. R3 cannot land until `--only` lands.
 - **R4 — cumulative ceiling.** L3 caps are per-run from an operator-supplied `--state` that resets per
   launch; a self-launcher launches repeatedly and never trips them. Add cross-run
@@ -160,7 +160,7 @@ flag. Must land first — it unblocks all three relaxations.
   routed through `autonomy_on()` and CRIT — so F1 is machine-enforced, not enumerate-and-trust (collapsing
   to one on/off key removes the `L3 OR L4 OR L5` disjunction that made the old per-level enumeration fragile).
 
-**Blockers to close in the same commit:** (1) `CAGE_ANCHORS` is a curated **subset** of `l3-cage.txt`,
+**Blockers to close in the same commit:** (1) `CAGE_ANCHORS` is a curated **subset** of `cage.txt`,
 not a mirror, and #43's anchor check is **directional** (anchors ⊆ cage) — so a path added to the cage
 but missing from `CAGE_ANCHORS` passes **silently**, the exact F2/F3 partial-landing this slice exists to
 prevent. Don't ship F2/F3 on a prose "add to both": add a **gating audit leg** (same shape Slice 2
@@ -225,7 +225,7 @@ Trialed on exactly **one low-stakes prose skill**.
   code/enforcement-surface candidates. Widen `l4-quality-trial.txt` incrementally, each addition
   re-audited.
 - **Blocker:** machine-enforce the two-copy cage sync in the same commit (a new #49, or extend #43b):
-  CRIT if `l4-quality-gate.sh` / `l4-quality-trial.txt` appear in `l3-cage.txt` but not the
+  CRIT if `l4-quality-gate.sh` / `l4-quality-trial.txt` appear in `cage.txt` but not the
   `CAGE_ANCHORS` heredoc (or vice-versa) — a partial landing silently un-cages the loop's own judge.
 
 ## 8. Slice 3 — #1 self-launch · effort L (highest blast radius — LAST)
@@ -235,7 +235,7 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
 - **Mechanism:** a launcher (`scripts/l4/launch.sh`) invoked by a detached, persistent macOS
   **launchd** `StartInterval` plist; the launcher reads the caged `scripts/l4/scheduler.conf`, sets
   `KBG_AUTONOMY_L4=1`, and drives the **same** prose `--auto` cycle calling the **same**
-  `l3-loop-guard.py` subcommands (caps + cage + `--max-flat` reused unchanged once they fire on L3 OR
+  `loop-guard.py` subcommands (caps + cage + `--max-flat` reused unchanged once they fire on L3 OR
   L4). Cadence is throttled by R4's cumulative ceiling. Audit #32's frontmatter assertion
   (`disable-model-invocation: true`, `audit.sh:1085`) stays **UNCHANGED and keeps firing** — it is still
   correct under L4 because the **OS scheduler**, not the model, self-starts the shell script, so the flag
@@ -261,7 +261,7 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
   where `check-act` (voluntary subcommand, not a PreToolUse interceptor) cannot reach — **no hook
   mechanically blocks writes there today.** The mechanical Act-layer guard (PreToolUse Bash/Write DENY on
   any write / `launchctl` mutation to the plist or kill-file while `KBG_AUTONOMY_L4=1`, mirroring how
-  `l3-push-gate.sh` denies push) is **built in Slice 0** (§5); #1 is **not buildable** until it ships
+  `push-gate.sh` denies push) is **built in Slice 0** (§5); #1 is **not buildable** until it ships
   gauntlet-green with a real-DENY test. Without it a self-launched loop could rewrite its own cadence and
   escape the kill-switch — model-discipline is not a cage. **(Substrate RESOLVED §11.1: launchd — the
   in-repo git-hook alternative was rejected as a false middle, so this Act-layer gate is *required*, not
@@ -313,7 +313,7 @@ Every slice ships committed + **gauntlet-green under the flag** (measure green *
 not only flag-OFF — the v0.3.10 lesson) **and** flag-OFF byte-identical (audit #48b) before the next is
 built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for everything after it.
 
-- **R3 gates Slice 2 by name:** Slice 2 (#3) MUST NOT build until `l3-loop-guard.py precheck
+- **R3 gates Slice 2 by name:** Slice 2 (#3) MUST NOT build until `loop-guard.py precheck
   --assert-cage-intact` is committed and a test proves a **holed cage forces STOP even when the model
   verdict is green** — the ordering is machine-checked (via #48), not prose-ordered.
 - **Gate 2 is now the independent backstop for #3 — strengthen it commensurately:** under L4 the batch's

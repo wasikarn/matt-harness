@@ -25,7 +25,7 @@ else
   CLAUDE_DIR="$REPO"
 fi
 ADR0003="$CLAUDE_DIR/docs/adr/0003-l3-bounded-autonomy.md"
-CAGE="$CLAUDE_DIR/scripts/l3-cage.txt"
+CAGE="$CLAUDE_DIR/scripts/cage.txt"
 
 CRIT_COUNT=0
 crit() { printf 'CRIT: %s\n' "$1"; CRIT_COUNT=$((CRIT_COUNT + 1)); }
@@ -35,16 +35,16 @@ crit() { printf 'CRIT: %s\n' "$1"; CRIT_COUNT=$((CRIT_COUNT + 1)); }
 
 # 43a: cage file present + non-empty (after stripping comments/blanks).
 if [ ! -f "$CAGE" ]; then
-  crit "L3 cage missing: scripts/l3-cage.txt absent but ADR 0003 declares L3 (the loop would run uncaged — ADR 0003 §Three rails)"
+  crit "L3 cage missing: scripts/cage.txt absent but ADR 0003 declares L3 (the loop would run uncaged — ADR 0003 §Three rails)"
 elif [ -z "$(grep -vE '^[[:space:]]*(#|$)' "$CAGE")" ]; then
-  crit "L3 cage empty: scripts/l3-cage.txt has no entries — a deny-by-default cage with nothing in it denies nothing (fail-closed expects entries)"
+  crit "L3 cage empty: scripts/cage.txt has no entries — a deny-by-default cage with nothing in it denies nothing (fail-closed expects entries)"
 else
   # 43b: cage must cover the load-bearing anchors. _CAGE_ANCHORS is the SINGLE
   # source for the curated anchor set; 43b checks anchors⊆cage (directional), 43d
   # checks the L4 members are in BOTH surfaces (bidirectional). Add a path here AND
-  # to scripts/l3-cage.txt in lockstep.
-  _CAGE_ANCHORS="scripts/l3-cage.txt
-scripts/l3-loop-guard.py
+  # to scripts/cage.txt in lockstep.
+  _CAGE_ANCHORS="scripts/cage.txt
+scripts/loop-guard.py
 hooks/**
 tests/hooks/runners/**
 skills/harness-audit/scripts/audit.sh
@@ -76,7 +76,7 @@ git-hooks/**
     [ -n "$_anchor" ] || continue
     grep -qxF "$_anchor" "$CAGE" || _missing="$_missing $_anchor"
   done <<<"$_CAGE_ANCHORS"
-  [ -z "$_missing" ] || crit "L3 cage incomplete: scripts/l3-cage.txt is missing required safety anchor(s):$_missing (the loop could edit these to escape — ADR 0003 §Cage redesign)"
+  [ -z "$_missing" ] || crit "L3 cage incomplete: scripts/cage.txt is missing required safety anchor(s):$_missing (the loop could edit these to escape — ADR 0003 §Cage redesign)"
   # 43d: L4 cage↔anchor lockstep (design §5 F2/F3 blocker). #43b is directional
   # (anchors⊆cage), so a path added to the cage but missing from CAGE_ANCHORS passes
   # SILENTLY; the L4 anchors must appear in BOTH surfaces. Quoted to defeat globstar.
@@ -84,7 +84,7 @@ git-hooks/**
     _ic=0; _ia=0
     if grep -qxF "$_a" "$CAGE"; then _ic=1; fi
     if printf '%s\n' "$_CAGE_ANCHORS" | grep -qxF "$_a"; then _ia=1; fi
-    [ "$_ic$_ia" = "11" ] || crit "L4 cage↔anchor drift: '$_a' in cage:$_ic / anchors:$_ia — must be in BOTH scripts/l3-cage.txt and the #43 CAGE_ANCHORS set (design §5 F2/F3; a one-sided add silently un-cages a path)"
+    [ "$_ic$_ia" = "11" ] || crit "L4 cage↔anchor drift: '$_a' in cage:$_ic / anchors:$_ia — must be in BOTH scripts/cage.txt and the #43 CAGE_ANCHORS set (design §5 F2/F3; a one-sided add silently un-cages a path)"
   done
 fi
 

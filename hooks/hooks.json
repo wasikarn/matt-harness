@@ -134,7 +134,7 @@
           },
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/l3-push-gate.sh\""
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/push-gate.sh\""
           },
           {
             "type": "command",

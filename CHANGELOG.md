@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.1] — 2026-06-23
+
+Drop the vestigial `l3-` prefix from the shared autonomy surfaces (post-single-key-collapse
+the cage/guard/push-gate/run-report are the shared floor, not L3-specific — `l3-push-gate.sh`
+was a misnomer, it enforces L4 Gate-2 + L5 ship-gate too). Pure rename, no functional change
+(gauntlet green, critical-hooks 500/0). `scripts/l4/` + `l4-*` kept as era-labels (those scripts
+genuinely are L4+ additions, not a misnomer). ADR filenames unchanged (immutable records).
+
+- `scripts/l3-cage.txt` → `scripts/cage.txt`
+- `scripts/l3-loop-guard.py` → `scripts/loop-guard.py`
+- `hooks/gates/l3-push-gate.sh` → `hooks/gates/push-gate.sh`
+- `scripts/l3-run-report.sh` → `scripts/run-report.sh`
+- ~119 caller references updated (hooks.json, audit #43/#44/#48c/#48d, tests, recursive-improve
+  SKILL.md, the cage self-reference, the importlib path in l4-auto-keep.py, CLAUDE.md, the design
+  doc). `l3-precycle-` rollback tags + `0003-l3-bounded-autonomy.md` ADR filename unchanged.
+
 ## [0.4.0] — 2026-06-23
 
 The full **L4/L5 autonomy machinery** (ADRs 0004 + 0005, design `docs/research/l4-machinery-design.md`)
@@ -70,7 +86,7 @@ human-launched and already bounded by `--max-runs` / `--max-duration` / `--fail-
 
 ### Added
 
-- **No-progress cap (`--max-flat`, default 2)** in `scripts/l3-loop-guard.py` — ends an `--auto`
+- **No-progress cap (`--max-flat`, default 2)** in `scripts/loop-guard.py` — ends an `--auto`
   run after K consecutive **green-but-flat** cycles (gauntlet passes but no audit/`gaps` metric
   moved). Distinct from `--fail-streak` (which counts reds). The `flat?` decision is a numeric
   delta the loop computes; the guard only counts (computational, never a model verdict). Covered
@@ -314,14 +330,14 @@ self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
   mutation), the **two-gate model** (Gate 1 = launch approval; Gate 2 = pre-push
   review; no per-cycle gate), and that ADR 0003 is itself reversible. ADR 0002
   gains a top supersession banner (not a silent violation).
-- **The cage** — `scripts/l3-cage.txt` (deny-by-default path list the loop may
+- **The cage** — `scripts/cage.txt` (deny-by-default path list the loop may
   never edit: all gates, `audit.sh`, doctrine, `.git/config`, the cage itself) +
-  `scripts/l3-loop-guard.py` (the single code-level enforcer: caps + cage check,
+  `scripts/loop-guard.py` (the single code-level enforcer: caps + cage check,
   fail-closed, flag captured immutable for the run, return contract
   `{CONTINUE, SKIP, REVERT, STOP}`). Caps are enforced in code, not prose:
   `--max-runs` (default 3, a reviewability bound), `--max-duration`,
   `--fail-streak`, `--dirty-abort`.
-- **Gate 2 push gate** (`hooks/gates/l3-push-gate.sh`, flag-scoped) — under an
+- **Gate 2 push gate** (`hooks/gates/push-gate.sh`, flag-scoped) — under an
   active L3 run with unreviewed commits, denies `git push` / `gh pr` /
   `core.hooksPath` tampering; override only via explicit `KBG_L3_REVIEW_DONE=1`.
   `_lib.sh` gains **L3 immunity**: profile-off / disabled-hooks can't disarm the
@@ -336,7 +352,7 @@ self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
   can't silently disarm the "model can't self-start the loop" guard. New tests
   `test-ch-l3.sh` (25 checks) + `test-ch-agent-readonly.sh`.
 - **Run-id audit trail** — `run_id` / `l3_cycle` correlation in the governance
-  journal (`hooks/JOURNAL-SCHEMA.md`) + `scripts/l3-run-report.sh` read-only
+  journal (`hooks/JOURNAL-SCHEMA.md`) + `scripts/run-report.sh` read-only
   query view.
 
 ### Changed

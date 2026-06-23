@@ -1,5 +1,5 @@
 #!/bin/bash
-# l3-push-gate.sh — Gate 2 of the L3 bounded-autonomy loop (ADR 0003).
+# push-gate.sh — Gate 2 of the L3 bounded-autonomy loop (ADR 0003).
 #
 # The L3 loop (recursive-improve --auto) commits LOCAL-only; pushing the batch is
 # a human decision made AFTER a pre-push review (Gate 2). This gate enforces that
@@ -18,11 +18,11 @@
 # Bypass (normal sessions only — has no effect during an armed run, by autonomy
 # immunity in _lib.sh):
 #   export CLAUDE_HOOK_PROFILE=off
-#   export CLAUDE_DISABLED_HOOKS=l3-push-gate
+#   export CLAUDE_DISABLED_HOOKS=push-gate
 
 set -uo pipefail
 
-HOOK_ID="l3-push-gate"
+HOOK_ID="push-gate"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat

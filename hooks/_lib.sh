@@ -60,7 +60,7 @@ hook_init() {
   # unattended loop must NOT be able to disarm gates via CLAUDE_HOOK_PROFILE=off /
   # CLAUDE_DISABLED_HOOKS. When armed (single-key autonomy_on predicate, design §5
   # F1), force every hook live regardless of those bypass vars. The flag is OFF by
-  # default → zero effect on normal sessions. (l3-loop-guard check-act ALSO denies
+  # default → zero effect on normal sessions. (loop-guard check-act ALSO denies
   # any candidate command that sets these vars; this is the runtime backstop for
   # the case a command slips past the loop's pre-Act check.)
   if autonomy_on; then

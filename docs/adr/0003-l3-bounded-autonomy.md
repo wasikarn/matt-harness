@@ -92,7 +92,7 @@ per-mutation inspection recoverable after the fact.
    `disable-model-invocation: true` (audit #32). L3 is unattended *within* a
    human-started run, **never self-launching**.
 
-Caps are enforced **in code** (`scripts/l3-loop-guard.py`), not prose:
+Caps are enforced **in code** (`scripts/loop-guard.py`), not prose:
 `--max-runs` (**default 3**), `--max-duration`, `--fail-streak`, `--dirty-abort`.
 `KBG_AUTONOMY_L3` is captured at process start and **immutable for the run** (the
 loop cannot self-elevate scope mid-run).
@@ -103,13 +103,13 @@ loop cannot self-elevate scope mid-run).
 > metrics). `--max-runs` + `--max-duration` are the hard, locally-observable bounds
 > and bound a run regardless of cost; real cost-drift estimation ships with the
 > Slice-2 learning engine, where the plan's cost-drift PORT already lives.
-> `scripts/l3-loop-guard.py` records this rationale in-file.
+> `scripts/loop-guard.py` records this rationale in-file.
 
 ### Implementation status (flag OFF == L2 until the ship slice)
 
 This ADR records an **accepted decision**. The enforcement machinery was built in a
 **separate, gauntlet-gated slice** (Slice 1) *after* this doctrine slice, and is
-**committed locally and gauntlet-green** (2026-06-21): `scripts/l3-loop-guard.py`,
+**committed locally and gauntlet-green** (2026-06-21): `scripts/loop-guard.py`,
 the cage-denylist, the computational push-gate, the `--auto` body, and audit checks
 **#43/#44** (plus **#45**, reviewer read-only). It is **not yet shipped to the
 plugin cache**.

@@ -19,11 +19,11 @@
 set -uo pipefail
 
 RANGE="${1:-HEAD~1..HEAD}"
-# Security-gate paths (the caged safety surface — mirrors l3-cage.txt's load-bearing
+# Security-gate paths (the caged safety surface — mirrors cage.txt's load-bearing
 # entries). A change to any of these in an L4-authored commit is the tripwire condition.
 SEC_PATS=(
-  'hooks/gates/' 'hooks/_lib\.sh' 'hooks/hooks\.json' 'scripts/l3-cage\.txt'
-  'scripts/l3-loop-guard\.py' 'skills/harness-audit/scripts/audit\.sh'
+  'hooks/gates/' 'hooks/_lib\.sh' 'hooks/hooks\.json' 'scripts/cage\.txt'
+  'scripts/loop-guard\.py' 'skills/harness-audit/scripts/audit\.sh'
   'scripts/run-gauntlet\.sh' 'scripts/l4/' 'git-hooks/'
   '\.claude-plugin/plugin\.json' '\.claude-plugin/marketplace\.json'
 )

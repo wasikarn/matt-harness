@@ -7,7 +7,7 @@
 # (cage-complete) verifies this list covers every file the gauntlet relies on;
 # if a new safety file appears that no entry matches, #43 CRITs.
 #
-# Syntax (kept deliberately dumb — see l3-loop-guard.py:is_caged):
+# Syntax (kept deliberately dumb — see loop-guard.py:is_caged):
 #   - "<dir>/**"  → the directory and everything under it, any depth
 #   - "<path>"    → that exact repo-relative path
 # No bare "*" globs: every entry is a "/**" dir-prefix or a literal path, so the
@@ -15,9 +15,9 @@
 
 # --- this cage + its guard + the Gate-2 review-view generator (self-reference:
 #     editing the cage / a tampered run-report could mislead the reviewer) ---
-scripts/l3-cage.txt
-scripts/l3-loop-guard.py
-scripts/l3-run-report.sh
+scripts/cage.txt
+scripts/loop-guard.py
+scripts/run-report.sh
 
 # --- all governance hooks (gates, advisory, lifecycle, session, post-tool,
 #     maintenance, _lib.sh/_lib.py, hooks.json, sensors.json) ---

@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 # test-ch-l3.sh — L3 bounded-autonomy machinery (ADR 0003):
-#   - l3-push-gate.sh  (Gate 2: deny push/merge/hooksPath while unreviewed)
+#   - push-gate.sh  (Gate 2: deny push/merge/hooksPath while unreviewed)
 #   - _lib.sh L3 immunity (profile-off / disabled-hooks can't disarm gates under L3)
 #   - block-dangerous-git.sh (L3 rollback carve-out: allow `reset --hard <l3-precycle>` under flag)
-#   - l3-loop-guard.py (caps + cage, fail-closed, flag-immutable)
+#   - loop-guard.py (caps + cage, fail-closed, flag-immutable)
 #   - audit check-numbering stability (#32/#34/#41/#43/#44 must not drift)
 # shellcheck disable=SC1090,SC2034,SC2086
 # shellcheck shell=bash
 source "$(dirname "$0")/test-critical-hooks-lib.sh"
 
 REPO="$(cd "$HOOKS/.." && pwd)"
-GUARD="$REPO/scripts/l3-loop-guard.py"
+GUARD="$REPO/scripts/loop-guard.py"
 AUDIT="$REPO/skills/harness-audit/scripts/audit.sh"
 
 # pcheck <env-string> <want-decision> <label> <command>
-# Runs l3-push-gate.sh with the given env on a Bash command. The armed cases pass
+# Runs push-gate.sh with the given env on a Bash command. The armed cases pass
 # KBG_AUTONOMY=1 + CLAUDE_PROJECT_DIR pointing at a per-repo arming fixture (the
 # only surface autonomy_on() honors — guard 3); a user-global flag arms nothing.
 pcheck() {
   local env="$1" want="$2" label="$3" cmd="$4" out got
-  out=$(printf '%s' "$(bash_event "$cmd")" | env $env bash "$HOOKS/gates/l3-push-gate.sh" 2>/dev/null)
+  out=$(printf '%s' "$(bash_event "$cmd")" | env $env bash "$HOOKS/gates/push-gate.sh" 2>/dev/null)
   if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
-  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l3-push-gate" "$label"
-  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l3-push-gate" "$label" "$want" "$got"; fi
+  if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "push-gate" "$label"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "push-gate" "$label" "$want" "$got"; fi
 }
 
 # --- per-repo arming fixtures (guard 3, design §5 F1) ---
@@ -46,7 +46,7 @@ REVJ="$FIXTURE/revjournal.jsonl"
 printf '%s\n' '{"id":"x","ts":"2026-06-22T00:00:00Z","session":"s","hook":"review-pr","event":"review_finding","source":"journal_append","fields":{}}' > "$REVJ"
 EMPTYJ="$FIXTURE/emptyjournal.jsonl"; : > "$EMPTYJ"
 
-# --- l3-push-gate: flag-scoped, Gate-2 enforcement (single-key autonomy_on) ---
+# --- push-gate: flag-scoped, Gate-2 enforcement (single-key autonomy_on) ---
 pcheck ""                                            none "inert when flag unset (normal session)"          "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny git push"    "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny gh pr merge" "gh pr merge 12"
@@ -61,7 +61,7 @@ pcheck "$ARMED_ENV"                                  none "armed: allow local co
 pcheck "$GLOBAL_ENV"                                 none "user-global flag (no per-repo arming): arms nothing" "git push origin develop"
 # Immunity: profile=off / disabled-hooks must NOT disarm the push-gate while armed.
 pcheck "$ARMED_ENV CLAUDE_HOOK_PROFILE=off"          deny "immunity: profile=off can't bypass when armed"  "git push origin develop"
-pcheck "$ARMED_ENV CLAUDE_DISABLED_HOOKS=l3-push-gate" deny "immunity: disabled-hooks can't bypass when armed" "git push origin develop"
+pcheck "$ARMED_ENV CLAUDE_DISABLED_HOOKS=push-gate" deny "immunity: disabled-hooks can't bypass when armed" "git push origin develop"
 
 # --- l4-act-gate: Act-layer self-launch guard (design §5 Act-layer gate + §8) ---
 # The launchd plist + kill-file live outside the repo; this PreToolUse gate DENIES
@@ -111,7 +111,7 @@ dgcheck "$ARMED_ENV"  deny "armed: deny reset --hard to a non-precycle ref"     
 dgcheck ""            deny "flag off: deny reset --hard even to l3-precycle tag"         "git reset --hard l3-precycle-run1-1"
 dgcheck "$ARMED_ENV"  deny "carve-out can't ride a compound (force-push appended)"       "git reset --hard l3-precycle-run1-1 && git push --force origin main"
 
-# --- l3-loop-guard.py: caps + cage, fail-closed, flag-immutable ---
+# --- loop-guard.py: caps + cage, fail-closed, flag-immutable ---
 # Run the guard inline so the exit code is captured in gcheck's own scope (a
 # $(...) wrapper would lose $? to its subshell). out=$(...) captures stdout; the
 # very next $? is the guard's exit.
@@ -120,14 +120,14 @@ gcheck() {
   local out gx got
   out=$(env $env python3 "$GUARD" "$@" 2>/dev/null); gx=$?
   got=$(printf '%s' "$out" | jq -r '.decision // "none"' 2>/dev/null || echo "none")
-  if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l3-loop-guard" "$label"
-  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "l3-loop-guard" "$label" "$want" "$wexit" "$got" "$gx"; fi
+  if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "loop-guard" "$label"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "loop-guard" "$label" "$want" "$wexit" "$got" "$gx"; fi
 }
 
 if command -v python3 >/dev/null 2>&1; then
   # selftest must pass (matcher + fail-closed posture).
-  if python3 "$GUARD" selftest >/dev/null 2>&1; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l3-loop-guard" "selftest passes"
-  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "l3-loop-guard" "selftest FAILED"; fi
+  if python3 "$GUARD" selftest >/dev/null 2>&1; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "loop-guard" "selftest passes"
+  else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "loop-guard" "selftest FAILED"; fi
 
   # check-act: flag off → STOP (refuses to run); caged path → REVERT; editable → CONTINUE; tamper → REVERT.
   gcheck STOP     10 "check-act refuses when flag off"      ""                     check-act "$REPO/hooks/x.sh"
@@ -180,8 +180,8 @@ if command -v python3 >/dev/null 2>&1; then
     local out gx got
     out=$(cd "$dir" && env $ARMED_ENV python3 "$GUARD" "$@" 2>/dev/null); gx=$?
     got=$(printf '%s' "$out" | jq -r '.decision // "none"' 2>/dev/null || echo "none")
-    if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l3-loop-guard" "$label"
-    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "l3-loop-guard" "$label" "$want" "$wexit" "$got" "$gx"; fi
+    if [ "$got" = "$want" ] && [ "$gx" = "$wexit" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "loop-guard" "$label"
+    else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s/%s, got %s/%s)\n' "loop-guard" "$label" "$want" "$wexit" "$got" "$gx"; fi
   }
   # F4 negative: a non-git CWD → STOP (not a git working tree).
   f4check "$BARE_PROJ"  STOP 10 "F4: non-git CWD → STOP"                precheck --state "$FIXTURE/f4a.json" --max-runs 1 --no-dirty-abort
@@ -197,7 +197,7 @@ if command -v python3 >/dev/null 2>&1; then
   # then the guard integration (positive + fail-closed).
   R3CF="$FIXTURE/r3cage"; mkdir -p "$R3CF/docs/adr" "$R3CF/scripts" "$R3CF/scripts/l4"
   printf '# adr0003 — gate #43 on\n' > "$R3CF/docs/adr/0003-l3-bounded-autonomy.md"
-  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$R3CF/scripts/l3-cage.txt"  # holed
+  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$R3CF/scripts/cage.txt"  # holed
   cp "$REPO/scripts/l4/cage-intact.sh" "$R3CF/scripts/l4/cage-intact.sh"  # the per-check runner the relay/`--only` shells
   bash "$AUDIT" --only 43 "$R3CF" >/dev/null 2>&1; _r=$?
   if [ "$_r" -ne 0 ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit --only 43" "holed cage → non-zero CRIT"; else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit --only 43" "holed cage did NOT CRIT"; fi
@@ -295,7 +295,7 @@ if command -v python3 >/dev/null 2>&1; then
   # WHEN the model verdict is green — the cage check is computational + gates the model.
   R3HOLE="$FIXTURE/r3hole"; mkdir -p "$R3HOLE/docs/adr" "$R3HOLE/scripts" "$R3HOLE/scripts/l4"
   printf '# adr0003\n' > "$R3HOLE/docs/adr/0003-l3-bounded-autonomy.md"
-  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$R3HOLE/scripts/l3-cage.txt"
+  /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$R3HOLE/scripts/cage.txt"
   cp "$REPO/scripts/l4/cage-intact.sh" "$R3HOLE/scripts/l4/cage-intact.sh"
   _holecrit=$(bash "$AUDIT" --only 43 "$R3HOLE" 2>&1); _holerc=$?
   if [ "$_holerc" -ne 0 ] && printf '%s\n' "$_holecrit" | /usr/bin/grep -q 'cage incomplete'; then
@@ -397,7 +397,7 @@ if command -v python3 >/dev/null 2>&1; then
   fi
 
   # --- Slice 4 / L5: auto-push ship-gate (ADR 0005, design §8.5, #35) ---
-  # Folded into l3-push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push
+  # Folded into push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push
   # ONLY to an allowlisted host+org (default EMPTY → un-configured pushes nowhere),
   # AND only after a green gauntlet. Deny on divergence / un-configured / unverified.
   # pcheck5 <cwd> <env> <want> <label> <cmd> — runs the gate with CWD=<cwd> (a fixture
@@ -409,7 +409,7 @@ if command -v python3 >/dev/null 2>&1; then
   printf '%s\n' '{"id":"g","ts":"2026-06-22T00:00:00Z","session":"s","hook":"recursive-improve","event":"l3_cycle","source":"journal_append","fields":{"outcome":"green","run_id":"r","iteration":1}}' > "$GREENJ"
   pcheck5() {
     local cwd="$1" env="$2" want="$3" label="$4" cmd="$5" out got
-    out=$(printf '%s' "$(bash_event "$cmd")" | ( cd "$cwd" && env $env bash "$HOOKS/gates/l3-push-gate.sh" ) 2>/dev/null)
+    out=$(printf '%s' "$(bash_event "$cmd")" | ( cd "$cwd" && env $env bash "$HOOKS/gates/push-gate.sh" ) 2>/dev/null)
     if [ -z "$out" ]; then got="none"; else got=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null || echo "parse-error"); fi
     if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l5-ship-gate" "$label"
     else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l5-ship-gate" "$label" "$want" "$got"; fi
@@ -425,23 +425,23 @@ if command -v python3 >/dev/null 2>&1; then
   PCF="$FIXTURE/push50"; mkdir -p "$PCF/hooks/gates" "$PCF/agents" "$PCF/docs/adr"
   printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$PCF/agents/x.md"
   printf '# adr0005\n' > "$PCF/docs/adr/0005-l5-auto-push.md"  # gate #50 on ADR 0005
-  cp "$REPO/hooks/gates/l3-push-gate.sh" "$PCF/hooks/gates/l3-push-gate.sh"
-  sed -i '' 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/l3-push-gate.sh" 2>/dev/null || sed -i 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/l3-push-gate.sh"
+  cp "$REPO/hooks/gates/push-gate.sh" "$PCF/hooks/gates/push-gate.sh"
+  sed -i '' 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/push-gate.sh" 2>/dev/null || sed -i 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/push-gate.sh"
   _p50=$(bash "$AUDIT" "$PCF" 2>&1)
   if printf '%s\n' "$_p50" | /usr/bin/grep -q 'empty-default'; then
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#50" "CRITs when the empty-allowlist default is removed"
   else
     FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#50" "did NOT CRIT on missing empty-default"
   fi
-  cp "$REPO/hooks/gates/l3-push-gate.sh" "$PCF/hooks/gates/l3-push-gate.sh"
+  cp "$REPO/hooks/gates/push-gate.sh" "$PCF/hooks/gates/push-gate.sh"
   _p50k=$(bash "$AUDIT" "$PCF" 2>&1)
-  if printf '%s\n' "$_p50k" | /usr/bin/grep -qE 'audit #50:.*l3-push-gate|empty-default|allowlist-var|dest-resolution|green-gauntlet|allowlist-membership'; then
+  if printf '%s\n' "$_p50k" | /usr/bin/grep -qE 'audit #50:.*push-gate|empty-default|allowlist-var|dest-resolution|green-gauntlet|allowlist-membership'; then
     FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#50" "false-positive on the clean ship-gate leg"
   else
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#50" "silent on the clean ship-gate leg"
   fi
 else
-  printf '  ⚠️  python3 absent — skipped l3-loop-guard checks\n'
+  printf '  ⚠️  python3 absent — skipped loop-guard checks\n'
 fi
 
 # --- audit check-numbering stability: the autonomy-load-bearing IDs must not drift ---
@@ -459,16 +459,16 @@ for id in 32 34 41 43 44 48 49 50; do ncheck "$id"; done
 CF="$FIXTURE/cage43"; mkdir -p "$CF/docs/adr" "$CF/scripts" "$CF/scripts/l4" "$CF/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CF/agents/x.md"  # satisfy audit's fleet guard
 printf '# adr0003 — gate #43 on\n' > "$CF/docs/adr/0003-l3-bounded-autonomy.md"
-cp "$REPO/scripts/l3-loop-guard.py" "$CF/scripts/l3-loop-guard.py"
+cp "$REPO/scripts/loop-guard.py" "$CF/scripts/loop-guard.py"
 cp "$REPO/scripts/l4/cage-intact.sh" "$CF/scripts/l4/cage-intact.sh"  # #43 relays through this standalone
-/usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/l3-cage.txt" > "$CF/scripts/l3-cage.txt"  # holed
+/usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$CF/scripts/cage.txt"  # holed
 HOLED=$(bash "$AUDIT" "$CF" 2>&1)
 if printf '%s\n' "$HOLED" | /usr/bin/grep -q 'cage incomplete' && printf '%s\n' "$HOLED" | /usr/bin/grep -qF 'CONTEXT.md'; then
   PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43b" "CRITs on holed cage (names missing anchor)"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43b" "did NOT CRIT on holed cage"
 fi
-cp "$REPO/scripts/l3-cage.txt" "$CF/scripts/l3-cage.txt"  # full cage = control
+cp "$REPO/scripts/cage.txt" "$CF/scripts/cage.txt"  # full cage = control
 if bash "$AUDIT" "$CF" 2>&1 | /usr/bin/grep -q 'cage incomplete'; then
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43b" "false-positive on complete cage"
 else
@@ -482,16 +482,16 @@ fi
 CFD="$FIXTURE/cage43d"; mkdir -p "$CFD/docs/adr" "$CFD/scripts" "$CFD/scripts/l4" "$CFD/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CFD/agents/x.md"
 printf '# adr0003 — gate #43 on\n' > "$CFD/docs/adr/0003-l3-bounded-autonomy.md"
-cp "$REPO/scripts/l3-loop-guard.py" "$CFD/scripts/l3-loop-guard.py"
+cp "$REPO/scripts/loop-guard.py" "$CFD/scripts/loop-guard.py"
 cp "$REPO/scripts/l4/cage-intact.sh" "$CFD/scripts/l4/cage-intact.sh"  # #43d relays through this standalone
-/usr/bin/grep -vxF 'scripts/l4/**' "$REPO/scripts/l3-cage.txt" > "$CFD/scripts/l3-cage.txt"  # L4 anchor holed from cage
+/usr/bin/grep -vxF 'scripts/l4/**' "$REPO/scripts/cage.txt" > "$CFD/scripts/cage.txt"  # L4 anchor holed from cage
 DRIFTED=$(bash "$AUDIT" "$CFD" 2>&1)
 if printf '%s\n' "$DRIFTED" | /usr/bin/grep -q 'cage↔anchor drift' && printf '%s\n' "$DRIFTED" | /usr/bin/grep -qF 'scripts/l4/**'; then
   PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43d" "CRITs on L4 anchor missing from cage (drift message)"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43d" "did NOT CRIT with drift message on holed L4 anchor"
 fi
-cp "$REPO/scripts/l3-cage.txt" "$CFD/scripts/l3-cage.txt"  # full cage = control
+cp "$REPO/scripts/cage.txt" "$CFD/scripts/cage.txt"  # full cage = control
 if bash "$AUDIT" "$CFD" 2>&1 | /usr/bin/grep -q 'cage↔anchor drift'; then
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43d" "false-positive drift on complete cage"
 else

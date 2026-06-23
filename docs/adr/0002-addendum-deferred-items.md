@@ -12,7 +12,7 @@
   ADR 0003**: L3 is a *bounded, opt-in, local-only, push-gated,
   computationally-gated* loop — it still does not provide the model-as-gate,
   run-until-true, or auto-PR autonomy these rows require. (ADR 0003's own L3
-  enforcement machinery — `l3-loop-guard.py`, the cage-denylist, audit checks
+  enforcement machinery — `loop-guard.py`, the cage-denylist, audit checks
   #43+ — ships in a later, gauntlet-gated build slice; until then
   `KBG_AUTONOMY_L3` is inert. See [ADR 0003](0003-l3-bounded-autonomy.md)
   §Implementation status.)

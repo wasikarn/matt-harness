@@ -1706,8 +1706,8 @@ fi
 # plugin repos + the audit fixtures don't declare L3, so the whole block is skipped).
 # CRIT, not WARN: a holed cage is one model-version from a self-rewriting loop.
 ADR0003="$CLAUDE_DIR/docs/adr/0003-l3-bounded-autonomy.md"
-CAGE="$CLAUDE_DIR/scripts/l3-cage.txt"
-GUARD="$CLAUDE_DIR/scripts/l3-loop-guard.py"
+CAGE="$CLAUDE_DIR/scripts/cage.txt"
+GUARD="$CLAUDE_DIR/scripts/loop-guard.py"
 if [ -f "$ADR0003" ]; then
   # 43a/43b/43d: cage-completeness core (design §5 R3). The logic lives ONCE in
   # scripts/l4/cage-intact.sh (the standalone) so the loop-guard's per-cycle
@@ -1728,27 +1728,27 @@ if [ -f "$ADR0003" ]; then
   fi
   # 43c: guard present, compiles, and its self-check passes (the matcher + fail-closed posture).
   if [ ! -f "$GUARD" ]; then
-    crit "L3 guard missing: scripts/l3-loop-guard.py absent but ADR 0003 declares L3 (no code-level enforcer of the caps/cage)"
+    crit "L3 guard missing: scripts/loop-guard.py absent but ADR 0003 declares L3 (no code-level enforcer of the caps/cage)"
   elif command -v python3 >/dev/null 2>&1; then
     if ! python3 -m py_compile "$GUARD" 2>/dev/null; then
-      crit "L3 guard broken: scripts/l3-loop-guard.py does not compile (py_compile failed)"
+      crit "L3 guard broken: scripts/loop-guard.py does not compile (py_compile failed)"
     elif ! python3 "$GUARD" selftest >/dev/null 2>&1; then
-      crit "L3 guard selftest FAILED: scripts/l3-loop-guard.py selftest non-zero (cage matcher or fail-closed posture regressed)"
+      crit "L3 guard selftest FAILED: scripts/loop-guard.py selftest non-zero (cage matcher or fail-closed posture regressed)"
     fi
   fi
 fi
 
 # 44. L3 push-gate + git wiring (ADR 0003) — Gate 2 (push stays human-gated) is
-# enforced by the l3-push-gate.sh PreToolUse hook; the git-hook gauntlet that runs
+# enforced by the push-gate.sh PreToolUse hook; the git-hook gauntlet that runs
 # the in-loop check is wired via core.hooksPath=git-hooks. A removed push-gate or a
 # redirected hooksPath silently disables Gate 2 / the gauntlet. Gated on ADR 0003.
 if [ -f "$ADR0003" ]; then
-  PUSHGATE="$CLAUDE_DIR/hooks/gates/l3-push-gate.sh"
+  PUSHGATE="$CLAUDE_DIR/hooks/gates/push-gate.sh"
   HOOKSJSON="$CLAUDE_DIR/hooks/hooks.json"
   if [ ! -f "$PUSHGATE" ]; then
-    crit "L3 push-gate missing: hooks/gates/l3-push-gate.sh absent but ADR 0003 declares L3 (Gate 2 unenforced — the loop could push its own batch)"
-  elif [ -f "$HOOKSJSON" ] && ! grep -qF 'l3-push-gate.sh' "$HOOKSJSON"; then
-    crit "L3 push-gate not registered: hooks/gates/l3-push-gate.sh exists but is not wired in hooks/hooks.json (the gate never fires)"
+    crit "L3 push-gate missing: hooks/gates/push-gate.sh absent but ADR 0003 declares L3 (Gate 2 unenforced — the loop could push its own batch)"
+  elif [ -f "$HOOKSJSON" ] && ! grep -qF 'push-gate.sh' "$HOOKSJSON"; then
+    crit "L3 push-gate not registered: hooks/gates/push-gate.sh exists but is not wired in hooks/hooks.json (the gate never fires)"
   fi
   # hooksPath sub-check: only when auditing the actual git working tree (skip for
   # the plugin cache, which has no .git, and for non-kbg repos without git-hooks/).
@@ -1853,7 +1853,7 @@ fi
 #       complete — a leftover direct read is the inert-under-L4 hole F1 closes).
 ADR0004="$CLAUDE_DIR/docs/adr/0004-l4-autonomy.md"
 if [ -f "$ADR0004" ]; then
-  PUSHGATE48="$CLAUDE_DIR/hooks/gates/l3-push-gate.sh"
+  PUSHGATE48="$CLAUDE_DIR/hooks/gates/push-gate.sh"
   # 48a/48b: runtime both directions. Skip cleanly if the gate or jq is absent.
   if [ -f "$PUSHGATE48" ] && command -v jq >/dev/null 2>&1; then
     _ev48='{"tool_name":"Bash","tool_input":{"command":"git push origin develop"}}'
@@ -1882,13 +1882,13 @@ if [ -f "$ADR0004" ]; then
     [ -f "$_f" ] || continue
     _base=$(basename "$_f")
     # Sanctioned homes for a raw KBG_AUTONOMY literal: the helper bodies (_lib.sh,
-    # l3-loop-guard.py), the push-gate tamper list (l3-push-gate.sh), AND the L4
+    # loop-guard.py), the push-gate tamper list (push-gate.sh), AND the L4
     # self-launch launcher (scripts/l4/launch.sh) — which SETS the flag for the cycle
     # (an arming SOURCE, not a read; it is the caged, flag-gated sole sanctioned
     # self-start, design §8). Every OTHER arming read must route through autonomy_on().
     case "$_f" in
       */scripts/l4/launch.sh) _newok=1 ;;
-      *) case "$_base" in _lib.sh|l3-push-gate.sh|l3-loop-guard.py) _newok=1 ;; *) _newok=0 ;; esac ;;
+      *) case "$_base" in _lib.sh|push-gate.sh|loop-guard.py) _newok=1 ;; *) _newok=0 ;; esac ;;
     esac
     _active=$(sed -E 's/#.*$//' "$_f" 2>/dev/null)
     if [ "$_newok" = "0" ] && printf '%s\n' "$_active" | grep -qE 'KBG_AUTONOMY([^_A-Z]|$)'; then
@@ -1906,7 +1906,7 @@ if [ -f "$ADR0004" ]; then
   # flag-armed installer is stopped only by the silent, brittle cache-has-no-.git
   # path, which evaporates the moment a delivery path makes the cache a git repo.
   # Static grep over the guard source; a removed/renamed anchor → CRIT.
-  _GUARD48="$CLAUDE_DIR/scripts/l3-loop-guard.py"
+  _GUARD48="$CLAUDE_DIR/scripts/loop-guard.py"
   if [ -f "$_GUARD48" ]; then
     _gsrc=$(cat "$_GUARD48" 2>/dev/null)
     _f4bad=""
@@ -1914,7 +1914,7 @@ if [ -f "$ADR0004" ]; then
     printf '%s\n' "$_gsrc" | grep -qF 'show-toplevel'      || _f4bad="$_f4bad git-toplevel"
     printf '%s\n' "$_gsrc" | grep -qF '.claude-plugin'     || _f4bad="$_f4bad plugin.json-sentinel"
     printf '%s\n' "$_gsrc" | grep -qF '!= "kbg"'           || _f4bad="$_f4bad name==kbg-check"
-    [ -z "$_f4bad" ] || crit "audit #48d: l3-loop-guard.py F4 anchoring incomplete (missing:$_f4bad) — the installer fail-safe (REPO_ROOT anchor + repo-identity) must stay in place (design §5 F4)"
+    [ -z "$_f4bad" ] || crit "audit #48d: loop-guard.py F4 anchoring incomplete (missing:$_f4bad) — the installer fail-safe (REPO_ROOT anchor + repo-identity) must stay in place (design §5 F4)"
   fi
 fi
 
@@ -1948,14 +1948,14 @@ if [ -f "$ADR0004" ]; then
 fi
 
 # 50. L5 auto-push ship-gate (ADR 0005, design §8.5, #35). With the human out of the
-# push loop, the in-plugin ship-gate (folded into l3-push-gate.sh as the L5 leg) must
+# push loop, the in-plugin ship-gate (folded into push-gate.sh as the L5 leg) must
 # default to an EMPTY allowlist (an un-configured install pushes NOWHERE), deny on
 # cross-remote host+org divergence, AND require a green gauntlet (a recent l3_cycle
 # green event) — the model never authorizes the ship. Positive assertions over the
 # push-gate's L5 leg (CRIT UNLESS each holds — design §8.5 blocker: same commit as
 # the gate; test injects a regression + asserts the CRIT).
 if [ -f "$CLAUDE_DIR/docs/adr/0005-l5-auto-push.md" ]; then
-  _PG="$CLAUDE_DIR/hooks/gates/l3-push-gate.sh"
+  _PG="$CLAUDE_DIR/hooks/gates/push-gate.sh"
   if [ -f "$_PG" ]; then
     _pg=$(grep -vE '^[[:space:]]*#' "$_PG" 2>/dev/null)
     _pbad=""
@@ -1966,7 +1966,7 @@ if [ -f "$CLAUDE_DIR/docs/adr/0005-l5-auto-push.md" ]; then
     printf '%s\n' "$_pg" | grep -qF '"outcome":"green"' || _pbad="$_pbad green-gauntlet-required"
     # the allow fires ONLY when dest is in the allowlist AND green (the case match).
     printf '%s\n' "$_pg" | grep -qF '",$_allow,"' || _pbad="$_pbad allowlist-membership-check"
-    [ -z "$_pbad" ] || crit "audit #50: l3-push-gate.sh L5 ship-gate leg regressed (missing:$_pbad) — design §8.5, ADR 0005. The auto-push must stay cross-remote-restricted + empty-allowlist-default + green-gauntlet-gated (the model never authorizes)."
+    [ -z "$_pbad" ] || crit "audit #50: push-gate.sh L5 ship-gate leg regressed (missing:$_pbad) — design §8.5, ADR 0005. The auto-push must stay cross-remote-restricted + empty-allowlist-default + green-gauntlet-gated (the model never authorizes)."
   fi
 fi
 

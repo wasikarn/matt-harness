@@ -78,7 +78,7 @@ follows **ECC's own design**: ECC's auto-merge (stage 5) is gated by a **computa
 
 ## The floor (retained from ADR 0004 — plus one addition)
 
-ADR 0004's entire floor is **retained**: the cage (`scripts/l3-cage.txt`), the computational kill-switch,
+ADR 0004's entire floor is **retained**: the cage (`scripts/cage.txt`), the computational kill-switch,
 per-cycle reversibility tags, the cumulative ceiling (R4), and `docs/adr/**` in the cage so **the loop can
 never author or accept its own successor ADR.** L5 adds one floor item and rewrites the push surface:
 
@@ -156,7 +156,7 @@ Accepting this ADR requires reworking — **not** silently:
   ADR 0004's preconditions (i/ii/iii) are **carried forward as the enable-gate**, not waived (§Acceptance).
 - **ADR 0004 §Exit condition** — replaced by the L5 exit condition above (single-bad-ship is no longer the
   trigger; cross-repo-loosening or >single-revert is).
-- **`l3-push-gate.sh` / audit #44** — invert from "deny unless human-reviewed" to "deny unless the
+- **`push-gate.sh` / audit #44** — invert from "deny unless human-reviewed" to "deny unless the
   computational ship-gate passed" under L5 (§floor 3). The human override survives but is not required.
 - **The cross-repo tripwire (ADR 0004 §10 / design §10)** — promoted from post-push detector to **pre-push
   blocking CRIT** *and* kept as the post-push witness (§floor 2).

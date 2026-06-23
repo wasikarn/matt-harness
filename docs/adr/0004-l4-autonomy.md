@@ -62,7 +62,7 @@ The owner adopted three of the four relaxations above (auto-push #2 dropped). Th
 select removing the **cage**, so it is **retained as the one irreducible brake** — alongside the kept
 push gate (Gate 2):
 
-1. **Cage denylist (`scripts/l3-cage.txt`) stays enforced at pre-Act time.** The loop may never edit
+1. **Cage denylist (`scripts/cage.txt`) stays enforced at pre-Act time.** The loop may never edit
    its own safety surface: the gates, the gauntlet, the audit, the doctrine, `.git/config` +
    `.git/hooks/**` + `git-hooks/**` (the gauntlet wiring), **and the cage denylist + guard themselves**.
    An L4 loop may auto-improve the *non-safety* surface (skills, agents, docs, non-cage scripts) fully
@@ -80,7 +80,7 @@ push gate (Gate 2):
      (defined before implementation). If it is editable, a cycle can install a second persistent entry
      that survives the kill-switch. (Audit-finding F3.)
 
-   Both must land in `scripts/l3-cage.txt` **and** the `CAGE_ANCHORS` heredoc in audit #43 so
+   Both must land in `scripts/cage.txt` **and** the `CAGE_ANCHORS` heredoc in audit #43 so
    cage-completeness is machine-verified.
 
    **The cage/governance audit checks run every cycle, computationally — relaxation #3 may NOT bypass
@@ -167,7 +167,7 @@ Accepting this ADR requires reworking — **not** silently — the following, ea
   self-starts the shell script, so `disable-model-invocation: true` stays correct and keeps firing. #32 is
   reworked **additively** — the existing check is unchanged; #32 *adds* an assertion that the caged,
   flag-gated launcher is the **only** sanctioned self-start (not loosened, not deleted).
-- **`l3-push-gate.sh` + `_lib.sh` L3 immunity + `l3-loop-guard.py` TAMPER_VARS — all are scoped to the
+- **`push-gate.sh` + `_lib.sh` L3 immunity + `loop-guard.py` TAMPER_VARS — all are scoped to the
   `KBG_AUTONOMY_L3` flag and go *inert* under an L4 flag (audit-finding F1, the highest-severity gap).**
   The build must extend all three to fire on `L3 OR L4` and add `KBG_AUTONOMY_L4` to `TAMPER_VARS`, so an
   L4 run cannot disarm gates via `CLAUDE_HOOK_PROFILE=off` or push unreviewed. **Because #2 is dropped,

@@ -43,8 +43,8 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 
 | Var | Default | Effect | Read by |
 |---|---|---|---|
-| `KBG_AUTONOMY_L3` | unset (**OFF** = L2) | `=1` opts into the L3 bounded-autonomy loop (`recursive-improve --auto`). Default OFF is the recorded ADR 0003 decision — **not** a flag flip to ON (that needs a superseding ADR). | `l3-loop-guard.py`, `l3-push-gate.sh`, `_lib.sh` |
-| `KBG_L3_REVIEW_DONE` | unset | `=1` clears the Gate-2 push-gate after a human reviews an L3 batch, allowing `git push`. Cannot be inline-forged (tamper check). | `l3-push-gate.sh` |
+| `KBG_AUTONOMY_L3` | unset (**OFF** = L2) | `=1` opts into the L3 bounded-autonomy loop (`recursive-improve --auto`). Default OFF is the recorded ADR 0003 decision — **not** a flag flip to ON (that needs a superseding ADR). | `loop-guard.py`, `push-gate.sh`, `_lib.sh` |
+| `KBG_L3_REVIEW_DONE` | unset | `=1` clears the Gate-2 push-gate after a human reviews an L3 batch, allowing `git push`. Cannot be inline-forged (tamper check). | `push-gate.sh` |
 | `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (ADR 0002 addendum) | `learn-capture.sh` |
 
 ## Learning-capture knobs

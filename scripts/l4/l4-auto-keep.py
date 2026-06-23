@@ -9,11 +9,11 @@ has NO ship verb (no git-push, no gh-CLI call) — the file stays local until Ga
 Confidence ORDERS (the upstream read-candidates.sh LIST is already sorted desc), it
 never GATES: this file reads NO confidence number, only the first row — audit #47
 blocker-A positively asserts there is no confidence comparison operator here. The
-writer runs ONLY inside an armed run (autonomy_on, imported from l3-loop-guard so
+writer runs ONLY inside an armed run (autonomy_on, imported from loop-guard so
 the predicate is not duplicated + this file carries no raw arming-key literal,
 keeping audit #48c clean). memory/ is intentionally uncaged (the loop must write
 there); the brakes are the push-gate + check-act (which exempts the sanctioned
-memory dir — see l3-loop-guard._memory_dir).
+memory dir — see loop-guard._memory_dir).
 
 With the autonomy flag unset, nothing here runs; kbg:learn's Step-4 AskUserQuestion
 gate path is byte-identical (the writer is a separate, armed-only path, not a
@@ -33,11 +33,11 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SCRIPTS = SCRIPT_DIR.parent
 
-# Reuse the canonical autonomy_on() (scripts/l3-loop-guard.py) — no duplication of
+# Reuse the canonical autonomy_on() (scripts/loop-guard.py) — no duplication of
 # the predicate, and no raw KBG_AUTONOMY literal in this file (keeps #48c clean).
-_spec = importlib.util.spec_from_file_location("_kbg_lg", SCRIPTS / "l3-loop-guard.py")
+_spec = importlib.util.spec_from_file_location("_kbg_lg", SCRIPTS / "loop-guard.py")
 if _spec is None or _spec.loader is None:
-    sys.exit("l4-auto-keep: cannot load l3-loop-guard.autonomy_on")
+    sys.exit("l4-auto-keep: cannot load loop-guard.autonomy_on")
 _lg = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_lg)
 

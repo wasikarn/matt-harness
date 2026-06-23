@@ -25,8 +25,8 @@ supersession) — read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounde
 Either way the skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and **L4** (no human gate at all) stays rejected. The human is the loop's real stop condition —
 at the per-mutation gate (L2) or at launch + pre-push review (L3); the iteration cap is a
-context-exhaustion backstop. (The `--auto` loop machinery — `scripts/l3-loop-guard.py`, the
-cage-denylist `scripts/l3-cage.txt`, and the `l3-push-gate` hook — now ships; see
+context-exhaustion backstop. (The `--auto` loop machinery — `scripts/loop-guard.py`, the
+cage-denylist `scripts/cage.txt`, and the `push-gate` hook — now ships; see
 **§ Autonomous mode (L3 `--auto`)** below for the cycle. The flag stays OFF by default; with
 `KBG_AUTONOMY` unset, only the L2 path below runs.)
 
@@ -165,7 +165,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 
 Runs the Observe→Propose→Act→Verify cycle as **bounded unattended cycles within one
 owner-approved run** (ADR 0003). The model is the loop's **actor** (it observes, proposes, and
-applies one candidate per cycle); every **bound** is computational — `scripts/l3-loop-guard.py`
+applies one candidate per cycle); every **bound** is computational — `scripts/loop-guard.py`
 (caps + cage) and `scripts/run-gauntlet.sh` (the in-loop quality gate). There is **no model-as-gate**
 and **no push** inside the loop. Read the contract first: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0003-l3-bounded-autonomy.md"`.
 
@@ -199,7 +199,7 @@ at `M`, even though nothing is failing.
 
 **The cycle** — let `RID` = a uuid minted at launch, `STATE=.scratch/l3-runs/$RID/state.json`:
 
-1. **precheck** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" precheck --state "$STATE" --run-id "$RID" --max-runs N [--max-duration S] [--fail-streak K] [--max-flat M]`
+1. **precheck** — `python3 "${KBG_PLUGIN_ROOT}/scripts/loop-guard.py" precheck --state "$STATE" --run-id "$RID" --max-runs N [--max-duration S] [--fail-streak K] [--max-flat M]`
    - `decision: STOP` → end the run (a cap tripped — runs/duration/fail-streak/**no-progress** — or the flag is off); go to **At run end**.
    - `decision: CONTINUE` → proceed (the guard has incremented the run counter).
 2. **Observe + Propose ONE candidate** (Steps 1–2 above), scoped to **≤5 files / ≤200 lines**.
@@ -211,19 +211,19 @@ at `M`, even though nothing is failing.
    drains it via `kbg:learn`); it does not `--archive`. This is a DIFFERENT queue from the
    comprehension-debt "drain the queue" gate at Step 1 above (that ledger = "what stays manual").
 3. **Tag the pre-cycle tree** (the revert anchor): `git tag "l3-precycle-$RID-$ITER"`.
-4. **check-act BEFORE writing** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" check-act <path>... --candidate-cmd "<the command/edit the candidate runs>"`
+4. **check-act BEFORE writing** — `python3 "${KBG_PLUGIN_ROOT}/scripts/loop-guard.py" check-act <path>... --candidate-cmd "<the command/edit the candidate runs>"`
    - `decision: REVERT` → the candidate touches a caged path or tampers with a safety var. **Skip it**,
      journal the skip, loop back to step 1. Do **not** apply it.
    - `decision: CONTINUE` → no caged path; apply it.
 5. **Apply the one candidate** (inline Edit/Write, or the matching senior agent).
 6. **In-loop gate (computational, never a model judging its own work):** `bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — exit 0 = green, nonzero = red.
-7. **record-result** — `python3 "${KBG_PLUGIN_ROOT}/scripts/l3-loop-guard.py" record-result --state "$STATE" --green|--red [--flat]`.
+7. **record-result** — `python3 "${KBG_PLUGIN_ROOT}/scripts/loop-guard.py" record-result --state "$STATE" --green|--red [--flat]`.
    - On **green**, compute the flat-delta numerically: re-read Observe (audit C/W/I count + `gaps`)
      and compare to the step-2 baseline. If **neither** decreased → pass `--flat` (counts toward
      `--max-flat`); if any improved → omit `--flat` (resets the no-progress streak). This is the
      drift guard (Step 5) as a computational signal, not a model verdict.
 8. **Keep or roll back:**
-   - green → `git commit` **LOCAL only** (the `l3-push-gate` denies any push inside the run); journal
+   - green → `git commit` **LOCAL only** (the `push-gate` denies any push inside the run); journal
      an `l3_cycle` event with `run_id` + `iteration` + `outcome: green` (+ `source: queue` when the
      candidate came from the learning-candidate queue, so Gate-2 review can see it). Add the git trailer
      `L4-authored: yes` to every `--auto` commit message (a blank line then the trailer) so the
@@ -235,9 +235,9 @@ at `M`, even though nothing is failing.
 
 **At run end (Gate 2 — push stays human-gated):**
 - Emit `.scratch/l3-runs/$RID/session-audit-trail.md` — the review artifact: per cycle
-  {proposed · files changed · gauntlet delta · keep/revert}. (`scripts/l3-run-report.sh "$RID"` re-renders it from the journal.)
+  {proposed · files changed · gauntlet delta · keep/revert}. (`scripts/run-report.sh "$RID"` re-renders it from the journal.)
 - **Surface the batch and STOP. Do not push.** The operator runs `kbg:review-pr` on the local batch;
-  only if satisfied do they `export KBG_REVIEW_DONE=1` and push. Until then `l3-push-gate` denies it.
+  only if satisfied do they `export KBG_REVIEW_DONE=1` and push. Until then `push-gate` denies it.
 - The loop never opens a PR and never proposes an ADR edit by writing one — a new ADR is the operator's
   to author (the cage denies `docs/adr/**`). The loop may *name* a needed ADR in the run report.
 

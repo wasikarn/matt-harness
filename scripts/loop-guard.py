@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-l3-loop-guard.py — the single code-level enforcer of L3 bounded-autonomy bounds.
+loop-guard.py — the single code-level enforcer of L3 bounded-autonomy bounds.
 
 The L3 self-improvement loop (`recursive-improve --auto`, ADR 0003) calls this
 guard at two points every cycle:
@@ -15,7 +15,7 @@ and once after the gauntlet:
 What this guard IS
 ------------------
 - The deterministic bound on an unattended run: max-runs, max-duration,
-  fail-streak, dirty-tree abort, and the cage-denylist (scripts/l3-cage.txt).
+  fail-streak, dirty-tree abort, and the cage-denylist (scripts/cage.txt).
 - Fail-CLOSED: an empty/missing cage, an unreadable state file, or the autonomy
   flag being unset all resolve to STOP/REVERT, never CONTINUE.
 - Flag-immutable: KBG_AUTONOMY is read ONCE at process start (via autonomy_on(),
@@ -59,7 +59,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 # armed path (check-act / precheck), not at import, so a flag-off invocation STOPs
 # at the activation gate before any tree is touched.
 REPO_ROOT = SCRIPT_DIR.parent
-CAGE_FILE = SCRIPT_DIR / "l3-cage.txt"
+CAGE_FILE = SCRIPT_DIR / "cage.txt"
 # R4 cumulative-ceiling state (design §5 R4): a SEPARATE caged file so a
 # self-launcher that restarts repeatedly cannot reset its own cross-run ceiling.
 # Caged via scripts/l4/** — the loop may not Edit/Write it (check-act denies);
@@ -106,7 +106,7 @@ def _assert_repo_root():
     if remotes.strip() and "kbg-harness" not in remotes:
         _emit("STOP", f"F4: REPO_ROOT ({root}) remotes do not reference kbg-harness — autonomy self-improves a kbg-harness checkout, not a same-named unrelated repo")
     REPO_ROOT = root
-    CAGE_FILE = root / "scripts" / "l3-cage.txt"
+    CAGE_FILE = root / "scripts" / "cage.txt"
     WINDOW_STATE_FILE = root / "scripts" / "l4" / ".window-state.json"
 
 def autonomy_on():
@@ -398,12 +398,12 @@ def cmd_record_result(args):
 def cmd_selftest(_args):
     """Runnable check (ponytail): the matcher + fail-closed posture must hold."""
     globs = ["hooks/**", "skills/harness-audit/scripts/audit.sh", "docs/adr/**",
-             "scripts/l3-cage.txt"]
+             "scripts/cage.txt"]
     assert is_caged("hooks/gates/secret-scan.sh", globs)          # under /**
     assert is_caged("hooks/_lib.sh", globs)                       # direct child of /**
     assert is_caged("skills/harness-audit/scripts/audit.sh", globs)  # literal
     assert is_caged("docs/adr/0003-l3-bounded-autonomy.md", globs)   # ADR /**
-    assert is_caged("scripts/l3-cage.txt", globs)                 # self-reference
+    assert is_caged("scripts/cage.txt", globs)                 # self-reference
     assert not is_caged("skills/fix-bug/SKILL.md", globs)         # editable skill
     assert not is_caged("README.md", globs)                       # not in this subset
     assert not is_caged("hooksX/y.sh", globs)                     # prefix not a dir boundary
@@ -431,7 +431,7 @@ def cmd_selftest(_args):
                 os.environ.pop(_k, None)
             else:
                 os.environ[_k] = _v
-    print("l3-loop-guard selftest: OK")
+    print("loop-guard selftest: OK")
 
 
 def main():

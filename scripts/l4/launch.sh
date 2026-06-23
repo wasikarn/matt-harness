@@ -4,7 +4,7 @@
 # Invoked by a detached, persistent macOS launchd StartInterval plist (NO Claude
 # Code session). Reads cadence/config ONLY from the caged scheduler.conf, honors the
 # kill-file before every launch, sets KBG_AUTONOMY=1, and drives ONE --auto cycle.
-# The cycle is the recursive-improve prose, which calls the SAME l3-loop-guard.py
+# The cycle is the recursive-improve prose, which calls the SAME loop-guard.py
 # subcommands (caps + cage + --max-flat + R4 + --assert-cage-intact) — NO parallel
 # enforcement path. Gate 2 (push review) still holds every batch — nothing here
 # auto-pushes or auto-merges.
@@ -46,7 +46,7 @@ if [ -f "$KILLFILE" ]; then
   exit 0
 fi
 
-# 3. Arm + drive ONE --auto cycle. cd to the repo so the cycle's l3-loop-guard
+# 3. Arm + drive ONE --auto cycle. cd to the repo so the cycle's loop-guard
 #    _assert_repo_root (F4) anchors REPO_ROOT to THIS checkout. R4 caps are surfaced
 #    via env for the cycle's precheck.
 cd "$REPO" || { echo "l4-launch: cannot cd to $REPO" >&2; exit 0; }
