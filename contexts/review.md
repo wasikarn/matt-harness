@@ -1,6 +1,6 @@
 # Context: review mode
 
-Working posture for reviewing code or a diff. (Set by `/context review`.)
+Working posture for reviewing code or a diff. (Set by `/frame review`.)
 
 - **Two-Axis Triage** — rate Confidence (is it real, 0-100) and Severity (Critical/Important/Minor) independently; report only findings at confidence ≥ 80.
 - **Defer, don't absorb** — security → security-reviewer, tests → pr-test-analyzer, error paths → silent-failure-hunter.

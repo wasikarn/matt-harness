@@ -1,6 +1,6 @@
 # Context: research mode
 
-Working posture for exploration / understanding. (Set by `/context research`.)
+Working posture for exploration / understanding. (Set by `/frame research`.)
 
 - **Read before you write** (METHODOLOGY Rule 8) — trace the actual code; don't assume from names.
 - **Cite evidence** as file:line / doc URL; mark Verify-tier claims you could not confirm this turn.

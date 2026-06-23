@@ -233,7 +233,7 @@ kbg-harness/
 │   ├── maintenance/      #   periodic upkeep
 │   └── hooks.json        #   registry (which script fires on which event)
 ├── output-styles/        # Live-response registers (senior-eng default, staff-eng opt-in)
-├── contexts/             # Working-frames loaded by /context (dev / review / research)
+├── contexts/             # Working-frames loaded by /frame (dev / review / research)
 ├── themes/               # Terminal themes
 ├── scripts/              # Orchestration + health + eval-support scripts (no LLM dispatch — see ADR 0002)
 ├── eval/                 # Eval harness: datasets/ + regressions/ + run-eval.py (the "build" gate)

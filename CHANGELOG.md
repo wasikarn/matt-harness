@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.6] — 2026-06-23
+
+`/context` → `/frame` rename — the kbg working-frame loader was shadowing Claude
+Code's built-in `/context` (the token-usage grid view), making the built-in
+unreachable. The kbg command is renamed to `/frame` so the built-in `/context`
+works again. Pure rename — no count change (still 22 commands), no frame-file
+or behavior change.
+
+- `commands/context.md` → `commands/frame.md` (`name: context` → `name: frame`;
+  body self-references updated; a blockquote records the rename + the collision
+  reason).
+- `contexts/{dev,review,research}.md`: the "Set by `/context X`" pointer → `/frame X`.
+- README + CLAUDE.md map lines: "loaded by `/context`" → "loaded by `/frame`".
+- Both manifest descriptions: `/context for loading a dev/review/research
+  working-frame` → `/frame for loading …`; version `0.4.5` → `0.4.6` in both.
+- Collision audit: checked all 22 kbg commands against Claude Code's 98 built-in
+  slash commands (+ aliases). `/context` was the **only** collision; the other 21
+  (incl. near-misses `debug-debate`/`debug`, `fix-bug`/`bug`, `status-update`/`status`,
+  `kbg-help`/`help`, `pre-ship-verify`/`verify`, `deep-dive`/`deep-research`) are
+  distinct compound names and safe. The historical `[0.2.118]` line below remains
+  as a record of when `/context` first shipped.
+
 ## [0.4.5] — 2026-06-23
 
 Auth-health-check signal-quality fixes — the SessionStart probe cried wolf on a

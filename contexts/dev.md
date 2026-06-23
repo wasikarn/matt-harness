@@ -1,6 +1,6 @@
 # Context: dev mode
 
-Working posture for implementation. (Set by `/context dev`.)
+Working posture for implementation. (Set by `/frame dev`.)
 
 - **TDD where it fits** — write the failing check first, then the minimal code to pass.
 - **Surgical diffs** — change only what the task needs (METHODOLOGY Rule 3). Flag adjacent issues; don't silently fix them.

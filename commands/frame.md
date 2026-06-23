@@ -1,10 +1,10 @@
 ---
-name: context
+name: frame
 description: "Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — kbg:research-brief, kbg:review-pr, kbg:backend-dev) or changing voice register (use /output-style)."
 argument-hint: dev | review | research
 ---
 
-# /context — load a working-frame
+# /frame — load a working-frame
 
 Read the requested mode file and adopt that working posture for the rest of the session. This sets *how you work*, not *what you say* (output-styles) and not a full workflow (a skill).
 
@@ -21,5 +21,9 @@ Read-only posture-setter — it loads a frame, it does not run a workflow or edi
 
 ## Relation to other surfaces
 
-- **Skills** are the heavier mode entry-points that *do the work* (`kbg:research-brief`, `kbg:review-pr`, `kbg:backend-dev`); `/context` just sets the frame.
-- **output-styles** (`senior-eng`, `staff-eng`) set the *voice register*; `/context` sets the *task posture*. Orthogonal — combine them freely.
+- **Skills** are the heavier mode entry-points that *do the work* (`kbg:research-brief`, `kbg:review-pr`, `kbg:backend-dev`); `/frame` just sets the frame.
+- **output-styles** (`senior-eng`, `staff-eng`) set the *voice register*; `/frame` sets the *task posture*. Orthogonal — combine them freely.
+
+> Renamed from `/context` (v0.4.6) — it shadowed Claude Code's built-in `/context`
+> (token-usage view), making the built-in unreachable. `/frame` is kbg's working-frame
+> loader; the built-in `/context` is unaffected by it.

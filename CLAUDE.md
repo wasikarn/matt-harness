@@ -17,7 +17,7 @@ The map below is the answer to "where does a new X go?" — and the reason kbg d
 | agents / skills / commands / hooks | `agents/` `skills/` `commands/` `hooks/` | **Fixed names** — the plugin loader discovers them by exact string; never rename |
 | output styles / themes (assets) | `output-styles/` `themes/` | Fixed plugin dirs — these *are* kbg's "assets" |
 | rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `docs/adr/` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
-| contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/context` command; add a frame = add a file here |
+| contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/frame` command; add a frame = add a file here |
 | scripts / tooling | `scripts/` + per-skill `scripts/` | Callers hardcode paths; rename = update all callers + cache cycle |
 | tests / fixtures | `tests/` (shell/hook runners) + `eval/` (gate datasets+regressions) + `tests/evals/` (per-skill baseline) + `scripts/evals/` (eval scripts) | Four homes, **distinct callers** — see the eval/test boundary note below; do **not** consolidate |
 | examples (project starters) | `examples/` (project-type `*-CLAUDE.md` starters) | Reference only — not a plugin surface, not auto-loaded |
@@ -32,7 +32,7 @@ Arriving from ECC's generic tree? Each of its 12 categories already maps onto an
 |---|---|---|
 | `agents` | `agents/` | 1:1 |
 | `skills` | `skills/` | 1:1 (+ `skills/_lib/` shared shell lib — no `SKILL.md`, not a surface) |
-| `contexts` | `contexts/` | 1:1 (loaded by `/context`) |
+| `contexts` | `contexts/` | 1:1 (loaded by `/frame`) |
 | `commands` | `commands/` | 1:1 |
 | `rules` | root `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` + `docs/adr/` | no `rules/` dir — 4 files hardcoded in `doctrine-bootstrap.sh` |
 | `hooks` | `hooks/` + `hooks/hooks.json` | 1:1 (subdirs `gates/ session/ lifecycle/ …` are kbg convention) |
