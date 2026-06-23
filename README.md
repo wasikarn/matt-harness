@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.3.4-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.2-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -191,7 +191,7 @@ There is no opt-out flag.
 
 3. **Autonomy invariant (ADR 0002 → ADR 0003).** **Default (L2):** no autonomous or
 unattended self-repair loops; every improvement iteration stops at a human approval gate.
-**L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a bounded loop runs unattended within an
+**L3 (opt-in, `KBG_AUTONOMY=1`, default OFF):** a bounded loop runs unattended within an
 owner-approved run, commits local-only, and is gated at *push* not per mutation
 ([ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)). Either way `kbg:recursive-improve` keeps
 `disable-model-invocation: true` so the model cannot self-start it, and L4 stays rejected.

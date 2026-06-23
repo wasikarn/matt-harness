@@ -51,7 +51,7 @@ the steady state going forward.
   autonomous or unattended self-repair loop, and no multi-iteration loop that
   runs without a human gate between iterations — every self-improvement
   iteration stops at a human `AskUserQuestion` gate before any mutation.
-  **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF):** a *bounded* unattended
+  **L3 (opt-in, `KBG_AUTONOMY=1`, default OFF):** a *bounded* unattended
   self-repair loop may run within an owner-approved run — but it still cannot
   self-start (`recursive-improve` stays `disable-model-invocation: true`),
   commits **local-only**, and is **human-gated at push**, not per mutation

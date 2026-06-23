@@ -8,7 +8,7 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-29 subagents, 38 skills, 21 commands, governance hooks, and mandatory doctrine
+29 subagents, 40 skills, 22 commands, governance hooks, and mandatory doctrine
 injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
 
 ## The 4 doctrine files (read in this order)
@@ -37,7 +37,7 @@ Other useful ones: `/kbg:fix-bug`, `/kbg:feature-dev`, `/kbg:team-plan`,
 **Do not relax the autonomy invariant.** No L4, no self-launching loops
 (cron / `/loop` / `CronCreate`), no model-as-gate, no self-improving-harness-via-PRs.
 The invariant is load-bearing — it preserves the operator's judgment over loop
-velocity. **L3 *bounded* autonomy IS in scope** (opt-in `KBG_AUTONOMY_L3`, default
+velocity. **L3 *bounded* autonomy IS in scope** (opt-in `KBG_AUTONOMY`, default
 OFF, push-gated — [ADR 0003](adr/0003-l3-bounded-autonomy.md)); it was adopted by a
 deliberate *superseding ADR*, not a flag flip. So: change the architecture only
 through a new ADR (the 0003 mechanism); a self-launching / L4 / model-as-gate

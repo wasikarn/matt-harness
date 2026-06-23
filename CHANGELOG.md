@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.2] — 2026-06-23
+
+Installability + tripwire-activation follow-ups surfaced by a 4-agent verification pass
+(design conformance / gate integrity / external installability / external safety):
+- **fix(exec):** the L4 autonomy scripts created during the v0.4.0 build (`l4-act-gate.sh`,
+  `scripts/l4/{launch,exit-tripwire,l4-quality-gate,cage-intact}.sh`) were committed as
+  non-executable (`100644`) — a foreign installer got `Permission denied` on the `l4-act-gate`
+  PreToolUse hook on every Bash call. Fixed git mode to `100755` on all five. (Missed by the
+  gauntlet — no audit checks exec bits; surfaced by a live error, not a test.)
+- **feat(tripwire):** wire `scripts/l4/exit-tripwire.sh` (ADR 0004 exit-trigger-2) into
+  `git-hooks/pre-push` — it was built but registered in no lifecycle event, so it never fired
+  outside the test suite. Now checks the pushed commit range for an L4-authored commit that
+  touched a caged safety surface and aborts the push on a CRIT. Computational (git log + grep),
+  not a model gate; lives outside the cage's own assertion path (design §10).
+- **fix(docs):** post-rename doc sweep — `env-vars.md`/`CONTEXT.md`/`README.md`/`onboarding.md`
+  still named the superseded `KBG_AUTONOMY_L3`/`KBG_L3_REVIEW_DONE` and `env-vars.md` claimed
+  `KBG_AUTONOMY` "arms nothing yet" (stale past v0.4.0). Corrected to the live single keys +
+  updated the "unenforced prose" note to "machine-enforced". README version badge 0.3.4→0.4.2;
+  onboarding counts 38 skills/21 commands → 40/22.
+- **chore(gitignore):** add `.claude/settings.local.json` to the repo `.gitignore` so the
+  autonomy-arming file is self-contained in-repo (was leaning on the owner's global
+  `~/.config/git/ignore`) — a foreign clone never inherits an armed state.
+
 ## [0.4.1] — 2026-06-23
 
 Drop the vestigial `l3-` prefix from the shared autonomy surfaces (post-single-key-collapse

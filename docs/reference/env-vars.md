@@ -27,24 +27,25 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | **`KBG_ENFORCE_TASK_COMPLETED`** | Defaults ON (safe); just don't persist `=0` user-global. | A global `=0` downgrades the F7 gate in every repo. |
 
 > **Read this before arming anything (esp. if you installed `kbg@kobig` and are not the author):**
-> - **`KBG_AUTONOMY` is the *future* single key (Slice-0 F1, unbuilt).** Today **no shipped code reads bare
->   `KBG_AUTONOMY`** — the live key is `KBG_AUTONOMY_L3` (table below). Setting `KBG_AUTONOMY=1` arms
->   **nothing** yet; the single-key collapse lands with the autonomy machinery, not before.
+> - **`KBG_AUTONOMY` is the live single arming key** (single-key collapse shipped v0.4.0; the old per-level
+>   `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` names are superseded — do not use them). Arming requires BOTH
+>   `KBG_AUTONOMY=1` in env AND the per-repo `.claude/settings.local.json` confirmation (`autonomy_on()`,
+>   `hooks/_lib.sh`) — a user-global-only set arms **nothing** (guard 3; ADR 0004).
 > - **The autonomy loop self-improves the kbg-harness checkout *itself*** (`hooks/**`, `skills/`, `docs/adr/**`
 >   — its own audit findings), **not the repo you opened.** It is not a tool for improving *your* project.
 >   The whole "opt-in + owner's-tool/owner's-risk" safety basis (ADR 0004/0005) is **non-transferable** — it
 >   assumes the operator is the author working *in* the harness repo.
-> - The "never user-global / must be caged" rules above are **currently unenforced prose**, not a machine
->   check. The in-plugin guards that make them real (repo-identity precondition, `autonomy_on()` user-global
->   fail-safe-OFF, cross-remote ship-gate, settings-file caging) are **Slice-0/Slice-4 build preconditions** —
->   see `docs/research/l4-machinery-design.md` §"External installers".
+> - The "never user-global / must be caged" rules above are **machine-enforced** (shipped v0.4.0): the
+>   repo-identity precondition (`loop-guard.py` F4), `autonomy_on()` user-global fail-safe-OFF (guard 3),
+>   cross-remote ship-gate, and settings-file caging (`cage.txt`) are live — see audit #43/#44/#48/#50 and
+>   `docs/research/l4-machinery-design.md` §"External installers".
 
 ## Autonomy & safety flags (load-bearing — see the ADRs before changing)
 
 | Var | Default | Effect | Read by |
 |---|---|---|---|
-| `KBG_AUTONOMY_L3` | unset (**OFF** = L2) | `=1` opts into the L3 bounded-autonomy loop (`recursive-improve --auto`). Default OFF is the recorded ADR 0003 decision — **not** a flag flip to ON (that needs a superseding ADR). | `loop-guard.py`, `push-gate.sh`, `_lib.sh` |
-| `KBG_L3_REVIEW_DONE` | unset | `=1` clears the Gate-2 push-gate after a human reviews an L3 batch, allowing `git push`. Cannot be inline-forged (tamper check). | `push-gate.sh` |
+| `KBG_AUTONOMY` | unset (**OFF** = L2) | `=1` arms the bounded-autonomy loop (`recursive-improve --auto`), gated by the per-repo `.claude/settings.local.json` confirmation (guard 3). Default OFF is the recorded ADR 0003/0004 decision — **not** a flag flip to ON (that needs a superseding ADR). Supersedes the old `KBG_AUTONOMY_L3`. | `loop-guard.py`, `push-gate.sh`, `_lib.sh`, `launch.sh` |
+| `KBG_REVIEW_DONE` | unset | `=1` clears the Gate-2 push-gate after a human reviews an autonomy batch, allowing `git push`. Shell-transient only — never persisted; cannot be inline-forged (tamper check). Supersedes the old `KBG_L3_REVIEW_DONE`. | `push-gate.sh` |
 | `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (ADR 0002 addendum) | `learn-capture.sh` |
 
 ## Learning-capture knobs

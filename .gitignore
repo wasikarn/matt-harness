@@ -24,3 +24,8 @@ eval/results/
 # R4 cumulative-ceiling runtime state (design §5 R4) — per-machine, never ship a
 # stale window blob. Caged via scripts/l4/**; the guard writes it at runtime.
 scripts/l4/.window-state.json
+
+# Owner's per-repo autonomy arming — self-contained in-repo (not leaning on the
+# owner's global ~/.config/git/ignore). A foreign clone never inherits an armed
+# state, and `git add -A` never stages a local settings file.
+.claude/settings.local.json

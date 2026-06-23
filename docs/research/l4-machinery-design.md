@@ -56,7 +56,7 @@ lists already shipped for L3. Mapped on source:
 |---|---|---|---|
 | Cage denylist | `scripts/cage.txt` (1-63, 27 entries) | deny-by-default paths the `--auto` loop may never write | add F2/F3 anchors |
 | Loop guard | `scripts/loop-guard.py` (1-273) | the single code-level enforcer: caps + cage matcher + `--max-flat`; never a model | flag predicate + TAMPER_VARS + R4 cap |
-| Push gate (Gate 2) | `hooks/gates/push-gate.sh` (1-87) | denies push/merge of an unreviewed batch; `KBG_L3_REVIEW_DONE=1` is the human override | flag predicate + TAMPER_PAT |
+| Push gate (Gate 2) | `hooks/gates/push-gate.sh` (1-87) | denies push/merge of an unreviewed batch; `KBG_REVIEW_DONE=1` is the human override | flag predicate + TAMPER_PAT |
 | Hook immunity | `hooks/_lib.sh:34-43` | forces every hook live (defeats `CLAUDE_HOOK_PROFILE=off`) during an authorized run | flag predicate |
 | Rollback carve-out | `hooks/gates/block-dangerous-git.sh:41-52` | lets the loop `git reset --hard` its own pre-cycle tag | flag predicate (**4th F1 site — see §5**) |
 | Capture half | `hooks/session/learn-capture.sh` + `scripts/read-candidates.sh` | SessionEnd stages candidates to an out-of-repo queue; confidence is **ordering-only** | inversion point for #4 |
@@ -320,7 +320,7 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
   *quality* judgment was made by an LLM (#3), so the single-model circularity moves one layer back, broken
   only by Gate 2 being fresh human context. Add a criterion: the session-audit-trail surfaced at Gate 2
   must include the **#3 model verdict per cycle**; a maker≠checker `kbg:review-pr` pass is **mandatory**
-  (not optional) before `KBG_L3_REVIEW_DONE=1` is honored under L4; record the Gate-2 review as a journal
+  (not optional) before `KBG_REVIEW_DONE=1` is honored under L4; record the Gate-2 review as a journal
   event so a **rubber-stamp streak is observable** at the quarterly decay sweep (mirrors ADR 0002
   §gate-discipline — without an observable, "must be a real review" is prose throughput pressure erodes).
 - **Exit-condition trigger-2 needs a detector outside the cage.** ADR 0004's second exit trigger ("a
