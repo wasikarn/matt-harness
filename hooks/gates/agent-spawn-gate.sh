@@ -39,10 +39,12 @@ hook_guard_unreadable
 [ "${TOOL:-}" = "Agent" ] || hook_decision none "tool is not Agent"
 
 # Build a single normalized text blob from description + prompt.
-PROMPT_TEXT=$(printf '%s %s' \
-    "$(printf '%s' "$TOOL_INPUT" | jq -r '.description // ""' 2>/dev/null)" \
-    "$(printf '%s' "$TOOL_INPUT" | jq -r '.prompt // ""' 2>/dev/null)" \
-    | tr '[:upper:]' '[:lower:]')
+# One jq fork (was two) reading TOOL_INPUT once — byte-identical output:
+# jq string interpolation joins the two fields with the same single space that
+# `printf '%s %s' "$desc" "$prompt"` did. The jq only runs when TOOL="Agent",
+# which itself requires jq present + a valid JSON envelope (hook_guard_unreadable
+# short-circuits every other path), so the failure-mode edge case is unreachable.
+PROMPT_TEXT=$(printf '%s' "$TOOL_INPUT" | jq -r '"\(.description // "") \(.prompt // "")"' 2>/dev/null | tr '[:upper:]' '[:lower:]')
 
 # Allow-list: explicit multi-agent team workflows already have their own
 # approval gates (/team-build F10, /team-plan Q&A). Let them through.

@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.3] — 2026-06-23
+
+Staff-engineer refactor + perf pass across all hooks/scripts (2 waves, 6 agents on
+disjoint slices, behavior-preserving, gauntlet-gated per wave). ~11 files changed,
+~65 left untouched as already-clean; 1 reverted (skills/memory-lint idx_stats
+extraction — introduced unused-var Pyright warnings). The safety-critical slices
+(hooks/gates/, scripts/l4/) were treated with default-to-leave-unchanged rigor —
+only 2 mechanical wins, both byte-identical-verified across edge cases.
+
+Wave 1 (non-safety, 9 files):
+- hooks/session/ideate-convergence-capture.sh + session-summary.sh: consolidate
+  multi-fork jq on one input -> single jq pass (5->1, 3->1).
+- hooks/maintenance/cleanup-bak-ttl.sh: hoist uname out of per-file loop.
+- hooks/maintenance/memory-lint-check.sh: printf|sed subshell -> param expansion.
+- hooks/post-tool/security-diff-review.py: drop duplicate .elm CODE_EXTS entry.
+- hooks/_lib.sh: remove orphaned duplicate comment block.
+- scripts/mailbox/mailbox-poll.sh: 4 sed file-reads -> 1 captured read.
+- scripts/evals/run-baseline-eval.py: cache 4 stats() results (8 calls -> 4).
+- skills/task-sizing/task_size_check.py: precompute per-task stats once (was 2x).
+
+Wave 2 (safety-critical, 2 files — byte-identical-verified across edge cases):
+- hooks/gates/agent-spawn-gate.sh: 2 jq forks on TOOL_INPUT -> 1.
+- scripts/l4/exit-tripwire.sh: collapse redundant printf|grep subshell in the CRIT
+  loop (capture once, test [ -n ]); SEC_PATS + CRIT/exit unchanged.
+
+Behavior-preserving: all outputs/exit-codes/permissionDecisions/journal-events
+byte-identical. Gauntlet green both waves (validate/audit 0C0W/critical-hooks/eval).
+
+Flagged for separate owner decisions (NOT changed — behavior/robustness, out of
+refactor scope):
+- hooks/maintenance/mcp-session-watchdog.sh + hooks/post-tool/post-edit-test.sh:
+  `|| true` masks the exit code so EXIT_CODE=$? is always 0 -> the degraded/broken
+  warning paths are dead code (real bugs).
+- hooks/gates/config-protection.sh:75: bare `grep -qiE` (aliased to rtk grep) vs
+  the `command grep` convention every other gate uses — a detector-adjacent
+  consistency gap.
+- scripts/evals/run-baseline-eval.py: pre-existing Pyright notes (line-167 Path|None
+  to rename; sys-unbound false-positives) — not from this refactor.
+
 ## [0.4.2] — 2026-06-23
 
 Installability + tripwire-activation follow-ups surfaced by a 4-agent verification pass

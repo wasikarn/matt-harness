@@ -39,8 +39,8 @@ while IFS= read -r _h; do
   [ -n "$_h" ] || continue
   _files=$(git diff-tree --no-commit-id --name-only -r "$_h" 2>/dev/null || true)
   for _pat in "${SEC_PATS[@]}"; do
-    if printf '%s\n' "$_files" | grep -qE "^${_pat}"; then
-      _hit=$(printf '%s\n' "$_files" | grep -E "^${_pat}" | tr '\n' ' ')
+    _hit=$(printf '%s\n' "$_files" | grep -E "^${_pat}" | tr '\n' ' ')
+    if [ -n "$_hit" ]; then
       echo "exit-tripwire: CRIT — L4-authored commit ${_h:0:8} touched security gate '$_pat' (files: $_hit) — ADR 0004 exit-trigger-2: a safety surface changed under an armed run; the cage should have prevented it" >&2
       _rc=1
     fi
