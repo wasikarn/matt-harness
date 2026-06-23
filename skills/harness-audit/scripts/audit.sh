@@ -1860,7 +1860,7 @@ if [ -f "$ADR0004" ]; then
     _ap48=$(mktemp -d)
     mkdir -p "$_ap48/.claude"
     printf '{"env":{"KBG_AUTONOMY":"1"}}' > "$_ap48/.claude/settings.local.json"
-    _arm48=$(printf '%s' "$_ev48" | env KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR="$_ap48" bash "$PUSHGATE48" 2>/dev/null \
+    _arm48=$(printf '%s' "$_ev48" | env -u KBG_REVIEW_DONE KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR="$_ap48" bash "$PUSHGATE48" 2>/dev/null \
              | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null) || true
     # The gate emits NO JSON when it no-ops (exit 0 early) — jq on an empty stream
     # exits 0 with empty output, so treat empty as "none" (no deny), mirroring the
