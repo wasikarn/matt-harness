@@ -91,6 +91,21 @@ def _probe_mcp_server(server: dict[str, Any], timeout: int) -> dict[str, Any]:
         if not isinstance(args, list):
             args = []
         try:
+            # Shell-wrapped stdio server (`/bin/sh -c "<script>"`,
+            # `bash -c …`): appending `--help` lands as $0 to the wrapper,
+            # never reaching the real server — which then blocks on stdin
+            # waiting for JSON-RPC and trips a false "broken" timeout.
+            # We can't cheaply verify a wrapped server without a slow MCP
+            # handshake (too slow for the SessionStart hook that runs this),
+            # so report the honest verdict: unprobeable, not broken.
+            if len(args) >= 2 and args[0] == "-c":
+                return {
+                    "name": name,
+                    "status": "degraded",
+                    "summary": f"MCP server {name!r}: stdio server wrapped in a shell (`{cmd} -c …`) — --help probe N/A (lands as $0), reachability not cheaply verifiable without a slow handshake",
+                    "elapsed_seconds": round(time.time() - started, 2),
+                    "remediation": f"Verify manually: run `{cmd} -c …` and send a JSON-RPC `initialize` request to confirm it responds.",
+                }
             # Probe with --help; if the binary doesn't support --help,
             # exit 1 or 2 is still "binary exists and runs". We only
             # treat timeout and FileNotFoundError as broken.

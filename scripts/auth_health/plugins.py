@@ -125,9 +125,25 @@ def check_plugin_cache() -> dict[str, Any]:
             continue
         manifest_path = install_path / ".claude-plugin" / "plugin.json"
         if not manifest_path.exists():
-            verdict["issues"].append(f"plugin.json not found at {manifest_path}")
-            overall_degraded += 1
-            verdict["status"] = "degraded"
+            # Some plugins ship without a plugin.json: skill-only plugins
+            # (a `skills/` dir, no manifest), marketplace.json-based plugins
+            # (qmd), or LSP connectors (a near-empty stub). If the install
+            # path exposes a discoverable plugin surface (agents/skills/
+            # commands/hooks/output-styles/themes, or an alt
+            # .claude-plugin/marketplace.json), the plugin loads without a
+            # manifest — treat as healthy. A stub with no surface stays
+            # degraded: we can't confirm it delivers anything.
+            surface_dirs = ("agents", "skills", "commands", "hooks", "output-styles", "themes")
+            has_surface = any((install_path / sd).is_dir() for sd in surface_dirs) \
+                or (install_path / ".claude-plugin" / "marketplace.json").exists()
+            if has_surface:
+                verdict["status"] = "healthy"
+            else:
+                verdict["issues"].append(
+                    f"plugin.json not found at {manifest_path} and no discoverable plugin surface (agents/skills/commands/hooks/output-styles/themes or marketplace.json) — unverified stub"
+                )
+                overall_degraded += 1
+                verdict["status"] = "degraded"
             verdicts.append(verdict)
             continue
         verdict["manifest_found"] = True
@@ -140,9 +156,17 @@ def check_plugin_cache() -> dict[str, Any]:
             verdicts.append(verdict)
             continue
         verdict["manifest_valid"] = True
-        # Version match
+        # Version match. The rule's purpose is to catch real drift (both
+        # versions non-empty and different). Many official/marketplace
+        # plugins ship an unversioned manifest (version="") while
+        # installed_plugins.json records "unknown" or a marketplace commit
+        # hash — the manifest is valid and the name matches, so the plugin
+        # loads. Accept an unversioned manifest as a match rather than
+        # crying "degraded" on every healthy official plugin.
         manifest_version = manifest.get("version", "")
         if manifest_version == plugin["version"]:
+            verdict["version_match"] = True
+        elif manifest_version == "":
             verdict["version_match"] = True
         else:
             verdict["issues"].append(

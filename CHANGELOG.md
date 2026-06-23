@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.5] — 2026-06-23
+
+Auth-health-check signal-quality fixes — the SessionStart probe cried wolf on a
+healthy MCP server and on healthy official plugins. Three surgical edits to the
+checker (no behavioral change to anything it watches):
+
+- `scripts/auth_health/mcp.py` (`_probe_mcp_server`): a stdio MCP server wrapped in
+  a shell (`/bin/sh -c "<script>"`, `bash -c …`) swallowed the probe's appended
+  `--help` as `$0` to the wrapper, so the real server never saw it and blocked on
+  stdin waiting for JSON-RPC — tripping a false "broken" 5s timeout. Detect the
+  `-c` wrapper and report the honest verdict (degraded/unprobeable) instead of a
+  false broken. (mongodb separately made genuinely green via a wrapper script —
+  see below — so its `--help` now reaches the real binary.)
+- `scripts/auth_health/plugins.py` (`check_plugin_cache`): two false-degrade fixes.
+  (1) Version match now accepts an unversioned manifest (`version=""`) as a match —
+  many official/marketplace plugins ship an unversioned `plugin.json` while
+  `installed_plugins.json` records `"unknown"` or a commit hash; the manifest is
+  valid and the name matches, so the plugin loads. (2) A missing `plugin.json` no
+  longer auto-degrades: if the install path exposes a discoverable plugin surface
+  (agents/skills/commands/hooks/output-styles/themes, or a `.claude-plugin/
+  marketplace.json`), it's healthy; only a stub with no surface stays degraded.
+
+Net effect on the local probe: 1 broken / 5 healthy / 11 degraded → 0 broken /
+13 healthy / 3 degraded (the 3 residual are genuine LSP connector stubs:
+pyright/typescript/lua-lsp — no discoverable surface, so "degraded" is now the
+honest verdict). Bump 0.4.4 -> 0.4.5.
+
 ## [0.4.4] — 2026-06-23
 
 Fix 3 real bugs surfaced (but deliberately left unchanged) by the v0.4.3 refactor
