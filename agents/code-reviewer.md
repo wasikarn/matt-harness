@@ -5,7 +5,6 @@ tools: Glob, Grep, Read, Bash
 model: sonnet
 effort: high
 color: red
-memory: user
 ---
 
 ## Prompt Defense Baseline

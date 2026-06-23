@@ -84,6 +84,7 @@ When a loop *verifies*, its stop-signal must reduce to an objective check — a 
 - Type-checker / linter output showing zero new errors.
 - Fresh-context adversarial review by a sub-agent (`code-reviewer`, `security-reviewer`, or `silent-failure-hunter`) with no access to the implementer's reasoning.
 - Deterministic acceptance-runner results (`python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py"`) against a locked `ACCEPTANCE.md` contract. The runner returns **distinct exit codes for PASS(0) / FAIL(1) / INVOCATION(2) / PARSE(3) / BLOCK(4)** — a BLOCKed criterion is not a PASSed one (fix for the scoreboard-collapse anti-cheat gap, SYNTHESIS row #15).
+- **Gate-bypass fixes ship the regression in the same commit.** A gauntlet / audit / critical-hooks / PreToolUse-gate defect (enforcement absent or circumventable) carries its red→green regression test in the SAME commit — to `tests/hooks/runners/test-critical-hooks.sh` (hook/gate bypass) or `eval/regressions/` (eval-gate bypass) — not a later audit. The 2026-06-16 dig's 5 CRIT bypasses had no same-commit regression until a separate adversarial audit caught them; the generic "write a test" framing above did not prevent it, because the fixer was not the one who wrote the regression.
 Store proof artifacts in `.scratch/<slug>/proofs/` so reviewers can inspect them without re-running the full session.
 
 **Sub-rule: Comprehension debt ceiling.** Before proposing new candidates, check
@@ -181,6 +182,8 @@ Before adding code:
 - "Completed" is wrong if anything was skipped silently.
 - "Tests pass" is wrong if any were skipped.
 - Default to surfacing uncertainty, not hiding it.
+
+**Sub-rule: Same failure twice = guessing — escalate, don't retry.** Two identical failures in a row on the same signal means the session is guessing, not fixing — stop retrying and escalate (fresh-context reviewer or the human gate) rather than attempt N+1. This elevates `fix-bug`'s Phase-3 "Stall" guard ("Same error twice in a row: you're guessing, not fixing") to L1; `recursive-improve`'s `--fail-streak=2` default is its operational form. Distinct from Rule 13 (Orchestrate), which governs decomposition — not retry caps.
 
 ## 13. Orchestrate, Don't Solo
 

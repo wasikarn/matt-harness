@@ -125,7 +125,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 - Route each approved candidate to the cheapest correct executor (inline for trivial; the
   matching senior agent for specialized work — gated per `orchestrate`). Give each a **done-when**:
   an observable output, not a topic.
-- **Repeated failure escalates, it does not retry (Rule 13).** A candidate's executor caps itself
+- **Repeated failure escalates, it does not retry (Rule 12 — escalate sub-rule).** A candidate's executor caps itself
   at one retry; on hitting the same failure it does **not** re-attempt — it records the candidate
   not-done with the verbatim failure signal (Rule 12) and surfaces it at Step 6. There is no
   failure counter, because Step 4 runs each candidate **once**: a "count to N" would presume a

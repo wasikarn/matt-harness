@@ -74,7 +74,7 @@ Initial report: $ARGUMENTS
 2. For each, state: what would have to be true for this to be the cause, and what evidence would distinguish it from the others.
 3. Rank by likelihood × cheapness-to-test. Pick the top one.
 4. **Confirm via instrumentation if not already proven by Phase 1's repro**: add logging / asserts / breakpoints → re-run the minimised repro → observe whether the expected evidence appears. If it doesn't, fall back to the next-ranked hypothesis and repeat. Don't write the fix on an unconfirmed hypothesis.
-   - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow Rule 13's "cap"/"retry" words, this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
+   - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow the retry-cap vocabulary (Rule 12 escalate sub-rule), this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
      - **Stall** — two instrumentation rounds return the *same missing-evidence result for the same failure signal* → stop re-ranking and go to the gate. ("Same error twice in a row: you're guessing, not fixing.")
      - **Degrading** — confidence/progress goes *backwards* (each round contradicts the last), not just standing still → stop and go to the gate.
      - **Reachable-source skip** — don't exit "blocked" on an inference when a real source/log was reachable but unread; read it, or route the block to the gate. "Blocked" must mean a real wall, not an unchecked assumption.

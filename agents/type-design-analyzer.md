@@ -5,7 +5,6 @@ model: sonnet
 effort: high
 color: purple
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
-memory: user
 ---
 
 ## Why this role exists

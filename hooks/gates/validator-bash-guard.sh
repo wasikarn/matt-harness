@@ -1,7 +1,7 @@
 #!/bin/bash
 # Block mutation Bash commands issued by validator-class agents.
 # Closes the "validator has Bash that can mutate" gap (audit F1,
-# 2026-06-12). 7 validator agents hold `Bash` for read-only inspection
+# 2026-06-12). 14 validator agents hold `Bash` for read-only inspection
 # (git diff/log, ls, cat, npm test, pytest, etc.) — the existing
 # `orchestrate` skill gates Bash-holding dispatch behind AskUserQuestion
 # for the dispatch step, but a direct Task spawn with Bash granted was
@@ -48,7 +48,7 @@ AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null)
 # file under agents/. Add a name here only after verifying the agent is
 # validator-class (read-only-by-doctrine) and is the source of an actual
 # mutation risk.
-VALIDATORS='^(code-reviewer|code-explorer|code-architect|comment-analyzer|pr-test-analyzer|silent-failure-hunter|security-reviewer|ux-reviewer)$'
+VALIDATORS='^(code-reviewer|code-explorer|code-architect|comment-analyzer|pr-test-analyzer|silent-failure-hunter|security-reviewer|type-design-analyzer|ux-reviewer|researcher|inferential-structural-judge|incident-commander|finops-engineer|product-analyst)$'
 if ! [[ "$AGENT_TYPE" =~ $VALIDATORS ]]; then
   exit 0
 fi
@@ -67,10 +67,10 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # opening quote (`bash -c 'git push'`, `eval "rm -rf x"`) is at a boundary and
 # matches — pre-fix it slipped through because `'`/`"` weren't separators (the
 # hook's own header claimed this case was closed; it wasn't). Interpreters that
-# run arbitrary code in another language (eval, python -c, node -e, perl -e,
-# ruby -e) are denied outright — they defeat shell-pattern matching entirely and
-# a read-only validator never needs them (it has Read/Grep).
-DENY_PATTERNS='(^|[[:space:];&|()`'\''"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
+# run arbitrary code in another language (eval, python -c/-m, bash/sh -c,
+# node -e, perl -e, ruby -e) are denied outright — they defeat shell-pattern
+# matching entirely and a read-only validator never needs them (it has Read/Grep).
+DENY_PATTERNS='(^|[[:space:];&|()`'\''"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(python3?|bash|sh|node|ruby|perl)[[:space:]]+[^-|;&[:space:]"][^|;&[:space:]]*\.(py|sh|js|rb|pl)([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
 
 # 1. Full-command deny check — catches quoted mutations that
 # hook_strip_quoted would strip away.

@@ -5,7 +5,6 @@ model: sonnet
 effort: xhigh
 color: red
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
-memory: user
 ---
 
 ## Prompt Defense Baseline
