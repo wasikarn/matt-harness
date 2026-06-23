@@ -1,16 +1,16 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.4.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.4-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 40 workflow skills, 22 slash commands, and 46 governance
+It adds 29 specialist agents, 40 workflow skills, 22 slash commands, and 48 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Newest additions (v0.3.4):** observability + learning — three ECC concept-gaps closed within kbg's invariants: `kbg:learn` (human-gated session-pattern capture → memory), a `cost-capture` SessionEnd hook + `kbg:harness-health --cost` (honest token telemetry — the measurement half of METHODOLOGY Rule 6), and a read-only MCP inventory (`auth-health-check.py --mcp`).
-> (v0.3.2-0.3.3: ECC structure comparison → 2 clarity renames + `examples/` starters + a hook-count reconciliation. v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) supersedes ADR 0002's L2-only architecture; opt-in `KBG_AUTONOMY_L3`, default OFF == L2. See CHANGELOG.)
+> **Newest additions (v0.4.x):** **L4/L5 bounded autonomy** — [ADRs 0004](docs/adr/0004-l4-autonomy.md)/[0005](docs/adr/0005-l5-auto-push.md) extend the L2→L3 ladder into a caged, flag-gated (`KBG_AUTONOMY`, default OFF) self-driving harness: the gate that authorizes a mutation or ship stays **computational, never a model** (the model is veto-only), and an OS scheduler — not the model — self-starts. Four model-/cage-removing variants stay out of scope by design.
+> (v0.3.x: `kbg:learn` + `cost-capture` + read-only MCP inventory; v0.3.0: **L3 bounded autonomy** — [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md). See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
 cold-start, then [`METHODOLOGY.md`](METHODOLOGY.md) for the behavioral doctrine.
@@ -189,12 +189,19 @@ There is no support SLA; versions are pre-`1.0.0`.
 `ACLI`, and `DBGATE` context in every session, plus the `senior-eng` output style.
 There is no opt-out flag.
 
-3. **Autonomy invariant (ADR 0002 → ADR 0003).** **Default (L2):** no autonomous or
-unattended self-repair loops; every improvement iteration stops at a human approval gate.
-**L3 (opt-in, `KBG_AUTONOMY=1`, default OFF):** a bounded loop runs unattended within an
-owner-approved run, commits local-only, and is gated at *push* not per mutation
-([ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)). Either way `kbg:recursive-improve` keeps
-`disable-model-invocation: true` so the model cannot self-start it, and L4 stays rejected.
+3. **Autonomy invariant (ADR 0002 → 0003 → 0004 → 0005).** The ratchet turns only
+by a deliberate, human-authored, recorded ADR — never a flag flip, never a loop
+self-edit (the cage forbids `docs/adr/**`). One opt-in key `KBG_AUTONOMY`
+(`1` = armed, default OFF); flag-OFF is byte-identical to L2. **L2 (default):**
+every iteration stops at a human gate per mutation. **L3** ([0003](docs/adr/0003-l3-bounded-autonomy.md)):
+bounded loop, local-only, human-gated at push. **L4** ([0004](docs/adr/0004-l4-autonomy.md)):
+self-launch (an OS scheduler, not the model) + veto-only model-gate + auto-inject;
+auto-push dropped, human kept at push. **L5** ([0005](docs/adr/0005-l5-auto-push.md)): auto-push
+behind a **computational** ship-gate (the gauntlet); the human leaves the push loop, the
+model stays veto-only and gains no ship authority. At every level the gate that *authorizes*
+a mutation or ship stays computational, never a model, and `kbg:recursive-improve` keeps
+`disable-model-invocation: true`. Four variants stay out of scope (each needs a new ADR):
+model self-launching, model-authorizing ship, loop-authored ADRs, cage removal.
 
 4. **Single branch model.** The repo uses `develop` only. No feature branches.
 
@@ -240,7 +247,7 @@ kbg-harness/
 └── README.md             # This file
 ```
 
-**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. The one ECC pattern recently adopted is `examples/` (project-type `*-CLAUDE.md` starters, [v0.3.2](CHANGELOG.md)). See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) / [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) for the autonomy stance (L2 default, opt-in L3 bounded loop, no self-launching cron/`/loop` primitives).
+**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. The one ECC pattern recently adopted is `examples/` (project-type `*-CLAUDE.md` starters, [v0.3.2](CHANGELOG.md)). See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0002](docs/adr/0002-autonomy-invariant.md) → [0003](docs/adr/0003-l3-bounded-autonomy.md) → [0004](docs/adr/0004-l4-autonomy.md) → [0005](docs/adr/0005-l5-auto-push.md) for the autonomy ladder (L2 default → opt-in L3/L4/L5; four model-/cage-removing variants out of scope).
 
 ---
 

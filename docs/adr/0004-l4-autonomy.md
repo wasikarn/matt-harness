@@ -5,7 +5,11 @@
   default — flag-OFF byte-identical to L2/L3)** — supersedes the *bounded-autonomy architecture* of
   [ADR 0003](0003-l3-bounded-autonomy.md) and relaxes the *principle* of
   [ADR 0002](0002-autonomy-invariant.md). Neither prior ADR is deleted; both remain the record of
-  their eras. **Accepting the decision and enabling the machinery are separate gates** (see
+  their eras. **"IMPLEMENTED" = built + gauntlet-green, not live-enabled:** Slice 2's gate
+  (`l4-quality-gate.sh`, #3) is built, audited (#49), tested, and allowlisted, but is **not yet invoked
+  in the live `--auto` cycle** — its cycle invocation is the owner-gated trial per §"Recommended staging
+  order" (stage 2); the gate stays inert (flag-OFF) until then. **Accepting the decision and enabling
+  the machinery are separate gates** (see
   §"Acceptance criteria"): this Accept records the telos decision only; nothing self-drives until the
   full machinery ships gauntlet-green behind the hardening-before-enable rule and the owner sets
   `KBG_AUTONOMY_L4=1`.

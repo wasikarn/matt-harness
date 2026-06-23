@@ -1,4 +1,4 @@
-# L4-push-gated machinery — buildable design (capability ≥ ECC)
+# L4/L5 autonomy machinery — buildable design (capability ≥ ECC)
 
 > **Status:** 🟢 BUILT 2026-06-23 — the full 5-slice L4/L5 machinery (Slices 0–4, issues #17–#35)
 > is implemented + gauntlet-green on `develop`. `KBG_AUTONOMY` stays OFF by default (flag-OFF
@@ -211,7 +211,10 @@ An LLM "good enough" verdict stands in for the **quality** portion of the gauntl
 Trialed on exactly **one low-stakes prose skill**.
 
 - **Mechanism:** a new ~60-line `scripts/l4/l4-quality-gate.sh` + an allowlist `l4-quality-trial.txt`,
-  invoked **after** `run-gauntlet.sh` (which runs first, unconditionally). The model verdict can only
+  **to be invoked after** `run-gauntlet.sh` (which runs first, unconditionally) once the owner-gated
+  trial begins (ADR 0004 §"Recommended staging order" stage 2). **As built today** the gate exists, is
+  audited (#49), tested, and allowlisted, but is **not yet wired into the live `--auto` cycle** — it
+  stays inert while `KBG_AUTONOMY` is OFF. The model verdict can only
   **veto a green** (force an extra rollback — the safe direction), **never bless a red**. Fail-CLOSED:
   missing/erroring/unparseable model output → rollback. The fresh-context read-only judge addresses the
   LLM-judge-circularity ECC's same-model loop has — but audit #45 guards reviewer-*agent* `tools:`, **not**
@@ -289,8 +292,10 @@ never *authorize* a ship), so the ship-gate stays computational, never a model.
 ## 9. Capability verdict — where kbg ≥ ECC and < ECC (by design)
 
 **kbg exceeds ECC (safety) — verifiable today:** an immutable deny-by-default cage the loop physically
-cannot edit (ECC writes anywhere); a permanent human push-gate (ECC *can* auto-merge conflict-free
-worktrees — opt-in config bool + a computational readiness check, not unconditional); a flag captured-once
+cannot edit (ECC writes anywhere); a human push-gate at L2–L4 (ECC *can* auto-merge conflict-free
+worktrees — opt-in config bool + a computational readiness check, not unconditional), replaced at L5
+([ADR 0005](../adr/0005-l5-auto-push.md)) by a computational ship-gate (the gauntlet) — the human leaves
+the push loop but the authorizing gate stays computational, never a model; a flag captured-once
 so the loop cannot self-elevate (ECC's Haiku is told "just write"); decay implemented in code
 (`read-candidates.sh:74`) where **ECC's confidence is write-once-by-Haiku — no decay implementation was
 found in the 2026-06-21 on-disk read** (cited read, not a universal negative).
@@ -301,11 +306,13 @@ flags; the per-cycle cage re-assert (R3) and the Slice-2 cage-sync (#49). These 
 facts** until Slice 0/2 ship — they are the design's load-bearing obligations, tracked as named gating
 deliverables in §5/§7/§10.
 
-**kbg is less capable than ECC (throughput — intentional):** no auto-merge / no parallel worktree
-fan-out; cadence throttled well below ECC's heartbeat by R4; #3 trialed on one prose skill, not the whole
-corpus; and learnings become resident **next-session** (kbg writes a `memory/` file), not injected
-**mid-session** (ECC re-renders additionalContext every session). Each is the deliberate cost of keeping
-the human at the one irreversible boundary.
+**kbg is less capable than ECC (throughput — intentional at L2–L4; partially closed at L5):** at L2–L4
+no auto-merge / no parallel worktree fan-out and the human sits at the one irreversible (push) boundary;
+L5 ([ADR 0005](../adr/0005-l5-auto-push.md)) re-adds auto-push/auto-merge behind the computational
+ship-gate, removing the human from the push loop. Still intentional at every level: cadence throttled
+well below ECC's heartbeat by R4; #3 trialed on one prose skill, not the whole corpus; and learnings
+become resident **next-session** (kbg writes a `memory/` file), not injected **mid-session** (ECC
+re-renders additionalContext every session).
 
 ## 10. Acceptance per slice (hardening-before-enable)
 

@@ -87,11 +87,20 @@ kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical
 
 **Do not** add speculative configurability to doctrine files — this is a personal harness, not a product. METHODOLOGY Rule 2: "No speculative configurability."
 
-### The autonomy invariant (load-bearing, ADR 0002 → superseded by ADR 0003)
+### The autonomy invariant (load-bearing, ADR 0002 → 0003 → 0004 → 0005)
 
-**Default (L2):** no autonomous or unattended self-repair loop; every self-improvement iteration stops at a human `AskUserQuestion` gate before any mutation. **L3 (opt-in, `KBG_AUTONOMY_L3=1`, default OFF, [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)):** a *bounded* unattended loop runs within an owner-approved run — commits local-only, human-gated at *push* not per mutation. Either way `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` so the model cannot self-start it.
+The autonomy ratchet turns **only by a deliberate, human-authored, recorded ADR** — never a flag flip, and never a loop self-edit (the cage forbids `docs/adr/**`). One **single opt-in arming key**, `KBG_AUTONOMY` (`1` = armed, unset/`0` = OFF, **default OFF**); the per-level `_L3`/`_L4`/`_L5` names collapsed into it at Slice 0, and `KBG_L3_REVIEW_DONE` → `KBG_REVIEW_DONE`. Which capabilities an armed run has is set by the **committed slice code**, not the key value; flag-OFF is byte-identical to L2.
 
-**Implications for development:** a *bounded, opt-in, local-only, push-gated* loop is now in scope (L3). Still **out of scope by design**: a self-*launching* loop (cron / `/loop` / `CronCreate` / Evo meta-loop), a **model-as-gate** (the in-loop check must stay computational), and **L4** (no human gate at all). Changing the autonomy architecture requires a new superseding ADR (the ADR 0003 mechanism) — not a flag flip, and never a loop self-edit. The invariant's *principle* (operator judgment is load-bearing) is preserved; only the *per-mutation gate* relaxed to *per-batch + push*.
+| Level | What the human gives up | What stays (the floor) |
+|---|---|---|
+| **L2** (default) | — | human `AskUserQuestion` gate **per mutation**; `recursive-improve` `disable-model-invocation: true` (model can't self-start) |
+| **L3** ([ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)) | the per-mutation loop; commits local-only, human-gated at *push* (Gate 2) | human launches (Gate 1) + reviews push (Gate 2); in-loop gate **computational** (gauntlet, never a model) |
+| **L4** ([ADR 0004](docs/adr/0004-l4-autonomy.md)) | self-launch (#1, **OS scheduler** not the model) + veto-only model-gate (#3, trialed on one skill) + auto-inject (#4); auto-push #2 **dropped**, human kept at Gate 2 | the **cage** (loop can't edit its gates/gauntlet/audit/doctrine/ADRs), computational kill-switch, per-cycle reversibility tags, cumulative cap; audits #43–#50 run computationally **every cycle** |
+| **L5** ([ADR 0005](docs/adr/0005-l5-auto-push.md)) | re-adds auto-push/auto-merge (#2); human **removed from the push loop** | **computational ship-gate** = the gauntlet (model stays **veto-only**, gains NO ship authority); pre-push cross-repo CRIT + post-push tripwire witness; enable gated by ADR 0004 i/ii/iii (N≥20 clean cycles, F1/F2/F3 closed, cumulative cap) |
+
+**The deepest invariant — preserved at every level:** the gate that *authorizes* a mutation or a ship stays **computational, never a model**. The model is **veto-only** at L4/L5 — it can force an extra rollback, it can **never** bless or ship. The cage is retained at every level: the loop may auto-improve the non-safety surface, but it **cannot disable its own brakes or rewrite its governing ADRs.** `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` — an **OS scheduler** (launchd → `scripts/l4/launch.sh`), not the model, self-starts the L4 self-launch.
+
+**Implications for development:** a *bounded, opt-in, flag-gated, cage-floored* self-driving harness is now in scope (through L5). Still **out of scope by design** (each needs a new superseding ADR): the **model** self-launching (L4 self-launch is the OS scheduler, not the model), a **model-authorizing** ship (the ship-gate is the gauntlet), the loop authoring/editing/accepting its **own ADRs** (cage forbids `docs/adr/**`), and **removing the cage** (would make a runaway unrecoverable). A self-*launching* loop driven by the model itself (`/loop`, `CronCreate`, Evo meta-loop, Ollie flywheel) stays out — the sole sanctioned self-start is the caged, flag-gated `scripts/l4/launch.sh` invoked by launchd.
 
 ### Hook architecture (two conventions)
 
@@ -286,5 +295,5 @@ Single-branch (`develop` only). Commit + push direct. No feature branches. See `
 
 - No public-marketplace publish, no CI release train (`.github/workflows/validate.yml` is a conformance gate, not a release train).
 - No bundled MCP/LSP servers.
-- No self-launching or L4 autonomy primitives (`/loop`, `CronCreate`, Evo meta-loop, Ollie flywheel, model-as-gate). L3 *bounded* autonomy is in scope (ADR 0003: opt-in `KBG_AUTONOMY_L3`, default OFF, human-launched + push-gated); only the self-launching / model-as-gate / L4 variants stay out — see the autonomy invariant section above.
+- No **model-self-launching** loop, no **model-authorizing** ship-gate, no loop-authored ADR, no cage removal. The sanctioned L4/L5 autonomy (ADRs 0004/0005, single opt-in key `KBG_AUTONOMY`, default OFF) is bounded by the cage + a **computational** ship-gate (the gauntlet) + a computational kill-switch — the model stays **veto-only** and an **OS scheduler** (not the model) self-starts. Only those four model-/cage-removing variants stay out — see the autonomy invariant section above.
 - No Option B (public-distributable) machinery.

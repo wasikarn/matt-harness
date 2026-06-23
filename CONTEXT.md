@@ -47,28 +47,48 @@ the steady state going forward.
 - **No bundled MCP/LSP servers.** Hooks that depend on `rtk` / `qmd` /
   `memory-lint` / `code-review-graph` must degrade gracefully when those tools
   are absent.
-- **Autonomy is human-gated (the autonomy invariant).** **Default (L2):** no
-  autonomous or unattended self-repair loop, and no multi-iteration loop that
-  runs without a human gate between iterations — every self-improvement
-  iteration stops at a human `AskUserQuestion` gate before any mutation.
-  **L3 (opt-in, `KBG_AUTONOMY=1`, default OFF):** a *bounded* unattended
-  self-repair loop may run within an owner-approved run — but it still cannot
-  self-start (`recursive-improve` stays `disable-model-invocation: true`),
-  commits **local-only**, and is **human-gated at push**, not per mutation
-  (ADR 0003). Either way the model cannot self-launch the loop, and **L4** (no
-  human gate at all) stays rejected. The gate is a deliberate
-  **judgment-preservation** choice — not a capability gap to be closed as
-  models improve; the same loop machinery preserves or destroys engineering
-  judgment depending on operator intent, and the loop can't tell the
-  difference. L3 keeps that judgment at the irreversible (push) boundary; it
-  relaxes only the per-mutation gate on reversible local commits. This is the
-  canonical home for the invariant that `recursive-improve` cites.
+- **Autonomy is human-gated within a cage floor (the autonomy invariant).**
+  The ratchet turns only by a deliberate, human-authored, recorded ADR —
+  never a flag flip, never a loop self-edit (the cage forbids `docs/adr/**`).
+  One opt-in arming key, `KBG_AUTONOMY` (`1` = armed, unset/`0` = OFF, default
+  OFF); which capabilities an armed run has is set by the committed slice code,
+  not the key value.
+  - **L2 (default):** no autonomous or unattended self-repair loop, and no
+    multi-iteration loop that runs without a human gate — every
+    self-improvement iteration stops at a human `AskUserQuestion` gate per
+    mutation; `recursive-improve` keeps `disable-model-invocation: true`
+    (the model can't self-start).
+  - **L3 (opt-in, [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)):** a
+    bounded unattended loop runs within an owner-approved run, commits
+    local-only, and is **human-gated at push (Gate 2)**, not per mutation; the
+    in-loop gate is **computational** (the gauntlet, never a model).
+  - **L4 (opt-in, [ADR 0004](docs/adr/0004-l4-autonomy.md)):** self-launch
+    (#1, an **OS scheduler** — not the model — self-starts) + a veto-only
+    model-gate (#3, trialed on one low-stakes skill) + auto-inject (#4);
+    auto-push (#2) is **dropped**, the human stays at Gate 2.
+  - **L5 (opt-in, [ADR 0005](docs/adr/0005-l5-auto-push.md)):** re-adds
+    auto-push/auto-merge (#2); the human leaves the push loop, replaced by a
+    **computational** ship-gate (the gauntlet); the model stays veto-only and
+    gains no ship authority. Enable is gated by ADR 0004's i/ii/iii (N≥20
+    clean cycles, F1/F2/F3 closed, cumulative cap).
 
-  **See [ADR 0002](docs/adr/0002-autonomy-invariant.md)** for the L2-era
-  decision record (rejected alternatives, 5 implementation surfaces, 3
-  verification pillars) and **[ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)**
-  for the L3 supersession (the two-gate model + the standing-consent
-  reconciliation).
+  **The deepest invariant, preserved at every level:** the gate that
+  *authorizes* a mutation or a ship stays **computational, never a model**.
+  The model is veto-only at L4/L5 — it can force a rollback, never bless or
+  ship. The cage is retained at every level: the loop may auto-improve the
+  non-safety surface, but it cannot disable its own brakes or rewrite its
+  governing ADRs. This is the canonical home for the invariant that
+  `recursive-improve` cites — a **judgment-preservation** choice, not a
+  capability gap to be closed as models improve. Four variants stay **out of
+  scope by design** (each needs a new superseding ADR): the *model*
+  self-launching, a *model*-authorizing ship-gate, the loop authoring its own
+  ADRs, and removing the cage.
+
+  **See** [ADR 0002](docs/adr/0002-autonomy-invariant.md) (L2-era principle +
+  foreclosures), [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) (the two-gate
+  model), [ADR 0004](docs/adr/0004-l4-autonomy.md) (self-launch within the
+  cage, push kept), and [ADR 0005](docs/adr/0005-l5-auto-push.md) (auto-push
+  behind a computational ship-gate).
 
 ## Components
 

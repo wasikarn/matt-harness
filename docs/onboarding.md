@@ -15,7 +15,7 @@ injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
 
 1. [`METHODOLOGY.md`](../METHODOLOGY.md) — 13-rule behavioral doctrine. **Start here.**
 2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
-3. [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) — the autonomy invariant: the load-bearing *principle* + foreclosures (no L4, no self-launch, no model-as-gate). L3 *bounded* autonomy is the opt-in successor in [`ADR 0003`](adr/0003-l3-bounded-autonomy.md).
+3. [`docs/adr/`](adr/) — the autonomy ladder: [ADR 0002](adr/0002-autonomy-invariant.md) (L2 principle) → [0003](adr/0003-l3-bounded-autonomy.md) (L3 bounded) → [0004](adr/0004-l4-autonomy.md) (L4 self-launch within a cage, push kept) → [0005](adr/0005-l5-auto-push.md) (L5 auto-push behind a computational ship-gate). All opt-in via one key `KBG_AUTONOMY`, default OFF; four model-/cage-removing variants stay out of scope.
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
 
 The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
@@ -34,14 +34,16 @@ Other useful ones: `/kbg:fix-bug`, `/kbg:feature-dev`, `/kbg:team-plan`,
 
 ## The 1 thing to never do
 
-**Do not relax the autonomy invariant.** No L4, no self-launching loops
-(cron / `/loop` / `CronCreate`), no model-as-gate, no self-improving-harness-via-PRs.
-The invariant is load-bearing — it preserves the operator's judgment over loop
-velocity. **L3 *bounded* autonomy IS in scope** (opt-in `KBG_AUTONOMY`, default
-OFF, push-gated — [ADR 0003](adr/0003-l3-bounded-autonomy.md)); it was adopted by a
-deliberate *superseding ADR*, not a flag flip. So: change the architecture only
-through a new ADR (the 0003 mechanism); a self-launching / L4 / model-as-gate
-feature is "out of scope by design."
+**Do not relax the autonomy invariant past a deliberate ADR.** The ratchet
+turns only by a human-authored, recorded ADR — never a flag flip, never a loop
+self-edit (the cage forbids `docs/adr/**`). L2–L5 are all in scope (opt-in
+`KBG_AUTONOMY`, default OFF — [ADR 0003](adr/0003-l3-bounded-autonomy.md) /
+[0004](adr/0004-l4-autonomy.md) / [0005](adr/0005-l5-auto-push.md)), but four
+variants stay **out of scope by design** (each needs a new superseding ADR):
+the *model* self-launching the loop, a *model*-authorizing ship-gate, the loop
+authoring its own ADRs, and removing the cage. The invariant is load-bearing
+— it preserves the operator's judgment; the gate that authorizes a mutation
+or ship stays **computational, never a model**.
 
 ## Recurring cadences (read once, never re-derive)
 
