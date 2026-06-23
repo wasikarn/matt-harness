@@ -42,6 +42,7 @@ SUITES=(
   test-ch-verif-validators.sh
   test-ch-harness-audit31.sh
   test-ch-harness-audit32.sh
+  test-ch-harness-audit52.sh
   test-ch-harness-audit-fixtures.sh
   test-ch-orphaned-runners.sh
   test-ch-ideate-fanout.sh

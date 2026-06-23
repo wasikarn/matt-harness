@@ -139,11 +139,22 @@ def check_plugin_cache() -> dict[str, Any]:
             if has_surface:
                 verdict["status"] = "healthy"
             else:
-                verdict["issues"].append(
-                    f"plugin.json not found at {manifest_path} and no discoverable plugin surface (agents/skills/commands/hooks/output-styles/themes or marketplace.json) — unverified stub"
-                )
-                overall_degraded += 1
-                verdict["status"] = "degraded"
+                # LSP-connector plugins (pyright-lsp / typescript-lsp /
+                # lua-lsp) ship NO plugin.json and NO surface dirs — they
+                # load a language server via an alternate path. Claude Code
+                # writes .in_use/<pid> markers ONLY when it actually loads a
+                # plugin, and surface plugins never have them, so a
+                # non-empty .in_use/ is the on-disk signal the connector is
+                # active (loaded), not a degraded stub.
+                in_use = install_path / ".in_use"
+                if in_use.is_dir() and any(in_use.iterdir()):
+                    verdict["status"] = "healthy"
+                else:
+                    verdict["issues"].append(
+                        f"plugin.json not found at {manifest_path} and no discoverable plugin surface (agents/skills/commands/hooks/output-styles/themes, marketplace.json, or active .in_use/ connector markers) — unverified stub"
+                    )
+                    overall_degraded += 1
+                    verdict["status"] = "degraded"
             verdicts.append(verdict)
             continue
         verdict["manifest_found"] = True

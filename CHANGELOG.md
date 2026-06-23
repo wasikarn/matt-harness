@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.11] — 2026-06-23
+
+Two follow-ups from the v0.4.10 armed-push session: an auth-health false-positive
+fix and an observability audit check for the push-gate rubber-stamp surface. No
+component count change — version bump only.
+
+- **Auth-health LSP-connector fix.** `scripts/auth_health/plugins.py` no-surface
+  branch now recognizes a non-empty `.in_use/` dir as an **active LSP-connector
+  plugin** (pyright-lsp / typescript-lsp / lua-lsp ship no `plugin.json` and no
+  surface dirs; Claude Code writes `.in_use/<pid>` markers only when it actually
+  loads a plugin, and surface plugins never have them) → classified **healthy**
+  instead of **degraded**. Restores the health check to 16/16 healthy.
+
+- **Audit #52 — push-gate review-rigor observe-flag.** New audit check
+  `checks/52-review-finding-rigor-inline-agent-not-.sh` (gated on the new ADR):
+  the armed-push Gate-2 check authorizes on the *presence* of a `review_finding`
+  event, not its *rigor* — an inline-review verdict satisfies the gate identically
+  to a full multi-agent `kbg:review-pr`. #52 INFO-flags `review_finding` events
+  whose `fields.agent` is not composed of fleet reviewer names
+  (`code-reviewer`/`security-reviewer`/`silent-failure-hunter`/`pr-test-analyzer`/
+  `comment-analyzer`/`type-design-analyzer`/`ux-reviewer`, in bare or `kbg:`-namespaced
+  form, multi-agent joined with `+`) — the decay-sweep prompt that the maker≠checker
+  bar was met. **INFO, not WARN** — never inflates the audit exit code; an
+  inline-review finding is a legitimate path, not a defect. Push gate **unchanged**
+  (observe-flag, not enforce-deny — enforce-deny would trip the #31.1 ceremony trap:
+  forcing a multi-agent pass on every armed push including a one-line diff). Audit
+  integrity guard bumped 51→52. Covered by `test-ch-harness-audit52.sh` (UU fire /
+  VV no-fire, the latter the predicate robustness guard for the bare-name +
+  combined-form convention shift).
+
+- **ADR 0002 addendum — push-gate review-rigor.**
+  `docs/adr/0002-addendum-push-gate-review-rigor.md` records the rubber-stamp
+  limitation, the observe-flag-vs-enforce-deny decision (and why enforce-deny
+  re-introduces the #31.1 ceremony trap), and the audit #52 enforcement. No
+  autonomy axis moves — the ship-authorizing gate stays computational and
+  permissive (the floor), the maker≠checker bar stays a human judgment at
+  armed-push-dance step 2 (the ceiling), and #52 is computational-FB (an INFO
+  line in `audit.sh`), not a model-judged gate.
+
 ## [0.4.10] — 2026-06-23
 
 Closes the four deferred items from the v0.4.9 decision-sizing/responsibility-map
