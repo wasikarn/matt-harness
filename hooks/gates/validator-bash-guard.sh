@@ -61,9 +61,12 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 
 # Narrow read-only exception: `python3 -m pytest` is a common test invocation
 # that the generic `python3 -m` deny (arbitrary module execution) would
-# otherwise block. The module name is anchored so `python3 -m pip install`
-# still reaches the deny list.
-if printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)'; then
+# otherwise block. We allow it ONLY when the entire command is a single
+# pytest invocation with simple arguments — no shell operators, command
+# substitution, quotes, or redirects. Plain `pytest ...` is already handled
+# by ALLOW_PREFIXES; this carve-out just covers the `python3 -m` form.
+if printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
+   ! printf '%s\n' "$COMMAND" | command grep -qE '[;|&`$()\<>"'"'"'"]'; then
   exit 0
 fi
 
@@ -79,7 +82,7 @@ fi
 # node -e, perl -e, ruby -e) are denied outright — they defeat shell-pattern
 # matching entirely and a read-only validator never needs them (it has Read/Grep).
 read -r DENY_PATTERNS <<'REGEX'
-(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|&()]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(python3?|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|&()]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|&()]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(python3?|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|&()]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
 
 # 1. Full-command deny check — catches quoted mutations that
