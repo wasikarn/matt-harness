@@ -98,7 +98,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 28 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 17 | Invoke via `/<command>` or `kbg:<command>` (e.g. `/ship-task`, `/ideate`, `/team-plan`) |
-| **Hooks** | 48 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (38 tracked as sensors) |
+| **Hooks** | 50 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (38 tracked as sensors) |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -133,7 +133,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 
 ## Governance Hooks
 
-48 hook scripts fire on 14 lifecycle events (63 registrations total; 38 tracked as sensors for staleness). They are split into four cells:
+50 hook scripts fire on 14 lifecycle events (66 registrations total; 38 tracked as sensors for staleness). They are split into four cells:
 
 | | Feedforward (before the act) | Feedback (after the act) |
 |---|---|---|
