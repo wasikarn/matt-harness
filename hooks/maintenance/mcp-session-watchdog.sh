@@ -24,11 +24,10 @@ SUMMARY=$(printf '%s' "$RESULT" | jq -r \
 LABEL="degraded"
 [ "$EXIT_CODE" -eq 2 ] && LABEL="BROKEN"
 
-printf '{"additionalContext":"⚠️ MCP health %s — %s. Run: python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/auth-health-check.py\""}\n' \
-  "$LABEL" "$SUMMARY"
+jq -nc --arg label "$LABEL" --arg summary "$SUMMARY" \
+  '{additionalContext:("⚠️ MCP health "+$label+" — "+$summary+". Run: python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/auth-health-check.py\"")}'
 
 ( journal_append "$HOOK_ID" "mcp_health_warning" \
-    "$(printf '{"exit_code":%d,"summary":"%s"}' "$EXIT_CODE" \
-       "$(printf '%s' "$SUMMARY" | tr -d '"')")" \
+    "$(jq -nc --argjson ec "$EXIT_CODE" --arg s "$SUMMARY" '{exit_code:$ec,summary:$s}')" \
     >/dev/null ) || true
 exit 0

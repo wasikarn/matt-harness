@@ -33,6 +33,11 @@ derive_memory_dir() {
 MD_DIR="$(derive_memory_dir)"
 MD_FILE="$MD_DIR/MEMORY.md"
 
+# ponytail: byte-count and lint-finding extraction each repeated 3× below —
+# one helper each keeps a single source for the size/lint shape.
+md_bytes() { if [ -f "$1" ]; then wc -c < "$1" | tr -d ' '; else echo 0; fi; }
+lint_findings() { local f; f=$(python3 "$LINT" "$1" 2>/dev/null | awk '/^Exit: /{print $2; exit}' || true); echo "${f:-?}"; }
+
 cmd="${1:-plan}"
 shift || true
 
@@ -48,13 +53,8 @@ case "$cmd" in
             yes_flag="--yes"
         fi
         # Capture size before
-        if [ -f "$MD_FILE" ]; then
-            before_bytes=$(wc -c < "$MD_FILE" | tr -d ' ')
-        else
-            before_bytes=0
-        fi
-        before_findings=$(python3 "$LINT" "$MD_DIR" 2>/dev/null | awk '/^Exit: /{print $2; exit}' || true)
-        if [ -z "$before_findings" ]; then before_findings="?"; fi
+        before_bytes=$(md_bytes "$MD_FILE")
+        before_findings=$(lint_findings "$MD_DIR")
         echo "memory-trim apply: $MD_DIR"
         echo "  before: ${before_bytes}B, ${before_findings} lint findings"
         echo
@@ -73,13 +73,8 @@ case "$cmd" in
         echo "Applying..."
         python3 "$LINT" "$MD_DIR" --auto-archive --yes 2>&1 | tail -20
         # Capture size after + re-lint
-        if [ -f "$MD_FILE" ]; then
-            after_bytes=$(wc -c < "$MD_FILE" | tr -d ' ')
-        else
-            after_bytes=0
-        fi
-        after_findings=$(python3 "$LINT" "$MD_DIR" 2>/dev/null | awk '/^Exit: /{print $2; exit}' || true)
-        if [ -z "$after_findings" ]; then after_findings="?"; fi
+        after_bytes=$(md_bytes "$MD_FILE")
+        after_findings=$(lint_findings "$MD_DIR")
         delta=$((after_bytes - before_bytes))
         echo
         echo "═══════════════════════════════════════"
@@ -93,11 +88,10 @@ case "$cmd" in
             echo "ERROR: MEMORY.md not found at $MD_FILE" >&2
             exit 1
         fi
-        bytes=$(wc -c < "$MD_FILE" | tr -d ' ')
+        bytes=$(md_bytes "$MD_FILE")
         lines=$(wc -l < "$MD_FILE" | tr -d ' ')
         pct=$(awk "BEGIN{printf \"%d\", ($bytes/25600)*100}")
-        findings=$(python3 "$LINT" "$MD_DIR" 2>/dev/null | awk '/^Exit: /{print $2; exit}' || true)
-        if [ -z "$findings" ]; then findings="?"; fi
+        findings=$(lint_findings "$MD_DIR")
         echo "memory-trim status: $MD_DIR"
         echo "  MEMORY.md: ${bytes}B / ${lines}L (${pct}% of 25KB cap)"
         echo "  lint findings: ${findings}"

@@ -122,6 +122,6 @@ journal_append "$HOOK_ID" "decision_rationale" "$fields" >/dev/null 2>&1 || true
 # Advisory nudge via additionalContext (NO permissionDecision -> allow + inject).
 # The triad is the staff-engineer decision-sizing loop (METHODOLOGY Rule 1).
 nudge="Consequential surface touched: ${surface} (${class}) — one-way-door-class edit. Before finalizing, record the decision-sizing triad in your response: (1) one-way door? (2) blast radius — what downstream breaks / what this couples to? (3) riskiest assumption — stated and verified? A decision_rationale provenance event is journaled; your triad is the human-readable half that accompanies it."
-ctx="$(printf '%s' "$nudge" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)" || exit 0
+ctx="$(printf '%s' "$nudge" | jq -cRs . 2>/dev/null)" || exit 0
 printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$ctx"
 exit 0

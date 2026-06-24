@@ -82,8 +82,7 @@ printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
 
 # Emit desktop notification via terminalSequence (OSC 9 — iTerm2, Terminal.app, etc.)
 # Requires Claude Code 2.1.141+ to route terminalSequence without a controlling TTY.
-NOTIFY_TOOL=$(printf '%s' "$TOOL" | sed 's/"/\\"/g')
-NOTIFY_REASON=$(printf '%s' "$REASON" | sed 's/"/\\"/g')
-printf '{"terminalSequence": "\\u001b]9;Auto-mode blocked: %s (%s)\\u0007"}\n' "$NOTIFY_TOOL" "$NOTIFY_REASON"
+jq -nc --arg t "$TOOL" --arg r "$REASON" \
+  '{terminalSequence:("\u001b]9;Auto-mode blocked: "+$t+" ("+$r+")\u0007")}'
 
 exit 0

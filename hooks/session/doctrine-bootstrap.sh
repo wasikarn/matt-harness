@@ -55,8 +55,8 @@ done
 # in another repo. The path points at the installed plugin copy (cache), not the working tree.
 doctrine+="Reasoning-models catalog — the named mental models kbg already applies (honesty caveat: none is a proven accuracy boost; one measurably hurt accuracy). When a task explicitly calls for one of these frames, run Bash cat \"$ROOT/docs/reference/reasoning-models.md\"; do not open it unprompted. The file contains Bash-only recipes because the path variable expands only in shell context. The 39 verbatim-vendored thinking-skill files live under $ROOT/docs/reference/thinking-skills/."$'\n'
 
-# JSON-escape via python3 (already required by other hooks). Bail safe if absent.
-ctx="$(printf '%s' "$doctrine" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)" || exit 0
+# JSON-encode via jq slurp-raw (one JSON string). Bail safe if jq absent.
+ctx="$(printf '%s' "$doctrine" | jq -cRs . 2>/dev/null)" || exit 0
 [ -n "$ctx" ] || exit 0
 
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$ctx"

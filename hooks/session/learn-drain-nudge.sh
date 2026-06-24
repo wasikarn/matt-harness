@@ -105,7 +105,7 @@ PY
 
 [ -n "$CTX" ] || exit 0
 
-CTX_JSON=$(printf '%s' "$CTX" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
+CTX_JSON=$(printf '%s' "$CTX" | jq -cRs . 2>/dev/null)
 [ -n "$CTX_JSON" ] || exit 0
 
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$CTX_JSON"

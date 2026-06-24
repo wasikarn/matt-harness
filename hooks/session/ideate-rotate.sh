@@ -149,7 +149,7 @@ did, surface the warning in the brief.
 EOF
 )
 
-CTX=$(printf '%s' "$ROTATION_MARKDOWN" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null) || CTX=''
+CTX=$(printf '%s' "$ROTATION_MARKDOWN" | jq -cRs . 2>/dev/null) || CTX=''
 if [ -n "$CTX" ]; then
   printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$CTX"
 fi

@@ -23,6 +23,8 @@ SENSORS_JSON="$HOOK_DIR/../sensors.json"
 AUDIT_SH="$HOOK_DIR/../../skills/harness-audit/scripts/audit.sh"
 DISMISS_FILE="$HOME/.claude/state/kbg-staleness-dismissed.json"
 JOURNAL="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
+# shellcheck disable=SC1090
+source "$HOOK_DIR/../_lib.sh" 2>/dev/null || true   # journal_append only — _lib.sh defines functions, no top-level side effects
 
 # ── Graceful degradation (silent no-op on missing deps) ─────────────
 command -v python3 >/dev/null 2>&1 || exit 0
@@ -194,14 +196,14 @@ ctx=$(printf '%s' "$result" | jq -r '.additional_context // ""' 2>/dev/null)
 [ -n "$ctx" ] || exit 0
 
 # JSON-encode for embedding in the hook output envelope
-ctx_json=$(printf '%s' "$ctx" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
+ctx_json=$(printf '%s' "$ctx" | jq -cRs . 2>/dev/null)
 [ -n "$ctx_json" ] || exit 0
 
-# ── Journal the fire (best-effort; silent on failure) ────────────
-# Inline shape mirrors journal_append in _lib.sh (id/ts/session/hook/event/fields).
-# This hook is matcher-less SessionStart and does not need hook_init's
-# PreToolUse parsing helpers, so the journal is built directly to avoid
-# dragging in _lib.sh.
+# ── Journal the fire (best-effort) ───────────────────────────────
+# journal_append (from _lib.sh) mints the same envelope the inline python did
+# (source:"journal_append", id=<ms>-<hook>-<rand>, same fields). It uses exit 2
+# (not return), so run it in a SUBSHELL: a journal failure must never suppress
+# the staleness warning emitted below.
 fields=$(printf '%s' "$result" | jq -c '{
   triggered: true,
   enforcement_count: (.enforcement_count // 0),
@@ -211,34 +213,11 @@ fields=$(printf '%s' "$result" | jq -c '{
   stale_set_hash: (.stale_set_hash // "")
 }' 2>/dev/null)
 
-CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-no-sid}" \
-CLAUDE_JOURNAL_PATH="$JOURNAL" \
-python3 - "$fields" <<'PY' 2>/dev/null
-import datetime as d, json, os, sys, uuid
-fields_json = sys.argv[1]
-journal = os.environ.get("CLAUDE_JOURNAL_PATH") or os.path.expanduser("~/.claude/governance-events.jsonl")
-try:
-    os.makedirs(os.path.dirname(journal), exist_ok=True)
-except OSError:
-    pass
-try:
-    fields = json.loads(fields_json)
-except ValueError:
-    fields = {}
-ts = d.datetime.now(d.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-rid = uuid.uuid4().hex[:8]
-envelope = {
-    "id": f"{int(d.datetime.now().timestamp()*1000)}-notify-sensor-staleness-{rid}",
-    "ts": ts,
-    "session": os.environ.get("CLAUDE_SESSION_ID", "no-sid"),
-    "hook": "notify-sensor-staleness",
-    "event": "notify-sensor-staleness",
-    "source": "journal_append",
-    "fields": fields,
-}
-with open(journal, "a", encoding="utf-8") as f:
-    f.write(json.dumps(envelope, separators=(",", ":")) + "\n")
-PY
+# shellcheck disable=SC2034  # SID is read cross-file by journal_append (_lib.sh:269)
+SID="${CLAUDE_SESSION_ID:-no-sid}"
+( CLAUDE_JOURNAL_PATH="$JOURNAL" \
+  journal_append "notify-sensor-staleness" "notify-sensor-staleness" "$fields" \
+  >/dev/null 2>&1 ) || true
 
 # ── Emit the additionalContext block ────────────────────────────
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$ctx_json"

@@ -22,6 +22,6 @@ printf '  • Commit message: imperative mood, under 72 chars, no "this commit"\
 
 CMD_PREFIX=$(printf '%s' "$CMD" | cut -c1-60)
 ( journal_append "$HOOK_ID" "pr_style_reminder_fired" \
-    "$(printf '{"cmd_prefix":"%s"}' "$CMD_PREFIX")" \
+    "$(jq -nc --arg p "$CMD_PREFIX" '{cmd_prefix:$p}')" \
     >/dev/null ) || true
 exit 0

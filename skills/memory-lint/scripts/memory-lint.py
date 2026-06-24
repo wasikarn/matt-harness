@@ -209,12 +209,6 @@ def short_hash(s, n=200):
     return hashlib.sha1(s[:n].encode("utf-8")).hexdigest()[:10]
 
 
-def parse_pointer_line(line):
-    """Extract (filename, link-text, rest-after-paren) from a `- [text](file.md) — tail` line."""
-    m = re.match(r"^- \[([^\]]+)\]\(([^)]+\.md)\)(.*)$", line)
-    if not m:
-        return None
-    return m.group(1), m.group(2), m.group(3)
 
 
 def class_a_stale_superseded(state):
