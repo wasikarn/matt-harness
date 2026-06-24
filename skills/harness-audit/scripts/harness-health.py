@@ -10,8 +10,9 @@ import json
 import os
 import sys
 
+_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_JOURNAL = os.path.expanduser("~/.claude/governance-events.jsonl")
-DEFAULT_SENSORS = "hooks/sensors.json"
+DEFAULT_SENSORS = os.path.join(os.path.dirname(_SCRIPT_DIR), "sensors.json")
 VERDICT = "inferential_structural_verdict"
 SKIPPED = "inferential_structural_verdict_skipped"
 JUDGMENT = (VERDICT, SKIPPED)

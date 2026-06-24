@@ -24,7 +24,7 @@ Strategic judgment differs from operational decision-making. `kbg:decide` climbs
 - **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident` (it embeds the hotfix path). For pure high-speed pattern-matching when no kbg surface fits, prompt an OODA loop from the vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not from a loadable `kbg:` surface.
 - **Answer already dictated** — if architecture charter, policy, or a hard constraint removes choice, say so instead of running the strategy loop.
 - **Pure research or intelligence gathering** — use `/deep-dive` or `kbg:decide (probe mode)` first; feed their output into `kbg:decide (strategize mode)`.
-- **Execution planning only** — use `kbg:ship-task` or `kbg:adr` once the strategy is set.
+- **Execution planning only** — use `/ship-task` or `kbg:adr` once the strategy is set.
 
 ## Procedure
 

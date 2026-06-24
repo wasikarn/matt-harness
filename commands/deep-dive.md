@@ -6,7 +6,7 @@ argument-hint: Optional topic or question
 
 # Deep Dive
 
-Single kbg research surface. Produces an actionable brief with cited sources (file:line, URL, commit sha). This command is both the user-typed entry (`/deep-dive`) and the model-routed path (`kbg:deep-dive`).
+Single kbg research surface. Produces an actionable brief with cited sources (file:line, URL, commit sha). This command is the user-typed entry (`/deep-dive`); the model routes here directly on open-ended research prompts.
 
 ## Core Principles
 
