@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.4.20] — 2026-06-24
+
+Aggressive consolidation of `@commands/` and `@skills/`.
+
+- **Merged standalone skills into surviving surfaces.** Deleted `skills/probe`, `strategize`, `debate`, `research-brief`, `hotfix`, `harness-coverage`, `harness-health`, `7-agent-pattern`, `types-first`, `task-sizing`, `semantic-code`, and `skills/ideate`; folded their content into `kbg:decide` (probe/strategize/debate modes), `kbg:incident` (hotfix path), `kbg:harness-audit` (--coverage / --health modes), `/team-plan` (references), `/ship-task`, `/deep-dive`, and `/ideate`.
+- **Deleted legacy slash commands.** Removed `/debug-debate`, `/feature-dev`, `/pre-flight-plan-linter`, `/pre-ship-verify`, and `/validate-and-fix`; their workflows now live under `/ship-task`, `/team-plan`, and `/team-build`.
+- **Updated live cross-references** across docs/research, docs/reference, commands, skills, eval fixtures, and critical-hooks tests to match the new surface layout.
+- **Regenerated `BOUNDARY.md`** and bumped plugin manifests to v0.4.20 (fleet: 29 agents, 28 skills, 17 commands, 50 hooks, 2 output-styles, 1 theme).
+- **Fixed relative `core.hooksPath`** so the pre-commit/pre-push gauntlet cannot be bypassed by an absolute-path redirect.
+
 ## [0.4.11] — 2026-06-23
 
 Two follow-ups from the v0.4.10 armed-push session: an auth-health false-positive

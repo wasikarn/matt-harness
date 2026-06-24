@@ -1,11 +1,11 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.4.4-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.20-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 40 workflow skills, 22 slash commands, and 48 governance
+It adds 29 specialist agents, 28 workflow skills, 17 slash commands, and 50 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
@@ -222,8 +222,8 @@ Directory-level layout. The auto-generated `BOUNDARY.md` is the **file-level** c
 kbg-harness/
 ├── .claude-plugin/       # Plugin + marketplace manifests (plugin.json, marketplace.json)
 ├── agents/               # 29 senior-specialist subagents (one .md each, flat)
-├── skills/               # 40 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
-├── commands/             # 22 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
+├── skills/               # 28 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
+├── commands/             # 17 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
 ├── hooks/                # Governance hooks across 14 lifecycle events, grouped by role:
 │   ├── gates/            #   PreToolUse deny/ask gates           (computational feedforward)
 │   ├── advisory/         #   journal-only sensors                (inferential feedback — never block)
