@@ -1,8 +1,3 @@
----
-name: 7-agent-pattern
-description: "Canonical 7-seat parallel feature-build template: seven specialized agents in dependency-ordered waves (types/contracts seat runs first) so parallel work integrates against shared contracts. Use when /team-plan needs a standard full-stack seat allocation, or the user asks for the canonical parallel build pattern / a 7-agent team / '7-agent', 'ทีม 7 คน', 'pattern 7 คน', or 'ทีมเต็มรูปแบบ'. Don't use for: single-agent features (use /ship-task), task right-sizing (see `commands/team-plan/references/task-sizing.md`), or runtime dispatch (use kbg:orchestrate)."
----
-
 # 7-Agent Pattern
 
 > **Subagent self-check:** If you were dispatched as a sub-agent for a specific seat, **do not

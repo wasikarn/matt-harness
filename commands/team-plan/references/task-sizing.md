@@ -1,8 +1,3 @@
----
-name: task-sizing
-description: "Right-size /team-plan tasks before /team-build: the 5-6-tasks-per-agent rule, wave balancing, splitting oversized tasks, merging undersized ones — so a team finishes faster with fewer merge conflicts. Use when reviewing a plan's task granularity, or the user asks how big a task or wave should be. Thai: 'task sizing', 'แบ่ง task', 'ขนาด task', 'ย่อย task'. Don't use for: authoring the plan (use /team-plan), runtime dispatch (use kbg:orchestrate), or single-agent work (use /ship-task)."
----
-
 # Task Sizing
 
 > **Subagent self-check:** If you were dispatched as a sub-agent for a specific task, **do not re-orchestrate.** Return your scoped output (a `done-when` artifact, a `Report:` block, or your done-criterion evidence) to the parent. The parent owns the prioritization + dispatch loop; you own one well-bounded deliverable.

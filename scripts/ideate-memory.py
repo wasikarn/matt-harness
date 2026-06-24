@@ -143,15 +143,22 @@ def _load_transcript(path: Path) -> tuple[list[dict], list[dict]]:
     return [], []
 
 
-def _is_ideate_skill_call(item: dict) -> bool:
-    """Return True if item is a tool_use whose skill target is ideate."""
+def _is_ideate_invocation(item: dict) -> bool:
+    """Return True if item is a tool_use that invokes the ideate surface.
+
+    ideate moved from the Skill surface (`kbg:ideate`) to the Command surface
+    (`/ideate`) in v0.4.20; capture both legacy Skill calls and current
+    Command invocations.
+    """
     if not isinstance(item, dict):
         return False
     tool_name = item.get("tool_name") or item.get("name") or ""
-    if tool_name != "Skill":
-        return False
     inp = item.get("input") or {}
-    return inp.get("skill") in ("ideate", "kbg:ideate")
+    if tool_name == "Skill":
+        return inp.get("skill") in ("ideate", "kbg:ideate")
+    if tool_name == "Command":
+        return inp.get("command") in ("ideate", "/ideate")
+    return False
 
 
 def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]:
@@ -164,14 +171,14 @@ def _find_ideate_runs(messages: list[dict], tool_uses: list[dict]) -> list[dict]
         return item.get("uuid") or item.get("id") or json.dumps(item, sort_keys=True, default=str)
 
     for item in tool_uses:
-        if _is_ideate_skill_call(item):
+        if _is_ideate_invocation(item):
             sid = _seen_id(item)
             if sid not in seen_ids:
                 seen_ids.add(sid)
                 skill_calls.append((len(skill_calls), item))
 
     for i, msg in enumerate(messages):
-        if _is_ideate_skill_call(msg):
+        if _is_ideate_invocation(msg):
             sid = _seen_id(msg)
             if sid not in seen_ids:
                 seen_ids.add(sid)

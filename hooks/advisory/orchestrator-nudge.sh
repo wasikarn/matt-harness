@@ -33,8 +33,13 @@ HOOK_ID="orchestrator-nudge"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
-# Namespace-mode detection: empty in symlink-farm, 'kbg:' in plugin.
-NS="${CLAUDE_PLUGIN_ROOT:+kbg:}"
+# Commands are bare /name surfaces; skills are kbg:<name>. Keep suggestions in the
+# form the model actually invokes.
+ORCHESTRATE_CMD="kbg:orchestrate"
+ADDRESS_REVIEW_CMD="/address-review"
+FIX_BUG_CMD="/fix-bug"
+REVIEW_PR_CMD="/review-pr"
+SHIP_MERGE_CMD="/ship-merge"
 
 # Original failed loud on missing jq AND on .prompt parse failure — preserve.
 hook_require_prompt
@@ -45,7 +50,7 @@ LOWERED=$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
 # Already orchestrating/delegating explicitly → user directed it, no nudge.
 case "$LOWERED" in
-  */orchestrate*) exit 0 ;;
+  */orchestrate*|*kbg:orchestrate*) exit 0 ;;
 esac
 
 # A nudge is a hint the model must either act on or explicitly dismiss in one
@@ -57,10 +62,6 @@ emit() {
     "Bypass: CLAUDE_DISABLED_HOOKS=orchestrator-nudge"
   exit 0
 }
-
-# Namespace-aware command names for orchestrate and address-review suggestions.
-orchestrate_cmd="/${NS}orchestrate"
-address_review_cmd="/${NS}address-review"
 
 # Routes: most-specific first; first match is the ONLY emission. English anchored with \b.
 
@@ -166,7 +167,7 @@ if [ "${CTX_COUNT:-0}" -ge 2 ]; then
   CTX_LIST=$(printf '%s\n' "$CONTEXTS" | paste -sd ',' -)
   printf '%s\n' \
     "[orchestrator-nudge] Heuristic match (path-overlap): the prompt's file paths span ≥2 bounded-contexts: $CTX_LIST." \
-    "Consider: route each context's slice to its owning agent/skill (Execution → /${NS}fix-bug, Quality → /${NS}review-pr, Communication → ${address_review_cmd}, Integration → /${NS}ship-merge) instead of doing it all inline. If the work IS genuinely cross-context, ${orchestrate_cmd} is the right primitive. This is a hook hint, not a directive — your judgment wins (METHODOLOGY Rule 5)." \
+    "Consider: route each context's slice to its owning agent/skill (Execution → ${FIX_BUG_CMD}, Quality → ${REVIEW_PR_CMD}, Communication → ${ADDRESS_REVIEW_CMD}, Integration → ${SHIP_MERGE_CMD}) instead of doing it all inline. If the work IS genuinely cross-context, ${ORCHESTRATE_CMD} is the right primitive. This is a hook hint, not a directive — your judgment wins (METHODOLOGY Rule 5)." \
     "Bypass: CLAUDE_DISABLED_HOOKS=orchestrator-nudge"
   exit 0
 fi

@@ -32,8 +32,8 @@ HOOK_ID="skill-nudge"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
-# Namespace-mode detection: empty in symlink-farm, 'kbg:' in plugin.
-NS="${CLAUDE_PLUGIN_ROOT:+kbg:}"
+# Commands are bare /name surfaces, even in plugin mode. Do not prepend a namespace.
+NS=""
 
 # Original failed loud on missing jq AND on .prompt parse failure — preserve.
 hook_require_prompt
