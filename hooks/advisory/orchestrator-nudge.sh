@@ -38,7 +38,7 @@ hook_init "$HOOK_ID" || exit 0
 ORCHESTRATE_CMD="kbg:orchestrate"
 ADDRESS_REVIEW_CMD="/address-review"
 FIX_BUG_CMD="/fix-bug"
-REVIEW_PR_CMD="/review-pr"
+REVIEW_PR_CMD="kbg:review-pr"
 SHIP_MERGE_CMD="/ship-merge"
 
 # Original failed loud on missing jq AND on .prompt parse failure — preserve.
