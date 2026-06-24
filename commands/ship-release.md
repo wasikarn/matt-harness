@@ -109,7 +109,7 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 
 **Actions**:
 1. Tell user: "Monitor for 30 minutes post-deploy. Check error rates, latency, and critical user journeys."
-2. If anomalies detected, be ready to invoke `hotfix` skill or rollback.
+2. If anomalies detected, be ready to invoke `kbg:incident` (hotfix path) or rollback.
 3. Summarize: version shipped, tag sha, deploy status, monitoring checklist.
 
 **Done.**

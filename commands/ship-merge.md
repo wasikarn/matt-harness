@@ -87,7 +87,7 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 
 **Actions**:
 1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
-2. If failures appear post-merge, be ready to revert or invoke `hotfix` skill.
+2. If failures appear post-merge, be ready to revert or invoke `kbg:incident` (hotfix path).
 3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. (For a user-facing merge/release note, route the prose through the `tech-humanize` skill to strip AI-flavor tells.)
 
 **Done.**
