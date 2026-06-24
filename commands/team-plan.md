@@ -1,6 +1,6 @@
 ---
 name: team-plan
-description: "Phase 1 of the agent-teams workflow: brain-dump the feature, research codebase, ask clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Use when starting non-trivial features for multi-agent parallel implementation, or when the user says 'team plan: X', 'สร้างทีม', 'ประชุมทีม', 'จัดสรรงานทีม', 'plan ทีม', or 'แผนทีม'. Don't use for: single-file changes (use /feature-dev), trivial features (do inline), or research-only tasks (use /deep-dive)."
+description: "Single planning surface for non-trivial multi-agent features. Brain-dump the feature, research the codebase, ask clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Includes the former /pre-flight-plan-linter, kbg:7-agent-pattern, kbg:task-sizing, and kbg:types-first as references or embedded steps. Use when starting non-trivial features for parallel implementation, or when the user says 'team plan: X', 'สร้างทีม', 'ประชุมทีม', 'จัดสรรงานทีม', 'plan ทีม', 'แผนทีม', 'lint the plan', 'types first'. Don't use for: single-file changes (use /fix-bug or inline), trivial features (do inline), or research-only tasks (use /deep-dive)."
 argument-hint: Feature description
 ---
 
@@ -16,6 +16,7 @@ This is Step 1-3 of the article `agent-teams-workflow` 7-step pipeline (Brain Du
 - **The plan file is the contract.** `.claude/tasks/<slug>.md` is what `/team-build` consumes, what a fresh session reads to resume, and what a different lead can pick up. Make it machine-parseable, not free-form prose.
 - **File ownership prevents merge conflicts.** The plan MUST assign each file to exactly one team member. Cross-cutting edits are the orchestrator's job (post-wave), not the teammate's.
 - **Validation commands are the gate.** Every acceptance criterion has an exact `validation_command:` that `/team-build`'s Step 7 runs. "Tests pass" is not a validation command; `npm test` is.
+- **References are on-demand.** Canonical seat allocation, task sizing, types-first contract discipline, and the pre-flight linter live under `references/` and are loaded only when the plan needs them.
 
 ---
 
@@ -40,7 +41,7 @@ This is Step 1-3 of the article `agent-teams-workflow` 7-step pipeline (Brain Du
 
 **Actions:**
 1. Read `CLAUDE.md` and `BOUNDARY.md` (if present) for project conventions and module boundaries
-2. Launch 2-3 `code-explorer` agents in parallel to map the affected area (one per cluster — schema, API surface, tests). Use the same prompt shape as `/feature-dev` Phase 2.
+2. Launch 2-3 `code-explorer` agents in parallel to map the affected area (one per cluster — schema, API surface, tests). Use the same prompt shape as `/ship-task` Phase 2.
 3. Read the files each agent flagged as essential (don't accept the agent's word; verify)
 4. **Identify underspecified aspects across these dimensions:**
    - Edge cases (empty input, concurrent access, malformed data)
@@ -86,11 +87,13 @@ For each team member, list:
 | INT  | Integration validator  | code-explorer (traces cross-component) |
 ```
 
-**Sweet spot: 3-5 teammates** (per F8 lead doctrine in `skills/orchestrate/SKILL.md`). Plans outside this range are flagged for revision here, not at `/team-build` time.
+**Sweet spot: 3-5 teammates** (per F8 lead doctrine in `skills/orchestrate/SKILL.md`). For a canonical 7-seat allocation, see `references/7-agent-pattern.md`. Plans outside the 3-5 range are flagged for revision here, not at `/team-build` time.
 
 **⚠️ F8.5 — Hard cap = 5 per wave** (advisory floor 3 — F8.4; the [[bounded-agent-spawning]] contract). A prompt asking for "N items" is not a cap — the LLM overshoots (see `skills/orchestrate/SKILL.md` § Bounded fan-out for the audit-2026-06-12 overshoot). The dispatch step in `commands/team-build.md` Step 6 is the enforcement point; this planning step is responsible for **pre-trimming** any work-list >5 by deferring the tail to a `deferred-<date>.md` and queuing it as a follow-up wave. The audit fixture `eval/regressions/bounded-agent-spawning.json` locks this in code.
 
 ### 3b. `## Step by Step Tasks`
+
+Size tasks so each teammate owns 5–6 tasks and each wave has a clear output. For detailed heuristics, see `references/task-sizing.md`.
 
 For each task:
 
@@ -103,7 +106,7 @@ For each task:
 | INT-1   | End-to-end trace: POST /users → DB  | V-1        | INT         | no       | (none)                  | integration test green                       | single TaskUpdate addBlockedBy=[API-1, V-1] |
 ```
 
-**Wave derivation:** tasks with `Depends On == "-"` are Wave 1. Tasks whose `Depends On` are all in the same wave become Wave 2 (in parallel). Continue until all tasks are placed.
+**Wave derivation:** tasks with `Depends On == "-"` are Wave 1. Tasks whose `Depends On` are all in the same wave become Wave 2 (in parallel). Continue until all tasks are placed. Tasks that cross module boundaries must emit a machine-verifiable contract before dependent tasks start. For the types-first discipline, see `references/types-first.md`.
 
 **Integration validator (D8):** for each cross-component boundary, add ONE `INT-N` task with `addBlockedBy=[all]` — single `TaskUpdate` that blocks the INT on ALL builders. Distinct from V-1's single-validator gate; INT-N verifies the seams.
 
@@ -137,9 +140,23 @@ The exact commands `/team-build` runs in Step 7 (post-build validation):
 
 ---
 
-## Step 3 done-when (final)
+## Step 4 — Pre-flight lint (final gate)
 
-The plan file `.claude/tasks/<slug>.md` is complete when:
+After the plan file is complete, run the plan linter before declaring the plan flight-ready:
+
+```bash
+python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md
+```
+
+- Exit 0 → plan is flight-ready; proceed to `/team-build` when the user confirms.
+- Exit 1 → structural errors; fix the plan and re-run.
+- Exit 2 → strict warnings (F10 risks); ask the user whether to revise or proceed.
+
+For full linter semantics, see `references/pre-flight-plan-linter.md`.
+
+## Step 4 done-when (final)
+
+The plan file `.claude/tasks/<slug>.md` is complete and flight-ready when:
 
 - [ ] `## Brain dump` filled (Step 1)
 - [ ] `## Q&A log` has ≥ 10 answered questions (Step 2)
@@ -149,6 +166,7 @@ The plan file `.claude/tasks/<slug>.md` is complete when:
 - [ ] `## Acceptance Criteria` filled (machine-checkable)
 - [ ] `## Validation Commands` filled (one or more per criterion)
 - [ ] `.scratch/<slug>/ACCEPTANCE.md` exists (machine-checkable contract, separate from this plan)
+- [ ] `python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md` exits 0, or exits 2 with explicit user override
 
 ---
 
@@ -166,4 +184,8 @@ The plan file `.claude/tasks/<slug>.md` is complete when:
 - The plan file is the session-resettable, lead-handoffable interface (per D10 in `.scratch/article-revalidation-2026-06-12/delta-vs-REPORT-v2.md`). A fresh session, a different lead, or a partial resumption all work because the plan decouples state from session context.
 - The F9 spawn-prompt template (in `skills/orchestrate/SKILL.md`) is the per-task contract format `/team-build` injects into every teammate's spawn prompt. The plan file's `## Step by Step Tasks` table is the data source; the template is the rendering.
 - Validation chain (`addBlockedBy`): orchestrated by `/team-build` Step 3; the plan's `Depends On` field is the input.
+- `references/7-agent-pattern.md` — canonical 7-seat allocation template.
+- `references/task-sizing.md` — right-sizing tasks and waves.
+- `references/types-first.md` — contract-before-dependent-task discipline.
+- `references/pre-flight-plan-linter.md` — full linter semantics and override rules.
 - METHODOLOGY: Rule 1 (think before coding) — this whole command is the deliberate-plan gate. Rule 4 (goal-driven) — every acceptance criterion is observable. Rule 12 (fail loud) — < 10 questions is a hard stop, not a soft suggestion.

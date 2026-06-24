@@ -49,14 +49,14 @@ Any file that appears in the output is missing the boundary guard.
 
 **Root cause:** The builder did not read the vendor's baseline capability list or the harness's existing agent fleet before adding a new surface. Custom agents should encode *team-specific* expertise, not reimplement vendor primitives.
 
-**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to `code-explorer`, research synthesis to `research-brief`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 28 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
+**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to `code-explorer`, research synthesis to `/deep-dive`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 29 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
 
 The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to `code-explorer` inline, not to a new agent.
 
 **Self-check:**
 
 ```bash
-grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "code-explorer\|research-brief"
+grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "code-explorer\|deep-dive"
 ```
 
 If the grep finds a command or agent whose description overlaps with an existing specialist, it is a candidate for consolidation.
@@ -110,7 +110,7 @@ The orchestrator's verification step (`/team-build` Step 6) greps for these obse
 
 ```bash
 grep -c "## Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
-grep -L "Done-when" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/validate-and-fix.md"
+grep -L "Done-when" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/team-build/references/per-task-validation.md"
 ```
 
 The first count should be > 0. The second grep should return nothing — both commands embed the F9 template that contains Done-when.
@@ -129,7 +129,7 @@ The first count should be > 0. The second grep should return nothing — both co
 
 2. **F7 test-claim gate** — in `hooks/lifecycle/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A teammate that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The teammate must add the command and re-trigger completion. This is the post-execution half of the pipeline.
 
-3. **`/validate-and-fix` command** — for single-task validation after the build. The command runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain, applied to one completed task. It is the manual invocation of the same quality gate for tasks that slipped through or need extra scrutiny.
+3. **`/team-build` Step 6b** — for single-task validation after each wave completes. The lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain on each completed task before starting the next wave. Details are in `commands/team-build/references/per-task-validation.md`.
 
 The plan linter (`scripts/plan-linter.py`) can also pre-check a plan before `/team-build` is invoked:
 
@@ -142,7 +142,7 @@ python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md --st
 ```bash
 grep -c "plan approval filter\|F10" "${KBG_PLUGIN_ROOT}/commands/team-build.md"
 grep -c "TaskCompleted\|F7" "${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"
-grep -c "B → V1 → F → V2\|validation chain" "${KBG_PLUGIN_ROOT}/commands/validate-and-fix.md"
+grep -c "B → V1 → F → V2\|validation chain" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/team-build/references/per-task-validation.md"
 ```
 
 All three counts should be non-zero. If any is zero, that gate is missing from the documented surface.
@@ -156,7 +156,7 @@ All three counts should be non-zero. If any is zero, that gate is missing from t
 - [`docs/adr/0002-autonomy-invariant.md`](./adr/0002-autonomy-invariant.md) — why maker≠checker separation is load-bearing
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 template, F8 lead doctrine, validation chain, routing table
 - [`commands/team-build.md`](../commands/team-build.md) — F10 plan approval filter, wave execution, post-build validation
-- [`commands/validate-and-fix.md`](../commands/validate-and-fix.md) — per-task B→V1→F→V2 validation chain
+- [`commands/team-build/references/per-task-validation.md`](../commands/team-build/references/per-task-validation.md) — per-task B→V1→F→V2 validation chain
 - [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — runtime Bash mutation guard for validators
 - [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted test-claim gate
 - [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight structural + F10 risk validation

@@ -5,7 +5,7 @@
     {
       "id": "acceptance-exit-code-blocked-only",
       "task": "When all remaining criteria are BLOCKED by the safety deny list and none FAILED, run-acceptance.py must return exit code 4 (not 0, not 1). The previous binary logic returned 0, which let BLOCKed criteria masquerade as PASS.",
-      "skill": "pre-ship-verify",
+      "skill": "ship-task",
       "context": {
         "slug": "acceptance-blocked-only",
         "expected_exit_code": 4,
@@ -19,7 +19,7 @@
       ],
       "expected_duration_seconds": 30,
       "expected_tokens": 1000,
-      "tags": ["pre-ship-verify", "exit-code", "anti-cheat", "scoreboard", "regression"],
+      "tags": ["ship-task", "exit-code", "anti-cheat", "scoreboard", "regression"],
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "scoreboard-blocked-masquerades-as-pass",

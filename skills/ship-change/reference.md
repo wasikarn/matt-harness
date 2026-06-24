@@ -28,7 +28,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 
 **Actions**:
 1. **Bug fix** → tell user to run `/fix-bug <arguments>`. Wait for it to complete.
-2. **New feature** → tell user to run `/feature-dev <arguments>`. Wait for it to complete.
+2. **New feature** → tell user to run `/ship-task <arguments>`. Wait for it to complete.
 3. **Refactor** → spawn `maintenance-engineer` agent. Wait for it to complete.
 4. Do NOT proceed to Phase 3 until the implementation command returns.
 
@@ -89,10 +89,11 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
    - Fresh-context adversarial review: spawn `code-reviewer` or `security-reviewer` with no prior context, capture findings to `.scratch/<slug>/proofs/adversarial-review.md`.
    - **Gate**: if NONE of the above are available → STOP. Tell user: "Proof missing. Run at least one verification step before merge."
 2. **Verify acceptance contract** (if the task locked one via `kbg:accept-task`):
-   - Run `/pre-ship-verify <slug>`.
-   - If RED → fix before merge.
-   - If AMBER → confirm manual criteria are met.
-   - If GREEN → proceed.
+   - Run `python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug> --verbose` and read `.scratch/<slug>/acceptance-results.json`.
+   - If RED (any failed/blocked criteria) → fix before merge.
+   - If AMBER (only manual/prose criteria skipped) → confirm manual criteria are met.
+   - If GREEN (all machine-checkable criteria passed) → proceed.
+   - Detailed gate semantics are in `commands/ship-task/references/pre-ship-verify.md`.
 3. Tell user: "Run `/ship-merge` when CI is green and approvals are in."
 4. Wait for `/ship-merge` to complete.
 5. Summarize: what changed, files touched, key decisions, proof artifacts collected, and any follow-up items.
@@ -106,4 +107,4 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 - **Circular handoffs**: never tell the user to re-run `kbg:ship-change` from within a phase. Use the specific phase command instead.
 - **Skipping review**: Phase 3 is non-negotiable. No PR opens without `kbg:review-pr` first.
 - **Silent merges**: Phase 5 requires explicit `/ship-merge` invocation — don't imply the user should merge manually.
-- **Bloated orchestrator**: if you find yourself adding implementation detail (e.g., "how to write a test"), that belongs in `/fix-bug` or `/feature-dev`, not here.
+- **Bloated orchestrator**: if you find yourself adding implementation detail (e.g., "how to write a test"), that belongs in `/fix-bug` or `/ship-task`, not here.

@@ -60,7 +60,7 @@
       "id": 2,
       "eval_name": "negative-no-trigger-feature-dev",
       "prompt": "Build a new payment gateway module that supports Stripe and PayPal. Start from scratch with TDD.",
-      "expected_output": "This is greenfield development with no legacy target. The skill should NOT trigger \u2014 it should redirect to /feature-dev or /tdd.",
+      "expected_output": "This is greenfield development with no legacy target. The skill should NOT trigger \u2014 it should redirect to /ship-task or /tdd.",
       "files": [],
       "assertions": [
         {
@@ -69,7 +69,7 @@
         },
         {
           "name": "redirect_to_feature_dev",
-          "description": "Response redirects to /feature-dev or /tdd, or explains this is not a migration"
+          "description": "Response redirects to /ship-task or /tdd, or explains this is not a migration"
         }
       ]
     }

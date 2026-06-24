@@ -4,11 +4,11 @@
   "evals": [
     {
       "id": "ideate-quality-contract-critic-option",
-      "task": "Verify that skills/ideate/SKILL.md mentions the fresh-context critic option and the ideate-critic agent, reducing the chance that a future edit silently removes the LLM-judge-circularity mitigation.",
+      "task": "Verify that commands/ideate.md mentions the fresh-context critic option and the ideate-critic agent, reducing the chance that a future edit silently removes the LLM-judge-circularity mitigation.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "commands/ideate.md"
         ],
         "required_phrases": [
           "fresh-context critic option",
@@ -68,11 +68,11 @@
     },
     {
       "id": "ideate-quality-contract-preflight-gate",
-      "task": "Verify that skills/ideate/SKILL.md still contains the pre-flight gate (Step 1 explicit invocation + Step 2 self-judge) so the expensive divergent pass does not fire on closed prompts.",
+      "task": "Verify that commands/ideate.md still contains the pre-flight gate (Step 1 explicit invocation + Step 2 self-judge) so the expensive divergent pass does not fire on closed prompts.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "commands/ideate.md"
         ],
         "required_phrases": [
           "Pre-flight gate",

@@ -1,6 +1,6 @@
 {
   "dataset_name": "ideate-memory-search",
-  "description": "Lock the qmd-backed ideate memory search feature shipped in v0.2.35. A SessionEnd hook captures problem + output from each kbg:ideate run into ~/.claude/state/ideate-memory/, a qmd collection indexes them, and the /ideate-search command queries them. This fixture fails if the command, hook, script, skill documentation, or hooks.json registration are missing or broken.",
+  "description": "Lock the qmd-backed ideate memory search feature shipped in v0.2.35. A SessionEnd hook captures problem + output from each /ideate run into ~/.claude/state/ideate-memory/, a qmd collection indexes them, and the /ideate-search command queries them. This fixture fails if the command, hook, script, skill documentation, or hooks.json registration are missing or broken.",
   "evals": [
     {
       "id": "ideate-memory-script-runs",
@@ -79,11 +79,11 @@
     },
     {
       "id": "ideate-memory-skill-doc-present",
-      "task": "Verify skills/ideate/SKILL.md documents the memory search feature and references /ideate-search.",
+      "task": "Verify commands/ideate.md documents the memory search feature and references /ideate-search.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "commands/ideate.md"
         ],
         "required_phrases": [
           "Ideate memory search",

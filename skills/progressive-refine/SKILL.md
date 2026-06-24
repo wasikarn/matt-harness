@@ -49,7 +49,7 @@ Use single-pass when:
 
 ## The 3-pass code pattern (most common)
 
-The default pipeline for production code. It maps directly to the validation chain in `skills/orchestrate/SKILL.md` § Validation chain and to `/validate-and-fix` — but applied proactively as a planned pipeline rather than reactively after a single builder claims done.
+The default pipeline for production code. It maps directly to the validation chain in `skills/orchestrate/SKILL.md` § Validation chain and to `/team-build` per-task validation — but applied proactively as a planned pipeline rather than reactively after a single builder claims done.
 
 Full F9 prompts: `references/spawn-prompts.md` § [3-pass code pattern](references/spawn-prompts.md#3-pass-code-pattern).
 
@@ -167,8 +167,8 @@ A full `GET /health` pipeline — builder → simplifier → reviewer (rejects: 
 - **Validation chain `B → V1 → F → V2`** — `skills/orchestrate/SKILL.md` § Validation chain. The 3-pass code pattern is the proactive pipeline version of the same chain.
 - **F9 spawn-prompt template** — `skills/orchestrate/SKILL.md` § Spawn-prompt template. Every pass uses this template verbatim.
 - **Task board integration (`depends_on`, `recompute_blocked`)** — `skills/orchestrate/SKILL.md` § Task board integration.
-- **`/validate-and-fix`** — `commands/validate-and-fix.md`. Use this command to run the builder-validator-fix-revalidator chain reactively on a single already-completed task. Use `progressive-refine` when you want to plan the multi-pass pipeline upfront.
+- **`/team-build` per-task validation** — `commands/team-build.md`. Use this command to run the builder→validator→fix→revalidator chain reactively on a single already-completed task. Use `progressive-refine` when you want to plan the multi-pass pipeline upfront.
 - **`code-simplifier`** — `agents/code-simplifier.md`. The Pass 2 agent for the 3-pass code pattern. If the agent file does not yet exist in the fleet, dispatch a simplification pass using the spawn prompt above with `backend-engineer` scoped to "refactor for clarity only."
-- **`7-agent-pattern`** — `skills/7-agent-pattern/SKILL.md`. Catalog of agent roles including `technical-writer`, `comment-analyzer`, `ux-reviewer`, and `security-reviewer` used in the 5-pass doc pattern and optional Pass 4.
+- **7-agent pattern reference** — `commands/team-plan/references/7-agent-pattern.md`. Catalog of agent roles including `technical-writer`, `comment-analyzer`, `ux-reviewer`, and `security-reviewer` used in the 5-pass doc pattern and optional Pass 4.
 - **`recursive-improve`** — `skills/recursive-improve/SKILL.md`. Use `recursive-improve` when the harness itself needs improvement; use `progressive-refine` when a single artifact needs quality passes. The former is human-gated by design; the latter can be scripted once the plan is approved.
 - **`backend-dev`** — `skills/backend-dev/SKILL.md`. The builder agent's own workflow (tests first, minimal implementation, architecture concerns). Pass 1 of the 3-pass pattern delegates to this skill.

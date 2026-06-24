@@ -32,10 +32,10 @@ The metric is **blocked by** the other two sibling plans: it consumes the regist
 1. **Why is this P3 when the others are P2?** — It is a meta-tool. The other two plans add *new* sensors; this one measures whether the existing sensors are *good*. The other plans are prerequisites (inferential-structural-test adds 1 sensor; sensor-fire-notification adds observability of all sensors; harness-coverage is the *aggregator*). Order: 2 → 1 → 3.
 2. **What's the *unit* of coverage?** — Candidate: per-cell coverage = (cells populated / cells total) × (fired-events / expected-events per populated cell). Both factors are machine-derivable from `sensors.json` + the journal.
 3. **What's the "expected events per cell"?** — Determined by the cell's purpose. Computational-FF: ≥ 1 PreToolUse event per session (always true). Computational-FB: ≥ 1 PostToolUse/audit event per session (always true if hooks exist). Inferential-FF: ≥ 1 doctrine-injection event per SessionStart (always true). Inferential-FB: ≥ 1 advisory event per N sessions (N=5? configurable). The expected-event thresholds are *sensors.json*'s job — this plan only consumes them.
-4. **What's the *output*?** — A 2×2×3 grid (12 cells) with a 0–100% coverage score per cell, plus a global score. Plus a "drift over time" line (last 30 sessions). Plus a "known gap" annotation (a registry entry that says "this cell is intentionally uncovered"). The user-facing surface is a new `kbg:harness-coverage` command, *or* an extension to `kbg:state-of-the-harness`.
+4. **What's the *output*?** — A 2×2×3 grid (12 cells) with a 0–100% coverage score per cell, plus a global score. Plus a "drift over time" line (last 30 sessions). Plus a "known gap" annotation (a registry entry that says "this cell is intentionally uncovered"). The user-facing surface is `scripts/evals/harness-coverage.py` (no separate `kbg:` skill; the script renders the markdown table directly).
 5. **What about cells the article says are unsolved (e.g. behaviour-inferential-FB)?** — Those are *annotated* as "article-punted" in the report, not scored 0%. The metric measures *intentional* vs *unintentional* gaps. This requires the 2×2 design grid in `CLAUDE.md` (per Q6 of `sensor-fire-notification.md`) as a cross-reference.
 6. **How does this avoid the LLM-judge circularity trap?** — The metric is *deterministic* — it counts events, it does not use a model to judge coverage. The numbers are machine-derived from the journal + the registry. The *interpretation* (is a 0% cell a gap or a feature?) is human.
-7. **Is this a `kbg:` skill or a script?** — Both. The deterministic aggregator is a script (`scripts/harness-coverage.py`); the human-facing report is a `kbg:harness-coverage` skill that runs the script and renders the grid.
+7. **Is this a `kbg:` skill or a script?** — Script only. The deterministic aggregator is `scripts/evals/harness-coverage.py`; it emits JSON and renders the human-facing markdown report. No `kbg:` skill wrapper is required.
 8. **What's the cost?** — The script runs at human request (not in any hook). It reads `sensors.json` + the journal + a few static configs. Cost: O(seconds), zero tokens.
 9. **What's the test?** — A regression fixture: a 30-session journal with known fire rates; the script's output is asserted to match expected grid. Lives at `eval/regressions/harness-coverage.json`.
 10. **What does this *not* do?** — It does not *add* sensors. It does not *fix* gaps. It does not *judge* whether a sensor is good (that's a separate inferential layer). It *measures* what is and is not covered. The fix loop is the operator's, gated by `decay-cadence` and the planning workflow.
@@ -55,23 +55,22 @@ The metric is **blocked by** the other two sibling plans: it consumes the regist
 | Task ID | Description | Depends On | Assigned To | Files | Criteria | Constraints |
 |---------|-------------|------------|-------------|-------|----------|-------------|
 | DOC-1 | Author the design doc | - | LEAD-D | docs/research/harness-coverage-metric-design.md | Resolves all 12 Q&A items; defines the 2×2×3 grid schema; cites Böckeler L493, L553; specifies the "intentional gap" annotation; "From metric to fix" section specifies the 3-step operator loop | — |
-| AGG-1 | Author the deterministic aggregator (BLOCKED on sensor-fire-notification.md + inferential-structural-test.md shipping first) | DOC-1 | LEAD-B | scripts/harness-coverage.py | Reads `sensors.json` + journal + 2×2 grid from CLAUDE.md; emits the 12-cell grid + global score; supports `--weight-meaningful` and `--weight-trivial` | No LLM call (deterministic); no `permissionDecision`; degrades on missing files |
-| SKILL-1 | Author the human-facing skill | AGG-1 | LEAD-B | skills/harness-coverage/SKILL.md (or extend `state-of-the-harness`) | `kbg:harness-coverage` runs the script and renders a markdown table with the 12 cells + global + drift-over-time | Audit #31.1 canonical sections (Input Contract / Output Format / Failure Modes) |
+| AGG-1 | Author the deterministic aggregator (BLOCKED on sensor-fire-notification.md + inferential-structural-test.md shipping first) | DOC-1 | LEAD-B | scripts/evals/harness-coverage.py | Reads `sensors.json` + journal + 2×2 grid from CLAUDE.md; emits the 12-cell grid + global score; supports `--weight-meaningful` and `--weight-trivial`; renders a markdown table for the operator | No LLM call (deterministic); no `permissionDecision`; degrades on missing files |
 | FIX-1 | Author the regression fixture | DOC-1, AGG-1, SKILL-1 | LEAD-B | eval/regressions/harness-coverage.json | 30-session synthetic journal + expected grid; eval gate exits 0 | Synthetic journal must be hand-curated to avoid the "test-quality" problem Böckeler L476 warns about |
-| DECAY-1 | Wire into `decay-cadence.md` | DOC-1 | LEAD-D | docs/harness-decay-cadence.md (new section) | "Run `kbg:harness-coverage` quarterly; treat any cell that drops below 60% as a decay candidate" | Closes the "silent sensors" gap with a *human cadence*, not an auto-prune |
-| INT-1 | End-to-end: cache-update + restart + manual smoke (run skill, observe 12-cell grid) | AGG-1, SKILL-1, FIX-1, DECAY-1 | LEAD-B | (none) | `claude plugin update kbg@kobig` exits 0; `/kbg:harness-coverage` emits 12-cell grid + global + drift | run via V validation step |
+| DECAY-1 | Wire into `decay-cadence.md` | DOC-1 | LEAD-D | docs/harness-decay-cadence.md (new section) | "Run `scripts/evals/harness-coverage.py` quarterly; treat any cell that drops below 60% as a decay candidate" | Closes the "silent sensors" gap with a *human cadence*, not an auto-prune |
+| INT-1 | End-to-end: manual smoke (run the script, observe 12-cell grid) | AGG-1, FIX-1, DECAY-1 | LEAD-B | (none) | `python3 scripts/evals/harness-coverage.py` emits 12-cell grid + global + drift | run via V validation step |
 
 ## Acceptance Criteria
 
 - [x] DOC-1: design doc resolves all 12 Q&A items validation_command: grep -c '^12\.' docs/research/harness-coverage-metric-design.md
 - [x] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/evals/harness-coverage.py > /dev/null
-- [x] SKILL-1: skill has all 3 canonical sections (audit #31.1) validation_command: bash skills/harness-audit/scripts/audit.sh .
+- [x] AGG-1: script runs in < 5s on a real journal, emits a 12-cell grid + global + drift validation_command: time python3 scripts/evals/harness-coverage.py > /dev/null
 - [x] FIX-1: regression fixture is hand-curated (no agent-generated text); 30 sessions, expected grid present validation_command: jq '.sessions | length' eval/regressions/harness-coverage.json
 - [x] FIX-1: eval gate exits 0 validation_command: python3 eval/run-eval.py --regression --tag harness-coverage --gate
 - [x] INT-1: harness-audit exits 0C/0W (or 0C/0W/1I — only the I1 plugin-cache info) validation_command: bash skills/harness-audit/scripts/audit.sh .
-- [x] DECAY-1: decay-cadence has a new section naming `kbg:harness-coverage` as a quarterly-lens surface validation_command: grep -c 'kbg:harness-coverage' docs/harness-decay-cadence.md
+- [x] DECAY-1: decay-cadence has a new section naming `scripts/evals/harness-coverage.py` as a quarterly-lens surface validation_command: grep -c 'scripts/evals/harness-coverage.py' docs/harness-decay-cadence.md
 - [x] The metric's "intentional gap" annotation is a *first-class* concept in the output (not a footnote) validation_command: grep -c 'intentional_gap\|intentional-gap\|intentional gap' docs/research/harness-coverage-metric-design.md
-- [x] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py skills/harness-coverage/SKILL.md
+- [x] No `permissionDecision` / `CronCreate` / `/loop` (autonomy-invariant) validation_command: git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py
 
 ## Validation Commands
 
@@ -79,9 +78,9 @@ The metric is **blocked by** the other two sibling plans: it consumes the regist
 - `bash hooks/tests/test-critical-hooks.sh` — critical-hooks regression
 - `python3 eval/run-eval.py --regression --tag harness-coverage --gate` — eval gate green
 - `time python3 scripts/evals/harness-coverage.py | head -50` — manual smoke: 12-cell grid + global
-- `claude plugin validate --strict .` — manifest valid (new skill + new script → plugin-surface change → version bump required)
-- `git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py skills/harness-coverage/SKILL.md` — autonomy-invariant scan (expect 0)
-- `claude plugin update kbg@kobig` — plugin cache update + restart Claude Code
+- `claude plugin validate --strict .` — manifest valid (script path change → update any callers; version bump only if a counted surface is added)
+- `git grep -n 'permissionDecision\|CronCreate\|/loop' scripts/evals/harness-coverage.py` — autonomy-invariant scan (expect 0)
+- `claude plugin update kbg@kobig` — plugin cache update + restart Claude Code (only if a plugin surface changed)
 
 ## What this plan does NOT do
 

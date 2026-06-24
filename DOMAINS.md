@@ -13,7 +13,7 @@ so the two can no longer silently diverge.
 |---|---|
 | `plugin-surface` | Auto-discovered plugin components: `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`, plus the two manifests under `.claude-plugin/`. |
 | `doctrine` | L1 resident doctrine: `METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`, `CLAUDE.md`, `DOMAINS.md`, `BOUNDARY.md`, `docs/adr/`. |
-| `audit-eval` | Self-test and eval harness: `skills/harness-audit/`, `skills/harness-coverage/`, `skills/critical-eval/`, `tests/`, `eval/`. |
+| `audit-eval` | Self-test and eval harness: `skills/harness-audit/`, `skills/critical-eval/`, `tests/`, `eval/`. |
 | `infra` | Scripts, CI, and packaging glue: `scripts/`, `git-hooks/`, `.github/`. |
 | `docs` | Human-readable documentation outside doctrine: `docs/` (non-ADR), `README.md`, `CHANGELOG.md`. |
 
@@ -28,13 +28,13 @@ consumers and do not share vocabulary by design. Tokens below are the literal
 
 | Path pattern(s) | Context | Notes |
 |---|---|---|
-| `commands/feature-dev`, `commands/fix-bug`, `commands/deep-dive`, `skills/migrate`, `skills/perf`, `skills/research-brief`, `skills/types-first`, `skills/task-sizing`, `skills/tech-humanize` | Execution | User-facing action verbs + work-doing skills. |
+| `commands/ship-task`, `commands/fix-bug`, `commands/deep-dive`, `skills/migrate`, `skills/perf`, `skills/tech-humanize` | Execution | User-facing action verbs + work-doing skills. |
 | `skills/backend-dev`, `agents/`, `app/`, `src/`, `packages/`, `services/`, `lib/` | Implementation | Code that ships behavior + the agents that write it. |
-| `skills/ship-change`, `skills/orchestrate`, `skills/inventory` | Orchestration | Workflow planning, dispatch, fleet accounting. |
-| `skills/harness-audit`, `skills/harness-coverage`, `skills/critical-eval`, `skills/review-pr`, `skills/security-auditor`, `skills/probe`, `tests/`, `eval/` | Quality | Self-audit, coverage, review, verification, fixtures. |
+| `skills/ship-change`, `skills/orchestrate`, `skills/inventory`, `commands/team-plan`, `commands/team-build` | Orchestration | Workflow planning, dispatch, fleet accounting. |
+| `skills/harness-audit`, `skills/critical-eval`, `skills/review-pr`, `skills/security-auditor`, `skills/decide`, `tests/`, `eval/` | Quality | Self-audit, coverage, review, verification, fixtures. |
 | `skills/adr`, `commands/address-review`, `commands/status-update`, `commands/post-mortem`, `docs/` | Communication | Documentation and status surfaces. |
-| `skills/incident`, `skills/hotfix`, `runbooks/` | Emergency | Incident / hotfix response. |
-| `skills/acli`, `skills/assert-presence`, `skills/decommission`, `skills/memory-lint`, `skills/semantic-code`, `commands/ship-merge`, `commands/ship-release`, `commands/ship-task`, `.scratch/` | Integration | External systems, release, decommission, scratch I/O. |
+| `skills/incident`, `runbooks/` | Emergency | Incident response. |
+| `skills/acli`, `skills/assert-presence`, `skills/decommission`, `skills/memory-lint`, `commands/ship-merge`, `commands/ship-release`, `.scratch/` | Integration | External systems, release, decommission, scratch I/O. |
 | `METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`, `CLAUDE.md`, `DOMAINS.md`, `BOUNDARY.md`, `docs/adr/` | doctrine | Always-resident doctrine files. |
 | `scripts/`, `git-hooks/`, `.claude-plugin/` | infra | Deterministic automation, CI, manifests. |
 | `README.md`, `CHANGELOG.md` | docs | Project-level human docs. |

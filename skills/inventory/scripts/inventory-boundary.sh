@@ -184,7 +184,7 @@ Derived from `skills/task-sizing/SKILL.md` and article `agent-teams-best-practic
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/feature-dev` instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship-task` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -270,11 +270,12 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 
 ### Module Boundaries
 - `agents/` — 29 senior-specialist agents
-- `skills/` — 38 workflow skills
-- `commands/` — 21 slash commands
-- `hooks/` — 44 hook scripts
-- `output-styles/` — 1 senior-eng
-- `eval/` — dataset + regression + CI gate (Phase 1)
+- `skills/` — 28 workflow skills
+- `commands/` — 17 slash commands
+- `hooks/` — 49 hook scripts
+- `output-styles/` — 2 output styles (senior-eng default, staff-eng opt-in)
+- `themes/` — 0 themes (deliberate non-goal)
+- `eval/` — dataset + regression gate
 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
@@ -321,14 +322,14 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "build the plan", "execute the plan", "ship the team plan" | `/team-build` | Steps 4-7: contract chain + wave execution |
 | "where are we", "status of the build", "is the team done" | `/wave-status` | Reads task board, reports wave progress |
 | "clean up the team", "remove old plans", "stale tasks" | `/team-cleanup` | Reaps locks, heartbeats, archives old boards |
-| "validate this task", "did the teammate do it right" | `/validate-and-fix` | B→V1→F→V2 validation chain on one task |
-| "lint the plan", "is this plan ready" | `/pre-flight-plan-linter` | Structural validation before `/team-build` |
-| "pros and cons", "which is better", "should we use X or Y" | `/debug-debate` | Advocate + Skeptic + Synthesizer debate |
+| "validate this task", "did the teammate do it right" | `/team-build` (per-task validation) | B→V1→F→V2 validation chain on one task |
+| "lint the plan", "is this plan ready" | `/team-plan` (embedded linter) | Structural validation before `/team-build` |
+| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` debate mode | Advocate + Skeptic + Synthesizer debate |
 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X" | `/feature-dev` | Single-agent ceremony |
+| "build one feature", "implement X" | `/ship-task` | Single-agent ceremony |
 | "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
@@ -354,7 +355,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "agent went idle", "teammate stopped" | `/wave-status` → `/team-build` re-dispatch | Heartbeat check + re-claim |
 | "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
-| "validation failed but it says done" | `/validate-and-fix` | F7 gate + re-validator |
+| "validation failed but it says done" | `/team-build` (per-task validation) | F7 gate + re-validator |
 | "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
 
 XREF4

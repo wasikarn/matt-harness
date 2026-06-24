@@ -1,11 +1,9 @@
 ---
 name: researcher
 description: "Senior research specialist for libraries, approaches, and external docs. Use when exploring unfamiliar technology, comparing options, or onboarding to a new module, or when the user says 'research', 'research brief', 'ศึกษา'. Don't use for: tracing internal code (defer to code-explorer), implementing code (defer to backend-engineer/frontend-engineer), or fast symbol lookups (spawn Explore subagent)."
-skills:
-  - research-brief
 model: sonnet
 effort: medium
-tools: Read, Grep, Glob, Bash, WebSearch
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 color: purple
 ---
 

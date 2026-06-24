@@ -25,12 +25,12 @@ No manual `@import` needed.
 
 | Command | When | What it does |
 |---|---|---|
-| `/kbg:pre-ship-verify` | Before every PR | Runs `ACCEPTANCE.md` + eval-harness gate; blocks ship on failure. |
-| `/kbg:review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
-| `/kbg:ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
+| `/ship-task` | From idea to shipped | Full 9-step senior-engineer loop; embeds acceptance gating before the ship step. |
+| `/review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
+| `/ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
 
-Other useful ones: `/kbg:fix-bug`, `/kbg:feature-dev`, `/kbg:team-plan`,
-`/kbg:team-build`, `/kbg:hotfix`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
+Other useful ones: `/fix-bug`, `/deep-dive`, `/team-plan`, `/team-build`,
+`/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
 
 ## The 1 thing to never do
 

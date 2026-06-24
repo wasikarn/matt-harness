@@ -1,11 +1,24 @@
 ---
 name: harness-audit
-description: "Run a deterministic health check across the kbg-harness Claude Code plugin ecosystem. Detects manifest drift, stale cache, version mismatches, and structural rot before they become silent failures. Use when running a harness health check, or on Thai requests like 'audit harness', 'ตรวจ harness', 'health check ปลั๊กอิน'. Don't use for: general repo lint, security audits (kbg:security-auditor), or per-session governance drill-down (kbg:harness-health)."
+description: "Single harness-state surface with three modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode queries the governance journal (formerly kbg:harness-health). --coverage mode renders the 2x2x3 (12-cell) decay grid (formerly kbg:harness-coverage). Use when running a harness audit, querying verdicts/sensors, or asking for the 12-cell coverage view. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness', 'harness coverage', 'ตาราง 12 cell'. Don't use for: general repo lint or security audits (kbg:security-auditor)."
 ---
 
-# Skill Audit
+# Harness Audit
 
-Run a deterministic health check across the custom Claude Code ecosystem. Detects drift before it becomes a silent failure.
+Single harness-state surface with three modes:
+
+- **Default (audit)** — deterministic fleet/schema/structural check. Detects drift before it becomes a silent failure.
+- **--health mode** — read-only governance-journal query (formerly `kbg:harness-health`). See `references/health.md`.
+- **--coverage mode** — 2x2x3 (12-cell) decay grid (formerly `kbg:harness-coverage`). See `references/coverage.md`.
+
+## Mode selection
+
+| User asks for | Mode | Entry |
+|---|---|---|
+| "audit harness", "fleet check", "manifest drift" | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
+| "harness health", "last verdicts", "sensor staleness", "token cost" | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
+| "harness coverage", "12-cell grid", "decay" | --coverage | `bash "${CLAUDE_SKILL_DIR}/scripts/harness-coverage.sh"` |
+
 
 ## Quick start
 
@@ -101,6 +114,11 @@ Add new checks to `audit.sh` in the order they appear. Each check emits:
 - `[CRIT] <id>: <message>` — requires immediate fix
 - `[WARN] <id>: <message>` — should fix but not blocking
 - `[INFO] <id>: <message>` — expected behavior, document only
+
+## References
+
+- `references/health.md` — full `--health` mode contract (formerly `kbg:harness-health`).
+- `references/coverage.md` — full `--coverage` mode contract (formerly `kbg:harness-coverage`).
 
 ## METHODOLOGY alignment
 

@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', or when retiring systems, upgrading major versions, or migrating databases. Thai: 'migrate', 'upgrade', 'ย้ายไป v2', 'deprecate'. Don't use for: new features (/feature-dev), hot bug fixes (/fix-bug, kbg:hotfix), refactors without a deprecation target, or when rollback is impossible."
+description: "Deprecate and migrate legacy code, APIs, or dependencies safely. Use when the user says 'migrate to v2', 'upgrade from X to Y', 'deprecate this API', 'extract this module', or when retiring systems, upgrading major versions, or migrating databases. Thai: 'migrate', 'upgrade', 'ย้ายไป v2', 'deprecate'. Don't use for: new features (/ship-task), hot bug fixes (/fix-bug, kbg:incident), refactors without a deprecation target, or when rollback is impossible."
 ---
 
 # Migrate
@@ -75,8 +75,8 @@ Move from old to new without breaking production. Migration is risk management f
 
 ## Related
 
-- `/feature-dev` — greenfield work
+- `/ship-task` — greenfield work
 - `/fix-bug` — regression during migration
-- `kbg:hotfix` — if migration causes outage
+- `kbg:incident` — if migration causes outage
 - `/deep-dive` — when a Gate question answers 'unknown'
 - `decommission` skill — for zombie code, not migration targets

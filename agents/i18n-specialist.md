@@ -4,9 +4,7 @@ description: "Senior internationalization and localization engineer for multi-lo
 model: sonnet
 effort: medium
 color: pink
-tools: Read, Grep, Glob, Edit, Write, Bash
-skills:
-  - research-brief
+tools: Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch
 ---
 
 ## Why this role exists

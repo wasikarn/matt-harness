@@ -4,9 +4,7 @@ description: "Senior product analyst for requirements elicitation, user-story de
 model: sonnet
 effort: medium
 color: purple
-tools: Read, Grep, Glob, Bash
-skills:
-  - research-brief
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 
 ## Why this role exists

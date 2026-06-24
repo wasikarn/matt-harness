@@ -1,6 +1,6 @@
 ---
 name: recursive-improve
-description: "Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /feature-dev), external tool research (use kbg:article-mine), or any self-launching / scheduled loop (the bounded L3 --auto mode is human-launched and push-gated, not self-starting)."
+description: "Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /ship-task), external tool research (use kbg:article-mine), or any self-launching / scheduled loop (the bounded L3 --auto mode is human-launched and push-gated, not self-starting)."
 disable-model-invocation: true
 disable-model-invocation-reason: LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---
@@ -34,7 +34,7 @@ cage-denylist `scripts/cage.txt`, and the `push-gate` hook — now ships; see
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
 deliberate cycle.
 
-**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/feature-dev`), an
+**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/ship-task`), an
 external tool/article (`kbg:article-mine`), or anything unattended. If you cannot present the
 proposal to a human and wait, **stop** — do not proceed plan-only into execution.
 
@@ -101,9 +101,9 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
   which agent), blast radius (low / medium / high), dependencies (none / chain).
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
   **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
-  it and hand it to `/feature-dev`; do not smuggle a large change through this ritual.
+  it and hand it to `/ship-task`; do not smuggle a large change through this ritual.
 - **Success criterion:** a ranked candidate list ready to present, each within the scope guard
-  or explicitly flagged as "too big — route to /feature-dev".
+  or explicitly flagged as "too big — route to /ship-task".
 
 ### 3. ASK — the gate (mandatory)
 
@@ -277,7 +277,7 @@ recursive-improve — iteration <N> report
 - **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask
   (Rule 12) — the regression is information.
 - **Scope creep through the side door.** A candidate over ~5 files / 200 lines is a feature, not a
-  loop iteration. Route it to `/feature-dev`; do not let the ritual become an un-gated refactor.
+  loop iteration. Route it to `/ship-task`; do not let the ritual become an un-gated refactor.
 
 ## Integration Notes (Project-Specific)
 
@@ -288,7 +288,7 @@ recursive-improve — iteration <N> report
   verify → combine, inline).
 - **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit` (the
   candidate-detail signal) · `recursive-improve-observe.py` (the verification metric) · the witness
-  scripts under `inventory/` (pre/post attestation) · `/feature-dev` (escrow for over-scope candidates) ·
+  scripts under `inventory/` (pre/post attestation) · `/ship-task` (escrow for over-scope candidates) ·
   the harness-decay cadence (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its
   `## Permission re-audit` section for tool-grant decay candidates).
 - **Reads, never writes, the journal.** The reader is read-only; this skill does not emit a journal

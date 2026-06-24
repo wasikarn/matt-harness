@@ -55,7 +55,7 @@
     },
     {
       "id": "ideate-command-exists",
-      "task": "Verify that commands/ideate.md exists with the expected frontmatter and disables model invocation.",
+      "task": "Verify that commands/ideate.md exists with the expected frontmatter and keeps model invocation enabled (auto-fire on vague open-ended prompts is the load-bearing use case).",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
@@ -64,15 +64,15 @@
         "required_phrases": [
           "name: ideate",
           "ideate command",
-          "disable-model-invocation: true",
-          "kbg:ideate"
+          "disable-model-invocation: false",
+          "/ideate"
         ]
       },
       "success_criteria": [
         "At least one of the checked files references name: ideate",
         "At least one of the checked files references ideate command",
-        "At least one of the checked files references disable-model-invocation: true",
-        "At least one of the checked files references kbg:ideate"
+        "At least one of the checked files references disable-model-invocation: false",
+        "At least one of the checked files references /ideate"
       ],
       "expected_duration_seconds": 5,
       "expected_tokens": 200,
@@ -84,11 +84,11 @@
     },
     {
       "id": "ideate-phase4-documented",
-      "task": "Verify that skills/ideate/SKILL.md documents Phase 4 interactive deepen and cost estimate in the brief.",
+      "task": "Verify that commands/ideate.md documents Phase 4 interactive deepen and cost estimate in the brief.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "commands/ideate.md"
         ],
         "required_phrases": [
           "Phase 4",

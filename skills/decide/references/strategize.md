@@ -7,7 +7,7 @@ description: "Use when making an irreversible or long-horizon strategic commitme
 
 Apply **strategic judgment** — the art of choosing under ambiguity where commitments are hard to reverse and the payoff horizon is long. This skill is not a planning drill; it is a disciplined way to shape the situation before the situation shapes you.
 
-Strategic judgment differs from operational decision-making. `kbg:decide` climbs the Judgment Ladder when the choice is analyzable and reversible. `kbg:strategize` is for commitments under uncertainty: the diagnosis is contested, the resources are constrained, the rivals adapt, and undoing the choice later would be costly or impossible.
+Strategic judgment differs from operational decision-making. `kbg:decide` climbs the Judgment Ladder when the choice is analyzable and reversible. `kbg:decide (strategize mode)` is for commitments under uncertainty: the diagnosis is contested, the resources are constrained, the rivals adapt, and undoing the choice later would be costly or impossible.
 
 > **Thai framing note.** This maps to "การตัดสินใจเชิงกลยุทธ์" — not merely picking a goal, but diagnosing the challenge, choosing a guiding policy, and designing actions that reinforce each other. It sits upstream of operational decision-making (ตัดสินใจปฏิบัติ) and upstream of execution.
 
@@ -23,7 +23,7 @@ Strategic judgment differs from operational decision-making. `kbg:decide` climbs
 - **Operational / analyzable decisions** — trade-offs are clear, data can answer the question, reversibility is high. Use `kbg:decide`.
 - **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident` or `kbg:hotfix`. For pure high-speed pattern-matching when no kbg surface fits, prompt an OODA loop from the vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not from a loadable `kbg:` surface.
 - **Answer already dictated** — if architecture charter, policy, or a hard constraint removes choice, say so instead of running the strategy loop.
-- **Pure research or intelligence gathering** — use `kbg:research-brief` or `kbg:probe` first; feed their output into `kbg:strategize`.
+- **Pure research or intelligence gathering** — use `kbg:research-brief` or `kbg:decide (probe mode)` first; feed their output into `kbg:decide (strategize mode)`.
 - **Execution planning only** — use `kbg:ship-task` or `kbg:adr` once the strategy is set.
 
 ## Procedure
@@ -147,11 +147,11 @@ Respond with these sections, calibrated to the stakes. For small-stakes strategi
 - Review cadence and triggers
 - Next test, not just next task
 
-## Applying `kbg:strategize` to software engineering
+## Applying `kbg:decide (strategize mode)` to software engineering
 
 Use this skill when a technical commitment is large, long-lived, or hard to reverse. Do not use it for day-to-day implementation trade-offs; those belong in `kbg:decide`.
 
-| Strategic technical bet | Why `kbg:strategize` fits | Typical real options |
+| Strategic technical bet | Why `kbg:decide (strategize mode)` fits | Typical real options |
 |---|---|---|
 | Monolith → services / modularization | Hard to reverse; changes team topology and deploy cadence | Pilot extraction of one bounded context first; clear rollback criteria |
 | Primary database / storage technology | Lock-in spans years; migration is expensive | Spike + PoC with production-like load; stage gate before full migration |
@@ -161,7 +161,7 @@ Use this skill when a technical commitment is large, long-lived, or hard to reve
 | Team topology (squads vs. platform teams) | Hard to reverse; changes communication architecture | Run a temporary platform crew; measure cognitive load before scaling |
 
 **Combined flow:**
-1. `kbg:strategize` sets the guiding policy and boundaries (e.g., "extract services only where deploy independence pays back the operational cost").
+1. `kbg:decide (strategize mode)` sets the guiding policy and boundaries (e.g., "extract services only where deploy independence pays back the operational cost").
 2. `kbg:decide` climbs the Judgment Ladder for each implementation choice inside that policy (e.g., "which service boundary first?").
 3. `kbg:adr` records the committed decision and the loop that keeps it honest.
 
@@ -177,7 +177,7 @@ Use this skill when a technical commitment is large, long-lived, or hard to reve
 
 - `kbg:decide` — operational / analyzable choices via the Judgment Ladder.
 - `kbg:adr` — record a committed architectural decision once the strategy is set.
-- `kbg:probe` — deep investigation of a slice of the situation before diagnosing.
+- `kbg:decide (probe mode)` — deep investigation of a slice of the situation before diagnosing.
 - `kbg:research-brief` — external and competitive intelligence to feed diagnosis.
 - `kbg:article-mine` — mine a strategy article or book chapter for doctrine.
 

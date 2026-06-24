@@ -1,6 +1,6 @@
 [
   {
-    "query": "The user says: 'I want to add a notification system to the app.' This is an Express app. You are about to start /feature-dev Phase 1.",
+    "query": "The user says: 'I want to add a notification system to the app.' This is an Express app. You are about to start /ship-task Phase 4.",
     "should_trigger": true
   },
   {

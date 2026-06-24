@@ -232,7 +232,7 @@ is most dangerous.
 
 - `kbg:decide` — interactive walk through the ladder
 - `kbg:adr` — record the decision after the ladder
-- `kbg:probe` — systems-thinking analysis before the ladder
+- `kbg:decide` probe mode — systems-thinking analysis before the ladder
 - `kbg:clarify-first` — when the decision itself is still ambiguous
 - `kbg:critical-eval` — stress-test reasoning in a decision or ADR
 - `kbg:strategize` — upstream skill for irreversible / long-horizon commitments

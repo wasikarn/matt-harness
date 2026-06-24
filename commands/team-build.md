@@ -1,6 +1,6 @@
 ---
 name: team-build
-description: "Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, then run post-build validation. Use after /team-plan completes, or when the user says 'team build: <slug>', 'execute the plan', 'สร้างทีม', 'รันแผนทีม', 'สร้างตามแผน', or 'build ทีม'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /feature-dev)."
+description: "Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, run per-task B→V1→F→V2 validation on each completed task, then run post-build validation. Use after /team-plan completes, or when the user says 'team build: <slug>', 'execute the plan', 'สร้างทีม', 'รันแผนทีม', 'สร้างตามแผน', or 'build ทีม'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /ship-task)."
 argument-hint: Path to plan file (e.g. .claude/tasks/health-endpoint.md)
 ---
 
@@ -106,9 +106,37 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 
 ---
 
+## Step 6b — Per-task validation chain (B → V1 → F → V2)
+
+**Goal:** before starting the next wave, independently validate every task that just completed. Do not let a broken Wave 1 flow into Wave 2's upstream contracts.
+
+**Why:** the F7 TaskCompleted hook catches malformed completion claims (`validation_command:` missing), but it does not review whether the implementation actually satisfies the acceptance criteria. That review is a separate, ungated V1/V2 step. This is the per-task counterpart to Step 7's project-wide validation.
+
+**Actions:**
+
+1. **For each task in the just-completed wave**, run the builder → validator → fix → re-validator chain:
+   - **V1 (primary review):** spawn `code-reviewer` read-only on the task's `files`. Verdict: `pass`, `minor`, or `reject`.
+   - If V1 is `reject`: surface `AskUserQuestion` with three options — spawn a write-capable fixer, skip the fix and accept risk, or reset the task to pending.
+   - If a fixer is spawned: run it on the task's `files`, then run V2.
+   - **V2 (re-validation):** spawn `code-reviewer` (or `security-reviewer` if the task touches auth/secrets/crypto). Verdict: `pass`, `minor`, or `reject`.
+   - If V2 rejects, surface `AskUserQuestion` again: loop another fixer, accept risk, or abort to pending.
+2. **Block the next wave until every task in the current wave is validated.** If any task ends in `rejected` and is not fixed, do NOT start Wave 2+ tasks that depend on it. The lead either re-dispatches the failed task or the user explicitly accepts the risk.
+3. **Capture V1/V2 validation results** into `task["validation_results"]` for use as `UPSTREAM CONTRACTS` in the next wave.
+4. **Locking:** all board mutations use `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.py` with `lock_acquire` / `lock_release`. Hold the lock for the duration of the chain.
+
+**Detailed prompts, board-update semantics, and sub-task record shapes are in** `commands/team-build/references/per-task-validation.md`. `/team-build` embeds the decision flow; the reference file has the verbatim F9 prompts so this command file stays readable.
+
+**Anti-patterns:**
+- **Start Wave 2 before V1 completes.** That defeats the chain — a broken upstream contract poisons downstream work.
+- **Spawn V1 reviews for the whole wave in parallel with Wave 2.** They must finish first.
+- **Silently override a V2 reject.** The user must explicitly accept risk or loop the fixer.
+- **Run the chain only at the end of the build.** Per-task validation catches issues while the builder's context is still warm; waiting until Step 7 makes re-dispatch expensive.
+
+---
+
 ## Step 7 — Post-build validation
 
-**Goal:** run all `## Validation Commands` from the plan, report pass/fail per acceptance criterion with evidence.
+**Goal:** run all `## Validation Commands` from the plan, report pass/fail per acceptance criterion with evidence. This is the project-wide acceptance gate; Step 6b is the per-task gate. Both must pass for the build to be considered complete.
 
 **Actions:**
 1. **Run every command** in the plan's `## Validation Commands` section.
@@ -117,6 +145,7 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
    - Fail: no validation command passes, OR the command passes but the criterion isn't actually exercised (e.g. the command is `bash -n` but the criterion is "the API returns X")
 3. **Report** to the user:
    - Wave-by-wave summary (which tasks passed, which failed, in which wave)
+   - Per-task validation summary (V1/V2 pass/minor/reject counts and any override decisions)
    - Per-criterion verdict with the exact command + output that proved it
    - The integration validator's verdict
    - Any leftover risks (e.g. "Wave 2 succeeded but the plan didn't include a regression test for the migration rollback path")
@@ -131,11 +160,12 @@ The full doctrine is in `skills/orchestrate/SKILL.md` § Lead-coordinator doctri
 The build is complete when:
 
 - [ ] All `## Step by Step Tasks` rows are `status=completed` in the TaskList
+- [ ] Every completed task passed V1 (or V2, if a fixer was spawned) — no `rejected` tasks remain without explicit user acceptance
 - [ ] All `## Acceptance Criteria` items pass
 - [ ] All `## Validation Commands` exit 0
 - [ ] The integration validator (D8) passes
 - [ ] The plan file's done-when checklist is checked
-- [ ] The build is reported to the user with per-criterion evidence
+- [ ] The build is reported to the user with per-criterion evidence and per-task validation summary
 - [ ] Every teammate spawned for this build is stopped (Step 8 teardown) — no idle teammate left waiting
 
 ---
@@ -164,6 +194,7 @@ The build is complete when:
 - Does NOT silently fix a bad plan. The plan approval filter (F10) rejects; the user revises.
 - Does NOT skip the F8 model split. Sonnet-teammate is the cost lever.
 - Does NOT skip the F7 task-completion gate. A teammate claiming "tests pass" without a runnable `validation_command:` is blocked by the hook, not the lead.
+- Does NOT skip per-task validation (Step 6b). The V1/V2 chain is part of the build, not optional.
 
 ---
 
@@ -175,5 +206,6 @@ The build is complete when:
 - **F7 TaskCompleted gate** — `hooks/lifecycle/task-lifecycle.sh`. Post-execution gate, complements F10. Uses exit 2 + stderr (NOT exit 0 + JSON like PreToolUse).
 - **D8 integration validator** — this command's Step 6 final sub-step. Single `TaskUpdate addBlockedBy=[all]` after all builders.
 - **D10 plan-file interface** — `.claude/tasks/<slug>.md` is the session-resettable, lead-handoffable interface. This command reads from it; a fresh session can resume from it.
-- **Validation chain** — `skills/orchestrate/SKILL.md` § Validation chain. The DAG `B → V1 → F → V2` is the per-task quality pattern; this command's wave structure is the multi-task quality pattern.
+- **Validation chain `B → V1 → F → V2`** — `skills/orchestrate/SKILL.md` § Validation chain. The DAG pattern, `addBlockedBy` ordering, and 4-step merge after parallel fan-in. `/team-build` Step 6b is the runtime implementation.
+- **Per-task validation prompts / board semantics** — `commands/team-build/references/per-task-validation.md`. Verbatim F9 prompts and `task_board_lib.py` lock semantics for the V1/F/V2 chain.
 - **METHODOLOGY:** Rule 1 (think before coding) — the plan approval filter is the runtime form of this rule. Rule 4 (goal-driven) — every validation command is observable. Rule 12 (fail loud) — bad plan rejected with reasons, not silently revised. Rule 13 (orchestrate) — this whole command IS the orchestration pattern.

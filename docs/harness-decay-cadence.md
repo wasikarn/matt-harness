@@ -257,7 +257,7 @@ above. They are complements, not substitutes.
 The build-to-delete sweep above asks "does each component still earn
 its place?" A sibling question: **is each quadrant of the 2×2 still
 populated by sensors doing real work, or are some cells going silent?**
-`kbg:harness-coverage` is the quarterly-lens surface for that second
+`scripts/evals/harness-coverage.py` is the quarterly-lens surface for that second
 question. It emits a 2×2 matrix of the 14 hook events ×
 {computational, inferential} × {feedforward, feedback}. Full design
 in
@@ -287,7 +287,7 @@ reasons, or is being routed around by a newer surface.
 ### Action loop (operator, 3 steps)
 
 1. **Diagnose** — for each sub-60% cell, read the per-fire
-   evidence `kbg:harness-coverage` emits (session IDs, matched
+   evidence `scripts/evals/harness-coverage.py` emits (session IDs, matched
    events, the upstream surface that *should* have triggered the
    sensor). Ask *why* it is silent: broken, obsolete, or work
    genuinely absent. The 2×2 framing in `CLAUDE.md` is the diagnosis
@@ -305,7 +305,7 @@ reasons, or is being routed around by a newer surface.
 
 ### Autonomy posture (explicit)
 
-`kbg:harness-coverage` does **not** auto-prune. The operator runs
+`scripts/evals/harness-coverage.py` does **not** auto-prune. The operator runs
 the surface on the cadence above, the surface emits a report, and
 the human decides what (if anything) to delete. No cron, no
 scheduled hook event, no model-as-own-gate. Same posture as the

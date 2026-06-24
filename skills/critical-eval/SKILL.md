@@ -1,6 +1,6 @@
 ---
 name: critical-eval
-description: "Stress-test reasoning in arguments, PRs, ADRs, RFCs, incidents, decisions. Use when asked to critique, evaluate reasoning, check assumptions, stress-test arguments, review logic, verify it holds up, or when something feels off. Thai: 'ตรวจ reasoning', 'stress test ข้อโต้แย้ง', 'เช็คสมมติฐาน', 'ดู logic นี้'. Flag overconfident plans (definitely safe, zero downtime). Don't use for: adversarial review of error-handling/fallback code paths (defer to silent-failure-hunter), system dynamics/architecture trade-offs (kbg:backend-dev/code-architect), code review (kbg:review-pr), security audit (kbg:security-auditor), or research (kbg:research-brief)."
+description: "Stress-test reasoning in arguments, PRs, ADRs, RFCs, incidents, decisions. Use when asked to critique, evaluate reasoning, check assumptions, stress-test arguments, review logic, verify it holds up, or when something feels off. Thai: 'ตรวจ reasoning', 'stress test ข้อโต้แย้ง', 'เช็คสมมติฐาน', 'ดู logic นี้'. Flag overconfident plans (definitely safe, zero downtime). Don't use for: adversarial review of error-handling/fallback code paths (defer to silent-failure-hunter), system dynamics/architecture trade-offs (kbg:backend-dev/code-architect), code review (kbg:review-pr), security audit (kbg:security-auditor), or research (/deep-dive)."
 ---
 
 # Critical Eval

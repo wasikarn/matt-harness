@@ -1,6 +1,6 @@
 ---
 name: kbg-help
-description: "Quick reference card for kbg-harness skills, commands, agents, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands', or when the user says 'ช่วยเหลือ', 'มีอะไรบ้าง', 'ใช้ kbg ยังไง'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-health). One-shot display, read-only."
+description: "Quick reference card for kbg-harness skills, commands, agents, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands', or when the user says 'ช่วยเหลือ', 'มีอะไรบ้าง', 'ใช้ kbg ยังไง'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-audit --health). One-shot display, read-only."
 ---
 
 # /kbg-help — kbg-harness quick reference
@@ -13,14 +13,14 @@ You don't memorize surfaces — describe what you're doing and the harness auto-
 
 | Stage | Entry points |
 |-------|--------------|
-| **DEFINE** — idea, scope, research | `kbg:ideate` · `kbg:clarify-first` · `kbg:research-brief` (or `/deep-dive`) |
+| **DEFINE** — idea, scope, research | `/ideate` · `kbg:clarify-first` · `/deep-dive` |
 | **PLAN** — spec, prioritize, team | `kbg:orchestrate` · `kbg:triage` · `/team-plan` → `/team-build` |
-| **BUILD** — implement | `/feature-dev` · `/fix-bug` · `kbg:backend-dev` · `kbg:hotfix` |
-| **VERIFY** — test, debug | `/validate-and-fix` · `/debug-debate` · `/pre-ship-verify` |
+| **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-dev` · `kbg:incident` |
+| **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `/team-build` (per-task validation) · `kbg:review-pr` |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:critical-eval` |
 | **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
 
-Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/feature-dev`, `/deep-dive`, `kbg:probe`).
+Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship-task`, `/deep-dive`, `kbg:decide` probe mode).
 
 ### ...and which specialist (agent) per stage
 
@@ -44,8 +44,8 @@ You rarely name an agent directly — `kbg:review-pr` and `/team-build` spawn th
 |------|-----------|
 | Don't know which skill/command covers a task | `kbg:harness-nav` |
 | Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
-| Read-only governance journal / verdicts / silent sensors | `kbg:harness-health` |
-| 12-cell coverage decay grid (quarter-end) | `kbg:harness-coverage` |
+| Read-only governance journal / verdicts / silent sensors | `kbg:harness-audit --health` |
+| 12-cell coverage decay grid (quarter-end) | `kbg:harness-audit --coverage` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
 | Mental-model reference library (39 cc-thinking-skills + workflow-pattern map) | Read `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` via Bash, or run `kbg:harness-nav` and search for "reasoning-models" |
 

@@ -11,8 +11,8 @@ Use it when the diagnosis is contested, the rivals adapt, the resources are cons
 | Goal-setting | A destination without a diagnosis or policy | — |
 | Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
 | Execution planning | Sequencing tasks after the strategy is set | `kbg:ship-task`, `kbg:adr` |
-| Chaos response | Stabilize first, decide fast | `kbg:incident`, `kbg:hotfix` |
-| Research | Gathering intelligence before committing | `kbg:research-brief`, `kbg:probe` |
+| Chaos response | Stabilize first, decide fast | `kbg:incident` |
+| Research | Gathering intelligence before committing | `/deep-dive`, `kbg:decide` probe mode |
 
 ## Core model: Rumelt's kernel
 
@@ -133,8 +133,8 @@ Software strategy is not about picking technologies. It is about choosing commit
 
 - `kbg:decide` — Judgment Ladder for operational/consequential choices
 - `kbg:adr` — record a committed decision once the strategy is set
-- `kbg:probe` — deep investigation of a slice before diagnosing
-- `kbg:research-brief` — external and competitive intelligence
+- `kbg:decide` probe mode — deep investigation of a slice before diagnosing
+- `/deep-dive` — external and competitive intelligence
 - `kbg:article-mine` — mine a strategy article or book chapter for doctrine
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

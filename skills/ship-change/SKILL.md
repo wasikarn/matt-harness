@@ -1,6 +1,6 @@
 ---
 name: ship-change
-description: "Orchestrate an already-scoped change through classify → implement → review → address → merge. Use when the change is understood and needs guided sequencing through /fix-bug, /feature-dev, kbg:review-pr, /address-review, and /ship-merge. Thai: 'ship change', 'พร้อม merge', 'ขึ้น production', 'deploy ตัวนี้'. Don't use for: a blank-slate task needing discovery first (use /ship-task), a change already mid-flight (jump straight to the relevant phase command, e.g. /fix-bug to continue or kbg:review-pr if ready for review), one-line fixes, or pure research/exploration."
+description: "Orchestrate an already-scoped change through classify → implement → review → address → merge. Use when the change is understood and needs guided sequencing through /fix-bug, /ship-task, kbg:review-pr, /address-review, and /ship-merge. Thai: 'ship change', 'พร้อม merge', 'ขึ้น production', 'deploy ตัวนี้'. Don't use for: a blank-slate task needing discovery first (use /ship-task), a change already mid-flight (jump straight to the relevant phase command, e.g. /fix-bug to continue or kbg:review-pr if ready for review), one-line fixes, or pure research/exploration."
 ---
 
 # Ship Change
@@ -22,7 +22,7 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 | Phase | Goal | Next |
 |-------|------|------|
 | 1 | Classify (bug / feature / refactor) | → 2 |
-| 2 | Implement via `/fix-bug`, `/feature-dev`, or `maintenance-engineer` | → 3 |
+| 2 | Implement via `/fix-bug`, `/ship-task`, or `maintenance-engineer` | → 3 |
 | 3 | Self-review via `kbg:review-pr` (zero Critical findings gate) | → 4 |
 | 4 | Address feedback via `/address-review` (all threads resolved gate) | → 3 or 5 |
 | 5 | Merge via `/ship-merge` (CI green + approvals gate) | Done |
@@ -31,7 +31,7 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 
 | Phase | Command | When |
 |---|---|---|
-| 1 → 2 | `/fix-bug`, `/feature-dev`, or spawn `maintenance-engineer` agent | After classification |
+| 1 → 2 | `/fix-bug`, `/ship-task`, or spawn `maintenance-engineer` agent | After classification |
 | 2 → 3 | `kbg:review-pr` | After implementation done |
 | 3 → 4 | Open PR; `/address-review` if comments arrive | After zero Critical findings |
 | 4 → 3 | `kbg:review-pr` again | After `/address-review` fixes |

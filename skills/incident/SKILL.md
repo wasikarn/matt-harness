@@ -1,6 +1,6 @@
 ---
 name: incident
-description: "Manage a live production incident end-to-end. Use when alerts fire, monitors show red, users report widespread issues, or error rates spike. Thai: 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (use security-reviewer first), or post-incident documentation (use /post-mortem after resolution)."
+description: "Manage a live production incident end-to-end, including the hotfix path when rollback/kill-switch is insufficient. Use when alerts fire, monitors show red, users report widespread issues, error rates spike, or the user asks for a hotfix / P0 fix. Thai: 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม', 'hotfix', 'แก้ด่วน', 'P0'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (STOP — redirect to security-reviewer first), or post-incident documentation (use /post-mortem after resolution)."
 ---
 
 # Incident
@@ -28,12 +28,12 @@ Run a production incident from first alert to resolution. **Incident response is
    - Kill-switch / feature flag
    - Circuit breaker / rate limit
    - Scale up / failover
-   - Hotfix (slowest — hand off to `kbg:hotfix`)
+   - Hotfix (slowest — run the hotfix path from `references/hotfix.md` under this same skill)
    Preserve evidence first. Document gaps: if a kill-switch or circuit breaker does not exist, say so.
 
 5. **Communicate** — Initial status within 5 min. Updates every 5 min during active incident. Audience scales with severity.
 
-6. **Fix Forward** — If mitigation ≠ rollback, hand off to `kbg:hotfix` (S1/S2) or `/fix-bug` (S3). Severity reassessment belongs in step 2, not here.
+6. **Fix Forward** — If mitigation ≠ rollback, run the hotfix path from `references/hotfix.md` (S1/S2) or hand off to `/fix-bug` (S3). Severity reassessment belongs in step 2, not here.
 
 7. **Resolve & Monitor** — Verify fix in production. Monitor window: S1=1hr, S2=30min, S3=10min. Close incident, schedule post-mortem if S1/S2. For S3/S4, if this was an alert misfire or threshold is too sensitive, include alert tuning in the close notes.
 
@@ -75,7 +75,7 @@ If the incident involves unauthorized access, data exfiltration, or any security
 
 ## Related
 
-- `kbg:hotfix` — rollback/kill-switch insufficient; actual fix under incident
+- `references/hotfix.md` — hotfix path when rollback/kill-switch is insufficient (formerly `kbg:hotfix`)
 - `/fix-bug` — non-urgent root cause fix after mitigation
 - `/post-mortem` — after resolution, blameless analysis
 - `/ship-merge` — deploying fix PR after resolution

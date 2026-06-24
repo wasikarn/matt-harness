@@ -92,14 +92,11 @@ printf '%s' "$LOWERED" | grep -qE "\b(comprehensive|end[- ]to[- ]end|exhaustive)
 # ship the plugin" — three contexts, one prompt, must route not inline.
 # SYNC: keep PATH_PATTERNS in lockstep with `DOMAINS.md` ## Path → Context.
 PATH_PATTERNS='
-commands/feature-dev|Execution
+commands/ship-task|Execution
 commands/fix-bug|Execution
 commands/deep-dive|Execution
 skills/migrate|Execution
 skills/perf|Execution
-skills/research-brief|Execution
-skills/types-first|Execution
-skills/task-sizing|Execution
 skills/tech-humanize|Execution
 skills/backend-dev|Implementation
 agents/|Implementation
@@ -111,12 +108,13 @@ lib/|Implementation
 skills/ship-change|Orchestration
 skills/orchestrate|Orchestration
 skills/inventory|Orchestration
+commands/team-plan|Orchestration
+commands/team-build|Orchestration
 skills/harness-audit|Quality
-skills/harness-coverage|Quality
 skills/critical-eval|Quality
 skills/review-pr|Quality
 skills/security-auditor|Quality
-skills/probe|Quality
+skills/decide|Quality
 tests/|Quality
 eval/|Quality
 skills/adr|Communication
@@ -125,16 +123,13 @@ commands/status-update|Communication
 commands/post-mortem|Communication
 docs/|Communication
 skills/incident|Emergency
-skills/hotfix|Emergency
 runbooks/|Emergency
 skills/acli|Integration
 skills/assert-presence|Integration
 skills/decommission|Integration
 skills/memory-lint|Integration
-skills/semantic-code|Integration
 commands/ship-merge|Integration
 commands/ship-release|Integration
-commands/ship-task|Integration
 .scratch/|Integration
 METHODOLOGY.md|doctrine
 RTK.md|doctrine

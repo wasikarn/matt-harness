@@ -3,7 +3,7 @@
 **Status:** Runbook reference. Adapted from the claudefa.st *Agent Teams Best Practices & Troubleshooting* article for the kbg-harness plugin.  
 **Last verified:** 2026-06-12
 
-This guide covers the eight most common failure modes when running multi-agent builds with `/team-build`, `/validate-and-fix`, and the agent-team lifecycle hooks. Each scenario includes the symptom you see, the likely cause, the exact fix, and how to prevent it next time.
+This guide covers the eight most common failure modes when running multi-agent builds with `/team-build` (including its embedded per-task `B → V1 → F → V2` validation chain) and the agent-team lifecycle hooks. Each scenario includes the symptom you see, the likely cause, the exact fix, and how to prevent it next time.
 
 ---
 
@@ -81,11 +81,11 @@ The F9 spawn-prompt template also requires `## FILES YOU OWN` — a teammate wit
 
 **Fix:**
 
-1. Run `/validate-and-fix` on the task:
+1. Run the per-task validation chain from `/team-build` Step 6b on the task:
    ```bash
-   /validate-and-fix API-1 health-endpoint
+   /team-build .claude/tasks/health-endpoint.md
    ```
-   This invokes the `B → V1 → F → V2` chain: a `code-reviewer` validates the builder's output, findings are presented to the user, a fixer agent applies fixes, and a re-validator confirms the fix.
+   `/team-build` will detect the already-completed task, invoke the `B → V1 → F → V2` chain (`commands/team-build/references/per-task-validation.md`), present findings to the user, and spawn a fixer + re-validator if needed.
 
 2. If the task board is already in `completed` state but you know it is wrong, reset it to `pending` manually (same Python snippet as scenario 1) and re-dispatch.
 
@@ -122,7 +122,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 3. If the plan is already in flight and the lead is saturated, abort the build (`/team-cleanup`), revise the plan, and restart with `/team-build`.
 
-**Prevention:** Task sizing guidance is load-bearing in the F8 lead doctrine (`skills/orchestrate/SKILL.md` § Lead-coordinator doctrine). The lead refuses to build plans outside the 3-5 teammate range. Future work will add a `skills/task-sizing` skill that estimates task granularity from the brain dump; for now, the linter and the F8 doctrine are the guards.
+**Prevention:** Task sizing guidance is load-bearing in the F8 lead doctrine (`skills/orchestrate/SKILL.md` § Lead-coordinator doctrine). The lead refuses to build plans outside the 3-5 teammate range. Task sizing guidance is in `commands/team-plan/references/task-sizing.md`; for now, the linter and the F8 doctrine are the guards.
 
 ---
 
@@ -248,7 +248,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 |------|---------|
 | Check build status | `/wave-status health-endpoint` |
 | Pre-flight plan check | `python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/health-endpoint.md --strict` |
-| Validate a completed task | `/validate-and-fix API-1 health-endpoint` |
+| Validate a completed task | `/team-build .claude/tasks/health-endpoint.md` (Step 6b per-task chain) |
 | Clean up stale artifacts | `/team-cleanup health-endpoint --dry-run` |
 | Reap expired locks | `bash "${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh" --team=health-endpoint` |
 | Disable one hook | `export CLAUDE_DISABLED_HOOKS=hook-name` |
@@ -263,7 +263,7 @@ The F9 template enforces this by convention; the F7 hook enforces it by runtime 
 
 - [`docs/common-mistakes.md`](./common-mistakes.md) — the five root causes that produce these symptoms
 - [`commands/team-build.md`](../commands/team-build.md) — F10 plan approval, wave execution, fresh-session gate
-- [`commands/validate-and-fix.md`](../commands/validate-and-fix.md) — per-task B→V1→F→V2 validation chain
+- [`commands/team-build/references/per-task-validation.md`](../commands/team-build/references/per-task-validation.md) — per-task B→V1→F→V2 validation chain
 - [`commands/wave-status.md`](../commands/wave-status.md) — heartbeat and lock status report
 - [`commands/team-cleanup.md`](../commands/team-cleanup.md) — stale artifact cleanup pipeline
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F8 lead doctrine, F8.5 bounded fan-out, F9 spawn-prompt template

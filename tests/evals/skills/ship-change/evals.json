@@ -6,7 +6,7 @@
       "id": 0,
       "eval_name": "feature-lifecycle-positive",
       "prompt": "I need to add a new user login feature with OAuth and session management. It's a medium-sized change spanning 4 files.",
-      "expected_output": "Phase 1 classify: 'New feature' (keywords 'add', 'feature'). Phase 2 dispatch /feature-dev. Phase 3 dispatch /review-pr (zero Critical gate). Phase 4 open PR / address-review if comments. Phase 5 /ship-merge.",
+      "expected_output": "Phase 1 classify: 'New feature' (keywords 'add', 'feature'). Phase 2 dispatch /ship-task for implementation. Phase 3 dispatch /review-pr (zero Critical gate). Phase 4 open PR / address-review if comments. Phase 5 /ship-merge.",
       "files": [],
       "assertions": [
         {
@@ -15,7 +15,7 @@
         },
         {
           "name": "phase_2_feature_dev",
-          "description": "Response directs user to run /feature-dev for implementation"
+          "description": "Response directs user to run /ship-task for implementation"
         },
         {
           "name": "phase_3_review_pr",

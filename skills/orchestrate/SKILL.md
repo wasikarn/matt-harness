@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, spans independent sub-tasks or sequential phases, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', or 'จัดpriority'. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/feature-dev), or single-file coding (inline)."
+description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, spans independent sub-tasks or sequential phases, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', or 'จัดpriority'. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/ship-task), or single-file coding (inline)."
 ---
 
 # Orchestrate

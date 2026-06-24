@@ -17,8 +17,8 @@ No phase is skipped. No autonomous loops — every fix iteration requires explic
 | 1 | 1 | **Explore** — `code-explorer` agent, read-only recon | Map returned |
 | 2 | 2 | **Clarify** — `kbg:clarify-first`, 3-step scope gate | All Q answered |
 | 3 | 3 | **Accept** — `kbg:accept-task`, lock ACCEPTANCE.md | Contract written |
-| 4 | 4 | **Implement** — `/feature-dev` or `/fix-bug`, TDD discipline | Command done |
-| 5 | 5+6 | **Test** — `post-edit-test` hook (auto) + `/pre-ship-verify` | GREEN or AMBER |
+| 4 | 4 | **Implement** — inline feature work or `/fix-bug`, TDD discipline | Command done |
+| 5 | 5+6 | **Test** — `post-edit-test` hook (auto) + acceptance contract verification | GREEN or AMBER |
 | 6 | 7 | **Review** — `kbg:review-pr`, SCRUTINIZE-4 filter | Zero Critical |
 | 7 | 8 | **Fix loop** — `/address-review` → re-run Phase 6 until clean | `review-last.json: clean: true` |
 | 8 | 9 | **Ship** — `/ship-merge` | CI green + review-state gate |
@@ -73,28 +73,45 @@ cat "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}/accept-last.json"
 
 ## Phase 4: Implement (Step 4 of 9)
 
-**Goal**: Build in small, reviewable pieces with TDD.
+**Goal**: Build in small, reviewable pieces with TDD. This phase inlines the former `/feature-dev` 7-phase feature workflow for new features and refactors; bug fixes still dispatch to `/fix-bug`.
 
 **Actions**:
-1. Classify: bug fix → `/fix-bug`; new feature or refactor → `/feature-dev`.
-2. Run the command. It handles its own internal explore → design → TDD implement → self-check loop.
-3. Stop after each phase within the command and verify before continuing.
+1. Classify: bug fix → `/fix-bug`; new feature or refactor → continue below.
+2. **Discovery** — analyze `$ARGUMENTS`, identify ambiguities, and decompose if the request spans independent subsystems.
+3. **Codebase exploration** — spawn 2–3 `code-explorer` agents in parallel (similar features, architecture, extension points) and read the key files they identify.
+4. **Clarifying questions** — present all underspecified aspects to the user and wait for answers before designing. Re-invoke `kbg:accept-task` if the scope changes materially.
+5. **Architecture design** — spawn 2–3 `code-architect` agents in parallel (minimal changes, clean architecture, pragmatic balance), self-review the chosen approach for placeholder/scope/ambiguity, and ask the user to pick.
+6. **Implementation** — wait for explicit approval, then default to TDD red → green → refactor unless one of the documented opt-out criteria applies (visual-only change, hard race with named tool, integration boundary with stated harness rejection, 1-line cosmetic).
+7. **Quality review** — spawn conditional reviewers (code-reviewer always; security-reviewer, silent-failure-hunter, type-design-analyzer, ux-reviewer, pr-test-analyzer as needed), consolidate findings into Critical/Important/Minor, and ask the user how to proceed.
+8. **Summary** — mark todos complete, document decisions, files modified, and next steps.
 
-**Gate**: command completes. ACCEPTANCE.md criteria must be passable.
+**Carve-out**: genuinely trivial work (a one-liner, a copy tweak) may skip the design-approval gate and implement directly, per METHODOLOGY Rule 1. Don't manufacture a design for a one-line change.
+
+**Gate**: Phase 4 completes. ACCEPTANCE.md criteria must be passable.
 
 ---
 
-## Phase 5: Test (Steps 5+6 of 9)
+## Phase 5: Test / Pre-Ship Verification (Steps 5+6 of 9)
 
-**Goal**: Prove the change works — automatic + explicit.
+**Goal**: Prove the change works against the locked acceptance contract.
 
-The `post-edit-test` hook fires asynchronously after every Edit/Write. If it logged failures, fix them before proceeding.
+The `post-edit-test` hook fires asynchronously after every Edit/Write in Phase 4. If it logged failures, fix them before proceeding.
 
-**Manual check**:
-```bash
-python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug>
-```
-Must exit GREEN (all machine criteria met) or AMBER (only prose criteria remain, confirm manually).
+Then run the deterministic acceptance gate:
+
+1. **Discover the contract.** If a slug was provided to `/ship-task`, use `.scratch/<slug>/ACCEPTANCE.md`. Otherwise, auto-detect the newest `.scratch/*/` directory containing `ACCEPTANCE.md`. If none exists → STOP: "Run `kbg:accept-task` to lock a contract before shipping."
+2. **Execute.** Run:
+   ```bash
+   python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug> --verbose
+   ```
+   Read `.scratch/<slug>/acceptance-results.json` and parse `passed`, `failed`, `skipped`, `blocked`.
+3. **Report + gate.** Emit the pass/fail/skip/block table and a GREEN / AMBER / RED verdict:
+   - **GREEN** (failed=0, blocked=0): all machine-checkable criteria pass → proceed to Phase 6.
+   - **AMBER** (only skipped manual/prose criteria): surface the skipped list and ask the user to confirm manual verification before proceeding.
+   - **RED** (any failed or blocked): list failing criteria with command + exit code. STOP. Do NOT proceed to Phase 6. The user must fix and re-run `/ship-task` from Phase 5, or explicitly accept the risk.
+4. **Audit trail.** Append a compact entry to `.scratch/<slug>/verification-log.jsonl` with the result.
+
+Detailed contract discovery, parsing rules, and audit-trail shape are in `commands/ship-task/references/pre-ship-verify.md`.
 
 ---
 

@@ -38,9 +38,9 @@ date: 2026-06-15
 - **Test suite** → `eval/run-eval.py` + 204 critical-hooks tests
 - **Mutation testing** → **No kbg-harness counterpart found** — angle-3 §5: article's underspecified lever
 - **Approved fixtures** → `eval/datasets/*.json` (kbg treats datasets as goldens)
-- **Human review** → `commands/pre-ship-verify.md` + `kbg:review-pr`
+- **Human review** → `/ship-task` Phase 5 acceptance gate + `kbg:review-pr`
 
-**"Human clearly specified"** (L448) is the article's deepest honesty. kbg closes it via `accept-task` as **front-loaded spec capture** + `pre-ship-verify` as grader. The 5-state `run-acceptance.py` exit is kbg's analog to "spec quality as a regulation axis."
+**"Human clearly specified"** (L448) is the article's deepest honesty. kbg closes it via `accept-task` as **front-loaded spec capture** + `/ship-task` as grader. The 5-state `run-acceptance.py` exit is kbg's analog to "spec quality as a regulation axis."
 
 ## 5. Feedforward/Feedback × Computational/Inferential 2×2
 

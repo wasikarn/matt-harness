@@ -44,7 +44,7 @@ LOWERED=$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')
 
 # Already naming a command via slash → user is invoking manually, no nudge.
 case "$LOWERED" in
-  */fix-bug*|*/feature-dev*|*/review-pr*|*/post-mortem*) exit 0 ;;
+  */fix-bug*|*/ship-task*|*/review-pr*|*/post-mortem*) exit 0 ;;
 esac
 
 # Dynamic-workflow trigger words (trq212, 2026-06-03) → never nudge. These are
@@ -80,19 +80,18 @@ command_emit() {
 printf '%s' "$LOWERED" | grep -qE '\bfix (this |a |the )?bug\b|\bbug[- ]?fix\b|\bdebug and fix\b' \
   && command_emit "fix-bug" "full bug-fix workflow: reproduce → localise → hypothesise → TDD-implement → verify → review."
 
-# /feature-dev — build/implement something non-trivial (backend-dev skill is
-# backend-specific; this is the general feature workflow)
+# /ship-task — build/implement something non-trivial (the general feature/workflow surface)
 printf '%s' "$LOWERED" | grep -qE '\b(build|implement|develop|create) (a |this |the )?(new )?feature\b|\bfeature (request|spec|development)\b|\bgreenfield\b' \
-  && command_emit "feature-dev" "7-phase feature workflow: discover → explore → clarify → design → implement → review → summarise."
+  && command_emit "ship-task" "9-step senior-engineer loop: explore → clarify → accept → implement → auto-test → review → fix-loop → ship."
 
 # /review-pr — multi-agent PR review (code-review skill is single-agent diff
 # review; this is the comprehensive multi-agent workflow)
 printf '%s' "$LOWERED" | grep -qE '\breview (my |this |the )?(pr|pull request|changes)\b|\bpr review\b|\bpull request review\b' \
   && command_emit "review-pr" "multi-agent PR review covering code quality, tests, comments, errors, security, and simplification."
 
-# /resolve-review — respond to existing PR review comments (no skill equivalent)
+# /address-review — respond to existing PR review comments (no skill equivalent)
 printf '%s' "$LOWERED" | grep -qE '\b(address|respond to|apply|fix) (the |my |this )?(pr |pull request )?review (comments?|feedback|threads?)\b|\bresolve review\b|\breview comments? (came back|returned|on my pr)\b' \
-  && command_emit "resolve-review" "triage and respond to open PR review threads: fetch via gh, classify, implement fixes, reply per-thread citing sha, re-request review."
+  && command_emit "address-review" "triage and respond to open PR review threads: fetch via gh, classify, implement fixes, reply per-thread citing sha, re-request review."
 
 # /post-mortem — document a resolved bug/incident (no skill equivalent)
 printf '%s' "$LOWERED" | grep -qE '\b(write|draft|create|need|do) .{0,20}post[- ]?mortem\b|\bpost[- ]?mortem .{0,20}(for|of|after|about|analysis|draft|writeup|report)\b|\bincident report\b' \
@@ -105,9 +104,9 @@ printf '%s' "$LOWERED" | grep -qE '\b(ready to ship|let.s ship|ship this|ship (t
 
 # Explore-first nudge: task-shaped prompts without a /command already named.
 # When user describes modifying/extending something without routing to a workflow command,
-# nudge toward /feature-dev or /fix-bug (both have built-in explore phases).
+# nudge toward /ship-task or /fix-bug (both have built-in explore phases).
 printf '%s' "$LOWERED" | grep -qE '\b(i need to|we need to|i want to|we want to|can you|please) (implement|change|modify|extend|add|refactor|update) \b' \
-  && ! printf '%s' "$LOWERED" | grep -qE '\b/(feature-dev|fix-bug|ship-task|ship-change|review-pr)\b' \
-  && command_emit "feature-dev" "starts with explore (read-only recon via code-explorer) before any edits — builds in the senior-engineer explore-first discipline."
+  && ! printf '%s' "$LOWERED" | grep -qE '\b/(ship-task|fix-bug|ship-change|review-pr)\b' \
+  && command_emit "ship-task" "starts with explore (read-only recon via code-explorer) before any edits — builds in the senior-engineer explore-first discipline."
 
 exit 0

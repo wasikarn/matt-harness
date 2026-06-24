@@ -1,6 +1,6 @@
 ---
 name: task-sizing
-description: "Right-size /team-plan tasks before /team-build: the 5-6-tasks-per-agent rule, wave balancing, splitting oversized tasks, merging undersized ones — so a team finishes faster with fewer merge conflicts. Use when reviewing a plan's task granularity, or the user asks how big a task or wave should be. Thai: 'task sizing', 'แบ่ง task', 'ขนาด task', 'ย่อย task'. Don't use for: authoring the plan (use /team-plan), runtime dispatch (use kbg:orchestrate), or single-agent work (use /feature-dev)."
+description: "Right-size /team-plan tasks before /team-build: the 5-6-tasks-per-agent rule, wave balancing, splitting oversized tasks, merging undersized ones — so a team finishes faster with fewer merge conflicts. Use when reviewing a plan's task granularity, or the user asks how big a task or wave should be. Thai: 'task sizing', 'แบ่ง task', 'ขนาด task', 'ย่อย task'. Don't use for: authoring the plan (use /team-plan), runtime dispatch (use kbg:orchestrate), or single-agent work (use /ship-task)."
 ---
 
 # Task Sizing
@@ -62,7 +62,7 @@ A `/team-build` plan is executed in waves: all Wave 1 tasks run in parallel, the
 | **Wave 2+** | Implementation layers that consume Wave 1 contracts | 2-4 tasks each |
 | **Final wave** | Integration validators + end-to-end checks (INT-N) | 1-3 tasks |
 
-**Total waves for a feature: 3-5.** More than 5 waves means the plan is too coarse-grained; merge waves or enlarge task scope. Fewer than 3 waves means the feature is small enough for `/feature-dev` (single-agent).
+**Total waves for a feature: 3-5.** More than 5 waves means the plan is too coarse-grained; merge waves or enlarge task scope. Fewer than 3 waves means the feature is small enough for `/ship-task` (single-agent).
 
 **Wave bands vs. the F8 min-3 floor (different axes — they do not conflict).** The task counts above are the width of an *auto-resolved* wave: a property of the dependency graph, which legitimately narrows as a feature integrates (the 7-agent pattern's later waves are often a single task — that is correct, not under-parallelized). The F8 "min 3 / max 5" band is a *different* axis — how many teammates a lead *chooses* to fan out into one explicit `type: parallel` stage. A later wave with 2 ready tasks is the DAG narrowing, never flagged. The dispatcher's F8.4 advisory fires only on an explicit `parallel` agent fan-out below 3 (`scripts/orchestrate/planner.py` `f8_4_under_warnings`), never on auto-resolved wave width; a fixed diverse-lens panel (e.g. code-review + security-review = 2 by design) opts out with `panel: true`.
 
@@ -81,7 +81,7 @@ This skill produces **revised task tables** (or a verbal sizing verdict) and opt
 Run the bundled self-check against a plan file to catch sizing violations before `/team-build`:
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/task_size_check.py" .claude/tasks/<slug>.md
+python3 "${KBG_PLUGIN_ROOT}/commands/team-plan/scripts/task_size_check.py" .claude/tasks/<slug>.md
 ```
 
 Exit codes: `0` = all tasks within bounds · `1` = plan file malformed or missing the `## Step by Step Tasks` table · `2` = one or more sizing flags found. The script prints per-wave counts, per-agent load, and a flagged-task list; thresholds mirror the heuristics above (see `scripts/task_size_check.py`).

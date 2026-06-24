@@ -1,15 +1,15 @@
 ---
 name: harness-coverage
-description: "Read-only harness-coverage report: renders the 2x2x3 (12-cell) grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold and the intentional-gap cell `inf-fb-behaviour` flagged. Use when the operator wants to know which cells are populated, stale, or empty, wants a quarter-end decay measurement, or a 12-row table view of the journal. Thai: 'harness coverage', 'ตาราง 12 cell', 'decay'. Don't use for: per-session drill-down or a verdict stream (use `kbg:harness-health`), or per-sensor fire-rate (read the journal)."
+description: "Read-only harness-coverage report for `kbg:harness-audit --coverage`: renders the 2x2x3 (12-cell) grid from `hooks/sensors.json` and the governance journal, with a 60% decay threshold and the intentional-gap cell `inf-fb-behaviour` flagged. Use when the operator wants to know which cells are populated, stale, or empty, wants a quarter-end decay measurement, or a 12-row table view of the journal. Thai: 'harness coverage', 'ตาราง 12 cell', 'decay'. Don't use for: per-session drill-down or a verdict stream (use `kbg:harness-audit --health`), or per-sensor fire-rate (read the journal)."
 ---
 
-# Skill: harness-coverage
+# Mode: `kbg:harness-audit --coverage`
 
 Read-only rendering layer over `scripts/evals/harness-coverage.py` (the
 deterministic 12-cell aggregator shipped in wave 2). The script reads
 `hooks/sensors.json` + the governance journal and emits the
 2x2x3 coverage grid (Bockeler 2026-04, L356-L374 + L437-L479; the same
-model baked into `CLAUDE.md`). This skill is the human-facing surface:
+model baked into `CLAUDE.md`). This `--coverage` mode is the human-facing surface:
 it runs the script and presents the output as a 12-row markdown table
 with the 60% decay threshold (per `docs/harness-decay-cadence.md`
 DECAY-1) called out cell-by-cell.
@@ -21,10 +21,10 @@ The 60% highlight is *information*, not a *decision*; the operator
 decides what to decommission per the decay-cadence 3-step loop
 (diagnose, plan, re-measure).
 
-The skill is the **SKILL-1** deliverable of the `harness-coverage-metric`
+This `--coverage` mode is the rendering half of the `harness-coverage-metric`
 plan (`.claude/tasks/harness-coverage-metric.md`). Aggregator = wave 2
-(`scripts/evals/harness-coverage.py`, AGG-1); this skill = wave 3; regression
-fixture = wave 4 (`eval/regressions/harness-coverage.json`, FIX-1);
+(`scripts/evals/harness-coverage.py`, AGG-1); this reference = the operator-facing
+contract; regression fixture = wave 4 (`eval/regressions/harness-coverage.json`, FIX-1);
 decay-cadence wiring = LEAD-D's DECAY-1.
 
 ## When to use
@@ -46,7 +46,7 @@ decay-cadence wiring = LEAD-D's DECAY-1.
 ## When NOT to use
 
 - **Per-session forensic drill-down** ("show me the last 10 events for
-  sensor X") — use `kbg:harness-health` instead. This skill is the
+  sensor X") — use `kbg:harness-audit --health` instead. This skill is the
   *fleet-level* view; `harness-health` is the *journal-history* view.
 - **Per-sensor fire-rate investigation** — read the journal directly
   (`jq` + `hooks/JOURNAL-SCHEMA.md`); the coverage metric is a
@@ -278,7 +278,7 @@ journal consumer pattern from `hooks/JOURNAL-SCHEMA.md` "Fail-loud"):
 
 ## Decay threshold (the "from metric to fix" intent)
 
-The script does not enforce a threshold. The skill surfaces a
+The script does not enforce a threshold. This mode surfaces a
 *human-facing interpretation* in its summary:
 
 - A cell with `cell_score_pct < 60%` AND `status != intentional_gap`
@@ -297,8 +297,8 @@ The script does not enforce a threshold. The skill surfaces a
   (the verdict rolls into the next pass's expected counts; a
   deliberate gap three quarters running is itself removal-eligible).
 
-The skill is **information**, not a *decision*. The operator runs
-the surface on the cadence above, the surface emits a report, and
+This mode is **information**, not a *decision*. The operator runs
+`kbg:harness-audit --coverage` on the cadence above, the surface emits a report, and
 the human decides what (if anything) to delete. No cron, no
 scheduled hook event, no model-as-own-gate.
 
@@ -367,8 +367,8 @@ How to read this:
   reads the journal + registry directly; no LLM in the loop, no
   `pip install`, stdlib only).
 - Does **not** auto-fire from any hook (this skill is
-  human-triggered; it is the `kbg:harness-coverage` slash command
-  surface, not a SessionStart/PostToolUse consumer).
+  human-triggered; it is the `kbg:harness-audit --coverage` mode,
+  not a SessionStart/PostToolUse consumer).
 - Does **not** run on a scheduled timer or unattended loop. The
   decay-cadence is a *human* quarterly cadence; the metric is
   the *lens*, not the *gate*. The autonomy invariant
@@ -398,12 +398,10 @@ How to read this:
   plan.
 - **Journal schema:** `hooks/JOURNAL-SCHEMA.md` "Envelope
   (nested)" — the JSONL contract the script reads.
-- **Peer skill:** `skills/harness-health/SKILL.md` — the
+- **Peer mode:** `references/health.md` — the
   journal-history view (verdict stream, sensor staleness,
-  L553 dual-fire-count). This skill is the *fleet-level* coverage
-  view; `harness-health` is the *per-sensor / per-event* view.
-- **Future deliverable:** `eval/regressions/harness-coverage.json`
+  L553 dual-fire-count). `--coverage` is the *fleet-level* coverage
+  view; `--health` is the *per-sensor / per-event* view.
+- **Regression fixture:** `eval/regressions/harness-coverage.json`
   (FIX-1, wave 4) — 30-session synthetic journal + expected
-  grid. The hand-curated eval coverage lives at
-  `tests/evals/skills/harness-coverage/evals.json`; the regression
-  fixture above is the *deterministic* coverage.
+  grid.

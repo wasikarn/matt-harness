@@ -1,6 +1,6 @@
 ---
 name: backend-dev
-description: "Backend implementation skill for API endpoints, DB migrations, webhooks, background jobs, rate limiters, error middleware, and schema design. Runs TDD, verifies with real execution, and flags architecture concerns. Use when the user asks for FastAPI/Flask/Django endpoints, SQL migrations, or Redis services. Thai: 'เขียน API', 'ทำ migration', 'เพิ่ม webhook', 'สร้าง background job', 'ทำ rate limiter'. Don't use for: frontend UI/CSS, security-only audits (kbg:security-auditor), research (kbg:research-brief), infra deployment (devops-engineer), or frontend tests."
+description: "Backend implementation skill for API endpoints, DB migrations, webhooks, background jobs, rate limiters, error middleware, and schema design. Runs TDD, verifies with real execution, and flags architecture concerns. Use when the user asks for FastAPI/Flask/Django endpoints, SQL migrations, or Redis services. Thai: 'เขียน API', 'ทำ migration', 'เพิ่ม webhook', 'สร้าง background job', 'ทำ rate limiter'. Don't use for: frontend UI/CSS, security-only audits (kbg:security-auditor), research (/deep-dive), infra deployment (devops-engineer), or frontend tests."
 ---
 
 Implement the backend task described by the user.

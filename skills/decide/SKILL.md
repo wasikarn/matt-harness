@@ -1,11 +1,18 @@
 ---
 name: decide
-description: "Use when walking through a consequential, analyzable decision using the Judgment Ladder. Thai: 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ'. Don't use for chaotic/time-pressed situations, choices already dictated by policy or constraint, or after the decision has already been committed and only documentation is needed (use kbg:adr)."
+description: "Use when you need structured decision support across four modes: decide (Judgment Ladder for consequential, analyzable choices), probe (systems-thinking Why? / What if?), strategize (irreversible / long-horizon commitment), or debate (parallel technical debate between options). Thai: 'ตัดสินใจ', 'ช่วยตัดสินใจ', 'judgment ladder', 'decision quality', 'วิเคราะห์ตัดสินใจ', 'strategy', 'กลยุทธ์', 'probe', 'what if', 'debate', 'ถกเถียง', 'which option', 'should we use X or Y'. Don't use for chaotic/time-pressed situations (use kbg:incident), choices already dictated by policy, or after the decision is committed and only needs recording (use kbg:adr)."
 ---
 
 # Decide
 
-Apply the **Judgment Ladder** — a compressed Decision Quality process — to a consequential choice before committing. The ladder is a reasoning scaffold, not a proof. It slows you down just enough to surface the real decision, the hidden assumptions, and the risks that usually get skipped.
+Single decision-support surface. Apply the right mode based on the user's request:
+
+- **decide mode (default)** — Judgment Ladder for consequential, analyzable choices.
+- **probe mode** — systems-thinking lens (Why? / What if?) before committing. Formerly `kbg:decide (probe mode)`.
+- **strategize mode** — irreversible or long-horizon strategic commitment under ambiguity. Formerly `kbg:decide (strategize mode)`.
+- **debate mode** — parallel technical debate between options using Advocate/Skeptic/Synthesizer/Cost-Analyst agents. Formerly `/debug-debate`.
+
+The ladder is a reasoning scaffold, not a proof. It slows you down just enough to surface the real decision, the hidden assumptions, and the risks that usually get skipped.
 
 The five rungs are sequential but iterative: a bad frame sends you back to re-recognize the decision; a failed assumption test sends you back to reframe; weak commitment sends you back to values.
 
@@ -19,11 +26,12 @@ The five rungs are sequential but iterative: a bad frame sends you back to re-re
 
 ## When NOT to use
 
-- **Chaotic / time-pressed situations** — stabilize first, then loop. Use `kbg:incident` or `kbg:hotfix`. If no kbg surface fits, fall back to an OODA-loop prompt from the vendored thinking-skills reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not to a loadable `kbg:` surface.
-- **Domain is complex and unknowable** — probe with experiments before estimating. Use `kbg:probe` to map the domain; Cynefin is available as a vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-cynefin/`), not as a kbg surface.
+- **Chaotic / time-pressed situations** — stabilize first, then loop. Use `kbg:incident`. If no kbg surface fits, fall back to an OODA-loop prompt from the vendored thinking-skills reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not to a loadable `kbg:` surface.
+- **Domain is complex and unknowable** — switch to **probe mode** (read `references/probe.md`) before estimating; Cynefin is available as a vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-cynefin/`).
 - **Answer is already dictated** — if policy, architecture, or a hard constraint makes the choice, say so instead of running the ladder.
 - **Decision is already made and only needs recording** — use `kbg:adr` for the decision record.
 - **Trivial / low-stakes / reversible choices** — a 2-minute gut check is enough.
+- **Irreversible / long-horizon strategic commitment** — switch to **strategize mode** (read `references/strategize.md`).
 
 ## Procedure
 
@@ -132,19 +140,22 @@ Four-bias guard:
 
 ## Applying `kbg:decide` to software engineering
 
-Most code decisions are reversible operational choices, not strategic commitments. Use this skill inside a boundary that is already set — by architecture charter, by `kbg:strategize`, or by a hard constraint.
+Most code decisions are reversible operational choices, not strategic commitments. Use **decide mode** inside a boundary that is already set — by architecture charter, by a prior strategize-mode run, or by a hard constraint.
 
-| Coding decision | Why `kbg:decide` fits | What to watch |
+| Coding decision | Mode | What to watch |
 |---|---|---|
-| Library / framework A vs. B inside an approved stack | Trade-offs are analyzable; revert costs days | Anchoring on the first benchmark; confirmation from one blog post |
-| REST vs. gRPC, cursor vs. offset pagination, sync vs. async | Known options with clear constraints | Framing the problem around the technology, not the user flow |
-| Deploy strategy: canary, blue-green, feature-flag rollout | Reversible if instrumentation is in place | False precision on risk; no revisit trigger |
-| Refactor sequence: which module first, how big a slice | High uncertainty but reversible in hours | Sunk-cost attachment to old code; soft commitment |
+| Library/framework choice inside an approved stack | decide | Anchoring on the first benchmark; confirmation from one blog post |
+| REST vs. gRPC, cursor vs. offset pagination | decide | Framing the problem around the technology, not the user flow |
+| Deploy strategy (canary, blue-green, feature flags) | decide | False precision on risk; no revisit trigger |
+| Refactor sequence | decide | Sunk-cost attachment to old code; soft commitment |
+| Monolith → services, database commitment, team topology | strategize | Premature lock-in; missing real options |
+| "Why is this necessary?" / "What if we scale 10x?" | probe | Map the domain before estimating |
 
 **Combined flow:**
-1. If the choice is hard to reverse (architecture, platform, org structure), run `kbg:strategize` first to set the guiding policy.
-2. Inside that policy, use `kbg:decide` for the reversible implementation choices.
-3. Record the committed decision in `kbg:adr`.
+1. If the choice is hard to reverse, run **strategize mode** first to set the guiding policy (`references/strategize.md`).
+2. If the domain is complex/unknowable, run **probe mode** first (`references/probe.md`).
+3. Inside the policy, use **decide mode** for reversible implementation choices.
+4. Record the committed decision in `kbg:adr`.
 
 ## Proportionality rule
 
@@ -185,13 +196,23 @@ biases that matter, but they are the ones most likely to flip a rung.
 | **Test assumptions** | **Confirmation Bias** | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? หาหลักฐานที่ refute ตัวเองบ้างหรือยัง? |
 | **Decide, commit, follow through** | **Sunk Cost Bias** | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? kill criteria คืออะไร? |
 
+## Mode selection
+
+Pick the mode from the user's wording before climbing:
+
+| User signal | Mode | Reference |
+|---|---|---|
+| "ตัดสินใจ", "judgment ladder", "which option", "A vs B", trade-offs inside a known boundary | **decide** | this file |
+| "probe", "what if", "systems thinking", "second-order effects", "why is this necessary", "scale 10x" | **probe** | `references/probe.md` |
+| "strategy", "strategic choice", "where to play", "irreversible commitment", "long-horizon bet" | **strategize** | `references/strategize.md` |
+| "debate", "ถกเถียง", "should we use X or Y", "which is better", "ประชุมถก" | **debate** | `references/debate.md` |
+
 ## Related
 
 - `kbg:adr` — record the decision after the ladder
-- `kbg:probe` — read-only systems-thinking analysis before the ladder
 - `kbg:clarify-first` — when the decision itself is still ambiguous
 - `kbg:critical-eval` — stress-test the reasoning in a decision or ADR
-- `kbg:strategize` — upstream skill for irreversible / long-horizon commitments
+- `references/debate.md` — technical debate for disagreements, now a `debate` mode of this skill
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
 

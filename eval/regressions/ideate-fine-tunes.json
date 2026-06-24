@@ -64,11 +64,11 @@
     },
     {
       "id": "ideate-skill-reads-rotation-block",
-      "task": "Verify that skills/ideate/SKILL.md instructs the host to prefer the rotated frames and to honor the budget warning.",
+      "task": "Verify that commands/ideate.md instructs the host to prefer the rotated frames and to honor the budget warning.",
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "skills/ideate/SKILL.md"
+          "commands/ideate.md"
         ],
         "required_phrases": [
           "Session frame rotation",

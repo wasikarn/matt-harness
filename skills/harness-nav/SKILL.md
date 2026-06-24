@@ -1,6 +1,6 @@
 ---
 name: harness-nav
-description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Thai: 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-health)."
+description: "L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Thai: 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-audit --health)."
 ---
 
 # Harness Navigation — L3 Escape Hatch
@@ -115,7 +115,7 @@ structured-thinking scaffolds, **not** an accuracy boost — see the honesty cav
 | `thinking-effectuation` | starting from means-at-hand when the goal is still fuzzy |
 | `thinking-dual-process` | checking whether you're in fast (System 1) vs slow (System 2) thinking |
 | `thinking-lindy-effect` | judging the durability / expected lifespan of a tech or idea |
-| `thinking-leverage-points` | finding the highest-impact intervention point (see also `kbg:probe` / systems-thinking) |
+| `thinking-leverage-points` | finding the highest-impact intervention point (see also `kbg:decide` probe mode / systems-thinking) |
 
 ---
 
@@ -126,7 +126,7 @@ Need a capability?
   └─ Check L2 first (zero grep cost):
        └─ skill-nudge fired? → invoke that skill
        └─ known skill name? → invoke it directly (e.g. kbg:review-pr)
-       └─ harness-health shows a relevant sensor? → check the sensor's skill
+       └─ harness-audit --health shows a relevant sensor? → check the sensor's skill
   └─ L2 miss → mine L3 (this skill):
        └─ run `nav.py "<phrase>"` for ranked cross-surface matches
        └─ keyword grep on skill descriptions → secondary confirmation
@@ -150,8 +150,8 @@ If L3 confirms no coverage, do the task inline. Don't invent a new skill invocat
 | Address PR review feedback | `/address-review` |
 | Multi-agent team orchestration | `/team-plan` + `/team-build` |
 | Harness self-audit (schema / manifest) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
-| Governance journal / sensor staleness | `kbg:harness-health` |
-| Research external library or approach | `kbg:research-brief` |
+| Governance journal / sensor staleness | `kbg:harness-audit --health` |
+| Research external library or approach | `/deep-dive` |
 | Clarify scope before coding | `kbg:clarify-first` |
 | Quick reference / what can kbg do | `/kbg-help` |
 

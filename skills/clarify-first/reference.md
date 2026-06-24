@@ -86,4 +86,4 @@ On-demand detail for `clarify-first` skill. Loaded when the agent needs template
 - **Auto Mode v2.1.146+**: Explicit `AskUserQuestion` flows are NOT suppressed by Auto Mode. This skill is safe to invoke even when Auto Mode is active.
 - **Sub-agents**: Sub-agents CANNOT use `AskUserQuestion`. If a sub-agent encounters ambiguity, it should return its analysis + recommendation to the main Claude, which then runs the gate.
 - **Session budget**: Each question gate costs ~200–500 tokens. A workflow with 3 well-placed gates is cheaper than one wrong assumption that requires a full redo.
-- **Overlap guard**: If the user has already invoked `kbg:probe` on the same topic, reuse its output in the Analyze step — don't re-derive.
+- **Overlap guard**: If the user has already invoked `kbg:decide` probe mode on the same topic, reuse its output in the Analyze step — don't re-derive.

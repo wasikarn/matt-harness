@@ -288,7 +288,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
                 # "At least one of the checked files references X" → X in any
                 if "at least one" in crit_lower and "references" in crit_lower:
                     # Extract the phrase after "references"
-                    m = re.search(r"references\s+([a-z0-9\-]+)", crit_lower)
+                    m = re.search(r"references\s+([/a-z0-9\-]+)", crit_lower)
                     target = m.group(1) if m else ""
                     if target and target in combined_lower:
                         passed += 1; details.append({"criterion": crit, "status": "passed"}); continue
@@ -475,7 +475,7 @@ def run_assertion_eval(eval_item: dict, verbose: bool) -> dict:
     # Each eval gets a unique --output file so multiple evals that share the same
     # slug (e.g., review-pr + ship-change both reference phase-1-safety-fixes)
     # can run in parallel without racing on .scratch/<slug>/acceptance-results.json.
-    elif skill in ("ship-change", "review-pr", "pre-ship-verify") and "slug" in context:
+    elif skill in ("ship-change", "review-pr", "pre-ship-verify", "ship-task") and "slug" in context:
         slug = context["slug"]
         acceptance_md = REPO_ROOT / ".scratch" / slug / "ACCEPTANCE.md"
         if acceptance_md.exists() and RUN_ACCEPTANCE.exists():

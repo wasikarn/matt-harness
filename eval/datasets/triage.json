@@ -31,7 +31,7 @@
       "success_criteria": [
         "Severity is P1",
         "Scope is component or single file",
-        "Recommends /feature-dev",
+        "Recommends /ship-task",
         "Does not mention kbg:orchestrate"
       ],
       "expected_duration_seconds": 20,
@@ -50,7 +50,7 @@
       "success_criteria": [
         "Severity is P2 or P3",
         "Scope is architecture or cross-component",
-        "Recommends kbg:probe or /deep-dive"
+        "Recommends kbg:decide (probe mode) or /deep-dive"
       ],
       "expected_duration_seconds": 20,
       "expected_tokens": 2000,

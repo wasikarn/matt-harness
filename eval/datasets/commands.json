@@ -9,20 +9,21 @@
       "context": {
         "files_to_check": [
           "commands/address-review.md",
-          "commands/debug-debate.md",
           "commands/deep-dive.md",
-          "commands/feature-dev.md",
+          "commands/dismiss-stale.md",
           "commands/fix-bug.md",
+          "commands/frame.md",
+          "commands/ideate-search.md",
+          "commands/ideate.md",
+          "commands/kbg-help.md",
           "commands/post-mortem.md",
-          "commands/pre-flight-plan-linter.md",
-          "commands/pre-ship-verify.md",
           "commands/ship-merge.md",
           "commands/ship-release.md",
+          "commands/ship-task.md",
           "commands/status-update.md",
           "commands/team-build.md",
           "commands/team-cleanup.md",
           "commands/team-plan.md",
-          "commands/validate-and-fix.md",
           "commands/wave-status.md"
         ],
         "required_phrases": ["---", "description:"]
@@ -43,20 +44,21 @@
       "context": {
         "files_to_check": [
           "commands/address-review.md",
-          "commands/debug-debate.md",
           "commands/deep-dive.md",
-          "commands/feature-dev.md",
+          "commands/dismiss-stale.md",
           "commands/fix-bug.md",
+          "commands/frame.md",
+          "commands/ideate-search.md",
+          "commands/ideate.md",
+          "commands/kbg-help.md",
           "commands/post-mortem.md",
-          "commands/pre-flight-plan-linter.md",
-          "commands/pre-ship-verify.md",
           "commands/ship-merge.md",
           "commands/ship-release.md",
+          "commands/ship-task.md",
           "commands/status-update.md",
           "commands/team-build.md",
           "commands/team-cleanup.md",
           "commands/team-plan.md",
-          "commands/validate-and-fix.md",
           "commands/wave-status.md"
         ],
         "required_phrases": ["# /"]

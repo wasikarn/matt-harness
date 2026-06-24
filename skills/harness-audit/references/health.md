@@ -1,9 +1,9 @@
 ---
-name: harness-health
-description: "Read-only query surface over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts over 7 in 30 days', or 'silent-sensor count', or 'token usage / cost this session'. Thai: 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ', 'ใช้ token เท่าไหร่'. Don't use for: the 12-cell decay grid / which cells are empty (use kbg:harness-coverage), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (kbg:harness-audit), or running the scoring engine."
+name: harness-audit-health
+description: "Read-only query surface for `kbg:harness-audit --health` over the governance journal. Surfaces structural-judge verdicts (accept/flag/escalate) and per-sensor fire counts / silent-sensor staleness from `hooks/sensors.json`. Use when the user asks 'what's the harness health', 'last 10 verdicts', 'verdicts over 7 in 30 days', or 'silent-sensor count', or 'token usage / cost this session'. Thai: 'harness health', 'สุขภาพ harness', 'verdicts', 'sensor เงียบ', 'ใช้ token เท่าไหร่'. Don't use for: the 12-cell decay grid / which cells are empty (use `kbg:harness-audit --coverage`), deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (`kbg:harness-audit` default), or running the scoring engine."
 ---
 
-# Skill: harness-health
+# Mode: `kbg:harness-audit --health`
 
 Read-only query layer over `~/.claude/governance-events.jsonl` (the
 governance evidence journal per `hooks/JOURNAL-SCHEMA.md`) and
@@ -13,11 +13,11 @@ SessionEnd hook (`hooks/session/inferential-structural-judge-on-session-end.sh`)
 plus per-sensor staleness / fire-count derived by joining the journal
 to the registry.
 
-The skill is **advisory only**: it never writes to the journal, never
-emits a `permissionDecision`, never invokes the underlying agent. It is
+This `--health` mode is **advisory only**: it never writes to the journal, never
+emits a `permissionDecision`, never invokes the underlying agent. It fulfills
 the **SURF-1 deliverable** of the `inferential-structural-test` plan
-(`.claude/tasks/inferential-structural-test.md`), implementing the
-surfacing contract from
+(`.claude/tasks/inferential-structural-test.md`) by extending
+`kbg:harness-audit` per the surfacing contract in
 `docs/research/inferential-structural-judge-design.md` §7 (SURF-1
 bullet) and §3 (verdict schema).
 

@@ -1,6 +1,6 @@
 ---
 name: triage
-description: "Single-issue triage: classify a bug, feature request, or task by severity, scope, and owner. Use when the user dumps a single issue and you need to decide whether to route it to /feature-dev, /fix-bug, /deep-dive, or kbg:orchestrate. Thai: 'triage', 'จัดลำดับ', 'ประเมิน priority', 'นี่ควรทำอะไร'. Don't use for: prioritizing a batch (use kbg:orchestrate), or building a feature (use /feature-dev)."
+description: "Single-issue triage: classify a bug, feature request, or task by severity, scope, and owner. Use when the user dumps a single issue and you need to decide whether to route it to /ship-task, /fix-bug, /deep-dive, or kbg:orchestrate. Thai: 'triage', 'จัดลำดับ', 'ประเมิน priority', 'นี่ควรทำอะไร'. Don't use for: prioritizing a batch (use kbg:orchestrate), or building a feature (use /ship-task)."
 ---
 
 # Triage
@@ -12,8 +12,8 @@ Classify one incoming item by asking 3 questions:
 
 Then route:
 - P0 bug → `/fix-bug` + spawn `incident-commander` if production
-- P1 bug / feature → `/feature-dev` or `kbg:orchestrate` if batch
+- P1 bug / feature → `/ship-task` or `kbg:orchestrate` if batch
 - Research / unknown → `/deep-dive`
-- Architecture question → `kbg:probe`
+- Architecture question → `kbg:decide` probe mode
 
 Done-when: a one-line classification + recommended next command.

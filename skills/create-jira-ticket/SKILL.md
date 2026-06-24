@@ -1,6 +1,6 @@
 ---
 name: create-jira-ticket
-description: "Create a single Jira Bug or Story using the team's Thai PO/QA-readable template. Use when the user says 'create bug'/'create story', 'report a bug', 'file a Jira bug', 'new Jira story', 'write a story', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'สร้าง story', 'เปิด story', 'เขียน story', 'ออก ticket bug', 'ออก story', or wants a structured Thai ticket. Don't use for: de-duping/triaging before filing (use atlassian:triage-issue), converting a spec/Confluence page to a backlog (use atlassian:spec-to-backlog), bulk creation (use acli), editing an existing ticket (use acli), technical tasks without PO-facing AC (use acli), security incidents (use kbg:incident/kbg:hotfix), or non-Jira trackers."
+description: "Create a single Jira Bug or Story using the team's Thai PO/QA-readable template. Use when the user says 'create bug'/'create story', 'report a bug', 'file a Jira bug', 'new Jira story', 'write a story', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'สร้าง story', 'เปิด story', 'เขียน story', 'ออก ticket bug', 'ออก story', or wants a structured Thai ticket. Don't use for: de-duping/triaging before filing (use atlassian:triage-issue), converting a spec/Confluence page to a backlog (use atlassian:spec-to-backlog), bulk creation (use acli), editing an existing ticket (use acli), technical tasks without PO-facing AC (use acli), security incidents (use kbg:incident), or non-Jira trackers."
 ---
 
 # Create Jira Ticket
@@ -131,6 +131,6 @@ After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/brows
 ## Related
 
 - `kbg:acli` — search, edit, transition, bulk ops, Confluence; also owns the canonical AC wording rules at `skills/acli/examples/README.md`.
-- `kbg:incident`, `kbg:hotfix` — production outages.
+- `kbg:incident` — production outages and security incidents.
 - `atlassian:triage-issue` — de-duping/triaging before filing.
 - `atlassian:spec-to-backlog` — converting a spec/Confluence page into a backlog of epics + tickets.

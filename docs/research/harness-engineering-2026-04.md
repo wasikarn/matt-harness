@@ -68,9 +68,9 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 
 | Axis | Computational FF | Inferential FF | Computational FB | Inferential FB |
 |---|---|---|---|---|
-| **Maintainability** | ✅ PreToolUse gates (`block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`) | ✅ Doctrine injection (`doctrine-bootstrap.sh`, `iron-rule-reminder.sh`, `orchestrator-nudge.sh`) + 34 skill `description:` blocks | ✅ `post-edit-audit.sh`, `security-diff-review.py`, 204 critical-hooks tests, `audit.sh` 38 checks | 🟡 `kbg:code-reviewer` (8 sub-skills via `kbg:review-pr`); **advisory only by design** |
-| **Architecture fitness** | ✅ JSONL `JOURNAL-SCHEMA.md` (logging contract); 14-event hook surface; 1536-char description budget | ✅ Token budgets (`METHODOLOGY.md:113-118`); `kbg:perf` skill | ✅ `BOUNDARY.md` auto-regen (module-boundary invariant); `last_permission_review` cadence | ❌ No inferential arch-review agent |
-| **Behaviour** | ✅ `accept-task` → `ACCEPTANCE.md` (locked spec) | 🟡 `commands/pre-ship-verify.md` (spec → grader) | ✅ `eval/run-eval.py --gate`; 5-state `run-acceptance.py` | ❌ No LLM-judge for "is this over-engineered?"; **`kbg:review-pr` is a task, not a sensor** |
+| **Maintainability** | ✅ PreToolUse gates (`block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`) | ✅ Doctrine injection (`doctrine-bootstrap.sh`, `iron-rule-reminder.sh`, `orchestrator-nudge.sh`) + 28 skill `description:` blocks | ✅ `post-edit-audit.sh`, `security-diff-review.py`, 204+ critical-hooks tests, `audit.sh` 38 checks | 🟡 `kbg:code-reviewer` (8 sub-skills via `kbg:review-pr`); **advisory only by design** |
+| **Architecture fitness** | ✅ JSONL `JOURNAL-SCHEMA.md` (logging contract); 14-event hook surface; 1536-char description budget | ✅ Token budgets (`METHODOLOGY.md:113-118`); `kbg:perf` skill | ✅ `BOUNDARY.md` auto-regen (module-boundary invariant); `last_permission_review` cadence | 🟡 `agents/inferential-structural-judge.md` (SessionEnd advisory scoring) |
+| **Behaviour** | ✅ `/accept-task` → `ACCEPTANCE.md` (locked spec) | 🟡 `/ship-task` Phase 5 acceptance gate (spec → grader) | ✅ `eval/run-eval.py --gate`; 5-state `run-acceptance.py` | ❌ No LLM-judge for semantic-correctness; **`kbg:review-pr` is a task, not a sensor** |
 | **Sensors kbg is missing** | Property-based tests; mutation testing; SBOM/Syft/Grype | Inferential structural tests (arch-drift via LLM) | Sandbox layer (no Firecracker/nsjail) | Sensor-fire notification (audit reports staleness; no human is paged) |
 
 **Steering loop:** `kbg:recursive-improve` (6-step, 5-iteration cap, human gate at Step 3) + `orchestrate-dispatch.py` (deterministic DAG, does NOT spawn agents — explicitly *not* an L4 loop per ADR 0002).
@@ -87,7 +87,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 
 **Later (require own design work):**
 
-4. **Inferential structural-test layer** — an `agents/over-engineering-judge` or `agents/diff-arch-drift-judge` that runs on SessionEnd, is *advisory* like `verification-gate.sh`, and journals its verdicts. Closes the behaviour-harness gap the article punts on, but at *inferential cost* — needs cost-attribution per L326.
+4. ~~Inferential structural-test layer~~ **SHIPPED** as `agents/inferential-structural-judge.md` (SessionEnd advisory scoring of `over_engineering`, `arch_drift`, `test_pattern`, `doctrine_conformance`). Cost-attribution is handled by the hook's 25k-token budget gate.
 5. **Sensor-fire notification.** Audit.sh already reports staleness (`audit.sh:773-880`); a `hooks/notify-sensor-failures.sh` on SessionStart that surfaces "X sensors didn't fire in 90 days" would close L553 (silent-sensor blindness).
 6. **Harness-coverage metric.** The hardest. A "harness coverage" tool analogous to test coverage — "what fraction of the harness's claimed sensors fired on the last N commits?" — is the meta-tool the article calls the right next question. Out of scope for a single iteration; worth a research follow-up.
 

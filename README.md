@@ -81,7 +81,7 @@ Try these one-liners to confirm everything loads:
 
 ```text
 /kbg-help              # quick-reference card of all commands
-/kbg:pre-ship-verify   # show the pre-ship acceptance gate
+/ship-task             # show the full 9-step senior-engineer loop
 /ideate How should we cache slow API responses?
 /ideate-search caching
 ```
@@ -96,8 +96,8 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | Component | Count | How to Use |
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
-| **Skills** | 40 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
-| **Commands** | 22 | Invoke via `/kbg:<command>` or `/ideate`, `/ideate-search` (user-only slash triggers) |
+| **Skills** | 28 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
+| **Commands** | 17 | Invoke via `/<command>` or `kbg:<command>` (e.g. `/ship-task`, `/ideate`, `/team-plan`) |
 | **Hooks** | 48 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (38 tracked as sensors) |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -108,23 +108,23 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 |---|---|
 | `/ideate <problem>` | Parallel divergent ideation under 5 rotating cognitive frames |
 | `/ideate-search <query>` | Search every past `/ideate` run stored in the local `qmd` index |
-| `/kbg:pre-ship-verify` | Run `ACCEPTANCE.md` + eval-harness gate before a PR |
-| `/kbg:review-pr` | Multi-agent review (code, tests, security, types) over the diff |
-| `/kbg:ship-task` | Full 9-step senior-engineer loop: plan → implement → verify → ship |
-| `/kbg:fix-bug` | Non-trivial bug fixes with TDD and root-cause capture |
-| `/kbg:feature-dev` | New feature development with types-first contract |
-| `/kbg:team-plan` / `/kbg:team-build` | Agent-team planning + execution (requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) |
-| `/kbg:wave-status` / `/kbg:team-cleanup` | Inspect and tear down persistent teammates |
+| `/ship-task` | Full 9-step senior-engineer loop: plan → implement → verify → ship (embeds acceptance gating) |
+| `/review-pr` | Multi-agent review (code, tests, security, types) over the diff |
+| `/fix-bug` | Non-trivial bug fixes with TDD and root-cause capture |
+| `/deep-dive` | Research briefs and structural exploration |
+| `/team-plan` / `/team-build` | Agent-team planning + execution (requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) |
+| `/wave-status` / `/team-cleanup` | Inspect and tear down persistent teammates |
 
 ### Spotlight Skills
 
 | Skill | When to use |
 |---|---|
-| `kbg:ideate` | Open-ended design, architecture, naming, fuzzy-debug |
+| `/ideate` | Open-ended design, architecture, naming, fuzzy-debug |
 | `kbg:review-pr` | Post-push PR review across multiple quality dimensions |
 | `kbg:ship-change` | Land a scoped change with acceptance gating |
 | `kbg:orchestrate` | Build a multi-agent plan with a hard fan-out cap |
-| `kbg:types-first` | Define contracts before parallel implementation |
+| `kbg:decide` | Structured decision support: Judgment Ladder + probe/strategize/debate lenses |
+| `kbg:incident` | Chaotic/time-pressed stabilization with embedded hotfix path |
 | `kbg:recursive-improve` | Self-improvement loop — always stops at a human `AskUserQuestion` gate |
 | `kbg:learn` | Capture durable session learnings → memory, gated by an `AskUserQuestion` approval |
 | `kbg:harness-audit` | Run the harness self-audit on demand |

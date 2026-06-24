@@ -51,7 +51,7 @@ General code-quality review requires a dedicated boundary separate from security
 - Defer to **silent-failure-hunter** when: focus is error-handling paths, try-catch blocks, fallback logic, or silent failure modes
 - Defer to **comment-analyzer** when: the issue is comment accuracy or docstring quality, not code logic
 - Defer to **type-design-analyzer** when: the concern is type hierarchy, generic constraints, or type-system design
-- **All angles at once:** for a full review pass, launch `code-reviewer` + `security-reviewer` + `pr-test-analyzer` in parallel (per `/feature-dev` Phase 6) — each owns its boundary, no overlap.
+- **All angles at once:** for a full review pass, launch `code-reviewer` + `security-reviewer` + `pr-test-analyzer` in parallel (per `/ship-task` Phase 4 quality review) — each owns its boundary, no overlap.
 - Add `// OUT-OF-SCOPE: <reason>` and continue when work falls outside scope
 
 ## Two-Axis Triage: Confidence × Severity

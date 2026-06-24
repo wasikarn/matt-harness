@@ -1,6 +1,6 @@
 ---
 name: article-mine
-description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Thai: 'mine บทความ', 'สรุปบทความนี้', 'เอาบทความนี้มาใช้', 'วิเคราะห์บทความ'. Don't use for: pure Q&A (kbg:research-brief), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
+description: "Mine an article / repo / RFC / doc for doctrine via 5-agent fan-out, then ship in-session. Use when the user pastes a URL / file / text and says 'mine this', 'analyze this article', 'extract lessons', 'read this and apply', or 'what can we take from this' — to harvest doctrine for the harness. Thai: 'mine บทความ', 'สรุปบทความนี้', 'เอาบทความนี้มาใช้', 'วิเคราะห์บทความ'. Don't use for: pure Q&A (/deep-dive), reasoning review (kbg:critical-eval), security (kbg:security-auditor), or PR review (kbg:review-pr)."
 ---
 
 # Article Mine
@@ -156,9 +156,9 @@ If `unverified` is non-empty, **do not** push — surface the unverified claims 
 
 ### Skills / commands this composes with
 
-- **`kbg:research-brief`** — single-agent deep-read, no doctrine application. Cheaper when the goal is "explain this" not "extract lessons."
+- **`/deep-dive`** — single-agent deep-read, no doctrine application. Cheaper when the goal is "explain this" not "extract lessons."
 - **`kbg:critical-eval`** — stress-tests an argument. Use when the article makes a strong claim worth probing before mining.
-- **`kbg:probe`** — systems-thinking lens on a design decision. Use when the article *is* a design proposal.
+- **`kbg:decide` probe mode** — systems-thinking lens on a design decision. Use when the article *is* a design proposal.
 - **`kbg:security-auditor`** — security review of a code change, not an article. Don't conflate.
 - **`kbg:review-pr`** — PR review flow. Article-mine is for external content, not internal diffs.
 

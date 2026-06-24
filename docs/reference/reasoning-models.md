@@ -102,12 +102,12 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | thought-experiment | `thinking-thought-experiment` | applied | skills/probe, skills/ideate | extreme-zero / extreme-infinite counterfactual frames |
 | inversion | `thinking-inversion` | applied | skills/ideate | named ideate frame: ask the OPPOSITE question |
 | reversibility | `thinking-reversibility` | applied | skills/adr, skills/probe, ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
-| debiasing | `thinking-debiasing` | applied | skills/probe | Check yourself — anti-self-deception step |
+| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
 | socratic | `thinking-socratic` | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | skills/perf | profile → find the one bottleneck → fix that |
-| red-team | `thinking-red-team` | applied | skills/critical-eval, commands/debug-debate | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/critical-eval, commands/debug-debate | Synthesizer: evaluate both sides; unconsidered alternatives |
+| red-team | `thinking-red-team` | applied | skills/critical-eval, kbg:decide (debate mode) | Skeptic role: argue AGAINST and find risks |
+| steel-manning | `thinking-steel-manning` | applied | skills/critical-eval, kbg:decide (debate mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -121,7 +121,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
 | map-territory | `thinking-map-territory` | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
 | via-negativa | `thinking-via-negativa` | applied | skills/decommission, skills/memory-trim | named in footer: removal/absence as via-negativa |
-| ooda | `thinking-ooda` | applied | skills/incident, skills/hotfix | named in incident footer (detect→assess→mitigate→monitor); hotfix inherits via handoff |
+| ooda | `thinking-ooda` | applied | skills/incident | named in incident footer (detect→assess→mitigate→monitor); the skill's hotfix path inherits via handoff |
 | cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
 | regret-minimization | `thinking-regret-minimization` | considered | — | no kbg anchor |
 | kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
@@ -131,7 +131,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | dual-process | `thinking-dual-process` | considered | — | no kbg anchor |
 | fermi-estimation | `thinking-fermi-estimation` | considered | — | no kbg anchor |
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
-| leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking/probe |
+| leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking / kbg:decide probe mode |
 
 ## kbg-native reasoning scaffolds
 
@@ -142,7 +142,7 @@ cc-thinking-skills models. These are kbg-native processes, not part of the upstr
 | Scaffold | kbg surface | What it adds |
 | --- | --- | --- |
 | **judgment-ladder** | `kbg:decide` + `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide, commit, and follow through. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
-| **strategic-judgment** | `kbg:strategize` + `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
+| **strategic-judgment** | `kbg:decide` strategize mode + `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
 
 Read the full scaffold with Bash:
 
@@ -166,11 +166,11 @@ They are read-only framing labels, not dispatch instructions.
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
 | **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `kbg:triage`, `kbg:clarify-first` |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:probe`, `kbg:research-brief`, `kbg:article-mine` |
-| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:critical-eval`, `commands/debug-debate`, `kbg:review-pr` |
-| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `kbg:ideate`, `kbg:adr`, `/feature-dev` scoping |
-| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:adr` (Pugh Matrix), `/debug-debate` |
-| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `/validate-and-fix` |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `/deep-dive`, `kbg:article-mine` |
+| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:critical-eval`, `kbg:decide` debate mode, `kbg:review-pr` |
+| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `kbg:adr`, `/ship-task` scoping |
+| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:adr` (Pugh Matrix), `kbg:decide` debate mode |
+| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `/team-build` per-task validation |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that
 surface — don't invoke a model name separately. The model names are useful when

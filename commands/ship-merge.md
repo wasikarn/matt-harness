@@ -30,7 +30,7 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 4. Check mergeable state: no conflicts, no "merge requirements not met" flags.
 5. Check branch protection rules: is squash required? Is linear history required?
 6. **Review / acceptance check** (two layers — machine first, human second):
-   - **Machine layer (deterministic):** If the PR's task has an `ACCEPTANCE.md` in `.scratch/<slug>/`, run `/pre-ship-verify <slug>` (or auto-detect) to get machine-checkable results. If the result is **RED** (any failed/blocked criteria) → STOP. Do not merge until criteria pass.
+   - **Machine layer (deterministic):** If the PR's task has an `ACCEPTANCE.md` in `.scratch/<slug>/`, run `/ship-task <slug> --acceptance` (or auto-detect) to get machine-checkable results. If the result is **RED** (any failed/blocked criteria) → STOP. Do not merge until criteria pass.
    - **Human layer (judgment):** If no `ACCEPTANCE.md` exists, or if machine results are GREEN/AMBER, check whether a review ran on this PR (`kbg:review-pr` or `/address-review`). If yes → confirm **zero unresolved Critical findings** (mirrors `/ship-release`'s "Zero Critical findings" gate) and surface any open acceptance-gap.
    - If no review ran → say so plainly and pass; **never fabricate a clean result.** The agent's self-report is not ground truth — re-check against the PR, not memory.
    - The machine layer is **authoritative for criteria it can check**; the human layer handles prose criteria and findings beyond the contract.

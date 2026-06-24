@@ -42,7 +42,7 @@ What this script does NOT do
   or a custom SessionStart hook (see "Wiring" below).
 - Does NOT block session start. The script exits with the verdict code
   and prints the JSON report. The CALLER (a SessionStart hook, a
-  pre-flight in `/pre-ship-verify`, or an explicit operator invocation)
+  pre-flight in `/ship-task`, or an explicit operator invocation)
   decides whether degraded/broken means "abort" or "warn and continue".
 
 Wiring

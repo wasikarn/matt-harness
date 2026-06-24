@@ -124,7 +124,7 @@ The plan trades ~1s/session-start latency + the cost of the operator's attention
 ## 8. Why-not alternatives
 
 - **CI cron (`.github/workflows/sensor-staleness-notify.yml`).** — Rejected. A cron is **L3 autonomy** per `docs/adr/0002-autonomy-invariant.md` ("no CronCreate, no `/loop`, no scheduled unattended loop"). The kbg harness is personal — sessions *are* the cadence. A SessionStart hook fires when the operator picks up the harness, which is the right beat; a cron fires on a wall clock, which the operator may not be at.
-- **`kbg:harness-health` command (operator-invoked).** — Rejected as the *load-bearing* surface (kept as a complement, optional). A command requires the operator to *remember to run it*. The harness is the right place to surface "your sensors are stale." A command is the right shape for a *deep dive* (one-shot, ad-hoc, returns a full report); the hook is the right shape for a *nudge* (every session, silent when clean).
+- **`kbg:harness-audit --health` (operator-invoked).** — Rejected as the *load-bearing* surface (kept as a complement, optional). A command requires the operator to *remember to run it*. The harness is the right place to surface "your sensors are stale." A command is the right shape for a *deep dive* (one-shot, ad-hoc, returns a full report); the hook is the right shape for a *nudge* (every session, silent when clean).
 - **Log-watch tail + Slack/email page.** — Rejected. Paging outside the harness is a behavioral change that the plan's "scope" doesn't authorize (Q&A #10: "Does NOT page the operator outside the harness"). Out of scope.
 - **Auto-disable a stale sensor.** — Rejected per Q5 verdict A and the autonomy invariant. The operator's attention is the gate; the harness never auto-mutates.
 
@@ -132,7 +132,7 @@ The plan trades ~1s/session-start latency + the cost of the operator's attention
 
 - **Auto-disable / auto-mutation.** The registry is hand-curated; the harness never edits it on the operator's behalf. Decay-cadence owns the removal decision (`docs/harness-decay-cadence.md`).
 - **Auto-page outside the harness.** The notification surface is `additionalContext` in the operator's own session, period. No Slack, no email, no webhook.
-- **A new `kbg:harness-health` command** (Q&A #2) is *not* a deliverable of this plan but is a natural complement; filing as a separate follow-up if the operator wants an ad-hoc deep dive.
+- **Extending `kbg:harness-audit` with a `--health` flag** (Q&A #2) is *not* a deliverable of this plan but is a natural complement; filing as a separate follow-up if the operator wants an ad-hoc deep dive.
 - **Cross-sibling-plan coordination.** The `inferential-structural-test` plan (P2, sibling) adds a *new* sensor when it lands; that plan owns adding its own registry entry. The two plans are siblings, not parent/child (Q&A #11).
 - **A "must_fire_in_session: true" entry.** v1 sets all entries to `false` per METHODOLOGY Rule 2 (no speculative configurability). Operators can flip individual entries to `true` as the need surfaces.
 

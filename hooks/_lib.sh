@@ -284,7 +284,7 @@ print(int(n.timestamp()*1000), n.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]+"Z", uuid
 }
 
 # _sensor_heartbeat — write one "sensor_evaluated" event per hook per session.
-# Called from comp-ff hooks (PreToolUse gates) so harness-coverage can see them
+# Called from comp-ff hooks (PreToolUse gates) so kbg:harness-audit --coverage can see them
 # as active on clean sessions (no deny/ask fired). Dedup via a temp file keyed
 # on hook_id + session_id; non-blocking (subshell + || true).
 _sensor_heartbeat() {

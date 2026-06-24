@@ -1,14 +1,12 @@
 ---
 name: deep-dive
-description: "Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. Use when user says 'research this', 'deep dive on X', 'compare Z approaches', or any open-ended exploration, or when the user says 'วิจัย', 'deep dive', 'ศึกษา'. Do NOT use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /feature-dev or /fix-bug), or structural system analysis (spawn code-architect)."
+description: "Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship-task or /fix-bug), or security audits (use kbg:security-auditor)."
 argument-hint: Optional topic or question
-disable-model-invocation: true
-disable-model-invocation-reason: research-brief is the model-invokable twin — the command is the user-only entry, so the model has exactly one auto-path to this work, not two
 ---
 
 # Deep Dive
 
-User-invoked wrapper around the **`research-brief`** skill. Invokes the skill with `$ARGUMENTS` as the research question, then walks the user through the brief.
+Single kbg research surface. Produces an actionable brief with cited sources (file:line, URL, commit sha). This command is both the user-typed entry (`/deep-dive`) and the model-routed path (`kbg:deep-dive`).
 
 ## Core Principles
 
