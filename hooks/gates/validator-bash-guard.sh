@@ -150,7 +150,7 @@ fi
 # variant is already in DENY_PATTERNS; this catches cat <<EOF | bash,
 # echo 'rm -rf /' | bash, etc. Prefix wrappers (nice, timeout, command,
 # env/sudo with flags, doas, run0) are also denied.
-if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '[|][[:space:]]+((/usr(/local)?/|/)?bin/)?(nice[[:space:]]+|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|command[[:space:]]+|doas[[:space:]]+|run0[[:space:]]+)?(env[[:space:]]+(-[iSsu]+[[:space:]]+)?)?(sudo[[:space:]]+(-[uSi]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'; then
+if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '[|][[:space:]]+((/usr(/local)?/|/)?bin/)?(nice[[:space:]]+(-n[[:space:]]+[0-9]+[[:space:]]+)?|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|command[[:space:]]+|doas[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?|run0[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(env[[:space:]]+([[:alnum:]_-]+(=[^[:space:]]*)?[[:space:]]+|(-[a-zA-Z]|--[a-z-]+)([[:space:]]+[^[:space:]]+)?[[:space:]]+)*)?(sudo[[:space:]]+(-[uSiE]+([[:space:]]+[[:alnum:]_-]+)?[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted pipe-to-interpreter (arbitrary code execution): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
@@ -161,16 +161,25 @@ fi
 # legitimate interpreter forms; anything else reaching here is unrecognized
 # and is denied. Catches bash -x script.sh, node app.js, ruby -Ilib x.rb,
 # bash --norc --init-file, etc.
-INTERPRETER_BACKSTOP='^((/usr(/local)?/|/)?bin/)?(exec[[:space:]]+|command[[:space:]]+|nice[[:space:]]+|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|doas[[:space:]]+|run0[[:space:]]+)?(env[[:space:]]+(-[iSsu]+[[:space:]]+)?)?(sudo[[:space:]]+(-[uSi]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'
+INTERPRETER_BACKSTOP='^((/usr(/local)?/|/)?bin/)?(exec[[:space:]]+|command[[:space:]]+|nice[[:space:]]+(-n[[:space:]]+[0-9]+[[:space:]]+)?|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|doas[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?|run0[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(env[[:space:]]+([[:alnum:]_-]+(=[^[:space:]]*)?[[:space:]]+|(-[a-zA-Z]|--[a-z-]+)([[:space:]]+[^[:space:]]+)?[[:space:]]+)*)?(sudo[[:space:]]+(-[uSiE]+([[:space:]]+[[:alnum:]_-]+)?[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'
 if printf '%s\n' "$STRIPPED" | command grep -qE "$INTERPRETER_BACKSTOP"; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter invocation: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
-# Variable indirection / backtick expansion as the first command token
-# (e.g. x=bash; $x -c "id" or `which bash` -c "id") bypasses literal-name
-# matching. Deny these explicitly.
-if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[[:space:];|&])[[:space:]]*[$`]'; then
+# Variable / command-substitution indirection bypasses literal interpreter-name
+# matching. We deny two shapes:
+#   1. Pre-strip: a double-quoted first word containing $ or backtick (e.g.
+#      "$x" -c "id", "`which bash`" -c "id"). hook_strip_quoted removes these,
+#      so the unquoted check below would miss them.
+#   2. Post-strip: an unquoted $ or backtick at the start of a command word
+#      (e.g. x=bash; $x -c "id", `which bash` -c "id"), including after
+#      compound-command openers.
+if printf '%s' "$COMMAND" | command grep -qE '(^|[];|\|&(){}<>[[:space:]])[[:space:]]*"[^"]*[$`][^"]*"([[:space:]]+-(c|e|p|r|s|[Ee])|[[:space:]]*$)'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted quoted variable/backtick indirection: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
+if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[];|\|&(){}<>[[:space:]])[[:space:]]*[$`]'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted variable or backtick indirection: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
