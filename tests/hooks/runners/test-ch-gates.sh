@@ -165,6 +165,14 @@ check gates/validator-bash-guard.sh deny "code-reviewer + source process substit
 check gates/validator-bash-guard.sh deny "code-reviewer + . process substitution"       "$(validator_bash_event 'code-reviewer' '. <(base64 -d <<< c2ggLXMgaXQK)')"
 check gates/validator-bash-guard.sh deny "code-reviewer + source command substitution"  "$(validator_bash_event 'code-reviewer' 'source $(cat scripts/setup.sh)')"
 check gates/validator-bash-guard.sh none "code-reviewer + python3 -m pytest bare"        "$(validator_bash_event 'code-reviewer' 'python3 -m pytest')"
+# Second review pass closures (newline + quoted command substitution + versioned python).
+check gates/validator-bash-guard.sh deny "code-reviewer + pytest prefix + newline rm"      "$(validator_bash_event 'code-reviewer' $'python3 -m pytest\nrm -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + source quoted command sub"       "$(validator_bash_event 'code-reviewer' 'source "$(cat scripts/setup.sh)"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + . quoted command sub"             "$(validator_bash_event 'code-reviewer' '. "$(base64 -d <<< c2ggLXMgaXQK)"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + bash quoted command sub"        "$(validator_bash_event 'code-reviewer' 'bash "$(echo script.sh)"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + python3 quoted command sub"      "$(validator_bash_event 'code-reviewer' 'python3 "$(echo script.py)"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + python3.11 module"                "$(validator_bash_event 'code-reviewer' 'python3.11 -m http.server')"
+check gates/validator-bash-guard.sh deny "code-reviewer + python3.11 file-form"           "$(validator_bash_event 'code-reviewer' 'python3.11 scripts/deploy.py')"
 
 # --- agent-spawn-gate: ask on ad-hoc one-shot Agent spawns, allow team workflows ---
 check gates/agent-spawn-gate.sh none "non-Agent tool passes through" "$(bash_event 'git status')"

@@ -63,9 +63,11 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # that the generic `python3 -m` deny (arbitrary module execution) would
 # otherwise block. We allow it ONLY when the entire command is a single
 # pytest invocation with simple arguments — no shell operators, command
-# substitution, quotes, or redirects. Plain `pytest ...` is already handled
-# by ALLOW_PREFIXES; this carve-out just covers the `python3 -m` form.
-if printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
+# substitution, quotes, redirects, or embedded newlines. Plain `pytest ...`
+# is already handled by ALLOW_PREFIXES; this carve-out just covers the
+# `python3 -m` form.
+if [[ "$COMMAND" != *$'\n'* ]] &&
+   printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
    ! printf '%s\n' "$COMMAND" | command grep -qE '[;|&`$()\<>"'"'"'"]'; then
   exit 0
 fi
@@ -82,7 +84,7 @@ fi
 # node -e, perl -e, ruby -e) are denied outright — they defeat shell-pattern
 # matching entirely and a read-only validator never needs them (it has Read/Grep).
 read -r DENY_PATTERNS <<'REGEX'
-(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python3?[[:space:]]+-c|python3?[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python3?|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|&()]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(python3?|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|&()]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(python[0-9]*(\.[0-9]*)*|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
 
 # 1. Full-command deny check — catches quoted mutations that
@@ -104,9 +106,18 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # P0: security fix — removed python3 -c, node -p, go build from the
 # allow-list because quote-stripping made them bypass vectors (any
 # payload inside quotes was invisible after hook_strip_quoted).
-ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote\s+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]]|python3[[:space:]]+-m[[:space:]]+pytest[[:space:]])'
+ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote[[:space:]]+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest[[:space:]])'
 if printf '%s\n' "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES"; then
   exit 0
+fi
+
+# P0: if a source/. or script interpreter invocation had its entire argument
+# inside quotes (possibly hiding command/process substitution), the argument
+# disappears during hook_strip_quoted. Deny the stripped husk so validators
+# cannot use source "$(...)" or bash "$(...)" to execute arbitrary code.
+if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[[:space:];&|()`'"'"'"])(source|[.]|python[0-9]*(\.[0-9]*)*|bash|sh|node|ruby|perl)[[:space:]]+$'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter/source with quoted/arbitrary argument: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
 fi
 
 # Fork-bomb pattern is a special case (no whitespace tokenizer works cleanly

@@ -53,13 +53,13 @@ check_task() {
   fi
 }
 
-bash_event() { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
-read_event() { printf '{"tool_name":"Read","tool_input":{"file_path":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
-edit_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
-validator_bash_event()    { printf '{"tool_name":"Bash","agent_type":%s,"tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
-main_thread_bash_event()  { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$(printf '%s' "$1" | jq -R .)"; }
-write_event()    { printf '{"tool_name":"Write","tool_input":{"file_path":%s,"content":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
-edit_new_event() { printf '{"tool_name":"Edit","tool_input":{"file_path":%s,"new_string":%s}}' "$(printf '%s' "$1" | jq -R .)" "$(printf '%s' "$2" | jq -R .)"; }
+bash_event() { jq -n --arg command "$1" '{tool_name:"Bash",tool_input:{command:$command}}'; }
+read_event() { jq -n --arg file_path "$1" '{tool_name:"Read",tool_input:{file_path:$file_path}}'; }
+edit_event() { jq -n --arg file_path "$1" '{tool_name:"Edit",tool_input:{file_path:$file_path}}'; }
+validator_bash_event()    { jq -n --arg agent_type "$1" --arg command "$2" '{tool_name:"Bash",agent_type:$agent_type,tool_input:{command:$command}}'; }
+main_thread_bash_event()  { jq -n --arg command "$1" '{tool_name:"Bash",tool_input:{command:$command}}'; }
+write_event()    { jq -n --arg file_path "$1" --arg content "$2" '{tool_name:"Write",tool_input:{file_path:$file_path,content:$content}}'; }
+edit_new_event() { jq -n --arg file_path "$1" --arg new_string "$2" '{tool_name:"Edit",tool_input:{file_path:$file_path,new_string:$new_string}}'; }
 agent_event() { jq -n --arg desc "$1" --arg prompt "$2" --argjson bg "${3:-false}" '{tool_name:"Agent",tool_input:{description:$desc,prompt:$prompt,run_in_background:$bg}}'; }
 task_event() { jq -n --arg id "$1" --arg subj "$2" --arg desc "$3" '{hook_event_name:"TaskCompleted",task_id:$id,task_subject:$subj,task_description:$desc}'; }
 teammate_idle_event() { jq -n '{hook_event_name:"TeammateIdle"}'; }
