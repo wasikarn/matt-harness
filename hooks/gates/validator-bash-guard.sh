@@ -21,8 +21,8 @@
 #
 # Fail-open for non-validator agents and main-thread (no `agent_type`)
 # calls — the user has already approved the action in those paths.
-# Fail-open for jq-missing input parse — same fail-soft pattern as the
-# other PreToolUse gates in this dir.
+# Fail-safe (ask) for jq-missing input parse — the gate cannot validate
+# the command, so it asks rather than silently allowing.
 #
 # Bypass:
 #   export CLAUDE_DISABLED_HOOKS=validator-bash-guard
@@ -36,7 +36,10 @@ _sensor_heartbeat
 hook_guard_unreadable  # fail CLOSED (ask) if input unparseable
 
 
-hook_require_jq
+if ! command -v jq >/dev/null 2>&1; then
+  hook_decision ask "[$HOOK_ID] jq unavailable — failing safe (ask)."
+  exit 0
+fi
 
 # agent_type is the agent's `name:` frontmatter value. Present only when
 # the hook fires inside a subagent call or a `--agent` session. For the
@@ -96,7 +99,7 @@ fi
 # stripped because POSIX ERE treats a literal newline as matching a newline
 # in the input, not as regex syntax.
 read -r -d '' DENY_PATTERNS <<'REGEX'
-(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+-(O|output-document=)|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
 DENY_PATTERNS=${DENY_PATTERNS//$'\n'/}
 
@@ -145,9 +148,30 @@ fi
 # General pipe-to-interpreter: any shell pipeline ending in an interpreter
 # (bash/python/node/ruby/perl) is arbitrary-code execution. The curl/wget
 # variant is already in DENY_PATTERNS; this catches cat <<EOF | bash,
-# echo 'rm -rf /' | bash, etc.
-if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '[|][[:space:]]*((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'; then
+# echo 'rm -rf /' | bash, etc. Prefix wrappers (nice, timeout, command,
+# env/sudo with flags, doas, run0) are also denied.
+if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '[|][[:space:]]+((/usr(/local)?/|/)?bin/)?(nice[[:space:]]+|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|command[[:space:]]+|doas[[:space:]]+|run0[[:space:]]+)?(env[[:space:]]+(-[iSsu]+[[:space:]]+)?)?(sudo[[:space:]]+(-[uSi]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted pipe-to-interpreter (arbitrary code execution): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
+
+# Backstop: any interpreter invocation (with or without arguments) is
+# arbitrary-code execution for a read-only validator. The python -m pytest
+# carve-out and the allow-list fast path above already handle the only
+# legitimate interpreter forms; anything else reaching here is unrecognized
+# and is denied. Catches bash -x script.sh, node app.js, ruby -Ilib x.rb,
+# bash --norc --init-file, etc.
+INTERPRETER_BACKSTOP='^((/usr(/local)?/|/)?bin/)?(exec[[:space:]]+|command[[:space:]]+|nice[[:space:]]+|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|doas[[:space:]]+|run0[[:space:]]+)?(env[[:space:]]+(-[iSsu]+[[:space:]]+)?)?(sudo[[:space:]]+(-[uSi]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'
+if printf '%s\n' "$STRIPPED" | command grep -qE "$INTERPRETER_BACKSTOP"; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter invocation: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
+
+# Variable indirection / backtick expansion as the first command token
+# (e.g. x=bash; $x -c "id" or `which bash` -c "id") bypasses literal-name
+# matching. Deny these explicitly.
+if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[[:space:];|&])[[:space:]]*[$`]'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted variable or backtick indirection: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
