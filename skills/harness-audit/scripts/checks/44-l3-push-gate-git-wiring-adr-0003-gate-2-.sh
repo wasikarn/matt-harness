@@ -14,8 +14,9 @@ if [ -f "$ADR0003" ]; then
   # the plugin cache, which has no .git, and for non-kbg repos without git-hooks/).
   if [ -d "$CLAUDE_DIR/git-hooks" ] && git -C "$CLAUDE_DIR" rev-parse --git-dir >/dev/null 2>&1; then
     _hp=$(git -C "$CLAUDE_DIR" config --local core.hooksPath 2>/dev/null || true)
-    if [ "$_hp" != "git-hooks" ]; then
-      crit "L3 git wiring: core.hooksPath is '${_hp:-<unset>}', expected 'git-hooks' — the gauntlet (pre-commit/pre-push) is bypassed (ADR 0003 §B computational push gate)"
+    _expected_abs="$(cd "$CLAUDE_DIR" && pwd)/git-hooks"
+    if [ "$_hp" != "git-hooks" ] && [ "$_hp" != "$_expected_abs" ]; then
+      crit "L3 git wiring: core.hooksPath is '${_hp:-<unset>}', expected 'git-hooks' (or its absolute equivalent $_expected_abs) — the gauntlet (pre-commit/pre-push) is bypassed (ADR 0003 §B computational push gate)"
     fi
   fi
 fi

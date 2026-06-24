@@ -1,7 +1,7 @@
 # Ideate frames
 
-The 15-frame pool for `kbg:ideate` Phase 1. Pick 5 per run; see **Picking
-frames** in `SKILL.md` for the selection rule. The `code` and `design` tags
+The 15-frame pool for `/ideate` Phase 1. Pick 5 per run; see **Picking
+frames** in `commands/ideate.md` for the selection rule. The `code` and `design` tags
 bias the picker toward engineering vantages for code-shaped problems; the
 `wild` tag guarantees range.
 

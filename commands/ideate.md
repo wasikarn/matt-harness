@@ -87,7 +87,7 @@ python3 "${KBG_PLUGIN_ROOT}/scripts/ideate-convergence.py" --today
 ## Ideate memory search (user command)
 
 A separate SessionEnd hook (`ideate-memory-capture.sh`) persists the problem
-and final output of every `kbg:ideate` run as a markdown file under
+and final output of every `/ideate` run as a markdown file under
 `~/.claude/state/ideate-memory/`. A qmd collection indexes those files, so the
 user can search past ideate runs with:
 
