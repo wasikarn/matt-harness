@@ -93,15 +93,15 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 
 | Model | Upstream dir | kbg status | kbg home | How it shows up |
 | --- | --- | --- | --- | --- |
-| systems-thinking | `thinking-systems` | applied | skills/probe | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
-| feedback-loops | `thinking-feedback-loops` | applied | skills/probe | named step: mark loop as reinforcing or balancing |
-| first-principles | `thinking-first-principles` | applied | skills/probe (Root Why) | probe one level deeper than the user's stated reason |
-| second-order | `thinking-second-order` | applied | skills/probe (What-if) | 10x / fail / nothing consequence branches |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/probe | catastrophic-failure branch: what breaks first + detection + rollback |
-| five-whys-plus | `thinking-five-whys-plus` | applied | skills/probe | Root Why probing; upstream name is five-whys-plus |
-| thought-experiment | `thinking-thought-experiment` | applied | skills/probe, skills/ideate | extreme-zero / extreme-infinite counterfactual frames |
-| inversion | `thinking-inversion` | applied | skills/ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | skills/adr, skills/probe, ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
+| systems-thinking | `thinking-systems` | applied | skills/decide (probe mode) | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
+| feedback-loops | `thinking-feedback-loops` | applied | skills/decide (probe mode) | named step: mark loop as reinforcing or balancing |
+| first-principles | `thinking-first-principles` | applied | skills/decide (probe mode) (Root Why) | probe one level deeper than the user's stated reason |
+| second-order | `thinking-second-order` | applied | skills/decide (probe mode) (What-if) | 10x / fail / nothing consequence branches |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode) | catastrophic-failure branch: what breaks first + detection + rollback |
+| five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
+| thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
+| inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
+| reversibility | `thinking-reversibility` | applied | skills/adr, skills/decide (probe mode), ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
 | socratic | `thinking-socratic` | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |

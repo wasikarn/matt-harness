@@ -174,7 +174,7 @@ The ladder is not universal. Match the process to the domain:
 
 ## Using the ladder in software engineering
 
-Use the ladder for **implementation and design choices inside an established architecture**, not for architecture-level bets. The latter belong in `kbg:strategize` first.
+Use the ladder for **implementation and design choices inside an established architecture**, not for architecture-level bets. The latter belong in `kbg:decide (strategize mode)` first.
 
 | Coding decision | Rung to stress | Typical bias trap |
 |---|---|---|
@@ -185,7 +185,7 @@ Use the ladder for **implementation and design choices inside an established arc
 | Hotfix vs. proper fix | Recognize | Treating an incident as a normal decision; use `kbg:incident` instead |
 
 **Quick coding flow:**
-1. Is the decision hard to reverse or long-lived? → `kbg:strategize`.
+1. Is the decision hard to reverse or long-lived? → `kbg:decide (strategize mode)`.
 2. Is it reversible within days and analyzable? → climb the ladder with `kbg:decide`.
 3. Is the answer already committed and only needs a record? → `kbg:adr`.
 
@@ -235,7 +235,7 @@ is most dangerous.
 - `kbg:decide` probe mode — systems-thinking analysis before the ladder
 - `kbg:clarify-first` — when the decision itself is still ambiguous
 - `kbg:critical-eval` — stress-test reasoning in a decision or ADR
-- `kbg:strategize` — upstream skill for irreversible / long-horizon commitments
+- `kbg:decide (strategize mode)` — upstream lens for irreversible / long-horizon commitments
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
 

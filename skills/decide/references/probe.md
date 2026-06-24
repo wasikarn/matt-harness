@@ -1,6 +1,6 @@
 ---
 name: probe
-description: "Use when applying a systems-thinking lens to a design or architecture decision before committing. Read-only analysis using Why? and What if? to probe assumptions, constraints, and second-order effects. Thai: 'probe', 'ถาม why', 'what if'. Don't use for: implementation work (kbg:backend-dev), code review (kbg:review-pr), security audits (kbg:security-auditor), or pure research (kbg:research-brief)."
+description: "Use when applying a systems-thinking lens to a design or architecture decision before committing. Read-only analysis using Why? and What if? to probe assumptions, constraints, and second-order effects. Thai: 'probe', 'ถาม why', 'what if'. Don't use for: implementation work (kbg:backend-dev), code review (kbg:review-pr), security audits (kbg:security-auditor), or pure research (/deep-dive)."
 ---
 
 # Probe

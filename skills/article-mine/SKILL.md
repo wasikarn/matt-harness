@@ -11,7 +11,7 @@ This skill records the verdict, updates memory, and (if doctrine moved) commits 
 
 **When to use:** the user has shared an article / repo / external doc and the goal is **transferable lessons + harness changes**, not "summarize this for me" or "explain this concept." A signal phrase like *"mine this," "what can we take," "apply to harness,"* or the pattern of *"here's the link — go"* confirms the intent.
 
-**When NOT to use:** pure research (no doctrine transfer), reasoning audit (no fan-out), security review of a diff (use `kbg:security-auditor`), or PR review (use `kbg:review-pr`). For a single-doc deep-read with no harness application, `research-brief` is cheaper.
+**When NOT to use:** pure research (no doctrine transfer), reasoning audit (no fan-out), security review of a diff (use `kbg:security-auditor`), or PR review (use `kbg:review-pr`). For a single-doc deep-read with no harness application, `/deep-dive` is cheaper.
 
 ---
 

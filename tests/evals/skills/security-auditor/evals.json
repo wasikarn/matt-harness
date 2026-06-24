@@ -60,12 +60,12 @@
       "id": 2,
       "eval_name": "live-incident-redirect",
       "prompt": "We just got breached. Unauthorized access detected 10 minutes ago. Help now.",
-      "expected_output": "Live security incident = redirect to /incident first (for response), then /hotfix if needed. Security-auditor is for pre-merge audits, not live incident response.",
+      "expected_output": "Live security incident = redirect to /incident (for response; kbg:incident embeds the hotfix path). Security-auditor is for pre-merge audits, not live incident response.",
       "files": [],
       "assertions": [
         {
           "name": "redirect_to_incident",
-          "description": "Response redirects to /incident or /hotfix for live incident response"
+          "description": "Response redirects to /incident for live incident response"
         },
         {
           "name": "no_audit_procedure",

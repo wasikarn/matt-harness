@@ -1,6 +1,6 @@
 ---
 name: strategize
-description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity. Thai: 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use kbg:incident or kbg:hotfix), or choices already dictated by policy or constraint."
+description: "Use when making an irreversible or long-horizon strategic commitment under ambiguity. Thai: 'วางกลยุทธ์', 'กลยุทธ์', 'strategy', 'strategic judgment', 'strategic choice', 'ตัดสินใจเชิงกลยุทธ์'. Don't use for operational/analyzable decisions (use kbg:decide), chaotic immediate response (use kbg:incident), or choices already dictated by policy or constraint."
 ---
 
 # Strategize
@@ -21,9 +21,9 @@ Strategic judgment differs from operational decision-making. `kbg:decide` climbs
 ## When NOT to use
 
 - **Operational / analyzable decisions** — trade-offs are clear, data can answer the question, reversibility is high. Use `kbg:decide`.
-- **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident` or `kbg:hotfix`. For pure high-speed pattern-matching when no kbg surface fits, prompt an OODA loop from the vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not from a loadable `kbg:` surface.
+- **Chaotic / time-pressed response** — stabilize first. Use `kbg:incident` (it embeds the hotfix path). For pure high-speed pattern-matching when no kbg surface fits, prompt an OODA loop from the vendored thinking reference (`docs/reference/thinking-skills/skills/thinking-ooda/`), not from a loadable `kbg:` surface.
 - **Answer already dictated** — if architecture charter, policy, or a hard constraint removes choice, say so instead of running the strategy loop.
-- **Pure research or intelligence gathering** — use `kbg:research-brief` or `kbg:decide (probe mode)` first; feed their output into `kbg:decide (strategize mode)`.
+- **Pure research or intelligence gathering** — use `/deep-dive` or `kbg:decide (probe mode)` first; feed their output into `kbg:decide (strategize mode)`.
 - **Execution planning only** — use `kbg:ship-task` or `kbg:adr` once the strategy is set.
 
 ## Procedure
@@ -178,7 +178,7 @@ Use this skill when a technical commitment is large, long-lived, or hard to reve
 - `kbg:decide` — operational / analyzable choices via the Judgment Ladder.
 - `kbg:adr` — record a committed architectural decision once the strategy is set.
 - `kbg:decide (probe mode)` — deep investigation of a slice of the situation before diagnosing.
-- `kbg:research-brief` — external and competitive intelligence to feed diagnosis.
+- `/deep-dive` — external and competitive intelligence to feed diagnosis.
 - `kbg:article-mine` — mine a strategy article or book chapter for doctrine.
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

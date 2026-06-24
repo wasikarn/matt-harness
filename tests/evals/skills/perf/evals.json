@@ -39,12 +39,12 @@
       "id": 1,
       "eval_name": "production-outage-redirect",
       "prompt": "Production is completely down. 500 errors everywhere. Users can't access anything.",
-      "expected_output": "Production outage = redirect to /incident or /hotfix. Perf is for measurement-based regression work when service is still up.",
+      "expected_output": "Production outage = redirect to /incident (kbg:incident embeds the hotfix path). Perf is for measurement-based regression work when service is still up.",
       "files": [],
       "assertions": [
         {
           "name": "redirect_to_incident",
-          "description": "Response redirects to /incident or /hotfix"
+          "description": "Response redirects to /incident"
         },
         {
           "name": "no_perf_procedure",

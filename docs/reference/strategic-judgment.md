@@ -90,9 +90,9 @@ Philip Tetlock's research on expert political judgment and superforecasting adds
 
 This is not a substitute for the Rumelt/Martin framework, but it sharpens the estimate step inside the strategy loop.
 
-## kbg-native scaffold: `kbg:strategize`
+## kbg-native scaffold: `kbg:decide (strategize mode)`
 
-The harness applies this reference through the `kbg:strategize` skill, which walks six steps:
+The harness applies this reference through the `kbg:decide (strategize mode)` skill, which walks six steps:
 
 1. Diagnose the situation
 2. Choose the guiding policy
@@ -101,16 +101,16 @@ The harness applies this reference through the `kbg:strategize` skill, which wal
 5. Red-team the strategy
 6. Commit to the strategy loop
 
-## When to reach for `kbg:strategize` vs. `kbg:decide`
+## When to reach for `kbg:decide (strategize mode)` vs. `kbg:decide`
 
 | Signal | Reach for |
 | --- | --- |
 | The choice is analyzable, reversible, and time-pressured | `kbg:decide` |
-| The commitment is large, long-lived, and hard to reverse | `kbg:strategize` |
-| The diagnosis is contested and the best option is not computable | `kbg:strategize` |
-| Rivals, markets, or stakeholders will adapt in response | `kbg:strategize` |
+| The commitment is large, long-lived, and hard to reverse | `kbg:decide (strategize mode)` |
+| The diagnosis is contested and the best option is not computable | `kbg:decide (strategize mode)` |
+| Rivals, markets, or stakeholders will adapt in response | `kbg:decide (strategize mode)` |
 | The question is "which of these known options is best?" | `kbg:decide` |
-| The question is "what game are we playing, and how do we win it?" | `kbg:strategize` |
+| The question is "what game are we playing, and how do we win it?" | `kbg:decide (strategize mode)` |
 
 ## Strategic judgment in software engineering
 
@@ -125,7 +125,7 @@ Software strategy is not about picking technologies. It is about choosing commit
 | Language / framework commitment | What ecosystem, hiring market, and runtime constraints bind us? | Standardize on one primary stack; allow escape hatches for proven needs | Prototype in a non-critical service; training pipeline; deprecation policy |
 
 **Mapping to the kbg flow:**
-1. `kbg:strategize` answers "what game are we playing and how do we win it?" and produces a guiding policy.
+1. `kbg:decide (strategize mode)` answers "what game are we playing and how do we win it?" and produces a guiding policy.
 2. `kbg:decide` answers "which known option is best?" inside that policy.
 3. `kbg:adr` records the commitment, the tripwires, and the loop that revisits it.
 

@@ -6,7 +6,7 @@
       "id": 0,
       "eval_name": "alert-fire-payment-api",
       "prompt": "PagerDuty fired: 500 error rate 80% on payment API for 5 minutes. Correlated with deploy at 14:03. What do we do?",
-      "expected_output": "Runs full incident procedure: Detect/Acknowledge, Assess (severity S1/S2, blast radius), Mitigate (rollback first, then kill-switch, etc.), Communicate (initial status + 5-min updates), Fix Forward (hand off to /hotfix if needed), Resolve/Monitor, Post-Mortem scheduling.",
+      "expected_output": "Runs full incident procedure: Detect/Acknowledge, Assess (severity S1/S2, blast radius), Mitigate (rollback first, then kill-switch, etc.), Communicate (initial status + 5-min updates), Fix Forward (use kbg:incident's embedded hotfix path or /fix-bug if needed), Resolve/Monitor, Post-Mortem scheduling.",
       "files": [],
       "assertions": [
         {
