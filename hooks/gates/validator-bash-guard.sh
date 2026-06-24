@@ -64,10 +64,10 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # otherwise block. We allow it ONLY when the entire command is a single
 # pytest invocation with simple arguments — no shell operators, command
 # substitution, quotes, redirects, or embedded newlines. Plain `pytest ...`
-# is already handled by ALLOW_PREFIXES; this carve-out just covers the
-# `python3 -m` form.
+# is already handled by ALLOW_PREFIXES; this carve-out covers the
+# `python[0-9]* -m` form (python, python3, python3.11, ...).
 if [[ "$COMMAND" != *$'\n'* ]] &&
-   printf '%s\n' "$COMMAND" | command grep -qE '^python3[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
+   printf '%s\n' "$COMMAND" | command grep -qE '^python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
    ! printf '%s\n' "$COMMAND" | command grep -qE '[;|&`$()\<>"'"'"'"]'; then
   exit 0
 fi

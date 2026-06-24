@@ -155,6 +155,8 @@ cmd_py="python3 \"path with spaces.py\""
 check gates/validator-bash-guard.sh deny "code-reviewer + python3 quoted file-form"     "$(validator_bash_event 'code-reviewer' "$cmd_py")"
 # python3 -m pytest is a read-only test invocation; other python3 -m modules stay denied.
 check gates/validator-bash-guard.sh none "code-reviewer + python3 -m pytest (allowed)"  "$(validator_bash_event 'code-reviewer' 'python3 -m pytest -x')"
+check gates/validator-bash-guard.sh none "code-reviewer + python -m pytest (allowed)"    "$(validator_bash_event 'code-reviewer' 'python -m pytest -x')"
+check gates/validator-bash-guard.sh none "code-reviewer + python3.11 -m pytest (allowed)" "$(validator_bash_event 'code-reviewer' 'python3.11 -m pytest -x')"
 check gates/validator-bash-guard.sh deny "code-reviewer + python3 -m http.server"      "$(validator_bash_event 'code-reviewer' 'python3 -m http.server')"
 # v0.4.13 review-closed bypasses: the pytest carve-out must not allow chained mutations,
 # and source/. must not accept process substitution / command substitution.
