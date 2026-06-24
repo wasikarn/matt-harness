@@ -254,6 +254,32 @@ check gates/validator-bash-guard.sh deny "code-reviewer + quoted backtick as bas
 # Sanity: backslash on an allow-listed command still works.
 check gates/validator-bash-guard.sh none "code-reviewer + backslash git diff"     "$(validator_bash_event 'code-reviewer' '\git diff')"
 
+# v0.4.16 — close validator-bash-guard bypasses found in v0.4.15 maker≠checker review.
+# Absolute-path mutation verbs bypass separator-based DENY_PATTERNS; xargs with an
+# absolute path bypasses the xargs wrapper check.
+check gates/validator-bash-guard.sh deny "code-reviewer + /bin/rm"                  "$(validator_bash_event 'code-reviewer' '/bin/rm -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/sed -i"          "$(validator_bash_event 'code-reviewer' '/usr/bin/sed -i s/a/b/ file')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /sbin/mkdir"              "$(validator_bash_event 'code-reviewer' '/sbin/mkdir /tmp/evil')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/xargs rm"        "$(validator_bash_event 'code-reviewer' 'echo /tmp/foo | /usr/bin/xargs rm')"
+# Pipe-to-interpreter regex previously required whitespace after `|`.
+check gates/validator-bash-guard.sh deny "code-reviewer + pipe no whitespace bash"   "$(validator_bash_event 'code-reviewer' 'echo pwn|bash')"
+check gates/validator-bash-guard.sh deny "code-reviewer + pipe no whitespace /bin/bash" "$(validator_bash_event 'code-reviewer' 'echo pwn|/bin/bash')"
+# su/sudo shell-spawning flags do not need an explicit interpreter token.
+check gates/validator-bash-guard.sh deny "code-reviewer + sudo -i"                 "$(validator_bash_event 'code-reviewer' 'sudo -i')"
+check gates/validator-bash-guard.sh deny "code-reviewer + sudo -s"                 "$(validator_bash_event 'code-reviewer' 'sudo -s')"
+check gates/validator-bash-guard.sh deny "code-reviewer + su -"                    "$(validator_bash_event 'code-reviewer' 'su -')"
+# Compound-command grouping / statement separators hide bare interpreters.
+check gates/validator-bash-guard.sh deny "code-reviewer + semicolon bash"          "$(validator_bash_event 'code-reviewer' 'git status; bash')"
+check gates/validator-bash-guard.sh deny "code-reviewer + subshell bash"            "$(validator_bash_event 'code-reviewer' '(bash)')"
+check gates/validator-bash-guard.sh deny "code-reviewer + brace bash"               "$(validator_bash_event 'code-reviewer' '{ bash; }')"
+check gates/validator-bash-guard.sh deny "code-reviewer + pipe into subshell bash"  "$(validator_bash_event 'code-reviewer' 'echo pwn | (bash)')"
+# macOS Homebrew interpreter paths bypass the path-prefix assumptions.
+check gates/validator-bash-guard.sh deny "code-reviewer + /opt/homebrew/bin/bash -c" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/bash -c "echo pwn"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /opt/homebrew/bin/python3 -c" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/python3 -c "print(1)"')"
+# Sanity: absolute-path read-only commands and homebrew python -m pytest still work.
+check gates/validator-bash-guard.sh none "code-reviewer + /usr/bin/git diff"          "$(validator_bash_event 'code-reviewer' '/usr/bin/git diff')"
+check gates/validator-bash-guard.sh none "code-reviewer + /opt/homebrew/bin/python3 -m pytest" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/python3 -m pytest -x')"
+
 # Sanity checks: legitimate read-only commands must still pass.
 check gates/validator-bash-guard.sh none "code-reviewer + git diff"                   "$(validator_bash_event 'code-reviewer' 'git diff')"
 check gates/validator-bash-guard.sh none "code-reviewer + ls"                       "$(validator_bash_event 'code-reviewer' 'ls -la')"
