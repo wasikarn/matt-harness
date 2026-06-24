@@ -2,12 +2,10 @@
 
 This document records what we considered, rejected, and kept when porting
 the [adhd-agent](https://github.com/UditAkhourii/adhd) divergent-ideation
-skill into kbg-harness as `skills/ideate/`. It is the sibling of the new
-skill's source — the *why we built it this way* companion to the *how to
-run it* operational doc.
+skill into kbg-harness. It is the sibling of the ideate source — the *why we built it this way* companion to the *how to run it* operational doc.
 
-Read this before changing `skills/ideate/SKILL.md` or the algorithm in
-its body. The choices recorded here are the contract PR1 ships against.
+Read this before changing `commands/ideate.md` or the algorithm in its
+body. The choices recorded here are the contract PR1 ships against.
 
 ## What we considered
 
@@ -105,12 +103,12 @@ The five techniques listed in §"What we considered", in their full
 upstream form, with these kbg-specific bindings:
 
 - All **15 frames** (`frames.ts:16-122`) ported verbatim as a table in
-  `skills/ideate/SKILL.md` §"Frames table". The frame prompts are
-  the algorithm — softening them produces less-divergent output, and
-  we have no eval harness sensitive enough to measure the
-  difference, so we do not soften.
+  `commands/ideate/references/frames.md`. The frame prompts are the
+  algorithm — softening them produces less-divergent output, and we have
+  no eval harness sensitive enough to measure the difference, so we do
+  not soften.
 - The **2-phase Diverge→Focus wall**, ported as §"Phase 1 — Diverge"
-  and §"Phase 2 — Focus" in the skill body, with the 5-Agent
+  and §"Phase 2 — Focus" in `commands/ideate.md`, with the 5-Agent
   parallel call and the deepen-pass call structure intact. The wall
   is what makes the algorithm work; collapsing it kills idea quality
   per the upstream comment at `engine.ts:50-51` ("The critic

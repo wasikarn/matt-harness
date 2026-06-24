@@ -1,6 +1,6 @@
 #!/bin/bash
 # ideate-convergence-capture.sh — SessionEnd hook that detects convergence
-# across kbg:ideate runs using local Ollama embeddings.
+# across /ideate (and legacy kbg:ideate) runs using local Ollama embeddings.
 #
 # Advisory only. Never blocks. Never mutates the repo. Appends one JSONL row
 # per ideate run to ~/.claude/state/ideate-embeddings.jsonl.
@@ -73,7 +73,6 @@ except ValueError:
 EMB_FILE = os.environ.get('KBG_IDEATE_EMBEDDINGS_FILE', '')
 
 SLASH_RE = re.compile(r'(?:^|[\s])/ideate\b', re.IGNORECASE)
-IDEATE_SKILLS = frozenset({'ideate', 'kbg:ideate'})
 
 
 def extract_text(content: Any) -> str:
@@ -116,32 +115,34 @@ def clean_problem(text: str) -> str:
     return text.strip()[:500]
 
 
-def is_ideate_skill(item: Any) -> bool:
+def is_ideate_invocation(item: Any) -> bool:
     if not isinstance(item, dict):
         return False
     tool_name = item.get('tool_name') or item.get('name') or ''
-    if tool_name != 'Skill':
-        return False
     inp = item.get('input') or {}
-    return inp.get('skill') in IDEATE_SKILLS
+    if tool_name == 'Skill':
+        return inp.get('skill') in ('ideate', 'kbg:ideate')
+    if tool_name == 'Command':
+        return inp.get('command') in ('ideate', '/ideate')
+    return False
 
 
-def iter_ideate_skill_calls(ev: dict) -> list[dict]:
-    """Return any ideate Skill calls carried by this event."""
+def iter_ideate_invocations(ev: dict) -> list[dict]:
+    """Return any ideate invocations carried by this event."""
     found = []
-    if is_ideate_skill(ev):
+    if is_ideate_invocation(ev):
         found.append(ev)
     # Nested tool_use blocks inside assistant message content.
     content = event_content(ev)
     if isinstance(content, list):
         for block in content:
-            if is_ideate_skill(block):
+            if is_ideate_invocation(block):
                 found.append(block)
     return found
 
 
 def parse_transcript(path: str) -> tuple[list[dict], list[dict]]:
-    """Return (events_in_order, ideate_skill_calls)."""
+    """Return (events_in_order, ideate_invocations)."""
     p = Path(path)
     if not p.exists():
         return [], []
@@ -150,7 +151,7 @@ def parse_transcript(path: str) -> tuple[list[dict], list[dict]]:
         return [], []
 
     events: list[dict] = []
-    skill_calls: list[dict] = []
+    invocations: list[dict] = []
 
     # Prefer JSONL; fall back to legacy single-object .messages format.
     for line in raw.splitlines():
@@ -169,12 +170,12 @@ def parse_transcript(path: str) -> tuple[list[dict], list[dict]]:
                 if not isinstance(ev, dict):
                     continue
                 events.append(ev)
-                skill_calls.extend(iter_ideate_skill_calls(ev))
+                invocations.extend(iter_ideate_invocations(ev))
             break
         events.append(obj)
-        skill_calls.extend(iter_ideate_skill_calls(obj))
+        invocations.extend(iter_ideate_invocations(obj))
 
-    return events, skill_calls
+    return events, invocations
 
 
 def compute_embedding(problem: str) -> Optional[list[float]]:
@@ -241,7 +242,7 @@ def max_same_day_similarity(current: list[float], today: str, path: str) -> floa
 
 
 def main() -> None:
-    events, skill_calls = parse_transcript(TRANSCRIPT)
+    events, invocations_list = parse_transcript(TRANSCRIPT)
     slash_invocations = 0
     last_slash_msg: Optional[dict] = None
 
@@ -252,32 +253,32 @@ def main() -> None:
                 slash_invocations += 1
                 last_slash_msg = ev
 
-    skill_invocations = len(skill_calls)
-    invocations = skill_invocations + slash_invocations
+    invocation_count = len(invocations_list)
+    invocations = invocation_count + slash_invocations
 
     if invocations == 0:
         print(json.dumps({'invocations': 0, 'problem': '', 'embedding': None,
                           'status': 'ok', 'reason': 'no ideate calls in session'}))
         return
 
-    # Problem extraction: prefer the most recent ideate Skill call's explicit
+    # Problem extraction: prefer the most recent ideate invocation's explicit
     # argument, otherwise the nearest preceding user message.
-    last_skill = skill_calls[-1] if skill_calls else None
+    last_invocation = invocations_list[-1] if invocations_list else None
     problem = ''
-    if last_skill is not None:
-        inp = last_skill.get('input') or {}
+    if last_invocation is not None:
+        inp = last_invocation.get('input') or {}
         for key in ('args', 'problem'):
             val = extract_text(inp.get(key))
             if val.strip():
                 problem = val
                 break
         if not problem.strip():
-            skill_ts = last_skill.get('timestamp') or ''
+            inv_ts = last_invocation.get('timestamp') or ''
             for prev in reversed(events):
                 if prev.get('type') != 'user':
                     continue
                 prev_ts = prev.get('timestamp') or ''
-                if prev_ts and skill_ts and prev_ts > skill_ts:
+                if prev_ts and inv_ts and prev_ts > inv_ts:
                     continue
                 candidate = extract_text(event_content(prev))
                 if candidate.strip():

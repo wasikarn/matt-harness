@@ -1,8 +1,9 @@
 #!/bin/bash
-# ideate-budget-capture.sh — SessionEnd hook that counts kbg:ideate invocations
-# from the session transcript and appends one JSONL row per calendar day to
-# ~/.claude/state/ideate-usage.jsonl. The companion SessionStart hook
-# ideate-rotate.sh reads that file and warns when the daily threshold is crossed.
+# ideate-budget-capture.sh — SessionEnd hook that counts /ideate (and legacy
+# kbg:ideate) invocations from the session transcript and appends one JSONL row
+# per calendar day to ~/.claude/state/ideate-usage.jsonl. The companion
+# SessionStart hook ideate-rotate.sh reads that file and warns when the daily
+# threshold is crossed.
 #
 # This is advisory-only feedback (ADR 0002 / CLAUDE.md §"LLM-judge circularity").
 # It never blocks SessionEnd and never emits a permissionDecision.
@@ -41,7 +42,6 @@ from pathlib import Path
 
 TRANSCRIPT = os.environ.get('KBG_IDEATE_TRANSCRIPT', '')
 SLASH_RE = re.compile(r'(?:^|[\s])/ideate\b', re.IGNORECASE)
-IDEATE_SKILLS = frozenset({'ideate', 'kbg:ideate'})
 
 
 def extract_text(content):
@@ -79,24 +79,26 @@ def event_content(ev):
     return None
 
 
-def is_ideate_skill(item):
+def is_ideate_invocation(item):
     if not isinstance(item, dict):
         return False
     tool_name = item.get('tool_name') or item.get('name') or ''
-    if tool_name != 'Skill':
-        return False
     inp = item.get('input') or {}
-    return inp.get('skill') in IDEATE_SKILLS
+    if tool_name == 'Skill':
+        return inp.get('skill') in ('ideate', 'kbg:ideate')
+    if tool_name == 'Command':
+        return inp.get('command') in ('ideate', '/ideate')
+    return False
 
 
-def iter_ideate_skill_calls(ev):
+def iter_ideate_invocations(ev):
     found = []
-    if is_ideate_skill(ev):
+    if is_ideate_invocation(ev):
         found.append(ev)
     content = event_content(ev)
     if isinstance(content, list):
         for block in content:
-            if is_ideate_skill(block):
+            if is_ideate_invocation(block):
                 found.append(block)
     return found
 
@@ -128,12 +130,12 @@ for line in raw.splitlines():
         for ev in obj['messages']:
             if not isinstance(ev, dict):
                 continue
-            invocations += len(iter_ideate_skill_calls(ev))
+            invocations += len(iter_ideate_invocations(ev))
             if ev.get('type') == 'user' and SLASH_RE.search(extract_text(event_content(ev))):
                 invocations += 1
         break
 
-    invocations += len(iter_ideate_skill_calls(obj))
+    invocations += len(iter_ideate_invocations(obj))
     if obj.get('type') == 'user' and SLASH_RE.search(extract_text(event_content(obj))):
         invocations += 1
 

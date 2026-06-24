@@ -1,6 +1,6 @@
 {
   "dataset_name": "ideate-quality-contract",
-  "description": "Machine-checkable contract for the ideate-quality surface. The ideate skill's output quality (diversity, trap detection, actionability) requires an LLM grader, so the behavioral evals live in eval/datasets/ideate-quality.json as manual/skipped fixtures. This regression fixture locks the structural contract: the skill body must mention the fresh-context critic option, the ideate-critic agent must exist with the right rubric, and the preflight gate must remain in place.",
+  "description": "Machine-checkable contract for the /ideate command. Output quality (diversity, trap detection, actionability) requires an LLM grader, so the behavioral evals live as manual/skipped fixtures. This regression fixture locks the structural contract: the command body must mention the fresh-context critic option, the ideate-critic agent must exist with the right rubric, and the preflight gate must remain in place.",
   "evals": [
     {
       "id": "ideate-quality-contract-critic-option",

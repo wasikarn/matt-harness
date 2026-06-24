@@ -10,19 +10,18 @@ eval/
 ├── SCHEMA.md              # Dataset + fixture schema
 ├── run-eval.py            # Entry point
 ├── datasets/              # Held-out task descriptions (≥3 required)
-│   ├── 7-agent-pattern.json
 │   ├── accept-task.json
 │   ├── article-mine.json
 │   ├── commands.json
+│   ├── description-quality.json
 │   ├── harness-audit.json
 │   ├── memory-trim.json
 │   ├── progressive-refine.json
 │   ├── recursive-improve.json
 │   ├── review-pr.json
 │   ├── ship-change.json
-│   ├── task-sizing.json
 │   ├── triage.json
-│   └── types-first.json
+│   └── ... (deleted: 7-agent-pattern.json, task-sizing.json, types-first.json)
 ├── fixtures/              # Expected outputs / assertions
 │   └── acceptance-pass.json
 ├── regressions/           # Known failure patterns that must not recur

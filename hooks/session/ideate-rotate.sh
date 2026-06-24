@@ -127,9 +127,9 @@ fi
 # Build a markdown payload that the skill body can detect via substring.
 
 ROTATION_MARKDOWN=$(cat <<EOF
-# kbg:ideate session advisory
+# /ideate session advisory
 
-If you are about to run \`kbg:ideate\` in this session, prefer this frame
+If you are about to run \`/ideate\` in this session, prefer this frame
 rotation unless the user explicitly asks for different frames:
 
 <ideate-rotation index="$INDEX">
@@ -137,7 +137,7 @@ $(printf '%s\n' "$PICKED" | sed 's/^/- /')
 </ideate-rotation>
 
 These frames already satisfy the 1-wild minimum. If this block is absent,
-use the deterministic picker in the skill body instead.
+use the deterministic picker in the command body instead.
 
 <ideate-budget status="$BUDGET_STATUS" today="$TODAY_COUNT" threshold="$DAILY_THRESHOLD">
 ${BUDGET_MESSAGE:+$BUDGET_MESSAGE}
