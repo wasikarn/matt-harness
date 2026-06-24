@@ -280,6 +280,27 @@ check gates/validator-bash-guard.sh deny "code-reviewer + /opt/homebrew/bin/pyth
 check gates/validator-bash-guard.sh none "code-reviewer + /usr/bin/git diff"          "$(validator_bash_event 'code-reviewer' '/usr/bin/git diff')"
 check gates/validator-bash-guard.sh none "code-reviewer + /opt/homebrew/bin/python3 -m pytest" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/python3 -m pytest -x')"
 
+# v0.4.17 — close validator-bash-guard bypasses found in the v0.4.16 review-pr pass.
+# Quote-wrapped or quote-split tokens evade literal matchers after quote stripping.
+check gates/validator-bash-guard.sh deny "code-reviewer + quoted rm"                "$(validator_bash_event 'code-reviewer' "'rm' -rf /tmp/foo")"
+check gates/validator-bash-guard.sh deny "code-reviewer + quote-split bash"         "$(validator_bash_event 'code-reviewer' "b'a's'h -c 'id'")"
+# File-descriptor redirects are file writes; the bare > pattern missed the digit prefix.
+check gates/validator-bash-guard.sh deny "code-reviewer + fd redirect"              "$(validator_bash_event 'code-reviewer' 'echo x 2> /tmp/file')"
+# su/sudo shell-spawning: any su token, and privilege wrappers around su.
+check gates/validator-bash-guard.sh deny "code-reviewer + bare su"                  "$(validator_bash_event 'code-reviewer' 'su')"
+check gates/validator-bash-guard.sh deny "code-reviewer + su root"                 "$(validator_bash_event 'code-reviewer' 'su root')"
+check gates/validator-bash-guard.sh deny "code-reviewer + sudo su"                  "$(validator_bash_event 'code-reviewer' 'sudo su')"
+check gates/validator-bash-guard.sh deny "code-reviewer + doas su"                  "$(validator_bash_event 'code-reviewer' 'doas su')"
+# Absolute-path mutation verbs beyond rm/sed/xargs; non-standard paths.
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/git push"        "$(validator_bash_event 'code-reviewer' '/usr/bin/git push origin main')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/curl -X POST"     "$(validator_bash_event 'code-reviewer' '/usr/bin/curl -X POST https://evil')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/wget -O"         "$(validator_bash_event 'code-reviewer' '/usr/bin/wget -O /tmp/x https://example.com/f')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/npm publish"      "$(validator_bash_event 'code-reviewer' '/usr/bin/npm publish')"
+check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/pip3 uninstall"   "$(validator_bash_event 'code-reviewer' '/usr/bin/pip3 uninstall foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + nonstandard path rm"      "$(validator_bash_event 'code-reviewer' '/tmp/rm -rf /foo')"
+# Sanity: backslash normalization now handles /-prefixed paths, so homebrew pytest passes.
+check gates/validator-bash-guard.sh none "code-reviewer + backslash homebrew pytest" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/\python3 -m pytest -x')"
+
 # Sanity checks: legitimate read-only commands must still pass.
 check gates/validator-bash-guard.sh none "code-reviewer + git diff"                   "$(validator_bash_event 'code-reviewer' 'git diff')"
 check gates/validator-bash-guard.sh none "code-reviewer + ls"                       "$(validator_bash_event 'code-reviewer' 'ls -la')"

@@ -62,11 +62,12 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 }
 [ -z "$COMMAND" ] && exit 0
 
-# Normalize backslash-escaped command words (\rm, \bash, etc.) so that existing
-# allow/deny patterns see the real token. The leading backslash only suppresses
-# alias expansion; the underlying mutation/interpreter command is unchanged.
+# Normalize backslash-escaped command words (\rm, \bash, etc.) and quote-split
+# words (b'a's'h, 'rm' -rf) so that allow/deny patterns see the real token.
+# The leading backslash only suppresses alias expansion; quote-splitting is
+# shell concatenation. Both hide the underlying command from literal matchers.
 RAW_COMMAND=$COMMAND
-COMMAND=$(printf '%s\n' "$COMMAND" | sed -E "s/(^|[[:space:];|&()<>'\"])\\\\([[:alnum:]_-])/\1\2/g")
+COMMAND=$(printf '%s\n' "$COMMAND" | sed -E "s/(^|[[:space:];|&()<>'\"\/])\\\\([[:alnum:]_-])/\1\2/g" | tr -d "'\"")
 
 # Narrow read-only exception: `python3 -m pytest` is a common test invocation
 # that the generic `python3 -m` deny (arbitrary module execution) would
@@ -91,16 +92,17 @@ if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`\\])((/usr(/lo
 fi
 
 # su/sudo shell-spawning flags do not require an explicit interpreter token
-# after them (e.g. `sudo -i`, `sudo -s`, `su -`, `su -c "id" root`).
-if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|&(){}<>])(sudo[[:space:]]+-(i|s)|su[[:space:]]+(-|[[:space:]]|$))'; then
+# after them. Catch `sudo -i/-s`, any `su` invocation (bare, user, -c),
+# and privilege-escalation wrappers around su (`sudo su`, `doas su`, etc.).
+if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|&(){}<>])(sudo[[:space:]]+-(i|s)|su([[:space:];|&(){}<>]|$))'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted shell-spawning su/sudo: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
 # Absolute-path mutation verbs and xargs bypass the separator-based deny list
 # because the leading '/' is not a separator. Catch /bin/rm, /usr/bin/sed -i,
-# /opt/homebrew/bin/xargs rm, etc. explicitly.
-ABS_PATH_MUTATION_RE='(^|[[:space:];|&(){}<>])[[:space:]]*((/usr(/local)?/|/)(sbin|bin)/|/opt/homebrew/bin/)(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|tee[[:space:]]|xargs([[:space:]]|$))'
+# /opt/homebrew/bin/xargs rm, /tmp/custom/rm, /usr/bin/git push, etc.
+ABS_PATH_MUTATION_RE='(^|[[:space:];|&(){}<>])[[:space:]]*(/[[:alnum:]_./-]+/)?(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|tee[[:space:]]|xargs([[:space:]]|$)|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|npm[[:space:]]+(publish|uninstall)|pip3?[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
 if printf '%s\n' "$COMMAND" | command grep -qE "$ABS_PATH_MUTATION_RE"; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted absolute-path mutation or xargs: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
@@ -121,7 +123,7 @@ fi
 # stripped because POSIX ERE treats a literal newline as matching a newline
 # in the input, not as regex syntax.
 read -r -d '' DENY_PATTERNS <<'REGEX'
-(^|[[:space:];&|()`'"\\])(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+(^|[[:space:];&|()`'"\\])(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|[0-9]*>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?(sbin|bin)/|/opt/homebrew/bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
 DENY_PATTERNS=${DENY_PATTERNS//$'\n'/}
 
