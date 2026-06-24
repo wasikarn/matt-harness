@@ -83,9 +83,13 @@ fi
 # run arbitrary code in another language (eval, python -c/-m, bash/sh -c,
 # node -e, perl -e, ruby -e) are denied outright — they defeat shell-pattern
 # matching entirely and a read-only validator never needs them (it has Read/Grep).
-read -r DENY_PATTERNS <<'REGEX'
+# read -d '' consumes the whole heredoc (multi-line-safe); newlines are
+# stripped because POSIX ERE treats a literal newline as matching a newline
+# in the input, not as regex syntax.
+read -r -d '' DENY_PATTERNS <<'REGEX'
 (^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+-i|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|(bash|sh|zsh|dash|ksh)[[:space:]]+-c|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|(curl|wget)[[:space:]]+[^|]*[|][[:space:]]*(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(python[0-9]*(\.[0-9]*)*|bash|sh|node|ruby|perl)[[:space:]]+((["'][^"';|]*\.(py|sh|js|rb|pl)["']|[^-|;&[:space:]"`][^|;&"`]*\.(py|sh|js|rb|pl)))([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
+DENY_PATTERNS=${DENY_PATTERNS//$'\n'/}
 
 # 1. Full-command deny check — catches quoted mutations that
 # hook_strip_quoted would strip away.
