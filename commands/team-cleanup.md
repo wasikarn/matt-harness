@@ -1,6 +1,6 @@
 ---
 name: team-cleanup
-description: "Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans, and expired mailbox messages. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม', or 'ทำความสะอาดทีม'. or when the user says 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม'. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days)."
+description: "Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม', or 'ทำความสะอาดทีม'. or when the user says 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม'. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days)."
 argument-hint: Plan slug or --all
 disable-model-invocation: true
 disable-model-invocation-reason: destructive — deletes stale team locks/heartbeats/artifacts
@@ -8,7 +8,7 @@ disable-model-invocation-reason: destructive — deletes stale team locks/heartb
 
 # /team-cleanup — Clean up stale agent-team artifacts
 
-You are a maintenance agent for the agent-teams workflow. This command reaps stale locks, heartbeats, orphaned board entries, archives completed plans, cleans old mailbox messages, and removes empty plan directories. It operates on the file-based task board at `.claude/tasks/<slug>/`.
+You are a maintenance agent for the agent-teams workflow. This command reaps stale locks, heartbeats, orphaned board entries, archives completed plans, and removes empty plan directories. It operates on the file-based task board at `.claude/tasks/<slug>/`.
 
 ## Core principles
 
@@ -149,24 +149,7 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 
 ---
 
-## Step 6 — Reap old mailbox messages
-
-**Goal:** run the mailbox reaper for each plan's team context.
-
-**Actions (per plan):**
-1. Run `bash "${KBG_PLUGIN_ROOT}/scripts/mailbox/mailbox-reap.sh" --team=<slug>`.
-   - The script defaults to `--unread-days=7` and `--archive-days=30`.
-   - Capture the numeric reap count from stdout.
-2. Log via `journal_append`:
-   - Event: `mailbox_reap`
-   - Fields: `{"slug":"<slug>","dry_run":<bool>,"reaped":<count>}`
-3. Record the count in the summary table under `Mailbox`.
-
-**Done-when Step 6:** expired inbox and archive messages have been removed.
-
----
-
-## Step 7 — Remove empty plan directories
+## Step 6 — Remove empty plan directories
 
 **Goal:** delete directories in `~/.claude/tasks/` that have no `board.json` and no `.md` plan file.
 
@@ -185,18 +168,18 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 
 **Safety:** Never remove a directory that still contains a `board.json` or is paired with a `.md` plan file in the parent directory.
 
-**Done-when Step 7:** only directories with plan artifacts remain.
+**Done-when Step 6:** only directories with plan artifacts remain.
 
 ---
 
-## Step 8 — Confirmation gate (destructive mode only)
+## Step 7 — Confirmation gate (destructive mode only)
 
 **Goal:** get explicit user approval before executing any destructive action when not in dry-run.
 
 **Actions:**
-1. If `DRY_RUN` is true, skip this step. Present the summary table from Step 9 and exit.
-2. If `DRY_RUN` is false AND any destructive action is queued (locks to break, heartbeats to delete, orphans to reset, boards to archive, mail to reap, empty dirs to remove):
-   - Present the summary table from Step 9.
+1. If `DRY_RUN` is true, skip this step. Present the summary table from Step 8 and exit.
+2. If `DRY_RUN` is false AND any destructive action is queued (locks to break, heartbeats to delete, orphans to reset, boards to archive, empty dirs to remove):
+   - Present the summary table from Step 8.
    - Invoke `AskUserQuestion` single-select:
      - `Proceed with cleanup` — execute all queued actions
      - `Cancel` — abort without modifying anything; log event `cleanup_cancelled`
@@ -206,20 +189,20 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
    - Print "Cleanup cancelled by user. No changes were made."
    - Exit.
 
-**Done-when Step 8:** user has explicitly approved destructive actions, or dry-run preview is complete.
+**Done-when Step 7:** user has explicitly approved destructive actions, or dry-run preview is complete.
 
 ---
 
-## Step 9 — Report summary
+## Step 8 — Report summary
 
 **Goal:** present a concise, machine-readable summary of everything that happened (or would happen).
 
 **Actions:**
 1. Build a markdown table:
 
-   | Plan Slug | Locks Reaped | Heartbeats Reaped | Orphans Reset | Archived | Mailbox Reaped | Empty Dirs |
-   |-----------|-------------:|------------------:|--------------:|---------:|---------------:|-----------:|
-   | `<slug>`  | 2            | 5                 | 1             | 0        | 3              | 0          |
+   | Plan Slug | Locks Reaped | Heartbeats Reaped | Orphans Reset | Archived | Empty Dirs |
+   |-----------|-------------:|------------------:|--------------:|---------:|-----------:|
+   | `<slug>`  | 2            | 5                 | 1             | 0        | 0          |
 
 2. Append a second table for archive details (if any):
 
@@ -230,29 +213,28 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 3. If `DRY_RUN` is true, prefix the report header with `## [DRY-RUN] Preview`.
 4. If any action failed (lock timeout, board read error, etc.), list failures in a separate `### Errors` section with the plan slug and error message.
 
-**Done-when Step 9:** user has a complete, auditable summary of the cleanup run.
+**Done-when Step 8:** user has a complete, auditable summary of the cleanup run.
 
 ---
 
-## Step 10 — Execute destructive actions (non-dry-run only)
+## Step 9 — Execute destructive actions (non-dry-run only)
 
 **Goal:** perform the actual cleanup after user confirmation.
 
 **Actions:**
 1. If `DRY_RUN` is true, this step is already complete (preview only).
-2. Replay Steps 2-7 with `DRY_RUN = false`, using the already-computed lists.
+2. Replay Steps 2-6 with `DRY_RUN = false`, using the already-computed lists.
    - Re-run `lock-reap.sh` without `--dry-run`.
    - Delete the heartbeats identified in Step 3.
    - Write the orphaned resets from Step 4.
    - Move the archives from Step 5.
-   - Run `mailbox-reap.sh`.
-   - Remove empty directories from Step 7.
-3. After execution, re-run Step 9 to present the final summary.
+   - Remove empty directories from Step 6.
+3. After execution, re-run Step 8 to present the final summary.
 4. Log a final completion event via `journal_append`:
    - Event: `cleanup_complete`
    - Fields: `{"slugs":[...],"actions_total":<sum of all counts>}`
 
-**Done-when Step 10:** all queued cleanup actions have been executed and the final summary is displayed.
+**Done-when Step 9:** all queued cleanup actions have been executed and the final summary is displayed.
 
 ---
 
@@ -270,6 +252,5 @@ You are a maintenance agent for the agent-teams workflow. This command reaps sta
 
 - **Task board library** — `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.py` provides `board_read()`, `board_write()`, `heartbeat_read_all()`, `lock_acquire()`, `lock_release()`, and `recompute_blocked()`. Use it for atomic board mutations.
 - **Lock reaper** — `"${KBG_PLUGIN_ROOT}/scripts/locks/lock-reap.sh"` breaks expired locks and logs via `journal_append`.
-- **Mailbox reaper** — `"${KBG_PLUGIN_ROOT}/scripts/mailbox/mailbox-reap.sh"` removes old unread and archived messages.
 - **Governance journal** — `hooks/_lib.sh:journal_append` (and `hooks/_lib.py`) is the single emission point. Every destructive action in this command MUST log through it.
-- **METHODOLOGY:** Rule 12 (fail loud) — missing plan, missing board, or lock timeout are surfaced as errors in the summary, not silently ignored. Rule 2 (simplicity first) — this command is a linear pipeline (2-7) with a single dry-run fork; no speculative abstraction layers.
+- **METHODOLOGY:** Rule 12 (fail loud) — missing plan, missing board, or lock timeout are surfaced as errors in the summary, not silently ignored. Rule 2 (simplicity first) — this command is a linear pipeline (2-6) with a single dry-run fork; no speculative abstraction layers.

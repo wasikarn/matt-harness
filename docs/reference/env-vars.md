@@ -87,7 +87,6 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | `CLAUDE_HOOK_PROFILE` | `standard` | `off` disables all kbg hooks (no effect during an active L3 run — L3 immunity in `_lib.sh`). |
 | `CLAUDE_JOURNAL_PATH` | `~/.claude/governance-events.jsonl` | Governance-journal location override. |
 | `CLAUDE_BAK_TTL_DAYS` / `CLAUDE_BAK_TTL_PROFILE` | `90` / `standard` | `.bak` cleanup TTL + profile. |
-| `CLAUDE_MAILBOX_BASE` | `~/.claude/mailbox` | Agent-teams mailbox root. |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | unset | `=1` enables the opt-in Agent Teams surface (`/team-plan`, `/team-build`, …). |
 
 ## Special

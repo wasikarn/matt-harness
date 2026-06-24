@@ -23,7 +23,6 @@ for _ot in \
   tests/hooks/runners/test-review-pr-marker.sh \
   tests/hooks/runners/test-trigger-pattern.sh \
   scripts/locks/test-lock-system.sh \
-  scripts/mailbox/test-mailbox.sh \
   tests/acli/run-tests.sh \
   tests/memory-lint/run-tests.sh ; do
   _rp="$_ORPHAN_REPO/$_ot"
