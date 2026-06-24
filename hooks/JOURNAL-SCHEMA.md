@@ -49,6 +49,7 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `verification_verdict` | `/review-pr` (Phase II) | `subject_id`, `disposition`, `tier`, `decision`, `rejected_reason` |
 | `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
 | `l3_cycle` | `recursive-improve --auto` (ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks`, optional `source` (`queue` when the candidate came from the learning-candidate queue — Route B, ADR 0002 addendum) |
+| `gauntlet_run` | `run-gauntlet.sh` (ADR 0005 addendum) | `sha` (the HEAD the gauntlet validated — binds the verdict to one commit so the L5 push leg can require green-for-HEAD), `outcome` (`green`\|`red`), `layers`, `failed`, `failing` (space-sep layer names), `fast` (0\|1) |
 | `learning_candidates` | `learn-capture.sh` (SessionEnd, default-OFF; ADR 0002 addendum) | `queued`, `corrections`, `preferences`, `queue_total` — **counts only**, no secret-named fields (the redactor nukes any key containing token/secret/key/password/credential) |
 | `decision_rationale` | `decision-provenance-nudge.sh` (PreToolUse, advisory) | `surface_touched`, `consequential_class` (`caged`\|`doctrine`), `one_way_door` (bool) |
 

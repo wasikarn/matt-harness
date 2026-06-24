@@ -3,7 +3,12 @@
 # that can regress the flag-OFF path via empty-string truthiness / a wrong default,
 # so this check PROVES both directions instead of asserting them in prose. Gated on
 # ADR 0004 presence. Three legs:
-#   (a) armed (per-repo KBG_AUTONOMY=1) → the push gate DENIES a real git push;
+#   (a) armed (per-repo KBG_AUTONOMY=1, no L5 allowlist, no KBG_REVIEW_DONE) → the
+#       push gate DENIES a real git push. Under L5 (ADR 0005 addendum) a green+allow-
+#       listed armed push may ALLOW, so the probe unsets KBG_L5_SHIP_ALLOWLIST to
+#       guarantee the L5 leg does not allow → the gate FIRES (step-3 deny) rather than
+#       no-ops. That firing-under-the-flag is the F1 invariant; the L5 allow path is
+#       covered hermetically in test-ch-l3.sh (green-for-HEAD + allowlist → allow);
 #   (b) flag unset → the push gate no-ops (exit 0) as the L2 baseline;
 #   (c) enumeration — every arming read routes through autonomy_on(): CRIT on a raw
 #       KBG_AUTONOMY literal outside the sanctioned homes, and on any LEFTOVER legacy
@@ -18,7 +23,7 @@ if [ -f "$ADR0004" ]; then
     _ap48=$(mktemp -d)
     mkdir -p "$_ap48/.claude"
     printf '{"env":{"KBG_AUTONOMY":"1"}}' > "$_ap48/.claude/settings.local.json"
-    _arm48=$(printf '%s' "$_ev48" | env -u KBG_REVIEW_DONE KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR="$_ap48" bash "$PUSHGATE48" 2>/dev/null \
+    _arm48=$(printf '%s' "$_ev48" | env -u KBG_REVIEW_DONE -u KBG_L5_SHIP_ALLOWLIST KBG_AUTONOMY=1 CLAUDE_PROJECT_DIR="$_ap48" bash "$PUSHGATE48" 2>/dev/null \
              | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null) || true
     # The gate emits NO JSON when it no-ops (exit 0 early) — jq on an empty stream
     # exits 0 with empty output, so treat empty as "none" (no deny), mirroring the
@@ -29,7 +34,7 @@ if [ -f "$ADR0004" ]; then
     if [ -z "$_off48" ]; then _off48="none"; fi
     # disposable mktemp fixture in $TMPDIR — trash if available (owner pref), else rm -rf.
     if command -v trash >/dev/null 2>&1; then trash "$_ap48" >/dev/null 2>&1 || rm -rf "$_ap48"; else rm -rf "$_ap48"; fi
-    [ "$_arm48" = "deny" ] || crit "audit #48a: under KBG_AUTONOMY=1 (per-repo) the push gate must DENY a real git push (got '$_arm48') — the F1 hole is not closed (design §5 #48, ADR 0004)"
+    [ "$_arm48" = "deny" ] || crit "audit #48a: under KBG_AUTONOMY=1 (per-repo, no L5 allowlist) the push gate must DENY a real git push (got '$_arm48') — the gate must fire under the flag (F1), not no-op. Under L5 a green+allowlisted push may allow (tested in test-ch-l3), but a push with no allowlist must still deny (design §5 #48, ADR 0004/0005)"
     [ "$_off48" = "none" ] || crit "audit #48b: with the flag unset the push gate must no-op (exit 0) as the L2 baseline (got '$_off48') — flag-OFF byte-identical regressed (design §5 #48)"
   fi
   # 48c: enumeration. Sanctioned raw-KBG_AUTONOMY homes (the helper bodies + the

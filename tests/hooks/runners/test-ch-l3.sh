@@ -398,17 +398,32 @@ if command -v python3 >/dev/null 2>&1; then
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#32b" "silent on the clean launcher"
   fi
 
-  # --- Slice 4 / L5: auto-push ship-gate (ADR 0005, design §8.5, #35) ---
-  # Folded into push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push
-  # ONLY to an allowlisted host+org (default EMPTY → un-configured pushes nowhere),
-  # AND only after a green gauntlet. Deny on divergence / un-configured / unverified.
+  # --- Slice 4 / L5: auto-push ship-gate (ADR 0005 + addendum, design §8.5, #35) ---
+  # Folded into push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push ONLY
+  # to an allowlisted host+org (default EMPTY → un-configured pushes nowhere), AND only
+  # after a SHA-bound green gauntlet (a gauntlet_run event with sha == HEAD + outcome
+  # green — stale green for a different commit and model verdicts do NOT authorize),
+  # AND only if the push range does not loosen a cross-repo security gate. Deny on
+  # divergence / un-configured / unverified / stale-green / model-verdict-only /
+  # security-loosening.
   # pcheck5 <cwd> <env> <want> <label> <cmd> — runs the gate with CWD=<cwd> (a fixture
-  # git repo with controlled remotes) so `git remote get-url` resolves hermetically.
+  # git repo with controlled remotes) so `git remote get-url` + `git rev-parse HEAD`
+  # resolve hermetically.
   L5FX="$FIXTURE/l5repo"; git init -q "$L5FX"
   git -C "$L5FX" remote add origin git@github.com:wasikarn/kbg-harness.git
   git -C "$L5FX" remote add divergent git@gitlab.com:otherorg/repo.git
+  git -C "$L5FX" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  L5HEAD=$(git -C "$L5FX" rev-parse HEAD)
   GREENJ="$FIXTURE/greenjournal.jsonl"
-  printf '%s\n' '{"id":"g","ts":"2026-06-22T00:00:00Z","session":"s","hook":"recursive-improve","event":"l3_cycle","source":"journal_append","fields":{"outcome":"green","run_id":"r","iteration":1}}' > "$GREENJ"
+  printf '%s\n' "{\"id\":\"g\",\"ts\":\"2026-06-24T00:00:00Z\",\"session\":\"s\",\"hook\":\"run-gauntlet\",\"event\":\"gauntlet_run\",\"source\":\"journal_append\",\"fields\":{\"sha\":\"$L5HEAD\",\"outcome\":\"green\",\"layers\":5,\"failed\":0,\"failing\":\"\",\"fast\":1}}" > "$GREENJ"
+  # stale green: a gauntlet_run green for a DIFFERENT sha (must not authorize this HEAD).
+  STALEJ="$FIXTURE/stalejournal.jsonl"
+  printf '%s\n' "{\"id\":\"g2\",\"ts\":\"2026-06-24T00:00:00Z\",\"session\":\"s\",\"hook\":\"run-gauntlet\",\"event\":\"gauntlet_run\",\"source\":\"journal_append\",\"fields\":{\"sha\":\"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\",\"outcome\":\"green\",\"layers\":5,\"failed\":0,\"failing\":\"\",\"fast\":1}}" > "$STALEJ"
+  # model-verdict-only: a quality_gate green (a model verdict) but no gauntlet_run green
+  # for HEAD — the model cannot self-bless; this must deny.
+  MODELJ="$FIXTURE/modeljournal.jsonl"
+  printf '%s\n' "{\"id\":\"q\",\"ts\":\"2026-06-24T00:00:00Z\",\"session\":\"s\",\"hook\":\"l4-quality-gate\",\"event\":\"quality_gate\",\"source\":\"journal_append\",\"fields\":{\"outcome\":\"green\"}}" > "$MODELJ"
+  EMPTYJ="$FIXTURE/emptyjournal.jsonl"; : > "$EMPTYJ"
   pcheck5() {
     local cwd="$1" env="$2" want="$3" label="$4" cmd="$5" out got
     out=$(printf '%s' "$(bash_event "$cmd")" | ( cd "$cwd" && env $env bash "$HOOKS/gates/push-gate.sh" ) 2>/dev/null)
@@ -416,10 +431,30 @@ if command -v python3 >/dev/null 2>&1; then
     if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "l5-ship-gate" "$label"
     else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "l5-ship-gate" "$label" "$want" "$got"; fi
   }
-  pcheck5 "$L5FX" "$ARMED_ENV CLAUDE_JOURNAL_PATH=$GREENJ"                      deny  "empty allowlist → deny (un-configured pushes nowhere)" "git push origin develop"
-  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"  none  "allowlisted origin + green gauntlet → allow" "git push origin develop"
-  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"  deny  "divergent remote → deny (cross-remote divergence)" "git push divergent develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST= CLAUDE_JOURNAL_PATH=$GREENJ"                      deny  "empty allowlist → deny (un-configured pushes nowhere)" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"   none  "allowlisted origin + green-for-HEAD → allow" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$STALEJ"   deny  "stale green (different sha) → deny" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$MODELJ"   deny  "model-verdict-only (quality_gate green, no gauntlet_run) → deny" "git push origin develop"
   pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$EMPTYJ"   deny  "no green gauntlet on record → deny (unverified)" "git push origin develop"
+  pcheck5 "$L5FX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$GREENJ"   deny  "divergent remote → deny (cross-remote divergence)" "git push divergent develop"
+
+  # --- security-loosening CRIT: a push whose range deletes a named gate (or removes a
+  # deny line) is denied EVEN when allowlisted + green-for-HEAD. Build a fixture repo
+  # with the gate committed at base, origin/develop pointed at base (hermetic —
+  # update-ref, no network), HEAD deleting the gate file. The CRIT must fire before the
+  # allow check. ---
+  SECFX="$FIXTURE/secrepo"; git init -q "$SECFX"
+  git -C "$SECFX" remote add origin git@github.com:wasikarn/kbg-harness.git
+  mkdir -p "$SECFX/hooks/gates"
+  printf '# deny dangerous\nhook_decision deny "force"\n' > "$SECFX/hooks/gates/secret-scan.sh"
+  git -C "$SECFX" add -A && git -C "$SECFX" -c user.email=t@t -c user.name=t commit -q -m base
+  SECBASE=$(git -C "$SECFX" rev-parse HEAD)
+  git -C "$SECFX" update-ref refs/remotes/origin/develop "$SECBASE"
+  git -C "$SECFX" rm -q hooks/gates/secret-scan.sh && git -C "$SECFX" -c user.email=t@t -c user.name=t commit -q -m delete-gate
+  SECHEAD=$(git -C "$SECFX" rev-parse HEAD)
+  SECJ="$FIXTURE/secjournal.jsonl"
+  printf '%s\n' "{\"id\":\"gs\",\"ts\":\"2026-06-24T00:00:00Z\",\"session\":\"s\",\"hook\":\"run-gauntlet\",\"event\":\"gauntlet_run\",\"source\":\"journal_append\",\"fields\":{\"sha\":\"$SECHEAD\",\"outcome\":\"green\",\"layers\":5,\"failed\":0,\"failing\":\"\",\"fast\":1}}" > "$SECJ"
+  pcheck5 "$SECFX" "$ARMED_ENV KBG_L5_SHIP_ALLOWLIST=github.com:wasikarn CLAUDE_JOURNAL_PATH=$SECJ" deny "security-gate deletion in push range → CRIT deny (loosened brake)" "git push origin develop"
 
   # --- audit #50: the L5 ship-gate leg must keep the empty-allowlist default + the
   # divergence DENY + the green-gauntlet requirement (design §8.5, #35). Inject a

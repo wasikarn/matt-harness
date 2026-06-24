@@ -24,6 +24,15 @@ fi
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$REPO_ROOT" || { echo "run-gauntlet: cannot cd to $REPO_ROOT" >&2; exit 2; }
 
+# Source _lib.sh for journal_append — the gauntlet emits a `gauntlet_run` event on
+# completion (ADR 0005 addendum 0005-addendum-manual-push-precondition-waiver.md): the
+# computational ship-gate evidence the L5 push leg reads. SHA-bound so the L5 leg can
+# require green-for-HEAD (closes the stale-green gap). Graceful degrade: no _lib.sh /
+# no jq / no journal_append → silent skip (the gauntlet's exit code is unchanged, so
+# non-journaling callers are unaffected). Mirrors l4-quality-gate.sh's sourcing pattern.
+_JLIB="$REPO_ROOT/hooks/_lib.sh"
+[ -f "$_JLIB" ] && command -v jq >/dev/null 2>&1 && source "$_JLIB" 2>/dev/null || true
+
 FAST=0
 for arg in "$@"; do
   case "$arg" in
@@ -90,6 +99,7 @@ run_layer "eval-gate" "python3 eval/run-eval.py --dataset eval/datasets/ --regre
 
 TOTAL=${#LAYER_PIDS[@]}
 FAILURES=0
+FAILING_NAMES=""
 SLOWEST_NAME=""
 SLOWEST_TIME=0
 
@@ -114,6 +124,7 @@ for ((i=0; i<TOTAL; i++)); do
   if [ "$rc" -ne 0 ]; then
     status="FAIL"
     FAILURES=$((FAILURES + 1))
+    FAILING_NAMES+="${name} "
   else
     status="PASS"
   fi
@@ -137,5 +148,18 @@ done
 
 echo "run-gauntlet: summary — $FAILURES/$TOTAL layer(s) failed"
 echo "run-gauntlet: slowest layer was ${SLOWEST_NAME:-none} at ${SLOWEST_TIME}s"
+
+# Emit the computational ship-gate evidence (ADR 0005 addendum). SHA-bound so the L5
+# push leg can require green-for-HEAD. Best-effort: never changes the exit code.
+if command -v journal_append >/dev/null 2>&1; then
+  _head=$(git rev-parse HEAD 2>/dev/null || echo "")
+  if [ -n "$_head" ]; then
+    if [ "$FAILURES" = "0" ]; then _out="green"; else _out="red"; fi
+    _failing="${FAILING_NAMES% }"
+    journal_append "run-gauntlet" "gauntlet_run" \
+      "{\"sha\":\"$_head\",\"outcome\":\"$_out\",\"layers\":$TOTAL,\"failed\":$FAILURES,\"failing\":\"$_failing\",\"fast\":$FAST}" \
+      >/dev/null 2>&1 || true
+  fi
+fi
 
 exit "$FAILURES"

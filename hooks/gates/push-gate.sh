@@ -97,16 +97,19 @@ if [ "${KBG_REVIEW_DONE:-}" = "1" ]; then
   hook_decision deny "autonomy run: KBG_REVIEW_DONE=1 is set but no maker≠checker kbg:review-pr pass (review_finding event) is in the recent audit trail — run kbg:review-pr on the batch first, THEN set KBG_REVIEW_DONE=1 (design §10, ADR 0004 Gate-2 strengthening)."
 fi
 
-# 2b. L5 auto-push ship-gate (ADR 0005, design §8.5, #35). With the human out of the
-#     push loop, a green-gauntlet batch may auto-push — BUT only to a destination
-#     whose host+org is in the configured allowlist (KBG_L5_SHIP_ALLOWLIST, default
-#     EMPTY → an un-configured install pushes NOWHERE), AND only after a green
-#     gauntlet (a recent l3_cycle green event). The model never authorizes the ship —
-#     this leg is purely computational. Deny on divergence / un-configured /
-#     unverified, fail-closed. Flag-OFF + L4 (KBG_REVIEW_DONE) behaviour is unchanged
-#     — this leg only fires when Gate 2 was NOT cleared. It ports the MECHANISM of the
-#     owner's cross-org push rule (origin-vs-destination divergence), never the named
-#     orgs — the portable substitute is the host+org allowlist, default empty.
+# 2b. L5 auto-push ship-gate (ADR 0005 + addendum 0005-addendum-manual-push-precondition-
+#     waiver.md, design §8.5, #35). With the human out of the push loop (manual armed
+#     push under the addendum; the unattended launchd loop stays paused behind the
+#     N≥20-cycle precondition), a green-gauntlet batch may auto-push — BUT only to a
+#     dest in KBG_L5_SHIP_ALLOWLIST (default EMPTY → an un-configured install pushes
+#     NOWHERE), only after a SHA-bound green gauntlet, and only if the push range does
+#     NOT loosen a cross-repo security gate. The model never authorizes the ship — this
+#     leg is purely computational. Fail-closed: missing green / un-configured / CRIT →
+#     fall through to the unreviewed-deny. Flag-OFF + L4 (KBG_REVIEW_DONE) behaviour is
+#     unchanged — this leg only fires when Gate 2 was NOT cleared. It ports the
+#     MECHANISM of the owner's cross-org push rule (origin-vs-destination divergence),
+#     never the named orgs — the portable substitute is the host+org allowlist, default
+#     empty.
 if printf '%s\n' "$STRIPPED" | $_GREP -qE "$PUSH_PAT"; then
   _rem=$(printf '%s\n' "$STRIPPED" | awk '{for(i=1;i<=NF;i++) if($i=="push"){for(j=i+1;j<=NF;j++) if($j !~ /^-/){print $j; exit}}}')
   _dest=""
@@ -116,14 +119,63 @@ if printf '%s\n' "$STRIPPED" | $_GREP -qE "$PUSH_PAT"; then
     _dest=$(printf '%s\n' "$_url" | sed -E 's#^(git@|ssh://git@|https?://|git://)##; s#\.git$##; s#^([^/:]+)[:/]([^/]+)/.*$#\1:\2#')
   fi
   _allow="${KBG_L5_SHIP_ALLOWLIST:-}"
-  _green=0
-  _jpath="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
-  if [ -f "$_jpath" ] && tail -n 500 "$_jpath" 2>/dev/null | $_GREP -q '"outcome":"green"'; then _green=1; fi
-  # Allow ONLY if dest is in the allowlist AND a green gauntlet is on record.
-  if [ -n "$_dest" ] && [ -n "$_allow" ] && [ "$_green" = "1" ]; then
-    case ",$_allow," in *",$_dest,"*) exit 0 ;; esac
+  # (a) Allowlist gate: dest must be configured. Empty allowlist → pushes nowhere.
+  _allow_ok=0
+  if [ -n "$_dest" ] && [ -n "$_allow" ]; then
+    case ",$_allow," in *",$_dest,"*) _allow_ok=1 ;; esac
   fi
-  # Else fall through to the unreviewed-deny (divergence / un-configured / unverified).
+  # (b) SHA-bound green gauntlet: the MOST RECENT gauntlet_run for the HEAD being
+  #     pushed must be green. Not a stale any-green (a prior run's green must NOT
+  #     authorize an unrelated commit), and not a model verdict (a quality_gate /
+  #     review_finding green does not satisfy this — the model cannot self-bless; it
+  #     must run the deterministic gauntlet, which journals gauntlet_run). A later red
+  #     for the same sha denies.
+  _green=0
+  _head=""
+  _jpath="${CLAUDE_JOURNAL_PATH:-$HOME/.claude/governance-events.jsonl}"
+  if command -v git >/dev/null 2>&1; then
+    _head=$(git rev-parse HEAD 2>/dev/null || echo "")
+  fi
+  if [ -n "$_head" ] && [ -f "$_jpath" ]; then
+    _last=$(tail -n 5000 "$_jpath" 2>/dev/null | $_GREP -F "\"sha\":\"$_head\"" | $_GREP 'gauntlet_run' | tail -1)
+    if [ -n "$_last" ] && printf '%s' "$_last" | $_GREP -q '"outcome":"green"'; then
+      _green=1
+    fi
+  fi
+  # (c) Cross-repo CRIT (ADR 0005 §floor 2): block a push that LOOSENS a security brake.
+  #     Keys on the three ADR-named gates (secret-scan / block-dangerous-git /
+  #     db-write-gate): a file deletion in the push range, or a removed deny line, is a
+  #     loosened brake → CRIT deny. "Touches a gate" is NOT the trigger (the owner
+  #     legitimately edits gates — including this very change); "loosens a brake" is.
+  #     The human-review override (KBG_REVIEW_DONE, the Gate-2 block above) still
+  #     authorizes the exceptional case. Degrade: if the range can't be computed, skip
+  #     (green-for-HEAD still applies).
+  _crit=0
+  _crit_msg=""
+  if command -v git >/dev/null 2>&1 && [ -n "$_head" ]; then
+    _base=$(git merge-base origin/develop HEAD 2>/dev/null || echo "")
+    if [ -n "$_base" ] && [ "$_base" != "$_head" ]; then
+      for _gate in hooks/gates/secret-scan.sh hooks/gates/block-dangerous-git.sh hooks/gates/db-write-gate.sh; do
+        _existed_at_base=0; git cat-file -e "${_base}:${_gate}" >/dev/null 2>&1 && _existed_at_base=1
+        _exists_at_head=0; git cat-file -e "HEAD:${_gate}" >/dev/null 2>&1 && _exists_at_head=1
+        if [ "$_existed_at_base" = "1" ] && [ "$_exists_at_head" = "0" ]; then
+          _crit=1; _crit_msg="$_gate was deleted in the push range (loosened brake)"
+        elif [ "$_existed_at_base" = "1" ] && [ "$_exists_at_head" = "1" ]; then
+          _removed=$(git diff "$_base" HEAD -- "$_gate" 2>/dev/null | $_GREP -E '^-.*(deny|DENY|CRIT|block|forbid|permissionDecision.*deny|dangerous|secret|password|token|db[._-]write|DB_WRITE)' || true)
+          if [ -n "$_removed" ]; then
+            _crit=1; _crit_msg="$_gate had a deny line removed in the push range (potential loosened brake)"
+          fi
+        fi
+      done
+    fi
+  fi
+  if [ "$_crit" = "1" ]; then
+    hook_decision deny "autonomy run (L5 ship-gate): cross-repo CRIT — $_crit_msg. A push that loosens a security brake is never part of shipping (ADR 0005 §floor 2). Review the change and push via the Gate-2 path (KBG_REVIEW_DONE) if the loosening is intended."
+  fi
+  # Allow ONLY if allowlisted AND green-for-HEAD. Else fall through to the unreviewed-deny.
+  if [ "$_allow_ok" = "1" ] && [ "$_green" = "1" ]; then
+    exit 0
+  fi
 fi
 
 # 3. Unreviewed batch → deny ship / merge / gauntlet-disable.
