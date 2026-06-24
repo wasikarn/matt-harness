@@ -48,8 +48,18 @@ EOF
 SE_JSONL='{"hook_event_name":"SessionEnd","session_id":"jsonl-conv","transcript_path":"'$JSONL_CONV'"}'
 HOME="$FIXTURE" KBG_IDEATE_OLLAMA_TIMEOUT=1 \
   check_task "session/ideate-convergence-capture.sh" 0 "" "appends record for JSONL ideate call" "$SE_JSONL"
-if [ -s "$FIXTURE/.claude/state/ideate-embeddings.jsonl" ] \
-    && /usr/bin/grep -qF '"session_id":"jsonl-conv"' "$FIXTURE/.claude/state/ideate-embeddings.jsonl"; then
+# The hook forks the capture to a `nohup` background child and returns in
+# <50ms, so the record lands after the hook exits. Poll for it (also drains
+# the worker so it cannot leak a late write into test #8's isolated state).
+_record_ok=0
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  if [ -s "$FIXTURE/.claude/state/ideate-embeddings.jsonl" ] \
+      && /usr/bin/grep -qF '"session_id":"jsonl-conv"' "$FIXTURE/.claude/state/ideate-embeddings.jsonl"; then
+    _record_ok=1; break
+  fi
+  sleep 0.3
+done
+if [ "$_record_ok" = "1" ]; then
   PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "convergence-capture" "record present in isolated state"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "convergence-capture" "record missing in isolated state"
