@@ -102,8 +102,13 @@ SECRET = re.compile(
 # inside a code comment / <system-reminder> / local-command block is not matched.
 TAG = re.compile(r"<(system-reminder|local-command[^>]*|command-name|command-args|persisted-output)>.*?</\1>", re.S)
 SELFCLOSE = re.compile(r"<[^>]+/>")
-FENCE = re.compile(r"```.*?```", re.S)
-BACKTICK = re.compile(r"`[^`]*`")
+# ponytail: backtick kept as \x60 (not literal) so bash 3.2's parser doesn't
+# misread it inside this <<'PY' heredoc — bash 3.2 -n hunts literal backticks in
+# quoted-heredoc bodies and false-positives "unexpected EOF"; 5.x is unaffected.
+# Byte-identical to the old r"```.*?```" / r"`[^`]*`" forms.
+BT = "\x60"
+FENCE = re.compile(BT * 3 + ".*?" + BT * 3, re.S)
+BACKTICK = re.compile(BT + "[^" + BT + "]*" + BT)
 
 
 def clean(text):
