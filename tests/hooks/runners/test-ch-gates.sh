@@ -225,7 +225,7 @@ check gates/validator-bash-guard.sh deny "code-reviewer + pipe env -i bash"     
 check gates/validator-bash-guard.sh deny "code-reviewer + pipe sudo -u root bash"    "$(validator_bash_event 'code-reviewer' 'echo rm -rf / | sudo -u root bash')"
 check gates/validator-bash-guard.sh deny "code-reviewer + variable indirection bash"  "$(validator_bash_event 'code-reviewer' 'x=bash; $x -c "echo pwn"')"
 check gates/validator-bash-guard.sh deny "code-reviewer + backtick indirection bash"   "$(validator_bash_event 'code-reviewer' '`which bash` -c \"echo pwn\"')"
-check gates/validator-bash-guard.sh deny "code-reviewer + quoted variable indirection bash" "$(validator_bash_event 'code-reviewer' '\"$x\" -c \"echo pwn\"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + quoted variable indirection bash" "$(validator_bash_event 'code-reviewer' '"$x" -c "echo pwn"')"
 check gates/validator-bash-guard.sh deny "code-reviewer + compound variable indirection"  "$(validator_bash_event 'code-reviewer' '($x -c \"echo pwn\")')"
 check gates/validator-bash-guard.sh deny "code-reviewer + env with var bash"             "$(validator_bash_event 'code-reviewer' 'env PATH=/bin bash -c \"echo pwn\"')"
 check gates/validator-bash-guard.sh deny "code-reviewer + env --ignore-environment bash" "$(validator_bash_event 'code-reviewer' 'env --ignore-environment bash')"
@@ -236,6 +236,24 @@ check gates/validator-bash-guard.sh deny "code-reviewer + pipe sudo -E bash"    
 check gates/validator-bash-guard.sh deny "code-reviewer + pipe nice -n 19 bash"           "$(validator_bash_event 'code-reviewer' 'echo pwn | nice -n 19 bash')"
 check gates/validator-bash-guard.sh deny "code-reviewer + wget long-form output"      "$(validator_bash_event 'code-reviewer' 'wget --output-document /tmp/x https://example.com/f')"
 check gates/validator-bash-guard.sh deny "code-reviewer + sed --in-place"             "$(validator_bash_event 'code-reviewer' 'sed --in-place "s/a/b/" file')"
+# v0.4.15 — close remaining validator-bash-guard bypasses from v0.4.14 maker≠checker review.
+# Backslash escaping only suppresses alias expansion; the underlying mutation/interpreter
+# command is unchanged.
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash rm"            "$(validator_bash_event 'code-reviewer' '\rm -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash bash -c"       "$(validator_bash_event 'code-reviewer' '\bash -c "rm -rf /tmp/foo"')"
+# ANSI-C quotes encode arbitrary bytes (newlines, etc.) and are not stripped.
+check gates/validator-bash-guard.sh deny "code-reviewer + ANSI-C newline chain"    "$(validator_bash_event 'code-reviewer' "git diff\\$'\\n'rm -rf /tmp/foo")"
+# Literal newline also defeats the single-prefix allow-list model.
+check gates/validator-bash-guard.sh deny "code-reviewer + literal newline chain"    "$(validator_bash_event 'code-reviewer' $'git diff\nrm -rf /tmp/foo')"
+# xargs executes arbitrary commands with attacker-controlled input.
+check gates/validator-bash-guard.sh deny "code-reviewer + xargs rm pipe"          "$(validator_bash_event 'code-reviewer' 'echo /tmp/foo | xargs rm')"
+check gates/validator-bash-guard.sh deny "code-reviewer + xargs bash -c"          "$(validator_bash_event 'code-reviewer' 'xargs bash -c "rm -rf /tmp/foo"')"
+# Quoted variable/backtick as command word, even without a following interpreter flag.
+check gates/validator-bash-guard.sh deny "code-reviewer + quoted var as rm word"   "$(validator_bash_event 'code-reviewer' 'cmd="rm"; "$cmd" -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + quoted backtick as bash" "$(validator_bash_event 'code-reviewer' '"`which bash`" -c "rm -rf /tmp/foo"')"
+# Sanity: backslash on an allow-listed command still works.
+check gates/validator-bash-guard.sh none "code-reviewer + backslash git diff"     "$(validator_bash_event 'code-reviewer' '\git diff')"
+
 # Sanity checks: legitimate read-only commands must still pass.
 check gates/validator-bash-guard.sh none "code-reviewer + git diff"                   "$(validator_bash_event 'code-reviewer' 'git diff')"
 check gates/validator-bash-guard.sh none "code-reviewer + ls"                       "$(validator_bash_event 'code-reviewer' 'ls -la')"

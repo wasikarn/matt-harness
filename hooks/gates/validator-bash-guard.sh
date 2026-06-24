@@ -62,6 +62,12 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 }
 [ -z "$COMMAND" ] && exit 0
 
+# Normalize backslash-escaped command words (\rm, \bash, etc.) so that existing
+# allow/deny patterns see the real token. The leading backslash only suppresses
+# alias expansion; the underlying mutation/interpreter command is unchanged.
+RAW_COMMAND=$COMMAND
+COMMAND=$(printf '%s\n' "$COMMAND" | sed -E "s/(^|[[:space:];|&()<>'\"])\\\\([[:alnum:]_-])/\1\2/g")
+
 # Narrow read-only exception: `python3 -m pytest` is a common test invocation
 # that the generic `python3 -m` deny (arbitrary module execution) would
 # otherwise block. We allow it ONLY when the entire command is a single
@@ -70,7 +76,7 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 # is already handled by ALLOW_PREFIXES; this carve-out covers the
 # `python[0-9]* -m` form (python, python3, python3.11, ...).
 if [[ "$COMMAND" != *$'\n'* ]] &&
-   printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
+   printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`\\])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)' &&
    ! printf '%s\n' "$COMMAND" | command grep -qE '[;|&`$()\<>"'"'"'"]'; then
   exit 0
 fi
@@ -78,9 +84,9 @@ fi
 # Python with any flag other than -m pytest is an arbitrary-code path
 # (-c, -i, -u script.py, --command, etc.). Read-only validators only need
 # `python[0-9]* -m pytest`; everything else is denied.
-if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-' &&
-   ! printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted python flag other than -m pytest: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`\\])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-' &&
+   ! printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`\\])((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest([[:space:]]|$)'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted python flag other than -m pytest: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0
 fi
 
@@ -99,7 +105,7 @@ fi
 # stripped because POSIX ERE treats a literal newline as matching a newline
 # in the input, not as regex syntax.
 read -r -d '' DENY_PATTERNS <<'REGEX'
-(^|[[:space:];&|()`'"])(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
+(^|[[:space:];&|()`'"\\])(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-c|python[0-9]*(\.[0-9]*)*[[:space:]]+-m|python[0-9]*(\.[0-9]*)*[[:space:]]+-([[:space:]]|$)|bash[[:space:]]+-(c|s)|sh[[:space:]]+-(c|s)|zsh[[:space:]]+-(c|s)|dash[[:space:]]+-(c|s)|ksh[[:space:]]+-(c|s)|node[[:space:]]+-[ep]|perl[[:space:]]+-[Ee]|ruby[[:space:]]+-e|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|>[[:space:]]*[^[:space:]|;&)]|tee[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|(curl|wget)[[:space:]]+.*[|][[:space:]]*((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+(["'][^"';|]*["']|[^[:space:];&|()`"]+)([[:space:]]|$)|(^|[[:space:];&|()`'"\\])(source|[.])[[:space:]]+[$<\`]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?(bash|sh|zsh|dash|ksh))[[:space:]]+(-(c|s)|--init-file|--rcfile)|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?node)[[:space:]]+-[ep]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?ruby)[[:space:]]+-e|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(sudo[[:space:]]+)?perl)[[:space:]]+-[Ee]|(((/usr(/local)?/|/)?bin/)?(env[[:space:]]+)?(python[0-9]*(\.[0-9]*)*|bash|sh|zsh|dash|ksh|node|ruby|perl))[[:space:]]+[^-[:space:];&|()<>`"][^[:space:];&|()<>`"]*([[:space:]]|$)|npm[[:space:]]+(publish|uninstall)|pip[[:space:]]+uninstall|docker[[:space:]]+(push|build))
 REGEX
 DENY_PATTERNS=${DENY_PATTERNS//$'\n'/}
 
@@ -107,13 +113,20 @@ DENY_PATTERNS=${DENY_PATTERNS//$'\n'/}
 # hook_strip_quoted would strip away.
 if printf '%s\n' "$COMMAND" | command grep -qE "$DENY_PATTERNS"; then
   matched=$(printf '%s\n' "$COMMAND" | command grep -oE "$DENY_PATTERNS" | head -1)
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
 # Strip quoted strings and comments so we match shell intent, not the
 # literal contents of strings (mirrors block-bash-doctrine-write pattern).
 STRIPPED=$(hook_strip_quoted "$COMMAND")
+
+# ANSI-C quotes ($'...') encode arbitrary bytes (including newlines) and are
+# not stripped by hook_strip_quoted. Read-only validators never need them.
+if printf '%s' "$COMMAND" | command grep -qE "\$'"; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted ANSI-C quote (can encode hidden commands): $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
 
 # Fast path: allow-list of read-only command prefixes. Order matters
 # loosely — these are anchored on the first token, so a subshell
@@ -123,7 +136,8 @@ STRIPPED=$(hook_strip_quoted "$COMMAND")
 # allow-list because quote-stripping made them bypass vectors (any
 # payload inside quotes was invisible after hook_strip_quoted).
 ALLOW_PREFIXES='^(git[[:space:]]+(diff|log|show|status|shortlog|rev-parse|describe|tag|name-rev|ls-files|ls-remote|remote[[:space:]]+-v)[[:space:]]|ls[[:space:]]|cat[[:space:]]|head[[:space:]]|tail[[:space:]]|wc[[:space:]]|grep[[:space:]]|rg[[:space:]]|find[[:space:]]|jq[[:space:]]|npm[[:space:]]+test[[:space:]]|pytest[[:space:]]|cargo[[:space:]]+test[[:space:]]|go[[:space:]]+test[[:space:]]|npx[[:space:]]+(jest|vitest|mocha|playwright)[[:space:]]|python[0-9]*(\.[0-9]*)*[[:space:]]+-m[[:space:]]+pytest[[:space:]])'
-if printf '%s\n' "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES" &&
+if [[ "$RAW_COMMAND" != *$'\n'* ]] &&
+   printf '%s\n' "$STRIPPED" | command grep -qE "$ALLOW_PREFIXES" &&
    ! printf '%s\n' "$STRIPPED" | command grep -qE '[;|&`$()<>"'"'"'"]'; then
   exit 0
 fi
@@ -133,7 +147,7 @@ fi
 # disappears during hook_strip_quoted. Deny the stripped husk so validators
 # cannot use source "$(...)" or bash "$(...)" to execute arbitrary code.
 if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[[:space:];&|/()`'"'"'"])(source|[.]|python[0-9]*(\.[0-9]*)*|bash|sh|node|ruby|perl)[[:space:]]+$'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter/source with quoted/arbitrary argument: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter/source with quoted/arbitrary argument: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -141,7 +155,7 @@ fi
 # substitution (<()). A read-only validator has no legitimate reason to run
 # bash <(curl ...), python3 <<EOF, python3 <(foo), etc.
 if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '(^|[[:space:];&|/()`'"'"'"])(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)[[:space:]]*(<|<<)'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter with heredoc/process-substitution input: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter with heredoc/process-substitution input: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -151,7 +165,15 @@ fi
 # echo 'rm -rf /' | bash, etc. Prefix wrappers (nice, timeout, command,
 # env/sudo with flags, doas, run0) are also denied.
 if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '[|][[:space:]]+((/usr(/local)?/|/)?bin/)?(nice[[:space:]]+(-n[[:space:]]+[0-9]+[[:space:]]+)?|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|command[[:space:]]+|doas[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?|run0[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(env[[:space:]]+([[:alnum:]_-]+(=[^[:space:]]*)?[[:space:]]+|(-[a-zA-Z]|--[a-z-]+)([[:space:]]+[^[:space:]]+)?[[:space:]]+)*)?(sudo[[:space:]]+(-[uSiE]+([[:space:]]+[[:alnum:]_-]+)?[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted pipe-to-interpreter (arbitrary code execution): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted pipe-to-interpreter (arbitrary code execution): $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  exit 0  # P0: security fix — explicit exit after deny
+fi
+
+# xargs executes an arbitrary command with attacker-controlled input. The
+# pipe-to-interpreter check above catches `... | bash`; this catches `... | xargs rm`
+# and `xargs bash -c ...` before the backstop.
+if printf '%s\n' "$STRIPPED" | tr '\n' ' ' | command grep -qE '(^|[[:space:];|&()<>'"'"'"])xargs([[:space:]]|$)'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted xargs wrapper (arbitrary command execution): $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -163,7 +185,7 @@ fi
 # bash --norc --init-file, etc.
 INTERPRETER_BACKSTOP='^((/usr(/local)?/|/)?bin/)?(exec[[:space:]]+|command[[:space:]]+|nice[[:space:]]+(-n[[:space:]]+[0-9]+[[:space:]]+)?|timeout[[:space:]]+(-?[0-9]+[smhd]?[[:space:]]+)?|doas[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?|run0[[:space:]]+(-[a-zA-Z]+[[:space:]]+[[:alnum:]_-]+[[:space:]]+)?)?(env[[:space:]]+([[:alnum:]_-]+(=[^[:space:]]*)?[[:space:]]+|(-[a-zA-Z]|--[a-z-]+)([[:space:]]+[^[:space:]]+)?[[:space:]]+)*)?(sudo[[:space:]]+(-[uSiE]+([[:space:]]+[[:alnum:]_-]+)?[[:space:]]+)?)?(bash|sh|zsh|dash|ksh|python[0-9]*(\.[0-9]*)*|node|ruby|perl)([[:space:]]|$)'
 if printf '%s\n' "$STRIPPED" | command grep -qE "$INTERPRETER_BACKSTOP"; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter invocation: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted interpreter invocation: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -175,12 +197,12 @@ fi
 #   2. Post-strip: an unquoted $ or backtick at the start of a command word
 #      (e.g. x=bash; $x -c "id", `which bash` -c "id"), including after
 #      compound-command openers.
-if printf '%s' "$COMMAND" | command grep -qE '(^|[];|\|&(){}<>[[:space:]])[[:space:]]*"[^"]*[$`][^"]*"([[:space:]]+-(c|e|p|r|s|[Ee])|[[:space:]]*$)'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted quoted variable/backtick indirection: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+if printf '%s' "$COMMAND" | command grep -qE '(^|[;|&(){}<>]|\n)[[:space:]]*"[^"]*[$`][^"]*"'; then
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted quoted variable/backtick command-word indirection: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 if printf '%s\n' "$STRIPPED" | command grep -qE '(^|[];|\|&(){}<>[[:space:]])[[:space:]]*[$`]'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted variable or backtick indirection: $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted variable or backtick indirection: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -190,7 +212,7 @@ fi
 # with `;:`. Some variants use `;}`. Match the structural shape (function
 # definition + self-recursion + background pipe) rather than the exact terminator.
 if printf '%s\n' "$STRIPPED" | command grep -qE ':[[:space:]]*\(\)[[:space:]]*\{[[:space:]]*:[[:space:]]*\|[[:space:]]*:[[:space:]]*&[[:space:]]*\}[[:space:]]*;'; then
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted fork-bomb pattern: $COMMAND. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted fork-bomb pattern: $RAW_COMMAND. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
@@ -198,7 +220,7 @@ fi
 # detection and catches anything the full-command check missed.
 if printf '%s\n' "$STRIPPED" | command grep -qE "$DENY_PATTERNS"; then
   matched=$(printf '%s\n' "$STRIPPED" | command grep -oE "$DENY_PATTERNS" | head -1)
-  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
+  hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted mutation ($matched): $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
 
