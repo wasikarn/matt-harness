@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready, after addressing feedback, or when asked to review changes/aspects. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool)."
+description: "Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready, after addressing feedback, or when asked to review changes/aspects. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: a quick diff review (use /code-review, optionally --fix/--comment/ultra) or a single GitHub PR (use /review), single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool)."
 ---
 
 # Comprehensive PR Review
