@@ -62,13 +62,30 @@ COMMAND=$(printf '%s\n' "$TOOL_INPUT" | jq -r '.command // empty') || {
 }
 [ -z "$COMMAND" ] && exit 0
 
-# Normalize backslash-escaped command words (\rm, \bash, etc.) and quote-split
-# words (b'a's'h, 'rm' -rf) so that allow/deny patterns see the real token.
-# The leading backslash only suppresses alias expansion; quote-splitting is
-# shell concatenation. Both hide the underlying command from literal matchers.
+# Normalize backslash-escaped command words (\rm, \bash, etc.), quote-split
+# words (b'a's'h, 'rm' -rf), and backslash-newline line continuations so
+# allow/deny patterns see the real token. The shell drops all three before
+# execution, so a literal matcher that does not drop them is bypassable.
 RAW_COMMAND=$COMMAND
-COMMAND=$(printf '%s\n' "$COMMAND" | sed -E "s/(^|[[:space:];|&()<>'\"\/])\\\\([[:alnum:]_-])/\1\2/g" | tr -d "'\"")
-
+# 1. Join backslash-newline continuations (\<LF>) so rm\<LF>-rf becomes rm -rf.
+# 2. Drop leading backslashes: \rm \bash.
+# 3. Drop in-word backslashes: r\m, gi\t, b\ash.
+# 4. Drop quotes: b'a's'h and "rm" collapse to bare tokens.
+COMMAND=$(printf '%s\n' "$COMMAND" | command awk '
+  {
+    if ($0 ~ /(^|[^\\])\\$/) {
+      sub(/\\$/, "")
+      printf "%s", $0
+      next
+    }
+    print
+  }
+' | sed -E \
+  -e "s/(^|[[:space:];|&()<>'\"\\/])\\\\([[:alnum:]_-])/\\1\\2/g" \
+  -e "s/([[:alnum:]_-])\\\\([[:alnum:]_-])/\\1\\2/g" \
+  -e "s/([[:alnum:]_-])\\\\([[:alnum:]_-])/\\1\\2/g" \
+  -e "s/([[:alnum:]_-])\\\\([[:alnum:]_-])/\\1\\2/g" \
+  | tr -d "'\"")
 # Narrow read-only exception: `python3 -m pytest` is a common test invocation
 # that the generic `python3 -m` deny (arbitrary module execution) would
 # otherwise block. We allow it ONLY when the entire command is a single
@@ -91,10 +108,11 @@ if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|(&`\\])((/usr(/lo
   exit 0
 fi
 
-# su/sudo shell-spawning flags do not require an explicit interpreter token
-# after them. Catch `sudo -i/-s`, any `su` invocation (bare, user, -c),
-# and privilege-escalation wrappers around su (`sudo su`, `doas su`, etc.).
-if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|&(){}<>])(sudo[[:space:]]+-(i|s)|su([[:space:];|&(){}<>]|$))'; then
+# su/sudo/doas shell-spawning flags do not require an explicit interpreter token
+# after them. Catch `sudo -i/-s/--login/--shell`, `doas -s`, any `su` invocation
+# (bare, user, -c), and privilege-escalation wrappers around su (`sudo su`,
+# `doas su`, etc.).
+if printf '%s\n' "$COMMAND" | command grep -qE '(^|[[:space:];|&(){}<>])(sudo[[:space:]]+(-(i|s)|--(login|shell))|doas[[:space:]]+-s|su([[:space:];|&(){}<>]|$))'; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted shell-spawning su/sudo: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny
 fi
@@ -102,7 +120,7 @@ fi
 # Absolute-path mutation verbs and xargs bypass the separator-based deny list
 # because the leading '/' is not a separator. Catch /bin/rm, /usr/bin/sed -i,
 # /opt/homebrew/bin/xargs rm, /tmp/custom/rm, /usr/bin/git push, etc.
-ABS_PATH_MUTATION_RE='(^|[[:space:];|&(){}<>])[[:space:]]*(/[[:alnum:]_./-]+/)?(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|tee[[:space:]]|xargs([[:space:]]|$)|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|npm[[:space:]]+(publish|uninstall)|pip3?[[:space:]]+uninstall|docker[[:space:]]+(push|build))'
+ABS_PATH_MUTATION_RE='(^|[[:space:];|&(){}<>])[[:space:]]*([[:alnum:]_./-]+/)?(rm[[:space:]]|sed[[:space:]]+(-i|--in-place)|eval[[:space:]]|mv[[:space:]]|cp[[:space:]]|chmod[[:space:]]|chown[[:space:]]|touch[[:space:]]|mkdir[[:space:]]|mkfifo[[:space:]]|ln[[:space:]]|install[[:space:]]|tee[[:space:]]|xargs([[:space:]]|$)|git[[:space:]]+(push|commit|merge|rebase[[:space:]]+-i|reset[[:space:]]+--hard|clean[[:space:]]+-fd)|curl[[:space:]]+.*-X[[:space:]]+(POST|PUT|DELETE|PATCH)|curl[[:space:]]+.*-(o|O|output|remote-name)|wget[[:space:]]+(-O|--output-document)(=|[[:space:]])|npm[[:space:]]+(publish|uninstall|install)|pip3?[[:space:]]+(uninstall|install)|docker[[:space:]]+(push|build|run|exec)|go[[:space:]]+(run|build|install)|make[[:space:]]+install|tar[[:space:]]+.*--to-command)'
 if printf '%s\n' "$COMMAND" | command grep -qE "$ABS_PATH_MUTATION_RE"; then
   hook_decision deny "VALIDATOR-BASH: $AGENT_TYPE attempted absolute-path mutation or xargs: $RAW_COMMAND. Validators are read-only-by-doctrine — use Edit/Write tools for mutations, or dispatch a writer-class agent. Bypass: CLAUDE_DISABLED_HOOKS=validator-bash-guard"
   exit 0  # P0: security fix — explicit exit after deny

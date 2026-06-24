@@ -298,6 +298,32 @@ check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/wget -O"     
 check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/npm publish"      "$(validator_bash_event 'code-reviewer' '/usr/bin/npm publish')"
 check gates/validator-bash-guard.sh deny "code-reviewer + /usr/bin/pip3 uninstall"   "$(validator_bash_event 'code-reviewer' '/usr/bin/pip3 uninstall foo')"
 check gates/validator-bash-guard.sh deny "code-reviewer + nonstandard path rm"      "$(validator_bash_event 'code-reviewer' '/tmp/rm -rf /foo')"
+# v0.4.18 — close bypasses found in the v0.4.17 focused security re-review.
+# In-word backslash escapes still drop to the real token (r\m, b\ash, gi\t).
+check gates/validator-bash-guard.sh deny "code-reviewer + in-word backslash rm"     "$(validator_bash_event 'code-reviewer' 'r\m -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + in-word backslash bash"   "$(validator_bash_event 'code-reviewer' 'b\ash -c "id"')"
+check gates/validator-bash-guard.sh deny "code-reviewer + in-word backslash git"     "$(validator_bash_event 'code-reviewer' 'gi\t push origin main')"
+# Relative-path mutation verbs bypass absolute-path anchoring.
+check gates/validator-bash-guard.sh deny "code-reviewer + ./rm"                    "$(validator_bash_event 'code-reviewer' './rm -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + bin/rm"                 "$(validator_bash_event 'code-reviewer' 'bin/rm -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + ../bin/rm"              "$(validator_bash_event 'code-reviewer' '../bin/rm -rf /tmp/foo')"
+# Non-listed package/build/runners that execute or mutate state.
+check gates/validator-bash-guard.sh deny "code-reviewer + npm install"              "$(validator_bash_event 'code-reviewer' 'npm install foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + pip install"             "$(validator_bash_event 'code-reviewer' 'pip install foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + docker run"             "$(validator_bash_event 'code-reviewer' 'docker run --rm evil/image')"
+check gates/validator-bash-guard.sh deny "code-reviewer + go run"                  "$(validator_bash_event 'code-reviewer' 'go run main.go')"
+check gates/validator-bash-guard.sh deny "code-reviewer + make install"           "$(validator_bash_event 'code-reviewer' 'make install')"
+check gates/validator-bash-guard.sh deny "code-reviewer + tar to-command bash"    "$(validator_bash_event 'code-reviewer' 'tar -cf /tmp/x /etc --to-command=bash')"
+# Backslash-newline line continuations join before the shell sees them.
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash-newline rm"      "$(validator_bash_event 'code-reviewer' $'rm\\\n -rf /tmp/foo')"
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash-newline bash"    "$(validator_bash_event 'code-reviewer' $'ba\\\nsh -c id')"
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash-newline git"     "$(validator_bash_event 'code-reviewer' $'gi\\\nt push origin main')"
+check gates/validator-bash-guard.sh deny "code-reviewer + backslash-newline sudo"    "$(validator_bash_event 'code-reviewer' $'sudo\\\n -i')"
+# Privilege-escalation long-form / alternate flags that spawn a shell.
+check gates/validator-bash-guard.sh deny "code-reviewer + sudo --login"              "$(validator_bash_event 'code-reviewer' 'sudo --login')"
+check gates/validator-bash-guard.sh deny "code-reviewer + sudo --shell"             "$(validator_bash_event 'code-reviewer' 'sudo --shell')"
+check gates/validator-bash-guard.sh deny "code-reviewer + doas -s"                  "$(validator_bash_event 'code-reviewer' 'doas -s')"
+
 # Sanity: backslash normalization now handles /-prefixed paths, so homebrew pytest passes.
 check gates/validator-bash-guard.sh none "code-reviewer + backslash homebrew pytest" "$(validator_bash_event 'code-reviewer' '/opt/homebrew/bin/\python3 -m pytest -x')"
 
