@@ -6,9 +6,16 @@
 # computationally: while an L3 run is active and the batch is unreviewed, DENY any
 # command that would ship the work or disable the gauntlet —
 #   - git push            (ships local commits)
-#   - gh pr create|merge  (ships via GitHub)
+#   - gh pr merge         (ships via GitHub — server-side merge, irreversible)
 #   - git config …hooksPath / core.hooks…  (redirects/neuters the git-hook gauntlet)
 # plus any command that inline-sets a safety env var (self-elevation / Gate-2 forge).
+#
+# `gh pr create` and `gh pr ready` are NOT gated (0002-addendum-push-gate-create-not-ship.md):
+# opening a PR and marking it ready-for-review are reversible review-prep, not a ship —
+# and gating them demanded a review_finding be journaled BEFORE a PR could be opened,
+# which is backwards (you open a PR to GET review). Only the irreversible ship
+# (merge / push / repo sync) stays gated, so the loop can open PRs without the flag
+# dance or the `!` handoff that forced the operator to run gh pr create themselves.
 #
 # It is FLAG-SCOPED: with the autonomy flag unset (every normal session) this gate
 # exits 0 immediately — force-push policy etc. stays owned by block-dangerous-git.
@@ -64,7 +71,7 @@ fi
 
 # Ship + gauntlet-disable patterns (denied unless Gate 2 is cleared).
 PUSH_PAT="${SEP}git[[:space:]]+${GOPT}push([[:space:]]|$)"
-GH_PAT="${SEP}gh[[:space:]]+(pr[[:space:]]+(create|merge|ready)|repo[[:space:]]+sync|.*push)"
+GH_PAT="${SEP}gh[[:space:]]+(pr[[:space:]]+merge|repo[[:space:]]+sync|.*push)"
 # Match hooksPath / core.hooks ANYWHERE after `git` — catches both the persistent
 # `git config core.hooksPath <path>` and the ephemeral `git -c core.hooksPath=x …`
 # forms (GOPT would otherwise consume the `-c core.hooksPath=` before `config`).
