@@ -308,7 +308,7 @@ Source `${KBG_PLUGIN_ROOT}/scripts/task_board_lib.sh` (the plugin-wide task-boar
 ## Cross-references
 
 - **Orchestration:** `skills/orchestrate/SKILL.md` — the F9 spawn-prompt template, validation chain (`addBlockedBy`), bounded fan-out cap (F8.5), and lead-coordinator doctrine (F8) that this skill's wave execution follows.
-- **Task sizing:** `skills/task-sizing/SKILL.md` — how to decide whether a contract is "one task" or "multiple tasks" (e.g., types + OpenAPI + DB schema might be three micro-tasks or one macro-task depending on complexity).
+- **Task sizing:** `commands/team-plan/references/task-sizing.md` — how to decide whether a contract is "one task" or "multiple tasks" (e.g., types + OpenAPI + DB schema might be three micro-tasks or one macro-task depending on complexity).
 - **Planning:** `commands/team-plan.md` — the plan file format (`## Step by Step Tasks` table with `Depends On`, `Files`, `Criteria`, `Constraints`) that feeds into this skill's wave derivation.
 - **Validation chain:** `skills/orchestrate/SKILL.md` § "Validation chain (TaskCreate + addBlockedBy)" — the builder → validator → fix → re-validator pattern that Wave 4 uses.
 - **Contract chain analysis:** Article `agent-teams-workflow` Step 5 — the conceptual source of the 4-wave pipeline.

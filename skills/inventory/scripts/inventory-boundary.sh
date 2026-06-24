@@ -167,7 +167,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Task sizing guidance
 
-Derived from `skills/task-sizing/SKILL.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
+Derived from `commands/team-plan/references/task-sizing.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
 
 ### The 5-6 rule
 5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.

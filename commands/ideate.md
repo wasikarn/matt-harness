@@ -81,7 +81,7 @@ the hook silently degrades to `convergence_status=unknown`.
 This is a heuristic, not a quality judgment. Query the history with:
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/convergence.sh" --today
+python3 "${KBG_PLUGIN_ROOT}/scripts/ideate-convergence.py" --today
 ```
 
 ## Ideate memory search (user command)
@@ -246,8 +246,8 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
 
 Pick 5 per run. The 15 cognitive frames — each with its tags
 (`code`/`design`/`general`/`wild`) and vantage prompt — live in
-[`references/frames.md`](references/frames.md), kept out of this file to stay
-under the SKILL.md size budget. Bias toward `code`/`design` tags for
+[`ideate/references/frames.md`](ideate/references/frames.md), kept out of this file to stay
+under the command size budget. Bias toward `code`/`design` tags for
 code-shaped problems; always include ≥1 `wild` frame for range.
 
 ### Picking frames

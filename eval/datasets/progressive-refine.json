@@ -29,7 +29,7 @@
       },
       "success_criteria": [
         "Response does not invoke or suggest progressive-refine",
-        "Response suggests single-pass inline approach or /feature-dev"
+        "Response suggests single-pass inline approach or /ship-task"
       ],
       "expected_duration_seconds": 15,
       "expected_tokens": 1500,

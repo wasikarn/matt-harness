@@ -52,7 +52,7 @@ decay-cadence wiring = LEAD-D's DECAY-1.
   (`jq` + `hooks/JOURNAL-SCHEMA.md`); the coverage metric is a
   30-session aggregate, not a per-event lens.
 - **Verdict stream** (a journal query for `inferential-structural`
-  verdicts) — use `kbg:harness-health --event-type verdict`.
+  verdicts) — use `kbg:harness-audit --health --event-type verdict`.
 - **Re-scoring a verdict** — use the `inferential-structural-judge`
   agent directly; the coverage script counts *events*, it does not
   *score* them.

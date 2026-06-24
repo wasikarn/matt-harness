@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # harness-health.py — read-only query surface over the governance journal.
-# See skills/harness-health/SKILL.md for the contract; see
+# Part of `kbg:harness-audit --health`; see skills/harness-audit/SKILL.md for the contract; see
 # docs/research/inferential-structural-judge-design.md §3 (verdict schema)
 # and §7 SURF-1 (the surfacing contract). Stdlib only, no subprocess.
 

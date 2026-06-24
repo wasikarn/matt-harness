@@ -1,6 +1,6 @@
 ---
 name: 7-agent-pattern
-description: "Canonical 7-seat parallel feature-build template: seven specialized agents in dependency-ordered waves (types/contracts seat runs first) so parallel work integrates against shared contracts. Use when /team-plan needs a standard full-stack seat allocation, or the user asks for the canonical parallel build pattern / a 7-agent team / '7-agent', 'ทีม 7 คน', 'pattern 7 คน', or 'ทีมเต็มรูปแบบ'. Don't use for: single-agent features (use /feature-dev), task right-sizing (use kbg:task-sizing), or runtime dispatch (use kbg:orchestrate)."
+description: "Canonical 7-seat parallel feature-build template: seven specialized agents in dependency-ordered waves (types/contracts seat runs first) so parallel work integrates against shared contracts. Use when /team-plan needs a standard full-stack seat allocation, or the user asks for the canonical parallel build pattern / a 7-agent team / '7-agent', 'ทีม 7 คน', 'pattern 7 คน', or 'ทีมเต็มรูปแบบ'. Don't use for: single-agent features (use /ship-task), task right-sizing (see `commands/team-plan/references/task-sizing.md`), or runtime dispatch (use kbg:orchestrate)."
 ---
 
 # 7-Agent Pattern
@@ -96,11 +96,11 @@ shared config) are the orchestrator's job in post-wave consolidation, not the te
 
 | Agents | When | Example |
 |--------|------|---------|
-| **< 3** | Single-file or trivial change | Use `/feature-dev` or inline — agent teams are overhead |
+| **< 3** | Single-file or trivial change | Use `/ship-task` or inline — agent teams are overhead |
 | **3–4** | Pure backend API or pure frontend component | Skip Seats 2, 5, 6, 7 as irrelevant |
 | **5–6** | Full-stack without complex CI/CD or docs requirements | Merge Seat 5 into Seat 1, Seat 7 into Seat 3 |
 | **7** | Full-stack with backend + frontend + DB + tests + docs + CI | **This pattern** |
-| **8+** | Multi-service change (e.g., microservice migration) | **Split into multiple plans instead.** The 8+ case is a signal the scope is too large for one session. See `skills/task-sizing/SKILL.md` (when available) for decomposition heuristics. |
+| **8+** | Multi-service change (e.g., microservice migration) | **Split into multiple plans instead.** The 8+ case is a signal the scope is too large for one session. See `commands/team-plan/references/task-sizing.md` for decomposition heuristics. |
 
 The F8 lead doctrine in `skills/orchestrate/SKILL.md` calls "3–5 teammates" the sweet spot.
 The 7-agent pattern stretches to 7 because full-stack features naturally touch 7 file
@@ -170,10 +170,10 @@ that's the authoring mistake, not a flaw in the pattern.)
 ## Cross-references
 
 - **Types-first discipline:** Seat 4's "run first" rule is the 7-agent specialization of
-  `skills/types-first/SKILL.md` (when available). Shared interfaces are dependencies;
+  `commands/team-plan/references/types-first.md`. Shared interfaces are dependencies;
   dependencies run before consumers.
-- **Task sizing:** Deviations from 7 agents are governed by `skills/task-sizing/SKILL.md`
-  (when available). If a plan grows to 8+, split scope before dispatch.
+- **Task sizing:** Deviations from 7 agents are governed by `commands/team-plan/references/task-sizing.md`.
+  If a plan grows to 8+, split scope before dispatch.
 - **Spawn-prompt template:** Every teammate prompt MUST use the F9 template from
   `skills/orchestrate/SKILL.md`. Missing What / Where / Focus / Deliverable / FILES YOU OWN
   / UPSTREAM CONTRACTS is the single most common sub-agent failure mode.
