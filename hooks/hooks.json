@@ -109,6 +109,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/advisory-push-reminder.sh\"",
+            "async": true
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-read-guard.sh\""
           },
           {
@@ -131,10 +136,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/push-gate.sh\""
           },
           {
             "type": "command",

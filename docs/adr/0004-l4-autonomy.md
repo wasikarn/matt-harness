@@ -13,6 +13,27 @@
   §"Acceptance criteria"): this Accept records the telos decision only; nothing self-drives until the
   full machinery ships gauntlet-green behind the hardening-before-enable rule and the owner sets
   `KBG_AUTONOMY_L4=1`.
+- **Gate-2 RETIRED (2026-06-25)**: the human-review-done check (`KBG_REVIEW_DONE=1` + a
+  `review_finding` in the recent journal, `push-gate.sh:80-97`) is retired and
+  `push-gate.sh` is deleted. The blanket-Bash block it caused — deny **ALL** Bash when
+  `KBG_REVIEW_DONE=1` had no `review_finding` — was a footgun: set the flag persistently
+  without a review (e.g. as a live shell export) and every Bash call in every session
+  dies until a `kbg:review-pr` journals a review or the flag is unset. Rationale: Gate-2
+  protected the unattended L4 self-launch loop, which has **never run live** (paused per
+  ADR 0005); the only live use (manual armed push) already moved off Gate-2 via addendum
+  0005 (the owner called the dance "annoying, unusable"). The implemented gate was a
+  presence check (`grep review_finding` in last 500 journal lines), not a rigor check
+  — a single inline review satisfied it identically to a full multi-agent review.
+  The maker≠checker computational-gate principle (lines 135-142) is **preserved** by
+  `block-dangerous-git.sh` scoped denials + `advisory-push-reminder.sh` (ECC-aligned:
+  review is advisory, not enforced; the model still cannot authorize a ship — it never
+  could, the gate was always computational). The "strengthen Gate 2 commensurately"
+  obligation (§10) dissolves — L4 model-as-gate relaxation #3 never went live either.
+  The `autonomy_on` predicate and the L4 machinery are **NOT** retired here — they
+  remain shared by `l4-act-gate.sh`, `post-push-tripwire.sh`, and the paused launchd
+  loop; with `push-gate.sh` gone, `autonomy_on` no longer causes any blanket-Bash deny
+  (it only enables scoped carve-outs and a paused loop), which matches ECC's scoped
+  philosophy. Retiring the L4 self-launch machinery itself is a separate follow-up ADR.
 - **Date**: 2026-06-22 (Accepted)
 - **Decider**: Owner
 - **Basis**: **telos, NOT capability.** (See §"The basis must be telos.")

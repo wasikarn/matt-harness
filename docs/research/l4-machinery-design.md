@@ -316,6 +316,16 @@ re-renders additionalContext every session).
 
 ## 10. Acceptance per slice (hardening-before-enable)
 
+> **Gate-2 strengthening criterion RETIRED 2026-06-25** (the "strengthen Gate 2
+> commensurately" bullet below): Gate-2 (`KBG_REVIEW_DONE=1` + `review_finding`) and
+> `push-gate.sh` are retired — see the ADR 0004 "Gate-2 RETIRED" note. The underlying
+> principle (maker≠checker; the gate that authorizes a ship stays computational, never a
+> model) is **retained** — it is now satisfied by `block-dangerous-git.sh` scoped denials +
+> `advisory-push-reminder.sh` (ECC-aligned: review is advisory, not enforced), not a
+> review-done flag. The L4 model-as-gate relaxation (#3) this criterion backstopped never
+> went live, so the criterion dissolves with it. The bullet text is kept below as the
+> historical record.
+
 Every slice ships committed + **gauntlet-green under the flag** (measure green *with* `KBG_AUTONOMY_L4=1`,
 not only flag-OFF — the v0.3.10 lesson) **and** flag-OFF byte-identical (audit #48b) before the next is
 built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for everything after it.

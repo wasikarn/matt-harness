@@ -2,6 +2,20 @@
 
 - **Status**: Accepted (extends [ADR 0005](0005-l5-auto-push.md); crosses
   [ADR 0004](0004-l4-autonomy.md))
+- **L5 ship-gate RETIRED (2026-06-25)**: the L5 auto-push ship-gate in `push-gate.sh`
+  (SHA-bound green-gauntlet + `KBG_L5_SHIP_ALLOWLIST` + cross-repo CRIT) is retired with
+  the deletion of `push-gate.sh` (see the ADR 0004 "Gate-2 RETIRED" note). The manual
+  armed-push path this addendum enabled is itself retired — the owner now pushes without
+  an autonomy flag, under ECC-aligned scoped denials in `block-dangerous-git.sh` + the
+  non-blocking `advisory-push-reminder.sh` (review is advisory, not enforced).
+  `gh pr merge` / `gh repo sync` move from enforced deny to an advisory reminder
+  (ECC's non-blocking stance; the owner stays at the keyboard for these irreversible
+  server-side ships). The **cross-repo CRIT** (loosened-brake detection — a push whose
+  range deletes a security gate file or removes a deny line) is the **one unique
+  protection lost**; flagged as a candidate for a **pre-commit advisory** if
+  brake-loosening detection is wanted again (it does not belong in a push gate once push
+  is not the ship boundary — the pre-commit gate already runs harness-audit on staged
+  files per the wire_harness_audit_precommit memory).
 - **Date**: 2026-06-24
 - **Decider**: Owner
 - **Operating point**: Enable L5 auto-push **for manual armed pushes** (`KBG_AUTONOMY=1`

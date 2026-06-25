@@ -47,6 +47,9 @@ _GREP="command grep"
 # from a per-repo .claude/settings.local.json). The target is restricted to the
 # `l3-precycle-` tag prefix the loop itself mints. Every other `git reset --hard`
 # (different target, compound command, or flag off) falls through to the deny.
+# (The autonomy_on gate is RETAINED here for step 1 — push-gate retirement only.
+# Dropping it to a pure pattern-allow so a human can roll back without arming is
+# step-2 autonomy-model territory, deferred — see ADR 0004 Gate-2 RETIRED note.)
 L3_ROLLBACK_FULL='^[[:space:]]*git[[:space:]]+reset[[:space:]]+--hard[[:space:]]+(refs/tags/)?l3-precycle-[A-Za-z0-9_.-]+[[:space:]]*$'
 if autonomy_on && printf '%s\n' "$STRIPPED" | $_GREP -qE "$L3_ROLLBACK_FULL"; then
   exit 0
@@ -134,6 +137,20 @@ REMOTE_MUTATION_PATTERN="${SEP}git[[:space:]]+${GOPT}remote[[:space:]]+(add|set-
 if printf '%s\n' "$STRIPPED" | $_GREP -qE "$REMOTE_MUTATION_PATTERN"; then
   matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}remote[[:space:]]+(add|set-url)[^#]*" | head -1 | xargs)
   hook_decision ask "git remote mutation: '$matched'. Adding/changing a remote redirects future pushes — confirm origin URL is intended."
+fi
+
+# core.hooksPath redirect — ported from the retired push-gate.sh (2026-06-25, ECC-
+# alignment). A `core.hooksPath` redirect (persistent `git config` or ephemeral `git -c
+# core.hooksPath=`) neuters the git-hook gauntlet — the safety surface that gates
+# commits/pushes. push-gate.sh denied this under the autonomy flag; with push-gate gone
+# this scoped deny stays here so the gauntlet can't be silently redirected by ANY
+# session (ECC's block-no-verify.js parity: deny hooksPath/core.hooks redirects).
+# Matches `core.hooksPath` / `core.hooks` anywhere after `git` so GOPT can't consume the
+# `-c core.hooksPath=` form before `config`/the subcommand.
+HOOKSPATH_PAT="${SEP}git[[:space:]][^#]*(hooksPath|core\.hooks)"
+if printf '%s\n' "$STRIPPED" | $_GREP -qE "$HOOKSPATH_PAT"; then
+  matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]][^#]*(hooksPath|core\.hooks)[^#]*" | head -1 | xargs)
+  hook_decision deny "git hooksPath/core.hooks redirect: '$matched'. Redirecting the hooks path neuters the gauntlet — never a legitimate part of a commit/push. Restore the default hooks path if you need to."
 fi
 
 exit 0
