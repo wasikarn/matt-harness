@@ -44,6 +44,36 @@ Go-specific surface. If a finding is general (missing test, naming, security), d
 - **Effective Go idioms**: `gofmt` / `goimports` discipline, package names lowercase single-word, no `Get` prefix on getters, error strings lowercase no-punct-prefix, struct field alignment (`maligned` / `fieldalignment`), constructor returns `(*T, error)`.
 - **Tooling**: `go vet`, `staticcheck`, `golangci-lint`, `govulncheck`, `go test -race` for race detector, `pprof` for CPU/mem, benchmark naming `BenchmarkFoo(b *testing.B)`.
 - **Library/version drift**: `slices`/`maps` packages (1.21+), `log/slog` (1.21+), `errors.Join` (1.20+), generics (1.18+) used sparingly, `http.ServeMux` patterns (1.22+), `cmp`/`cmp.Diff` (1.21+) — verify against `go.mod` `go` directive.
+- **Race conditions on shared state** (cross-cuts with security): shared state without synchronization, slice/map mutation from multiple goroutines without a mutex, `sync.Mutex` lock-ordering across two locks. Surface as `Critical` because they are auth-bypass-shaped; defer the security framing to `kbg:security-reviewer`.
+- **`unsafe` package use without justification**: `unsafe.Pointer` arithmetic, `reflect.SliceHeader` shenanigans — `Critical`; flag to `kbg:security-reviewer` for audit and `kbg:code-reviewer` for the justification audit.
+- **Insecure TLS**: `tls.Config{InsecureSkipVerify: true}`, `http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}`, expired/self-signed certs in production paths — `Critical`; defer to `kbg:security-reviewer`.
+- **Panic as control flow**: `panic(err)` for recoverable errors in library code, `recover()` in handlers that swallows the stack — flag as `Critical` if the panic is reachable from user input.
+
+## Diagnostic commands (run before review)
+
+```
+go vet ./...                       # standard vet
+staticcheck ./...                  # deeper static analysis
+go test -race -count=1 ./...       # race detector, no cache
+govulncheck ./...                  # known-CVE scan (1.18+)
+gofmt -l .                         # unformatted files (should be empty)
+```
+
+If any of these fail, the finding is `Critical` regardless of the human-impact dimension below. `govulncheck` hits are always `Critical` — they are known CVEs.
+
+## Output template (severity-anchored)
+
+For every finding, emit a block the consumer can parse:
+
+```
+[SEVERITY] <Critical|High|Medium|Low>
+File:     <path>:<line>
+Issue:    <one-line Go construct + why it's wrong>
+Fix:      <minimal correction — defer placement, %w wrap, ctx first-param, channel direction, etc.>
+Refs:     <CWE if security; otherwise omit>
+```
+
+Severity rubric: `Critical` = goroutine leak, race condition, `unsafe` without justification, `InsecureSkipVerify`, panic as control flow, govulncheck hit. `High` = missing `%w` wrap, defer-in-loop, missing ctx propagation, channel-direction missing, interface segregation violation. `Medium` = receiver consistency, tooling miss (`go vet`/`staticcheck` would catch it). `Low` = naming, comment, doc string.
 
 ## Grading rubric (1–10)
 

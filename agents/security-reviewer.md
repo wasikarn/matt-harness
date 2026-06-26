@@ -71,6 +71,20 @@ Findings split into two output sections by confidence — never dropped, just ro
 
 The split exists because suppressing low-confidence findings during discovery causes silent regressions, but treating every uncertain smell as a blocker creates alert fatigue. Both failures lose information. Categorize don't drop.
 
+## Verdict gate (binary PR gate)
+
+After producing findings, emit a single verdict at the top of the report so downstream automation can gate on it without re-parsing the body:
+
+```
+VERDICT: <BLOCK | WARNING | PASS>
+```
+
+- **BLOCK** — one or more Blocking findings present. PR must not merge until resolved or explicitly waived by the author with `security-waiver:` in the commit subject.
+- **WARNING** — no Blocking findings, but Open Questions present at Medium-or-higher confidence. PR may merge; reviewer must address or explicitly defer each Open Question before next-touch.
+- **PASS** — no Blocking findings and no Medium+ Open Questions. PR is clean from a security lens.
+
+The verdict gate exists so `kbg:review-pr` and any CI integration can parse one line to decide mergeability, instead of scanning the full report. Always emit the verdict line, even on PASS.
+
 ## Realist Check (anti-inflation)
 
 After producing findings, pressure-test each Critical/High severity rating before final output:

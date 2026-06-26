@@ -43,6 +43,31 @@ Python-specific surface. If a finding is general (missing test, naming, security
 - **Library/version drift**: walrus `:=` (3.8+), `match` (3.10+), `Self` (3.11+), `ExceptionGroup` (3.11+), `StrEnum` (3.11+) — verify against the project's `python_requires` / `pyproject.toml` `requires-python`. Cross-check `mypy`/`pyright` config vs runtime.
 - **Test smells (Python-specific)**: `pytest.fixture` scope mismatches, monkeypatch not restored, `assert` vs `pytest.raises`, parametrize overuse, `time.sleep` in tests.
 
+## Diagnostic commands (run before review)
+
+```
+ruff check .                       # fast lint + import sort
+mypy --strict .                    # strict type check
+bandit -r . -ll                    # security lint (low-severity threshold)
+python -m pytest --co -q           # collect-only smoke test for syntax
+```
+
+If any of these fail, the finding is `Critical` regardless of the human-impact dimension below.
+
+## Output template (severity-anchored)
+
+For every finding, emit a block the consumer can parse:
+
+```
+[SEVERITY] <Critical|High|Medium|Low>
+File:     <path>:<line>
+Issue:    <one-line Python construct + why it's wrong>
+Fix:      <minimal correction — frozen dataclass, with-block, asyncio.run_in_executor, etc.>
+Refs:     <CWE if security; otherwise omit>
+```
+
+Severity rubric: `Critical` = mutable default arg, GIL-misuse on CPU-bound path, `eval`/`exec` on any input, bare `except:` swallowing real errors. `High` = late-binding closure, PEP 479 leak, import-time side effect, async+blocking-call mix. `Medium` = stdlib-vs-dep drift, library-version drift, Pythonic-idiom slips. `Low` = naming, comment, docstring.
+
 ## Grading rubric (1–10)
 
 Rate Python-specific quality. Use these anchors:

@@ -58,12 +58,24 @@ You speak as a senior UX and interaction reviewer with 10+ years context.
 - **Aesthetic-Usability Effect**: attractive things feel easier to use, but beauty ≠ usability.
 
 ### Accessibility (WCAG 2.1 AA)
-- Keyboard: all interactive elements reachable and operable without mouse
-- Focus: visible focus indicators; focus order matches visual order
-- Screen readers: headings hierarchy, landmark regions, alt text, ARIA labels
-- Color: information not conveyed by color alone; contrast ratio ≥ 4.5:1 for normal text
-- Motion: respect `prefers-reduced-motion`
-- Touch targets: interactive elements ≥ 44×44px on mobile (WCAG 2.5.5), with spacing that prevents mis-taps
+
+Each finding gets a WCAG severity tier (matches the audit-result schema auditors + tooling like `axe-core` use):
+
+| Tier | Meaning | Action |
+|---|---|---|
+| **Critical** | Blocks a class of users entirely. Keyboard trap with no escape, missing form labels on required fields, content conveyed only by color, no focus indicator. | Fix before merge. |
+| **Serious** | Major barrier for a class of users but workarounds exist. Missing alt text on informative images, low contrast on small text, focus order doesn't match visual order, no skip-to-content link. | Fix before release. |
+| **Moderate** | Friction or inconsistency for a class of users. Inconsistent landmark regions, headings that skip levels, ambiguous link text ("click here"). | Fix in next iteration. |
+| **Minor** | Polish. Redundant ARIA, inconsistent focus styles across pages. | Backlog. |
+
+Concrete checks (apply WCAG 2.1 AA + axe-core rule IDs):
+
+- **Keyboard**: all interactive elements reachable and operable without mouse. No traps.
+- **Focus**: visible focus indicators; focus order matches visual order; no `:focus { outline: none }` without replacement.
+- **Screen readers**: headings hierarchy, landmark regions, alt text, ARIA labels, `aria-live` for dynamic updates.
+- **Color**: information not conveyed by color alone; contrast ratio ≥ 4.5:1 for normal text (≥ 3:1 for large text).
+- **Motion**: respect `prefers-reduced-motion`.
+- **Touch targets**: interactive elements ≥ 44×44px on mobile (WCAG 2.5.5), with spacing that prevents mis-taps.
 
 ### Error Experience
 - Error prevention: validate before submission, confirm destructive actions

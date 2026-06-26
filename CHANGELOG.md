@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.8.1] — 2026-06-26
+
+Adopt ECC patterns as surgical edits to existing kbg agents. No new agents in
+this release — pure pattern adoption. Derived from analysis of
+`affaan-m/ECC` agents directory (50+ files reviewed); applied the 5-check
+framework (`feedback_evaluating_third_party_claude_frameworks.md`):
+
+- **Pattern adopted in `kbg:typescript-reviewer`** — `[SEVERITY]/File/Issue/Fix` output template, diagnostic commands (`tsc --noEmit`, `eslint`, `tsc --strict`); RSC/Server Action + hydration-mismatch + `value!` audit + `JSON.parse` safety + client-bundle env-prefix secret leak + `forEach`/`for…of` async trap.
+- **Pattern adopted in `kbg:python-reviewer`** — severity template + diagnostic commands (`ruff`, `mypy --strict`, `bandit`, `pytest --co`).
+- **Pattern adopted in `kbg:go-reviewer`** — severity template + diagnostic commands (`go vet`, `staticcheck`, `go test -race`, `govulncheck`); race conditions on shared state, `unsafe` use, `InsecureSkipVerify`, panic as control flow.
+- **Pattern adopted in `kbg:ux-reviewer`** — WCAG severity tiers (Critical/Serious/Moderate/Minor) replace the flat accessibility list.
+- **Pattern adopted in `kbg:compliance-engineer`** — auditor-grade PHI exposure-vector checklist (10 vectors: app logs, URL params, browser storage, error responses, analytics, backups, third-party processors, DB row-level, internal cache, source control).
+- **Pattern adopted in `kbg:security-reviewer`** — `VERDICT: BLOCK|WARNING|PASS` binary gate at the top of every report so `kbg:review-pr` / CI can parse mergeability from one line.
+- **Pattern adopted in `kbg:devops-engineer`** — Web Vitals rubric (FCP<1.8s, LCP<2.5s, TBT<200ms, CLS<0.1, INP<200ms) with field-vs-lab measurement guidance.
+- **Pattern adopted in `kbg:code-architect`** — algorithmic complexity table (8 rows: nested loops → Map, array.find in loop → lookup, string concat in loop → join, etc.) as a pre-build upgrade cheat-sheet.
+- **Pattern adopted in `kbg:frontend-engineer`** — anti-AI-slop checklist (gradient `#667eea→#764ba2`, default rounded-everything, unstyled shadcn/MUI, SaaS landing layout, emoji icons, perfect gray-ramp).
+- **Pattern adopted in `kbg:researcher`** — Bash tool allow-list (`grep`/`cat`/`ls`/`find`/`git log --no-pager` etc.) + deny-list (`rm`/`git commit`/`npm install`/`docker`/etc.) replacing the blanket "READ-ONLY" line.
+
+No behavior change for existing agents' core role; additive surface only.
+Agent count: 32 → 32 (no new agents).
+
 ## [0.8.0] — 2026-06-26
 
 Add three language-specific reviewer agents for the `/review-pr` multi-agent

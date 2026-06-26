@@ -40,7 +40,36 @@ TypeScript-specific surface. If a finding is general (missing test, naming, secu
 - **`this` binding**: class methods passed as callbacks losing `this`, arrow-function class fields (allocates per instance), `bind` in render.
 - **Module/eslint resolution**: `import type` vs `import` correctness, circular deps, side-effect imports.
 - **TSX/React-specific** (when `.tsx`): hooks dependency arrays, exhaustive deps, key prop correctness, ref forwarding, `forwardRef` deprecated path.
+- **RSC / Server Actions** (when `.tsx` + Next.js / RSC metaframework): `'use server'` functions accepting `FormData` or args without a schema — treat as a public API endpoint (Zod/Valibot/ArkType validation). Hydration hazards: `Date.now()` / `Math.random()` / `typeof window` / `localStorage` accessed during render (move to `useEffect` or a server-side deterministic source). `dangerouslySetInnerHTML` with unsanitized input.
+- **Non-null assertion (`!`) audit**: `value!` without a guard is the same lie as `as` — strip them with narrowing or rewrite to `value ?? throw ...`.
+- **`JSON.parse` safety**: untrusted input without `try/catch` and a runtime schema check (Zod/Valibot) — typing the result `as Foo` does not make the parse safe.
+- **Client-bundle secret leak via env prefix**: `NEXT_PUBLIC_*`, `VITE_*`, `REACT_APP_*`, `EXPO_PUBLIC_*` — anything under those prefixes is shipped to every client. Cross-reference with `kbg:security-reviewer` for anything you suspect is leaked.
+- **forEach vs for…of async hazard**: `await` inside `.forEach` does NOT await the inner callbacks (fire-and-forget). Use `for…of` or `Promise.all(arr.map(async …))`.
 - **Library-version drift**: using APIs from a newer TS lib target than the project supports (`Array.prototype.at`, `Object.hasOwn`, top-level await) — works at type level, fails at runtime in old Node/browsers. Always cross-check `tsconfig.json` `target` + `lib`.
+
+## Diagnostic commands (run before review)
+
+```
+npx tsc --noEmit                    # type errors
+npx eslint . --ext .ts,.tsx         # lint
+npx tsc --noEmit --strict           # strict-mode check (if not always-on)
+```
+
+If any of these fail, the finding is `Critical` regardless of the human-impact dimension below.
+
+## Output template (severity-anchored)
+
+For every finding, emit a block the consumer can parse:
+
+```
+[SEVERITY] <Critical|High|Medium|Low>
+File:     <path>:<line>
+Issue:    <one-line TS construct + why it's wrong>
+Fix:      <minimal correction — narrow, `satisfies`, schema check, etc.>
+Refs:     <OWASP category if security; otherwise omit>
+```
+
+Severity rubric: `Critical` = type-system lie or runtime hazard (e.g. `JSON.parse as Foo` on user input, hydration mismatch, secret in client bundle). `High` = `any` leak, `!` without guard, missing exhaustiveness. `Medium` = `strict` drift, async/forEach trap, library-version drift. `Low` = naming, comment.
 
 ## Grading rubric (1–10)
 
