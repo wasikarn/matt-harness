@@ -109,6 +109,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/dev-tmux-transform.sh\""
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/advisory-push-reminder.sh\"",
             "async": true
           },
@@ -167,6 +171,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/fact-force-gate.sh\""
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-scan.sh\""
           },
           {
@@ -204,6 +212,10 @@
       {
         "matcher": "mcp__.*",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/mcp-health-gate.sh\""
+          },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/db-write-gate.sh\""
@@ -253,6 +265,10 @@
       {
         "matcher": "*",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/context-monitor.sh\""
+          },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""
@@ -448,6 +464,10 @@
       {
         "matcher": "*",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/mcp-health-gate.sh\""
+          },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/maintenance/superset-notify-wrapper.sh\""

@@ -22,7 +22,10 @@ MSG="${MSG}2. State 2-3 criteria that would confirm or rule out each.\\n"
 MSG="${MSG}3. Your conclusion must address every hypothesis — not just the first one the evidence supports.\\n"
 MSG="${MSG}This prevents post-hoc rationalisation and convergence on the first plausible answer."
 
-printf '{"additionalContext":"%s"}\n' "$MSG"
+# additionalContext MUST live under hookSpecificOutput with the matching
+# hookEventName; top-level {"additionalContext":...} is silently ignored
+# (verified code.claude.com/docs/en/hooks 2026-06-26). jq -Rs safe-encodes $MSG.
+jq -nc --arg c "$MSG" '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:$c}}'
 
 PROMPT_PREFIX=$(printf '%s' "$PROMPT_TEXT" | cut -c1-80 | tr -d '"\\')
 ( journal_append "$HOOK_ID" "hypothesis_gate_fired" \

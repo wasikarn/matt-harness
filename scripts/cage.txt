@@ -14,10 +14,11 @@
 # No bare "*" globs: every entry is a "/**" dir-prefix or a literal path, so the
 # matcher is unambiguous and errs toward over-denying, never under-denying.
 
-# --- this manifest + its guard + the run-report generator (self-reference:
-#     editing the cage / a tampered run-report could mislead the reviewer) ---
+# --- this manifest + the run-report generator (self-reference: editing the
+#     cage / a tampered run-report could mislead the reviewer). loop-guard.py
+#     (the former guard) retired 2026-06-25 with ADR 0006; the manifest now
+#     stands without a runtime guarder, #43 cage-coverage retired with it ---
 scripts/cage.txt
-scripts/loop-guard.py
 scripts/run-report.sh
 
 # --- all governance hooks (gates, advisory, lifecycle, session, post-tool,

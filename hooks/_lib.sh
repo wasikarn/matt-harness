@@ -14,6 +14,15 @@
 # Knob: HOOK_HONOR_PROFILE_OFF=0 (set BEFORE sourcing) to bypass the PROFILE=off
 # short-circuit — use for audit hooks that must log even when PROFILE=off.
 #
+# Knob: HOOK_PROFILES (set BEFORE hook_init) — the profile tiers this hook runs
+# under, space-separated. A hook runs only if $CLAUDE_HOOK_PROFILE is in it.
+# Default "standard strict" = the hook is OFF under `minimal` (the dial-down
+# tier). The irrecoverable-floor gates (block-dangerous-* / secret-* / block-
+# bash-doctrine-write) opt INTO all three via HOOK_PROFILES="minimal standard
+# strict" so the safety floor survives a minimal session. ADR 0007. `strict`
+# currently equals `standard`'s gate set (reserved for future strict-only
+# friction); `minimal` is the meaningful dial.
+#
 # Behavioral contract preserved verbatim from the previous inline versions:
 #   - decision-emit hooks exit 0 (exit 2 would discard JSON per Claude Code spec)
 #   - permissionDecision values: "deny" | "allow" | "ask"
@@ -60,6 +69,15 @@ hook_init() {
   fi
   case ",$DISABLED," in
     *",$hook_id,"*) return 1 ;;
+  esac
+  # ADR 0007 profile-tier gate: run only if the active profile is in this hook's
+  # declared HOOK_PROFILES. Default "standard strict" → OFF under minimal. Floor
+  # gates set HOOK_PROFILES="minimal standard strict" to survive a minimal
+  # session. Space-delimited full-token match (leading+trailing space on both
+  # sides) prevents partial matches like "stand" hitting "standard".
+  case " ${HOOK_PROFILES:-standard strict} " in
+    *" $PROFILE "*) ;;
+    *) return 1 ;;
   esac
 
   if command -v jq >/dev/null 2>&1; then

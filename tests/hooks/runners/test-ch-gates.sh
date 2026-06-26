@@ -618,6 +618,46 @@ out=$(printf '%s' "$(bash_event 'git reset --hard')" | CLAUDE_DISABLED_HOOKS=blo
 if [ -z "$out" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "block-dangerous-git.sh" "CLAUDE_DISABLED_HOOKS bypass works"
 else FAIL=$((FAIL+1)); printf '  ❌ %-22s bypass env did not disable (got: %s)\n' "block-dangerous-git.sh" "$out"; fi
 
+# --- ECC-parity ports (ADR 0007): fact-force, dev-tmux, mcp-health, context-monitor ---
+# These are stateful or emit updatedInput/additionalContext (not permissionDecision),
+# so the `check` helper can't grade them. Isolated temp HOME + session id per call.
+# Note: a hook that ALLOWS prints nothing; jq on empty input returns empty (not
+# "none"), so normalize empty→"none" before comparing. session_id has non-alnum
+# chars translated to "_" by the hooks (tr -c), so prefer alnum-only session ids.
+echo
+echo "--- ECC-parity ports (ADR 0007) ---"
+PARITY_HOME="$FIXTURE/parity-home"; mkdir -p "$PARITY_HOME/.claude"
+norm() { [ -z "$1" ] && echo none || echo "$1"; }  # empty hook output → "none" (allow)
+ff_event() { jq -n --arg fp "$1" --arg sid "$2" --argjson agent "${3:-null}" \
+  '{hook_event_name:"PreToolUse",tool_name:"Edit",tool_input:{file_path:$fp},session_id:$sid,agent_id:$agent}'; }
+FFSID="fftest1"
+ff_run() { norm "$(ff_event "$1" "$FFSID" "${2:-null}" | HOME="$PARITY_HOME" CLAUDE_HOOK_PROFILE=standard CLAUDE_DISABLED_HOOKS="" bash "$HOOKS/gates/fact-force-gate.sh" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null)"; }
+out=$(ff_run "/tmp/parity-a.txt");                                          [ "$out" = "deny" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "fact-force-gate.sh" "first touch denies"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s first touch want deny got %s\n' "fact-force-gate.sh" "$out"; }
+out=$(ff_run "/tmp/parity-a.txt");                                          [ "$out" = "none" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "fact-force-gate.sh" "second touch allows"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s second touch want none got %s\n' "fact-force-gate.sh" "$out"; }
+out=$(ff_run "/tmp/parity-b.txt" "sub1");                                    [ "$out" = "none" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "fact-force-gate.sh" "subagent exempt"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s subagent want none got %s\n' "fact-force-gate.sh" "$out"; }
+out=$(norm "$(ff_event "/tmp/parity-min.txt" "$FFSID" | HOME="$PARITY_HOME" CLAUDE_HOOK_PROFILE=minimal bash "$HOOKS/gates/fact-force-gate.sh" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null)")
+[ "$out" = "none" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "fact-force-gate.sh" "off under minimal"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s minimal want none got %s\n' "fact-force-gate.sh" "$out"; }
+
+dt_bash() { jq -n --arg c "$1" '{hook_event_name:"PreToolUse",tool_name:"Bash",tool_input:{command:$c}}'; }
+cmd=$(dt_bash "npm run dev" | HOME="$PARITY_HOME" bash "$HOOKS/gates/dev-tmux-transform.sh" 2>/dev/null | jq -r '.hookSpecificOutput.updatedInput.command // ""' 2>/dev/null)
+case "$cmd" in "tmux new-session -d"*) PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "dev-tmux-transform.sh" "rewrites npm run dev → tmux";; *) FAIL=$((FAIL+1)); printf '  ❌ %-22s want tmux rewrite got: %s\n' "dev-tmux-transform.sh" "$cmd";; esac
+out=$(dt_bash "ls -la" | HOME="$PARITY_HOME" bash "$HOOKS/gates/dev-tmux-transform.sh" 2>/dev/null)
+[ -z "$out" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "dev-tmux-transform.sh" "passes ls through"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s ls should pass through got: %s\n' "dev-tmux-transform.sh" "$out"; }
+
+mc_event() { jq -n --arg tn "$1" --arg ev "$2" --argjson resp "${3:-null}" \
+  '{hook_event_name:$ev,tool_name:$tn,tool_input:{},session_id:"mc1"} + (if $resp==null then {} else {tool_response:$resp} end)'; }
+out=$(norm "$(mc_event "mcp__s__tool" "PreToolUse" | HOME="$PARITY_HOME" bash "$HOOKS/gates/mcp-health-gate.sh" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null)")
+[ "$out" = "none" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "mcp-health-gate.sh" "fresh server allows"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s fresh want none got %s\n' "mcp-health-gate.sh" "$out"; }
+mc_event "mcp__s__tool" "PostToolUseFailure" '{"error":"503 Service Unavailable"}' | HOME="$PARITY_HOME" bash "$HOOKS/gates/mcp-health-gate.sh" >/dev/null 2>&1
+out=$(norm "$(mc_event "mcp__s__tool" "PreToolUse" | HOME="$PARITY_HOME" bash "$HOOKS/gates/mcp-health-gate.sh" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "none"' 2>/dev/null)")
+[ "$out" = "deny" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "mcp-health-gate.sh" "unhealthy within backoff denies"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s post-failure want deny got %s\n' "mcp-health-gate.sh" "$out"; }
+
+cm_dir="$PARITY_HOME/.claude/context-monitor"; mkdir -p "$cm_dir"
+cmf="$cm_dir/cm1.jsonl"; : > "$cmf"   # session_id "cm1" → sid_safe "cm1" (alnum-only)
+for i in $(seq 1 21); do printf '{"ts":1,"tool":"Edit","file":"f%d"}\n' "$i" >> "$cmf"; done
+ctx=$(jq -n --arg fp "f22" '{hook_event_name:"PostToolUse",tool_name:"Edit",tool_input:{file_path:$fp},session_id:"cm1"}' | HOME="$PARITY_HOME" bash "$HOOKS/post-tool/context-monitor.sh" 2>/dev/null | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null)
+[ -n "$ctx" ] && { PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "context-monitor.sh" "scope>20 advisory fires"; } || { FAIL=$((FAIL+1)); printf '  ❌ %-22s scope>20 want advisory\n' "context-monitor.sh"; }
+
 # --- syntax smoke: every hook script must parse (a crashing logger can block) ---
 echo
 echo "--- syntax smoke: every hook script parses ---"

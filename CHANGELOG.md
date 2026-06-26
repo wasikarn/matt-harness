@@ -5,6 +5,72 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.6.0] — 2026-06-26
+
+ECC behavioral-parity ports (ADR 0007). The harness gains the five ECC
+runtime capabilities a cross-repo parity audit (2026-06-26) found missing —
+not operating-model differences, but concrete gates an operator moving from
+ECC to kbg would notice. All default-on under `standard`; `minimal` dials them
+off without losing the safety floor. Minor bump: new default-on gates + a
+profile knob, no contract break for existing gates (byte-identical under
+`standard`).
+
+- **Profile ladder (`CLAUDE_HOOK_PROFILE=minimal|standard|strict|off`).**
+  `hooks/_lib.sh` `hook_init` gained a profile-tier gate: a hook runs only if
+  the active profile is in its declared `HOOK_PROFILES` (default
+  `"standard strict"` → off under `minimal`). The irrecoverable-floor gates
+  (block-dangerous-bash/git, secret-read-guard, secret-scan,
+  block-bash-doctrine-write) opt into all three via
+  `HOOK_PROFILES="minimal standard strict"` so the safety floor survives a
+  `minimal` session. `strict` currently equals `standard` (reserved).
+  `doctrine-bootstrap.sh` stays always-on (it's context, not friction; it
+  doesn't call `hook_init`).
+- **`fact-force-gate.sh` (GateGuard four-fact-force port).** PreToolUse
+  Edit|Write|MultiEdit, first in the Edit chain. Denies the FIRST edit of each
+  file path per session with the 4-fact block (importers/callers, affected API,
+  data schemas, user instruction verbatim); second touch passes. Per-session
+  state, 30-min idle reset, denial budget, subagent + settings.json
+  exemptions. Off: `KBG_GATEGUARD=off`, `KBG_FACT_FORCE_DISABLED=1`,
+  `CLAUDE_HOOK_PROFILE=minimal`.
+- **`mcp-health-gate.sh` (MCP runtime health port).** PreToolUse:mcp__.* blocks
+  calls to a server known unhealthy (exponential backoff, 30s base / 600s cap);
+  PostToolUseFailure marks unhealthy + optional operator reconnect
+  (`KBG_MCP_RECONNECT_<SERVER>`). State at `~/.claude/mcp-health-cache.json`.
+  **Documented deviation:** no stdio spawn-probe (too risky in bash); health is
+  failure-driven with optimistic reset past `nextRetryAt`. Off:
+  `KBG_MCP_HEALTH_FAIL_OPEN=1`, `CLAUDE_HOOK_PROFILE=minimal`.
+- **`dev-tmux-transform.sh` (dev-server auto-tmux port).** PreToolUse:Bash,
+  first in the Bash chain. Rewrites dev-server commands (npm/yarn/pnpm/bun run
+  dev|start, next/vite/astro dev, ng serve, python http.server/runserver,
+  uvicorn/gunicorn/flask, rails s, go/cargo run) into a detached
+  `tmux new-session -d`. Skips when tmux is absent or the session name is taken.
+  Off: `KBG_DEV_TMUX_DISABLED=1`, `CLAUDE_HOOK_PROFILE=minimal`.
+- **`context-monitor.sh` (PostToolUse scope/loop monitor port).** Observe-only
+  advisory: nudge when distinct files modified > 20 or a tool repeats ≥3 in
+  the last 6 events. Emits `hookSpecificOutput.additionalContext` (never
+  blocks). **Documented deviation:** context-% and cost-USD thresholds deferred
+  (need a statusline/metrics bridge kbg doesn't ship); gated on
+  `KBG_CONTEXT_MONITOR_FILE`.
+- **Contracts verified, not assumed (third-party port).** Three Claude Code
+  hook-contract facts were checked against `code.claude.com/docs/en/hooks`
+  before shipping: (1) tool-input mutation needs `hookSpecificOutput.updatedInput`
+  — printing modified top-level JSON is silently ignored (ECC's
+  `auto-tmux-dev.js` ships this broken; the bash port uses the right field);
+  (2) advisory injection needs `hookSpecificOutput.additionalContext` with the
+  matching `hookEventName` — found and fixed a pre-existing sibling bug in
+  `hypothesis-gate.sh`; (3) the event name is stdin `.hook_event_name`, not an
+  env var — `mcp-health-gate.sh` branches on it. A fourth bug (jq helpers
+  piping the filename instead of file contents → silent state no-op) was
+  caught by empirical smoke test and fixed.
+- **`hypothesis-gate.sh` additionalContext fix.** Was emitting top-level
+  `{"additionalContext":...}` (silently ignored); now emits
+  `hookSpecificOutput.{hookEventName:"UserPromptSubmit",additionalContext:$c}`
+  via `jq -nc`. The investigation nudge now actually fires.
+- **Audit + tests.** Harness self-audit: 0 Critical / 0 Warnings (56 hooks).
+  Critical-hooks suite: 570 passed, 0 failed. New gates smoke-tested
+  empirically with mock stdin (first-touch deny/second-touch allow, tmux
+  rewrite, unhealthy-block, scope/loop advisory).
+
 ## [0.5.0] — 2026-06-25
 
 ECC-aligned operating model (ADR 0006) — retires the L2-L5 bounded-autonomy ratchet.

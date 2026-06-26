@@ -79,10 +79,57 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Var | Default | Effect |
 |---|---|---|
 | `CLAUDE_DISABLED_HOOKS` | empty | Comma/space list of hook IDs to disable (e.g. `learn-capture`, `iron-rule-reminder`). |
-| `CLAUDE_HOOK_PROFILE` | `standard` | `off` disables all kbg hooks. |
+| `CLAUDE_HOOK_PROFILE` | `standard` | The profile ladder (ADR 0007): `off` disables ALL kbg hooks; `minimal` dials friction down while the safety floor (block-dangerous-*, secret-*) stays on; `standard` is the default (all gates on); `strict` reserves a future stricter tier (currently equals `standard`). Each hook declares `HOOK_PROFILES` (default `standard strict`); floor gates opt into `minimal standard strict` so a `minimal` session keeps the irrecoverable floor. |
 | `CLAUDE_JOURNAL_PATH` | `~/.claude/governance-events.jsonl` | Governance-journal location override. |
 | `CLAUDE_BAK_TTL_DAYS` / `CLAUDE_BAK_TTL_PROFILE` | `90` / `standard` | `.bak` cleanup TTL + profile. |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | unset | `=1` enables the opt-in Agent Teams surface (`/team-plan`, `/team-build`, …). |
+
+## ECC-parity port knobs (ADR 0007)
+
+Five capabilities ported from ECC at ECC's own activation semantics, default-on under
+`standard`. Each port has a per-gate kill switch plus the profile dial (`minimal` turns
+all four off; the floor gates stay on). See [ADR 0007](../adr/0007-ecc-parity-ports.md).
+
+### fact-force-gate (four-fact-force, first-edit friction)
+
+| Var | Default | Effect | Read by |
+|---|---|---|---|
+| `KBG_GATEGUARD` | `on` | `off`/`0`/`false`/`disabled` disables the gate (parity with ECC `ECC_GATEGUARD`). | `fact-force-gate.sh` |
+| `KBG_FACT_FORCE_DISABLED` | `0` | `=1` disables this gate only (narrower than `KBG_GATEGUARD`). | `fact-force-gate.sh` |
+| `KBG_FACT_FORCE_FULL_DENIALS` | `3` | First N denials per session get the full 4-fact block; after that a condensed one-liner (friction, not a wall). | `fact-force-gate.sh` |
+
+### mcp-health-gate (runtime health, exponential backoff)
+
+| Var | Default | Effect | Read by |
+|---|---|---|---|
+| `KBG_MCP_HEALTH_FAIL_OPEN` | `0` | `=1` makes an unhealthy server block→allow (fail-open; parity with ECC). | `mcp-health-gate.sh` |
+| `KBG_MCP_HEALTH_BACKOFF_MS` | `30000` | Backoff base (doubles per failure). Hard cap 600000ms (10min). | `mcp-health-gate.sh` |
+| `KBG_MCP_HEALTH_TTL_MS` | `120000` | How long a marked-healthy server is trusted before re-mark. | `mcp-health-gate.sh` |
+| `KBG_MCP_HEALTH_STATE_PATH` | `~/.claude/mcp-health-cache.json` | Health-state cache location. | `mcp-health-gate.sh` |
+| `KBG_MCP_RECONNECT_<SERVER>` / `KBG_MCP_RECONNECT_COMMAND` | empty | Optional operator-configured reconnect command run after marking unhealthy (`<SERVER>` = server name uppercased, non-alnum→`_`). | `mcp-health-gate.sh` |
+| `KBG_MCP_RECONNECT_TIMEOUT_MS` | `5` | Bounded timeout for the reconnect attempt. | `mcp-health-gate.sh` |
+
+> **Documented deviation:** ECC actively probes stdio servers by spawning their command.
+> This port is **failure-driven** (no spawn — strictly safer, never false-blocks a healthy
+> server); a stdio server is re-allowed optimistically once backoff expires. http servers
+> get a bounded curl probe.
+
+### dev-tmux-transform (dev-server → detached tmux)
+
+| Var | Default | Effect | Read by |
+|---|---|---|---|
+| `KBG_DEV_TMUX_DISABLED` | `0` | `=1` disables the rewrite. No-ops automatically when tmux is absent or the session name is taken. | `dev-tmux-transform.sh` |
+
+### context-monitor (scope/loop advisory)
+
+| Var | Default | Effect | Read by |
+|---|---|---|---|
+| `KBG_CONTEXT_MONITOR_DISABLED` | `0` | `=1` disables the monitor. | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_SCOPE` | `20` | Distinct-files-modified threshold for the scope advisory. | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_LOOP` | `3` | Same-tool repeat count that triggers the loop advisory. | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_WINDOW` | `6` | Sliding window of PostToolUse events scanned for the loop. | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_FILE` | empty | Path to a bridge JSON with `context_remaining_pct` / `total_cost_usd`. Set to enable the context-% / cost advisories (deferred signals; ADR 0007). | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_CTX_LOW` | `25` | context-remaining-% below which the low-context advisory fires (only when `KBG_CONTEXT_MONITOR_FILE` is set). | `context-monitor.sh` |
 
 ## Special
 

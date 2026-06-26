@@ -100,14 +100,18 @@ The harness is a **friction layer, not a hard wall**: it **denies the irrecovera
 
 **Implications for development:** the L2-L5 autonomy ratchet (levels, Gate 1/2, `autonomy_on`, the launchd loop, `loop-guard.py`) is retired — see [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) for what dies and what lives. Four model-/cage-removing variants stay **out of scope by design** (each needs a new superseding ADR): the **model** self-starting a loop, a **model-authorizing** ship, the loop authoring its **own ADRs** (cage forbids `docs/adr/**`), and **removing the cage**. These are principle-bounded, not capability-bounded — reopening them on a "models are better now" argument is still foreclosed.
 
-### Hook architecture (two conventions)
+### Hook architecture (emission shapes + profile ladder)
 
-Hooks are shell scripts registered in `hooks/hooks.json`. There are two distinct hook conventions:
+Hooks are shell scripts registered in `hooks/hooks.json`. Four distinct emission shapes (the CC contract each uses is verified in ADR 0007 — a top-level mutated/advisory JSON is silently ignored, so every shape wraps its payload in `hookSpecificOutput` with the matching `hookEventName`):
 
-1. **PreToolUse gates** — emit JSON `permissionDecision` (`deny`/`ask`/`none`) on stdout. Must exit 0 (per vendor spec, exit 2 discards the JSON). Assert the emitted decision string, not the exit code.
-2. **TaskCompleted enforcement** (`hooks/lifecycle/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
+1. **PreToolUse `permissionDecision`** — emit `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny|ask|none"}}` on stdout. Must exit 0 (per vendor spec, exit 2 discards the JSON). Assert the emitted decision string, not the exit code. (floor gates, `fact-force-gate`, `mcp-health-gate`, `secret-*`, `db-write-gate`, …)
+2. **PreToolUse `updatedInput`** — tool-input *mutation*. `dev-tmux-transform` rewrites a dev-server command into a detached tmux session via `hookSpecificOutput.updatedInput`; a top-level `{"command":...}` mutation is silently ignored (the bug ECC shipped).
+3. **PostToolUse `additionalContext`** — *advisory* injection. `context-monitor` (scope/loop nudge) and `hypothesis-gate` emit `hookSpecificOutput.additionalContext`; never a `permissionDecision` (a PostToolUse deny is a category error).
+4. **TaskCompleted enforcement** (`hooks/lifecycle/task-lifecycle.sh` F7) — uses **exit 2 + stderr feedback** (different convention from PreToolUse). The 12 F7 tests in `tests/hooks/runners/test-critical-hooks.sh` use `check_task` (asserts exit code + stderr substring).
 
 All hooks that shell out to external tools (`rtk`, `qmd`, `code-review-graph`) must degrade gracefully when absent (`command -v` guard, silent no-op). No bundled dependencies.
+
+**Profile ladder (ADR 0007):** `CLAUDE_HOOK_PROFILE=minimal` dials friction down while the safety floor (`block-dangerous-*`, `secret-*`) stays on; `standard` is the default (all gates on); `off` disables every kbg hook. Floor gates declare `HOOK_PROFILES="minimal standard strict"`; the four ECC-parity friction ports default `standard strict` (off under `minimal`). Per-gate kill switches and tuning knobs: `docs/reference/env-vars.md` § "ECC-parity port knobs".
 
 ### Harness as a 2×2 mental model (why 14 hook events exist)
 
@@ -120,9 +124,9 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 
 **Why this is load-bearing for kbg:** the article warns that one without the other is broken — feedback-only = "agent that keeps repeating the same mistakes"; feedforward-only = "agent that encodes rules but never finds out whether they worked" (L345). The 14 hook events in `hooks/hooks.json` are kbg's answer to populating every cell:
 
-- **Computational FF** → `block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`, `config-protection.sh`, `db-write-gate.sh`, `secret-read-guard`, `doctrine-edit-gate`
+- **Computational FF** → `block-dangerous-git.sh`, `secret-scan.sh`, `block-alias-shadowing.sh`, `block-bash-doctrine-write.sh`, `config-protection.sh`, `db-write-gate.sh`, `secret-read-guard`, `doctrine-edit-gate`, `fact-force-gate.sh` (first-edit four-fact friction), `mcp-health-gate.sh` (runtime health + backoff), `dev-tmux-transform.sh` (dev-server → detached tmux; `updatedInput` mutation)
 - **Inferential FF** → `doctrine-bootstrap.sh` (matcher-less SessionStart injects METHODOLOGY/RTK/ACLI/DBGATE), `iron-rule-reminder.sh`, `orchestrator-nudge.sh`
-- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (the critical-hooks suite), `audit.sh` (the audit checks)
+- **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (the critical-hooks suite), `audit.sh` (the audit checks), `context-monitor.sh` (PostToolUse scope/loop advisory — `additionalContext`, never a `permissionDecision`)
 - **Inferential FB** → `verification-gate.sh` (SessionEnd, **journals but NEVER emits `permissionDecision`** — see [LLM-judge circularity](#llm-judge-circularity-why-inferential-sensors-are-advisory) below), `fabrication-verdict-log.sh` (Stop), `kbg:review-pr` (command), `inferential-structural-judge` (SessionEnd, advisories on diff shape — over-engineering / arch-drift / test-pattern / doctrine-conformance; designed in `docs/research/inferential-structural-judge-design.md`)
 
 **Anti-pattern:** don't add an inferential-FB sensor that emits a `permissionDecision` — same model class across generation, judgment, and meta-engineering is a single-model failure mode. The 2×2 framing is the *justification* for the `verification-gate.sh` "advisory only" invariant (ADR 0002 §L115).

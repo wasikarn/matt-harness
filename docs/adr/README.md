@@ -17,3 +17,4 @@ with the [`adr`](../../skills/adr) skill (its "Maintain" step keeps this index c
 | [0005](0005-l5-auto-push.md) | L5 — auto-push/auto-merge (the human leaves the push loop; gauntlet-gated ship, supersedes 0004's "keep Gate 2") | Superseded by 0006 | 2026-06-22 |
 | [0005-addendum](0005-addendum-manual-push-precondition-waiver.md) | Waive N≥20-cycle precondition for MANUAL-armed-push | Accepted (superseded by 0006; moot) | 2026-06-22 |
 | [0006](0006-ecc-aligned-operating-model.md) | ECC-aligned operating model (retires the L3/L4/L5 bounded-autonomy ratchet; preserves 0002 judgment-preservation principle) | Accepted | 2026-06-25 |
+| [0007](0007-ecc-parity-ports.md) | ECC behavioral-parity ports (fact-force-gate, mcp-health-gate, dev-tmux-transform, context-monitor + minimal/standard/strict profile ladder) | Accepted | 2026-06-26 |
