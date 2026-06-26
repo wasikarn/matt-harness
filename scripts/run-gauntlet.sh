@@ -80,7 +80,11 @@ run_layer() {
 }
 
 run_layer "plugin-validate" "claude plugin validate --strict ."
-run_layer "audit" "bash skills/harness-audit/scripts/audit.sh ."
+AUDIT_CMD="bash skills/harness-audit/scripts/audit.sh ."
+if [ -n "${KBG_GAUNTLET_PLUGIN_CACHE:-}" ]; then
+  AUDIT_CMD="$AUDIT_CMD --plugin-cache $KBG_GAUNTLET_PLUGIN_CACHE"
+fi
+run_layer "audit" "$AUDIT_CMD"
 
 # docs-as-tests + supply-chain guard: fast static suites, always-on (not
 # skipped in --fast — they are quick greps/counts, unlike the critical-hooks

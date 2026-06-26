@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.8.0] — 2026-06-26
+
+Add three language-specific reviewer agents for the `/review-pr` multi-agent
+chain. Each owns the bug classes the language-agnostic `kbg:code-reviewer`
+glosses over: TS narrowing / `any` leaks, Python mutability / GIL / generators,
+Go error wrapping / goroutine lifecycle / channel direction. Defer to
+`kbg:code-reviewer`, `kbg:type-design-analyzer`, `kbg:security-reviewer`,
+`kbg:test-engineer`, and `kbg:devops-engineer` for out-of-scope dimensions.
+No behavior change for existing agents or skills; pure additive surface.
+Agent count: 29 → 32.
+
+- **Added agents.**
+  - `kbg:typescript-reviewer` — `any`/casts, narrowing, generics, async/type
+    hazards, type-vs-runtime drift, `strict` config drift, `this` binding,
+    TSX/React hooks, library-version drift.
+  - `kbg:python-reviewer` — mutability, late-binding closures, GIL/threading,
+    generators (PEP 479), exception control flow, import-time side effects,
+    stdlib-vs-dependency, type hints, version drift.
+  - `kbg:go-reviewer` — `%w` error wrapping, `ctx` propagation, goroutine
+    lifecycle, defer gotchas, channel direction, interface segregation,
+    receiver consistency, nil hazards, `errgroup`, tooling (`go vet`,
+    `staticcheck`, `go test -race`).
+
 ## [0.7.1] — 2026-06-26
 
 Patch release to force a plugin-cache re-fetch. The 0.7.0 cache was a

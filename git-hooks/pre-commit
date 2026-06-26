@@ -91,7 +91,11 @@ run_audit_layer() {
     [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
     if [ -f "$AUDIT" ]; then
       local audit_out
-      audit_out="$(bash "$AUDIT" "$ROOT" 2>&1)"
+      local audit_cmd="bash $AUDIT $ROOT"
+      if [ -n "${KBG_GAUNTLET_PLUGIN_CACHE:-}" ]; then
+        audit_cmd="$audit_cmd --plugin-cache $KBG_GAUNTLET_PLUGIN_CACHE"
+      fi
+      audit_out="$(eval "$audit_cmd" 2>&1)"
       local crit_n
       crit_n="$(printf '%s\n' "$audit_out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
       if [ -z "$crit_n" ]; then

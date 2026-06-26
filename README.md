@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.7.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -95,7 +95,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 
 | Component | Count | How to Use |
 |---|---|---|
-| **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
+| **Agents** | 32 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 28 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
 | **Commands** | 13 | Invoke via `/<command>` or `kbg:<command>` (e.g. `/ship-task`, `/ideate`, `/frame`) |
 | **Hooks** | 50 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (38 tracked as sensors) |
