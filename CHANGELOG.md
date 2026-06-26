@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.9.0] — 2026-06-26
+
+Tier-2 ECC adoption: 4 new senior-specialist agents, derived from the
+`affaan-m/ECC` agents directory. Each follows kbg canonical anatomy
+(voice, tool grants, defer rules, signature ritual, METHODOLOGY alignment,
+paper trail). Read-only tool profile — Bash is advisory inspection, no
+Edit/Write. No existing agent mutated; pure additive surface.
+
+- **`kbg:infra-engineer`** — physical/virtual hosts, storage, HA topology. Voice: capacity-then-resilience (workload estimate → headroom policy → failure-domain analysis). Domain: ZFS / raidz sizing, NAS-class drive selection, hybrid cloud, hardware class, ECC RAM for scrubs. Defer to `devops-engineer` (CI/CD), `networking-engineer` (routing), `backend-engineer` (app services). Tool grants: Read/Grep/Glob/Bash/WebSearch/WebFetch. Color: orange. Thai triggers: `'โครงสร้างพื้นฐาน'`, `'เซิร์ฟเวอร์'`.
+- **`kbg:networking-engineer`** — L2/L3 routing, switching, firewall policy, VPN, DNS. Voice: route-then-policy (L3 reachability first, then ACLs; ACLs cannot fix broken routes). Domain: BGP/OSPF/EIGRP, VLAN/STP/LAG, ACL/stateful/zone-based firewall, IPsec/WireGuard, DNS, IPv6 dual-stack, NetFlow/sFlow. Defer to `infra-engineer` (servers/hosts), `devops-engineer` (CI/CD), `backend-engineer` (app-layer protocols). Tool grants: Read/Grep/Glob/Bash/WebSearch/WebFetch. Color: cyan. Thai triggers: `'เครือข่าย'`, `'ไฟร์วอลล์'`.
+- **`kbg:marketing-engineer`** — growth systems, attribution, lifecycle automation, martech integration. Voice: cohort-then-attribution (define cohort window + lookback + denominator before any model comparison). Domain: attribution modeling, lifecycle automation, martech stack, funnel analytics, A/B testing rigor, privacy/cookie-less future. Defer to `frontend-engineer` (UI copy), `data-engineer` (ETL), `technical-writer` (content/SEO), `compliance-engineer` (GDPR consent). Tool grants: Read/Grep/Glob/Bash/WebSearch/WebFetch. Color: pink. Thai triggers: `'การตลาด'`, `'แอตทริบิวชัน'`.
+- **`kbg:security-auditor`** — standalone deep threat-model + remediation plan. Distinct from `kbg:security-reviewer` (the fast flag inside `kbg:review-pr`): run the auditor for a deep audit, run the reviewer for a PR-time fast flag. Voice: surface-then-trust-boundary (enumerate every trust boundary first, then check each crossing). Domain: STRIDE/DREAD/PASTA, OWASP Top 10/API/LLM, secrets/PII, auth/authz, crypto, supply chain, compliance mapping. Effort: `high` (deeper reasoning than other specialists). Tool grants: Read/Grep/Glob/Bash/WebSearch/WebFetch (read-only scans: nmap -sV passive, testssl.sh, semgrep/trivy offline, ss/netstat — NO active exploit tooling). Color: red. Thai triggers: `'ตรวจความปลอดภัย'`, `'ภัยคุกคาม'`.
+
+Excluded from this round: `healthcare-clinical` (overlaps with `compliance-engineer` HIPAA scope — YAGNI on speculative clinical-workflow domain; defer until a real use case appears).
+
+Routing table updated in `skills/orchestrate/reference.md` (line 44) — 4 new names appended to the Domain specialists list with explicit NOT-THIS defer rules to prevent routing collisions with adjacent agents.
+
+Verification: `run-gauntlet.sh` against the v0.9.0 snapshot: 6/6 layers PASS (plugin-validate, audit, docs-as-tests, ci-guard, critical-hooks, eval-gate). Description-quality eval: 77/77 surfaces pass (Thai triggers, 1024-char limit, positive trigger clause, DMI reasons, exit-0).
+
+Agent count: 32 → 36. Skill count: 28 → 28. Command count: 13 → 13.
+
 ## [0.8.1] — 2026-06-26
 
 Adopt ECC patterns as surgical edits to existing kbg agents. No new agents in
