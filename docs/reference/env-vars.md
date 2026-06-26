@@ -22,31 +22,26 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Key class | Settable where | Why |
 |---|---|---|
 | **Tuning** (`KBG_IDEATE_*`, `KBG_DEBT_*`, `KBG_EVAL_MAX_AGE_DAYS`, `KBG_LEARN_DRAIN_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
-| **`KBG_AUTONOMY`** (autonomy arming) | **Per-repo `.claude/settings.local.json` ONLY — never user-global.** And the file must be **caged** (Slice 0). | User-global `env` reaches every repo's hooks → arms the self-modifying loop in employer/other repos, defeating the per-environment opt-in the ADRs rest on. A settings file the loop can write is a self-elevation surface (same class as the launchd plist). |
-| **`KBG_REVIEW_DONE`** (Gate-2 override) | **Never persisted in any settings file.** Shell transient, one push at a time. | It is a one-shot "I reviewed *this* batch" override; a persisted `=1` holds Gate 2 open permanently — the main push brake silently disabled. |
+| **`KBG_AUTONOMY`** / **`KBG_REVIEW_DONE`** / **`KBG_AUTONOMY_L3`** / **`KBG_L3_REVIEW_DONE`** | **Retired by ADR 0006 (2026-06-25).** No autonomy flag; no maker-checker ship-gate. | The live knobs are the scoped denials `block-dangerous-git.sh` + `block-dangerous-bash.sh` (no operator flag) and the advisory reminders (`advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`). The operator is the authority at every irreversible boundary. |
 | **`KBG_ENFORCE_TASK_COMPLETED`** | Defaults ON (safe); just don't persist `=0` user-global. | A global `=0` downgrades the F7 gate in every repo. |
 
-> **Read this before arming anything (esp. if you installed `kbg@kobig` and are not the author):**
-> - **`KBG_AUTONOMY` is the live single arming key** (single-key collapse shipped v0.4.0; the old per-level
->   `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` names are superseded — do not use them). Arming requires BOTH
->   `KBG_AUTONOMY=1` in env AND the per-repo `.claude/settings.local.json` confirmation (`autonomy_on()`,
->   `hooks/_lib.sh`) — a user-global-only set arms **nothing** (guard 3; ADR 0004).
-> - **The autonomy loop self-improves the kbg-harness checkout *itself*** (`hooks/**`, `skills/`, `docs/adr/**`
->   — its own audit findings), **not the repo you opened.** It is not a tool for improving *your* project.
->   The whole "opt-in + owner's-tool/owner's-risk" safety basis (ADR 0004/0005) is **non-transferable** — it
->   assumes the operator is the author working *in* the harness repo.
-> - The "never user-global / must be caged" rules above are **machine-enforced** (shipped v0.4.0): the
->   repo-identity precondition (`loop-guard.py` F4), `autonomy_on()` user-global fail-safe-OFF (guard 3),
->   cross-remote ship-gate, and settings-file caging (`cage.txt`) are live — see audit #43/#44/#48/#50 and
->   `docs/research/l4-machinery-design.md` §"External installers".
+> **Retired by ADR 0006 (2026-06-25):** the `KBG_AUTONOMY` arming key, the `KBG_REVIEW_DONE` Gate-2
+> override, and the old per-level `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` names are all retired. There is
+> no autonomy flag and no enforced maker-checker ship-gate. The harness denies the irrecoverable set
+> computationally (scoped denials: `block-dangerous-git.sh` + `block-dangerous-bash.sh`, no operator flag)
+> and advises on the rest (advisory reminders: `advisory-push-reminder`, `tmux-reminder`,
+> `commit-quality-reminder`); the operator is the authority at every irreversible boundary. See
+> [ADR 0006](../adr/0006-ecc-aligned-operating-model.md). ADRs 0002–0005 are retained as historical
+> record (superseded banners in place).
 
-## Autonomy & safety flags (load-bearing — see the ADRs before changing)
+## Autonomy & safety flags — RETIRED by ADR 0006 (2026-06-25)
 
-| Var | Default | Effect | Read by |
-|---|---|---|---|
-| `KBG_AUTONOMY` | unset (**OFF** = L2) | `=1` arms the bounded-autonomy loop (`recursive-improve --auto`), gated by the per-repo `.claude/settings.local.json` confirmation (guard 3). Default OFF is the recorded ADR 0003/0004 decision — **not** a flag flip to ON (that needs a superseding ADR). Supersedes the old `KBG_AUTONOMY_L3`. | `loop-guard.py`, `push-gate.sh`, `_lib.sh`, `launch.sh` |
-| `KBG_REVIEW_DONE` | unset | `=1` clears the Gate-2 push-gate after a human reviews an autonomy batch, allowing `git push`. Shell-transient only — never persisted; cannot be inline-forged (tamper check). Supersedes the old `KBG_L3_REVIEW_DONE`. | `push-gate.sh` |
-| `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (ADR 0002 addendum) | `learn-capture.sh` |
+| Var | Status | Note |
+|---|---|---|
+| `KBG_AUTONOMY` | **Retired** | No autonomy flag. The bounded-autonomy loop (`recursive-improve --auto`), the `autonomy_on()` confirmation, and the L2–L5 ladder are superseded. Live computational guardrails are the scoped denials `block-dangerous-git.sh` + `block-dangerous-bash.sh` (no operator flag). |
+| `KBG_REVIEW_DONE` | **Retired** | No enforced maker-checker ship-gate (Gate-2 is gone). Advisory push review lives in `advisory-push-reminder` (journals + nudges, never a `permissionDecision`). |
+| `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` | **Retired** | Old per-level names, already superseded by the single-key collapse and now fully retired by ADR 0006. |
+| `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (ADR 0002 addendum) |
 
 ## Learning-capture knobs
 
@@ -84,7 +79,7 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Var | Default | Effect |
 |---|---|---|
 | `CLAUDE_DISABLED_HOOKS` | empty | Comma/space list of hook IDs to disable (e.g. `learn-capture`, `iron-rule-reminder`). |
-| `CLAUDE_HOOK_PROFILE` | `standard` | `off` disables all kbg hooks (no effect during an active L3 run — L3 immunity in `_lib.sh`). |
+| `CLAUDE_HOOK_PROFILE` | `standard` | `off` disables all kbg hooks. |
 | `CLAUDE_JOURNAL_PATH` | `~/.claude/governance-events.jsonl` | Governance-journal location override. |
 | `CLAUDE_BAK_TTL_DAYS` / `CLAUDE_BAK_TTL_PROFILE` | `90` / `standard` | `.bak` cleanup TTL + profile. |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | unset | `=1` enables the opt-in Agent Teams surface (`/team-plan`, `/team-build`, …). |

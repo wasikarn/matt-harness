@@ -16,17 +16,12 @@
 
 set -uo pipefail
 
-# Hermetic flag baseline (ADR 0003/0004). This suite verifies hook correctness —
-# including the disable mechanisms (CLAUDE_HOOK_PROFILE=off, CLAUDE_DISABLED_HOOKS)
-# that _lib.sh deliberately NEUTRALIZES during an armed run (autonomy_on → L3/L4
-# immunity). When an autonomy loop runs this suite as its in-loop gate, the ambient
-# flag would make every disable / flag-off assertion fail (gates/orphaned-runners/
-# l3) — the gate could never go green, so the loop could never keep a commit.
-# Scrub BOTH key generations so the suite always runs from a clean baseline: the
-# legacy per-level keys (KBG_AUTONOMY_L3 / KBG_L3_REVIEW_DONE) still read by the
-# loop-guard + rollback carve-out until the F1-complete slice, and the single-key
-# KBG_AUTONOMY / KBG_REVIEW_DONE now read by the push gate + immunity. The flag-ON
-# cases (in test-ch-l3.sh) set the flag + per-repo fixture themselves, per-test.
+# Hermetic flag baseline. This suite verifies hook correctness — including the
+# disable mechanisms (CLAUDE_HOOK_PROFILE=off, CLAUDE_DISABLED_HOOKS). The
+# autonomy machinery (ADR 0003/0004 — loop-guard, push-gate, L3/L4 immunity,
+# rollback carve-out) was retired 2026-06-25 (ADR 0006); the vars below no
+# longer arm anything. The unset is kept as a harmless scrub so any residual
+# ambient flag from a pre-retirement loop cannot flip a flag-off assertion.
 unset KBG_AUTONOMY_L3 KBG_L3_REVIEW_DONE KBG_AUTONOMY KBG_REVIEW_DONE
 
 HOOKS_DIR="$(cd "$(dirname "$0")/../../../hooks" && pwd)"

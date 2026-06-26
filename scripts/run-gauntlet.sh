@@ -149,17 +149,8 @@ done
 echo "run-gauntlet: summary — $FAILURES/$TOTAL layer(s) failed"
 echo "run-gauntlet: slowest layer was ${SLOWEST_NAME:-none} at ${SLOWEST_TIME}s"
 
-# Emit the computational ship-gate evidence (ADR 0005 addendum). SHA-bound so the L5
-# push leg can require green-for-HEAD. Best-effort: never changes the exit code.
-if command -v journal_append >/dev/null 2>&1; then
-  _head=$(git rev-parse HEAD 2>/dev/null || echo "")
-  if [ -n "$_head" ]; then
-    if [ "$FAILURES" = "0" ]; then _out="green"; else _out="red"; fi
-    _failing="${FAILING_NAMES% }"
-    journal_append "run-gauntlet" "gauntlet_run" \
-      "{\"sha\":\"$_head\",\"outcome\":\"$_out\",\"layers\":$TOTAL,\"failed\":$FAILURES,\"failing\":\"$_failing\",\"fast\":$FAST}" \
-      >/dev/null 2>&1 || true
-  fi
-fi
+# gauntlet_run emission RETIRED 2026-06-25 (ADR 0006); the L5 ship-gate consumer
+# (push-gate.sh) is gone — gauntlet_run was ship-gate evidence, now advisory-only.
+# (The computational validation above is unchanged; only the journal event is dropped.)
 
 exit "$FAILURES"

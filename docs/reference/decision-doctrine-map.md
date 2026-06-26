@@ -32,7 +32,7 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 | an **irreversible** / long-horizon commitment under contested diagnosis | `strategize` | RTK + `strategic-judgment.md` |
 | audit existing reasoning (plan, ADR, RFC) for hidden assumptions | `critical-eval` | RTK |
 | disprove a confident output in fresh context before committing | `doubt-driven` (external) | METHODOLOGY Rule 1 |
-| a mutation or ship under autonomy (L3/L4/L5) | the **computational** gate (gauntlet / push-gate), never the model | ADR 0002–0005 (autonomy invariant); model is veto-only |
+| a mutation or ship | the harness **denies the irrecoverable set computationally** (scoped denials: `block-dangerous-git.sh` + `block-dangerous-bash.sh`) and **advises on the rest** (advisory reminders: `advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`); the **operator is the authority at every irreversible boundary** | ADR 0006 (ECC-aligned operating model); ADRs 0002–0005 retained as historical record |
 | writing to a doctrine/caged file | doctrine-edit-gate (interactive) / cage-deny (loop) | ADR 0003 (cage); `cage.txt` |
 | a db write | `db-write-gate.sh` | DBGATE.md |
 | an Atlassian (Jira/Confluence) operation | the Atlassian MCP contract | ACLI.md |

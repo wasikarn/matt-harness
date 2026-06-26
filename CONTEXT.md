@@ -47,48 +47,57 @@ the steady state going forward.
 - **No bundled MCP/LSP servers.** Hooks that depend on `rtk` / `qmd` /
   `memory-lint` / `code-review-graph` must degrade gracefully when those tools
   are absent.
-- **Autonomy is human-gated within a cage floor (the autonomy invariant).**
-  The ratchet turns only by a deliberate, human-authored, recorded ADR —
-  never a flag flip, never a loop self-edit (the cage forbids `docs/adr/**`).
-  One opt-in arming key, `KBG_AUTONOMY` (`1` = armed, unset/`0` = OFF, default
-  OFF); which capabilities an armed run has is set by the committed slice code,
-  not the key value.
-  - **L2 (default):** no autonomous or unattended self-repair loop, and no
-    multi-iteration loop that runs without a human gate — every
-    self-improvement iteration stops at a human `AskUserQuestion` gate per
-    mutation; `recursive-improve` keeps `disable-model-invocation: true`
-    (the model can't self-start).
-  - **L3 (opt-in, [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md)):** a
-    bounded unattended loop runs within an owner-approved run, commits
-    local-only, and is **human-gated at push (Gate 2)**, not per mutation; the
-    in-loop gate is **computational** (the gauntlet, never a model).
-  - **L4 (opt-in, [ADR 0004](docs/adr/0004-l4-autonomy.md)):** self-launch
-    (#1, an **OS scheduler** — not the model — self-starts) + a veto-only
-    model-gate (#3, trialed on one low-stakes skill) + auto-inject (#4);
-    auto-push (#2) is **dropped**, the human stays at Gate 2.
-  - **L5 (opt-in, [ADR 0005](docs/adr/0005-l5-auto-push.md)):** re-adds
-    auto-push/auto-merge (#2); the human leaves the push loop, replaced by a
-    **computational** ship-gate (the gauntlet); the model stays veto-only and
-    gains no ship authority. Enable is gated by ADR 0004's i/ii/iii (N≥20
-    clean cycles, F1/F2/F3 closed, cumulative cap).
+- **Operating model: scoped denials, advisory review, operator-as-authority
+  ([ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md), supersedes the
+  L2-L5 ratchet of 0003/0004/0005).** The harness is a **friction layer, not a
+  hard wall**: it **denies the irrecoverable set computationally and advises on
+  the rest**; the **operator is the authority at every irreversible boundary**.
+  There is **no autonomy flag** (the `KBG_AUTONOMY` ratchet and its
+  `KBG_REVIEW_DONE`/`KBG_L5_SHIP_ALLOWLIST` keys are retired), **no enforced
+  maker≠checker ship-gate**, and **no model self-start**. Review is **advisory**,
+  not a hard-coded gate; the maker≠checker bar stays a human judgment matched to
+  stakes.
+  - **Scoped denials (computational feedforward)** — `block-dangerous-git.sh`
+    (force-push-to-main/master deny, develop ask, fix/feat allow;
+    `reset --hard` / `clean -f` / `branch -D` / `checkout .` / `restore .` /
+    `core.hooksPath` / `commit --amend` / `git rm -r` / `switch --force` deny;
+    remote-mutation ask; `--no-verify`/`-n` hook-bypass blocked) +
+    `block-dangerous-bash.sh` (non-git destructive surface: `rm -rf` all flag
+    forms, `find -exec rm`, `dd`, SQL DDL) deny the irrecoverable set. The safe
+    operator force (`--force-with-lease`) is allowed.
+  - **Advisory reminders (non-blocking)** — `advisory-push-reminder.sh`,
+    `tmux-reminder`, `commit-quality-reminder` surface review prompts; they
+    never block.
+  - **The gauntlet as a general validation runner** — `run-gauntlet.sh`
+    validates (CI + operator); the retired `gauntlet_run` SHA-bound push-leg
+    ship-gate is gone, so the gauntlet validates but does not authorize a ship.
+  - **Judgment preservation (ADR 0002, preserved append-only)** — the gate that
+    *denies* a mutation or a ship stays **computational, never a model**. The
+    model is **veto-only** — it can force a rollback, never bless or ship. This
+    is the canonical home for the principle `recursive-improve` cites — a
+    **judgment-preservation** choice, not a capability gap to be closed as
+    models improve.
+  - **The cage retained as a safety-surface manifest** — `scripts/cage.txt`
+    stays as the consequential-safety-surface manifest;
+    `decision-provenance-nudge.sh` keeps reading it as the single source for
+    "caged path" provenance classification. The cage forbids `docs/adr/**` —
+    loop-authored ADRs stay out.
+  - **No model self-start** — `recursive-improve` keeps
+    `disable-model-invocation: true` (audit #32 CRIT, guarded by ADR 0002) and
+    survives as the Observe → Propose → `AskUserQuestion` human-gated ritual —
+    every iteration stops at a human gate before any mutation. The L4 launchd
+    self-launch machinery is decommissioned; there is no OS-scheduler
+    self-start either.
 
-  **The deepest invariant, preserved at every level:** the gate that
-  *authorizes* a mutation or a ship stays **computational, never a model**.
-  The model is veto-only at L4/L5 — it can force a rollback, never bless or
-  ship. The cage is retained at every level: the loop may auto-improve the
-  non-safety surface, but it cannot disable its own brakes or rewrite its
-  governing ADRs. This is the canonical home for the invariant that
-  `recursive-improve` cites — a **judgment-preservation** choice, not a
-  capability gap to be closed as models improve. Four variants stay **out of
-  scope by design** (each needs a new superseding ADR): the *model*
-  self-launching, a *model*-authorizing ship-gate, the loop authoring its own
-  ADRs, and removing the cage.
+  Four variants stay **out of scope by design** (each needs a new superseding
+  ADR): the *model* self-starting a loop, a *model*-authorizing ship, the loop
+  authoring its own ADRs, and removing the cage. These are principle-bounded,
+  not capability-bounded — reopening them on a "models are better now" argument
+  is foreclosed.
 
-  **See** [ADR 0002](docs/adr/0002-autonomy-invariant.md) (L2-era principle +
-  foreclosures), [ADR 0003](docs/adr/0003-l3-bounded-autonomy.md) (the two-gate
-  model), [ADR 0004](docs/adr/0004-l4-autonomy.md) (self-launch within the
-  cage, push kept), and [ADR 0005](docs/adr/0005-l5-auto-push.md) (auto-push
-  behind a computational ship-gate).
+  **See** [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) (the
+  operating model) and [ADR 0002](docs/adr/0002-autonomy-invariant.md)
+  (judgment-preservation principle + foreclosures, preserved append-only).
 
 ## Components
 

@@ -1,5 +1,7 @@
 # ADR 0002: Autonomy invariant — no autonomous or unattended self-repair loop
 
+> **Superseded for architecture + operating model by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25).** Preserved append-only: ADR 0002 judgment-preservation principle (model never authorizes a ship) + the cited basis for recursive-improve disable-model-invocation: true (audit #32 surface-3) survive. The L3/L4/L5 ratchet, the autonomy flag, Gate-2, and the L5 ship-gate are retired; see ADR 0006.
+
 - **Status**: Accepted — **superseded for architecture** by [ADR 0003](0003-l3-bounded-autonomy.md) (2026-06-21). Preserved append-only as the canonical record of the L2 era.
 - **Date**: 2026-06-12
 - **Decider**: Owner

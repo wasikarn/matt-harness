@@ -1,5 +1,7 @@
 # ADR 0005 — Addendum: waive the N≥20-cycle precondition for MANUAL-armed-push
 
+> **Superseded by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25); moot.** The L3/L4/L5 bounded-autonomy machinery is retired; see ADR 0006 for the ECC-aligned operating model.
+
 - **Status**: Accepted (extends [ADR 0005](0005-l5-auto-push.md); crosses
   [ADR 0004](0004-l4-autonomy.md))
 - **L5 ship-gate RETIRED (2026-06-25)**: the L5 auto-push ship-gate in `push-gate.sh`

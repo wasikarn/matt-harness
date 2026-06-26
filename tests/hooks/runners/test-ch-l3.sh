@@ -69,6 +69,7 @@ else
   printf '  ⏭  push-gate retired 2026-06-25 — Gate-2 enforcement skipped\n'
 fi
 
+if [ -f "$HOOKS/gates/l4-act-gate.sh" ]; then
 # --- l4-act-gate: Act-layer self-launch guard (design §5 Act-layer gate + §8) ---
 # The launchd plist + kill-file live outside the repo; this PreToolUse gate DENIES
 # any write/launchctl mutation to them while armed. Real-DENY matrix (the Slice-3
@@ -100,10 +101,16 @@ actwcheck "$ARMED_ENV" deny "armed: Write the plist → deny"                   
 actwcheck "$ARMED_ENV" deny "armed: Write the kill-file → deny"                 "$HOME/.claude/kbg-l4-kill"
 actwcheck "$ARMED_ENV" none "armed: Write a normal path → none"                 "/tmp/some-file"
 
-# --- block-dangerous-git: L3/L4 rollback carve-out (ADR 0003/0004) ---
-# The loop rolls back a failed cycle with `git reset --hard <l3-precycle-* tag>`.
-# block-dangerous-git blanket-denies `git reset --hard`; the carve-out allows ONLY
-# that exact command, full-anchored, and ONLY when armed (autonomy_on).
+else
+  printf '  ⏭  l4-act-gate.sh retired 2026-06-25 — l4-act-gate checks skipped\n'
+fi
+
+# --- block-dangerous-git: L3/L4 rollback carve-out (retired 2026-06-25, ADR 0006) ---
+# The L3 loop rolled back a failed cycle with `git reset --hard <l3-precycle-* tag>`;
+# block-dangerous-git blanket-denies `git reset --hard` and the carve-out allowed ONLY
+# that exact command, full-anchored, when armed (autonomy_on). The carve-out was removed
+# in Batch 0 (autonomy retirement) — reset --hard is now blanket-denied in all cases.
+# The deny assertions below still hold; the carve-out ALLOW case is skipped.
 # dgcheck <env> <want> <label> <command>
 dgcheck() {
   local env="$1" want="$2" label="$3" cmd="$4" out got
@@ -112,7 +119,11 @@ dgcheck() {
   if [ "$got" = "$want" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "block-dangerous-git" "$label"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s (want %s, got %s)\n' "block-dangerous-git" "$label" "$want" "$got"; fi
 }
+if [ "${KBG_L3_ROLLBACK_CARVEOUT:-no}" = "live" ]; then
 dgcheck "$ARMED_ENV"  none "rollback: allow reset --hard <l3-precycle tag> when armed"   "git reset --hard l3-precycle-run1-1"
+else
+  printf '  ⏭  L3 rollback carve-out retired 2026-06-25 (ADR 0006) — block-dangerous-git reset --hard allow skipped\n'
+fi
 dgcheck "$ARMED_ENV"  deny "armed: deny reset --hard to a non-precycle ref"              "git reset --hard HEAD~3"
 dgcheck ""            deny "flag off: deny reset --hard even to l3-precycle tag"         "git reset --hard l3-precycle-run1-1"
 dgcheck "$ARMED_ENV"  deny "carve-out can't ride a compound (force-push appended)"       "git reset --hard l3-precycle-run1-1 && git push --force origin main"
@@ -131,6 +142,7 @@ gcheck() {
 }
 
 if command -v python3 >/dev/null 2>&1; then
+if [ -f "$GUARD" ]; then
   # selftest must pass (matcher + fail-closed posture).
   if python3 "$GUARD" selftest >/dev/null 2>&1; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "loop-guard" "selftest passes"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "loop-guard" "selftest FAILED"; fi
@@ -220,7 +232,12 @@ if command -v python3 >/dev/null 2>&1; then
   (cd "$R3FC" && git init -q)   # a kbg-sentinel git tree with NO audit.sh
   f4check "$R3FC" STOP 10 "R3 --assert-cage-intact: audit.sh missing → STOP (fail-closed)" precheck --state "$FIXTURE/r3f.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
 
-  # --- Slice 1: l4-auto-keep writer (design §6, #27) + check-act memory exemption ---
+  else
+  printf '  ⏭  loop-guard.py retired 2026-06-25 — loop-guard checks skipped\n'
+fi
+
+if [ -f "$REPO/scripts/l4/l4-auto-keep.py" ]; then
+# --- Slice 1: l4-auto-keep writer (design §6, #27) + check-act memory exemption ---
   # check-act exempts the sanctioned out-of-repo memory dir (design §6: memory/ is
   # uncaged). _memory_dir() derives from CLAUDE_PROJECT_DIR (=$ARMED_PROJ), so the
   # test path must match that slug. Armed check-act on a memory-dir path → CONTINUE
@@ -279,7 +296,12 @@ if command -v python3 >/dev/null 2>&1; then
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#47b" "silent on the clean writer"
   fi
 
-  # --- Slice 2: l4-quality-gate (model-as-gate, design §7, #29) + audit #49 ---
+  else
+  printf '  ⏭  l4-auto-keep.py retired 2026-06-25 — auto-keep + #47b skipped\n'
+fi
+
+if [ -f "$REPO/scripts/l4/l4-quality-gate.sh" ]; then
+# --- Slice 2: l4-quality-gate (model-as-gate, design §7, #29) + audit #49 ---
   # qcheck <result> <skill> <judge-cmd> <want-stdout> <want-exit> <label>
   qcheck() {
     local result="$1" skill="$2" jcmd="$3" want="$4" wexit="$5" label="$6" out got gx
@@ -341,7 +363,12 @@ if command -v python3 >/dev/null 2>&1; then
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#49" "silent on the clean quality-gate"
   fi
 
-  # --- Slice 3: l4-launch.sh (self-launch, design §8, #31) + exit-tripwire (#32) ---
+  else
+  printf '  ⏭  l4-quality-gate.sh retired 2026-06-25 — quality-gate + #49 skipped\n'
+fi
+
+if [ -f "$REPO/scripts/l4/launch.sh" ]; then
+# --- Slice 3: l4-launch.sh (self-launch, design §8, #31) + exit-tripwire (#32) ---
   # Launcher: no scheduler.conf → abort (kill-switch); kill-file → abort; normal →
   # arms the flag + surfaces R4 caps + invokes the cycle. lcheck <conf> <killfile>
   # <want-cycle-ran: yes|no> <label>.
@@ -402,7 +429,11 @@ if command -v python3 >/dev/null 2>&1; then
     PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#32b" "silent on the clean launcher"
   fi
 
-  # --- Slice 4 / L5: auto-push ship-gate (ADR 0005 + addendum, design §8.5, #35) ---
+  else
+  printf '  ⏭  launch.sh retired 2026-06-25 — l4-launch + exit-tripwire + #32b skipped\n'
+fi
+
+# --- Slice 4 / L5: auto-push ship-gate (ADR 0005 + addendum, design §8.5, #35) ---
   # Folded into push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push ONLY
   # to an allowlisted host+org (default EMPTY → un-configured pushes nowhere), AND only
   # after a SHA-bound green gauntlet (a gauntlet_run event with sha == HEAD + outcome
@@ -503,8 +534,9 @@ ncheck() {
   if /usr/bin/grep -qE "^# ${id}\. " "$AUDIT" "$(dirname "$AUDIT")"/checks/*.sh 2>/dev/null; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit-numbering" "#${id} present"
   else FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit-numbering" "#${id} MISSING (load-bearing ID drifted)"; fi
 }
-for id in 32 34 41 43 44 48 49 50; do ncheck "$id"; done
+for id in 32 34 41 44; do ncheck "$id"; done
 
+if [ -f "$REPO/scripts/loop-guard.py" ]; then
 # --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
 # Runs the REAL audit.sh against a fixture that gates #43 on (fake ADR 0003 + real guard
@@ -549,6 +581,9 @@ if bash "$AUDIT" "$CFD" 2>&1 | /usr/bin/grep -q 'cage↔anchor drift'; then
   FAIL=$((FAIL+1)); printf '  ❌ %-22s %s\n' "audit#43d" "false-positive drift on complete cage"
 else
   PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "audit#43d" "silent on complete cage (no drift)"
+fi
+else
+  printf '  ⏭  loop-guard.py retired 2026-06-25 — #43b/#43d cage legs skipped\n'
 fi
 
 report

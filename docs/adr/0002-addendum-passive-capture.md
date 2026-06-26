@@ -1,5 +1,7 @@
 # ADR 0002 — Addendum: Passive Learning-Capture (capture half only)
 
+> **Note (2026-06-25):** Unaffected by [ADR 0006](0006-ecc-aligned-operating-model.md) — capture is advisory, apply is human-gated, no autonomy flag involved.
+
 - **Status**: Accepted (extends [ADR 0002](0002-autonomy-invariant.md))
 - **Date**: 2026-06-21
 - **Decider**: Owner

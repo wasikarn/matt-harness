@@ -1,5 +1,7 @@
 # ADR 0002 — Addendum: `gh pr create`/`ready` are review-prep, not ship
 
+> **Superseded by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25); moot.** The L3/L4/L5 bounded-autonomy machinery is retired; see ADR 0006 for the ECC-aligned operating model.
+
 - **Status**: Accepted (extends [ADR 0002](0002-autonomy-invariant.md); crosses
   [ADR 0003](0003-l3-bounded-autonomy.md) Gate 2 + [ADR 0004](0004-l4-autonomy.md) +
   [ADR 0005](0005-l5-auto-push.md))

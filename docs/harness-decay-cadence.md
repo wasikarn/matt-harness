@@ -57,8 +57,9 @@ Decay reasoning must **never** retire a verifier on the argument that "the model
 can verify its own work now." The maker≠checker separation exists for
 **vouchability and independence** — a fresh-context checker catches what the
 maker cannot see — not because the model is too weak to check. That is exactly
-the boundary METHODOLOGY Rule 4's fresh-context-verification principle and the
-autonomy invariant ([`docs/adr/0002-autonomy-invariant.md`](0002-autonomy-invariant.md)) protect. Collapsing the checker into the maker is the
+the boundary METHODOLOGY Rule 4's fresh-context-verification principle and
+ADR 0002's judgment-preservation principle (preserved append-only by
+[ADR 0006](0006-ecc-aligned-operating-model.md)) protect. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no
@@ -66,7 +67,7 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See [ADR 0002](0002-autonomy-invariant.md)** (the L2-era rationale) **and [ADR 0003](0003-l3-bounded-autonomy.md)** (the L3 supersession) — the autonomy invariant's *principle* is irreversible (operator judgment is load-bearing; never auto-prune a verifier), but its *architecture* was deliberately superseded L2→L3 by ADR 0003. The "never auto-prune" guard is its concrete expression in decay reasoning and holds under L3 unchanged (the loop never auto-deletes components; the cage forbids it). The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
+**See [ADR 0006](0006-ecc-aligned-operating-model.md)** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but ADR 0002's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
@@ -86,8 +87,8 @@ four cells — but the **inferential-FB cell** carries a specific decay
 hazard: a "smart" sensor that uses the same model class to judge work
 the model just produced inherits the generator's blind spots and can
 quietly self-confirm. A `permissionDecision: deny` from such a sensor
-is also a model-as-own-gate — covert L4, autonomy-invariant
-forbidden.
+is also a model-as-own-gate — the covert self-authorization
+pattern ADR 0006 retires and audit #34 keeps guarding hermetically.
 
 **kbg's posture, captured at the decay layer:**
 
@@ -156,7 +157,7 @@ The gates mapped above (DB writes, secret reads, config edits, doctrine edits �
 plus the `recursive-improve` Step 3 gate) earn their place only by carrying
 judgment. A gate the operator approves every time without a recorded change of
 decision is **ceremony**, not judgment — and ceremony trains the atrophy the
-autonomy invariant exists to prevent. This review is the exit condition for the
+judgment-preservation principle (ADR 0002, preserved append-only by [ADR 0006](0006-ecc-aligned-operating-model.md)) exists to prevent. This review is the exit condition for the
 gate *implementation* (the principle stays irreversible — ADR 0002).
 
 One question, folded into the quarterly pass: **which gates did the operator
@@ -175,7 +176,7 @@ gate:
 - **never fired** → already covered by the harness-coverage silent-cell review
   below.
 
-Removing a ceremony gate is **not** a move toward L3/L4; it is the
+Removing a ceremony gate is **not** a move toward any autonomy level; it is the
 build-to-delete sweep applied to gates — keep every remaining gate one the
 operator actually deliberates at. Measure and delete stay human-gated, no
 auto-prune. **Carve-out:** the maker≠checker hard guard above still binds — never
@@ -201,7 +202,7 @@ same human-gated cadence applies. Two surfaces carry tool grants:
 - **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
   second, broader allowlist applied to every session in this harness).
 
-**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for the autonomy invariant's enforcement (ADR 0002).
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (ADR 0002's judgment-preservation principle, preserved by [ADR 0006](0006-ecc-aligned-operating-model.md)).
 
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets
@@ -303,14 +304,15 @@ reasons, or is being routed around by a newer surface.
    is itself removal-from-matrix-shape eligible (an `ABSENT_*`
    witness through the same `decommission` flow).
 
-### Autonomy posture (explicit)
+### Operator-authority posture (explicit)
 
 `scripts/evals/harness-coverage.py` does **not** auto-prune. The operator runs
 the surface on the cadence above, the surface emits a report, and
 the human decides what (if anything) to delete. No cron, no
 scheduled hook event, no model-as-own-gate. Same posture as the
 build-to-delete sweep + the permission re-audit; same posture ADR
-0002's autonomy invariant protects. The
+0006's operator-as-authority model (and ADR 0002's judgment-preservation
+principle, preserved append-only) protects. The
 [2×2 section in `CLAUDE.md`](../../CLAUDE.md#hook-architecture-two-conventions)
 calls out the LLM-judge-circularity hazard of any inferential-FB
 sensor that emits a `permissionDecision` — a coverage-driven

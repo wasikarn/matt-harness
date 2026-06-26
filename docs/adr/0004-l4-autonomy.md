@@ -1,5 +1,7 @@
 # ADR 0004: L4 self-driving harness — autonomy within the cage floor
 
+> **Superseded by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25); moot.** The L3/L4/L5 bounded-autonomy machinery is retired; see ADR 0006 for the ECC-aligned operating model.
+
 - **Status**: **Accepted (decision recorded 2026-06-22) + IMPLEMENTED 2026-06-23 (Slices 0–3 of the
   5-slice build, issues #17–#33, shipped gauntlet-green on `develop`; `KBG_AUTONOMY` still OFF by
   default — flag-OFF byte-identical to L2/L3)** — supersedes the *bounded-autonomy architecture* of

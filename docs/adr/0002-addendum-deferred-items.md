@@ -1,5 +1,7 @@
 # ADR 0002 — Addendum: Deferred Items Mapping
 
+> **Note (2026-06-25):** [ADR 0006](0006-ecc-aligned-operating-model.md) retires the L3/L4/L5 ratchet; these items remain deferred on ADR 0002's surviving principle (no model-self-start, no model-authorizing-a-ship), no longer gated by an autonomy level.
+
 - **Status**: Accepted (extends [ADR 0002](0002-autonomy-invariant.md))
 - **Date**: 2026-06-12
 - **Decider**: Owner

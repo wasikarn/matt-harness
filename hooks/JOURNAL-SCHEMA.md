@@ -48,8 +48,8 @@ so a new producer can ship before this doc is updated. Keep this table current.
 | `review_finding` | `/review-pr` (Phase II) | `file`, `line`, `tier`, `agent`, `summary` |
 | `verification_verdict` | `/review-pr` (Phase II) | `subject_id`, `disposition`, `tier`, `decision`, `rejected_reason` |
 | `verification_summary` | `verification-gate.sh` (SessionEnd) | `features`, `tdd_provenance`, `analyzer_pass`, `no_trail`, `gaps`, `exit_reason` |
-| `l3_cycle` | `recursive-improve --auto` (ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks`, optional `source` (`queue` when the candidate came from the learning-candidate queue — Route B, ADR 0002 addendum) |
-| `gauntlet_run` | `run-gauntlet.sh` (ADR 0005 addendum) | `sha` (the HEAD the gauntlet validated — binds the verdict to one commit so the L5 push leg can require green-for-HEAD), `outcome` (`green`\|`red`), `layers`, `failed`, `failing` (space-sep layer names), `fast` (0\|1) |
+| `l3_cycle` | `recursive-improve --auto` (historical, ADR 0003) | `run_id`, `iteration`, `outcome` (`green`\|`red`\|`skipped`), `files`, `failing_checks`, optional `source` (`queue` when the candidate came from the learning-candidate queue — Route B, ADR 0002 addendum). **Moot post-ADR 0006 (2026-06-25):** the `--auto` loop is retired, so no new `l3_cycle` events are produced; existing entries remain as historical audit trail. |
+| `gauntlet_run` | `run-gauntlet.sh` | `sha` (the HEAD the gauntlet validated), `outcome` (`green`\|`red`), `layers`, `failed`, `failing` (space-sep layer names), `fast` (0\|1). **Advisory evidence only** post-ADR 0006 (2026-06-25): the push-gate consumer is retired, so this is no longer a ship-gate input — the operator reads it as validation evidence and remains the authority at the push boundary. |
 | `learning_candidates` | `learn-capture.sh` (SessionEnd, default-OFF; ADR 0002 addendum) | `queued`, `corrections`, `preferences`, `queue_total` — **counts only**, no secret-named fields (the redactor nukes any key containing token/secret/key/password/credential) |
 | `decision_rationale` | `decision-provenance-nudge.sh` (PreToolUse, advisory) | `surface_touched`, `consequential_class` (`caged`\|`doctrine`), `one_way_door` (bool) |
 
@@ -82,15 +82,17 @@ of scope for the F4 fix. The field is additive; the consumer can introduce the
 other enum values later without a schema break.
 
 `l3_cycle` is the per-cycle record of an L3 bounded-autonomy run (`recursive-improve
---auto`, ADR 0003). `run_id` (a uuid minted at launch) is the **correlation key**:
-every cycle of one unattended run shares it, so `scripts/run-report.sh <run-id>`
-reconstructs the whole run (cycles, green/red/skipped outcomes, files touched) from
-the append-only journal at Gate-2 review time — the journal is the durable audit
-trail of what the loop did while the operator was away, not write-only. `outcome`
-is `green` (gauntlet passed, committed local), `red` (gauntlet failed, reset to the
-pre-cycle tag), or `skipped` (the candidate hit a caged path / tamper at `check-act`).
-The loop NEVER pushes (the `push-gate` hook enforces it), so there is no
-`l3_cycle` event for a push — the batch ships only after the human Gate-2 review.
+--auto`, ADR 0003), now **moot** under ADR 0006 (2026-06-25): the `--auto` loop is
+retired and no model self-starts, so no new `l3_cycle` events are produced. Existing
+entries remain as a historical audit trail. `run_id` (a uuid minted at launch) was
+the **correlation key**: every cycle of one unattended run shared it, so
+`scripts/run-report.sh <run-id>` reconstructs a past run (cycles, green/red/skipped
+outcomes, files touched) from the append-only journal. `outcome` was `green`
+(gauntlet passed, committed local), `red` (gauntlet failed, reset to the pre-cycle
+tag), or `skipped` (the candidate hit a caged path / tamper at `check-act`). The
+enforced push-gate that consumed this event is retired (ADR 0006); the operator is
+the authority at the push boundary, and `advisory-push-reminder` nudges rather than
+gates.
 
 `decision_rationale` is the **machine-provenance half** of a decision-sizing
 record (the staff-engineer triad from METHODOLOGY Rule 1: one-way door / blast

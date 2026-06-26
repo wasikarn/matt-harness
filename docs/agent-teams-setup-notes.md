@@ -129,7 +129,7 @@ Subagents spawned via the Agent tool are **persistent teammates** when teammate 
 
 ## See also
 
-- `docs/adr/0002-autonomy-invariant.md` + `docs/adr/0003-l3-bounded-autonomy.md` — why the harness is human-gated (L2 default; L3 *bounded* opt-in, push-gated) and rejects L4 / self-launching loops
+- `docs/adr/0006-ecc-aligned-operating-model.md` — the current operating model (Accepted 2026-06-25): the harness denies the irrecoverable set computationally and advises on the rest; the operator is the authority at every irreversible boundary; no autonomy flag, no enforced maker-checker ship-gate, no model self-start. **ADRs 0003-0005** (the L2-L5 bounded-autonomy ratchet: L3 bounded opt-in, L4 self-driving, L5 auto-push) **are superseded by ADR 0006; the autonomy model is retired.** ADR 0002's judgment-preservation principle (the model never authorizes a ship) is preserved append-only.
 - `commands/team-plan.md` — Step 1-3 of the 7-step pipeline
 - `commands/team-build.md` — Step 4-7, including the F10 plan approval filter
 - `skills/orchestrate/SKILL.md` — F9 spawn-prompt template and validation chain

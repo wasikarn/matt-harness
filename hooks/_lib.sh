@@ -36,13 +36,8 @@
 # first test and return before any file fork, so the flag-OFF path is byte-ident
 # to a plain env-string compare.
 autonomy_on() {
-  [ "${KBG_AUTONOMY:-}" = "1" ] || return 1
-  local home="${CLAUDE_PROJECT_DIR:-}/.claude/settings.local.json"
-  [ -f "$home" ] || return 1
-  command -v jq >/dev/null 2>&1 || return 1
-  local v
-  v=$(jq -r '.env.KBG_AUTONOMY // ""' "$home" 2>/dev/null) || return 1
-  [ "$v" = "1" ]
+  # RETIRED 2026-06-25 (ADR 0006); autonomy model retired — always un-armed.
+  return 1
 }
 
 # hook_init sets TOOL / TOOL_INPUT / PROMPT as globals for CALLERS (the sourcing
@@ -56,17 +51,9 @@ hook_init() {
   PROFILE="${CLAUDE_HOOK_PROFILE:-standard}"
   DISABLED="${CLAUDE_DISABLED_HOOKS:-}"
 
-  # L3/L4 immunity (ADR 0003/0004): during an authorized autonomy run, the
-  # unattended loop must NOT be able to disarm gates via CLAUDE_HOOK_PROFILE=off /
-  # CLAUDE_DISABLED_HOOKS. When armed (single-key autonomy_on predicate, design §5
-  # F1), force every hook live regardless of those bypass vars. The flag is OFF by
-  # default → zero effect on normal sessions. (loop-guard check-act ALSO denies
-  # any candidate command that sets these vars; this is the runtime backstop for
-  # the case a command slips past the loop's pre-Act check.)
-  if autonomy_on; then
-    PROFILE="standard"
-    DISABLED=""
-  fi
+  # L3/L4 immunity block RETIRED 2026-06-25 (ADR 0006): the autonomy model is
+  # retired, so CLAUDE_HOOK_PROFILE / CLAUDE_DISABLED_HOOKS are honored normally
+  # again (no armed-run forced-live override).
 
   if [ "${HOOK_HONOR_PROFILE_OFF:-1}" = "1" ] && [ "$PROFILE" = "off" ]; then
     return 1

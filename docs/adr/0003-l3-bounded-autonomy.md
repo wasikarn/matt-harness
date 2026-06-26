@@ -1,5 +1,7 @@
 # ADR 0003: L3 bounded autonomy — human-gated by run + push, not by mutation
 
+> **Superseded by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25); moot.** The L3/L4/L5 bounded-autonomy machinery is retired; see ADR 0006 for the ECC-aligned operating model.
+
 - **Status**: Accepted — supersedes the *L2-only architectural decision* of [ADR 0002](0002-autonomy-invariant.md). ADR 0002 remains the canonical record of the L2 era and its reasoning; this ADR does not delete or rewrite it.
 - **Date**: 2026-06-21
 - **Decider**: Owner

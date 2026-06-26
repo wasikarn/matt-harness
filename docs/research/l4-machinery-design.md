@@ -1,3 +1,15 @@
+> **RETIRED 2026-06-25 — ADR 0006.** The L4 self-launch machinery this design
+> specifies was never run live and is fully retired; `scripts/l4/**`,
+> `scripts/loop-guard.py`, and the launchd plist
+> (`~/Library/LaunchAgents/com.kbg.l4-launcher.plist`) are deleted, and the
+> `KBG_AUTONOMY` arming flag / `autonomy_on()` predicate are retired. The
+> operating model is now [ADR 0006](../adr/0006-ecc-aligned-operating-model.md):
+> the harness denies the irrecoverable set computationally and advises on the
+> rest; the operator is the authority at every irreversible boundary; no
+> autonomy flag, no enforced maker-checker ship-gate, no model self-start. This
+> document is kept as the **historical record of the L4 era**; the body below is
+> unchanged (it is the historical design record, not a live specification).
+
 # L4/L5 autonomy machinery — buildable design (capability ≥ ECC)
 
 > **Status:** 🟢 BUILT 2026-06-23 — the full 5-slice L4/L5 machinery (Slices 0–4, issues #17–#35)

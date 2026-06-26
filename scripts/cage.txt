@@ -1,7 +1,8 @@
-# === L3 cage denylist (ADR 0003) ===
-# The L3 self-improvement loop (recursive-improve --auto) may NOT edit any path
-# matching an entry below. An Act targeting a caged path is DENIED at the
-# pre-Act check, before it lands — the loop cannot edit the cage to escape it.
+# === consequential-safety-surface manifest (ADR 0006) ===
+# A denylist of the repo's consequential safety surfaces: the gates, gauntlet,
+# audit, doctrine, git wiring, and this manifest itself. An Act targeting a
+# caged path is DENIED at the pre-Act check, before it lands — the loop cannot
+# edit the cage to escape it.
 #
 # deny-by-default: this is the *known safety surface*. Audit check #43
 # (cage-complete) verifies this list covers every file the gauntlet relies on;
@@ -13,7 +14,7 @@
 # No bare "*" globs: every entry is a "/**" dir-prefix or a literal path, so the
 # matcher is unambiguous and errs toward over-denying, never under-denying.
 
-# --- this cage + its guard + the Gate-2 review-view generator (self-reference:
+# --- this manifest + its guard + the run-report generator (self-reference:
 #     editing the cage / a tampered run-report could mislead the reviewer) ---
 scripts/cage.txt
 scripts/loop-guard.py
@@ -45,7 +46,7 @@ eval/datasets/**
 eval/regressions/**
 tests/evals/**
 
-# --- governance ADRs (decision records, incl. this L3 ADR) ---
+# --- governance ADRs (decision records, incl. this ADR) ---
 docs/adr/**
 
 # --- L1 doctrine + governance prose ---
@@ -66,16 +67,10 @@ git-hooks/**
 .claude-plugin/plugin.json
 .claude-plugin/marketplace.json
 
-# --- L4 self-launch surface (F3, design §5): the single sanctioned scheduler
-#     config + the launcher/quality-gate/auto-keep scripts that an L4 run drives.
-#     The loop must never edit its own launch cadence (kill-switch = delete the
-#     scheduler.conf entry, ADR 0004 §kill-switch). scripts/l4/** covers all of it. ---
-scripts/l4/**
-
 # --- the per-repo arming home (F3 guard 4, design §5): .claude/settings.local.json
-#     is the ONLY surface autonomy_on() honors for arming (guard 3). A settings
-#     file the loop can write is the same self-elevation surface as the scheduler
-#     config — the loop must not arm itself by editing its own settings. (The
-#     outside-repo ~/.claude/settings.json is covered by the §8 Act-layer gate,
-#     not the cage.) ---
+#     is the surface autonomy_on() honored for arming (guard 3). Retained as a
+#     consequential surface even after the autonomy model retirement (ADR 0006):
+#     a settings file the loop can write remains a self-elevation surface worth
+#     fencing. (The outside-repo ~/.claude/settings.json is covered by the §8
+#     Act-layer gate, not the cage.) ---
 .claude/settings.local.json

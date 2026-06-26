@@ -114,11 +114,25 @@
           },
           {
             "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/tmux-reminder.sh\"",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/commit-quality-reminder.sh\"",
+            "async": true
+          },
+          {
+            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-read-guard.sh\""
           },
           {
             "type": "command",
             "command": "if command -v rtk >/dev/null 2>&1; then rtk hook claude; fi"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/block-dangerous-bash.sh\""
           },
           {
             "type": "command",
@@ -136,10 +150,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/l4-act-gate.sh\""
           }
         ]
       },
@@ -170,10 +180,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/decision-provenance-nudge.sh\""
-          },
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/gates/l4-act-gate.sh\""
           }
         ]
       },
@@ -241,16 +247,6 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/post-witness-memory.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/post-tool/post-push-tripwire.sh\"",
-            "async": true
           }
         ]
       },

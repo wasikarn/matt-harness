@@ -38,26 +38,13 @@ GOPT='((-c|-C|--git-dir|--work-tree|--namespace|--super-prefix|--config-env)[=[:
 # Use command grep to bypass potential ugrep/claude wrapper that breaks backtracking
 _GREP="command grep"
 
-# L3/L4 rollback carve-out (ADR 0003/0004). The bounded-autonomy loop rolls back
-# a failed cycle with `git reset --hard <l3-precycle-RID-ITER tag>`. This gate
-# otherwise blanket-denies `git reset --hard` (DANGEROUS_PATTERNS below), which
-# would block the loop's own rollback. Allow ONLY that exact command: FULL-ANCHORED
-# (^...$ so no `;`/`&&` compound can ride along on an early exit) and ONLY during
-# an authorized autonomy run (autonomy_on — armed via the single KBG_AUTONOMY key
-# from a per-repo .claude/settings.local.json). The target is restricted to the
-# `l3-precycle-` tag prefix the loop itself mints. Every other `git reset --hard`
-# (different target, compound command, or flag off) falls through to the deny.
-# (The autonomy_on gate is RETAINED here for step 1 — push-gate retirement only.
-# Dropping it to a pure pattern-allow so a human can roll back without arming is
-# step-2 autonomy-model territory, deferred — see ADR 0004 Gate-2 RETIRED note.)
-L3_ROLLBACK_FULL='^[[:space:]]*git[[:space:]]+reset[[:space:]]+--hard[[:space:]]+(refs/tags/)?l3-precycle-[A-Za-z0-9_.-]+[[:space:]]*$'
-if autonomy_on && printf '%s\n' "$STRIPPED" | $_GREP -qE "$L3_ROLLBACK_FULL"; then
-  exit 0
-fi
-
 # Space-delimited force flag pattern — prevents matching -f inside branch names like fix/ or followup-spec.
 # Right-anchored with ([[:space:]]|$) so trailing-position flags (e.g. `git push origin main --force`) match.
-FORCE_FLAG_PAT='([[:space:]]--force([[:space:]]|$)|[[:space:]]-f([[:space:]]|$)|[[:space:]]--force-with-lease([[:space:]]|$))'
+# GAP 2 (ECC parity): --force-with-lease is the SAFE force — the lease redeems
+# it. Removed from FORCE_FLAG_PAT so `git push --force-with-lease` matches NO
+# force pattern below and falls through to ALLOW (ECC allows it everywhere).
+# Bare --force/-f and +refspec still deny/ask as before.
+FORCE_FLAG_PAT='([[:space:]]--force([[:space:]]|$)|[[:space:]]-f([[:space:]]|$))'
 
 # Order-agnostic branch matching: real-world git invocations put the
 # flag either before or after the branch name (`git push --force origin
@@ -67,8 +54,6 @@ FORCE_FLAG_PAT='([[:space:]]--force([[:space:]]|$)|[[:space:]]-f([[:space:]]|$)|
 # Force push to main/master: always BLOCK
 FORCE_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*main|main.*${FORCE_FLAG_PAT})"
 FORCE_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*master|master.*${FORCE_FLAG_PAT})"
-FORCE_LEASE_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(--force-with-lease.*main|main.*--force-with-lease)"
-FORCE_LEASE_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(--force-with-lease.*master|master.*--force-with-lease)"
 REF_MAIN_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*main|main.*[+])"
 REF_MASTER_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*master|master.*[+])"
 
@@ -80,20 +65,28 @@ REF_DEVELOP_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*develop|develop.*[+
 FORCE_FIX_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}.*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*${FORCE_FLAG_PAT})"
 REF_FIX_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*([+].*([^[:alnum:]_]|^)(fix|bugfix|feature|feat)|([^[:alnum:]_]|^)(fix|bugfix|feature|feat).*[+])"
 
-# General force push: BLOCK (any --force/-f/--force-with-lease or + refspec after git push)
+# General force push: BLOCK (any --force/-f or + refspec after git push).
+# --force-with-lease is intentionally absent (GAP 2) — it falls through to ALLOW.
 FORCE_ANY_PATTERN="${SEP}git[[:space:]]+${GOPT}push.*(${FORCE_FLAG_PAT}|[+])"
 
-# Other dangerous patterns
+# Other dangerous patterns (GAP 3 widened the set — ECC parity). Each uses GOPT
+# so `git -c k=v commit --amend` is caught: GOPT sits BETWEEN `git` and the
+# subcommand and consumes the global-option tokens, preserving `git<space>sub`
+# adjacency for the regex (see GOPT comment above).
 DANGEROUS_PATTERNS=(
   "${SEP}git[[:space:]]+${GOPT}reset[[:space:]]+--hard"
   "${SEP}git[[:space:]]+${GOPT}clean[[:space:]]+-[a-zA-Z]*f"
   "${SEP}git[[:space:]]+${GOPT}branch[[:space:]]+-D"
   "${SEP}git[[:space:]]+${GOPT}checkout[[:space:]]+\\."
   "${SEP}git[[:space:]]+${GOPT}restore[[:space:]]+\\."
+  "${SEP}git[[:space:]]+${GOPT}commit[[:space:]].*--amend([[:space:]]|$)"
+  "${SEP}git[[:space:]]+${GOPT}rm.*[[:space:]]-[^[:space:]]*r[^[:space:]]*([[:space:]]|$)"
+  "${SEP}git[[:space:]]+${GOPT}switch.*[[:space:]](-f|-C|--force|--discard-changes)([[:space:]]|$)"
+  "${SEP}git[[:space:]]+${GOPT}checkout.*[[:space:]](-f|--force)([[:space:]]|$)"
 )
 
 # Check force push to main/master first (BLOCK via canonical permissionDecision=deny)
-for pattern in "$FORCE_MAIN_PATTERN" "$FORCE_MASTER_PATTERN" "$FORCE_LEASE_MAIN_PATTERN" "$FORCE_LEASE_MASTER_PATTERN" "$REF_MAIN_PATTERN" "$REF_MASTER_PATTERN"; do
+for pattern in "$FORCE_MAIN_PATTERN" "$FORCE_MASTER_PATTERN" "$REF_MAIN_PATTERN" "$REF_MASTER_PATTERN"; do
   if printf '%s\n' "$STRIPPED" | $_GREP -qE "$pattern"; then
     matched=$(printf '%s\n' "$STRIPPED" | $_GREP -oE "git[[:space:]]+${GOPT}push[^#]*" | head -1 | xargs)
     hook_decision deny "force push to main/master: '$matched'. User policy prevents this command."
@@ -128,6 +121,53 @@ for pattern in "${DANGEROUS_PATTERNS[@]}"; do
     hook_decision deny "dangerous git command: '$matched'. User policy prevents this command."
   fi
 done
+
+# GAP 4 (ECC block-no-verify.js parity): deny --no-verify / -n hook-bypass on
+# commit|push|merge|cherry-pick|rebase|am. hook_strip_quoted (called at the top)
+# already removed quoted strings, so `git commit -m "--no-verify"` became
+# `git commit -m` -> --no-verify is gone -> no false positive from quoted forms.
+# BUT bare `git commit -m --no-verify` (unquoted) leaves --no-verify as the -m
+# VALUE -> a naive grep would false-positive. Token-scan STRIPPED and skip any
+# token that immediately follows a value-taking option (mirrors ECC
+# block-no-verify.js COMMIT_OPTIONS_WITH_VALUE). -n is the hook-bypass short
+# flag ONLY for commit (push -n=dry-run, rebase -n=--no-stat, am -n=--no-resolv-
+# message, cherry-pick -n=--no-commit) so deny -n on commit alone.
+NOVERIFY_SUBS='commit|push|merge|cherry-pick|rebase|am'
+if printf '%s\n' "$STRIPPED" | $_GREP -qE "${SEP}git[[:space:]]+${GOPT}(${NOVERIFY_SUBS})[[:space:]]"; then
+  # Value-taking options whose NEXT token is a value (not a real --no-verify).
+  # -e is EXCLUDED: for `git commit`, -e is the boolean --edit flag (NOT value-
+  # taking), so including it let `git commit -e --no-verify` skip --no-verify as
+  # -e's "value" — a real hook-bypass false-negative. -T/--output are dead for
+  # these subcommands (git rejects them) so they are harmless but kept minimal.
+  NOVERIFY_VAL_OPTS=' -m --message -C -F --file -t -T --author --date -o --output --pathspec-from-file '
+  _prev_val=0
+  _is_commit=0
+  printf '%s\n' "$STRIPPED" | $_GREP -qE "${SEP}git[[:space:]]+${GOPT}commit[[:space:]]" && _is_commit=1
+  for _tok in $STRIPPED; do
+    if [ "$_prev_val" = "1" ]; then
+      # ponytail: this token is the VALUE of the previous value-taking option
+      # (e.g. the message after -m) — skip it, it is not a real --no-verify flag.
+      _prev_val=0
+      continue
+    fi
+    case "$_tok" in
+      --no-verify)
+        hook_decision deny "git --no-verify hook-bypass: '$(printf '%s' "$STRIPPED" | xargs)'. --no-verify skips pre-commit AND commit-msg hooks — never bypass the gauntlet."
+        ;;
+      -n)
+        if [ "$_is_commit" = "1" ]; then
+          hook_decision deny "git commit -n hook-bypass: '$(printf '%s' "$STRIPPED" | xargs)'. -n skips pre-commit AND commit-msg hooks on commit."
+        fi
+        ;;
+    esac
+    # Detect a value-taking option -> next token is its value and must be skipped.
+    # Attached `--opt=value` forms keep the value in-token, so no separate value
+    # token follows and prev_val stays 0 (the value can't be a bare --no-verify).
+    case " $NOVERIFY_VAL_OPTS " in
+      *" $_tok "*) _prev_val=1 ;;
+    esac
+  done
+fi
 
 # Git remote mutation (add/set-url) — silent exfil risk; escalate to user.
 # Closes round-4 audit finding: silent remote swap → next `git push`

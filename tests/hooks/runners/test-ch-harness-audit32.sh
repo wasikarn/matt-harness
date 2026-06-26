@@ -36,6 +36,10 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s real repo emitted %s INVARIANT_FAIL findings (want 0), rc=%s:\n%s\n' "harness-audit #32" "$PP_HAS_INVARIANT" "$PP_RC" "$PP_OUT"
 fi
 
+# push-gate-retired 2026-06-25 (ADR 0006) — #32 ADR-legs no-op'd in audit.sh.
+# QQ/RR/SS/TT asserted #32 ADR-leg CRITs; with the legs no-op'd they emit 0 CRIT
+# and would fail. Re-enable by setting KBG_AUDIT_32_ADR_LEGS=live when the legs return.
+if [ "${KBG_AUDIT_32_ADR_LEGS:-no}" = "live" ]; then
 # (QQ) violation fixture — temp recursive-improve skill with the field
 # set to `false` (the would-be regression).
 QQ_F="$FIXTURE/qq-ri-bad"; rm -rf "$QQ_F"; mkdir -p "$QQ_F/claude/skills/recursive-improve" "$QQ_F/claude/agents" "$QQ_F/claude/commands" "$QQ_F/claude/hooks" "$QQ_F/claude/docs" "$QQ_F/.claude-plugin"
@@ -143,6 +147,9 @@ if [ "$TT_HAS_PHRASE_CRIT" -ge 1 ] && [ "$TT_HAS_S3" = 0 ]; then
   PASS=$((PASS+1)); printf '  ✅ %-26s surface phrase drop: reworded CONTEXT.md fires CRIT; good skill stays silent\n' "harness-audit #32"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s surface phrase drop: want phrase-CRIT + no-S3, got phrase=%s s3=%s rc=%s:\n%s\n' "harness-audit #32" "$TT_HAS_PHRASE_CRIT" "$TT_HAS_S3" "$TT_RC" "$TT_OUT"
+fi
+else
+  printf "  ⏭  push-gate-retired 2026-06-25 (ADR 0006) — #32 ADR-legs no-op'd — QQ/RR/SS/TT skipped\n"
 fi
 
 # --- harness-audit check #34 — autonomy invariant surface 5 (advisory-only) ---

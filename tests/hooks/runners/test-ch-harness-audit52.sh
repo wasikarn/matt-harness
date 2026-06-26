@@ -42,6 +42,10 @@ emit_review_finding() {
     >> "$jpath"
 }
 
+# push-gate-retired 2026-06-25 (ADR 0006) — audit #52 (review-rigor observe-flag) no-op'd.
+# UU/VV asserted #52 INFO firing; with #52 no-op'd there is no INFO → UU fails.
+# Re-enable by setting KBG_AUDIT_52_LIVE=live when #52 returns.
+if [ "${KBG_AUDIT_52_LIVE:-no}" = "live" ]; then
 # (UU) fire — inline-agent review_finding present → audit #52 INFO, count=1.
 UU_F="$FIXTURE/uu-52"; mk_audit_fixture "$UU_F"
 UU_J="$UU_F/journal.jsonl"
@@ -73,6 +77,9 @@ if [ "$VV_HAS52" = 0 ]; then
   PASS=$((PASS+1)); printf '  ✅ %-26s no-fire: dispatched forms (kbg:+bare+combined) → #52 silent (predicate robust to convention shift)\n' "harness-audit #52"
 else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s no-fire: #52 must be silent for dispatched-only journal, but emitted (rc=%s):\n%s\n' "harness-audit #52" "$VV_RC" "$(printf '%s' "$VV_OUT" | grep "audit #52:" | head -5)"
+fi
+else
+  printf "  ⏭  push-gate-retired 2026-06-25 (ADR 0006) — audit #52 no-op'd — UU/VV skipped\n"
 fi
 
 report

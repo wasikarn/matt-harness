@@ -1,5 +1,7 @@
 # ADR 0005: L5 — auto-push/auto-merge (the human leaves the push loop)
 
+> **Superseded by [ADR 0006](0006-ecc-aligned-operating-model.md) (2026-06-25); moot.** The L3/L4/L5 bounded-autonomy machinery is retired; see ADR 0006 for the ECC-aligned operating model.
+
 - **Status**: **Accepted (telos decision recorded 2026-06-22) + IMPLEMENTED 2026-06-23 (Slice 4, issue
   #35, shipped gauntlet-green on `develop`; `KBG_AUTONOMY` still OFF by default — flag-OFF byte-identical
   to L2/L3/L4; enable still gated by §Acceptance criteria).** This ADR re-adds **relaxation #2 (auto-push
