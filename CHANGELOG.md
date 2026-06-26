@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.7.1] — 2026-06-26
+
+Patch release to force a plugin-cache re-fetch. The 0.7.0 cache was a
+pre-deletion phantom (a prior session cached 0.7.0 before the agent-teams
+deletions landed), so `claude plugin update` silently skipped on version match.
+No behavior change — pure version bump to 0.7.1 so the update re-fetches the
+final 0.7.0 content (commands removed, ADR 0008 present) into the live cache.
+
 ## [0.7.0] — 2026-06-26
 
 Decommission the `agent-teams` feature (ADR 0008). The feature — gated behind
