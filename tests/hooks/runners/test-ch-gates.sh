@@ -334,10 +334,10 @@ check gates/validator-bash-guard.sh none "code-reviewer + pytest"               
 check gates/validator-bash-guard.sh none "code-reviewer + env python3 -m pytest"     "$(validator_bash_event 'code-reviewer' 'env python3 -m pytest -x')"
 check gates/validator-bash-guard.sh none "code-reviewer + sudo python3 -m pytest"    "$(validator_bash_event 'code-reviewer' 'sudo python3 -m pytest -x')"
 
-# --- agent-spawn-gate: ask on ad-hoc one-shot Agent spawns, allow team workflows ---
+# --- agent-spawn-gate: ask on ad-hoc one-shot Agent spawns, allow approved dispatch ---
 check gates/agent-spawn-gate.sh none "non-Agent tool passes through" "$(bash_event 'git status')"
-check gates/agent-spawn-gate.sh none "allows /team-build Agent spawn" "$(agent_event 'team-build wave 1' 'Spawn backend-engineer for /team-build plan_slug: api-rewrite task_id: T-1')"
-check gates/agent-spawn-gate.sh none "allows /team-plan Agent spawn" "$(agent_event 'team-plan lead' 'Plan decomposition for /team-plan with plan_slug: api-rewrite')"
+check gates/agent-spawn-gate.sh none "allows plan_slug+task_id dispatch spawn" "$(agent_event 'wave 1 dispatch' 'Spawn backend-engineer for plan_slug: api-rewrite task_id: T-1')"
+check gates/agent-spawn-gate.sh none "allows plan_slug dispatch spawn" "$(agent_event 'lead dispatch' 'Plan decomposition with plan_slug: api-rewrite')"
 check gates/agent-spawn-gate.sh none "allows orchestrate workflow spawn" "$(agent_event 'orchestrate dispatcher' 'Run orchestrate-dispatch.py for workflow fan-out plan_slug: api-rewrite task_id: T-2')"
 check gates/agent-spawn-gate.sh ask  "asks on blueprint Agent spawn" "$(agent_event 'blueprint agent' 'Staff engineer blueprint agent for API redesign')"
 check gates/agent-spawn-gate.sh ask  "asks on audit Agent spawn" "$(agent_event 'audit agent' 'Run a security audit pass over the repo')"
@@ -565,8 +565,8 @@ else
 fi
 
 # (TB6) TeammateIdle when the build is complete (all tasks completed) → exit 0
-#       + journals a teammate_teardown_ready advisory (the signal /team-build
-#       Step 8 reaps on). Advisory only — the hook never stops the teammate (ADR 0002).
+#       + journals a teammate_teardown_ready advisory (the teardown signal a
+#       dispatch flow reaps on). Advisory only — the hook never stops the teammate (ADR 0002).
 mkdir -p "$BOARD_FIXTURE/.claude/tasks/done-plan"
 cat > "$BOARD_FIXTURE/.claude/tasks/done-plan/board.json" <<'BEOF'
 {

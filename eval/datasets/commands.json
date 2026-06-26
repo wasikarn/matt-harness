@@ -20,11 +20,7 @@
           "commands/ship-merge.md",
           "commands/ship-release.md",
           "commands/ship-task.md",
-          "commands/status-update.md",
-          "commands/team-build.md",
-          "commands/team-cleanup.md",
-          "commands/team-plan.md",
-          "commands/wave-status.md"
+          "commands/status-update.md"
         ],
         "required_phrases": ["---", "description:"]
       },
@@ -55,11 +51,7 @@
           "commands/ship-merge.md",
           "commands/ship-release.md",
           "commands/ship-task.md",
-          "commands/status-update.md",
-          "commands/team-build.md",
-          "commands/team-cleanup.md",
-          "commands/team-plan.md",
-          "commands/wave-status.md"
+          "commands/status-update.md"
         ],
         "required_phrases": ["# /"]
       },
@@ -77,8 +69,6 @@
       "skill": "docs-check",
       "context": {
         "files_to_check": [
-          "commands/team-build.md",
-          "commands/team-plan.md",
           "commands/ship-release.md"
         ],
         "required_phrases": ["disable-model-invocation"]

@@ -1,5 +1,5 @@
 #!/bin/bash
-# task-lifecycle.sh — observability for agent-team lifecycle events.
+# task-lifecycle.sh — observability for task lifecycle events.
 #
 # Wired into settings.json under TeammateIdle / TaskCreated / TaskCompleted.
 # Receives JSON event payload via stdin per Claude Code hook convention.
@@ -19,8 +19,8 @@
 # "cargo test" / "go test" / "tsc" / "pnpm test" in task_subject or
 # task_description, but does NOT include a runnable `validation_command:`
 # field, is blocked from completing (exit 2 + stderr feedback). This is
-# the post-execution half of the quality pipeline; /team-build's plan
-# approval filter (F10) is the pre-execution half. Convention is
+# the post-execution half of the quality pipeline; the plan linter
+# (scripts/plan-linter.py) is the pre-execution half. Convention is
 # DIFFERENT from PreToolUse: TaskCompleted uses exit 2 + stderr
 # (per https://code.claude.com/docs/en/hooks "TaskCompleted" section,
 # verified 2026-06-12), NOT exit 0 + JSON `permissionDecision` like
@@ -53,7 +53,7 @@
 #                     teammates" — keep working) — IMPLEMENTED via heartbeat scan (Phase 3,
 #                     2026-06-12). Inverse case: when the board shows ALL tasks completed,
 #                     journal a teammate_teardown_ready advisory (exit 0) so the lead reaps
-#                     idle teammates via /team-build Step 8 instead of leaving them to linger.
+#                     idle teammates via the dispatch flow's teardown step instead of leaving them to linger.
 #
 # Failure mode: TaskCreated stays silent (exit 0, log-only). TeammateIdle exits 2 on
 # stale-heartbeat-with-pending, journals teammate_teardown_ready when the build is
@@ -238,7 +238,7 @@ TASK-GATE[blocked]: completion claimed test execution ("tests pass" / "pytest" /
 
 Add a runnable \`validation_command: <cmd>\` line to the task description (e.g. \`validation_command: pytest tests/test_x.py -v\`) and re-trigger TaskCompleted. The validation command will be journaled for post-build review.
 
-This gate is Phase 2 F7 (audit 2026-06-12). See hooks/lifecycle/task-lifecycle.sh for the keyword regex and /team-build for the spawn-prompt template that includes the validation_command field by default.
+This gate is Phase 2 F7 (audit 2026-06-12). See hooks/lifecycle/task-lifecycle.sh for the keyword regex and skills/orchestrate/SKILL.md § Spawn-prompt template for the prompt that includes the validation_command field by default.
 EOF
       exit 2
     fi
@@ -326,8 +326,8 @@ if [ "$EVENT" = "TeammateIdle" ]; then
   # Teardown-ready advisory (ADR 0002 — journal-only, NEVER stops the teammate).
   # When a teammate goes idle and the board shows every task completed (nothing
   # left pending/in_progress/blocked), the build is done. We journal a
-  # teammate_teardown_ready signal so the lead (/team-build Step 8) and
-  # /wave-status can observe "build complete, teammates idle → reap" instead of
+  # teammate_teardown_ready signal so the lead (the dispatch flow's teardown
+  # step) can observe "build complete, teammates idle → reap" instead of
   # teammates lingering forever on a SendMessage that never arrives. The actual
   # TaskStop is the lead's job — a hook that stopped agents itself would be the
   # autonomous mutation the autonomy invariant forbids.
@@ -372,7 +372,7 @@ TeammateIdle blocked: stale heartbeat detected for plan '${IDLE_PLAN}' and pendi
 EOF
     exit 2
   elif [ "$TEARDOWN_READY" = 1 ]; then
-    # Advisory only: the lead reaps via /team-build Step 8; we never stop the teammate here.
+    # Advisory only: the lead reaps via the dispatch flow's teardown step; we never stop the teammate here.
     journal_append "$HOOK_ID" "teammate_teardown_ready" "$(jq -nc --arg plan "$TEARDOWN_PLAN" '{plan: $plan, trigger: "TeammateIdle"}')" >/dev/null 2>&1 || true
   fi
 fi

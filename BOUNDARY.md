@@ -37,7 +37,7 @@ _Personals/kbg-harness_
   ◇ tech-humanize                  Humanize dev/tech writing in English and/or Thai to sound natural, not AI-generated. Use when editing standup reports, PR descriptions, commit messages, ADRs, UI copy, or 'fix this to read less AI'. Covers English, Thai, and Thai↔English code-switching. Use when user says humanize, แก้ให้เป็นธรรมชาติ, เขียนให้ฟังดูเป็นคน, ปรับ tone, or 'less like ChatGPT'. Don't use for translation, detection-only analysis, or code identifiers.
   ◇ triage                         Single-issue triage: classify a bug, feature request, or task by severity, scope, and owner. Use when the user dumps a single issue and you need to decide whether to route it to /ship-task, /fix-bug, /deep-dive, or kbg:orchestrate. Thai: 'triage', 'จัดลำดับ', 'ประเมิน priority', 'นี่ควรทำอะไร'. Don't use for: prioritizing a batch (use kbg:orchestrate), or building a feature (use /ship-task).
 
-### Commands (17)
+### Commands (13)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship-task or /fix-bug), or security audits (use kbg:security-auditor).
   ◇ dismiss-stale                  Dismiss the sensor-staleness notification for 7 days (writes ~/.claude/state/kbg-staleness-dismissed.json with the current stale-set hash). Use when the user says 'dismiss', 'silence the staleness alert', 'mute the sensor warning', or after a SessionStart injection has been acknowledged. The dismissal is hash-gated: a new sensor going stale re-injects immediately, or when the user says 'ปิดแจ้งเตือน', 'dismiss stale', 'เงียบเซนเซอร์'. Don't use for: removing sensors (decay-cadence), silencing one specific sensor (edit hooks/sensors.json), or auditing why a sensor is stale (run /harness-audit).
@@ -51,10 +51,6 @@ _Personals/kbg-harness_
   ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging, or when the user says 'ปล่อยเวอร์ชัน', 'release', 'ship release'. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use kbg:incident hotfix path), or when there is no release branch / tag strategy defined.
   ◇ ship-task                      9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate, or when the user says 'ทำงานใหม่', 'ship task', 'เริ่มต้นทำงาน'. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration.
   ◇ status-update                  Rewrite operator-supplied engineering content for leadership (VPs, directors, PMs) and shape for channel — JIRA, Slack, standup, email, or talking-points. Rewrites text you provide; does NOT fetch from Jira/Confluence. Use when user asks to write/rewrite for management/exec/VP/PM, asks for executive summary / leadership update, or wants a channel-specific version, or when the user says 'สรุปผู้บริหาร', 'status update', 'รายงานผู้บริหาร'. Don't use for: a report generated FROM Jira issues (use atlassian:generate-status-report), technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes.
-  ◇ team-build                     Phase 2 of the agent-teams workflow: read .claude/tasks/<slug>.md, apply the plan approval filter (F10), spawn agents in waves using the F9 spawn-prompt template, run per-task B→V1→F→V2 validation on each completed task, then run post-build validation. Use after /team-plan completes, or when the user says 'team build: <slug>', 'execute the plan', 'สร้างทีม', 'รันแผนทีม', 'สร้างตามแผน', or 'build ทีม'. Don't use for: features without a plan file (run /team-plan first), or single-agent work (use /ship-task).
-  ◇ team-cleanup                   Clean up stale agent-team artifacts: old locks, dead heartbeats, orphaned board entries, archived completed plans. Use after a /team-build finishes, when the user says 'clean up the team', 'remove old plans', 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม', or 'ทำความสะอาดทีม'. or when the user says 'ล้างทีม', 'เคลียร์ทีม', 'ลบแผนทีม'. Don't use for: active builds (use /wave-status first to verify completion), or plans you intend to resume (the archive is reversible for 30 days).
-  ◇ team-plan                      Single planning surface for non-trivial multi-agent features. Brain-dump the feature, research the codebase, ask clarifying questions, then write a structured plan to .claude/tasks/<slug>.md with team members, dependency chains, file ownership, acceptance criteria, and validation commands. Includes the former /pre-flight-plan-linter, 7-agent-pattern, task-sizing, and types-first references as embedded steps. Use when starting non-trivial features for parallel implementation, or when the user says 'team plan: X', 'สร้างทีม', 'ประชุมทีม', 'จัดสรรงานทีม', 'plan ทีม', 'แผนทีม', 'lint the plan', 'types first'. Don't use for: single-file changes (use /fix-bug or inline), trivial features (do inline), or research-only tasks (use /deep-dive).
-  ◇ wave-status                    Report real-time status of a multi-agent build: current wave, task progress, stale heartbeats, active locks, and ETA. Writes a temporary helper under .scratch/ for deterministic analysis. Use when monitoring /team-build execution, or when the user asks 'where are we', 'status of the build', 'is the team done', 'wave status', 'สถานะทีม', 'ความคืบหน้าทีม', or 'wave ไหนแล้ว'. Don't use for: single-file work (use /status-update), or before a plan exists (use /team-plan first).
 
 ### Agents (29)
   ◇ api-doc-specialist             Senior API documentation specialist for OpenAPI specs, SDK references, and developer-portal content. Use when generating or updating API contract docs, designing endpoint naming, or building integration guides, or when the user says 'เอกสาร API', 'OpenAPI', 'API docs'. Don't use for: user-facing product docs (defer to technical-writer), frontend component docs (defer to frontend-engineer), or internal runbooks (defer to technical-writer). Owns the contract between your API and its consumers.
@@ -175,13 +171,13 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-26T01:13:52Z_
+_Generated: 2026-06-26T05:09:00Z_
 
 ---
 
 ## Task sizing guidance
 
-Derived from `commands/team-plan/references/task-sizing.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
+Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `kbg:orchestrate` plan time, before fan-out dispatch.
 
 ### The 5-6 rule
 5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
@@ -215,7 +211,7 @@ Derived from `commands/team-plan/references/task-sizing.md` and article `agent-t
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in a `/team-build` plan to prevent silent overwrites.
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites.
 
 | Agent | Canonical file patterns | Notes |
 |---|---|---|
@@ -258,14 +254,14 @@ Canonical file patterns per agent. Assign each file to exactly one agent in a `/
 
 ---
 
-## Team-ready blocks
+## Repo context
 
-When spawning a teammate (via `/team-build` or any agent-team dispatch), inject these shared conventions so teammates load the same module map + verification recipe.
+Module map + verification recipe for the harness. Inject these conventions when a freshly spawned subagent needs the same onboarding map the lead already holds.
 
 ### Module Boundaries
 - `agents/` — 29 senior-specialist agents
 - `skills/` — 28 workflow skills
-- `commands/` — 17 slash commands
+- `commands/` — 13 slash commands
 - `hooks/` — 49 hook scripts
 - `output-styles/` — 2 output styles (senior-eng default, staff-eng opt-in)
 - `themes/` — 0 themes (deliberate non-goal)
@@ -286,32 +282,15 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 
 ---
 
-## Agent Teams
-
-Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable experimental features.
-
-**What it unlocks:**
-- `/team-plan <feature>` — Steps 1-3: brain dump + research + ≥10 Q&A → `.claude/tasks/<slug>.md`
-- `/team-build <plan-file>` — Steps 4-7: contract chain + wave execution + post-build validation
-- TaskCompleted test-claim gate (`hooks/lifecycle/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
-- F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
-
----
-
 ## Trigger phrases
 
 Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
 
-### Planning & execution
+### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "plan this for the team", "multi-agent plan", "team plan: X" | `/team-plan` | Steps 1-3: brain dump + Q&A + structured plan |
-| "build the plan", "execute the plan", "ship the team plan" | `/team-build` | Steps 4-7: contract chain + wave execution |
-| "where are we", "status of the build", "is the team done" | `/wave-status` | Reads task board, reports wave progress |
-| "clean up the team", "remove old plans", "stale tasks" | `/team-cleanup` | Reaps locks, heartbeats, archives old boards |
-| "validate this task", "did the teammate do it right" | `/team-build` (per-task validation) | B→V1→F→V2 validation chain on one task |
-| "lint the plan", "is this plan ready" | `/team-plan` (embedded linter) | Structural validation before `/team-build` |
 | "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` debate mode | Advocate + Skeptic + Synthesizer debate |
+| "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows
 | User says | Dispatch | Why |
@@ -328,7 +307,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "research this", "deep dive on X", "how does Y work" | `/deep-dive` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
 | "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
-| "what should I work on", "prioritize these" | `kbg:orchestrate` skill | Prioritize + route |
 
 ### Incident & post-mortem
 | User says | Dispatch | Why |
@@ -336,14 +314,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
 | "status update", "what did we ship" | `/status-update` | Status report |
-
-### Agent-team troubleshooting
-| User says | Dispatch | Why |
-|---|---|---|
-| "agent went idle", "teammate stopped" | `/wave-status` → `/team-build` re-dispatch | Heartbeat check + re-claim |
-| "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
-| "validation failed but it says done" | `/team-build` (per-task validation) | F7 gate + re-validator |
-| "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
 
 
 ---

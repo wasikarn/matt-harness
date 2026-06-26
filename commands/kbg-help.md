@@ -14,9 +14,9 @@ You don't memorize surfaces — describe what you're doing and the harness auto-
 | Stage | Entry points |
 |-------|--------------|
 | **DEFINE** — idea, scope, research | `/ideate` · `kbg:clarify-first` · `/deep-dive` |
-| **PLAN** — spec, prioritize, team | `kbg:orchestrate` · `kbg:triage` · `/team-plan` → `/team-build` |
+| **PLAN** — spec, prioritize | `kbg:orchestrate` · `kbg:triage` · `kbg:decide` |
 | **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-dev` · `kbg:incident` |
-| **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `/team-build` (per-task validation) · `kbg:review-pr` |
+| **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:critical-eval` |
 | **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
 
@@ -36,7 +36,7 @@ The 29-agent fleet is grouped by **discipline/ownership** (each agent owns one c
 | **OPERATE** | `incident-commander` (live incident) · `maintenance-engineer` (debt/refactor post-ship) |
 | **Cross-cutting** | `technical-writer` · `api-doc-specialist` (docs, any stage) · `ideate-critic` · `inferential-structural-judge` (fresh-context critics/sensors) |
 
-You rarely name an agent directly — `kbg:review-pr` and `/team-build` spawn the right specialists for you. This lens is for when you want one on purpose.
+You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spawn the right specialists for you. This lens is for when you want one on purpose.
 
 ## Which discovery surface?
 

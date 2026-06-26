@@ -8,8 +8,8 @@
 # redundancy can't.
 #
 # All validator stages are `agent` type because they require LLM
-# judgment; the lead (or `/team-build` consuming this spec) dispatches
-# them in Wave 1. The deterministic `merge-reports` command in Wave 2
+# judgment; the orchestrating lead (consuming this spec via the dispatch
+# flow) dispatches them in Wave 1. The deterministic `merge-reports` command in Wave 2
 # is what the dispatcher actually runs in `--execute` mode; the
 # validator agents are rendered as "would-spawn" lines.
 #

@@ -29,7 +29,7 @@ No manual `@import` needed.
 | `/review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
 | `/ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
 
-Other useful ones: `/fix-bug`, `/deep-dive`, `/team-plan`, `/team-build`,
+Other useful ones: `/fix-bug`, `/deep-dive`, `/frame`,
 `/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
 
 ## The 1 thing to never do

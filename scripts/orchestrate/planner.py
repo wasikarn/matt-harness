@@ -55,7 +55,7 @@ def resolve_waves(stages: list[dict[str, Any]], max_per_wave: int) -> list[list[
         if overflow:
             # Overflow lands in the next wave; we do NOT report them as
             # "deferred" here because the spec author may have intended
-            # a wide wave. The lead / `/team-build` decides whether to
+            # a wide wave. The orchestrating lead decides whether to
             # treat the overflow as a follow-up wave or split the spec.
             # The deferred-deque file is only written when the spec
             # explicitly sets `f8_5_overflow: deferred` (TODO, future).
@@ -74,9 +74,8 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
     """Build a structured plan: {name, waves: [{ids, stages}, ...], ...}.
 
     Each wave carries the FULL stage data for the lead to render into
-    F9 spawn prompts. This is the data shape `/team-build` would consume
-    if it ever grows a `--spec` flag (future work; see
-    `commands/team-build.md` for the consumer side).
+    spawn prompts. This is the data shape the orchestrating lead consumes
+    via the dispatch flow (see `skills/orchestrate/SKILL.md`).
 
     F8.5 overflow is FLAGGED, not auto-split. The lead (or a human
     operator) is the one who decides whether to split a 30-sub-stage

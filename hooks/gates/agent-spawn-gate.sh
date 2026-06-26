@@ -1,16 +1,14 @@
 #!/bin/bash
 # agent-spawn-gate.sh — PreToolUse gate that intercepts ad-hoc one-shot Agent spawns.
 #
-# Problem: the Agent tool creates persistent teammates that do not self-terminate.
-# A one-shot read-only spawn (blueprint, audit, research map) that the parent
-# forgets to stop will block the next session exit with "Background work is
+# Problem: a one-shot Agent spawn (blueprint, audit, research map) that the parent
+# forgets to stop can block the next session exit with "Background work is
 # running". This gate asks the operator to confirm any Agent spawn that does not
-# look like an approved multi-agent team workflow.
+# carry an approved-dispatch marker.
 #
-# Allow-list (no gate): prompts/descriptions that carry team workflow markers
-#   - /team-build, /team-plan, /team-cleanup, /wave-status
-#   - plan_slug: or task_id: embedding
-#   - "orchestrate", "workflow", "teardown", "TaskStop", "Agent Teams"
+# Allow-list (no gate): prompts/descriptions that carry dispatch markers
+#   - plan_slug: or task_id: embedding (board/task tracking)
+#   - "orchestrate", "workflow", "teardown", "TaskStop"
 #
 # Ask-list (gate): prompts/descriptions that look like bounded read-only passes
 #   - "blueprint", "audit", "research", "map", "survey", "bounded pass"
@@ -46,11 +44,11 @@ hook_guard_unreadable
 # short-circuits every other path), so the failure-mode edge case is unreachable.
 PROMPT_TEXT=$(printf '%s' "$TOOL_INPUT" | jq -r '"\(.description // "") \(.prompt // "")"' 2>/dev/null | tr '[:upper:]' '[:lower:]')
 
-# Allow-list: explicit multi-agent team workflows already have their own
-# approval gates (/team-build F10, /team-plan Q&A). Let them through.
-ALLOW_PATTERNS='(\/team-(build|plan|cleanup)|\/wave-status|plan_slug:|task_id:|orchestrate|workflow|teardown|taskstop|agent teams)'
+# Allow-list: prompts that carry an approved-dispatch marker (board/task
+# tracking slug, or the orchestrate workflow vocabulary) let through.
+ALLOW_PATTERNS='(plan_slug:|task_id:|orchestrate|workflow|teardown|taskstop)'
 if printf '%s' "$PROMPT_TEXT" | /usr/bin/grep -iqE "$ALLOW_PATTERNS"; then
-    hook_decision none "Agent spawn matches an approved team workflow allow-list"
+    hook_decision none "Agent spawn matches an approved dispatch allow-list"
 fi
 
 # Ask-list: bounded read-only / one-shot patterns are exactly the failure mode.
@@ -65,5 +63,5 @@ if [ "$RUN_BG" = "true" ]; then
     hook_decision ask "Agent spawn is backgrounded. Background teammates persist until explicitly stopped and block session exit. Confirm this is intentional."
 fi
 
-# Default safe: any Agent spawn that is not obviously a team workflow asks.
+# Default safe: any Agent spawn that is not obviously an approved dispatch asks.
 hook_decision ask "Agent tool creates persistent teammates. Confirm this spawn is intentional and that you will stop it after consuming the output."

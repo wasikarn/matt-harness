@@ -167,7 +167,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Task sizing guidance
 
-Derived from `commands/team-plan/references/task-sizing.md` and article `agent-teams-best-practices`. Apply at `/team-plan` time, before `/team-build` dispatch.
+Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `kbg:orchestrate` plan time, before fan-out dispatch.
 
 ### The 5-6 rule
 5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
@@ -201,7 +201,7 @@ Derived from `commands/team-plan/references/task-sizing.md` and article `agent-t
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in a `/team-build` plan to prevent silent overwrites.
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites.
 
 | Agent | Canonical file patterns | Notes |
 |---|---|---|
@@ -253,25 +253,24 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 XREF
 fi
 
-# Team-ready blocks + Agent Teams section (D1 + D4 closure, 2026-06-12).
-# D4 specifies Module Boundaries + Quick Context + Verification block so
-# agent teams load shared conventions at runtime. D1 specifies the
-# Agent Teams opt-in env var. Both live here, OUTSIDE the regenerator's
-# scope, so the next `inventory-boundary.sh --repo-only` regen preserves
-# them. Pattern mirrors F6's Cross-references block above.
+# Repo context block (D4 closure, 2026-06-12; team framing shed 2026-06-26).
+# Module Boundaries + Quick Context + Verification so any reader (or a freshly
+# spawned subagent) loads the same module map + verification recipe. Lives
+# here, OUTSIDE the regenerator's scope, so the next `inventory-boundary.sh
+# --repo-only` regen preserves it. Pattern mirrors F6's Cross-references block.
 if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF2'
 
 ---
 
-## Team-ready blocks
+## Repo context
 
-When spawning a teammate (via `/team-build` or any agent-team dispatch), inject these shared conventions so teammates load the same module map + verification recipe.
+Module map + verification recipe for the harness. Inject these conventions when a freshly spawned subagent needs the same onboarding map the lead already holds.
 
 ### Module Boundaries
 - `agents/` — 29 senior-specialist agents
 - `skills/` — 28 workflow skills
-- `commands/` — 17 slash commands
+- `commands/` — 13 slash commands
 - `hooks/` — 49 hook scripts
 - `output-styles/` — 2 output styles (senior-eng default, staff-eng opt-in)
 - `themes/` — 0 themes (deliberate non-goal)
@@ -289,22 +288,10 @@ When spawning a teammate (via `/team-build` or any agent-team dispatch), inject 
 - `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
 - `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` — expect 0 failures
 - `python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate` — exit 0
-
----
-
-## Agent Teams
-
-Opt-in via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Plugin does NOT auto-enable experimental features.
-
-**What it unlocks:**
-- `/team-plan <feature>` — Steps 1-3: brain dump + research + ≥10 Q&A → `.claude/tasks/<slug>.md`
-- `/team-build <plan-file>` — Steps 4-7: contract chain + wave execution + post-build validation
-- TaskCompleted test-claim gate (`hooks/lifecycle/task-lifecycle.sh`, exit 2 + stderr per vendor spec)
-- F9 spawn-prompt template in `skills/orchestrate/SKILL.md` (the "what/where/focus/deliverable" quad + FILES YOU OWN / UPSTREAM CONTRACTS schema)
 XREF2
 fi
 
-# Trigger phrases for agent-teams use cases (added 2026-06-12).
+# Trigger phrases for harness use cases (added 2026-06-12).
 # Maps common user requests to the correct command/skill/agent.
 if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF4'
@@ -315,16 +302,11 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
 
-### Planning & execution
+### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "plan this for the team", "multi-agent plan", "team plan: X" | `/team-plan` | Steps 1-3: brain dump + Q&A + structured plan |
-| "build the plan", "execute the plan", "ship the team plan" | `/team-build` | Steps 4-7: contract chain + wave execution |
-| "where are we", "status of the build", "is the team done" | `/wave-status` | Reads task board, reports wave progress |
-| "clean up the team", "remove old plans", "stale tasks" | `/team-cleanup` | Reaps locks, heartbeats, archives old boards |
-| "validate this task", "did the teammate do it right" | `/team-build` (per-task validation) | B→V1→F→V2 validation chain on one task |
-| "lint the plan", "is this plan ready" | `/team-plan` (embedded linter) | Structural validation before `/team-build` |
 | "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` debate mode | Advocate + Skeptic + Synthesizer debate |
+| "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows
 | User says | Dispatch | Why |
@@ -341,7 +323,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "research this", "deep dive on X", "how does Y work" | `/deep-dive` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
 | "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
-| "what should I work on", "prioritize these" | `kbg:orchestrate` skill | Prioritize + route |
 
 ### Incident & post-mortem
 | User says | Dispatch | Why |
@@ -349,14 +330,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
 | "status update", "what did we ship" | `/status-update` | Status report |
-
-### Agent-team troubleshooting
-| User says | Dispatch | Why |
-|---|---|---|
-| "agent went idle", "teammate stopped" | `/wave-status` → `/team-build` re-dispatch | Heartbeat check + re-claim |
-| "merge conflict", "two agents touched same file" | `scripts/plan-linter.py` + `/team-plan` revision | Ownership violation |
-| "validation failed but it says done" | `/team-build` (per-task validation) | F7 gate + re-validator |
-| "context exhausted", "out of tokens" | `/team-build` fresh-session gate | Context budget preservation |
 
 XREF4
 fi

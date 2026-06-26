@@ -1,11 +1,11 @@
 # kbg — Claude Code Harness (Plugin)
 
-[![Version](https://img.shields.io/badge/version-0.4.20-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
 A **personal Claude Code harness** delivered as an installable plugin (`kbg@kobig`).
-It adds 29 specialist agents, 28 workflow skills, 17 slash commands, and 50 governance
+It adds 29 specialist agents, 28 workflow skills, 13 slash commands, and 50 governance
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
@@ -97,7 +97,7 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 |---|---|---|
 | **Agents** | 29 | Spawn via `kbg:<agent>` (e.g. `kbg:code-architect`, `kbg:security-reviewer`) |
 | **Skills** | 28 | Invoke via `kbg:<skill>` (e.g. `kbg:review-pr`, `kbg:ship-change`) or let them auto-fire |
-| **Commands** | 17 | Invoke via `/<command>` or `kbg:<command>` (e.g. `/ship-task`, `/ideate`, `/team-plan`) |
+| **Commands** | 13 | Invoke via `/<command>` or `kbg:<command>` (e.g. `/ship-task`, `/ideate`, `/frame`) |
 | **Hooks** | 50 scripts | Run automatically on SessionStart, PreToolUse, PostToolUse, SessionEnd, etc. (38 tracked as sensors) |
 | **Output Styles** | 2 | `senior-eng` (default live-response register), `staff-eng` (opt-in cross-boundary) |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -112,8 +112,6 @@ After enabling and restarting, Claude Code loads everything from the plugin cach
 | `/review-pr` | Multi-agent review (code, tests, security, types) over the diff |
 | `/fix-bug` | Non-trivial bug fixes with TDD and root-cause capture |
 | `/deep-dive` | Research briefs and structural exploration |
-| `/team-plan` / `/team-build` | Agent-team planning + execution (requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) |
-| `/wave-status` / `/team-cleanup` | Inspect and tear down persistent teammates |
 
 ### Spotlight Skills
 
@@ -221,7 +219,7 @@ kbg-harness/
 ├── .claude-plugin/       # Plugin + marketplace manifests (plugin.json, marketplace.json)
 ├── agents/               # 29 senior-specialist subagents (one .md each, flat)
 ├── skills/               # 28 workflow skills (one dir each: SKILL.md + optional references/, scripts/) + _lib/ helpers
-├── commands/             # 17 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
+├── commands/             # 13 user-facing slash commands (legacy surface per CC docs; kept for the verb layer)
 ├── hooks/                # Governance hooks across 14 lifecycle events, grouped by role:
 │   ├── gates/            #   PreToolUse deny/ask gates           (computational feedforward)
 │   ├── advisory/         #   journal-only sensors                (inferential feedback — never block)

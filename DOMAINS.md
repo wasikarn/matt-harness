@@ -30,7 +30,7 @@ consumers and do not share vocabulary by design. Tokens below are the literal
 |---|---|---|
 | `commands/ship-task`, `commands/fix-bug`, `commands/deep-dive`, `skills/migrate`, `skills/perf`, `skills/tech-humanize` | Execution | User-facing action verbs + work-doing skills. |
 | `skills/backend-dev`, `agents/`, `app/`, `src/`, `packages/`, `services/`, `lib/` | Implementation | Code that ships behavior + the agents that write it. |
-| `skills/ship-change`, `skills/orchestrate`, `skills/inventory`, `commands/team-plan`, `commands/team-build` | Orchestration | Workflow planning, dispatch, fleet accounting. |
+| `skills/ship-change`, `skills/orchestrate`, `skills/inventory` | Orchestration | Workflow planning, dispatch, fleet accounting. |
 | `skills/harness-audit`, `skills/critical-eval`, `skills/review-pr`, `skills/security-auditor`, `skills/decide`, `tests/`, `eval/` | Quality | Self-audit, coverage, review, verification, fixtures. |
 | `skills/adr`, `commands/address-review`, `commands/status-update`, `commands/post-mortem`, `docs/` | Communication | Documentation and status surfaces. |
 | `skills/incident`, `runbooks/` | Emergency | Incident response. |

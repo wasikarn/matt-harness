@@ -109,8 +109,6 @@ lib/|Implementation
 skills/ship-change|Orchestration
 skills/orchestrate|Orchestration
 skills/inventory|Orchestration
-commands/team-plan|Orchestration
-commands/team-build|Orchestration
 skills/harness-audit|Quality
 skills/critical-eval|Quality
 skills/review-pr|Quality

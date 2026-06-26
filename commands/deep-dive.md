@@ -106,7 +106,7 @@ Single kbg research surface. Produces an actionable brief with cited sources (fi
 
 This command is the **research surface**. It runs the 5-phase UX (Scope → Local → External → Synthesize → Archive) inline, forking the `researcher` agent for the external-search phase and the `code-explorer` agent for the local phase as needed. The formerly separate `research-brief` skill was merged into this command; all cross-references now resolve to `/deep-dive`.
 
-Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, `skills/adr/SKILL.md`, and `commands/team-plan.md` all point at `/deep-dive` as the user-invoked entry point. They remain valid because this command still ships and still produces a brief.
+Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, and `skills/adr/SKILL.md` all point at `/deep-dive` as the user-invoked entry point. They remain valid because this command still ships and still produces a brief.
 
 ## Handoff Reference
 

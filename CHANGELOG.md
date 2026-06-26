@@ -5,6 +5,70 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.7.0] — 2026-06-26
+
+Decommission the `agent-teams` feature (ADR 0008). The feature — gated behind
+Anthropic's `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flag and surfaced as four
+slash commands — had no stability: persistent teammates blocked session exit,
+the env-var gate was an experimental flag that could shift beneath us, and the
+agent-teams doctrine entangled the general `orchestrate` skill with the
+team-specific command set. Removed in full rather than keep patching an unstable
+experimental surface. Minor bump (pre-`1.0.0`): a shipped feature is removed, but
+the kept infrastructure is byte-identical in behavior.
+
+- **Removed commands.** Deleted `/team-plan`, `/team-build`, `/team-cleanup`,
+  and `/wave-status` (including their `references/` and `scripts/` sub-trees).
+  Slash-command count: 17 → 13. Replacements: `/team-build` workflow →
+  `kbg:orchestrate` (inline Agent dispatch with the spawn-prompt template and the
+  `B → V1 → F → V2` validation chain); pre-flight plan validation →
+  `python3 scripts/plan-linter.py <plan>.md --strict`; idle-teammate reaping →
+  the dispatch flow's teardown step (now the only path; `teammate_teardown_ready`
+  advisory still journals from `task-lifecycle.sh`).
+- **Removed the env-var gate.** Dropped the `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+  row from `docs/reference/env-vars.md`; dropped the `agent-teams` / `team-plan`
+  / `team-build` / `wave-status` / `team-cleanup` keywords from both plugin
+  manifests.
+- **Reframed `orchestrate`.** `skills/orchestrate/SKILL.md` shed the agent-teams
+  doctrine (F8 lead-coordinator doctrine, F9 teammate spawn-template framing,
+  3–5 teammate sweet-spot, builder→validator framing tied to `/team-build`) and
+  is now pure inline-Agent orchestration — the orchestrating lead dispatches
+  subagents in waves and reviews their output. The F9 spawn-prompt template
+  and validation chain survive as the dispatch contract. `scripts/orchestrate-dispatch.py`
+  + `scripts/orchestrate/planner.py` kept their deterministic coordination-as-code
+  behavior (F8.5 fan-out cap, F8.4 under-parallelized advisory); only
+  `/team-build`-as-consumer prose was reframed to the dispatch flow.
+- **Kept shared infrastructure (NOT team-specific).** The task board
+  (`~/.claude/tasks/<slug>/board.json` + `scripts/task_board_lib.{sh,py}`),
+  `hooks/lifecycle/task-lifecycle.sh` (F7 test-claim gate, `TeammateIdle`/
+  `TaskCreated`/`TaskCompleted` handling, `teammate_teardown_ready` advisory,
+  `~/.claude/team-events/*.jsonl`), `skills/progressive-refine`, and audit check
+  #46 are general infrastructure used outside agent-teams. They survive
+  unchanged — `TeammateIdle` / `teammate` is Claude Code's own event vocabulary
+  (the hook is wired into settings.json under those event names), kept as the
+  shared-infra data model. Only dangling `/team-build` command references in
+  comments/prose were reframed.
+- **`agent-spawn-gate.sh` allow-list narrowed.** `ALLOW_PATTERNS` no longer
+  matches `/team-build` / `/team-plan` / `/team-cleanup` / `/wave-status` /
+  `agent teams`; it matches dispatch markers only (`plan_slug:`, `task_id:`,
+  `orchestrate`, `workflow`, `teardown`, `taskstop`). The "team workflow"
+  allow-reason reframed to "approved dispatch allow-list". The behavioral
+  reason strings ("persistent teammates", "Background teammates") are kept —
+  they use the CC event vocabulary, consistent with `task-lifecycle.sh`.
+- **Docs + evals reconciled.** `README.md`, `CLAUDE.md`, `METHODOLOGY.md`,
+  `DOMAINS.md`, `docs/common-mistakes.md`, `docs/onboarding.md`,
+  `docs/reference/{env-vars,reasoning-models}.md`, `commands/{deep-dive,dismiss-
+  stale,kbg-help}.md`, `skills/{harness-nav,progressive-refine,inventory}/*`,
+  and `hooks/advisory/orchestrator-nudge.sh` swept clean of dangling
+  `/team-build` command references. `docs/troubleshooting-guide.md` deleted
+  (was entirely about the removed `/team-build`). `BOUNDARY.md` regenerated
+  (357 → 327 lines, zero team refs). Regression evals
+  (`agent-spawn-gate-incident.json`, `orchestrate-dispatch-schema.json`,
+  `bounded-agent-spawning.json`) and the `commands.json` dataset reconciled to
+  the reframed surfaces and verified against live hook/script output.
+- **Re-addition guard.** [ADR 0008](docs/adr/0008-decommission-agent-teams.md)
+  records the decommission rationale; re-introducing an agent-teams surface
+  requires a superseding ADR and a stability story for persistent teammates.
+
 ## [0.6.0] — 2026-06-26
 
 ECC behavioral-parity ports (ADR 0007). The harness gains the five ECC

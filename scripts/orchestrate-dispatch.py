@@ -5,9 +5,9 @@ orchestrate-dispatch.py — deterministic coordinator-as-code dispatcher.
 Reads a workflow spec (JSON or YAML) describing stages, resolves the DAG
 into a wave-by-wave execution plan, optionally runs the `command`-typed
 stages, and prints a structured plan suitable for a downstream consumer
-(`/team-build`, `claude -p` headless, or a human operator) to dispatch
-agent-typed stages per the lead-coordinator doctrine (F8 in
-`skills/orchestrate/SKILL.md`).
+(`claude -p` headless, the inline orchestrating lead, or a human operator)
+to dispatch agent-typed stages per the dispatch flow
+(`skills/orchestrate/SKILL.md`).
 
 What this script IS
 -------------------
@@ -19,8 +19,8 @@ What this script IS
 - A runner for `command`-typed stages (subprocess with timeouts) so the
   trivial "run `make build` then `pytest`" pipeline is one-shot.
 - A plan emitter: `--emit-plan` prints a machine-readable JSON of the
-  resolved wave structure; the lead (or `/team-build`) reads it and
-  dispatches `agent`-typed stages per the F9 spawn-prompt template.
+  resolved wave structure; the orchestrating lead reads it and
+  dispatches `agent`-typed stages per the spawn-prompt template.
 
 What this script IS NOT
 -----------------------
@@ -29,10 +29,11 @@ What this script IS NOT
   session, not in this script. The autonomy invariant (ADR 0002) keeps
   harness-internal loops at L2/L3 with a human gate per iteration;
   putting the LLM dispatch inside this script would be a covert L4.
-- NOT a replacement for `/team-build`. `/team-build` owns the lead-
-  coordinator contract; this script owns the spec-rendering half of
-  the coordination contract. A lead can ask this script "what would
-  the wave structure look like for `ship-merge.yml`?" before dispatch.
+- NOT a replacement for the orchestrating lead. The lead (the inline
+  dispatch flow in `skills/orchestrate/SKILL.md`) owns the dispatch
+  contract; this script owns the spec-rendering half of that contract.
+  A lead can ask this script "what would the wave structure look like
+  for `ship-merge.yml`?" before dispatch.
 - NOT a `claude -p` headless harness. The script doesn't talk to an
   LLM; the lead does. If you need headless agent dispatch, that's a
   separate project (and a separate ADR-0002 conversation).
@@ -62,7 +63,7 @@ Usage
     # Validate + print the resolved wave plan (default; safe):
     python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml
 
-    # Emit a machine-readable plan (for `/team-build` consumption):
+    # Emit a machine-readable plan (for the dispatch flow to consume):
     python3 scripts/orchestrate-dispatch.py examples/ship-merge.yml --emit-plan
 
     # Run all `command`-typed stages in order (the deterministic chain
@@ -108,7 +109,7 @@ from orchestrate.loader import load_spec, validate_spec, SpecValidationError
 from orchestrate.planner import resolve_waves, build_plan, print_plan_human
 from orchestrate.executor import run_execute, DEFAULT_TIMEOUT
 
-DEFAULT_MAX_PER_WAVE = 5  # F8.5 hard cap — max teammates per wave (skills/orchestrate/SKILL.md)
+DEFAULT_MAX_PER_WAVE = 5  # hard cap — max subagents per wave (skills/orchestrate/SKILL.md)
 DEFAULT_MIN_PER_WAVE = 3  # F8.4 advisory floor — below this an AGENT fan-out is under-parallelized
 
 
@@ -123,7 +124,7 @@ def main() -> int:
     parser.add_argument("spec", help="Path to workflow spec (JSON or YAML).")
     parser.add_argument(
         "--emit-plan", action="store_true",
-        help="Print a machine-readable JSON plan to stdout (for /team-build consumption).",
+        help="Print a machine-readable JSON plan to stdout (for the dispatch flow to consume).",
     )
     parser.add_argument(
         "--execute", action="store_true",

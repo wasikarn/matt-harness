@@ -193,7 +193,7 @@ os.replace(tmp_path, final_path)
 PY
 ```
 
-**Why Python `os.replace` instead of `mv -f`?** — `mv -f` on macOS/Linux is implemented as `rename(2)` for same-filesystem moves, which is atomic, so functionally equivalent. Python's `os.replace` is used here for two reasons: (1) it makes the atomic-rename intent explicit in code, and (2) it makes the `os.fsync` call natural (Bash `sync` flushes the whole kernel buffer cache; `fsync(2)` flushes just the file's dirty data and metadata, which is what we want). The pattern in `commands/team-cleanup.md:109` ("tempfile + rename") is the same invariant; the only difference is the explicit `fsync` step.
+**Why Python `os.replace` instead of `mv -f`?** — `mv -f` on macOS/Linux is implemented as `rename(2)` for same-filesystem moves, which is atomic, so functionally equivalent. Python's `os.replace` is used here for two reasons: (1) it makes the atomic-rename intent explicit in code, and (2) it makes the `os.fsync` call natural (Bash `sync` flushes the whole kernel buffer cache; `fsync(2)` flushes just the file's dirty data and metadata, which is what we want). This "tempfile + rename" atomic-write invariant is shared across the harness; the only difference here is the explicit `fsync` step.
 
 **Mode 0o600.** The dismissal file is *operator* state — there is no reason for it to be world-readable. Mode 0o600 (owner read/write only) is the right default.
 

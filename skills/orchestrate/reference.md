@@ -177,7 +177,7 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 
 ### 4-mistake taxonomy
 
-1. **Over-fragmentation** — slicing work into so many agents that the merge cost exceeds the dispatch savings. Symptom: 12 agents for 4 files. Fix: cap at 3-5 teammates per the agent-teams sweet-spot rule; one agent owns one file or one tightly-coupled cluster.
+1. **Over-fragmentation** — slicing work into so many agents that the merge cost exceeds the dispatch savings. Symptom: 12 agents for 4 files. Fix: cap at 3-5 parallel agents per the fan-out sweet-spot rule (F8.5); one agent owns one file or one tightly-coupled cluster.
 2. **Under-specification** — vague prompts ("review this code") that the model interprets broadly. Symptom: 5 different validators return 5 different slices of the same codebase, none complete. Fix: file:line scope + explicit done-when + output format (per F2 validation chain).
 3. **Resource conflicts** — parallel agents writing to the same file. Symptom: one agent's output overwrites another's; merge conflicts in code; corrupted state. Fix: serialize writes to the same file (`addBlockedBy` chain); parallelize only when files are disjoint.
 4. **Context duplication** — `CLAUDE.md` × N agents = N×context-cost at spawn time. Symptom: 8 agents holding the same doctrine each pay 30K of front-loaded tokens. Fix: layer — one orchestrator reads CLAUDE.md, sub-agents receive only the slice they need; the file:line reference goes in the spawn prompt, not the full doc.

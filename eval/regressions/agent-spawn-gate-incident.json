@@ -34,15 +34,15 @@
     },
     {
       "id": "agent-spawn-gate-team-build-allowed",
-      "task": "Run agent-spawn-gate.sh with a /team-build workflow payload. The hook must pass through (no block) because team workflows already have their own approval gates.",
+      "task": "Run agent-spawn-gate.sh with an orchestrate-dispatch workflow payload carrying plan_slug + task_id board-tracking markers. The hook must pass through (no block) because dispatch-flow spawns already carry approved-dispatch markers.",
       "skill": "hook-script",
       "context": {
         "hook_path": "hooks/gates/agent-spawn-gate.sh",
         "stdin": {
           "tool_name": "Agent",
           "tool_input": {
-            "description": "/team-build spawn backend-engineer for plan_slug: api-rewrite task_id: T-1",
-            "prompt": "Spawn backend-engineer to implement the API rewrite task as part of /team-build workflow.",
+            "description": "orchestrate-dispatch spawn backend-engineer for plan_slug: api-rewrite task_id: T-1",
+            "prompt": "Spawn backend-engineer to implement the API rewrite task as part of the orchestrate dispatch workflow.",
             "run_in_background": false
           }
         },
@@ -51,11 +51,11 @@
       },
       "success_criteria": [
         "Output contains hookSpecificOutput.permissionDecision equal to none",
-        "Output contains the reason text about approved team workflow"
+        "Output contains the reason text about an approved dispatch allow-list"
       ],
       "expected_duration_seconds": 5,
       "expected_tokens": 200,
-      "tags": ["agent-spawn-gate", "regression", "team-workflow", "allow-list"],
+      "tags": ["agent-spawn-gate", "regression", "dispatch-workflow", "allow-list"],
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "team-build-agent-spawn-falsely-gated",

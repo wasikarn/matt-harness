@@ -24,14 +24,14 @@ The dispatcher is the **deterministic** half of the coordination contract. The l
 # Render a human-readable wave plan (default; safe):
 bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml"
 
-# Emit a machine-readable plan (for `/team-build --spec` consumption):
+# Emit a machine-readable plan (for the lead to dispatch inline, or pipe to a consumer):
 bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --emit-plan
 
 # Run command-typed stages in wave order (deterministic chain half):
 bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --execute
 ```
 
-**What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (or `/team-build` consuming the plan) dispatches them per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (ADR 0002) forbids. P2.4 ships the spec-rendering half; future work would wire `/team-build --spec` to consume the rendered plan.
+**What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (you) dispatches them inline per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (ADR 0002) forbids.
 
 **Example specs (in `skills/orchestrate/examples/`):**
 - `ship-merge.yml` — minimal "build → fan-out lint+typecheck → test → ship" workflow. 4 stages, 4 waves, exercises all 4 stage types (command, parallel, command, agent).
@@ -111,9 +111,9 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 ## Spawn-prompt template (gates F3)
 
-**The single most common sub-agent failure is the under-specified spawn prompt.** Four articles (`agent-teams-best-practices`, `agent-teams-setup-usage-2026`, `agent-teams-workflow-plan-to-production`, `team-orchestration-builder-validator`) converge on the same template. When `/team-build` dispatches a teammate, every spawn prompt MUST use this shape — without it, teammates guess, hallucinate ownership, and conflict on shared files.
+**The single most common sub-agent failure is the under-specified spawn prompt.** Four articles (`agent-teams-best-practices`, `agent-teams-setup-usage-2026`, `agent-teams-workflow-plan-to-production`, `team-orchestration-builder-validator`) converge on the same template. When you dispatch an inline subagent (the Agent tool) for a non-trivial task, every spawn prompt MUST use this shape — without it, subagents guess, hallucinate ownership, and conflict on shared files.
 
-**Use this template verbatim for every team-mode dispatch. Inline the values; do not summarize.**
+**Use this template verbatim for every dispatch. Inline the values; do not summarize.**
 
 ```
 # Task: <short verb-phrase, ≤8 words>
@@ -157,34 +157,21 @@ Inline example: "Validator A flags `SKILL.md:42` overstates nesting depth; Valid
 
 **Why this shape works:**
 
-- **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the teammate guesses (usually wrong).
-- **Why** — *optional; omit when self-evident.* One clause of intent (the goal or ADR the task serves) so the teammate resolves an ambiguous edge case toward the goal instead of guessing. METHODOLOGY's "give the reason" sub-rule applied to the spawn prompt — never pad a task whose What already implies its why.
-- **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the teammate) arbitrates cross-boundary edits.
-- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the teammate either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
+- **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the subagent guesses (usually wrong).
+- **Why** — *optional; omit when self-evident.* One clause of intent (the goal or ADR the task serves) so the subagent resolves an ambiguous edge case toward the goal instead of guessing. METHODOLOGY's "give the reason" sub-rule applied to the spawn prompt — never pad a task whose What already implies its why.
+- **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the subagent) arbitrates cross-boundary edits.
+- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the subagent either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
 - **Files + Criteria + Constraints** — the testable contract. "Make the code work" is not a criterion. "`POST /health` returns `{"status":"ok","db":"ping","uptime_s":N}` with HTTP 200" is.
-- **Done-when** — three observable checks. Passes the orchestrator's verify gate without re-asking the teammate.
+- **Done-when** — three observable checks. Passes the orchestrator's verify gate without re-asking the subagent.
 
 **Anti-patterns (spawn-prompt quality):**
 
-- **"Implement feature X" as the entire prompt** — no What, no Where, no Focus. Teammate picks all four, usually wrong.
+- **"Implement feature X" as the entire prompt** — no What, no Where, no Focus. The subagent picks all four, usually wrong.
 - **Topic as deliverable** — "research the options" (not a thing to grep). Use "Brief at `.scratch/<slug>/brief.md` with 3 options, each with file:line citations."
-- **Implicit file ownership** — "we'll all edit SKILL.md" → merge conflict. One teammate owns each file; orchestrator resolves cross-cutting edits.
-- **Missing upstream contracts in Wave 2+** — teammate re-derives or assumes. Inject from the plan file's `Depends On` field.
+- **Implicit file ownership** — "we'll all edit SKILL.md" → merge conflict. One subagent owns each file; orchestrator resolves cross-cutting edits.
+- **Missing upstream contracts in Wave 2+** — the subagent re-derives or assumes. Inject from the plan file's `Depends On` field.
 
-**Cross-references:** this template is enforced by `/team-build` (see `commands/team-build.md` Step 6 — "Inject the F9 template into every spawn prompt"). Validation chain (`addBlockedBy`) gates ordering; this template gates the per-task contract.
-
-## Lead-coordinator doctrine (F8)
-
-**The lead is special.** Articles `agent-teams-best-practices`, `agent-teams-controls-delegate-mode-hooks`, and `sub-agents-parallel-vs-sequential` converge on four doctrines that distinguish a working agent team from a noisy one:
-
-1. **Shift+Tab delegate mode is the default for the lead.** The lead receives user intent, drafts a plan, dispatches teammates — and **does not write code itself**. Manual override is allowed when the lead is the only one with context (single-agent task) or the lead is debugging a teammate's stuck state. The default makes "lead silently edited `SKILL.md` while teammates were working on it" impossible.
-2. **Opus-lead + Sonnet-teammate cost split.** Opus is expensive; it's good at synthesis + judgment, not at routine implementation. Sonnet handles execution. The lead dispatches with `model: "sonnet"` for teammates by default; the lead itself stays on Opus. This is the **largest token-cost lever** in agent-team mode — running the whole team on Opus is the failure mode the article explicitly warns about.
-3. **Plan-mode lifetime is fixed by the plan, not by the session.** Once `/team-build` dispatches Wave 1, the lead is in plan-mode for the rest of the plan's lifetime — even mid-`/team-build`, even across `AskUserQuestion` answers, even when teammates fail. The plan is the lead's teaching document; revise the plan, not the mode. The lead exits plan-mode only when the entire plan is complete or aborted.
-4. **3-5 teammates is the sweet spot.** Below 3: under-parallelized, lead does too much. Above 5: coordination overhead dominates; merge step (4-step recipe above) starts drowning the lead. Article explicitly calls out "3-5 teammates" as the empirical sweet spot. Plans outside this range should be **revised at `/team-plan` time**, not patched at `/team-build` time. **"3-5" counts PEAK CONCURRENT live teammates, not total tasks/seats across the build.** A teammate is persistent and takes multiple tasks (≈5-6 each); a feature with 7 seats/tasks (e.g. `7-agent-pattern`) is realized by ≤5 concurrent teammates via wave-based spawn/evict — its peak concurrency (≤3 in the `7-agent-pattern`) is what must fit 3-5, not its total seat count. The `## Team Members` roster a `/team-plan` author writes is that concurrent set.
-
-**Why these are doctrine, not preference:** the alternative is the lead editing `SKILL.md` while a teammate is also editing it (silent conflict), the lead burning Opus tokens on routine implementation (cost cliff), or the lead dropping plan-mode mid-`/team-build` because a teammate's question felt "faster to answer inline" (chain breaks). Each rule exists because the failure mode is real and observable.
-
-**Cross-references:** this doctrine is the runtime contract that `/team-build` assumes. The lead's spawn prompt is the F9 template above; the lead's behavior in plan-mode is the four rules above.
+**Cross-references:** this template is the per-task contract; the validation chain (`addBlockedBy`) gates ordering. Enforce both at your dispatch boundary — the spawn prompt IS the contract.
 
 ## Validation chain (builder → validator → fix → re-validator)
 
@@ -424,11 +411,11 @@ Without these injections, each agent re-derives or assumes, which produces laten
 1. **Hard cap = 5 agents per wave; advisory floor = 3 (F8.4).** Below 3: under-parallelized — lead does too much (F8.4 advisory; the dispatcher flags an agent fan-out `<3` but never blocks; a fixed diverse-lens panel like code-review + security-review = 2 sets `panel: true` on the `parallel` stage to opt out — it is not an under-split builder fan-out). Above 5: coordination overhead dominates and the audit goes wrong before it even starts (ref: [[bounded-agent-spawning]]). The lead MUST clamp any work-list >5 to 5 before spawning, and queue the rest in a `deferred-<date>.md` for a follow-up wave. (The cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5 on owner request — F8 band and F8.5 cap now coincide at 3-5.)
 2. **The cap is a number in code, not prose.** "Don't overspawn" is a vibe; `if len(worklist) > 5: worklist = worklist[:5]` is a contract. The audit fixture `eval/regressions/bounded-agent-spawning.json` greps for "cap" and "fan-out" in this file — if either phrase goes missing, the fixture fails and the lesson is gone.
 3. **Worklist count ≠ spawn count.** Audit + verify is a SECOND fan-out layer on top of the work-list. If the work-list already hit 44 and the audit doubles to 88, the cap on the work-list didn't help. The cap must be on TOTAL spawned agents across the entire plan lifetime, not on the work-list size.
-4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. The dispatch function (or `commands/team-build.md` Step 6) is the enforcement point.
+4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. Your dispatch code (clamping the work-list to the cap before spawning) is the enforcement point.
 
 **Why this is doctrine, not preference:** the 2026-06-12 audit at 105 agents was caused by a soft cap. The next agent author will write the same soft cap again unless the hard cap is a number in code AND a fixture that fails when the number is removed.
 
-**Cross-references:** this contract is enforced by `commands/team-build.md` (Step 6 — the dispatch step is the clamp point) and `commands/team-plan.md` (Step 4 — the planning step pre-trims oversized work-lists). The `eval/regressions/bounded-agent-spawning.json` fixture locks this section in place.
+**Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time. The `eval/regressions/bounded-agent-spawning.json` fixture locks this section in place.
 
 ## Fast Path Gate
 
@@ -453,7 +440,7 @@ Full routing tables, agent fleet mapping, scripted execution details, and delega
 
 ## Example
 
-Input: "prod /orders is 500ing; refactor auth for readability; teammate wants a signups CSV; should we move to pnpm?"
+Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants a signups CSV; should we move to pnpm?"
 
 | Task | Quadrant | Route |
 |---|---|---|

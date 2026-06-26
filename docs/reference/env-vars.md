@@ -82,7 +82,6 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | `CLAUDE_HOOK_PROFILE` | `standard` | The profile ladder (ADR 0007): `off` disables ALL kbg hooks; `minimal` dials friction down while the safety floor (block-dangerous-*, secret-*) stays on; `standard` is the default (all gates on); `strict` reserves a future stricter tier (currently equals `standard`). Each hook declares `HOOK_PROFILES` (default `standard strict`); floor gates opt into `minimal standard strict` so a `minimal` session keeps the irrecoverable floor. |
 | `CLAUDE_JOURNAL_PATH` | `~/.claude/governance-events.jsonl` | Governance-journal location override. |
 | `CLAUDE_BAK_TTL_DAYS` / `CLAUDE_BAK_TTL_PROFILE` | `90` / `standard` | `.bak` cleanup TTL + profile. |
-| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | unset | `=1` enables the opt-in Agent Teams surface (`/team-plan`, `/team-build`, …). |
 
 ## ECC-parity port knobs (ADR 0007)
 

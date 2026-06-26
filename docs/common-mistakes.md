@@ -3,7 +3,7 @@
 **Status:** Convention reference. Adapted from the claudefa.st *Custom Commands* article for the kbg-harness plugin.  
 **Last verified:** 2026-06-12
 
-The claudefa.st corpus documents four mistakes that crop up when teams build custom agents. This document adds a fifth (plan-without-validation) that the harness's agent-team workflow specifically guards against. Each section maps the vendor mistake to a harness-native fix, with a one-line self-check you can run to verify the guard is in place.
+The claudefa.st corpus documents four mistakes that crop up when teams build custom agents. This document adds a fifth (plan-without-validation) that the harness's orchestrate workflow specifically guards against. Each section maps the vendor mistake to a harness-native fix, with a one-line self-check you can run to verify the guard is in place.
 
 ---
 
@@ -91,11 +91,11 @@ The first grep should return no files. The second grep should return a non-zero 
 
 ## Mistake 4 — No done-when criterion
 
-**Symptom:** A teammate finishes its task and reports "I analyzed the auth module" or "The research is complete." The lead has no observable artifact to verify — no file path, no test output, no commit SHA. The task is marked complete by fiat, and downstream waves build on unverified sand.
+**Symptom:** A subagent finishes its task and reports "I analyzed the auth module" or "The research is complete." The lead has no observable artifact to verify — no file path, no test output, no commit SHA. The task is marked complete by fiat, and downstream waves build on unverified sand.
 
-**Root cause:** The spawn prompt describes a topic, not a deliverable. Without an explicit "done-when" checklist, the teammate substitutes prose for evidence and the lead has no gate to reject it.
+**Root cause:** The spawn prompt describes a topic, not a deliverable. Without an explicit "done-when" checklist, the subagent substitutes prose for evidence and the lead has no gate to reject it.
 
-**Harness fix:** The F9 spawn-prompt template (`skills/orchestrate/SKILL.md` § Spawn-prompt template) mandates a `## Done-when` section with three observable checks. Every `/team-build` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
+**Harness fix:** The F9 spawn-prompt template (`skills/orchestrate/SKILL.md` § Spawn-prompt template) mandates a `## Done-when` section with three observable checks. Every `orchestrate` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
 
 ```markdown
 ## Done-when
@@ -104,34 +104,33 @@ The first grep should return no files. The second grep should return a non-zero 
 - [ ] No edit outside FILES YOU OWN
 ```
 
-The orchestrator's verification step (`/team-build` Step 6) greps for these observables before starting the next wave. If a teammate returns prose instead of a checked done-when list, the lead re-dispatches or rejects the task.
+The orchestrator's verification step greps for these observables before starting the next wave. If a subagent returns prose instead of a checked done-when list, the lead re-dispatches or rejects the task.
 
 **Self-check:**
 
 ```bash
-grep -c "## Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
-grep -L "Done-when" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/team-build/references/per-task-validation.md"
+grep -c "Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
 ```
 
-The first count should be > 0. The second grep should return nothing — both commands embed the F9 template that contains Done-when.
+The count should be > 0 — orchestrate's F9 template embeds the Done-when contract.
 
 ---
 
 ## Mistake 5 — Plan without validation
 
-**Symptom:** The team executes a plan, waves finish, and the user asks "does it work?" No one knows. Tests were mentioned in the plan but never run. A schema change went in without a migration. The integration validator (INT-*) was skipped because "everyone's code looked fine." The build ships with latent defects that a 5-minute validation command would have caught.
+**Symptom:** The dispatch flow executes a plan, waves finish, and the user asks "does it work?" No one knows. Tests were mentioned in the plan but never run. A schema change went in without a migration. The integration validator (INT-*) was skipped because "everyone's code looked fine." The build ships with latent defects that a 5-minute validation command would have caught.
 
 **Root cause:** The planning phase optimistically assumed correctness; the execution phase had no post-work gate. Quality was eyes-only, not command-verified.
 
 **Harness fix:** Three gates, one pipeline:
 
-1. **F10 plan approval filter** — in `/team-build` Step 5 (`commands/team-build.md`). Before any agent is spawned, the lead checks the plan file (`.claude/tasks/<slug>.md`) for pre-execution risks: overlapping file ownership, missing migration tasks, auth/secrets without a security reviewer, and absent integration validators. Bad plans are rejected with reasons; the user revises and re-invokes.
+1. **Pre-flight plan linter** — `scripts/plan-linter.py`. Before any agent is spawned, the lead runs the linter against the plan file (`.claude/tasks/<slug>.md`) to catch pre-execution risks: overlapping file ownership, missing migration tasks, auth/secrets without a security reviewer, and absent integration validators. Bad plans are rejected with reasons; the user revises and re-runs. The orchestrator's Step 4 blast-radius + dependency analysis is the dispatch-side companion gate (`skills/orchestrate/SKILL.md` § Procedure step 4).
 
-2. **F7 test-claim gate** — in `hooks/lifecycle/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A teammate that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The teammate must add the command and re-trigger completion. This is the post-execution half of the pipeline.
+2. **F7 test-claim gate** — in `hooks/lifecycle/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A subagent that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The subagent must add the command and re-trigger completion. This is the post-execution half of the pipeline.
 
-3. **`/team-build` Step 6b** — for single-task validation after each wave completes. The lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain on each completed task before starting the next wave. Details are in `commands/team-build/references/per-task-validation.md`.
+3. **Per-task validation chain** — for single-task validation after each wave completes. The lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain inline on each completed task before starting the next wave.
 
-The plan linter (`scripts/plan-linter.py`) can also pre-check a plan before `/team-build` is invoked:
+The plan linter can pre-check a plan before `orchestrate` dispatch:
 
 ```bash
 python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md --strict
@@ -140,23 +139,20 @@ python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md --st
 **Self-check:**
 
 ```bash
-grep -c "plan approval filter\|F10" "${KBG_PLUGIN_ROOT}/commands/team-build.md"
-grep -c "TaskCompleted\|F7" "${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"
-grep -c "B → V1 → F → V2\|validation chain" "${KBG_PLUGIN_ROOT}/commands/team-build.md" "${KBG_PLUGIN_ROOT}/commands/team-build/references/per-task-validation.md"
+grep -c "validation_command\|F7" "${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"
+grep -c "validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
+test -x "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" && echo "plan-linter present"
 ```
 
-All three counts should be non-zero. If any is zero, that gate is missing from the documented surface.
+All three should be non-zero / present. If any is missing, that gate is gone from the documented surface.
 
 ---
 
 ## Cross-references
 
-- [`docs/troubleshooting-guide.md`](./troubleshooting-guide.md) — what to do when one of these mistakes produces a runtime failure
-- [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, 27-agent tool matrix
+- [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, agent tool matrix
 - [`docs/adr/0002-autonomy-invariant.md`](./adr/0002-autonomy-invariant.md) — why maker≠checker separation is load-bearing
-- [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 template, F8 lead doctrine, validation chain, routing table
-- [`commands/team-build.md`](../commands/team-build.md) — F10 plan approval filter, wave execution, post-build validation
-- [`commands/team-build/references/per-task-validation.md`](../commands/team-build/references/per-task-validation.md) — per-task B→V1→F→V2 validation chain
+- [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 spawn-prompt template, bounded fan-out, validation chain, routing table
 - [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — runtime Bash mutation guard for validators
 - [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted test-claim gate
-- [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight structural + F10 risk validation
+- [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight structural + risk validation

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-scripts/plan-linter.py — Pre-flight plan validator for /team-build consumption.
+scripts/plan-linter.py — Pre-flight plan validator for the orchestrate dispatch flow.
 
 Validates a .claude/tasks/<slug>.md plan file against structural rules,
 dependency acyclicity, file-ownership uniqueness, acceptance-criteria

@@ -67,7 +67,7 @@ def check_gh_auth(timeout: int = DEFAULT_GH_TIMEOUT) -> dict[str, Any]:
             "summary": "gh auth status: non-zero, no GITHUB_TOKEN/GH_TOKEN env var; gh CLI is not authenticated",
             "details": (stdout + stderr).splitlines() if (stdout or stderr) else [],
             "elapsed_seconds": round(elapsed, 2),
-            "remediation": "Run `gh auth login` (or set GITHUB_TOKEN/GH_TOKEN) before running /team-build, /review-pr, or any task that touches the gh CLI.",
+            "remediation": "Run `gh auth login` (or set GITHUB_TOKEN/GH_TOKEN) before running kbg:orchestrate, kbg:review-pr, or any task that touches the gh CLI.",
         }
     except subprocess.TimeoutExpired:
         return {
