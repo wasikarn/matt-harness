@@ -74,7 +74,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY pr-test-analyzer (even though code-reviewer is "always applicable" under `all`). `kbg:review-pr code tests` runs code-reviewer + pr-test-analyzer.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
 
-**Note**: `code-simplifier` is **NOT a reviewer** — it's an optional post-review polish step. See Phase 7 step 2 next-step suggestions.
+**Note**: code simplification is **NOT a reviewer** — it's an optional post-review polish step. See Phase 7 step 2 next-step suggestions (uses `backend-engineer` with clarity-only scope).
 
 ---
 
@@ -214,7 +214,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - Agents dispatched + their tier counts (e.g. "code-reviewer: 2 Critical / 3 Important / 0 Minor")
    - User decision (author flow: fixed-now / deferred / proceeded-as-is; reviewer flow: posted line-level / posted summary / fixed+pushed / skipped)
    - **Suggested next steps** (pick what applies):
-     - Wants clarity polish after fixes → invoke `code-simplifier` agent as follow-up (NOT part of kbg:review-pr itself)
+     - Wants clarity polish after fixes → invoke `backend-engineer` (clarity-only scope) as follow-up (NOT part of kbg:review-pr itself; see `kbg:progressive-refine` Pass 2)
      - At PR-ready → `/ship-merge` (or push for review)
      - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA window)
      - Reviewer comments came back externally → `/address-review`
@@ -283,7 +283,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: secret-scan runs on all diffs automatically. doctrine-edit-gate protects CLAUDE.md/METHODOLOGY.md from mid-session edits.
 - **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
-- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests → pr-test-analyzer. Comments → comment-analyzer. Error handling → silent-failure-hunter. Polish → code-simplifier (post-review opt-in, **not** part of kbg:review-pr).
+- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests → pr-test-analyzer. Comments → comment-analyzer. Error handling → silent-failure-hunter. Polish → `backend-engineer` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship-task`, `/fix-bug`, and `kbg:review-pr` — normalized in commit `9e89bf2`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.

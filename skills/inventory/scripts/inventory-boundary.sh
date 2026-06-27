@@ -210,7 +210,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `code-architect` | `docs/adr/`, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
 | `code-explorer` | any file | Read-only trace |
 | `code-reviewer` | any file | Read-only review |
-| `code-simplifier` | any file | Post-impl refinement; Edit/Write/Bash |
 | `comment-analyzer` | any file | Read-only comment audit |
 | `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |
 | `data-engineer` | `migrations/`, `etl/`, `analytics/`, `warehouse/`, `dbt/`, `spark/` | Beyond OLTP |

@@ -23,7 +23,7 @@ From article `agent-patterns`: each pass focuses on a different quality dimensio
 |------|------|----------|-------------|
 | 1 | **Coverage** | Does it handle all cases? | builder / drafter |
 | 2 | **Correctness** | Are the edge cases right? | reviewer / editor |
-| 3 | **Clarity** | Can a junior read this? | simplifier / reviewer |
+| 3 | **Clarity** | Can a junior read this? | backend-engineer (clarity-only) / reviewer |
 | 4 | **Performance** | Does it meet latency/budget constraints? | perf engineer / validator |
 | 5 | **Polish** | Docs, error messages, naming | polisher / technical-writer |
 
@@ -61,13 +61,13 @@ Write the rough implementation. Scope is "make it work." Do not optimize, do not
 
 Spawn **gated** — builder holds Edit/Write/Bash.
 
-### Pass 2 — Simplifier (`code-simplifier`)
+### Pass 2 — Simplifier (`backend-engineer` — clarity-only scope)
 
 Refine the builder's output for clarity and brevity. Scope is "make it readable." The simplifier may extract helpers, reduce nesting, rename variables, inline trivial abstractions — but must not change behavior.
 
 **Done-when:** Cyclomatic complexity <10 per function, no functions >50 lines, and all tests from Pass 1 still pass.
 
-Spawn **gated** — simplifier holds Edit/Write/Bash.
+Spawn **gated** — simplifier holds Edit/Write/Bash. F9 spawn-prompt template scoped to "refactor for clarity only" (see fallback note in Cross-references below).
 
 ### Pass 3 — Validator (`code-reviewer` + `test-engineer`)
 
@@ -107,7 +107,7 @@ Source `${CLAUDE_SKILL_DIR}/scripts/task-board-lib.sh` (a per-skill wrapper that
 ### Chain structure
 
 ```
-Pass 1 (builder)     →  Pass 2 (simplifier)  →  Pass 3a (code-reviewer)
+Pass 1 (builder)     →  Pass 2 (backend-engineer, clarity-only)  →  Pass 3a (code-reviewer)
    T1                       T2                       T3a
    depends_on: []           depends_on: [T1]         depends_on: [T2]
                                                       ↓
@@ -128,7 +128,7 @@ If any pass rejects (verdict != `pass`), the pipeline stops and the lead spawns 
 **Shell pattern for rejection recovery:**
 
 ```bash
-# T2 (simplifier) returned reject
+# T2 (backend-engineer, clarity-only) returned reject
 updated=$(kbg_board_read "$PLAN_DIR" | jq '
   .tasks["T2-fix-1"] = {
     id: "T2-fix-1",
@@ -148,7 +148,7 @@ kbg_recompute_blocked "$PLAN_DIR"
 | Pass role | Gated? | Why |
 |-----------|--------|-----|
 | Builder / Drafter (Pass 1) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
-| Simplifier / Editor (Pass 2) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
+| Simplifier / Editor (Pass 2) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash (backend-engineer, clarity-only scope) |
 | Reviewer / Validator (Pass 3+) | **No** | Read-only; no AskUserQuestion |
 | Fixer (rejection recovery) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
 | Polisher (Pass 5) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
@@ -168,6 +168,6 @@ A full `GET /health` pipeline — builder → simplifier → reviewer (rejects: 
 - **F9 spawn-prompt template** — `skills/orchestrate/SKILL.md` § Spawn-prompt template. Every pass uses this template verbatim.
 - **Task board integration (`depends_on`, `recompute_blocked`)** — `skills/orchestrate/SKILL.md` § Task board integration.
 - **Per-task validation chain** — `skills/orchestrate/SKILL.md` § Validation chain (TaskCreate + addBlockedBy). Run the builder→validator→fix→revalidator chain reactively on a single already-completed task by dispatching that sequence inline via `kbg:orchestrate`. Use `progressive-refine` when you want to plan the multi-pass pipeline upfront.
-- **`code-simplifier`** — `agents/code-simplifier.md`. The Pass 2 agent for the 3-pass code pattern. If the agent file does not yet exist in the fleet, dispatch a simplification pass using the spawn prompt above with `backend-engineer` scoped to "refactor for clarity only."
+- **Pass 2 simplifier** — `backend-engineer` (clarity-only scope, no behavior change). The F9 spawn prompt in `references/spawn-prompts.md` § Pass 2 routes to `backend-engineer` with the scope fence "refactor for clarity only — no behavior change, no API shape change, no test deletion." The previous `code-simplifier` agent (v0.9.0 and earlier) was removed in this release; `backend-engineer` covers the same surface.
 - **`recursive-improve`** — `skills/recursive-improve/SKILL.md`. Use `recursive-improve` when the harness itself needs improvement; use `progressive-refine` when a single artifact needs quality passes. The former is human-gated by design; the latter can be scripted once the plan is approved.
 - **`backend-dev`** — `skills/backend-dev/SKILL.md`. The builder agent's own workflow (tests first, minimal implementation, architecture concerns). Pass 1 of the 3-pass pattern delegates to this skill.

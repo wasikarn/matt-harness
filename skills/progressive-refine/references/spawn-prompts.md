@@ -52,7 +52,7 @@ Coverage over elegance. Every acceptance criterion must have a test that exercis
 - [ ] No edit to files outside FILES YOU OWN
 ```
 
-### Pass 2 — Simplifier (`code-simplifier`) — gated
+### Pass 2 — Simplifier (`backend-engineer`, clarity-only scope) — gated
 
 ```
 # Task: Simplify <feature> implementation
@@ -116,7 +116,7 @@ A structured verdict report at `.scratch/<feature>-review/verdict.md`:
 (Only these files. Do not review out-of-scope files.)
 
 ## UPSTREAM CONTRACTS
-- From task T2 (simplifier): final diff — behavior should be identical to T1
+- From task T2 (backend-engineer, clarity-only): final diff — behavior should be identical to T1
 
 ## Files + Criteria + Constraints
 | File | Criterion | Constraint |
@@ -393,7 +393,7 @@ src/api/routes/health.py exists and GET /health returns {"status":"ok"} with HTT
 - [ ] No edit to files outside FILES YOU OWN
 ```
 
-### Pass 2 — Simplifier: `code-simplifier` refactors
+### Pass 2 — Simplifier: `backend-engineer` refactors (clarity-only scope)
 
 ```
 # Task: Simplify GET /health implementation

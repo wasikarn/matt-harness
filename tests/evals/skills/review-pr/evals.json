@@ -35,7 +35,7 @@
         },
         {
           "name": "phase_7_summary_next_steps",
-          "description": "Response summarizes agents dispatched, tier counts, and suggests next steps (/ship-merge, re-run /review-pr, /address-review, code-simplifier)"
+          "description": "Response summarizes agents dispatched, tier counts, and suggests next steps (/ship-merge, re-run /review-pr, /address-review, backend-engineer with clarity-only scope for post-review polish)"
         },
         {
           "name": "worktree_cleanup_mentioned",

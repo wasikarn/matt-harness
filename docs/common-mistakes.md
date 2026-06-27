@@ -71,9 +71,9 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 **Harness fix:** Two layers:
 
-1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The 7 validator agents (`code-reviewer`, `code-explorer`, `code-architect`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`) list `Read, Grep, Glob, Bash` at most — never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
+1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The 14 validator-class agents (`code-reviewer`, `code-explorer`, `code-architect`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`, `type-design-analyzer`, `ux-reviewer`, `researcher`, `inferential-structural-judge`, `incident-commander`, `finops-engineer`, `product-analyst` — see `validator-bash-guard.sh:54` for the canonical list) list `Read, Grep, Glob, Bash` at most — never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
 
-2. **Runtime Bash guard.** `hooks/gates/validator-bash-guard.sh` is a `PreToolUse` hook that intercepts Bash commands from the 7 validator agents. It maintains an allow-list of read-only prefixes (`git diff`, `ls`, `cat`, `grep`, `pytest`, etc.) and a deny-list of mutation patterns (`rm`, `sed -i`, `git push`, `curl POST`, `mv`, `cp`, etc.). If a validator attempts a mutation pattern, the hook emits a `deny` decision with feedback: "Validators are read-only-by-doctrine." The hook is wired into `settings.json` and runs on every Bash invocation inside a subagent.
+2. **Runtime Bash guard.** `hooks/gates/validator-bash-guard.sh` is a `PreToolUse` hook that intercepts Bash commands from the 14 validator-class agents. It maintains an allow-list of read-only prefixes (`git diff`, `ls`, `cat`, `grep`, `pytest`, etc.) and a deny-list of mutation patterns (`rm`, `sed -i`, `git push`, `curl POST`, `mv`, `cp`, etc.). If a validator attempts a mutation pattern, the hook emits a `deny` decision with feedback: "Validators are read-only-by-doctrine." The hook is wired into `settings.json` and runs on every Bash invocation inside a subagent.
 
 3. **Orchestrate dispatch gate.** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Procedure step 4) gates any agent holding `Edit`, `Write`, or `Bash` behind an `AskUserQuestion`. Read-only agents (no mutation tools) dispatch without a gate; write-capable agents require explicit approval. This means even if a validator accidentally had `Edit` added to its frontmatter, the orchestrator would not dispatch it without user consent.
 
@@ -81,7 +81,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-explorer,code-architect,comment-analyzer,pr-test-analyzer,silent-failure-hunter}.md 2>/dev/null
+  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-explorer,code-architect,comment-analyzer,pr-test-analyzer,silent-failure-hunter,type-design-analyzer,ux-reviewer,researcher,inferential-structural-judge,incident-commander,finops-engineer,product-analyst}.md 2>/dev/null
 grep -c "VALIDATOR-BASH" "${KBG_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh"
 ```
 

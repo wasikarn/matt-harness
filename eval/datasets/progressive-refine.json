@@ -46,7 +46,7 @@
       },
       "success_criteria": [
         "Pass 1 assigned to backend-engineer with FILES YOU OWN and Done-when including test passage",
-        "Pass 2 assigned to code-simplifier with cyclomatic complexity <10 and no function >50 lines",
+        "Pass 2 assigned to backend-engineer with clarity-only scope (cyclomatic complexity <10 and no function >50 lines)",
         "Pass 3 split into code-reviewer (ungated, verdict report) and test-engineer (gated, coverage >80%)",
         "Explicit UPSTREAM CONTRACTS referencing prior pass"
       ],

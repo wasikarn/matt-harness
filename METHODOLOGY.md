@@ -215,7 +215,7 @@ Behavior:
 | bug + convention review (non-security, non-coverage, non-error-handling) | `code-reviewer` |
 | multi-approach architecture blueprint | `code-architect` |
 | end-to-end trace, dep graph, abstraction mapping | `code-explorer` |
-| post-impl cleanup, behavior-preserving simplification | `code-simplifier` |
+| post-impl cleanup, behavior-preserving simplification | `backend-engineer` (clarity-only scope) |
 | refactor, deprecation, framework upgrade, tech-debt | `maintenance-engineer` |
 | active prod incident, post-mortem, error-budget breach | `incident-commander` |
 | error-handling audit, swallowed errors, hidden fallbacks | `silent-failure-hunter` |

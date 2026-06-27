@@ -15,7 +15,7 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 | `security` | `security-reviewer` | only if auth/secrets/input touched |
 | `types` | `type-design-analyzer` | only if types/interfaces/DTOs/schemas/models changed |
 | `ux` | `ux-reviewer` | only if user-facing UI/components/flows changed |
-| `simplify` | NOT a reviewer | invoke `code-simplifier` agent separately after review decisions land (Phase 7 next-step) |
+| `simplify` | NOT a reviewer | invoke `backend-engineer` (clarity-only scope) separately after review decisions land (Phase 7 next-step) — see `kbg:progressive-refine` Pass 2 |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
 
 ## Agent Descriptions
@@ -31,7 +31,7 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 | `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80 |
 | `type-design-analyzer` | Type/DTO/schema encapsulation + invariants + API-contract honesty (rated 1-10) |
 | `ux-reviewer` | UX friction + cognitive load + WCAG 2.1 AA accessibility + interaction flow |
-| `code-simplifier` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
+| `backend-engineer` post-review polish (clarity-only scope, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
 ## Tips
 

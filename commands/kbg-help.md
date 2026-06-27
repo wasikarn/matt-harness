@@ -32,7 +32,7 @@ The 29-agent fleet is grouped by **discipline/ownership** (each agent owns one c
 | **DESIGN** | `code-architect` (blueprint) · `type-design-analyzer` (contracts/encapsulation) |
 | **BUILD** | `backend-engineer` · `frontend-engineer` · `mobile-engineer` · `data-engineer` · `ml-engineer` · `platform-engineer` · `devops-engineer` · domain: `i18n-specialist` · `compliance-engineer` · `finops-engineer` |
 | **VERIFY** | `test-engineer` (write tests) · `pr-test-analyzer` (coverage gaps) |
-| **REVIEW** | `code-reviewer` · `security-reviewer` · `silent-failure-hunter` · `comment-analyzer` · `ux-reviewer` · `code-simplifier` |
+| **REVIEW** | `code-reviewer` · `security-reviewer` · `silent-failure-hunter` · `comment-analyzer` · `ux-reviewer` (simplification: `backend-engineer` with clarity-only scope — see `kbg:progressive-refine` Pass 2) |
 | **OPERATE** | `incident-commander` (live incident) · `maintenance-engineer` (debt/refactor post-ship) |
 | **Cross-cutting** | `technical-writer` · `api-doc-specialist` (docs, any stage) · `ideate-critic` · `inferential-structural-judge` (fresh-context critics/sensors) |
 
