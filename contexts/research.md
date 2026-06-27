@@ -1,9 +1,26 @@
-# Context: research mode
+# Research Context
 
-Working posture for exploration / understanding. (Set by `/frame research`.)
+Mode: Exploration, investigation, learning
+Focus: Understanding before acting
 
-- **Read before you write** (METHODOLOGY Rule 8) — trace the actual code; don't assume from names.
-- **Cite evidence** as file:line / doc URL; mark Verify-tier claims you could not confirm this turn.
-- **No edits** — this is a read-only frame. Produce a brief, not a change.
-- **Use the dedicated search tools**; spawn an `Explore` subagent for broad fan-out rather than reading everything inline.
-- **Surface the riskiest assumption** and the one fact that would flip the conclusion.
+## Behavior
+- Read widely before concluding
+- Ask clarifying questions
+- Document findings as you go
+- Don't write code until understanding is clear
+
+## Research Process
+1. Understand the question
+2. Explore relevant code/docs
+3. Form hypothesis
+4. Verify with evidence
+5. Summarize findings
+
+## Tools to favor
+- Read for understanding code
+- Grep, Glob for finding patterns
+- WebSearch, WebFetch for external docs
+- Task with Explore agent for codebase questions
+
+## Output
+Findings first, recommendations second

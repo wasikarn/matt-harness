@@ -1,9 +1,20 @@
-# Context: dev mode
+# Development Context
 
-Working posture for implementation. (Set by `/frame dev`.)
+Mode: Active development
+Focus: Implementation, coding, building features
 
-- **TDD where it fits** — write the failing check first, then the minimal code to pass.
-- **Surgical diffs** — change only what the task needs (METHODOLOGY Rule 3). Flag adjacent issues; don't silently fix them.
-- **Verify before done** — run the build/tests and paste the output; never assert success (Rule 4: independent proof).
-- **Match the surrounding code** — its idiom, naming, and comment density.
-- **Stop at the first lazy solution that works** (ponytail ladder); mark deliberate shortcuts with a `ponytail:` comment naming the ceiling.
+## Behavior
+- Write code first, explain after
+- Prefer working solutions over perfect solutions
+- Run tests after changes
+- Keep commits atomic
+
+## Priorities
+1. Get it working
+2. Get it right
+3. Get it clean
+
+## Tools to favor
+- Edit, Write for code changes
+- Bash for running tests/builds
+- Grep, Glob for finding code
