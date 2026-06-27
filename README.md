@@ -302,6 +302,16 @@ When the plugin is installed, internal docs live in the plugin cache and must be
 
 ---
 
+## Upstream Attribution
+
+kbg-harness aggregates components from the following upstream projects. All are used under their respective licenses.
+
+| Source | License | Components adopted |
+|---|---|---|
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 19 skills under `skills/` — `ask-matt`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grill-me`, `grill-with-docs`, `grilling`, `handoff`, `implement`, `improve-codebase-architecture`, `prototype`, `resolving-merge-conflicts`, `setup-matt-pocock-skills`, `tdd`, `teach`, `to-issues`, `to-prd`, `triage`, `writing-great-skills` (copied 2026-06-28 @ v1.0.1) |
+
+---
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
