@@ -1,6 +1,11 @@
 ---
 name: council
 description: "Convene a four-voice council (Architect + Skeptic + Pragmatist + Critic) for ambiguous decisions, tradeoffs, and go/no-go calls. Use when the user says 'second opinion', 'tradeoffs', 'should we ship X', 'go/no-go', 'should I refactor or rewrite', or describes a decision where multiple valid paths exist and structured disagreement is needed before choosing. Thai: 'council', 'ปรึกษา', 'ตัดสินใจ', 'second opinion', 'ทางเลือก'. Don't use for: code review (use kbg:review-pr), implementation planning (use /ship-task), architecture design (use code-architect agent), or any single-correct-answer technical question. Read-only decision ritual; does not mutate code."
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, and explicit deferral rules in frontmatter description; body content identical to ECC upstream."
 ---
 
 # Council

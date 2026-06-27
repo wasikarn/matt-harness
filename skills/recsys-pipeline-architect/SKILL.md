@@ -1,6 +1,11 @@
 ---
 name: recsys-pipeline-architect
 description: "Design composable recommendation, ranking, and feed pipelines using the six-stage Source→Hydrator→Filter→Scorer→Selector→SideEffect framework popularized by xAI's open-sourced For You algorithm. Use when the user is building any system that picks 'the top K items for a (user, context)' — social feeds, content CMSs, RAG rerankers, task prioritizers, notification triage, search reranking, ad ranking, 'for-you feed'. Thai: 'recommendation', 'feed', 'ranking', 'top-K', 'แนะนำรายการ', 'จัดอันดับ'. Don't use for: simple CRUD without ranking (use backend-dev), pure data infrastructure (use data-engineer), or batch analytics (not realtime selection). Spec-and-scaffold: produces design + skeleton code, not production deployments."
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, and 'Spec-and-scaffold' output-scope declaration in frontmatter description; body content identical to ECC upstream."
 ---
 
 # recsys-pipeline-architect

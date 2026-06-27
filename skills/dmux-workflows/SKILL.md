@@ -1,6 +1,11 @@
 ---
 name: dmux-workflows
 description: "Patterns for orchestrating parallel AI agent sessions across Claude Code, Codex, OpenCode, and other harnesses via dmux (tmux pane manager). Use when the user says 'run in parallel', 'split this work across panes', 'use dmux', 'multi-agent panes', or coordinates multi-agent development workflows across harnesses. Thai: 'dmux', 'parallel', 'multi-pane', 'ทำพร้อมกัน', 'แบ่งงานหลาย pane'. Don't use for: single-session fan-out within one lead (use kbg:orchestrate), single-task work (no pane split needed), or anything requiring shared mutable state (use git worktrees for file-conflict-prone work). Keep total panes under 5-6 (resource awareness)."
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, and 5-6 pane cap rationale in frontmatter description; body content identical to ECC upstream."
 ---
 
 # dmux Workflows

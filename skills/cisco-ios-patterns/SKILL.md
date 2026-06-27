@@ -1,6 +1,11 @@
 ---
 name: cisco-ios-patterns
 description: "Cisco IOS and IOS-XE review patterns for show commands, config hierarchy, wildcard masks, ACL placement, interface hygiene, and safe change-window verification. Use when reviewing Cisco router/switch config snippets, planning ACL placement, validating change-window safety, or working with IOS show command output. Thai: 'Cisco IOS', 'ตรวจ Cisco', 'Cisco config'. Don't use for: general networking (use networking-engineer agent), Cisco-IOS-independent routing (use kbg:networking-engineer), or applying live changes (read-only review). Treat IOS examples as patterns, not paste-ready production changes — confirm platform, interface names, current config, rollback path, and out-of-band access before any change."
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, and 'Treat IOS examples as patterns' safety clause in frontmatter description; body content identical to ECC upstream."
 ---
 
 # Cisco IOS Patterns

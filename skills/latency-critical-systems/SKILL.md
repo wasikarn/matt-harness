@@ -1,6 +1,11 @@
 ---
 name: latency-critical-systems
 description: "Engineering methodology for latency-sensitive systems — realtime dashboards, market data, streaming agents, execution gateways, queues, caches, or HFT-adjacent infrastructure where freshness and p95 latency matter. Use when the user mentions 'p99', 'p95 latency', 'realtime', 'HFT', 'market data', 'streaming pipeline', 'execution gateway', 'hot path', or is designing a system where freshness and tail latency are first-class constraints. Thai: 'p99', 'realtime', 'HFT', 'latency', 'ความหน่วงต่ำ', 'ตลาดหุ้น'. Don't use for: general performance work (use kbg:perf), batch/ETL workloads, or anything that can tolerate seconds-to-minutes latency. Explicit guardrail: do not run live orders, destructive migrations, or customer-impacting deploys without an explicit approval gate — this skill is methodology, not authorization."
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, and explicit 'methodology, not authorization' safety clause in frontmatter description; body content identical to ECC upstream."
 ---
 
 # Latency Critical Systems
