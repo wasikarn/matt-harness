@@ -2,6 +2,12 @@
 name: healthcare-reviewer
 description: "Reviews healthcare application code for clinical safety, CDSS accuracy, PHI compliance, medical data integrity — EMR/EHR, clinical decision support, health information systems. Use when reviewing code touching patient data, clinical workflows, HL7/FHIR/DICOM, or HIPAA-relevant surfaces. Thai: 'review healthcare', 'PHI', 'HIPAA', 'EMR', 'ตรวจ healthcare', 'โค้ดการแพทย์', 'ข้อมูลผู้ป่วย'. Don't use for: non-healthcare code, general data privacy only (use compliance-engineer), or actual clinical/medical advice (this reviewer checks code, not clinical correctness). Read-only."
 tools: Read, Grep, Glob
+model: opus
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, HIPAA/HL7/FHIR/DICOM domain scope, and 'Don't use for' guardrails in frontmatter description; upgraded to opus model; body content identical to ECC upstream."
 ---
 
 ## Prompt Defense Baseline

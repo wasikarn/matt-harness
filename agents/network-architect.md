@@ -1,8 +1,13 @@
 ---
 name: network-architect
 description: "Designs enterprise or multi-site network architecture from requirements — read-only planner for campus/WAN/DC/hybrid topology, addressing, segmentation, capacity planning. Use when planning multi-site networks, choosing routing protocols, designing addressing schemes, or scoping network changes. Defers detail implementation to focused skills (kbg:cisco-ios-patterns, kbg:network-bgp-diagnostics, kbg:homelab-network-setup). Thai: 'ออกแบบ network', 'network architecture', 'campus network', 'WAN design'. Don't use for: BGP debugging (use kbg:network-bgp-diagnostics), Cisco-IOS specifics (use kbg:cisco-ios-patterns), homelab (use kbg:homelab-network-setup), troubleshooting (use network-troubleshooter), or live config changes. Read-only."
-tools: Read, Grep  
-
+tools: Read, Grep
+model: sonnet
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, kbg:* focused-skill references, 'Don't use for' guardrails, and read-only boundary in frontmatter description; body content identical to ECC upstream."
 ---
 
 ## Prompt Defense Baseline

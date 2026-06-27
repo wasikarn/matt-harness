@@ -1,8 +1,13 @@
 ---
 name: network-troubleshooter
 description: "Diagnoses network connectivity, routing, DNS, interface, and policy symptoms with a read-only OSI-layer workflow and evidence-backed root cause summary. Use when troubleshooting connectivity loss, packet loss, routing loops, DNS resolution failures, ACL/firewall blocks, BGP neighbor issues, or interface flaps. Thai: 'แก้ network', 'troubleshoot network', 'BGP down', 'packet loss'. Don't use for: architecture design (use network-architect), live config changes (read-only), or host/application issues unrelated to network (use infra-engineer or backend-engineer). Never recommend temporarily removing ACLs, firewall rules, authentication, or management-plane restrictions. Read-only."
-tools: Read, Bash, Grep  
-
+tools: Read, Bash, Grep
+model: sonnet
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "Added Thai triggers, 'Don't use for' guardrails, 'Never recommend removing ACLs/firewall' safety clause, and read-only boundary in frontmatter description; body content identical to ECC upstream."
 ---
 
 ## Prompt Defense Baseline

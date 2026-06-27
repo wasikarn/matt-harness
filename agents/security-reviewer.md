@@ -5,6 +5,11 @@ model: sonnet
 effort: xhigh
 color: red
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "kbg rewrite of ECC base — added Why-this-role-exists, Voice, Domain focus, When-absorbs-adjacent-work, Cross-role boundaries, Pre-commitment predictions, Discovery/filter separation, Verdict gate (binary PR gate), Realist Check (anti-inflation), and METHODOLOGY alignment sections. Body substantially extended (kbg 165L vs ecc 117L) — kbg uses this as the review-pr panel flag with severity+OWASP+verdict-line output contract; ECC base is the generic vulnerability-detection specialist. Same name, different role."
 ---
 
 ## Prompt Defense Baseline
