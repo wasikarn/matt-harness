@@ -308,7 +308,8 @@ kbg-harness aggregates components from the following upstream projects. All are 
 
 | Source | License | Components adopted |
 |---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 19 skills under `skills/` — `ask-matt`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grill-me`, `grill-with-docs`, `grilling`, `handoff`, `implement`, `improve-codebase-architecture`, `prototype`, `resolving-merge-conflicts`, `setup-matt-pocock-skills`, `tdd`, `teach`, `to-issues`, `to-prd`, `triage`, `writing-great-skills` (copied 2026-06-28 @ v1.0.1) |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 19 skills — `ask-matt`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grill-me`, `grill-with-docs`, `grilling`, `handoff`, `implement`, `improve-codebase-architecture`, `prototype`, `resolving-merge-conflicts`, `setup-matt-pocock-skills`, `tdd`, `teach`, `to-issues`, `to-prd`, `triage`, `writing-great-skills` (copied 2026-06-28 @ v1.0.1) |
+| [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 24 skills — `agent-sort`, `database-migrations`, `deployment-patterns`, `docker-patterns`, `documentation-lookup`, `e2e-testing`, `error-handling`, `fastapi-patterns`, `knowledge-ops`, `mysql-patterns`, `postgres-patterns`, `python-patterns`, `python-testing`, `react-patterns`, `react-performance`, `react-testing`, `redis-patterns`, `safety-guard`, `search-first`, `security-review`, `strategic-compact`, `tdd-workflow`, `terminal-ops`, `verification-loop` (copied 2026-06-28 @ 2bc924fa) |
 
 ---
 
