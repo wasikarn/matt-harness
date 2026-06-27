@@ -12,7 +12,7 @@ follow_up_plans:
   - .claude/tasks/inferential-structural-judge-escalation-mirror.md
 target: kbg-harness 0.3.x or later
 created: 2026-06-15
-related: ADR 0002, decay-cadence.md, inferential-structural-test.md, sensor-fire-notification.md
+related: the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, decay-cadence.md, inferential-structural-test.md, sensor-fire-notification.md
 ---
 
 # Plan: Harness-coverage metric (the meta-tool Böckeler calls the right next question)

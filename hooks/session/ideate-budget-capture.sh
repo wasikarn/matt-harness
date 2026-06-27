@@ -5,7 +5,7 @@
 # SessionStart hook ideate-rotate.sh reads that file and warns when the daily
 # threshold is crossed.
 #
-# This is advisory-only feedback (ADR 0002 / CLAUDE.md §"LLM-judge circularity").
+# This is advisory-only feedback (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model / CLAUDE.md §"LLM-judge circularity").
 # It never blocks SessionEnd and never emits a permissionDecision.
 #
 # Bypass:

@@ -1,5 +1,5 @@
 # 15. settings.json delivery mode — context, NOT a finding. In the single
-# plugin-delivery path (ADR 0001) settings.json carries only `hooks`; the
+# plugin-delivery path (the plugin-delivery model section in CLAUDE.md) settings.json carries only `hooks`; the
 # commands/agents/skills arrays are absent BY DESIGN (loaded from the plugin
 # cache). That's permanent, not drift, so a missing array fires every run and
 # is never actionable — same shape as the demoted F1/plugin-cache line. Print

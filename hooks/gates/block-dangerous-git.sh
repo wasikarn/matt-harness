@@ -12,7 +12,7 @@ set -uo pipefail
 HOOK_ID="block-dangerous-git"
 source "$(dirname "$0")/../_lib.sh"
 # shellcheck disable=SC2034  # HOOK_PROFILES is consumed by _lib.sh hook_init (sourced above)
-HOOK_PROFILES="minimal standard strict"  # floor gate: survives a `minimal` session (ADR 0007)
+HOOK_PROFILES="minimal standard strict"  # floor gate: survives a `minimal` session (CLAUDE.md §Hook architecture (current profile ladder design))
 hook_init "$HOOK_ID" || exit 0
 _sensor_heartbeat
 hook_guard_unreadable  # fail CLOSED (ask) if input unparseable

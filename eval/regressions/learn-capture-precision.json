@@ -19,7 +19,7 @@
       ],
       "expected_duration_seconds": 10,
       "expected_tokens": 500,
-      "tags": ["passive-capture", "precision", "harvest", "regression", "adr-0002-addendum"],
+      "tags": ["passive-capture", "precision", "harvest", "regression", "governance-invariant"],
       "eval_type": "assertion",
       "expected_failure": false,
       "failure_pattern": "learn-capture-harvest-precision-regressed",

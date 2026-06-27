@@ -7,7 +7,7 @@
 #      vantages. Writes state to ~/.claude/state/ideate-rotation.json.
 #   2. Budget warning: count ideate invocations in today's captured sessions
 #      and print a soft warning if the daily threshold is exceeded. This is
-#      advisory only — no enforcement, no permissionDecision (ADR 0002).
+#      advisory only — no enforcement, no permissionDecision (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 #
 # The hook emits a SessionStart additionalContext JSON envelope. The markdown
 # payload carries <ideate-rotation> and <ideate-budget> blocks; Claude Code

@@ -58,8 +58,8 @@ can verify its own work now." The maker≠checker separation exists for
 **vouchability and independence** — a fresh-context checker catches what the
 maker cannot see — not because the model is too weak to check. That is exactly
 the boundary METHODOLOGY Rule 4's fresh-context-verification principle and
-ADR 0002's judgment-preservation principle (preserved append-only by
-[ADR 0006](0006-ecc-aligned-operating-model.md)) protect. Collapsing the checker into the maker is the
+the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle (preserved append-only by
+[CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)) protect. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no
@@ -67,7 +67,7 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See [ADR 0006](0006-ecc-aligned-operating-model.md)** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but ADR 0002's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
+**See [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
@@ -88,7 +88,7 @@ hazard: a "smart" sensor that uses the same model class to judge work
 the model just produced inherits the generator's blind spots and can
 quietly self-confirm. A `permissionDecision: deny` from such a sensor
 is also a model-as-own-gate — the covert self-authorization
-pattern ADR 0006 retires and audit #34 keeps guarding hermetically.
+pattern CLAUDE.md §The operating model (current) retires and audit #34 keeps guarding hermetically.
 
 **kbg's posture, captured at the decay layer:**
 
@@ -150,15 +150,14 @@ doctrine-via-Bash). See `hooks/gates/secret-read-guard.sh:36-41` and
 
 ## Gate discipline review (judgment vs ceremony)
 
-*Pairs with the quarterly sweep above; see [ADR 0002 § "Gate discipline:
-judgment gate vs ceremony gate"](0002-autonomy-invariant.md) for the rationale.*
+*Pairs with the quarterly sweep above; see `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model for the rationale on gate discipline.*
 
 The gates mapped above (DB writes, secret reads, config edits, doctrine edits —
 plus the `recursive-improve` Step 3 gate) earn their place only by carrying
 judgment. A gate the operator approves every time without a recorded change of
 decision is **ceremony**, not judgment — and ceremony trains the atrophy the
-judgment-preservation principle (ADR 0002, preserved append-only by [ADR 0006](0006-ecc-aligned-operating-model.md)) exists to prevent. This review is the exit condition for the
-gate *implementation* (the principle stays irreversible — ADR 0002).
+judgment-preservation principle (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only by [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)) exists to prevent. This review is the exit condition for the
+gate *implementation* (the principle stays irreversible — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 
 One question, folded into the quarterly pass: **which gates did the operator
 rubber-stamp this quarter?** The evidence is the `ask`-gate decisions the harness
@@ -202,7 +201,7 @@ same human-gated cadence applies. Two surfaces carry tool grants:
 - **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
   second, broader allowlist applied to every session in this harness).
 
-**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (ADR 0002's judgment-preservation principle, preserved by [ADR 0006](0006-ecc-aligned-operating-model.md)).
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle, preserved by [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)).
 
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets
@@ -311,7 +310,7 @@ the surface on the cadence above, the surface emits a report, and
 the human decides what (if anything) to delete. No cron, no
 scheduled hook event, no model-as-own-gate. Same posture as the
 build-to-delete sweep + the permission re-audit; same posture ADR
-0006's operator-as-authority model (and ADR 0002's judgment-preservation
+0006's operator-as-authority model (and the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation
 principle, preserved append-only) protects. The
 [2×2 section in `CLAUDE.md`](../../CLAUDE.md#hook-architecture-two-conventions)
 calls out the LLM-judge-circularity hazard of any inferential-FB

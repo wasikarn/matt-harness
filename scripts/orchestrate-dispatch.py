@@ -26,7 +26,7 @@ What this script IS NOT
 -----------------------
 - NOT an LLM agent dispatcher. `agent`-typed stages are emitted as
   "would-spawn" lines; the actual `Agent()` call lives in the Claude
-  session, not in this script. The autonomy invariant (ADR 0002) keeps
+  session, not in this script. The autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) keeps
   harness-internal loops at L2/L3 with a human gate per iteration;
   putting the LLM dispatch inside this script would be a covert L4.
 - NOT a replacement for the orchestrating lead. The lead (the inline
@@ -36,7 +36,7 @@ What this script IS NOT
   for `ship-merge.yml`?" before dispatch.
 - NOT a `claude -p` headless harness. The script doesn't talk to an
   LLM; the lead does. If you need headless agent dispatch, that's a
-  separate project (and a separate ADR-0002 conversation).
+  separate project (and a separate the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model conversation).
 
 The fan-out cap (F8.5, hard cap = 5 per wave) is enforced in this
 script via `--max-per-wave` (default 5); a symmetric F8.4 advisory floor
@@ -50,7 +50,7 @@ FLAGGED (`f8_5_overflow_warnings`), NOT split — the lead clamps it (ADR
 resolved wave list, not on the input spec; the spec can declare more
 stages if the DAG fans out organically.
 
-ADR 0002 alignment
+the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model alignment
 ------------------
 This dispatcher is L2/L3: a deterministic coordinator the lead consults
 on demand. It does NOT auto-spawn agents, does NOT loop unattended, and

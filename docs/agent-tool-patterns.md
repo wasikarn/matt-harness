@@ -108,7 +108,7 @@ disallowedTools: Write, Edit, NotebookEdit
 ## 5. Cross-references
 
 - **[Permission re-audit cadence](./harness-decay-cadence.md#permission-re-audit)** — quarterly review of `tools:` grants.
-- **[ADR 0002 — Autonomy invariant](./adr/0002-autonomy-invariant.md)** — the autonomy invariant is enforced by **allowlist-based tool grants** (Pillar 1: deterministic via `audit.sh #32` on `recursive-improve`'s `disable-model-invocation: true`). The allowlist convention is the substrate for the invariant's enforcement.
+- **[the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — Autonomy invariant](#autonomy-invariant-prose)** — the autonomy invariant is enforced by **allowlist-based tool grants** (Pillar 1: deterministic via `audit.sh #32` on `recursive-improve`'s `disable-model-invocation: true`). The allowlist convention is the substrate for the invariant's enforcement. (See `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model for the invariant's prose form.)
 - **[F1 Bash-gate pattern](./harness-decay-cadence.md#permission-re-audit)** — the `hooks/gates/validator-bash-guard.sh` hook applies to the 14 validator-class agents (see `validator-bash-guard.sh:54` for the canonical list) and is the runtime enforcement of "validators are read-only" beyond the allowlist's `Bash` grant.
 - **BOUNDARY.md** — the regenerator outputs a `Mutates` column that reflects `Edit`/`Write`/`Bash` grants (allows readers to see at-a-glance which agents can mutate state).
 - **Skill template (`docs/skill-template/SKILL.md`)** — the skill template does not use `tools:` (skills are loaded into the parent agent, not invoked as separate contexts), but the allowlist convention still applies to the parent agent that loads the skill.

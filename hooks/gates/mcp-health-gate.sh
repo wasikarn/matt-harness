@@ -1,5 +1,5 @@
 #!/bin/bash
-# MCP runtime health gate — ECC mcp-health-check.js port (ADR 0007). Blocks
+# MCP runtime health gate — ECC mcp-health-check.js port (CLAUDE.md §Hook architecture (current profile ladder design)). Blocks
 # PreToolUse MCP calls to a server known to be unhealthy, with exponential
 # backoff; marks a server unhealthy on PostToolUseFailure and attempts an
 # operator-configured reconnect. Failure-driven (no active stdio spawn-probe

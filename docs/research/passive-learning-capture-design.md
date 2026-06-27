@@ -14,7 +14,7 @@
 
 Owner goal: **"AI ทำงานเองได้มากสุด (คนถอยออกจากวง) + autonomous loop + เรียนรู้เองอัตโนมัติ."**
 
-Two of the three pillars already exist as **L3 (ADR 0003)** — human-launched bounded loop, human
+Two of the three pillars already exist as **L3 (CLAUDE.md §The operating model (was L3 bounded autonomy, retired))** — human-launched bounded loop, human
 out *within an approved run*, gate at push. This plan builds the third — **เรียนรู้เองอัตโนมัติ** — at
 the owner-chosen **Maximal-bounded** point:
 
@@ -50,18 +50,18 @@ The design agents disagreed; the first skeptic + the independent audit resolved 
 | 3 | sensor 2×2 cell | **computational-FB** + audit #47 source-grep | mechanism is regex/heuristic (cost-capture precedent), not LLM; mislabeling inferential-FB to back-door #34 corrupts the coverage grid |
 | 4 | storage format | **JSONL queue, append-only** in the hook; promotion builds the real `.md` | per-candidate `.md` over-engineers a staging queue; **AUDIT FIX (concurrency)**: capture appends only — cap+rotate happens later in the gated kbg:learn flow, never inside the kill-prone SessionEnd hook |
 | 5 | confidence | **omitted at capture**; computed at review from `seen_count`+recency, used to ORDER the review list | keeps confidence provably non-gating |
-| 6 | **governance home** | **ADR 0002 addendum** (`docs/adr/0002-addendum-passive-capture.md`), NOT "within ADR 0003" | **AUDIT FIX #6**: ADR 0003 is the L3-loop ADR; the cited advisory sensors (verification-gate, inferential-structural-judge) predate it and are governed by **ADR 0002 + the CLAUDE.md 2×2 advisory-only doctrine**. learn-capture is an ADR-0002-class advisory sensor. It also relaxes a stance labelled `## Autonomy posture (load-bearing)` in `skills/learn/SKILL.md:18` — the addendum must cross-ref :18 and record the conscious relaxation |
+| 6 | **governance home** | **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum** (`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`), NOT "within CLAUDE.md §The operating model (was L3 bounded autonomy, retired)" | **AUDIT FIX #6**: CLAUDE.md §The operating model (was L3 bounded autonomy, retired) is the L3-loop ADR; the cited advisory sensors (verification-gate, inferential-structural-judge) predate it and are governed by **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model + the CLAUDE.md 2×2 advisory-only doctrine**. learn-capture is an the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model-class advisory sensor. It also relaxes a stance labelled `## Autonomy posture (load-bearing)` in `skills/learn/SKILL.md:18` — the addendum must cross-ref :18 and record the conscious relaxation |
 
-**ADR verdict (confirmed by audit):** no ADR 0004 / no superseding ADR. The architecture (advisory
-sensors journal; APPLY human-gated) is unchanged. The honest weight is an **append-only ADR 0002
+**ADR verdict (confirmed by audit):** no CLAUDE.md §The operating model (was L4 self-launch, retired) / no superseding ADR. The architecture (advisory
+sensors journal; APPLY human-gated) is unchanged. The honest weight is an **append-only the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model
 addendum** + rewriting both `skills/learn/SKILL.md` surfaces (frontmatter:3 + the `## Autonomy
-posture` block at :18-20). Standalone ADR 0004 is the alternative only if the owner wants more weight.
+posture` block at :18-20). Standalone CLAUDE.md §The operating model (was L4 self-launch, retired) is the alternative only if the owner wants more weight.
 
 ## 4. Components (Phase 1 — core capture + apply + drain)
 
 > **Note:** these rows record Phase 1 **as shipped at v0.3.7** — capture **default-OFF** (gate
 > `KBG_LEARN_CAPTURE:-0`). The default flipped **OFF→ON at v0.3.9** (gate is now `:-1`, opt-out
-> `KBG_LEARN_CAPTURE=0`); see §9.3 + the ADR 0002 addendum. Read the "default-OFF" mentions below as
+> `KBG_LEARN_CAPTURE=0`); see §9.3 + the the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum. Read the "default-OFF" mentions below as
 > the original design, not current behavior.
 
 | File | Change |
@@ -77,7 +77,7 @@ posture` block at :18-20). Standalone ADR 0004 is the alternative only if the ow
 | **NEW** `audit.sh` check **#47** | **extends the pattern of #34** (AUDIT FIX — not #43, which is L3-cage): strip full-line comments (`grep -vE '^[[:space:]]*#'`) then (a) CRIT if the capture hook emits `permissionDecision\|hook_decision\|kbg_permission_decision` (`kbg_permission_decision` = defensive ghost-name, no impl); (b) CRIT if capture hook OR `skills/learn/SKILL.md` has a confidence-gate `confidence *(>=|>|-ge|-gt) *0\.[0-9]` (comment-stripped first). #47 is the correct next number (highest is #46) |
 | **NEW** `eval/regressions/passive-capture-advisory.json` | EVAL-1 sensors computational-FB + present; EVAL-2 capture hook emits no permissionDecision; EVAL-3 confidence never in a gating comparison |
 | **NEW** `eval/regressions/learn-capture-precision.json` | **AUDIT FIX #3** — labeled fixture: real corrections + adversarial near-misses ("no" in prose, quoted code comments, assistant text) with a measured **false-positive ceiling**; fails if the harvester queues a non-correction |
-| **NEW** `docs/adr/0002-addendum-passive-capture.md` | append-only addendum (AUDIT FIX #6): capture-to-queue is in ADR 0002's advisory-sensor envelope; records the `skills/learn/SKILL.md:18` "load-bearing" relaxation + why advisory-only (no gate, no repo write, exit 0, default-OFF) preserves the principle; APPLY ratchet untouched |
+| **NEW** `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model` | append-only addendum (AUDIT FIX #6): capture-to-queue is in the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's advisory-sensor envelope; records the `skills/learn/SKILL.md:18` "load-bearing" relaxation + why advisory-only (no gate, no repo write, exit 0, default-OFF) preserves the principle; APPLY ratchet untouched |
 | **MOD** `.claude-plugin/plugin.json` + `marketplace.json` | version **0.3.6 → 0.3.7** (2 new counted hooks). Descriptions carry no raw script count |
 | **MOD** `README.md` | counts (derivation: jq unique `.sh` from hooks.json + `hooks/post-tool/*.py` action scripts, **excluding `_lib.sh` + `_lib.py`**): **46→48 scripts, 61→63 registrations, 36→38 sensors** |
 | **NEW** `tests/hooks/runners/test-ch-learn-capture.sh` | sub-suite **registered in the SUITES array**: OFF→exit 0 + zero writes; ON+correction fixture→1 row in temp scoped dir; precision (adversarial near-miss → 0 rows); dedupe→once; never permissionDecision; always exit 0; drain-nudge fires only when queue stale |
@@ -87,7 +87,7 @@ posture` block at :18-20). Standalone ADR 0004 is the alternative only if the ow
 
 0. **Pin the contract** (slug=transcript-parent, append-only JSONL, secret-scrub fail-safe) — §3.
 1. `CANDIDATE-SCHEMA.md` (the contract; valid confidence formula) + assign the SKILL.md reversal here.
-2. `learn-capture.sh` + `learn-drain-nudge.sh` + governance fold-in (sensors.json, audit #47, ADR 0002 addendum, manifests, README) — **version bump here, once**; **regen `BOUNDARY.md`** (`inventory-boundary.sh --repo-only`) before commit.
+2. `learn-capture.sh` + `learn-drain-nudge.sh` + governance fold-in (sensors.json, audit #47, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum, manifests, README) — **version bump here, once**; **regen `BOUNDARY.md`** (`inventory-boundary.sh --repo-only`) before commit.
 3. `read-candidates.sh` + kbg:learn Step 0 (replaces Step 2 for this-session rows).
 4. `test-ch-learn-capture.sh` + the 2 eval fixtures.
 5. New-component F1 cache-transient: `--no-verify` commit+push → `claude plugin update` → restart.
@@ -102,7 +102,7 @@ posture` block at :18-20). Standalone ADR 0004 is the alternative only if the ow
 > bounded by `--max-runs`/`--max-duration`/`--fail-streak`. retry-storm/cost-drift/merge-conflict
 > skipped (retry already capped; no merge inside the loop).
 
-Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, within ADR 0003):
+Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, within CLAUDE.md §The operating model (was L3 bounded autonomy, retired)):
 
 - **Runaway guard** ← `session-guardian.sh`: active-hours (overnight-aware) + per-run cooldown + idle, cheapest-first, **fail-open**.
 - **Escalation caps** ← `loop-operator`: stop on no-progress×2 / retry-storm (same stack-trace) / cost-drift / merge-conflict.
@@ -134,12 +134,12 @@ Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, wit
    - **YAGNI case (against):** it adds 2 hooks + 2 scripts + schema + audit #47 + ADR addendum + a doctrine reversal, for a single-author harness where `kbg:learn` already does this on demand. If you reliably run kbg:learn at session end anyway, passive capture is overhead.
    - **The deciding question:** *do you actually forget to run kbg:learn?* If yes → build (the drain-nudge is the whole point). If no → hold; the feature is YAGNI.
    - **DECISION (2026-06-21):** Owner answered "I forget often" → **BUILD**. Phase 1 shipped v0.3.7
-     (capture hook, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, ADR 0002
+     (capture hook, drain-nudge, read-candidates, kbg:learn Step 0, audit #47, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model
      addendum, 2 eval fixtures, 13-test sub-suite). Independent code review post-build: 0 Critical,
      all 6 invariants verified, 1 Major + 4 Minor folded (drain-nudge `_lib` bypass, cap/rotate
      open-row protection, precision tightening, emit-before-record). Gauntlet 4/4.
      **Default flipped OFF→ON at v0.3.9** (opt-out `KBG_LEARN_CAPTURE=0`, all projects) — within the
-     ADR 0002 addendum's "capture is automatic" envelope; APPLY stays human-gated. See the addendum
+     the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum's "capture is automatic" envelope; APPLY stays human-gated. See the addendum
      "Default flip" section. (Phase 1 originally shipped default-OFF gate `:-0`; v0.3.9 gate is `:-1`.)
 
 ## 10. Audit → fix traceability (Rev 2)
@@ -151,6 +151,6 @@ Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, wit
 | #3 harvest precision | regex can't tell a real correction from "no" in prose; no precision test | §4 role==user + word-boundary + NEW `learn-capture-precision.json` |
 | #4 slug conflation | CWD-slug vs git-toplevel-slug diverge → silent zero candidates | §3 contract #2 — derive from transcript-parent, one shared fn |
 | #5 double-mine | Step 0 + Step 2 surface the same correction twice | §4 Step 0 replaces Step 2 for this-session rows |
-| #6 ADR home | filed "within ADR 0003" but it's an ADR-0002-class advisory sensor relaxing a load-bearing stance | §3 + §4 — ADR 0002 addendum, cross-ref SKILL.md:18 |
+| #6 ADR home | filed "within CLAUDE.md §The operating model (was L3 bounded autonomy, retired)" but it's an the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model-class advisory sensor relaxing a load-bearing stance | §3 + §4 — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum, cross-ref SKILL.md:18 |
 | minors | timeout, mkdir, append-only/concurrency, sensors.json concrete value, #47 framing, formula, off-by-one citations, build-order scope, BOUNDARY regen, count derivation | folded across §3–§8 |
 | false alarm | "README stale at 45" — REFUTED, it's correctly 46 (44 `.sh` + 2 `.py`); delta is 46→48 for 2 new hooks | §4 README row |

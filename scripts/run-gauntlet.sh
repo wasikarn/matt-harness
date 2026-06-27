@@ -25,9 +25,10 @@ REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$REPO_ROOT" || { echo "run-gauntlet: cannot cd to $REPO_ROOT" >&2; exit 2; }
 
 # Source _lib.sh for journal_append — the gauntlet emits a `gauntlet_run` event on
-# completion (ADR 0005 addendum 0005-addendum-manual-push-precondition-waiver.md): the
-# computational ship-gate evidence the L5 push leg reads. SHA-bound so the L5 leg can
-# require green-for-HEAD (closes the stale-green gap). Graceful degrade: no _lib.sh /
+# completion. (The retired L5 auto-push leg that read this event is gone with the
+# CLAUDE.md §The operating model (current) operating-model switch on 2026-06-25;
+# the gauntlet validates but does not authorize a ship. SHA-bound so any future
+# gate that re-arms gauntlet-green-for-HEAD has the data.) Graceful degrade: no _lib.sh /
 # no jq / no journal_append → silent skip (the gauntlet's exit code is unchanged, so
 # non-journaling callers are unaffected). Mirrors l4-quality-gate.sh's sourcing pattern.
 _JLIB="$REPO_ROOT/hooks/_lib.sh"
@@ -153,7 +154,7 @@ done
 echo "run-gauntlet: summary — $FAILURES/$TOTAL layer(s) failed"
 echo "run-gauntlet: slowest layer was ${SLOWEST_NAME:-none} at ${SLOWEST_TIME}s"
 
-# gauntlet_run emission RETIRED 2026-06-25 (ADR 0006); the L5 ship-gate consumer
+# gauntlet_run emission RETIRED 2026-06-25 (CLAUDE.md §The operating model (current)); the L5 ship-gate consumer
 # (push-gate.sh) is gone — gauntlet_run was ship-gate evidence, now advisory-only.
 # (The computational validation above is unchanged; only the journal event is dropped.)
 

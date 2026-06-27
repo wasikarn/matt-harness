@@ -16,7 +16,7 @@ The map below is the answer to "where does a new X go?" — and the reason kbg d
 |---|---|---|
 | agents / skills / commands / hooks | `agents/` `skills/` `commands/` `hooks/` | **Fixed names** — the plugin loader discovers them by exact string; never rename |
 | output styles / themes (assets) | `output-styles/` `themes/` | Fixed plugin dirs — these *are* kbg's "assets" |
-| rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `docs/adr/` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
+| rules / doctrine | `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` (root) + `CLAUDE.md (doctrine home) ` | L1, hardcoded by name in `doctrine-bootstrap.sh` — never rename; a `rules/` dir would be read by nothing |
 | contexts (working frames) | `contexts/` (`dev.md`, `research.md`, `review.md`) | Loaded by the `/frame` command; add a frame = add a file here |
 | scripts / tooling | `scripts/` + per-skill `scripts/` | Callers hardcode paths; rename = update all callers + cache cycle |
 | tests / fixtures | `tests/` (shell/hook runners) + `eval/` (gate datasets+regressions) + `tests/evals/` (per-skill baseline) + `scripts/evals/` (eval scripts) | Four homes, **distinct callers** — see the eval/test boundary note below; do **not** consolidate |
@@ -34,7 +34,7 @@ Arriving from ECC's generic tree? Each of its 12 categories already maps onto an
 | `skills` | `skills/` | 1:1 (+ `skills/_lib/` shared shell lib — no `SKILL.md`, not a surface) |
 | `contexts` | `contexts/` | 1:1 (loaded by `/frame`) |
 | `commands` | `commands/` | 1:1 |
-| `rules` | root `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` + `docs/adr/` | no `rules/` dir — 4 files hardcoded in `doctrine-bootstrap.sh` |
+| `rules` | root `METHODOLOGY.md` `RTK.md` `ACLI.md` `DBGATE.md` + `CLAUDE.md (doctrine home) ` | no `rules/` dir — 4 files hardcoded in `doctrine-bootstrap.sh` |
 | `hooks` | `hooks/` + `hooks/hooks.json` | 1:1 (subdirs `gates/ session/ lifecycle/ …` are kbg convention) |
 | `scripts` | `scripts/` + per-skill `scripts/` | 1:1 |
 | `tests` | `tests/` + `eval/` + `tests/evals/` + `scripts/evals/` | four homes — see boundary note below |
@@ -58,7 +58,7 @@ Decision: document the boundary, don't merge — consolidating would conflate th
 
 ### Plugin delivery model (the "single path")
 
-There is **one delivery path**: the plugin cache at `~/.claude/plugins/cache/kobig/kbg/<version>/`. The owner dogfoods the same plugin that external installers use. There is no separate "owner" path. See ADR 0001 (`cat "${KBG_PLUGIN_ROOT}/docs/adr/0001-personal-harness-as-plugin.md"`) for the irreversible decision.
+There is **one delivery path**: the plugin cache at `~/.claude/plugins/cache/kobig/kbg/<version>/`. The owner dogfoods the same plugin that external installers use. There is no separate "owner" path. See the **plugin delivery model** section below for the irreversible decision.
 
 **Cache-invalidation is manual and load-bearing:** when you add/modify/remove any plugin-delivered surface (agent, skill, command, hook, output-style, theme), you MUST:
 1. Bump version in **both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
@@ -71,7 +71,7 @@ Skipping step 1 or 2 causes the plugin cache to stale-load the old version, and 
 
 ### Context hierarchy (L1 / L2 / L3)
 
-kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical Agent" L1/L2/L3 cache model. **(These context tiers are unrelated to the operating-model "levels" of prior ADRs, retired by [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) — same letters, different axis: tiers = doctrine residency.)**
+kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical Agent" L1/L2/L3 cache model. **(These context tiers are unrelated to the operating-model "levels" that previously lived in the L2–L5 ratchet, retired by CLAUDE.md §The operating model (current) — same letters, different axis: tiers = doctrine residency.)**
 
 | Tier | What | When |
 |------|------|------|
@@ -87,22 +87,22 @@ kbg-harness organizes context in three tiers — borrow-from Wang 2026 "Vertical
 
 **Do not** add speculative configurability to doctrine files — this is a personal harness, not a product. METHODOLOGY Rule 2: "No speculative configurability."
 
-### The operating model (load-bearing, ADR 0006 — supersedes the L2-L5 ratchet of 0003/0004/0005)
+### The operating model (load-bearing, CLAUDE.md §The operating model (current) — supersedes the L2-L5 autonomy ratchet that previously lived in `docs/adr/`)
 
 The harness is a **friction layer, not a hard wall**: it **denies the irrecoverable set computationally and advises on the rest**; the **operator is the authority at every irreversible boundary**. There is **no autonomy flag** (the `KBG_AUTONOMY` ratchet and its `_L3`/`_L4`/`_L5`/`KBG_REVIEW_DONE`/`KBG_L5_SHIP_ALLOWLIST` keys are retired), **no enforced maker≠checker ship-gate**, and **no model self-start**. Review is **advisory**, not a hard-coded gate; the maker≠checker bar stays a human judgment matched to stakes.
 
 - **Scoped denials (computational feedforward)** — `block-dangerous-git.sh` (force-push-to-main/master deny, develop ask, fix/feat allow; `reset --hard` / `clean -f` / `branch -D` / `checkout .` / `restore .` / `core.hooksPath` / `commit --amend` / `git rm -r` / `switch --force` deny; remote-mutation ask; `--no-verify`/`-n` hook-bypass blocked) + `block-dangerous-bash.sh` (the non-git destructive surface: `rm -rf` all flag forms, `find -exec rm`, `dd`, SQL DDL) deny the irrecoverable set. Everything else is allowed — including the safe operator force (`--force-with-lease`).
 - **Advisory reminders (inferential feedforward, non-blocking)** — `advisory-push-reminder.sh`, `tmux-reminder`, `commit-quality-reminder` surface review prompts; they never emit a blocking `permissionDecision` for review.
 - **The gauntlet as a general validation runner** — `run-gauntlet.sh` stays as the pre-push validation runner (CI + operator); the retired `gauntlet_run` SHA-bound push-leg ship-gate contract is gone, so the gauntlet validates but does not authorize a ship.
-- **Judgment preservation (ADR 0002, preserved append-only)** — the model **never** authorizes a ship. It never could; the denial gate was always computational and stays so. The model remains **veto-only** (it can force a rollback; it cannot bless or ship).
-- **The cage retained as a safety-surface manifest** — `scripts/cage.txt` stays as the consequential-safety-surface manifest (the L3 framing is dropped); `decision-provenance-nudge.sh` keeps reading it as the single source for "caged path" provenance classification. The cage forbids `docs/adr/**` — loop-authored ADRs stay out.
-- **No model self-start** — `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` (audit #32 CRIT, guarded by ADR 0002). The model cannot self-start the improvement loop; there is no OS-scheduler self-start either (the L4 launchd self-launch machinery is decommissioned). `recursive-improve` survives as the Observe → Propose → `AskUserQuestion` human-gated ritual — every iteration stops at a human gate before any mutation.
+- **Judgment preservation (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only)** — the model **never** authorizes a ship. It never could; the denial gate was always computational and stays so. The model remains **veto-only** (it can force a rollback; it cannot bless or ship).
+- **The cage retained as a safety-surface manifest** — `scripts/cage.txt` stays as the consequential-safety-surface manifest (the L3 framing is dropped); `decision-provenance-nudge.sh` keeps reading it as the single source for "caged path" provenance classification. The cage forbids the doctrine prose files (CLAUDE.md / METHODOLOGY.md / RTK.md / ACLI.md / DBGATE.md / CONTEXT.md / DOMAINS.md) — loop-authored doctrine stays out.
+- **No model self-start** — `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` (audit #32 CRIT, guarded by the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model). The model cannot self-start the improvement loop; there is no OS-scheduler self-start either (the L4 launchd self-launch machinery is decommissioned). `recursive-improve` survives as the Observe → Propose → `AskUserQuestion` human-gated ritual — every iteration stops at a human gate before any mutation.
 
-**Implications for development:** the L2-L5 autonomy ratchet (levels, Gate 1/2, `autonomy_on`, the launchd loop, `loop-guard.py`) is retired — see [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) for what dies and what lives. Four model-/cage-removing variants stay **out of scope by design** (each needs a new superseding ADR): the **model** self-starting a loop, a **model-authorizing** ship, the loop authoring its **own ADRs** (cage forbids `docs/adr/**`), and **removing the cage**. These are principle-bounded, not capability-bounded — reopening them on a "models are better now" argument is still foreclosed.
+**Implications for development:** the L2-L5 autonomy ratchet (levels, Gate 1/2, `autonomy_on`, the launchd loop, `loop-guard.py`) is retired — see CLAUDE.md §The operating model (current) for what dies and what lives. Four model-/cage-removing variants stay **out of scope by design** (each would need a new superseding prose edit): the **model** self-starting a loop, a **model-authorizing** ship, the loop authoring its **own doctrine edits** (cage forbids the doctrine prose files), and **removing the cage**. These are principle-bounded, not capability-bounded — reopening them on a "models are better now" argument is still foreclosed.
 
 ### Hook architecture (emission shapes + profile ladder)
 
-Hooks are shell scripts registered in `hooks/hooks.json`. Four distinct emission shapes (the CC contract each uses is verified in ADR 0007 — a top-level mutated/advisory JSON is silently ignored, so every shape wraps its payload in `hookSpecificOutput` with the matching `hookEventName`):
+Hooks are shell scripts registered in `hooks/hooks.json`. Four distinct emission shapes (the CC contract each uses is verified in CLAUDE.md §Hook architecture (current profile ladder design) — a top-level mutated/advisory JSON is silently ignored, so every shape wraps its payload in `hookSpecificOutput` with the matching `hookEventName`):
 
 1. **PreToolUse `permissionDecision`** — emit `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny|ask|none"}}` on stdout. Must exit 0 (per vendor spec, exit 2 discards the JSON). Assert the emitted decision string, not the exit code. (floor gates, `fact-force-gate`, `mcp-health-gate`, `secret-*`, `db-write-gate`, …)
 2. **PreToolUse `updatedInput`** — tool-input *mutation*. `dev-tmux-transform` rewrites a dev-server command into a detached tmux session via `hookSpecificOutput.updatedInput`; a top-level `{"command":...}` mutation is silently ignored (the bug ECC shipped).
@@ -111,7 +111,7 @@ Hooks are shell scripts registered in `hooks/hooks.json`. Four distinct emission
 
 All hooks that shell out to external tools (`rtk`, `qmd`, `code-review-graph`) must degrade gracefully when absent (`command -v` guard, silent no-op). No bundled dependencies.
 
-**Profile ladder (ADR 0007):** `CLAUDE_HOOK_PROFILE=minimal` dials friction down while the safety floor (`block-dangerous-*`, `secret-*`) stays on; `standard` is the default (all gates on); `off` disables every kbg hook. Floor gates declare `HOOK_PROFILES="minimal standard strict"`; the four ECC-parity friction ports default `standard strict` (off under `minimal`). Per-gate kill switches and tuning knobs: `docs/reference/env-vars.md` § "ECC-parity port knobs".
+**Profile ladder (CLAUDE.md §Hook architecture (current profile ladder design)):** `CLAUDE_HOOK_PROFILE=minimal` dials friction down while the safety floor (`block-dangerous-*`, `secret-*`) stays on; `standard` is the default (all gates on); `off` disables every kbg hook. Floor gates declare `HOOK_PROFILES="minimal standard strict"`; the four ECC-parity friction ports default `standard strict` (off under `minimal`). Per-gate kill switches and tuning knobs: `docs/reference/env-vars.md` § "ECC-parity port knobs".
 
 ### Harness as a 2×2 mental model (why 14 hook events exist)
 
@@ -129,7 +129,7 @@ Böckeler (Thoughtworks, [harness-engineering 2026-04](https://martinfowler.com/
 - **Computational FB** → `post-edit-audit.sh`, `security-diff-review.py`, `test-critical-hooks.sh` (the critical-hooks suite), `audit.sh` (the audit checks), `context-monitor.sh` (PostToolUse scope/loop advisory — `additionalContext`, never a `permissionDecision`)
 - **Inferential FB** → `verification-gate.sh` (SessionEnd, **journals but NEVER emits `permissionDecision`** — see [LLM-judge circularity](#llm-judge-circularity-why-inferential-sensors-are-advisory) below), `fabrication-verdict-log.sh` (Stop), `kbg:review-pr` (command), `inferential-structural-judge` (SessionEnd, advisories on diff shape — over-engineering / arch-drift / test-pattern / doctrine-conformance; designed in `docs/research/inferential-structural-judge-design.md`)
 
-**Anti-pattern:** don't add an inferential-FB sensor that emits a `permissionDecision` — same model class across generation, judgment, and meta-engineering is a single-model failure mode. The 2×2 framing is the *justification* for the `verification-gate.sh` "advisory only" invariant (ADR 0002 §L115).
+**Anti-pattern:** don't add an inferential-FB sensor that emits a `permissionDecision` — same model class across generation, judgment, and meta-engineering is a single-model failure mode. The 2×2 framing is the *justification* for the `verification-gate.sh` "advisory only" invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115).
 
 ### LLM-judge circularity (why inferential sensors are advisory)
 
@@ -137,7 +137,7 @@ The 2×2 cell most at risk of a covert failure is **inferential FB**: a "smart" 
 
 1. **Shared blind spots.** A judge inherits the generator's blind spots. A model that mis-diagnoses a bug cannot catch itself mis-diagnosing that bug.
 2. **Self-confirming verdicts.** Inferential-FB sensors on a "happy path" of similar-generation-then-judge sessions can quietly converge to "everything is fine." (Human-facing version: a session asked to grade its own work is invested and leans *yes*; a fresh-context reviewer has nothing to defend — that's why maker≠checker runs in a separate context, not as a politely-worded self-check.)
-3. **Covert self-driving loop.** A `permissionDecision: deny` from an inferential-FB sensor is a model-driven mutation gate — the operating model (ADR 0006, preserving ADR 0002's judgment-preservation principle) forbids it.
+3. **Covert self-driving loop.** A `permissionDecision: deny` from an inferential-FB sensor is a model-driven mutation gate — the operating model (CLAUDE.md §The operating model (current), preserving the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle) forbids it.
 
 **kbg's posture:** all inferential-FB sensors in `hooks/` are **advisory only** — they journal, they do not block. The critical-hooks suite + the audit checks are the *computational* FB that does the enforcement. This is the symmetric counterpart of the 2×2's load-bearing warning: we get the L345 feedback loop by leaning on the computational-FB column, not by adding inferential-FB `permissionDecision`s.
 
@@ -149,7 +149,7 @@ The `.scratch/research/harness-engineering-2026-04.md` 1-pager (cross-referenced
 
 ### Coordination-as-code (`scripts/orchestrate-dispatch.py`)
 
-The dispatcher is the deterministic rendering half of the coordination contract; the lead (you, inline) is the judgment half. It reads workflow specs (JSON/YAML), validates schema (no cycles / no bad refs / no missing fields), resolves DAG into waves, flags F8.5 fan-out overflow, and emits plans. It does **NOT** spawn LLM agents — agent-typed stages are emitted as "would-spawn" lines that the lead dispatches per the F9 template. Putting LLM dispatch inside the dispatcher would be a covert self-driving loop, which the operating model (ADR 0006) forbids.
+The dispatcher is the deterministic rendering half of the coordination contract; the lead (you, inline) is the judgment half. It reads workflow specs (JSON/YAML), validates schema (no cycles / no bad refs / no missing fields), resolves DAG into waves, flags F8.5 fan-out overflow, and emits plans. It does **NOT** spawn LLM agents — agent-typed stages are emitted as "would-spawn" lines that the lead dispatches per the F9 template. Putting LLM dispatch inside the dispatcher would be a covert self-driving loop, which the operating model (CLAUDE.md §The operating model (current)) forbids.
 
 ### Error-handling convention (`skills/_lib/err.sh`)
 
@@ -260,7 +260,7 @@ Choose **per surface** and **record why** in a `disable-model-invocation-reason:
 - **Set it** when the surface has **no in-flow confirmation gate** and the model firing it *unprompted, because the work looks ready,* would be wrong — typically a one-shot external/destructive/governance action: `ship-merge` / `ship-release` (server-side merge/release), `dismiss-stale` (the model must not mute its own safety alert). The lone load-bearing **skill** instance is `recursive-improve` (see Safety vs taste). These are all commands except `recursive-improve` — no other skill carries the flag.
 - **Leave it off** for **read-only reporters, analysis, and any capability the model uses to fulfil an explicit request** — *even when it writes to an external tracker, mutates the local tree, or spawns agents* — as long as the write is **confirmation-gated in-flow**. Bulk tracker ops (`acli`), single Thai-template ticket creation (`create-jira-ticket`, with a preview-and-confirm step before any write), scoped mutations the operator commits to (`migrate`, `decommission`, `ship-change`), orchestration work that stops for approval (`kbg:orchestrate`), writing code (`backend-dev`), reviewing (`review-pr`, ~8 agents), and researching (`/deep-dive`) are the model's core job. **Why this beats user-only for these:** the flag also drops the surface's `description` from model context, so a hidden creation skill gets bypassed — the model reaches for a raw MCP/tool call instead of the template. That exact failure is why the Atlassian creation skills came off the flag (v0.2.91). Agent-spawn **cost** is governed by the fan-out cap (F8.5 / the dispatcher), **not** by this flag.
 
-**Safety vs taste (do not conflate).** For the command surfaces that carry it, this flag is reversible UX taste — flip it per the recorded reason. For **`recursive-improve` alone** it is a load-bearing instance of the no-model-self-start principle (the operating model, [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md), preserving ADR 0002), guarded by audit **#32 (CRIT)** and recorded in **ADR 0002** (`cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`). Never reason about `recursive-improve`'s flag through this taste criterion — #32 governs it.
+**Safety vs taste (do not conflate).** For the command surfaces that carry it, this flag is reversible UX taste — flip it per the recorded reason. For **`recursive-improve` alone** it is a load-bearing instance of the no-model-self-start principle (the operating model, CLAUDE.md §The operating model (current), preserving the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model), guarded by audit **#32 (CRIT)** and recorded in **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model** (`cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). Never reason about `recursive-improve`'s flag through this taste criterion — #32 governs it.
 
 #### Naming new surfaces — `noun-verb`, reuse the verb
 
@@ -300,5 +300,5 @@ Single-branch (`develop` only). Commit + push direct. No feature branches. See `
 
 - No public-marketplace publish, no CI release train (`.github/workflows/validate.yml` is a conformance gate, not a release train).
 - No bundled MCP/LSP servers.
-- No **model-self-starting** loop, no **model-authorizing** ship, no loop-authored ADR (the cage forbids `docs/adr/**`), no cage removal. These four model-/cage-removing variants stay out of scope by design — principle-bounded, not capability-bounded; reopening them on a "models are better now" argument is foreclosed. The operating model (scoped denials + advisory review + operator-as-authority, [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md)) is the steady state — see the operating model section above.
+- No **model-self-starting** loop, no **model-authorizing** ship, no loop-authored doctrine (the cage forbids the doctrine prose files), no cage removal. These four model-/cage-removing variants stay out of scope by design — principle-bounded, not capability-bounded; reopening them on a "models are better now" argument is foreclosed. The operating model (scoped denials + advisory review + operator-as-authority, CLAUDE.md §The operating model (current)) is the steady state — see the operating model section above.
 - No Option B (public-distributable) machinery.

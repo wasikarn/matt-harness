@@ -11,7 +11,7 @@
 # for the four skip paths).
 #
 # Pure SENSOR: it journals but NEVER emits a permissionDecision — autonomy
-# invariant (ADR 0002 §L112). Non-blocking: always exit 0 so a broken judge
+# invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L112). Non-blocking: always exit 0 so a broken judge
 # never blocks session end (matches verification-gate.sh / session-summary.sh).
 #
 # Bypass (matches verification-gate.sh so operators have one mental model):

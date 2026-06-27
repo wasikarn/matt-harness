@@ -15,7 +15,7 @@ injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
 
 1. [`METHODOLOGY.md`](../METHODOLOGY.md) — 13-rule behavioral doctrine. **Start here.**
 2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
-3. [`docs/adr/`](adr/) — the autonomy ladder: [ADR 0002](adr/0002-autonomy-invariant.md) (L2 principle) → [0003](adr/0003-l3-bounded-autonomy.md) (L3 bounded) → [0004](adr/0004-l4-autonomy.md) (L4 self-launch within a cage, push kept) → [0005](adr/0005-l5-auto-push.md) (L5 auto-push behind a computational ship-gate). All opt-in via one key `KBG_AUTONOMY`, default OFF; four model-/cage-removing variants stay out of scope.
+3. `CLAUDE.md` §The operating model — the current operating model (scoped denials + advisory review + operator-as-authority; no autonomy flag, no maker-checker ship-gate, no model self-start). The L2–L5 autonomy ratchet that previously lived in `METHODOLOGY.md or CLAUDE.md` through `0005-...` is retired — see CLAUDE.md §The operating model for what survives (the no-model-self-start rule) and what was retired (L3 cage, L4 self-launch, L5 auto-push). Four model-/cage-removing variants stay out of scope by design.
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
 
 The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
@@ -34,14 +34,15 @@ Other useful ones: `/fix-bug`, `/deep-dive`, `/frame`,
 
 ## The 1 thing to never do
 
-**Do not relax the autonomy invariant past a deliberate ADR.** The ratchet
-turns only by a human-authored, recorded ADR — never a flag flip, never a loop
-self-edit (the cage forbids `docs/adr/**`). L2–L5 are all in scope (opt-in
-`KBG_AUTONOMY`, default OFF — [ADR 0003](adr/0003-l3-bounded-autonomy.md) /
-[0004](adr/0004-l4-autonomy.md) / [0005](adr/0005-l5-auto-push.md)), but four
-variants stay **out of scope by design** (each needs a new superseding ADR):
-the *model* self-launching the loop, a *model*-authorizing ship-gate, the loop
-authoring its own ADRs, and removing the cage. The invariant is load-bearing
+**Do not relax the autonomy invariant past a deliberate superseding ADR.** The operating model
+turns only by a human-authored, recorded superseding decision — never a flag flip, never a loop
+self-edit (the cage forbids `CLAUDE.md`, `METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`,
+`settings.json`, and any caged path in `scripts/cage.txt`). The L3–L5 ladder (L3 bounded autonomy,
+L4 self-launch within a cage, L5 auto-push behind a computational ship-gate) was retired when the
+L2–L5 ratchet was superseded — see `CLAUDE.md` §The operating model. Four variants stay
+**out of scope by design** (each would need a new superseding decision): the *model* self-launching
+the loop, a *model*-authorizing ship-gate, the loop authoring its own doctrine, and removing the
+cage. The invariant is load-bearing
 — it preserves the operator's judgment; the gate that authorizes a mutation
 or ship stays **computational, never a model**.
 
@@ -55,7 +56,7 @@ or ship stays **computational, never a model**.
 
 Read this file's first three sections. If you have 5 more minutes, skim
 [`METHODOLOGY.md`](../METHODOLOGY.md). If you have 10 more, read
-[`DOMAINS.md`](../DOMAINS.md) and [`docs/adr/0002-autonomy-invariant.md`](adr/0002-autonomy-invariant.md) §"Rejected alternatives".
+[`DOMAINS.md`](../DOMAINS.md) and [`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`](METHODOLOGY.md or CLAUDE.md §"Rejected alternatives".
 
 ## What we've shipped recently (2026-06-12)
 
@@ -69,4 +70,4 @@ Unreleased → Phase 1.1–2.5.
 - **`recursive-improve` skill** — stall detection + debt ceiling.
 - **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
 - **`scripts/governance/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
-- **[ADR 0002 addendum](adr/0002-addendum-deferred-items.md)** — 10 deferred items + L2 alternatives.
+- **[the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md or CLAUDE.md — 10 deferred items + L2 alternatives.

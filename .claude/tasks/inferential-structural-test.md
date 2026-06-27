@@ -11,7 +11,7 @@ follow_up_plans:
 tag_only_eval: true
 target: kbg-harness 0.2.x (after 0.1.18 description-trim lands)
 created: 2026-06-15
-related: ADR 0002 §L115 (verification-gate.sh advisory invariant), sensor-fire-notification.md
+related: the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115 (verification-gate.sh advisory invariant), sensor-fire-notification.md
 ---
 
 # Plan: Inferential structural-test layer for kbg-harness
@@ -27,7 +27,7 @@ kbg-harness currently has:
 The gap: no **automatic** inferential FB on a diff that asks "is this over-engineered?" / "does this introduce architectural drift?" / "is the test pattern reverting to agent-slop?" Today those are *tasks* (`kbg:review-pr`), not *sensors* (run on every commit, journal verdicts, surface drift).
 
 This plan designs a new inferential-FB agent that:
-- Runs on **SessionEnd** (advisory — never emits `permissionDecision`, per ADR 0002)
+- Runs on **SessionEnd** (advisory — never emits `permissionDecision`, per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model)
 - Journals verdicts to the existing JSONL contract
 - Is **non-blocking** (autonomy-invariant-safe)
 - Costs at most ~1k tokens per session (per `METHODOLOGY.md` "Token Budgets Are Not Advisory" Rule 6)
@@ -61,7 +61,7 @@ The agent is the *new sensor* that `sensor-fire-notification.md` will register i
 
 | Task ID | Description | Depends On | Assigned To | Files | Criteria | Constraints |
 |---------|-------------|------------|-------------|-------|----------|-------------|
-| DOC-1 | Resolve Q5 (verdict schema) and Q6 (circularity mitigations) in design doc | - | LEAD-D | docs/research/inferential-structural-judge-design.md | Schema field set, 3 mitigations, cost ceiling (Q8) explicit; LLM-judge-circularity section cites Böckeler L356–359 | No speculative configurability (METHODOLOGY Rule 2); no `permissionDecision` (ADR 0002) |
+| DOC-1 | Resolve Q5 (verdict schema) and Q6 (circularity mitigations) in design doc | - | LEAD-D | docs/research/inferential-structural-judge-design.md | Schema field set, 3 mitigations, cost ceiling (Q8) explicit; LLM-judge-circularity section cites Böckeler L356–359 | No speculative configurability (METHODOLOGY Rule 2); no `permissionDecision` (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) |
 | AGENT-1 | Author the agent file | DOC-1 | LEAD-B | agents/inferential-structural-judge.md | `description:` ≤ 1536 chars (audit #31); has `## Input Contract`, `## Output Format`, `## Failure Modes` (audit #31.1); `tools:` allowlist, no `disallowedTools:` (decay-cadence convention) | Description includes "advisory only" trigger |
 | HOOK-1 | Wire the SessionStart hook (SessionEnd trigger, journal emit) | DOC-1, AGENT-1 | LEAD-B | hooks/inferential-structural-judge-on-session-end.sh, hooks/hooks.json | Bash 3.2 compat (zsh 5.9 OK); degrades on agent absent (`command -v`); emits JSONL event per `JOURNAL-SCHEMA.md` | Hook is *matcher-less* SessionStart to match the doctrine-bootstrap pattern |
 | FIX-1 | Author the regression fixture | DOC-1, AGENT-1 | LEAD-B | eval/regressions/inferential-structural-judge.json | 10 hand-curated diffs (5 good / 5 bad) with hand-written rationales; eval strategy follows existing 6-strategy ladder in `run-eval.py:60-519` | No agent-generated rationale (defeats Q9's circularity test) |

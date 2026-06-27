@@ -14,7 +14,7 @@ personal Claude Code harness, packaged as an installable plugin (`kbg@kobig`).
 The owner **dogfoods the plugin** — the same delivery shape that external
 installers use is the delivery shape the owner uses day-to-day. There is no
 separate "owner" path. See
-[`docs/adr/0001-personal-harness-as-plugin.md`](docs/adr/0001-personal-harness-as-plugin.md).
+`CLAUDE.md §Plugin delivery model`.
 
 ## Delivery path
 
@@ -48,8 +48,8 @@ the steady state going forward.
   `memory-lint` / `code-review-graph` must degrade gracefully when those tools
   are absent.
 - **Operating model: scoped denials, advisory review, operator-as-authority
-  ([ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md), supersedes the
-  L2-L5 ratchet of 0003/0004/0005).** The harness is a **friction layer, not a
+  (CLAUDE.md §The operating model (current), supersedes the
+  L2-L5 autonomy ratchet that previously lived in `docs/adr/`).** The harness is a **friction layer, not a
   hard wall**: it **denies the irrecoverable set computationally and advises on
   the rest**; the **operator is the authority at every irreversible boundary**.
   There is **no autonomy flag** (the `KBG_AUTONOMY` ratchet and its
@@ -71,7 +71,7 @@ the steady state going forward.
   - **The gauntlet as a general validation runner** — `run-gauntlet.sh`
     validates (CI + operator); the retired `gauntlet_run` SHA-bound push-leg
     ship-gate is gone, so the gauntlet validates but does not authorize a ship.
-  - **Judgment preservation (ADR 0002, preserved append-only)** — the gate that
+  - **Judgment preservation (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only)** — the gate that
     *denies* a mutation or a ship stays **computational, never a model**. The
     model is **veto-only** — it can force a rollback, never bless or ship. This
     is the canonical home for the principle `recursive-improve` cites — a
@@ -80,23 +80,24 @@ the steady state going forward.
   - **The cage retained as a safety-surface manifest** — `scripts/cage.txt`
     stays as the consequential-safety-surface manifest;
     `decision-provenance-nudge.sh` keeps reading it as the single source for
-    "caged path" provenance classification. The cage forbids `docs/adr/**` —
-    loop-authored ADRs stay out.
+    "caged path" provenance classification. The cage forbids the doctrine prose files
+    (CLAUDE.md / METHODOLOGY.md / RTK.md / ACLI.md / DBGATE.md / CONTEXT.md / DOMAINS.md) —
+    loop-authored doctrine stays out.
   - **No model self-start** — `recursive-improve` keeps
-    `disable-model-invocation: true` (audit #32 CRIT, guarded by ADR 0002) and
+    `disable-model-invocation: true` (audit #32 CRIT, guarded by the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) and
     survives as the Observe → Propose → `AskUserQuestion` human-gated ritual —
     every iteration stops at a human gate before any mutation. The L4 launchd
     self-launch machinery is decommissioned; there is no OS-scheduler
     self-start either.
 
-  Four variants stay **out of scope by design** (each needs a new superseding
-  ADR): the *model* self-starting a loop, a *model*-authorizing ship, the loop
-  authoring its own ADRs, and removing the cage. These are principle-bounded,
+  Four variants stay **out of scope by design** (each would need a new superseding
+  prose edit): the *model* self-starting a loop, a *model*-authorizing ship, the loop
+  authoring its own doctrine edits, and removing the cage. These are principle-bounded,
   not capability-bounded — reopening them on a "models are better now" argument
   is foreclosed.
 
-  **See** [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) (the
-  operating model) and [ADR 0002](docs/adr/0002-autonomy-invariant.md)
+  **See** CLAUDE.md §The operating model (current) (the
+  operating model) and the no-model-self-start rule in METHODOLOGY.md Rule 8 and CLAUDE.md
   (judgment-preservation principle + foreclosures, preserved append-only).
 
 ## Components

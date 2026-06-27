@@ -56,11 +56,11 @@ esac
 # ACLI.md and DBGATE.md added 2026-06-10 — Atlassian operation gate and
 # database-write gate respectively, both load-bearing doctrine via CLAUDE.md
 # @import chain; same pattern-matching-error risk as METHODOLOGY/RTK.
-# The three governance ADRs (0001/0002/0003) added 2026-06-21 — ADR 0003 is the
+# The three governance ADRs (0001/0002/0003) added 2026-06-21 — CLAUDE.md §The operating model (was L3 bounded autonomy, retired) is the
 # L3 autonomy keystone; an unguarded edit silently moves the autonomy boundary.
 # Keep aligned with block-bash-doctrine-write.sh (audit #41 seam asserts equality).
 case "$BASE" in
-  CLAUDE.md|METHODOLOGY.md|RTK.md|ACLI.md|DBGATE.md|settings.json|.mcp.json|mcp-servers.json|0001-personal-harness-as-plugin.md|0002-autonomy-invariant.md|0003-l3-bounded-autonomy.md)
+  CLAUDE.md|METHODOLOGY.md|RTK.md|ACLI.md|DBGATE.md|settings.json|.mcp.json|mcp-servers.json)
     hook_decision ask "Doctrine edit detected: ${FILE_PATH}. These files are load-bearing across every session. Confirm this edit is intentional and verified."
     ;;
 esac

@@ -5,5 +5,5 @@
 #   (b) fail-closed: a missing/unparseable verdict resolves to rollback (the *) case);
 #   (c) veto-only: a red gauntlet short-circuits before any model call (never red→green);
 #   (d) veto-green: a NOT_GOOD verdict forces rollback.
-# RETIRED 2026-06-25 — L4 model-gate check retired (ADR 0006 supersedes 0004; the L4 autonomy machinery is deleted in Batch 2). ADRs are append-only, so the gate is no-op'd directly here rather than relying on ADR absence.
-info "audit #49: RETIRED 2026-06-25 — L4 model-gate non-circularity check retired (ADR 0006 supersedes 0004; L4 machinery deleted in Batch 2)" 2>/dev/null || true
+# RETIRED 2026-06-25 — L4 model-gate check retired (CLAUDE.md §The operating model (current) supersedes 0004; the L4 autonomy machinery is deleted in Batch 2). ADRs are append-only, so the gate is no-op'd directly here rather than relying on ADR absence.
+info "audit #49: RETIRED 2026-06-25 — L4 model-gate non-circularity check retired (CLAUDE.md §The operating model (current) supersedes 0004; L4 machinery deleted in Batch 2)" 2>/dev/null || true

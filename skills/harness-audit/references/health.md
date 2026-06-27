@@ -234,7 +234,7 @@ Per the design doc §6 (the upstream contract) and the task spec:
 - Does **not** emit a `permissionDecision` anywhere (no blocking, no
   gating, no ask-gate; mirrors the inferential-FB "advisory only"
   invariant per `docs/research/inferential-structural-judge-design.md`
-  §4(c) and ADR 0002 §L115).
+  §4(c) and the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115).
 - Does **not** add a `disallowedTools:` to any agent's frontmatter (per
   decay-cadence convention).
 - Does **not** shell out to `claude` via `subprocess` (the script

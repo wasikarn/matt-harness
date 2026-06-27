@@ -566,7 +566,7 @@ fi
 
 # (TB6) TeammateIdle when the build is complete (all tasks completed) → exit 0
 #       + journals a teammate_teardown_ready advisory (the teardown signal a
-#       dispatch flow reaps on). Advisory only — the hook never stops the teammate (ADR 0002).
+#       dispatch flow reaps on). Advisory only — the hook never stops the teammate (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 mkdir -p "$BOARD_FIXTURE/.claude/tasks/done-plan"
 cat > "$BOARD_FIXTURE/.claude/tasks/done-plan/board.json" <<'BEOF'
 {
@@ -618,14 +618,14 @@ out=$(printf '%s' "$(bash_event 'git reset --hard')" | CLAUDE_DISABLED_HOOKS=blo
 if [ -z "$out" ]; then PASS=$((PASS+1)); printf '  ✅ %-22s %s\n' "block-dangerous-git.sh" "CLAUDE_DISABLED_HOOKS bypass works"
 else FAIL=$((FAIL+1)); printf '  ❌ %-22s bypass env did not disable (got: %s)\n' "block-dangerous-git.sh" "$out"; fi
 
-# --- ECC-parity ports (ADR 0007): fact-force, dev-tmux, mcp-health, context-monitor ---
+# --- ECC-parity ports (CLAUDE.md §Hook architecture (current profile ladder design)): fact-force, dev-tmux, mcp-health, context-monitor ---
 # These are stateful or emit updatedInput/additionalContext (not permissionDecision),
 # so the `check` helper can't grade them. Isolated temp HOME + session id per call.
 # Note: a hook that ALLOWS prints nothing; jq on empty input returns empty (not
 # "none"), so normalize empty→"none" before comparing. session_id has non-alnum
 # chars translated to "_" by the hooks (tr -c), so prefer alnum-only session ids.
 echo
-echo "--- ECC-parity ports (ADR 0007) ---"
+echo "--- ECC-parity ports (CLAUDE.md §Hook architecture (current profile ladder design)) ---"
 PARITY_HOME="$FIXTURE/parity-home"; mkdir -p "$PARITY_HOME/.claude"
 norm() { [ -z "$1" ] && echo none || echo "$1"; }  # empty hook output → "none" (allow)
 ff_event() { jq -n --arg fp "$1" --arg sid "$2" --argjson agent "${3:-null}" \

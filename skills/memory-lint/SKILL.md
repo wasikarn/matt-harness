@@ -63,7 +63,7 @@ is in memory":
      the draft captures what the audit *said*, not what you should *remember*.
    - **Discard** — the item was noise, rediscovery, or already captured.
    - **Defer** — write a one-liner to `deferred-<date>.md` for a future audit
-     to revisit (e.g., items blocked by ADR 0002).
+     to revisit (e.g., items blocked by the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 4. **Re-lint** to confirm the new entries are linked and the index is in sync.
 
 The script **never** writes to `MEMORY.md` directly (preserves the autonomy

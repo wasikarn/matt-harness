@@ -1,22 +1,22 @@
-> **RETIRED 2026-06-25 — ADR 0006.** The L4 self-launch machinery this design
+> **RETIRED 2026-06-25 — see `CLAUDE.md` §The operating model (current).** The L4 self-launch machinery this design
 > specifies was never run live and is fully retired; `scripts/l4/**`,
 > `scripts/loop-guard.py`, and the launchd plist
 > (`~/Library/LaunchAgents/com.kbg.l4-launcher.plist`) are deleted, and the
 > `KBG_AUTONOMY` arming flag / `autonomy_on()` predicate are retired. The
-> operating model is now [ADR 0006](../adr/0006-ecc-aligned-operating-model.md):
-> the harness denies the irrecoverable set computationally and advises on the
-> rest; the operator is the authority at every irreversible boundary; no
-> autonomy flag, no enforced maker-checker ship-gate, no model self-start. This
-> document is kept as the **historical record of the L4 era**; the body below is
-> unchanged (it is the historical design record, not a live specification).
+> operating model is now: the harness denies the irrecoverable set
+> computationally and advises on the rest; the operator is the authority at
+> every irreversible boundary; no autonomy flag, no enforced maker≠checker
+> ship-gate, no model self-start. This document is kept as the **historical
+> record of the L4 era**; the body below is unchanged (it is the historical
+> design record, not a live specification).
 
 # L4/L5 autonomy machinery — buildable design (capability ≥ ECC)
 
 > **Status:** 🟢 BUILT 2026-06-23 — the full 5-slice L4/L5 machinery (Slices 0–4, issues #17–#35)
 > is implemented + gauntlet-green on `develop`. `KBG_AUTONOMY` stays OFF by default (flag-OFF
 > byte-identical to L2/L3); arming an L4/L5 run is the owner's separate, later act. This doc was
-> the *blueprint* [ADR 0004](../adr/0004-l4-autonomy.md) (Accepted 2026-06-22) deferred to a
-> "staged, gauntlet-gated build"; each slice shipped committed gauntlet-green behind the
+> the *blueprint* (Accepted 2026-06-22) deferred to a "staged, gauntlet-gated
+> build"; each slice shipped committed gauntlet-green behind the
 > hardening-before-enable rule (Slice N green before Slice N+1 starts).
 > **Date:** 2026-06-22 · **Decider:** Owner · **Operating point:** L4 push-gated (#1+#3+#4, auto-push
 > #2 dropped, Gate 2 + cage kept permanently).
@@ -38,7 +38,7 @@ ECC's running loop is the **capability bar** (verified on source, §2). kbg must
 capability and **exceed** it on safety — but the safety-exceed is *load-bearing on computational gates
 that do not exist yet* (`audit.sh --only`, audit #48/#49, the per-cycle cage re-assert, the outside-repo
 launchd gate). Until those ship gauntlet-green they are **obligations, not guarantees**; §5–§10 make each
-a named, gating deliverable rather than prose. The operating point (ADR 0004): adopt self-launch (#1),
+a named, gating deliverable rather than prose. The operating point (CLAUDE.md §The operating model (was L4 self-launch, retired)): adopt self-launch (#1),
 model-as-gate (#3), auto-inject (#4); **drop** auto-push (#2) so a human reviews every batch at the
 permanent **Gate 2** before it reaches `origin`; keep the **cage** the loop can never edit.
 
@@ -81,7 +81,7 @@ lists already shipped for L3. Mapped on source:
 + `CronCreate` are CLAUDE.md "Deliberate non-goals"). #1 self-launch is greenfield and must be built
 **in-cage**, not imported from the vendor `/loop` or `CronCreate`.
 
-## 4. Staging (ADR 0004 — lowest blast radius first)
+## 4. Staging (CLAUDE.md §The operating model (was L4 self-launch, retired) — lowest blast radius first)
 
 **Slice 0 hardening → #4 auto-inject → #3 model-gate → #1 self-launch.** The push gate (Gate 2) is ON
 at every stage; with `KBG_AUTONOMY_L4` unset, behaviour is byte-identical to today's L3/L2.
@@ -95,7 +95,7 @@ flag. Must land first — it unblocks all three relaxations.
 > are superseded by a **single on/off key `KBG_AUTONOMY` (`1` = armed, unset/`0` = OFF)**; this slice's F1
 > builds the single-key reader. Below, `L3` / `L4` / `L5` are **era-labels** (which committed-code
 > generation an armed run is), **not** separate key values — the level a run runs at is set by the
-> committed slice code, not the operator. Recorded as a key-encoding note in ADR 0003/0004; only the
+> committed slice code, not the operator. Recorded as a key-encoding note in CLAUDE.md §The operating model (was L3 bounded autonomy, retired)/0004; only the
 > representation changes, no prior decision. (Same change collapses the sibling `KBG_L3_REVIEW_DONE` →
 > `KBG_REVIEW_DONE` — the "L3" there is the same vestigial level-in-the-name; it is honored under L4/L5.)
 
@@ -121,7 +121,7 @@ flag. Must land first — it unblocks all three relaxations.
   `cage.txt` **and** the audit #43 `CAGE_ANCHORS` heredoc (`audit.sh:1680-1705`) in lockstep.
 - **F3 — define + cage the scheduler config.** No path exists. Define `scripts/l4/scheduler.conf`
   (the only sanctioned self-launch config) and cage `scripts/l4/**` in both surfaces, so the loop can
-  never edit its own launch cadence (kill-switch = delete the entry, ADR 0004 §kill-switch). **Cage the
+  never edit its own launch cadence (kill-switch = delete the entry, CLAUDE.md §The operating model (was L4 self-launch, retired) §kill-switch). **Cage the
   arming home (guard 4):** `.claude/settings.local.json` is the per-repo arming home (the legitimate
   per-environment home for `KBG_AUTONOMY` — *never* user-global, which reaches every repo's hooks; see
   `docs/reference/env-vars.md` §"Where to set them"). Add it to **both** `cage.txt` and the #43
@@ -161,7 +161,7 @@ flag. Must land first — it unblocks all three relaxations.
   interceptor) cannot reach. Build a mechanical PreToolUse Bash/Write gate that **DENIES** any write /
   `launchctl` mutation targeting the plist or kill-file while `KBG_AUTONOMY_L4=1`, covered by a #48-style
   **real-DENY** assertion. This is a **Slice-0 hard precondition**: #1 (Slice 3) is *not buildable* until
-  this ships gauntlet-green — model-discipline is not a cage (§8, ADR 0004 §Acceptance).
+  this ships gauntlet-green — model-discipline is not a cage (§8, CLAUDE.md §The operating model (was L4 self-launch, retired) §Acceptance).
 - **audit #48 (new — proves F1 closed BOTH ways).** (a) With `KBG_AUTONOMY_L4=1` (L3 unset): CRIT unless
   the guard stays active and the push-gate **denies an actual `git push`** — proof the hole is closed. (b)
   With **both** flags unset: CRIT unless each of the four gates no-ops exactly as the L2 baseline — the
@@ -224,7 +224,7 @@ Trialed on exactly **one low-stakes prose skill**.
 
 - **Mechanism:** a new ~60-line `scripts/l4/l4-quality-gate.sh` + an allowlist `l4-quality-trial.txt`,
   **to be invoked after** `run-gauntlet.sh` (which runs first, unconditionally) once the owner-gated
-  trial begins (ADR 0004 §"Recommended staging order" stage 2). **As built today** the gate exists, is
+  trial begins (CLAUDE.md §The operating model (was L4 self-launch, retired) §"Recommended staging order" stage 2). **As built today** the gate exists, is
   audited (#49), tested, and allowlisted, but is **not yet wired into the live `--auto` cycle** — it
   stays inert while `KBG_AUTONOMY` is OFF. The model verdict can only
   **veto a green** (force an extra rollback — the safe direction), **never bless a red**. Fail-CLOSED:
@@ -284,9 +284,9 @@ An in-cage scheduler replaces the human Gate-1 launch. **Not** `/loop` or `CronC
 
 ## 8.5 Slice 4 — #2 auto-push ship-gate (L5, opt-in *beyond* L4) · effort M (LAST)
 
-[ADR 0005](../adr/0005-l5-auto-push.md) (Accepted) re-adopts auto-push **beyond** the L4 operating point in
+`CLAUDE.md` §The operating model (the L5 auto-push tier, since retired) re-adopts auto-push **beyond** the L4 operating point in
 §1: the human leaves the push loop and the computational gauntlet becomes the sole ship authority. Build
-only after Slice 3 is gauntlet-green; the model stays **veto-only** (ADR 0005 — can force an extra rollback,
+only after Slice 3 is gauntlet-green; the model stays **veto-only** (CLAUDE.md §The operating model (was L5 auto-push, retired) — can force an extra rollback,
 never *authorize* a ship), so the ship-gate stays computational, never a model.
 
 - **Cross-remote ship-gate (guard 5).** With the human out of the push loop, the gauntlet grades the
@@ -306,7 +306,7 @@ never *authorize* a ship), so the ship-gate stays computational, never a model.
 **kbg exceeds ECC (safety) — verifiable today:** an immutable deny-by-default cage the loop physically
 cannot edit (ECC writes anywhere); a human push-gate at L2–L4 (ECC *can* auto-merge conflict-free
 worktrees — opt-in config bool + a computational readiness check, not unconditional), replaced at L5
-([ADR 0005](../adr/0005-l5-auto-push.md)) by a computational ship-gate (the gauntlet) — the human leaves
+([CLAUDE.md §The operating model (was L5 auto-push, retired)](../METHODOLOGY.md or CLAUDE.md by a computational ship-gate (the gauntlet) — the human leaves
 the push loop but the authorizing gate stays computational, never a model; a flag captured-once
 so the loop cannot self-elevate (ECC's Haiku is told "just write"); decay implemented in code
 (`read-candidates.sh:74`) where **ECC's confidence is write-once-by-Haiku — no decay implementation was
@@ -320,7 +320,7 @@ deliverables in §5/§7/§10.
 
 **kbg is less capable than ECC (throughput — intentional at L2–L4; partially closed at L5):** at L2–L4
 no auto-merge / no parallel worktree fan-out and the human sits at the one irreversible (push) boundary;
-L5 ([ADR 0005](../adr/0005-l5-auto-push.md)) re-adds auto-push/auto-merge behind the computational
+L5 ([CLAUDE.md §The operating model (was L5 auto-push, retired)](../METHODOLOGY.md or CLAUDE.md re-adds auto-push/auto-merge behind the computational
 ship-gate, removing the human from the push loop. Still intentional at every level: cadence throttled
 well below ECC's heartbeat by R4; #3 trialed on one prose skill, not the whole corpus; and learnings
 become resident **next-session** (kbg writes a `memory/` file), not injected **mid-session** (ECC
@@ -330,7 +330,7 @@ re-renders additionalContext every session).
 
 > **Gate-2 strengthening criterion RETIRED 2026-06-25** (the "strengthen Gate 2
 > commensurately" bullet below): Gate-2 (`KBG_REVIEW_DONE=1` + `review_finding`) and
-> `push-gate.sh` are retired — see the ADR 0004 "Gate-2 RETIRED" note. The underlying
+> `push-gate.sh` are retired — see the CLAUDE.md §The operating model (was L4 self-launch, retired) "Gate-2 RETIRED" note. The underlying
 > principle (maker≠checker; the gate that authorizes a ship stays computational, never a
 > model) is **retained** — it is now satisfied by `block-dangerous-git.sh` scoped denials +
 > `advisory-push-reminder.sh` (ECC-aligned: review is advisory, not enforced), not a
@@ -350,9 +350,9 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
   only by Gate 2 being fresh human context. Add a criterion: the session-audit-trail surfaced at Gate 2
   must include the **#3 model verdict per cycle**; a maker≠checker `kbg:review-pr` pass is **mandatory**
   (not optional) before `KBG_REVIEW_DONE=1` is honored under L4; record the Gate-2 review as a journal
-  event so a **rubber-stamp streak is observable** at the quarterly decay sweep (mirrors ADR 0002
+  event so a **rubber-stamp streak is observable** at the quarterly decay sweep (mirrors the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model
   §gate-discipline — without an observable, "must be a real review" is prose throughput pressure erodes).
-- **Exit-condition trigger-2 needs a detector outside the cage.** ADR 0004's second exit trigger ("a
+- **Exit-condition trigger-2 needs a detector outside the cage.** CLAUDE.md §The operating model (was L4 self-launch, retired)'s second exit trigger ("a
   security-gate loosening slipping past the cage") can only fire *after* the cage already failed silently —
   the cage cannot be its own detector. Add a cheap post-push tripwire (run #43-#47 against
   `origin/develop`) that CRITs if any cross-repo security gate's content changed in an L4-authored commit,
@@ -379,7 +379,7 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
 ## 12. External installers (scope + guard index)
 
 The plugin is publicly installable (`claude plugin install kbg@kobig`, the **single delivery path** the
-owner dogfoods, ADR 0001). A third party who installs it and sets the arming flag in **their own** repo on
+owner dogfoods, the plugin-delivery model section in CLAUDE.md). A third party who installs it and sets the arming flag in **their own** repo on
 **their own** machine is a real operator class the autonomy design must fail safe for. A 32-agent
 fresh-context adversarial sweep (4 lenses → refute-by-default verify → synthesis, 2026-06-22) confirmed
 **9 real gaps** (18 refuted/downgraded). Verdict: the author's proposed **"default-OFF + repo-identity
@@ -389,7 +389,7 @@ rejected Option-C of porting the owner's dotfiles guards).
 
 **Scope statement (the load-bearing precondition):** the L3/L4/L5 loop **self-improves the kbg-harness
 checkout *itself*** — every cage path is repo-relative to the harness (`hooks/**`, `skills/`,
-`docs/adr/**`), Observe reads `harness-audit`, candidates are the harness's own audit findings. It is **not**
+`CLAUDE.md (doctrine home) **`), Observe reads `harness-audit`, candidates are the harness's own audit findings. It is **not**
 a tool for improving the repo the installer opened. The "opt-in + owner's-tool/owner's-risk" basis (ADR
 0004:156-158, 0005) is telos+ownership-based and **non-transferable** — it assumes the operator *is* the
 author working *in* the harness repo, with a single-author, git-recoverable, disposable non-safety surface.
@@ -422,6 +422,6 @@ has configured nothing.
 **Present-tense (ships before any machinery):** the only live installer footgun is documentation — bare
 `KBG_AUTONOMY` is read by **zero** shipped lines (every predicate keys on `KBG_AUTONOMY_L3`), yet
 `env-vars.md` presented it as the live arming knob. Fixed 2026-06-22 (`env-vars.md` §"Where to set them"
-note). Everything else here is **DESIGN-ONLY** (ADR 0004/0005 Accepted-not-Implemented; `audit.sh` has no
+note). Everything else here is **DESIGN-ONLY** (CLAUDE.md §The operating model (was L4 self-launch, retired)/0005 Accepted-not-Implemented; `audit.sh` has no
 #43-#48; `recursive-improve` keeps `disable-model-invocation: true`) — Slice-0/4 build preconditions, not
 shipped behavior.

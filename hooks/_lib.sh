@@ -19,7 +19,7 @@
 # Default "standard strict" = the hook is OFF under `minimal` (the dial-down
 # tier). The irrecoverable-floor gates (block-dangerous-* / secret-* / block-
 # bash-doctrine-write) opt INTO all three via HOOK_PROFILES="minimal standard
-# strict" so the safety floor survives a minimal session. ADR 0007. `strict`
+# strict" so the safety floor survives a minimal session. CLAUDE.md §Hook architecture (current profile ladder design). `strict`
 # currently equals `standard`'s gate set (reserved for future strict-only
 # friction); `minimal` is the meaningful dial.
 #
@@ -29,7 +29,7 @@
 #   - audit log prefix: ts \t session-id, then caller's columns in order
 #   - DISABLED match: substring on ",$DISABLED," to avoid partial-id false matches
 
-# autonomy_on — the single arming predicate (ADR 0004 single-key collapse +
+# autonomy_on — the single arming predicate (CLAUDE.md §The operating model (was L4 self-launch, retired) single-key collapse +
 # installer fail-safe guard 3, design §5 F1). Returns 0 (armed) iff BOTH hold:
 #   1. KBG_AUTONOMY=1 is in this process's env (read at call time = once per hook
 #      process; the loop cannot self-elevate mid-run by re-exporting it — the
@@ -45,7 +45,7 @@
 # first test and return before any file fork, so the flag-OFF path is byte-ident
 # to a plain env-string compare.
 autonomy_on() {
-  # RETIRED 2026-06-25 (ADR 0006); autonomy model retired — always un-armed.
+  # RETIRED 2026-06-25 (CLAUDE.md §The operating model (current)); autonomy model retired — always un-armed.
   return 1
 }
 
@@ -60,7 +60,7 @@ hook_init() {
   PROFILE="${CLAUDE_HOOK_PROFILE:-standard}"
   DISABLED="${CLAUDE_DISABLED_HOOKS:-}"
 
-  # L3/L4 immunity block RETIRED 2026-06-25 (ADR 0006): the autonomy model is
+  # L3/L4 immunity block RETIRED 2026-06-25 (CLAUDE.md §The operating model (current)): the autonomy model is
   # retired, so CLAUDE_HOOK_PROFILE / CLAUDE_DISABLED_HOOKS are honored normally
   # again (no armed-run forced-live override).
 
@@ -70,7 +70,7 @@ hook_init() {
   case ",$DISABLED," in
     *",$hook_id,"*) return 1 ;;
   esac
-  # ADR 0007 profile-tier gate: run only if the active profile is in this hook's
+  # CLAUDE.md §Hook architecture (current profile ladder design) profile-tier gate: run only if the active profile is in this hook's
   # declared HOOK_PROFILES. Default "standard strict" → OFF under minimal. Floor
   # gates set HOOK_PROFILES="minimal standard strict" to survive a minimal
   # session. Space-delimited full-token match (leading+trailing space on both

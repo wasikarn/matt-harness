@@ -114,7 +114,7 @@ def check_stall(projects_dir=None, threshold_min=DEFAULT_STALL_THRESHOLD_MIN):
     Contract (per SYNTHESIS row #11 / loop-engineering-closure-roadmap P2.1):
         - Pure read-only — never mutates journal, transcript, or session state.
         - Never blocks, never auto-pauses. Surfaces a suggested_action string for
-          the operator to act on. ADR 0002 autonomy invariant: human-gated only.
+          the operator to act on. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model autonomy invariant: human-gated only.
         - Projects dir is overridable (loop-status.py's --projects-dir) so
           regression fixtures can mock against a temp dir without touching
           ~/.claude/projects. The default still points at the real transcript
@@ -276,7 +276,7 @@ def compute_debt_ledger(evts, now=None, open_prs=None):
 
 
 def read_learning_candidates():
-    """Read-only Route-B (ADR 0002 addendum): shell out to the single queue reader
+    """Read-only Route-B (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum): shell out to the single queue reader
     scripts/read-candidates.sh (avoids the sync-seam audit #37-40 guards) and return
     the open learning candidates, merged + confidence-ranked. NEVER writes the queue.
     Returns [] on clean/empty, None if the reader is missing."""
@@ -324,7 +324,7 @@ def main():
     # verification summary. A parked session corrupts the verification signal
     # (the metric for this session may itself be stale), so the operator sees
     # the stall FIRST and can decide whether the gaps table below is
-    # trustworthy. NEVER auto-pauses (ADR 0002).
+    # trustworthy. NEVER auto-pauses (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
     if not args.no_stall_check:
         posture = check_stall(projects_dir=args.projects_dir, threshold_min=args.stall_threshold_min)
         if posture["error"]:
@@ -344,7 +344,7 @@ def main():
     # Comprehension debt ledger (SYNTHESIS #41 / spec §4.4). Counts three
     # sources of "what stays manual" — the operator's loop can only act on
     # what they've actually reviewed. When debt_count exceeds the ceiling,
-    # surface a PAUSE warning. NEVER auto-blocks (ADR 0002) — the operator
+    # surface a PAUSE warning. NEVER auto-blocks (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) — the operator
     # decides whether to drain the queue or accept the breach.
     if not args.no_debt_check:
         # Read the journal here (load_jsonl is pure; safe to call once).
@@ -367,7 +367,7 @@ def main():
         # Surface the breach but DO NOT sys.exit(1) — observe is a sensor.
         # The SKILL.md Step 1 callout is the operator-facing pause signal.
 
-    # Learning-candidate queue (Route B, ADR 0002 addendum) — read-only. This is a
+    # Learning-candidate queue (Route B, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum) — read-only. This is a
     # DIFFERENT queue from the comprehension-debt ledger above: that one is "what
     # stays manual"; this one is passively-captured operator corrections/preferences
     # awaiting kbg:learn triage. In L3 --auto, a high-confidence row is an eligible

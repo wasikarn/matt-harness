@@ -47,19 +47,19 @@ date: 2026-06-15
 |  | **Computational** | **Inferential** |
 |---|---|---|
 | **Feedforward** | PreToolUse gates (`block-dangerous-git.sh:86-89`, `block-bash-doctrine-write.sh`, `block-alias-shadowing.sh`, `secret-scan.sh`) — emit `permissionDecision: deny/ask` | Doctrine injection (`doctrine-bootstrap.sh:7-9`, `iron-rule-reminder.sh`, `orchestrator-nudge.sh`) |
-| **Feedback** | `post-edit-audit.sh:1-2` · `security-diff-review.py:1-2` · `audit.sh` 38 checks · `test-critical-hooks.sh` 204 assertions | `verification-gate.sh:1-2` (SessionEnd, *advisory* — ADR 0002 §L115) · `fabrication-verdict-log.sh` (Stop) · `kbg:review-pr` |
+| **Feedback** | `post-edit-audit.sh:1-2` · `security-diff-review.py:1-2` · `audit.sh` 38 checks · `test-critical-hooks.sh` 204 assertions | `verification-gate.sh:1-2` (SessionEnd, *advisory* — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115) · `fabrication-verdict-log.sh` (Stop) · `kbg:review-pr` |
 
-All inferential-feedback sensors are **advisory by design** — `verification-gate.sh` "journals but NEVER emits a `permissionDecision`" (ADR 0002 §L115). Addresses critique-cost §3 (LLM-judge-circularity) at the cost of a thinner sensor stack.
+All inferential-feedback sensors are **advisory by design** — `verification-gate.sh` "journals but NEVER emits a `permissionDecision`" (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115). Addresses critique-cost §3 (LLM-judge-circularity) at the cost of a thinner sensor stack.
 
 ## 6. Steering loop (L388-394)
 
-- **Steering loop** = `kbg:recursive-improve` skill (6-step cycle, 5-iteration cap — ADR 0002:98-100). Human `AskUserQuestion` at Step 3 is load-bearing.
-- **AI-in-the-loop dispatch** = `scripts/orchestrate-dispatch.py:1-60` (deterministic DAG resolver). **Does NOT spawn agents** (orchestrate-dispatch.py:38-46) — that would be a covert L4 loop (ADR 0002).
+- **Steering loop** = `kbg:recursive-improve` skill (6-step cycle, 5-iteration cap — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model:98-100). Human `AskUserQuestion` at Step 3 is load-bearing.
+- **AI-in-the-loop dispatch** = `scripts/orchestrate-dispatch.py:1-60` (deterministic DAG resolver). **Does NOT spawn agents** (orchestrate-dispatch.py:38-46) — that would be a covert L4 loop (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 
 ## 7. ADRs the article would prescribe (vs kbg's decisions)
 
-1. **Single delivery = plugin (ADR 0001)** — forecloses template versioning (L521). Plugin cache is the *only* install path. *Article supports; kbg goes harder.*
-2. **Autonomy invariant (ADR 0002)** — forecloses L3/L4 (critique-gaps §6). Explicit divergence, not absence.
+1. **Single delivery = plugin (the plugin-delivery model section in CLAUDE.md)** — forecloses template versioning (L521). Plugin cache is the *only* install path. *Article supports; kbg goes harder.*
+2. **Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model)** — forecloses L3/L4 (critique-gaps §6). Explicit divergence, not absence.
 3. **No `disallowedTools:` for agents** (`docs/agent-tool-patterns.md`) — kbg uses `tools:` allowlists. *Contradicts* critique-cost §5 ("harness work is removing affordances") — kbg chose *add structure*.
 4. **F7 test-claim gate** (task-lifecycle.sh:166-231) — sensor for the behaviour axis's biggest gap. *Article silent; kbg defines the anti-pattern.*
 5. **Bypass-audit-log on every PreToolUse** (hooks.json:64-73) — silent hook-bypass is journaled. *L342 misses the symmetric failure; kbg closes it.*

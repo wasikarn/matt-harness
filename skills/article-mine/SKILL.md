@@ -46,7 +46,7 @@ Spawn all five in one message. Each gets the same source + scope hint, plus a sp
 | 2 | `general-purpose` | **Apply** | Concrete list: which canon files / memory entries / skills would change if this is true? Cite `file:line` or `<name>.md`. |
 | 3 | `general-purpose` | **Gaps** | What does the article miss? What would a skeptical reviewer say? Where are the weak links, unstated assumptions, or counter-examples? |
 | 4 | `general-purpose` | **Suggestions** | 0–3 *specific* small changes to the kbg harness (a rule, a memory note, a skill patch, a hook). If none are warranted, say "no suggestion" — do not invent. |
-| 5 | `general-purpose` | **Security/Doctrine** | Does this collide with any explicit doctrine (METHODOLOGY rules, ACLI, DBGATE, file-trust levels, ADR 0002 autonomy invariant, dispatch-skill capability gate)? Any risk of importing a contradictory framework? |
+| 5 | `general-purpose` | **Security/Doctrine** | Does this collide with any explicit doctrine (METHODOLOGY rules, ACLI, DBGATE, file-trust levels, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model autonomy invariant, dispatch-skill capability gate)? Any risk of importing a contradictory framework? |
 
 **Why 5 and not 1:** a single agent will blend synthesis with opinion and produce a confident-but-wrong digest. The fan-out forces the lenses to be claimed separately, then verified against each other.
 

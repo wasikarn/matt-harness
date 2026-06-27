@@ -168,9 +168,9 @@ if [ "$EVENT" = "TaskCreated" ]; then
   fi
 fi
 
-# Exit reason vocabulary (ADR 0002 §L12 — named for observability, not for automation).
+# Exit reason vocabulary (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L12 — named for observability, not for automation).
 # Only "blocked" is enforced today; the others are future-compatible placeholders.
-# kbg never runs autonomous loops (ADR 0002), so stalled/degrading/timeout are
+# kbg never runs autonomous loops (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model), so stalled/degrading/timeout are
 # not yet wired but are reserved so any future bounded loop can adopt the taxonomy.
 #   blocked   — explicit human-actionable blocker (e.g. test-claim without validation_command)
 #   stalled   — (future) no-progress detected across N iterations
@@ -204,7 +204,7 @@ fi
 # Setting KBG_ENFORCE_TASK_COMPLETED=0 downgrades F7 to log-only for that
 # session — the event is still journaled so Phase 4 observe.py still sees
 # the gap, but the gate does NOT exit 2. Any other value (unset, "", "1",
-# "false", etc.) keeps enforcement ON. ADR 0002 L2/L3 — L2 is the default;
+# "false", etc.) keeps enforcement ON. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L2/L3 — L2 is the default;
 # this env var is the L3 escape hatch.
 ENFORCE_TASK_COMPLETED=1
 if [ "${KBG_ENFORCE_TASK_COMPLETED:-1}" = "0" ]; then
@@ -323,7 +323,7 @@ if [ "$EVENT" = "TeammateIdle" ]; then
     return 1
   }
 
-  # Teardown-ready advisory (ADR 0002 — journal-only, NEVER stops the teammate).
+  # Teardown-ready advisory (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — journal-only, NEVER stops the teammate).
   # When a teammate goes idle and the board shows every task completed (nothing
   # left pending/in_progress/blocked), the build is done. We journal a
   # teammate_teardown_ready signal so the lead (the dispatch flow's teardown

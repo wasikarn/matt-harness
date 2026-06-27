@@ -1,5 +1,5 @@
 #!/bin/bash
-# Dev-server tmux transform — ECC auto-tmux-dev.js port (ADR 0007). Rewrites a
+# Dev-server tmux transform — ECC auto-tmux-dev.js port (CLAUDE.md §Hook architecture (current profile ladder design)). Rewrites a
 # Bash command that starts a dev server (npm run dev / next dev / vite / rails
 # s / uvicorn …) into a detached tmux session so the agent doesn't block on a
 # long-running foreground process. Passes the rewritten JSON back to CC by

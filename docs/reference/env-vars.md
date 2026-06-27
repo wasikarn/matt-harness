@@ -22,26 +22,26 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Key class | Settable where | Why |
 |---|---|---|
 | **Tuning** (`KBG_IDEATE_*`, `KBG_DEBT_*`, `KBG_EVAL_MAX_AGE_DAYS`, `KBG_LEARN_DRAIN_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
-| **`KBG_AUTONOMY`** / **`KBG_REVIEW_DONE`** / **`KBG_AUTONOMY_L3`** / **`KBG_L3_REVIEW_DONE`** | **Retired by ADR 0006 (2026-06-25).** No autonomy flag; no maker-checker ship-gate. | The live knobs are the scoped denials `block-dangerous-git.sh` + `block-dangerous-bash.sh` (no operator flag) and the advisory reminders (`advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`). The operator is the authority at every irreversible boundary. |
+| **`KBG_AUTONOMY`** / **`KBG_REVIEW_DONE`** / **`KBG_AUTONOMY_L3`** / **`KBG_L3_REVIEW_DONE`** | **Retired by CLAUDE.md §The operating model (current) (2026-06-25).** No autonomy flag; no maker-checker ship-gate. | The live knobs are the scoped denials `block-dangerous-git.sh` + `block-dangerous-bash.sh` (no operator flag) and the advisory reminders (`advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`). The operator is the authority at every irreversible boundary. |
 | **`KBG_ENFORCE_TASK_COMPLETED`** | Defaults ON (safe); just don't persist `=0` user-global. | A global `=0` downgrades the F7 gate in every repo. |
 
-> **Retired by ADR 0006 (2026-06-25):** the `KBG_AUTONOMY` arming key, the `KBG_REVIEW_DONE` Gate-2
+> **Retired by CLAUDE.md §The operating model (current) (2026-06-25):** the `KBG_AUTONOMY` arming key, the `KBG_REVIEW_DONE` Gate-2
 > override, and the old per-level `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` names are all retired. There is
 > no autonomy flag and no enforced maker-checker ship-gate. The harness denies the irrecoverable set
 > computationally (scoped denials: `block-dangerous-git.sh` + `block-dangerous-bash.sh`, no operator flag)
 > and advises on the rest (advisory reminders: `advisory-push-reminder`, `tmux-reminder`,
 > `commit-quality-reminder`); the operator is the authority at every irreversible boundary. See
-> [ADR 0006](../adr/0006-ecc-aligned-operating-model.md). ADRs 0002–0005 are retained as historical
-> record (superseded banners in place).
+> `CLAUDE.md` §The operating model. (No separate ADR record; the L2–L5 autonomy ladder was
+> retired 2026-06-25 with the ratchet.)
 
-## Autonomy & safety flags — RETIRED by ADR 0006 (2026-06-25)
+## Autonomy & safety flags — RETIRED by CLAUDE.md §The operating model (current) (2026-06-25)
 
 | Var | Status | Note |
 |---|---|---|
 | `KBG_AUTONOMY` | **Retired** | No autonomy flag. The bounded-autonomy loop (`recursive-improve --auto`), the `autonomy_on()` confirmation, and the L2–L5 ladder are superseded. Live computational guardrails are the scoped denials `block-dangerous-git.sh` + `block-dangerous-bash.sh` (no operator flag). |
 | `KBG_REVIEW_DONE` | **Retired** | No enforced maker-checker ship-gate (Gate-2 is gone). Advisory push review lives in `advisory-push-reminder` (journals + nudges, never a `permissionDecision`). |
-| `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` | **Retired** | Old per-level names, already superseded by the single-key collapse and now fully retired by ADR 0006. |
-| `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (ADR 0002 addendum) |
+| `KBG_AUTONOMY_L3` / `KBG_L3_REVIEW_DONE` | **Retired** | Old per-level names, already superseded by the single-key collapse and now fully retired by CLAUDE.md §The operating model (current). |
+| `KBG_LEARN_CAPTURE` | `1` (**ON**) | Passive learning-capture is default-ON (opt out with `=0`). Advisory only — capture never gates or mutates the repo; APPLY stays human-gated in `kbg:learn`. (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum) |
 
 ## Learning-capture knobs
 
@@ -79,15 +79,15 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Var | Default | Effect |
 |---|---|---|
 | `CLAUDE_DISABLED_HOOKS` | empty | Comma/space list of hook IDs to disable (e.g. `learn-capture`, `iron-rule-reminder`). |
-| `CLAUDE_HOOK_PROFILE` | `standard` | The profile ladder (ADR 0007): `off` disables ALL kbg hooks; `minimal` dials friction down while the safety floor (block-dangerous-*, secret-*) stays on; `standard` is the default (all gates on); `strict` reserves a future stricter tier (currently equals `standard`). Each hook declares `HOOK_PROFILES` (default `standard strict`); floor gates opt into `minimal standard strict` so a `minimal` session keeps the irrecoverable floor. |
+| `CLAUDE_HOOK_PROFILE` | `standard` | The profile ladder (CLAUDE.md §Hook architecture (current profile ladder design)): `off` disables ALL kbg hooks; `minimal` dials friction down while the safety floor (block-dangerous-*, secret-*) stays on; `standard` is the default (all gates on); `strict` reserves a future stricter tier (currently equals `standard`). Each hook declares `HOOK_PROFILES` (default `standard strict`); floor gates opt into `minimal standard strict` so a `minimal` session keeps the irrecoverable floor. |
 | `CLAUDE_JOURNAL_PATH` | `~/.claude/governance-events.jsonl` | Governance-journal location override. |
 | `CLAUDE_BAK_TTL_DAYS` / `CLAUDE_BAK_TTL_PROFILE` | `90` / `standard` | `.bak` cleanup TTL + profile. |
 
-## ECC-parity port knobs (ADR 0007)
+## ECC-parity port knobs (CLAUDE.md §Hook architecture (current profile ladder design))
 
 Five capabilities ported from ECC at ECC's own activation semantics, default-on under
 `standard`. Each port has a per-gate kill switch plus the profile dial (`minimal` turns
-all four off; the floor gates stay on). See [ADR 0007](../adr/0007-ecc-parity-ports.md).
+all four off; the floor gates stay on). See `CLAUDE.md` §Hook architecture.
 
 ### fact-force-gate (four-fact-force, first-edit friction)
 
@@ -127,7 +127,7 @@ all four off; the floor gates stay on). See [ADR 0007](../adr/0007-ecc-parity-po
 | `KBG_CONTEXT_MONITOR_SCOPE` | `20` | Distinct-files-modified threshold for the scope advisory. | `context-monitor.sh` |
 | `KBG_CONTEXT_MONITOR_LOOP` | `3` | Same-tool repeat count that triggers the loop advisory. | `context-monitor.sh` |
 | `KBG_CONTEXT_MONITOR_WINDOW` | `6` | Sliding window of PostToolUse events scanned for the loop. | `context-monitor.sh` |
-| `KBG_CONTEXT_MONITOR_FILE` | empty | Path to a bridge JSON with `context_remaining_pct` / `total_cost_usd`. Set to enable the context-% / cost advisories (deferred signals; ADR 0007). | `context-monitor.sh` |
+| `KBG_CONTEXT_MONITOR_FILE` | empty | Path to a bridge JSON with `context_remaining_pct` / `total_cost_usd`. Set to enable the context-% / cost advisories (deferred signals; CLAUDE.md §Hook architecture (current profile ladder design)). | `context-monitor.sh` |
 | `KBG_CONTEXT_MONITOR_CTX_LOW` | `25` | context-remaining-% below which the low-context advisory fires (only when `KBG_CONTEXT_MONITOR_FILE` is set). | `context-monitor.sh` |
 
 ## Special

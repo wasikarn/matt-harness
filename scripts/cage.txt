@@ -1,4 +1,4 @@
-# === consequential-safety-surface manifest (ADR 0006) ===
+# === consequential-safety-surface manifest (CLAUDE.md §The operating model (current)) ===
 # A denylist of the repo's consequential safety surfaces: the gates, gauntlet,
 # audit, doctrine, git wiring, and this manifest itself. An Act targeting a
 # caged path is DENIED at the pre-Act check, before it lands — the loop cannot
@@ -16,7 +16,7 @@
 
 # --- this manifest + the run-report generator (self-reference: editing the
 #     cage / a tampered run-report could mislead the reviewer). loop-guard.py
-#     (the former guard) retired 2026-06-25 with ADR 0006; the manifest now
+#     (the former guard) retired 2026-06-25 with CLAUDE.md §The operating model (current); the manifest now
 #     stands without a runtime guarder, #43 cage-coverage retired with it ---
 scripts/cage.txt
 scripts/run-report.sh
@@ -47,8 +47,8 @@ eval/datasets/**
 eval/regressions/**
 tests/evals/**
 
-# --- governance ADRs (decision records, incl. this ADR) ---
-docs/adr/**
+# --- governance doctrine (no separate ADR dir; doctrine is the prose in
+#     CLAUDE.md/METHODOLOGY.md/RTK.md/ACLI.md/DBGATE.md below) ---
 
 # --- L1 doctrine + governance prose ---
 CLAUDE.md
@@ -70,7 +70,7 @@ git-hooks/**
 
 # --- the per-repo arming home (F3 guard 4, design §5): .claude/settings.local.json
 #     is the surface autonomy_on() honored for arming (guard 3). Retained as a
-#     consequential surface even after the autonomy model retirement (ADR 0006):
+#     consequential surface even after the autonomy model retirement (CLAUDE.md §The operating model (current)):
 #     a settings file the loop can write remains a self-elevation surface worth
 #     fencing. (The outside-repo ~/.claude/settings.json is covered by the §8
 #     Act-layer gate, not the cage.) ---

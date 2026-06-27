@@ -54,7 +54,7 @@ This plan designs a notification surface: at the start of each session, the harn
 
 ## Q&A log
 
-1. **Why a SessionStart hook and not a CI cron?** — Cron is L3 autonomy (per ADR 0002; "no CronCreate"). The kbg harness is personal — sessions *are* the cadence. A SessionStart hook fires when the operator picks up the harness, which is the right beat.
+1. **Why a SessionStart hook and not a CI cron?** — Cron is L3 autonomy (per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model; "no CronCreate"). The kbg harness is personal — sessions *are* the cadence. A SessionStart hook fires when the operator picks up the harness, which is the right beat.
 2. **Why not extend `kbg:harness-audit` with a `--health` flag?** — A command requires the operator to *remember to run it*. The harness is the right place to surface "your sensors are stale." A `--health` flag is fine as a complement, but the hook is the load-bearing surface.
 3. **What's the staleness threshold?** — Per-sensor, sourced from a new `hooks/sensors.json` registry: `{"name": "block-dangerous-git", "should_fire_when": "PreToolUse:Bash", "max_silent_days": 1, "fallback_role": "computational-FF", "must_fire_in_session": false, "enabled": true}`. Defaults are per-event-bucket (Q2 mapping). The `must_fire_in_session: true` boolean is for the rare "must fire every session" sensor (days ≠ session-count).
 4. **Where does the registry live?** — `hooks/sensors.json` (Q1 verdict A). The hook script is *matcher-less* SessionStart and reads the registry via `$(dirname "$0")/sensors.json`, reusing the BASH_SOURCE-stable pattern every hook in the repo already employs. Adding/removing sensors is JSON-only.

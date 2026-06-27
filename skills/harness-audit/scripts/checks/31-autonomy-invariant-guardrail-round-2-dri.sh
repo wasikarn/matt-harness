@@ -1,5 +1,5 @@
 # 32. Autonomy invariant guardrail — round-2 drill-down (2026-06-12),
-# surface-closure 2026-06-16. ADR 0002 names FIVE load-bearing surfaces for the
+# surface-closure 2026-06-16. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model names FIVE load-bearing surfaces for the
 # invariant; before this closure only surface 3 (the `disable-model-invocation:
 # true` frontmatter on recursive-improve) was guarded — and even that silently
 # passed when the skill file was deleted (delete the skill -> the guard no-ops
@@ -8,7 +8,7 @@
 # check at all and could be reworded or removed silently.
 #
 # RETIRED 2026-06-25 — surfaces 1/2/4 + the deleted-skill-hole leg + the #32b
-# ADR-0004 leg retired (ADR 0006 supersedes 0002/0003/0004/0005; the autonomy
+# CLAUDE.md §The operating model (was L4 self-launch, retired) leg retired (CLAUDE.md §The operating model (current) supersedes 0002/0003/0004/0005; the autonomy
 # machinery is deleted in Batch 2). The ADRs are append-only, so the ADR-gated
 # legs are no-op'd DIRECTLY here rather than relying on ADR absence.
 #
@@ -22,7 +22,7 @@
 RI_SKILL="$CLAUDE_DIR/skills/recursive-improve/SKILL.md"
 if [ -f "$RI_SKILL" ]; then
   if [ "$(fm_get "$RI_SKILL" "disable-model-invocation" --block | tr -d ' ')" != "true" ]; then
-    crit "skills/recursive-improve/SKILL.md: missing 'disable-model-invocation: true' in frontmatter (autonomy invariant regressed — see CONTEXT.md §Invariants + ADR 0002)"
+    crit "skills/recursive-improve/SKILL.md: missing 'disable-model-invocation: true' in frontmatter (autonomy invariant regressed — see CONTEXT.md §Invariants + the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model)"
   fi
 fi
-info "audit #32: RETIRED 2026-06-25 — surfaces 1/2/4 + deleted-skill-hole + #32b ADR-0004 legs retired (ADR 0006 supersedes 0002/0003/0004/0005); surface 3 stays live" 2>/dev/null || true
+info "audit #32: RETIRED 2026-06-25 — surfaces 1/2/4 + deleted-skill-hole + #32b CLAUDE.md §The operating model (was L4 self-launch, retired) legs retired (CLAUDE.md §The operating model (current) supersedes 0002/0003/0004/0005); surface 3 stays live" 2>/dev/null || true

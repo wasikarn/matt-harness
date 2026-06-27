@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # pre-push — run the full parallel validation gauntlet before allowing push,
-# then the ADR 0004 exit-trigger-2 tripwire (design §10, #32).
+# then the CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2 tripwire (design §10, #32).
 #
 # This is the heavy gate. It runs plugin-validate, self-audit, the full
 # critical-hooks behavioral suite, and the eval gate (all datasets + all
@@ -8,7 +8,7 @@
 #
 # After the gauntlet, exit-tripwire.sh independently checks the pushed commits
 # for an L4-authored commit that touched a caged safety surface — the cage
-# cannot be its own witness (ADR 0004 exit-trigger-2). Computational (git log +
+# cannot be its own witness (CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2). Computational (git log +
 # grep), not a model gate; a CRIT aborts the push. Lives OUTSIDE the cage's own
 # assertion path (scripts/l4/exit-tripwire.sh, not cage-intact.sh).
 #
@@ -32,7 +32,7 @@ fi
 echo "pre-push: running full validation gauntlet..."
 bash "$GAUNTLET"
 
-# ADR 0004 exit-trigger-2: did an L4-authored commit in the pushed range touch a
+# CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2: did an L4-authored commit in the pushed range touch a
 # security gate? The cage should have prevented it; this independent detector
 # catches a silent cage failure. Abort the push on a CRIT — a safety surface
 # changed under an armed run must not reach origin.
@@ -49,7 +49,7 @@ if [ -x "$TRIPWIRE" ]; then
   [ -n "$RANGE" ] || RANGE="HEAD~1..HEAD"
   echo "pre-push: exit-tripwire on $RANGE..."
   bash "$TRIPWIRE" "$RANGE" || {
-    echo "pre-push: exit-tripwire CRIT — an L4-authored commit in $RANGE touched a security gate (ADR 0004 exit-trigger-2). Push aborted." >&2
+    echo "pre-push: exit-tripwire CRIT — an L4-authored commit in $RANGE touched a security gate (CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2). Push aborted." >&2
     exit 1
   }
 else

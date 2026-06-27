@@ -164,7 +164,7 @@ fi
 # + nudges via additionalContext, and NEVER emits a permissionDecision. This is the
 # LLM-judge-circularity guard (CLAUDE.md §): a computational path-match nudge that
 # never decides can never become a model-driven mutation gate (autonomy invariant,
-# ADR 0002). Also pins the #31.1-avoidance: the threshold is the one-way-door class
+# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model). Also pins the #31.1-avoidance: the threshold is the one-way-door class
 # only, so a benign edit is SILENT (no blanket firing that manufactures boilerplate).
 echo
 echo "--- C1 evidence journal: decision-provenance-nudge advisory invariant ---"

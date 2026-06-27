@@ -76,11 +76,11 @@ Patch release to force a plugin-cache re-fetch. The 0.7.0 cache was a
 pre-deletion phantom (a prior session cached 0.7.0 before the agent-teams
 deletions landed), so `claude plugin update` silently skipped on version match.
 No behavior change — pure version bump to 0.7.1 so the update re-fetches the
-final 0.7.0 content (commands removed, ADR 0008 present) into the live cache.
+final 0.7.0 content (commands removed, CLAUDE.md §Deliberate non-goals (agent-teams decommission) present) into the live cache.
 
 ## [0.7.0] — 2026-06-26
 
-Decommission the `agent-teams` feature (ADR 0008). The feature — gated behind
+Decommission the `agent-teams` feature (CLAUDE.md §Deliberate non-goals (agent-teams decommission)). The feature — gated behind
 Anthropic's `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flag and surfaced as four
 slash commands — had no stability: persistent teammates blocked session exit,
 the env-var gate was an experimental flag that could shift beneath us, and the
@@ -138,13 +138,13 @@ the kept infrastructure is byte-identical in behavior.
   (`agent-spawn-gate-incident.json`, `orchestrate-dispatch-schema.json`,
   `bounded-agent-spawning.json`) and the `commands.json` dataset reconciled to
   the reframed surfaces and verified against live hook/script output.
-- **Re-addition guard.** [ADR 0008](docs/adr/0008-decommission-agent-teams.md)
+- **Re-addition guard.** CLAUDE.md §Deliberate non-goals (agent-teams decommission)
   records the decommission rationale; re-introducing an agent-teams surface
   requires a superseding ADR and a stability story for persistent teammates.
 
 ## [0.6.0] — 2026-06-26
 
-ECC behavioral-parity ports (ADR 0007). The harness gains the five ECC
+ECC behavioral-parity ports (CLAUDE.md §Hook architecture (current profile ladder design)). The harness gains the five ECC
 runtime capabilities a cross-repo parity audit (2026-06-26) found missing —
 not operating-model differences, but concrete gates an operator moving from
 ECC to kbg would notice. All default-on under `standard`; `minimal` dials them
@@ -210,16 +210,16 @@ profile knob, no contract break for existing gates (byte-identical under
 
 ## [0.5.0] — 2026-06-25
 
-ECC-aligned operating model (ADR 0006) — retires the L2-L5 bounded-autonomy ratchet.
+ECC-aligned operating model (CLAUDE.md §The operating model (current)) — retires the L2-L5 bounded-autonomy ratchet.
 
-A doctrine-level change: the four-level autonomy ratchet (L2/L3/L4/L5, `KBG_AUTONOMY`, Gate-1/2, the enforced maker≠checker ship-gate, the launchd self-launch) is replaced by ADR 0006's single operating model — **the harness denies the irrecoverable set computationally and advises on the rest; the operator is the authority at every irreversible boundary; no autonomy flag, no enforced maker≠checker ship-gate, no model self-start.** Minor bump because the operating-model contract changes shape, not just surface.
+A doctrine-level change: the four-level autonomy ratchet (L2/L3/L4/L5, `KBG_AUTONOMY`, Gate-1/2, the enforced maker≠checker ship-gate, the launchd self-launch) is replaced by CLAUDE.md §The operating model (current)'s single operating model — **the harness denies the irrecoverable set computationally and advises on the rest; the operator is the authority at every irreversible boundary; no autonomy flag, no enforced maker≠checker ship-gate, no model self-start.** Minor bump because the operating-model contract changes shape, not just surface.
 
 - **push-gate retired, advisory reminder added (step 1, commit 7cabcea).** Deleted `hooks/gates/push-gate.sh` (the blanket-Bash-deny footgun that blocked safe operator tools like `--force-with-lease` behind the same wall as genuinely destructive commands) and added `hooks/advisory/advisory-push-reminder.sh` — the ECC-aligned non-blocking review reminder. `core.hooksPath` deny ported into `block-dangerous-git.sh`.
-- **ADR 0006 supersedes ADR 0003 / 0004 / 0005** for architecture AND operating model. Adopts the ECC-aligned model: scoped denials, advisory review, operator-as-authority, no autonomy flag. ADRs 0002-0005 stay append-only with "Superseded by ADR 0006" banners; ADR 0002's judgment-preservation principle (the model never authorizes a ship) is preserved.
+- **CLAUDE.md §The operating model (current) supersedes CLAUDE.md §The operating model (was L3 bounded autonomy, retired) / 0004 / 0005** for architecture AND operating model. Adopts the ECC-aligned model: scoped denials, advisory review, operator-as-authority, no autonomy flag. ADRs 0002-0005 stay append-only with "Superseded by CLAUDE.md §The operating model (current)" banners; the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle (the model never authorizes a ship) is preserved.
 - **L4 self-launch machinery + L3 enforcer deleted.** Removed `scripts/l4/**` (launch.sh, launchd plist, scheduler.conf, l4-quality-gate.sh, l4-quality-trial.txt, l4-auto-keep.py, cage-intact.sh, exit-tripwire.sh), `scripts/loop-guard.py`, `hooks/gates/l4-act-gate.sh`, and `hooks/post-tool/post-push-tripwire.sh` (all unwired from `hooks/hooks.json`). `autonomy_on()` in `hooks/_lib.sh` stubbed to `return 1`; the L3/L4 immunity block that forced `PROFILE=standard`/`DISABLED=""` while armed is removed — `CLAUDE_HOOK_PROFILE`/`CLAUDE_DISABLED_HOOKS` honor normally again. The `block-dangerous-git.sh` `git reset --hard l3-precycle-*` autonomy carve-out is removed; `git reset --hard` falls through to the blanket deny. `run-gauntlet.sh`'s `gauntlet_run` SHA-bound push-leg emission is neutralized (its only consumer, `push-gate.sh`, is gone); `run-gauntlet.sh` itself is **retained as the general validation runner** (CI + operator + gauntlet). The launchd job is decommissioned (it never ran live; the plist is a dark-restart hazard now that `KBG_AUTONOMY` can no longer be set).
 - **ECC parity gaps closed.** (1) New `hooks/gates/block-dangerous-bash.sh` — a Bash-wide destructive gate for the non-git destructive surface (`rm -rf` all flag forms, `find -exec rm`, `dd`, SQL DDL). (2) `--force-with-lease` (the safe operator force) is allowed again — dropped from `FORCE_FLAG_PAT`. (3) Git destructive set widened: `commit --amend`, `git rm -r`, `switch --force`, `checkout --force` now denied. (4) `--no-verify`/`-n` hook-bypass blocked on commit/push/merge/rebase/cherry-pick/am. (5) Advisory `hooks/advisory/tmux-reminder.sh` + `hooks/advisory/commit-quality-reminder.sh` added (non-blocking, no `permissionDecision`).
-- **Audit checks retired to no-op; tests updated.** `#31` (autonomy-invariant guardrail, ADR-0002 legs), `#32` (ADR-0002 legs + #32b ADR-0004 leg), `#43` (L3 cage integrity), `#48` (L4 F1-floor), `#49` (L4 model-gate), and `#52` (review-rigor INFO) return 0 with headers kept for ncheck stability. `#44`'s autonomy legs re-gated on `run-gauntlet.sh`/`hooks.json` presence (not ADR 0003/0005) so the retained gauntlet's `gauntlet_run`-emit + `core.hooksPath` guards stay live. Critical-hooks tests (`test-ch-l3.sh`, `test-ch-gates.sh`, `test-ch-harness-audit32.sh`, `test-ch-harness-audit52.sh`, `test-critical-hooks.sh`) updated for the new surface.
-- **Preserved.** ADR 0002's judgment-preservation principle (model is veto-only, never blesses a ship). `scripts/cage.txt` retained as a general consequential-safety-surface manifest (still read by `decision-provenance-nudge.sh`). `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` (no model self-start; audit #32 surface-3 stays live). The gauntlet runner (`run-gauntlet.sh`). Hermetic non-ADR-gated checks `#34` (inferential-FB sensors emit no `permissionDecision`), `#45` (reviewer read-only / maker≠checker), `#47` (learn-capture advisory-only) keep running.
+- **Audit checks retired to no-op; tests updated.** `#31` (autonomy-invariant guardrail, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model legs), `#32` (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model legs + #32b CLAUDE.md §The operating model (was L4 self-launch, retired) leg), `#43` (L3 cage integrity), `#48` (L4 F1-floor), `#49` (L4 model-gate), and `#52` (review-rigor INFO) return 0 with headers kept for ncheck stability. `#44`'s autonomy legs re-gated on `run-gauntlet.sh`/`hooks.json` presence (not CLAUDE.md §The operating model (was L3 bounded autonomy, retired)/0005) so the retained gauntlet's `gauntlet_run`-emit + `core.hooksPath` guards stay live. Critical-hooks tests (`test-ch-l3.sh`, `test-ch-gates.sh`, `test-ch-harness-audit32.sh`, `test-ch-harness-audit52.sh`, `test-critical-hooks.sh`) updated for the new surface.
+- **Preserved.** the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle (model is veto-only, never blesses a ship). `scripts/cage.txt` retained as a general consequential-safety-surface manifest (still read by `decision-provenance-nudge.sh`). `recursive-improve/SKILL.md` keeps `disable-model-invocation: true` (no model self-start; audit #32 surface-3 stays live). The gauntlet runner (`run-gauntlet.sh`). Hermetic non-ADR-gated checks `#34` (inferential-FB sensors emit no `permissionDecision`), `#45` (reviewer read-only / maker≠checker), `#47` (learn-capture advisory-only) keep running.
 
 ## [0.4.20] — 2026-06-24
 
@@ -261,8 +261,8 @@ component count change — version bump only.
   VV no-fire, the latter the predicate robustness guard for the bare-name +
   combined-form convention shift).
 
-- **ADR 0002 addendum — push-gate review-rigor.**
-  `docs/adr/0002-addendum-push-gate-review-rigor.md` records the rubber-stamp
+- **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum — push-gate review-rigor.**
+  `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model` records the rubber-stamp
   limitation, the observe-flag-vs-enforce-deny decision (and why enforce-deny
   re-introduces the #31.1 ceremony trap), and the audit #52 enforcement. No
   autonomy axis moves — the ship-authorizing gate stays computational and
@@ -284,7 +284,7 @@ not a new event type) — version bump only.
   decision-sizing triad (one-way door / blast radius / riskiest assumption). It
   is **advisory only** — it never emits a `permissionDecision`, so it cannot
   become a model-driven mutation gate (gate↔evidence invariant #29 +
-  LLM-judge-circularity guard, ADR 0002). Threshold is the one-way-door class
+  LLM-judge-circularity guard, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model). Threshold is the one-way-door class
   only (narrow, not blanket — avoids the #31.1 trap). Registered in `hooks.json`
   (Edit|Write|MultiEdit). `decision_rationale` added to `JOURNAL-SCHEMA.md` +
   the consumer `KNOWN_EVENTS`. Critical-hooks test pins no-`permissionDecision`
@@ -427,7 +427,7 @@ Installability + tripwire-activation follow-ups surfaced by a 4-agent verificati
   non-executable (`100644`) — a foreign installer got `Permission denied` on the `l4-act-gate`
   PreToolUse hook on every Bash call. Fixed git mode to `100755` on all five. (Missed by the
   gauntlet — no audit checks exec bits; surfaced by a live error, not a test.)
-- **feat(tripwire):** wire `scripts/l4/exit-tripwire.sh` (ADR 0004 exit-trigger-2) into
+- **feat(tripwire):** wire `scripts/l4/exit-tripwire.sh` (CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2) into
   `git-hooks/pre-push` — it was built but registered in no lifecycle event, so it never fired
   outside the test suite. Now checks the pushed commit range for an L4-authored commit that
   touched a caged safety surface and aborts the push on a CRIT. Computational (git log + grep),
@@ -455,7 +455,7 @@ genuinely are L4+ additions, not a misnomer). ADR filenames unchanged (immutable
 - `scripts/l3-run-report.sh` → `scripts/run-report.sh`
 - ~119 caller references updated (hooks.json, audit #43/#44/#48c/#48d, tests, recursive-improve
   SKILL.md, the cage self-reference, the importlib path in l4-auto-keep.py, CLAUDE.md, the design
-  doc). `l3-precycle-` rollback tags + `0003-l3-bounded-autonomy.md` ADR filename unchanged.
+  doc). `l3-precycle-` rollback tags retained.
 
 ## [0.4.0] — 2026-06-23
 
@@ -481,7 +481,7 @@ L4/L5 run is the owner's separate, later act.
 
 ## [0.3.10] — 2026-06-22
 
-First real L3 `--auto` dry-run (ADR 0003 Slice-1 acceptance) found the in-loop gate was never
+First real L3 `--auto` dry-run (CLAUDE.md §The operating model (was L3 bounded autonomy, retired) Slice-1 acceptance) found the in-loop gate was never
 runnable under the flag — the prior "gauntlet-green" was only ever measured flag-OFF. Two blocking fixes.
 
 ### Fixed
@@ -509,13 +509,13 @@ Passive learning-capture is now **default-ON** (opt out with `KBG_LEARN_CAPTURE=
   the flag too). **Scope:** default-ON applies to **all projects** the plugin is active in;
   captures are secret-scrubbed, out-of-repo, apply-gated. Per-shell opt-out `KBG_LEARN_CAPTURE=0`;
   per-hook `CLAUDE_DISABLED_HOOKS=learn-capture`. See
-  [ADR 0002 addendum](docs/adr/0002-addendum-passive-capture.md) "Default flip".
+  [the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model) "Default flip".
 - `test-ch-learn-capture.sh` gains a default-ON capture case; the off case now sets `=0` explicitly.
 
 ## [0.3.8] — 2026-06-21
 
 Passive learning-capture **Phase 2** — fold two L3-loop guards into
-`recursive-improve --auto` (within ADR 0003: human-launched, push-gated, computational).
+`recursive-improve --auto` (within CLAUDE.md §The operating model (was L3 bounded autonomy, retired): human-launched, push-gated, computational).
 Owner-scoped: build the goal-advancing pieces, **drop** the runaway-guard (active-hours/idle/
 cooldown) as a category mismatch — those guard a *self-launching daemon*; kbg's loop is
 human-launched and already bounded by `--max-runs` / `--max-duration` / `--fail-streak`.
@@ -543,7 +543,7 @@ human-launched and already bounded by `--max-runs` / `--max-duration` / `--fail-
 Passive learning-capture (Phase 1) — the "เรียนรู้เองอัตโนมัติ" pillar at the owner-chosen
 **Maximal-bounded** point: adopt ECC's continuous-learning **capture half** (observe → queue),
 human-gate the **apply half**. Owner answered the §9.3 build-vs-hold call ("I forget to run
-kbg:learn") → BUILD. Governance: [ADR 0002 addendum](docs/adr/0002-addendum-passive-capture.md)
+kbg:learn") → BUILD. Governance: [the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model)
 (not a superseding ADR — the advisory-sensor architecture is unchanged).
 
 ### Added
@@ -560,7 +560,7 @@ kbg:learn") → BUILD. Governance: [ADR 0002 addendum](docs/adr/0002-addendum-pa
   all unreviewed rows).
 - **`skills/learn/CANDIDATE-SCHEMA.md`** — the writer/reader contract (queue path, row shape,
   confidence formula, secret-scrub deny-list).
-- **`docs/adr/0002-addendum-passive-capture.md`**, **audit check #47** (CRIT: no
+- **`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`**, **audit check #47** (CRIT: no
   `permissionDecision`, no confidence-gate), 2 eval fixtures, `test-ch-learn-capture.sh` (12 tests).
 
 ### Changed
@@ -591,7 +591,7 @@ against building a new surface.
 ### Not done (recorded)
 
 - **`kbg:think` apply-engine skill — rejected.** A skill whose job is "pick the framework for you"
-  is a model-as-router (ADR 0002 — the line is *who picks the lens*, not *who presses go*); its
+  is a model-as-router (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — the line is *who picks the lens*, not *who presses go*); its
   description would collide with probe/decide/ideate/critical-eval (the v0.3.5 trigger-collision
   smell); and the upstream eval gives it no accuracy to gain.
 - **A new "situation → framework" table — rejected** as redundant: `harness-nav` already routes to
@@ -751,8 +751,8 @@ L3 bounded autonomy. A deliberate **telos change**, not a capability argument:
 the human gate moves from *per-mutation* to *per-run-approval + per-push*, so a
 self-improvement loop can run unattended *within an owner-approved run*. Minor
 bump for the milestone. **`KBG_AUTONOMY_L3` is OFF by default → behavior is
-identical to L2 today**; the flag is inert until the operator opts in. ADR 0003
-supersedes ADR 0002's L2-only architecture (append-only; ADR 0002 stays the
+identical to L2 today**; the flag is inert until the operator opts in. CLAUDE.md §The operating model (was L3 bounded autonomy, retired)
+supersedes the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's L2-only architecture (append-only; the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model stays the
 canonical L2 record). L4 (no human gate) stays rejected — changing the autonomy
 architecture requires a new superseding ADR, never a flag flip or a loop
 self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
@@ -760,11 +760,11 @@ self-edit. Surface counts unchanged (29 agents / 40 skills / 22 commands /
 
 ### Added
 
-- **ADR 0003 (`docs/adr/0003-l3-bounded-autonomy.md`)** — records the conscious
-  override of ADR 0002, the preserved principle (operator judgment is
+- **CLAUDE.md §The operating model (was L3 bounded autonomy, retired) (`CLAUDE.md §The operating model`)** — records the conscious
+  override of the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, the preserved principle (operator judgment is
   load-bearing), the one real relaxation (gate per-batch + per-push, not per
   mutation), the **two-gate model** (Gate 1 = launch approval; Gate 2 = pre-push
-  review; no per-cycle gate), and that ADR 0003 is itself reversible. ADR 0002
+  review; no per-cycle gate), and that CLAUDE.md §The operating model (was L3 bounded autonomy, retired) is itself reversible. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model
   gains a top supersession banner (not a silent violation).
 - **The cage** — `scripts/cage.txt` (deny-by-default path list the loop may
   never edit: all gates, `audit.sh`, doctrine, `.git/config`, the cage itself) +
@@ -1130,7 +1130,7 @@ Staff-eng + official-docs-verified fine-tune across all agent, command, and skil
 
 ### Fixed
 
-- **`recursive-improve` placeholder description** replaced with a real routed description that explains the bounded human-gated harness-improvement loop; `disable-model-invocation: true` and its recorded ADR-0002 reason are preserved.
+- **`recursive-improve` placeholder description** replaced with a real routed description that explains the bounded human-gated harness-improvement loop; `disable-model-invocation: true` and its recorded the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model reason are preserved.
 - **`kbg:harness-audit` description** now carries an explicit `Use when …` positive trigger clause instead of only `Also fires on …`.
 - **Regenerated `BOUNDARY.md`** to match the current fleet state.
 
@@ -1156,7 +1156,7 @@ Staff-eng + official-docs-verified fine-tune of team/orchestration surfaces. Tha
 
 - **All team/orchestration surfaces now carry Thai trigger phrases.** `/team-plan`, `/team-build`, `/team-cleanup`, `/validate-and-fix`, `/pre-flight-plan-linter`, `/wave-status`, `/debug-debate`, `kbg:orchestrate`, and `kbg:7-agent-pattern` descriptions now include Thai tokens (`สร้างทีม`, `รันแผนทีม`, `ล้างทีม`, `ตรวจงาน`, `ตรวจแผน`, `wave ไหนแล้ว`, `ถกเถียง`, `จัดสรรงาน`, `ทีม 7 คน`, …) alongside English, so Thai team/orchestrate requests route to the kbg surfaces instead of bypassing them.
 - **Single source of truth for teammate model selection.** `agents/{backend-engineer,code-architect,frontend-engineer,security-reviewer}.md` now declare `model: sonnet`, matching the F8 cost-split doctrine and the command spawn prompts. The redundant `model: "sonnet"` lines were removed from `/team-build`, `/validate-and-fix`, and `/debug-debate` body spawn instructions.
-- **`disable-model-invocation` applied per surface, not as a blanket.** Removed the flag from `/team-plan`, `/team-build`, `/validate-and-fix`, and `/pre-flight-plan-linter` — they are confirmation-gated in-flow and the model should reach them on explicit Thai/English requests. Kept the flag on `/team-cleanup` (destructive teardown, matches the recorded criterion). `recursive-improve` untouched (ADR 0002).
+- **`disable-model-invocation` applied per surface, not as a blanket.** Removed the flag from `/team-plan`, `/team-build`, `/validate-and-fix`, and `/pre-flight-plan-linter` — they are confirmation-gated in-flow and the model should reach them on explicit Thai/English requests. Kept the flag on `/team-cleanup` (destructive teardown, matches the recorded criterion). `recursive-improve` untouched (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 - **`/wave-status` description fixed.** It now notes the temporary `.scratch/` helper write instead of claiming strict read-only.
 
 ### Fixed
@@ -1212,7 +1212,7 @@ Removed `disable-model-invocation` from every skill except `recursive-improve`, 
 ### Changed
 
 - Dropped `disable-model-invocation: true` from `adr`, `article-mine`, `assert-presence`, `create-jira-bug`, `create-jira-story`, `decommission`, `migrate`, and `ship-change`. The flag also drops a skill's `description` from model context, so the create-jira skills were invisible to the model — it bypassed the Thai PO/QA templates and called raw MCP `createJiraIssue` directly. Single-ticket creation now relies on its in-flow preview-and-confirm step as the safeguard.
-- `recursive-improve` keeps the flag (autonomy invariant, audit #32 / ADR 0002); `ideate` stays `disable-model-invocation: false` (audit-required).
+- `recursive-improve` keeps the flag (autonomy invariant, audit #32 / the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model); `ideate` stays `disable-model-invocation: false` (audit-required).
 - Updated now-stale prose in the affected skills and the `acli` cross-reference; regenerated BOUNDARY.md (8 skills `manual` → `auto`).
 
 ## [0.2.90] — 2026-06-18
@@ -1236,7 +1236,7 @@ Fourth cross-component path-sweep: correct stale hook subdir references, outdate
 ### Fixed
 
 - `skills/semantic-code/SKILL.md` and `skills/semantic-code/reference.md` now point to `hooks/gates/secret-read-guard.sh::function::is_secret_path` (was `claude/hooks/secret-read-guard.sh...`, then `hooks/secret-read-guard.sh...`).
-- `docs/harness-decay-cadence.md`, `docs/onboarding.md`, and `docs/adr/0002-addendum-deferred-items.md` now reference gate hooks under `hooks/gates/` and the advisory logger under `hooks/advisory/` instead of the old flat `hooks/` paths.
+- `docs/harness-decay-cadence.md`, `docs/onboarding.md`, and `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model` now reference gate hooks under `hooks/gates/` and the advisory logger under `hooks/advisory/` instead of the old flat `hooks/` paths.
 - `docs/agents/verification-trail.md` now references `hooks/session/verification-gate.sh`.
 - `scripts/orchestrate-dispatch.py` and `scripts/evals/run-acceptance.py` docstring usage examples use `python3` instead of `python`.
 - `CHANGELOG.md` historical references updated: `hooks/tests/test-critical-hooks.sh` → `tests/hooks/runners/test-critical-hooks.sh`, `scripts/verification-tier-audit.py` → `scripts/governance/verification-tier-audit.py`, `scripts/review-pr-journal-pre-emit-validator.py` → `scripts/pr/review-pr-journal-pre-emit-validator.py`, `scripts/governance-summary.py` → `scripts/governance/governance-summary.py`.
@@ -1457,7 +1457,7 @@ Final pass of the count-drift sweep: refresh the last stale current-fleet snapsh
 
 ## [0.2.66] — 2026-06-18
 
-Surface consolidation to cut adopter cognitive load **without** adding a router. A two-workflow analysis (redundancy map + routing-technique research, each with an adversarial doctrine review) confirmed the "middle surface that routes" already exists as a flat tier (`orchestrate` / `triage` / `harness-nav` / `/kbg-help`); the work was to unify and de-duplicate, not build a dispatcher. An explicit routing tree / BST / router-agent was rejected (90 surfaces, not the ~1,000 where flat description-routing degrades; a model that routes-then-acts edges into the ADR 0002 self-gate).
+Surface consolidation to cut adopter cognitive load **without** adding a router. A two-workflow analysis (redundancy map + routing-technique research, each with an adversarial doctrine review) confirmed the "middle surface that routes" already exists as a flat tier (`orchestrate` / `triage` / `harness-nav` / `/kbg-help`); the work was to unify and de-duplicate, not build a dispatcher. An explicit routing tree / BST / router-agent was rejected (90 surfaces, not the ~1,000 where flat description-routing degrades; a model that routes-then-acts edges into the the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model self-gate).
 
 ### Removed
 
@@ -2184,14 +2184,14 @@ side effect of the runner edits.
 - `BOUNDARY.md` — no surface-area change (still 27 skills / 11
   commands / 27 agents / 35 hooks).
 - `docs/onboarding.md`, `README.md` — no edits needed.
-- Autonomy invariant (ADR 0002) — preserved; all 5 fixes are
+- Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) — preserved; all 5 fixes are
   doc/eval-only, no behavioral changes to runtime.
 
 ## [0.1.4] — 2026-06-12
 
 Minor release — closes the 2026-06-12 loop-engineering closure epic: 10
 SYNTHESIS items promoted Partial → Present, 1 defer-documentation pattern
-shipped, autonomy invariant (ADR 0002) preserved throughout. No breaking
+shipped, autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) preserved throughout. No breaking
 changes; old components keep their contracts; new ones are additive.
 
 This is the first release that ships the formal eval harness, the
@@ -2246,18 +2246,18 @@ category (Added / Changed / Fixed) within each phase.
     halts), `address-review` (per-cluster cap + reclassify + author-aware dedup), `ship-merge`
     (zero-Critical / acceptance-gap checklist), `/accept-task` wiring into `feature-dev`/`fix-bug`,
     and a weakened-to-pass gap class in `pr-test-analyzer`.
-- **Post-cutover doctrine rewrite** (`e8a1c95`) — `CONTEXT.md` + `docs/adr/0001-plugin-as-delivery.md`
+- **Post-cutover doctrine rewrite** (`e8a1c95`) — `CONTEXT.md` + `CLAUDE.md (doctrine home) 0001-plugin-as-delivery.md`
   rewritten to describe the persistent-plugin-enable state. Inverts the no-double-fire invariant:
   the load-bearing guard is the `install.sh` neutering of the 6 `install_claude_*` symlink-farm
   calls (the symlink farm no longer exists; `doctrine-edit-gate.sh` is belt-and-braces, not primary).
-  Adds `docs/adr/README.md` index. Documents the `.scratch/<slug>/` convention in `issue-tracker.md`.
+  Adds `CLAUDE.md §The operating model` index. Documents the `.scratch/<slug>/` convention in `issue-tracker.md`.
 - **Inventory labels dehardcoded** (`b03a556`) — `inventory-boundary.sh` no longer hardcodes
   `/Users/kobig/...` in `print_source` and `print_boundary` (mirrors the `audit.sh` repo-root-aware
   pattern from G15). `BOUNDARY.md` regenerated; host-portable labels (`Personals/kbg-harness`,
   not absolute path). **Activates harness-audit check #16 (fleet-drift detection, advisory)** —
   deactivating by deleting `BOUNDARY.md` reverts to the W1 state.
 - **4 pre-existing defects flagged by the epic audit** (`d9a1b2e`, PR #14) — `ARCHITECTURE.md`
-  ref-repoint (README→`CONTEXT.md`, CHANGELOG→ADR 0001), created `docs/adr/README.md` index,
+  ref-repoint (README→`CONTEXT.md`, CHANGELOG→the plugin-delivery model section in CLAUDE.md), created `CLAUDE.md §The operating model` index,
   documented `.scratch/<slug>/` convention in `issue-tracker.md`, fixed `inventory-boundary.sh`
   (hardcoded `GIT_ROOT/claude` → repo-root-aware post-cutover map) + committed a real
   `BOUNDARY.md` so check #16 (fleet-drift) can fire. Repo at **0C / 0W / 22I exit 0** after the
@@ -2665,12 +2665,12 @@ the spec's "compactness rule"). Acceptance contract at
   (F3-3)** — second `## Step 7` heading renamed to `## Step 7 done-when (final)`;
   same fix for `## Step 3` in team-plan.md. Prevents auto-linker / TOC
   collisions.
-- **`docs/adr/0002-autonomy-invariant.md` "Mapping to Harness-Engineering
+- **`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model` "Mapping to Harness-Engineering
   Corpus Prescriptions" section** — 16-article corpus map (10 loop-engineering
   + 5 production-harness + 1 self-repair) with explicit "Harness Alternative"
   and "Divergence Rationale" columns for each L3/L4 prescription. Records the
   principled rejection of L3/L4 autonomy as a **deliberate divergence**, not a
-  backlog gap. Gap-closure spec distinguishes "Blocked by ADR 0002" (L3/L4
+  backlog gap. Gap-closure spec distinguishes "Blocked by the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model" (L3/L4
   items, not backlog) from "Eligible for closure" (items that can be promoted
   without violating the invariant). This makes the autonomy invariant's
   reach explicit so future readers do not mistake a rejection for an oversight.
@@ -2691,7 +2691,7 @@ the spec's "compactness rule"). Acceptance contract at
   inside `majestic`) — fixed in 3 iterations and locked in with 9 new test
   cases (F7g negative, F7h positive boundary-class). Final state: 201/0 tests
   pass (was 192/0; +9 new). `audit.sh` green bar: `0C/0W/26I exit 0` (matches
-  the 26-I1 baseline from ADR 0002 §Verification).
+  the 26-I1 baseline from the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §Verification).
 - 5 of 6 open SPEC.md questions resolved (sweet spot, 5-vs-3 teammates,
   model split, plan-file location, fresh-session gate handling); 1
   deferred (INT-N pre-task lock — answered with "validate after all builders
@@ -2735,7 +2735,7 @@ requested; ship in bulk"). Acceptance contract at
   excludes, (2) denylist pattern + when to consider it, (3) our convention
   (default allowlist; reserve denylist; review on Permission re-audit
   cadence), (4) examples from this harness (4 agents, with `tools:` line
-  + rationale), (5) cross-references to ADR 0002, harness-decay-cadence
+  + rationale), (5) cross-references to the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, harness-decay-cadence
   Permission re-audit, F1 Bash-gate pattern, BOUNDARY.md Mutates column.
 - **3 cross-references to `docs/agent-tool-patterns.md` (F6)** — `BOUNDARY.md`
   gains a 1-paragraph "Cross-references" section linking to the new doc;
@@ -2817,7 +2817,7 @@ and `claude_code.tool` OTEL spans with `agent_id` / `parent_agent_id`
 attributes, but kbg-harness had zero OTEL config and zero cost-monitoring
 skill. Owner resolved 2026-06-12 to ship **passive monitor only** (option
 A), accepting the late-warning tradeoff to preserve the L2 invariant
-(ADR 0002).
+(the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 
 - 1 new skill: `skills/usage-monitor/` (SKILL.md 6.0K, scripts/usage-summarize.sh
   4.0K) — read-only cost + sub-agent usage summary, opt-in via `KBG_USAGE_MONITOR=1`.
@@ -2832,11 +2832,11 @@ A), accepting the late-warning tradeoff to preserve the L2 invariant
 - 1 symlink: `~/.claude/skills/usage-monitor` → repo (for harness-audit
   F1 satisfaction and Claude Code loadability).
 - 0 changes to `settings.local.json` — capture is fully opt-in via env var.
-- 0 changes to doctrine, ADRs, or any gate hooks. ADR 0002 (L2 only)
+- 0 changes to doctrine, ADRs, or any gate hooks. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model (L2 only)
   honored strictly.
 - CHANGELOG: this subsection.
 - SPEC.md (gitignored): D9 marked `RESOLVED 2026-06-12 (passive monitor
-  shipped; no enforcement per ADR 0002)`.
+  shipped; no enforcement per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model)`.
 - BOUNDARY.md regenerated: Skills count 26 → 27; the pre-existing
   regenerator `description: \|` parse bug resolved by the new skill's
   single-quoted `description: '...'` YAML.
@@ -2950,8 +2950,8 @@ honest docs.
   and the only place the invariant's guard lives; the check does not pretend
   future skills need the same property.
 
-- **ADR 0002 — Autonomy invariant** (`dd38247`, `docs/adr/0002-autonomy-invariant.md`,
-  251 lines) — the canonical record of the irreversible decision. Mirrors ADR 0001's
+- **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — Autonomy invariant** (`dd38247`, `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`,
+  251 lines) — the canonical record of the irreversible decision. Mirrors the plugin-delivery model section in CLAUDE.md's
   5-H2 structure (Context / Decision / Consequences / Rejected alternatives /
   Verification). Status: Accepted, **irreversible on the capability-bounding
   argument** ("a model that can verify its own work still cannot vouch for the
@@ -2968,7 +2968,7 @@ honest docs.
   honest-fixable doc-only changes that don't alter behavior:
   - L5 vocabulary cross-reference at `skills/orchestrate/reference.md:76` —
     first CONTEXT.md cross-ref in that file, names the autonomy invariant
-    (CONTEXT.md §Invariants + ADR 0002) and clarifies L5 vendor primitives
+    (CONTEXT.md §Invariants + the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) and clarifies L5 vendor primitives
     (`/schedule`, `/loop`, `CronCreate`) are for user-external tasks only.
   - config-change-log mislabel at `docs/harness-decay-cadence.md:80` —
     previously said "config-change-log + config-protection (gates Edit/Write
@@ -3018,7 +3018,7 @@ default is ON (preserves the 12 F7 tests in `tests/hooks/runners/test-critical-h
 This is **opt-OUT, not opt-IN**: the gate is a load-bearing safety check that
 blocks test-claim-without-validation; the escape hatch is a documented way to
 downgrade F7 to log-only for sessions where the operator trusts the teammate
-chain to surface test-claim gaps another way. ADR 0002 L2/L3 boundary
+chain to surface test-claim gaps another way. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L2/L3 boundary
 preserved — the L2 default is the safety-checked one; the L3 mode is the
 opt-out.
 
@@ -3065,7 +3065,7 @@ lead picks it up cold, and a 30-stage fan-out overshoots because the LLM
 forgot the F8.5 cap mid-spawn. With the dispatcher, the spec is on disk,
 the wave plan is machine-rendered, and a fresh session can resume from
 the same plan file. **The model does judgment; the code does
-coordination.** ADR 0002 boundary preserved: the dispatcher does NOT
+coordination.** the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model boundary preserved: the dispatcher does NOT
 spawn LLM agents; agent-typed stages are emitted as "would-spawn" lines
 that the lead dispatches per the F9 template. Putting LLM dispatch
 inside the dispatcher would be a covert L4 loop, which the autonomy
@@ -3112,7 +3112,7 @@ invariant forbids.
 - `skills/orchestrate/SKILL.md` — new "Coordination-as-code" section
   (~30 lines) under the existing rule structure. Names the model/ code
   split explicitly, links the 3 example specs, and states the
-  "dispatcher does NOT spawn agents" boundary (ADR 0002). The plan
+  "dispatcher does NOT spawn agents" boundary (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model). The plan
   acceptance criteria said "≥3 example workflow specs in
   `skills/orchestrate/examples/`" + "SKILL.md references the dispatcher"
   — both delivered.
@@ -3207,22 +3207,22 @@ spends tokens discovering the failure mid-task.
   the import to module level alongside the other stdlib imports.
 - BOUNDARY.md unchanged (script additions don't change routable
   surfaces: still 27 skills / 11 commands / 27 agents / 38 hooks).
-- Autonomy invariant (ADR 0002) preserved: the script is a SENSOR
+- Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) preserved: the script is a SENSOR
   that returns a verdict; it does not auto-fix, auto-mutate, or
   block session start. The CALLER (a hook, `/pre-ship-verify`, or
   the operator) decides what to do with the verdict.
 
-### Phase 3 — Defer documentation + ADR 0002 addendum (2026-06-12, 2 commits)
+### Phase 3 — Defer documentation + the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum (2026-06-12, 2 commits)
 
 Captures the **why** behind the 10 SYNTHESIS items that will never ship
 as their own components (L3/L4 territory, vendor primitives, or
-ADR 0002 collisions), and what the L2 alternative is for each. The
+the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model collisions), and what the L2 alternative is for each. The
 addendum is the **one-stop reference** for "why is X absent?" so the
 next audit doesn't waste cycles re-debating decided-closed decisions.
 
 #### Added
 
-- `docs/adr/0002-addendum-deferred-items.md` — new ADR addendum mapping
+- `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model` — new ADR addendum mapping
   10 SYNTHESIS rows to their shipped L2 alternatives:
   - **#5** `goal-primitive-stop-condition` → `ACCEPTANCE.md` stop-condition contract
   - **#21** `machine-readable-feature-list` → `docs/agents/verification-trail.md` schema
@@ -3235,10 +3235,10 @@ next audit doesn't waste cycles re-debating decided-closed decisions.
   - **#47** `durable-checkpointed-state-recovery` → `.scratch/<slug>/` journaled events (session-scoped by design)
   - **#50** `self-improving-harness-via-prs` → `recursive-improve` skill (proposal-then-ASK-then-act)
 
-  Rationale for the addendum (vs a section in ADR 0002): ADR 0002 is
+  Rationale for the addendum (vs a section in the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model): the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model is
   the canonical invariant record (don't dilute the "judgment preservation"
   thesis); the addendum is the derived mapping (changes over time);
-  cross-link is unidirectional (ADR 0002 → addendum).
+  cross-link is unidirectional (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model → addendum).
 
 - `.scratch/harness-loop-audit-2026-06-12/GAP-CLOSURE-SPEC.md` — added
   inline `> AUTONOMY-DEFER` / `> VENDOR-DEFER` callouts at the 3 spec
@@ -3246,7 +3246,7 @@ next audit doesn't waste cycles re-debating decided-closed decisions.
   addendum. Inline callouts survive the spec becoming the source of
   truth in a future round.
 
-- `docs/adr/README.md` — added index row for the addendum (Accepted
+- `CLAUDE.md §The operating model` — added index row for the addendum (Accepted
   status, 2026-06-12 date).
 
 ### Phase 5 — Onboarding integration + closure milestone (2026-06-12, 1 commit)
@@ -3267,7 +3267,7 @@ the remote.
   new section adds ~60 words, well under the 1-commit budget).
 
 - `README.md` — Documentation index gets 1 new entry:
-  `docs/adr/0002-addendum-deferred-items.md`. The 2-entry delta in
+  `METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`. The 2-entry delta in
   the P5 plan became a 1-entry delta because `docs/onboarding.md`
   was already indexed in P1.3 (line 87).
 
@@ -3299,10 +3299,10 @@ the remote.
   Partial before); the 10 promotions (Partial → Present) are
   #11, #13, #15, #22, #24, #33, #38, #39, #41, #49.
 
-- **ADR 0002 addendum conformance**: `claude plugin validate --strict .`
+- **the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum conformance**: `claude plugin validate --strict .`
   passes (doc-only change, not manifest-affecting).
 
-- **Autonomy invariant (ADR 0002) preserved throughout**:
+- **Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) preserved throughout**:
   - P2.3 `KBG_ENFORCE_TASK_COMPLETED` is opt-OUT (default ON, breaks
     nothing), not opt-IN (would require amendment).
   - P2.5 `auth-health-check.py` is a sensor; it does not auto-block
@@ -3326,7 +3326,7 @@ the remote.
 | P2.3 | #13 `KBG_ENFORCE_TASK_COMPLETED` opt-OUT escape hatch | 1 | done |
 | P2.4 | #49 coordination-as-code: `orchestrate-dispatch.py` + 3 specs | 1 | done |
 | P2.5 | #38 auth/MCP/plugin health probe (`auth-health-check.py` + 2 evals) | 1 | done |
-| P3 | Defer docs: 3 spec callouts + ADR 0002 addendum | 1 | done |
+| P3 | Defer docs: 3 spec callouts + the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum | 1 | done |
 | P4 | SYNTHESIS re-baseline (local, `.scratch/` gitignored) | (local-only) | done |
 | P5 | Onboarding integration + closure milestone (this entry) | 1 | done |
 | **Total** | **13 commits + 1 local-only audit update** | **14** | **done** |
@@ -3423,7 +3423,7 @@ standalone, self-contained Claude Code plugin (`.claude-plugin/{plugin,marketpla
   truth, shipped as a plugin artifact. The owner installs it via a bare-name symlink farm
   (`install.sh`), **not** via plugin-install; the plugin is disabled locally
   (`settings.json: "kbg@kobig": false`) so its hooks never double-fire against the symlinked copy.
-  See `docs/adr/0001-personal-harness-as-plugin.md`.
+  See `CLAUDE.md §Plugin delivery model`.
 - **Doctrine is mandatory, not opt-in.** A stranger who installs and enables `kbg` inherits the
   owner's METHODOLOGY/RTK/ACLI/DBGATE conventions as-is. This is intentional for a personal harness;
   see `README.md` → "For external installers" for how to disable or adapt.

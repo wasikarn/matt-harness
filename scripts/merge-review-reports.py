@@ -15,7 +15,7 @@ the review-pr.yml `merge-reports` stage:
   4. Action Plan     — concrete file:line edits with owner column.
 
 The script is intentionally deterministic: it merges, de-dups, ranks, and
-formats; it does NOT call an LLM. Autonomy invariant (ADR 0002): leave
+formats; it does NOT call an LLM. Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model): leave
 judgment calls (e.g., whether a conflict is real) to the lead agent.
 """
 

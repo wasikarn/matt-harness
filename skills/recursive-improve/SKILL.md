@@ -2,7 +2,7 @@
 name: recursive-improve
 description: "Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /ship-task), external tool research (use kbg:article-mine), or any self-launching / scheduled / unattended loop (every iteration is human-gated at an AskUserQuestion gate before any mutation)."
 disable-model-invocation: true
-disable-model-invocation-reason: LOAD-BEARING safety invariant (ADR 0002), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
+disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---
 
 # Recursive Improve
@@ -19,8 +19,8 @@ the hand — but a hand the human always holds.
 multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion` gate before any
 mutation. The skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and the human is the loop's real stop condition at the per-mutation gate; the iteration cap is a
-context-exhaustion backstop. The operating model is ADR 0006 — read in Bash:
-`cat "${KBG_PLUGIN_ROOT}/docs/adr/0006-ecc-aligned-operating-model.md"`.
+context-exhaustion backstop. The operating model is CLAUDE.md §The operating model (current) — read in Bash:
+`cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`.
 
 **When to use:** the user explicitly asks to improve / fix / audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
@@ -59,7 +59,7 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
   gaps table below is not trustworthy. The script does NOT auto-pause
   (`recursive-improve-observe.py:check_stall` returns a posture dict, never
   raises — the in-loop gate stays computational, never a model self-deciding;
-  ADR 0006 principle). Suggested action strings are
+  CLAUDE.md §The operating model (current) principle). Suggested action strings are
   advisory; the operator decides.
 - **Debt-ceiling gate (SYNTHESIS #41 / spec §4.4):** if the `comprehension debt
   ledger` section reports `DEBT-CEILING BREACHED` (debt_count > `KBG_DEBT_CEILING`,
@@ -205,4 +205,4 @@ recursive-improve — iteration <N> report
   (kept minimal per Rule 2 — revisit only if a durable per-iteration history is actually needed).
 - **Origin & locked decisions:** `.scratch/harness-recursive-improvement/phase-4-recursive-loop.md`
   (metric = `verification_summary` gaps + harness-audit findings; cap = 5; rollback = surface + ask).
-  The autonomous-vs-human-gated question is resolved: **human-gated at the per-mutation gate** — never model-gated, never self-launching (ADR 0006).
+  The autonomous-vs-human-gated question is resolved: **human-gated at the per-mutation gate** — never model-gated, never self-launching (CLAUDE.md §The operating model (current)).

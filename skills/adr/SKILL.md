@@ -27,7 +27,7 @@ Record decisions that future engineers will need to understand. An ADR is not a 
 
 4. **State Decision** — "We will X." Rationale, consequences, mitigations. State the **revisit trigger**: the one condition that, if it changed, would flip this decision (e.g. "if write throughput exceeds 10k/s, revisit"). A decision with no reversal condition is either trivial or untested.
 
-5. **Write ADR** — Markdown in `docs/adr/` or `adr/`:
+5. **Write ADR** — Markdown in `CLAUDE.md (doctrine home) ` or `adr/`:
    ```markdown
    # ADR-NNN: Title
    - Status: proposed
@@ -47,7 +47,7 @@ Record decisions that future engineers will need to understand. An ADR is not a 
 
 6. **Review & Accept** — Share with stakeholders. Incorporate feedback. Change status to `accepted`. Notify affected teams.
 
-7. **Maintain** — Mark deprecated/superseded as system evolves. Update constraints or mitigations. Maintain index at `docs/adr/README.md`.
+7. **Maintain** — Mark deprecated/superseded as system evolves. Update constraints or mitigations. Maintain index at `CLAUDE.md §The operating model`.
 
 Done.
 

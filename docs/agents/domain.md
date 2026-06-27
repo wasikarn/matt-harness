@@ -6,7 +6,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 - **`DOMAINS.md`** at the repo root (in this repo; the conventional name in other repos is `CONTEXT.md`), or
 - **`CONTEXT-MAP.md`** at the repo root if it exists — it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+- **`CLAUDE.md (doctrine home) `** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/CLAUDE.md (doctrine home) ` for context-scoped decisions.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skill (`/grill-with-docs`) creates them lazily when terms or decisions actually get resolved.
 
@@ -17,7 +17,7 @@ Single-context repo (most repos):
 ```
 /
 ├── CONTEXT.md
-├── docs/adr/
+├── CLAUDE.md (doctrine home) 
 │   ├── 0001-event-sourced-orders.md
 │   └── 0002-postgres-for-write-model.md
 └── src/
@@ -28,14 +28,14 @@ Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
 ```
 /
 ├── CONTEXT-MAP.md
-├── docs/adr/                          ← system-wide decisions
+├── CLAUDE.md (doctrine home)                           ← system-wide decisions
 └── src/
     ├── ordering/
     │   ├── CONTEXT.md
-    │   └── docs/adr/                  ← context-specific decisions
+    │   └── CLAUDE.md (doctrine home)                   ← context-specific decisions
     └── billing/
         ├── CONTEXT.md
-        └── docs/adr/
+        └── CLAUDE.md (doctrine home) 
 ```
 
 ## Use the glossary's vocabulary
@@ -48,4 +48,4 @@ If the concept you need isn't in the glossary yet, that's a signal — either yo
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+> _Contradicts CLAUDE.md §Hook architecture (current profile ladder design) (event-sourced orders) — but worth reopening because…_

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fact-forcing edit gate — ECC gateguard-fact-force.js four-fact-force port
-# (ADR 0007). Denies the FIRST Edit/Write/MultiEdit of each file path per
+# (CLAUDE.md §Hook architecture (current profile ladder design)). Denies the FIRST Edit/Write/MultiEdit of each file path per
 # session, forcing the agent to state importers/callers, affected API, data
 # schemas, and the user's verbatim instruction BEFORE the edit lands. The
 # second touch of the same path passes — friction, not a wall.

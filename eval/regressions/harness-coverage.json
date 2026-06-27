@@ -1835,9 +1835,9 @@
       "drift_vs_prev_window_pct": 0,
       "status": "intentional_gap",
       "intentional_gap": {
-        "rationale": "Bockeler L465-L478 names behaviour-inferential-FB as the article's deepest open problem; kbg's verification-gate, fabrication-verdict-log, and inferential-structural-judge are advisory-only per ADR 0002 L115 (LLM-judge-circularity mitigation).",
+        "rationale": "Bockeler L465-L478 names behaviour-inferential-FB as the article's deepest open problem; kbg's verification-gate, fabrication-verdict-log, and inferential-structural-judge are advisory-only per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L115 (LLM-judge-circularity mitigation).",
         "article_citation": "L465-L478",
-        "kbg_decision_ref": "ADR 0002 L115",
+        "kbg_decision_ref": "the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L115",
         "revisit_when": "When a non-model-class judge (different model family) is available; the autonomy invariant forbids a model-driven gating decision from this cell in the meantime."
       }
     }
@@ -1850,7 +1850,7 @@
     },
     {
       "id": "case_1_intentional_gap_is_inf_fb_behaviour",
-      "description": "The 1 known intentional_gap cell is inf-fb-behaviour (Bockeler L465-L478 + ADR 0002 L115). Guards against the intentional_gap annotation being lost or renamed in a future schema revision.",
+      "description": "The 1 known intentional_gap cell is inf-fb-behaviour (Bockeler L465-L478 + the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L115). Guards against the intentional_gap annotation being lost or renamed in a future schema revision.",
       "assertion": "exactly 1 cell has status='intentional_gap' AND its cell_id == 'inf-fb-behaviour' AND its intentional_gap object has all 4 required keys: rationale, article_citation, kbg_decision_ref, revisit_when"
     },
     {
@@ -1880,8 +1880,8 @@
     },
     {
       "id": "case_7_intentional_gap_4_subfields_populated",
-      "description": "The intentional_gap annotation has exactly the 4 required sub-fields per design doc section 3.4 (rationale, article_citation, kbg_decision_ref, revisit_when). The values are non-empty strings. article_citation references Bockeler L465-L478; kbg_decision_ref references ADR 0002 L115 — the verbatim text from the script's KNOWN_INTENTIONAL_GAPS table.",
-      "assertion": "inf-fb-behaviour.intentional_gap has exactly the 4 keys {rationale, article_citation, kbg_decision_ref, revisit_when} AND rationale is a non-empty string AND article_citation == 'L465-L478' AND kbg_decision_ref == 'ADR 0002 L115' AND revisit_when is a non-empty string"
+      "description": "The intentional_gap annotation has exactly the 4 required sub-fields per design doc section 3.4 (rationale, article_citation, kbg_decision_ref, revisit_when). The values are non-empty strings. article_citation references Bockeler L465-L478; kbg_decision_ref references the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L115 — the verbatim text from the script's KNOWN_INTENTIONAL_GAPS table.",
+      "assertion": "inf-fb-behaviour.intentional_gap has exactly the 4 keys {rationale, article_citation, kbg_decision_ref, revisit_when} AND rationale is a non-empty string AND article_citation == 'L465-L478' AND kbg_decision_ref == 'the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model L115' AND revisit_when is a non-empty string"
     },
     {
       "id": "case_8_journal_contains_meaningful_and_trivial_fires",

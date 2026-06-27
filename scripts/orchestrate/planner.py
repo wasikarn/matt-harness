@@ -82,7 +82,7 @@ def build_plan(spec: dict[str, Any], waves: list[list[str]], max_per_wave: int, 
     parallel into 5-agent follow-up waves, merge some agents, or accept
     the overshoot explicitly. The dispatcher refuses to silently mutate
     the spec — that would be a covert L4 auto-block, which the autonomy
-    invariant (ADR 0002) forbids. The flag is a `f8_5_overflow` list on
+    invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) forbids. The flag is a `f8_5_overflow` list on
     the stage entry; the lead reads it, decides.
     """
     stage_by_id = {s["id"]: s for s in spec["stages"]}

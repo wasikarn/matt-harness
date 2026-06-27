@@ -1,4 +1,4 @@
-# 55. mcp-health-gate event-name contract (ADR 0007) — this gate is wired under
+# 55. mcp-health-gate event-name contract (CLAUDE.md §Hook architecture (current profile ladder design)) — this gate is wired under
 # TWO events (PreToolUse:mcp__.* and PostToolUseFailure), so it MUST branch on
 # stdin `.hook_event_name`. There is NO `CLAUDE_HOOK_EVENT_NAME` env var (verified
 # contract #3) — branching on the non-existent env var silently makes both
@@ -14,8 +14,8 @@ _F=$(find "$CLAUDE_DIR/hooks" -type f -name "mcp-health-gate.sh" 2>/dev/null | h
 if [ -f "$_F" ]; then
   _code=$(sed '/^[[:space:]]*#/d' "$_F" 2>/dev/null)
   printf '%s\n' "$_code" | /usr/bin/grep -qE '\.hook_event_name' \
-    || crit "mcp-health-gate.sh: does not read .hook_event_name from stdin — a CLAUDE_HOOK_EVENT_NAME env branch silently no-ops both wired events (ADR 0007 contract #3)"
+    || crit "mcp-health-gate.sh: does not read .hook_event_name from stdin — a CLAUDE_HOOK_EVENT_NAME env branch silently no-ops both wired events (CLAUDE.md §Hook architecture (current profile ladder design) contract #3)"
   if printf '%s\n' "$_code" | /usr/bin/grep -qE 'CLAUDE_HOOK_EVENT_NAME'; then
-    crit "mcp-health-gate.sh: code branches on CLAUDE_HOOK_EVENT_NAME — that env var does not exist (ADR 0007 contract #3); use stdin .hook_event_name"
+    crit "mcp-health-gate.sh: code branches on CLAUDE_HOOK_EVENT_NAME — that env var does not exist (CLAUDE.md §Hook architecture (current profile ladder design) contract #3); use stdin .hook_event_name"
   fi
 fi

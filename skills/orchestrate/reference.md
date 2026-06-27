@@ -45,7 +45,7 @@ Domain specialists (dispatch when the task matches the domain — `backend-engin
 
 ### Sensors (auto-fired by hooks, NOT user-dispatched)
 
-These agents are invoked by hook scripts, not by the user via `/orchestrate`. They appear in the routing table only so the harness-audit W1 ("not referenced in orchestrate routing table") does not false-flag a sensor. They are **read-only** by design (autonomy invariant, ADR 0002 §L115) — they judge, they do not write. The orchestrator MUST NOT dispatch them; only the matching hook may invoke them.
+These agents are invoked by hook scripts, not by the user via `/orchestrate`. They appear in the routing table only so the harness-audit W1 ("not referenced in orchestrate routing table") does not false-flag a sensor. They are **read-only** by design (autonomy invariant, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115) — they judge, they do not write. The orchestrator MUST NOT dispatch them; only the matching hook may invoke them.
 
 - `inferential-structural-judge` — SessionEnd sensor for diff-shape judging (over-engineering / arch-drift / test-pattern / doctrine-conformance; 4-dimension schema per `docs/research/inferential-structural-judge-design.md` §3). Invoked by `hooks/session/inferential-structural-judge-on-session-end.sh`. Advisory only — journals to `~/.claude/governance-events.jsonl`, never emits `permissionDecision`.
 
@@ -88,7 +88,7 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 
 The top rung: work that runs **unattended and recurring** — handed to `/schedule` (remote cron routine), `/loop` (in-session interval), or `CronCreate` — instead of you re-running it each cycle. L4 is unattended but one-shot; L5 is unattended **and** repeating.
 
-L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (ADR 0002 — read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
+L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — read in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
 
 **Route here only when ALL hold:**
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SessionStart advisory — probes MCP connections on startup/resume.
 # Emits additionalContext warning if any MCP is degraded or broken.
-# Non-blocking: exit 0 always. Operator must reauth manually (ADR 0002).
+# Non-blocking: exit 0 always. Operator must reauth manually (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 # shellcheck disable=SC2034
 HOOK_HONOR_PROFILE_OFF=1
 HOOK_ID="mcp-session-watchdog"

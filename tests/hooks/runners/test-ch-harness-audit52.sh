@@ -7,7 +7,7 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # The armed-push Gate-2 check (push-gate.sh:87) authorizes on the PRESENCE of a
 # `review_finding` event, not its rigor: an inline-review verdict satisfies the
 # gate identically to a full multi-agent kbg:review-pr. Audit #52 (gated on the
-# ADR 0002 addendum) INFO-flags review_finding events whose `fields.agent` is NOT
+# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum) INFO-flags review_finding events whose `fields.agent` is NOT
 # composed of fleet reviewer names — the decay-sweep prompt that the maker≠checker
 # bar was met, not rubber-stamped. INFO never inflates the audit exit code.
 #
@@ -21,7 +21,7 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 #                    misclassified as inline. A `!~ ^kbg:` predicate would cry "3"
 #                    here — the positive-identification predicate must stay silent.
 AUDIT="$HOOKS/../skills/harness-audit/scripts/audit.sh"
-ADR_REL="docs/adr/0002-addendum-push-gate-review-rigor.md"
+ADR_REL="METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model"
 
 # Build a minimal-but-valid audit fixture: a repo with a claude/ tree (fleet
 # dirs so the no-fleet guard does not err_die) + the ADR (so #52's gate opens).
@@ -30,7 +30,7 @@ mk_audit_fixture() {
   local f="$1"
   /bin/rm -rf "$f" 2>/dev/null || true
   mkdir -p "$f/claude/agents" "$f/claude/skills" "$f/claude/commands" "$f/claude/hooks" "$f/claude/docs/adr" "$f/.claude-plugin"
-  printf '# ADR 0002 addendum — fixture (gates audit #52 on)\n' > "$f/claude/$ADR_REL"
+  printf '# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum — fixture (gates audit #52 on)\n' > "$f/claude/$ADR_REL"
   printf '{ "name": "kbg", "version": "0.0.1" }\n' > "$f/.claude-plugin/plugin.json"
 }
 
@@ -42,7 +42,7 @@ emit_review_finding() {
     >> "$jpath"
 }
 
-# push-gate-retired 2026-06-25 (ADR 0006) — audit #52 (review-rigor observe-flag) no-op'd.
+# push-gate-retired 2026-06-25 (CLAUDE.md §The operating model (current)) — audit #52 (review-rigor observe-flag) no-op'd.
 # UU/VV asserted #52 INFO firing; with #52 no-op'd there is no INFO → UU fails.
 # Re-enable by setting KBG_AUDIT_52_LIVE=live when #52 returns.
 if [ "${KBG_AUDIT_52_LIVE:-no}" = "live" ]; then
@@ -79,7 +79,7 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s no-fire: #52 must be silent for dispatched-only journal, but emitted (rc=%s):\n%s\n' "harness-audit #52" "$VV_RC" "$(printf '%s' "$VV_OUT" | grep "audit #52:" | head -5)"
 fi
 else
-  printf "  ⏭  push-gate-retired 2026-06-25 (ADR 0006) — audit #52 no-op'd — UU/VV skipped\n"
+  printf "  ⏭  push-gate-retired 2026-06-25 (CLAUDE.md §The operating model (current)) — audit #52 no-op'd — UU/VV skipped\n"
 fi
 
 report

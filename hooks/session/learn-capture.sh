@@ -6,7 +6,7 @@
 # rows to the out-of-repo queue. It is the capture half of the ECC continuous-
 # learning idea, with the apply half kept HUMAN-GATED (kbg:learn). It NEVER
 # mutates the repo, NEVER emits a permissionDecision, and ALWAYS exits 0.
-# Governance: docs/adr/0002-addendum-passive-capture.md. Contract: the schema at
+# Governance: METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model. Contract: the schema at
 # skills/learn/CANDIDATE-SCHEMA.md (queue path, row shape, secret-scrub).
 #
 # Default-ON: disable with `export KBG_LEARN_CAPTURE=0` (opt-out).
@@ -18,7 +18,7 @@ HOOK_ID="learn-capture"
 source "$(dirname "$0")/../_lib.sh"
 hook_init "$HOOK_ID" || exit 0
 
-# Default-ON gate; opt out with KBG_LEARN_CAPTURE=0 (ADR 0002 addendum). Capture is
+# Default-ON gate; opt out with KBG_LEARN_CAPTURE=0 (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum). Capture is
 # advisory (out-of-repo queue, secret-scrubbed, never gates) so on-by-default is within
 # the addendum's "capture is automatic" envelope — APPLY stays human-gated in kbg:learn.
 [ "${KBG_LEARN_CAPTURE:-1}" = "0" ] && exit 0

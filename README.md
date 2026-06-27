@@ -9,7 +9,7 @@ It adds 29 specialist agents, 28 workflow skills, 13 slash commands, and 50 gove
 hooks across 14 lifecycle events — plus always-on doctrine injection. No symlink farm,
 no manual wiring: components auto-discover from the plugin cache.
 
-> **Operating model (v0.4.x):** [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) supersedes the L2–L5 autonomy ladder. The harness **denies the irrecoverable set computationally** (scoped denials: `block-dangerous-git.sh` + `block-dangerous-bash.sh`) and **advises on the rest** (advisory reminders: `advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`); the **operator is the authority at every irreversible boundary**. No autonomy flag, no enforced maker-checker ship-gate, no model self-start. The gauntlet (`run-gauntlet.sh`) remains as a general validation runner. ADRs 0002–0005 are retained as historical record (superseded banners in place).
+> **Operating model (v0.4.x):** CLAUDE.md §The operating model (current) supersedes the L2–L5 autonomy ladder. The harness **denies the irrecoverable set computationally** (scoped denials: `block-dangerous-git.sh` + `block-dangerous-bash.sh`) and **advises on the rest** (advisory reminders: `advisory-push-reminder`, `tmux-reminder`, `commit-quality-reminder`); the **operator is the authority at every irreversible boundary**. No autonomy flag, no enforced maker-checker ship-gate, no model self-start. The gauntlet (`run-gauntlet.sh`) remains as a general validation runner. (The L2–L5 ratchet that previously lived under `docs/adr/` is retired; the no-model-self-start rule in METHODOLOGY.md + CLAUDE.md §The operating model is what survives.)
 > (v0.3.x: `kbg:learn` + `cost-capture` + read-only MCP inventory. See CHANGELOG.)
 
 > **First time here?** Read [`docs/onboarding.md`](docs/onboarding.md) for a 10-minute
@@ -187,8 +187,8 @@ There is no support SLA; versions are pre-`1.0.0`.
 `ACLI`, and `DBGATE` context in every session, plus the `senior-eng` output style.
 There is no opt-out flag.
 
-3. **Operating model (ADR 0006, 2026-06-25).** ADR 0006 supersedes the L2–L5
-autonomy ladder (ADRs 0002–0005 are retained as historical record). The harness
+3. **Operating model (CLAUDE.md §The operating model (current), 2026-06-25).** CLAUDE.md §The operating model (current) supersedes the L2–L5
+autonomy ladder. The harness
 **denies the irrecoverable set computationally** — scoped denials
 (`block-dangerous-git.sh` + `block-dangerous-bash.sh`) block dangerous git and
 bash operations with no operator flag — and **advises on the rest**: advisory
@@ -231,7 +231,7 @@ kbg-harness/
 ├── output-styles/        # Live-response registers (senior-eng default, staff-eng opt-in)
 ├── contexts/             # Working-frames loaded by /frame (dev / review / research)
 ├── themes/               # Terminal themes
-├── scripts/              # Orchestration + health + eval-support scripts (no LLM dispatch — see ADR 0002)
+├── scripts/              # Orchestration + health + eval-support scripts (no LLM dispatch — see the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model)
 ├── eval/                 # Eval harness: datasets/ + regressions/ + run-eval.py (the "build" gate)
 ├── tests/                # Critical-hooks suite + skill/_lib tests
 ├── git-hooks/            # pre-commit (fast) + pre-push (full parallel gauntlet)
@@ -243,7 +243,7 @@ kbg-harness/
 └── README.md             # This file
 ```
 
-**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. The one ECC pattern recently adopted is `examples/` (project-type `*-CLAUDE.md` starters, [v0.3.2](CHANGELOG.md)). See [ADR 0001](docs/adr/0001-personal-harness-as-plugin.md) for the single-delivery-path model and [ADR 0006](docs/adr/0006-ecc-aligned-operating-model.md) for the operating model (scoped denials + advisory review + operator-as-authority; ADRs 0002–0005 retained as historical record).
+**Relative to ECC's layout:** the core skeleton (`.claude-plugin/ agents/ skills/ commands/ hooks/ scripts/ tests/`) is the shared Claude Code plugin convention. kbg's differences are deliberate: doctrine is **always-injected** (`METHODOLOGY/RTK/ACLI/DBGATE`) rather than a `rules/` dir copied into `~/.claude/`; there is **no `mcp-configs/`** ([non-goal](CLAUDE.md): no bundled MCP/LSP servers); and `hooks/` + `docs/` are **grouped by role** rather than flat. The one ECC pattern recently adopted is `examples/` (project-type `*-CLAUDE.md` starters, [v0.3.2](CHANGELOG.md)). See the plugin-delivery model section in CLAUDE.md for the single-delivery-path model and CLAUDE.md §The operating model (current) for the operating model (scoped denials + advisory review + operator-as-authority).
 
 ---
 
@@ -298,7 +298,7 @@ When the plugin is installed, internal docs live in the plugin cache and must be
 - [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) — 39 vendored mental models (cc-thinking-skills) and where kbg already applies them
 - [`docs/reference/env-vars.md`](docs/reference/env-vars.md) — every operator-tunable env var (default + effect + reader)
 - [`CHANGELOG.md`](CHANGELOG.md) — Release notes
-- [`docs/adr/`](docs/adr/) — Architecture decision records (start with ADR 0001 and ADR 0002; ADR 0003 supersedes 0002's architecture for L3)
+- `CLAUDE.md` — Architecture decision records (start with the **plugin delivery model** section and `§The operating model`; the L2–L5 autonomy ladder that previously lived under `docs/adr/` is retired)
 
 ---
 

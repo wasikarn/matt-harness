@@ -137,7 +137,7 @@ DBGATE.md|doctrine
 CLAUDE.md|doctrine
 DOMAINS.md|doctrine
 BOUNDARY.md|doctrine
-docs/adr/|doctrine
+CLAUDE.md (doctrine home) |doctrine
 scripts/|infra
 git-hooks/|infra
 .claude-plugin/|infra

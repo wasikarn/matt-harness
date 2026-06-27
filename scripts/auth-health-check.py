@@ -35,7 +35,7 @@ What this script does NOT do
 ----------------------------
 - Does NOT auto-fix anything. The verdict is "healthy" / "degraded" /
   "broken" with specific remediation. Auto-fix would be L3/L4 territory
-  and the autonomy invariant (ADR 0002) keeps the harness's self-repair
+  and the autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) keeps the harness's self-repair
   at L2 (sensor only, never auto-block / auto-mutate).
 - Does NOT log to a journal. The script's job is the verdict; if the
   caller wants a journaled event, they wire it through `task-lifecycle.sh`

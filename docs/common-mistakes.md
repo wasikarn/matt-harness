@@ -151,7 +151,7 @@ All three should be non-zero / present. If any is missing, that gate is gone fro
 ## Cross-references
 
 - [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, agent tool matrix
-- [`docs/adr/0002-autonomy-invariant.md`](./adr/0002-autonomy-invariant.md) — why maker≠checker separation is load-bearing
+- `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model — why maker≠checker separation is load-bearing
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 spawn-prompt template, bounded fan-out, validation chain, routing table
 - [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — runtime Bash mutation guard for validators
 - [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted test-claim gate

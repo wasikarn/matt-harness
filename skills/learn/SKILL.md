@@ -22,7 +22,7 @@ notices what belongs in it.
   out-of-repo queue (journal-only, never the repo, never a `permissionDecision`). But this skill
   is still the **only** path that WRITES memory, and only after the `AskUserQuestion` gate. The
   autonomy invariant is preserved by capture-never-applies + the gate below — see
-  [`docs/adr/0002-addendum-passive-capture.md`](../../docs/adr/0002-addendum-passive-capture.md)
+  [`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`](../../METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model)
   (the conscious relaxation of the prior "no SessionEnd hook" stance) + the
   [candidate schema](CANDIDATE-SCHEMA.md).
 - **Writes are gated.** Candidates are NEVER written silently. Every save passes an

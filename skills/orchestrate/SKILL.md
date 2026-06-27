@@ -31,7 +31,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/shi
 bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --execute
 ```
 
-**What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (you) dispatches them inline per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (ADR 0002) forbids.
+**What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (you) dispatches them inline per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) forbids.
 
 **Example specs (in `skills/orchestrate/examples/`):**
 - `ship-merge.yml` — minimal "build → fan-out lint+typecheck → test → ship" workflow. 4 stages, 4 waves, exercises all 4 stage types (command, parallel, command, agent).
@@ -404,7 +404,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 ## Bounded fan-out — hard cap (F8.5)
 
-**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (ADR 0002: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
+**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
 
 **Hard rules:**
 

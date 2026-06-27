@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-ch-learn-capture.sh — the passive learning-capture pair (ADR 0002 addendum).
+# test-ch-learn-capture.sh — the passive learning-capture pair (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum).
 # learn-capture.sh (SessionEnd, default-OFF) harvests operator corrections/prefs from
 # the transcript and APPENDS JSONL candidate rows to an out-of-repo queue; it must
 # NEVER write when OFF, NEVER emit a permissionDecision, NEVER gate, and stay precise

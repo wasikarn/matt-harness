@@ -101,7 +101,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
 | thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | skills/adr, skills/decide (probe mode), ADR 0002 | "hard to reverse?" and "reversible in hours/days/never" |
+| reversibility | `thinking-reversibility` | applied | skills/adr, skills/decide (probe mode), the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model | "hard to reverse?" and "reversible in hours/days/never" |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
 | socratic | `thinking-socratic` | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
@@ -154,7 +154,7 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per ADR 0002; read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`).
+unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model; read in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
@@ -181,4 +181,4 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (read ADR 0002 in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/adr/0002-autonomy-invariant.md"`). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (read the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). It may still appear as *framing* inside an applied surface.

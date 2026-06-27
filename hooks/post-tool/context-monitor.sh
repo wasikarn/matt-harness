@@ -1,5 +1,5 @@
 #!/bin/bash
-# Context/scope/loop monitor — ECC ecc-context-monitor.js port (ADR 0007).
+# Context/scope/loop monitor — ECC ecc-context-monitor.js port (CLAUDE.md §Hook architecture (current profile ladder design)).
 # PostToolUse observe-only: tracks files modified this session and the recent
 # tool sequence, then surfaces advisory friction when scope or loop thresholds
 # trip. Emits additionalContext (a stderr/JSON hint CC shows the agent) and

@@ -18,8 +18,8 @@ set -uo pipefail
 
 # Hermetic flag baseline. This suite verifies hook correctness — including the
 # disable mechanisms (CLAUDE_HOOK_PROFILE=off, CLAUDE_DISABLED_HOOKS). The
-# autonomy machinery (ADR 0003/0004 — loop-guard, push-gate, L3/L4 immunity,
-# rollback carve-out) was retired 2026-06-25 (ADR 0006); the vars below no
+# autonomy machinery (CLAUDE.md §The operating model (was L3 bounded autonomy, retired)/0004 — loop-guard, push-gate, L3/L4 immunity,
+# rollback carve-out) was retired 2026-06-25 (CLAUDE.md §The operating model (current)); the vars below no
 # longer arm anything. The unset is kept as a harmless scrub so any residual
 # ambient flag from a pre-retirement loop cannot flip a flag-off assertion.
 unset KBG_AUTONOMY_L3 KBG_L3_REVIEW_DONE KBG_AUTONOMY KBG_REVIEW_DONE

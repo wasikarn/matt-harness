@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-ch-l3.sh — L3 bounded-autonomy machinery (ADR 0003):
+# test-ch-l3.sh — L3 bounded-autonomy machinery (CLAUDE.md §The operating model (was L3 bounded autonomy, retired)):
 #   - push-gate.sh  (Gate 2: deny push/merge/hooksPath while unreviewed)
 #   - _lib.sh L3 immunity (profile-off / disabled-hooks can't disarm gates under L3)
 #   - block-dangerous-git.sh (L3 rollback carve-out: allow `reset --hard <l3-precycle>` under flag)
@@ -51,8 +51,8 @@ if [ -f "$HOOKS/gates/push-gate.sh" ]; then
 pcheck ""                                            none "inert when flag unset (normal session)"          "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny git push"    "git push origin develop"
 pcheck "$ARMED_ENV"                                  deny "armed (per-repo) + unreviewed: deny gh pr merge" "gh pr merge 12"
-pcheck "$ARMED_ENV"                                  none "armed: allow gh pr create (reversible review-prep, not ship — ADR 0002 addendum)" "gh pr create --base develop --head feat/x --title t --body b"
-pcheck "$ARMED_ENV"                                  none "armed: allow gh pr ready (reversible draft→review-prep, not ship — ADR 0002 addendum)" "gh pr ready 12"
+pcheck "$ARMED_ENV"                                  none "armed: allow gh pr create (reversible review-prep, not ship — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum)" "gh pr create --base develop --head feat/x --title t --body b"
+pcheck "$ARMED_ENV"                                  none "armed: allow gh pr ready (reversible draft→review-prep, not ship — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum)" "gh pr ready 12"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1 CLAUDE_JOURNAL_PATH=$REVJ"    none "armed + reviewed (review-pr pass journalled): allow git push" "git push origin develop"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1 CLAUDE_JOURNAL_PATH=$EMPTYJ"  deny "armed + KBG_REVIEW_DONE but no review-pr pass → deny (maker≠checker)" "git push origin develop"
 pcheck "$ARMED_ENV KBG_REVIEW_DONE=1"                deny "reviewed but inline-forged flag: deny"          "KBG_REVIEW_DONE=1 git push"
@@ -105,7 +105,7 @@ else
   printf '  ⏭  l4-act-gate.sh retired 2026-06-25 — l4-act-gate checks skipped\n'
 fi
 
-# --- block-dangerous-git: L3/L4 rollback carve-out (retired 2026-06-25, ADR 0006) ---
+# --- block-dangerous-git: L3/L4 rollback carve-out (retired 2026-06-25, CLAUDE.md §The operating model (current)) ---
 # The L3 loop rolled back a failed cycle with `git reset --hard <l3-precycle-* tag>`;
 # block-dangerous-git blanket-denies `git reset --hard` and the carve-out allowed ONLY
 # that exact command, full-anchored, when armed (autonomy_on). The carve-out was removed
@@ -122,7 +122,7 @@ dgcheck() {
 if [ "${KBG_L3_ROLLBACK_CARVEOUT:-no}" = "live" ]; then
 dgcheck "$ARMED_ENV"  none "rollback: allow reset --hard <l3-precycle tag> when armed"   "git reset --hard l3-precycle-run1-1"
 else
-  printf '  ⏭  L3 rollback carve-out retired 2026-06-25 (ADR 0006) — block-dangerous-git reset --hard allow skipped\n'
+  printf '  ⏭  L3 rollback carve-out retired 2026-06-25 (CLAUDE.md §The operating model (current)) — block-dangerous-git reset --hard allow skipped\n'
 fi
 dgcheck "$ARMED_ENV"  deny "armed: deny reset --hard to a non-precycle ref"              "git reset --hard HEAD~3"
 dgcheck ""            deny "flag off: deny reset --hard even to l3-precycle tag"         "git reset --hard l3-precycle-run1-1"
@@ -214,7 +214,7 @@ if [ -f "$GUARD" ]; then
   # model verdict (Slice 2) is green. First exercise the per-check runner directly,
   # then the guard integration (positive + fail-closed).
   R3CF="$FIXTURE/r3cage"; mkdir -p "$R3CF/docs/adr" "$R3CF/scripts" "$R3CF/scripts/l4"
-  printf '# adr0003 — gate #43 on\n' > "$R3CF/docs/adr/0003-l3-bounded-autonomy.md"
+  printf '# adr0003 — gate #43 on\n' > "$R3CF/CLAUDE.md §The operating model"
   /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$R3CF/scripts/cage.txt"  # holed
   cp "$REPO/scripts/l4/cage-intact.sh" "$R3CF/scripts/l4/cage-intact.sh"  # the per-check runner the relay/`--only` shells
   bash "$AUDIT" --only 43 "$R3CF" >/dev/null 2>&1; _r=$?
@@ -228,7 +228,7 @@ if [ -f "$GUARD" ]; then
   gcheck CONTINUE 0 "R3 --assert-cage-intact: clean cage → CONTINUE" "$ARMED_ENV" precheck --state "$FIXTURE/r3p.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
   R3FC="$FIXTURE/r3fail"; mkdir -p "$R3FC/.claude-plugin" "$R3FC/scripts" "$R3FC/docs/adr"
   printf '{"name":"kbg","version":"0.0.0"}' > "$R3FC/.claude-plugin/plugin.json"
-  printf '# adr0003\n' > "$R3FC/docs/adr/0003-l3-bounded-autonomy.md"
+  printf '# adr0003\n' > "$R3FC/CLAUDE.md §The operating model"
   (cd "$R3FC" && git init -q)   # a kbg-sentinel git tree with NO audit.sh
   f4check "$R3FC" STOP 10 "R3 --assert-cage-intact: audit.sh missing → STOP (fail-closed)" precheck --state "$FIXTURE/r3f.json" --max-runs 9 --no-dirty-abort --assert-cage-intact
 
@@ -322,7 +322,7 @@ if [ -f "$REPO/scripts/l4/l4-quality-gate.sh" ]; then
   # §10 non-circularity proof: a holed cage forces STOP (audit --only 43 CRITs) EVEN
   # WHEN the model verdict is green — the cage check is computational + gates the model.
   R3HOLE="$FIXTURE/r3hole"; mkdir -p "$R3HOLE/docs/adr" "$R3HOLE/scripts" "$R3HOLE/scripts/l4"
-  printf '# adr0003\n' > "$R3HOLE/docs/adr/0003-l3-bounded-autonomy.md"
+  printf '# adr0003\n' > "$R3HOLE/CLAUDE.md §The operating model"
   /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$R3HOLE/scripts/cage.txt"
   cp "$REPO/scripts/l4/cage-intact.sh" "$R3HOLE/scripts/l4/cage-intact.sh"
   _holecrit=$(bash "$AUDIT" --only 43 "$R3HOLE" 2>&1); _holerc=$?
@@ -337,7 +337,7 @@ if [ -f "$REPO/scripts/l4/l4-quality-gate.sh" ]; then
   # own failure mode). Control: the clean gate is silent. ---
   QCF="$FIXTURE/qgate49"; mkdir -p "$QCF/scripts/l4" "$QCF/agents" "$QCF/docs/adr"
   printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$QCF/agents/x.md"
-  printf '# adr0004\n' > "$QCF/docs/adr/0004-l4-autonomy.md"  # gate #49 on ADR 0004
+  printf '# adr0004\n' > "$QCF/CLAUDE.md §The operating model"  # gate #49 on CLAUDE.md §The operating model (was L4 self-launch, retired)
   cp "$REPO/scripts/l4/l4-quality-trial.txt" "$QCF/scripts/l4/l4-quality-trial.txt"
   cp "$REPO/scripts/l4/l4-quality-gate.sh" "$QCF/scripts/l4/l4-quality-gate.sh"
   sed -i '' 's/--allowedTools Read/--allowedTools Read,Write/' "$QCF/scripts/l4/l4-quality-gate.sh" 2>/dev/null || sed -i 's/--allowedTools Read/--allowedTools Read,Write/' "$QCF/scripts/l4/l4-quality-gate.sh"
@@ -412,7 +412,7 @@ if [ -f "$REPO/scripts/l4/launch.sh" ]; then
   # the CRIT. Control: the clean launcher is silent. ---
   LCF="$FIXTURE/launch32b"; mkdir -p "$LCF/scripts/l4" "$LCF/agents" "$LCF/docs/adr"
   printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$LCF/agents/x.md"
-  printf '# adr0004\n' > "$LCF/docs/adr/0004-l4-autonomy.md"
+  printf '# adr0004\n' > "$LCF/CLAUDE.md §The operating model"
   cp "$REPO/scripts/l4/launch.sh" "$LCF/scripts/l4/launch.sh"
   sed -i '' '/KILLFILE/d' "$LCF/scripts/l4/launch.sh" 2>/dev/null || sed -i '/KILLFILE/d' "$LCF/scripts/l4/launch.sh"
   _l32=$(bash "$AUDIT" "$LCF" 2>&1)
@@ -433,7 +433,7 @@ if [ -f "$REPO/scripts/l4/launch.sh" ]; then
   printf '  ⏭  launch.sh retired 2026-06-25 — l4-launch + exit-tripwire + #32b skipped\n'
 fi
 
-# --- Slice 4 / L5: auto-push ship-gate (ADR 0005 + addendum, design §8.5, #35) ---
+# --- Slice 4 / L5: auto-push ship-gate (CLAUDE.md §The operating model (was L5 auto-push, retired) + addendum, design §8.5, #35) ---
   # Folded into push-gate.sh as the L5 leg. A green-gauntlet batch may auto-push ONLY
   # to an allowlisted host+org (default EMPTY → un-configured pushes nowhere), AND only
   # after a SHA-bound green gauntlet (a gauntlet_run event with sha == HEAD + outcome
@@ -505,7 +505,7 @@ fi
   if [ -f "$HOOKS/gates/push-gate.sh" ]; then
     PCF="$FIXTURE/push50"; mkdir -p "$PCF/hooks/gates" "$PCF/agents" "$PCF/docs/adr"
     printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$PCF/agents/x.md"
-    printf '# adr0005\n' > "$PCF/docs/adr/0005-l5-auto-push.md"  # gate #50 on ADR 0005
+    printf '# adr0005\n' > "$PCF/CLAUDE.md §The operating model"  # gate #50 on CLAUDE.md §The operating model (was L5 auto-push, retired)
     cp "$REPO/hooks/gates/push-gate.sh" "$PCF/hooks/gates/push-gate.sh"
     sed -i '' 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/push-gate.sh" 2>/dev/null || sed -i 's/KBG_L5_SHIP_ALLOWLIST:-/KBG_L5_SHIP_ALLOWLIST:-github.com:default/' "$PCF/hooks/gates/push-gate.sh"
     _p50=$(bash "$AUDIT" "$PCF" 2>&1)
@@ -539,11 +539,11 @@ for id in 32 34 41 44; do ncheck "$id"; done
 if [ -f "$REPO/scripts/loop-guard.py" ]; then
 # --- audit #43b: cage-completeness must CRIT when a required anchor is removed ---
 # (test-honesty Rule 9 "distinguishes-or-it-doesn't": a green-only check is decoration.
-# Runs the REAL audit.sh against a fixture that gates #43 on (fake ADR 0003 + real guard
+# Runs the REAL audit.sh against a fixture that gates #43 on (fake CLAUDE.md §The operating model (was L3 bounded autonomy, retired) + real guard
 # so 43a/43c stay clean) with a cage that is the real cage MINUS one required anchor.)
 CF="$FIXTURE/cage43"; mkdir -p "$CF/docs/adr" "$CF/scripts" "$CF/scripts/l4" "$CF/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CF/agents/x.md"  # satisfy audit's fleet guard
-printf '# adr0003 — gate #43 on\n' > "$CF/docs/adr/0003-l3-bounded-autonomy.md"
+printf '# adr0003 — gate #43 on\n' > "$CF/CLAUDE.md §The operating model"
 cp "$REPO/scripts/loop-guard.py" "$CF/scripts/loop-guard.py"
 cp "$REPO/scripts/l4/cage-intact.sh" "$CF/scripts/l4/cage-intact.sh"  # #43 relays through this standalone
 /usr/bin/grep -vxF 'CONTEXT.md' "$REPO/scripts/cage.txt" > "$CF/scripts/cage.txt"  # holed
@@ -566,7 +566,7 @@ fi
 # message. Hole one L4 anchor (scripts/l4/**) from the cage → CRIT names it.
 CFD="$FIXTURE/cage43d"; mkdir -p "$CFD/docs/adr" "$CFD/scripts" "$CFD/scripts/l4" "$CFD/agents"
 printf -- '---\nname: x\ntools: Read\n---\nx\n' > "$CFD/agents/x.md"
-printf '# adr0003 — gate #43 on\n' > "$CFD/docs/adr/0003-l3-bounded-autonomy.md"
+printf '# adr0003 — gate #43 on\n' > "$CFD/CLAUDE.md §The operating model"
 cp "$REPO/scripts/loop-guard.py" "$CFD/scripts/loop-guard.py"
 cp "$REPO/scripts/l4/cage-intact.sh" "$CFD/scripts/l4/cage-intact.sh"  # #43d relays through this standalone
 /usr/bin/grep -vxF 'scripts/l4/**' "$REPO/scripts/cage.txt" > "$CFD/scripts/cage.txt"  # L4 anchor holed from cage

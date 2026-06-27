@@ -46,7 +46,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 
 ## Where the article is weak (adversarial summary)
 
-- **LLM-judge circularity unaddressed.** Coding model, judging model, and meta-engineering model are all the same class (L356–L359, L393). A judge inherits the generator's blind spots. kbg's mitigation: inferential-feedback sensors (`verification-gate.sh`, `fabrication-verdict-log.sh`) are *advisory only* — they journal but **never** emit a `permissionDecision` (ADR 0002 §L115).
+- **LLM-judge circularity unaddressed.** Coding model, judging model, and meta-engineering model are all the same class (L356–L359, L393). A judge inherits the generator's blind spots. kbg's mitigation: inferential-feedback sensors (`verification-gate.sh`, `fabrication-verdict-log.sh`) are *advisory only* — they journal but **never** emit a `permissionDecision` (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115).
 - **Behaviour is a cop-out.** The article classifies the problem, names one pattern (approved-fixtures), and admits defeat. Most of what humans bring *is* behavioural judgment (L527–L531) — the framework is structurally unequipped to deliver the autonomy the abstract promises.
 - **Coherence tax under-acknowledged.** L553 raises "how do we keep a harness coherent" and drops it. N guides × M sensors is multiplicative; the article frames it additively.
 - **Quality-left without trade-off analysis.** Stripe's "shift feedback left" (L544) is cited uncritically. The costs — reviewer fatigue, false positives, slow pre-commit, "tool said fine" stamp on Critical CVEs — are never acknowledged.
@@ -59,7 +59,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 2. **Cost / token budget as a regulation axis** — appears only as "fewer wasted tokens" (L326). kbg's analog: `METHODOLOGY.md:113-118` "Token Budgets Are Not Advisory" (4k/task, 30k/session).
 3. **The harness's own test suite** — how you regression-test a non-deterministic harness. kbg's analog: `test-critical-hooks.sh` (204 assertions) + `audit.sh` 38 checks.
 4. **Sandboxing** as a precondition for behaviour-harness feedback. Article never mentions Firecracker/nsjail/gVisor.
-5. **Provenance / accountability** when AI iterates the harness itself (L393). kbg's analog: `kbg:recursive-improve` (6-step cycle, human `AskUserQuestion` at Step 3 — ADR 0002).
+5. **Provenance / accountability** when AI iterates the harness itself (L393). kbg's analog: `kbg:recursive-improve` (6-step cycle, human `AskUserQuestion` at Step 3 — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 6. **Multi-agent / agent-team harnesses** — the article is single-agent throughout. A "harness for an agent team" is the obvious next article. kbg's analog: `orchestrate-dispatch.py` (deterministic DAG, does NOT spawn agents — that would be a covert L4 loop).
 7. **Harness economy** — npm-like / Docker-Hub-like / GitHub-Actions-like? The "service templates" analogy (L507) is well-chosen; the market dynamics are unsolved.
 8. **Local vs CI sensor split** — which inferential sensors are user-paid, which are CI-paid?
@@ -73,7 +73,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 | **Behaviour** | ✅ `/accept-task` → `ACCEPTANCE.md` (locked spec) | 🟡 `/ship-task` Phase 5 acceptance gate (spec → grader) | ✅ `eval/run-eval.py --gate`; 5-state `run-acceptance.py` | ❌ No LLM-judge for semantic-correctness; **`kbg:review-pr` is a task, not a sensor** |
 | **Sensors kbg is missing** | Property-based tests; mutation testing; SBOM/Syft/Grype | Inferential structural tests (arch-drift via LLM) | Sandbox layer (no Firecracker/nsjail) | Sensor-fire notification (audit reports staleness; no human is paged) |
 
-**Steering loop:** `kbg:recursive-improve` (6-step, 5-iteration cap, human gate at Step 3) + `orchestrate-dispatch.py` (deterministic DAG, does NOT spawn agents — explicitly *not* an L4 loop per ADR 0002).
+**Steering loop:** `kbg:recursive-improve` (6-step, 5-iteration cap, human gate at Step 3) + `orchestrate-dispatch.py` (deterministic DAG, does NOT spawn agents — explicitly *not* an L4 loop per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 
 **Single divergent decision** the article would push back on: kbg uses `tools:` allowlists (add structure) rather than `disallowedTools:` (remove affordances) — `docs/agent-tool-patterns.md`. The cost-reviewer lens would call this inverted from real-world practice.
 
@@ -82,7 +82,7 @@ The article's warning: **one without the other is broken**. Feedback-only = "age
 **Now (low-cost, high-signal):**
 
 1. **Document the 2×2 grid in `CLAUDE.md`** as the mental model for *why* kbg has 14 hook events. Currently the hook architecture is described mechanically; the 2×2 framing makes the *purpose* of each event obvious.
-2. **Add a `## Open questions` mirror to `docs/harness-decay-cadence.md`** for the harness's own LLM-judge-circularity concern — single paragraph explaining why `verification-gate.sh` is *advisory*. Today this is in ADR 0002 §L115 but isn't surfaced to harness-readers.
+2. **Add a `## Open questions` mirror to `docs/harness-decay-cadence.md`** for the harness's own LLM-judge-circularity concern — single paragraph explaining why `verification-gate.sh` is *advisory*. Today this is in the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115 but isn't surfaced to harness-readers.
 3. **Surface the behaviour-harness honesty.** Add a one-liner to `METHODOLOGY.md`: "Acceptance criteria are the upper bound on what the test gate can prove." This bakes the L448 lesson into doctrine.
 
 **Later (require own design work):**

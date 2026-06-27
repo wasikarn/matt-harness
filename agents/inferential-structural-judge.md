@@ -181,7 +181,7 @@ Per `docs/research/inferential-structural-judge-design.md` §6 (verbatim, with t
 ## What this agent does NOT do
 
 - Does **not** mutate the repo (no `Edit` / `Write` in the `tools:` allowlist — autonomy invariant).
-- Does **not** emit a model-driven mutation gate (autonomy invariant, ADR 0002 §L115 — the design doc §4(c) guard; the agent journals, the human acts).
+- Does **not** emit a model-driven mutation gate (autonomy invariant, the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L115 — the design doc §4(c) guard; the agent journals, the human acts).
 - Does **not** call `git diff` directly (the hook passes the diff in the Input Contract envelope; the `Bash` tool is for `git log` / `git rev-parse` style lookups only, not for re-fetching the diff).
 - Does **not** add a 5th dimension (the design doc §3 enumerates exactly 4; adding a fifth breaks the 4-dimension contract that the `kbg:harness-audit --coverage` aggregator will rely on).
 - Does **not** narrate reasoning in the verdict JSON (the hook journals the verdict, not the prompt trail — drift-awareness is for *your scoring*, not the output).

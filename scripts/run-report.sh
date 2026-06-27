@@ -1,6 +1,6 @@
 #!/bin/bash
 # run-report.sh <run-id> — re-render an L3 `--auto` run from the governance
-# journal (ADR 0003 §E). Read-only. The journal is the durable per-cycle record
+# journal (CLAUDE.md §The operating model (was L3 bounded autonomy, retired) §E). Read-only. The journal is the durable per-cycle record
 # (event=l3_cycle, fields.run_id + iteration + outcome); this is its query view,
 # the companion to the human-written .scratch/l3-runs/<id>/session-audit-trail.md
 # at Gate-2 review time. Degrades gracefully when jq or the journal is absent.

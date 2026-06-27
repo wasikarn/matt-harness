@@ -14,7 +14,7 @@ source "$(dirname "$0")/test-critical-hooks-lib.sh"
 # `: True` (Python truthy), or is removed, the harness loses its
 # self-binding and the model can self-start the recursive-improve skill
 # — a one-model-version-away self-rewriter. The check emits CRIT, not
-# WARN, because the invariant is irreversible (per ADR 0002).
+# WARN, because the invariant is irreversible (per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 #
 # Mirrors the (MM)/(NN)/(OO) trio pattern: hermetic temp-dir fixture
 # for the violation paths, real-repo path for the positive control.
@@ -36,7 +36,7 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s real repo emitted %s INVARIANT_FAIL findings (want 0), rc=%s:\n%s\n' "harness-audit #32" "$PP_HAS_INVARIANT" "$PP_RC" "$PP_OUT"
 fi
 
-# push-gate-retired 2026-06-25 (ADR 0006) — #32 ADR-legs no-op'd in audit.sh.
+# push-gate-retired 2026-06-25 (CLAUDE.md §The operating model (current)) — #32 ADR-legs no-op'd in audit.sh.
 # QQ/RR/SS/TT asserted #32 ADR-leg CRITs; with the legs no-op'd they emit 0 CRIT
 # and would fail. Re-enable by setting KBG_AUDIT_32_ADR_LEGS=live when the legs return.
 if [ "${KBG_AUDIT_32_ADR_LEGS:-no}" = "live" ]; then
@@ -92,13 +92,13 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s truthy-typo regression: 0 CRIT (want 1+) — check would silently pass `: True` — rc=%s:\n%s\n' "harness-audit #32" "$RR_RC" "$RR_OUT"
 fi
 
-# (SS) deleted-skill hole — the surface-closure (2026-06-16) case. ADR 0002 is
+# (SS) deleted-skill hole — the surface-closure (2026-06-16) case. the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model is
 # present (the repo DECLARES the invariant) but the self-binding skill was
 # deleted. Pre-closure the check silently passed ("no file = no guard"); now
 # the deletion itself is the regression and must CRIT.
 SS_F="$FIXTURE/ss-ri-deleted"; rm -rf "$SS_F"; mkdir -p "$SS_F/claude/docs/adr" "$SS_F/claude/agents" "$SS_F/claude/commands" "$SS_F/claude/hooks" "$SS_F/.claude-plugin"
-cat > "$SS_F/claude/docs/adr/0002-autonomy-invariant.md" <<'ADR'
-# ADR 0002: Autonomy invariant — fixture (declares the invariant, no skill present)
+cat > "$SS_F/claude/METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model" <<'ADR'
+# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model: Autonomy invariant — fixture (declares the invariant, no skill present)
 ADR
 cat > "$SS_F/.claude-plugin/plugin.json" <<'PJ'
 { "name": "ss-fixture", "version": "0.0.1" }
@@ -126,8 +126,8 @@ disable-model-invocation: true
 ---
 # fixture
 SK
-cat > "$TT_F/claude/docs/adr/0002-autonomy-invariant.md" <<'ADR'
-# ADR 0002: Autonomy invariant — fixture
+cat > "$TT_F/claude/METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model" <<'ADR'
+# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model: Autonomy invariant — fixture
 ADR
 # CONTEXT.md present but reworded (the load-bearing phrase is gone).
 cat > "$TT_F/claude/CONTEXT.md" <<'CTX'
@@ -149,7 +149,7 @@ else
   FAIL=$((FAIL+1)); printf '  ❌ %-26s surface phrase drop: want phrase-CRIT + no-S3, got phrase=%s s3=%s rc=%s:\n%s\n' "harness-audit #32" "$TT_HAS_PHRASE_CRIT" "$TT_HAS_S3" "$TT_RC" "$TT_OUT"
 fi
 else
-  printf "  ⏭  push-gate-retired 2026-06-25 (ADR 0006) — #32 ADR-legs no-op'd — QQ/RR/SS/TT skipped\n"
+  printf "  ⏭  push-gate-retired 2026-06-25 (CLAUDE.md §The operating model (current)) — #32 ADR-legs no-op'd — QQ/RR/SS/TT skipped\n"
 fi
 
 # --- harness-audit check #34 — autonomy invariant surface 5 (advisory-only) ---
@@ -255,7 +255,7 @@ fi
 # ── HOOK-1.5: inferential-structural-judge-on-session-end.sh (matcher-less SessionEnd) ──
 # Inferential-FB sensor that journals a verdict to ~/.claude/governance-events.jsonl.
 # It is journal-only and never emits a permissionDecision (autonomy invariant,
-# ADR 0002 §L112). Tests cover the deterministic shell logic; the agent
+# the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model §L112). Tests cover the deterministic shell logic; the agent
 # invocation (`claude -p --agent ...`) is exercised separately via the
 # EVAL-1 fixture runner (the agent runtime is not always present in the
 # shell-only test env, and exercising it here would couple the test to
