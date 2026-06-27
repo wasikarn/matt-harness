@@ -3,6 +3,11 @@ name: ship-task
 description: "9-step senior-engineer loop from scratch: explore → clarify → accept-task → implement → (auto-test hook) → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate, or when the user says 'ทำงานใหม่', 'ship task', 'เริ่มต้นทำงาน'. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration."
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external and spawns agents — full ship loop ending in merge
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "kbg fuses three ECC commands (plan + prp-implement + feature-dev) into a single 9-step senior-engineer monolith with explicit phase gates: Explore (code-explorer) → Clarify (kbg:clarify-first, 3-step scope gate) → Accept (kbg:accept-task, lock ACCEPTANCE.md) → Implement (inline /fix-bug, TDD) → Test (post-edit-test hook auto + acceptance contract) → Review (kbg:review-pr, SCRUTINIZE-4) → Fix-loop (/address-review → re-run Phase 6) → Ship (/ship-merge). kbg body 165L vs ecc three-command decomposition (~600L combined); kbg is one-shot, ecc is composed."
 ---
 
 # Ship Task — 9-Step Senior Engineer Loop

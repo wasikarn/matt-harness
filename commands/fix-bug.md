@@ -4,6 +4,11 @@ description: "Guided 7-phase bug-fix workflow with diagnostic and test-first pat
 argument-hint: Optional bug description or repro steps
 disable-model-invocation: true
 disable-model-invocation-reason: spawns agents and mutates — a fix the user commits to
+metadata:
+  origin: ECC
+  ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
+  ported: 2026-06-27
+  kbg_extension: "kbg expanded the thin ECC orch-fix-defect wrapper into a full 7-phase discipline — added No-repro-no-fix gate, Root-cause-over-symptom principle, Surgical-by-default, Tests-encode-intent (METHODOLOGY Rule 9), TodoWrite tracking, Sequential ledger, and Hard Sequencing Rules (no hypothesis before deterministic repro; no fix before confirmed hypothesis; no cleanup before regression test passes). kbg body 187L vs ecc wrapper 38L — kbg is the substantive implementation, ecc delegates to orch-fix-defect skill."
 ---
 
 # Fix Bug
