@@ -69,7 +69,7 @@ Systems-thinking analysis *before* committing to a frame. Use when the diagnosis
 itself is contested or the problem space is complex/emergent.
 
 1. Map the system: actors, flows, feedback loops, delays.
-2. Name the leverage points (see `kbg:leverage-points`).
+2. Name the leverage points (see `kbg:thinking` → leverage-points model).
 3. Stress-test the diagnosis: what would prove the current frame wrong?
 4. Output: a framing memo, not a decision — hand off to `decide` or `strategize`.
 
