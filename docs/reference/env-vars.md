@@ -82,7 +82,7 @@ Recommended values for context/cost efficiency, sourced from ECC token-optimizat
 |---|---|---|---|
 | `MAX_THINKING_TOKENS` | `10000` | `10000` ✅ | Extended thinking reserves up to 31,999 output tokens for internal reasoning. 10k cuts hidden cost ~70% vs the default. Set to `0` for trivial tasks. Toggle with **Option+T** (macOS). |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | `haiku` | `haiku` ✅ | Model for subagents spawned via the Task tool. Haiku is ~80% cheaper and sufficient for exploration, file reading, and test running. Switch the main session to `opus` for complex reasoning without changing this. |
-| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | _unset_ | _unset_ ✅ | Overrides the auto-compaction threshold. Community reports: values below the CC default compact **earlier**, not later. ECC recommendation: leave unset; use manual `/compact` + `kbg:strategic-compact` instead. |
+| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `50` | `50` ✅ | Compacts at 50% context used instead of the CC default 95%. Compacts **earlier** = better summarization quality in long sessions (the model has more room to summarize). ECC recommended. |
 
 Use the right model per task mid-session:
 ```
@@ -90,6 +90,18 @@ Use the right model per task mid-session:
 /model sonnet   # day-to-day coding (default)
 /model opus     # complex architecture, multi-step reasoning
 ```
+
+## Context Window Management (ECC)
+
+Each loaded MCP server's tool descriptions consume tokens from your 200k context window — a fully-loaded setup can shrink usable space to ~70k.
+
+**Limits to stay under:**
+- **10 MCP servers active** — beyond this, tool-description overhead is measurable
+- **80 tools total active** — token cost scales linearly with tool count
+
+Use `/mcp` in-session to disable unused servers. Prefer keeping heavy-schema MCPs (Figma, Atlassian, MongoDB) inactive unless actively needed.
+
+**Agent teams cost:** each teammate agent consumes tokens independently. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"` disables agent-team spawning. Already set ✅.
 
 ## Vendor levers the harness honors (Claude Code owns these; listed for completeness)
 
