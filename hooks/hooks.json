@@ -26,6 +26,18 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "id": "lifecycle:pre-compact",
+        "description": "Lifecycle: log compaction events to ~/.local/share/kbg/compaction-log.txt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/lifecycle/pre-compact.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "id": "gate:bash:irrecoverable",
