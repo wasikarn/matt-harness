@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.2.1-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -63,7 +63,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
 
-> v0.2.0 ships two PreToolUse gates: `irrecoverable` (rm -rf, push --force, --no-verify, reset --hard) and `path-hardcode` (/Users/ in .sh/.py). Session-inject and advisory sensors are planned.
+> v0.2.1 hooks: SessionStart doctrine injection (METHODOLOGY.md), two PreToolUse gates (`irrecoverable` + `path-hardcode`), and 20 gate unit tests. Advisory sensors planned.
 
 ---
 

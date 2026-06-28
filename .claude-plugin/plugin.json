@@ -1,6 +1,6 @@
 {
   "name": "kbg",
-  "version": "v0.2.0",
+  "version": "v0.2.1",
   "description": "Personal Claude Code harness: 49 specialist agents, 113 workflow skills (incl. thinking, decide, orch-* orchestrator family, golang/kotlin/java/swift/cpp/vue/angular/django/dotnet/nestjs/springboot language tracks, kubernetes-patterns, intent-driven-development, context-budget, agent-architecture-audit, eval-harness, deep-research, codebase-onboarding, adonisjs-patterns, effect-ts-patterns, langchain-langgraph-patterns, drizzle-patterns, hono-patterns, tauri-v2-patterns, grpc-node-patterns, and domain/language specialists), 68 commands (incl. review-pr, learn, plan, feature-dev, orch-*, go/kotlin/cpp/vue/flutter/react/rust/python workflow commands, quality-gate, skill-create, epic-*, and multi-* multi-model commands), 2 output-style registers (senior-eng default, staff-eng opt-in), 1 theme (catppuccin-mocha). Governance hooks pending rebuild. Components auto-discover from agents/, skills/, commands/, hooks/, output-styles/, themes/.",
   "author": {
     "name": "KOBIG"

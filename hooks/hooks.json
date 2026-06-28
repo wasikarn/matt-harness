@@ -1,6 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-hooks.json",
   "hooks": {
+    "SessionStart": [
+      {
+        "id": "session:doctrine-bootstrap",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/session/doctrine-bootstrap.sh\""
+          }
+        ],
+        "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context"
+      }
+    ],
     "PreToolUse": [
       {
         "id": "gate:bash:irrecoverable",
