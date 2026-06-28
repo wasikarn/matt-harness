@@ -97,6 +97,23 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | `kbg:production-audit` | Local-evidence production readiness check — no external service required |
 | `kbg:architecture-decision-records` | Capture decisions as structured ADRs during a session |
 
+### Agents
+
+Agents run in a delegated sub-task context — Claude spawns them automatically or you can request one explicitly via the `Task` tool.
+
+| Agent | Role |
+|---|---|
+| `code-architect` | System design, module boundaries, and dependency decisions |
+| `security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks |
+| `planner` | Implementation blueprints — breaks a goal into ordered, concrete steps |
+| `code-reviewer` | Quality, correctness, patterns, and missing edge cases |
+| `performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs |
+| `tdd-guide` | Enforces red → green → refactor; writes the failing test first |
+| `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
+| `silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns |
+| `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
+| `type-design-analyzer` | Evaluates TypeScript type modelling — narrows `any`, improves generics |
+
 ### Tathep Platform
 
 kbg-native skills for the Tathep project stack — created because no upstream fit existed.
