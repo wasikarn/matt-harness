@@ -6,6 +6,8 @@
 
 A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 49 specialist agents, 113 workflow skills, and 68 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
+Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
+
 ---
 
 ## Table of Contents
@@ -94,6 +96,20 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | `kbg:security-review` | OWASP Top 10, secrets scanning, and auth review |
 | `kbg:production-audit` | Local-evidence production readiness check — no external service required |
 | `kbg:architecture-decision-records` | Capture decisions as structured ADRs during a session |
+
+### Tathep Platform
+
+kbg-native skills for the Tathep project stack — created because no upstream fit existed.
+
+| Skill | When to reach for it |
+|---|---|
+| `kbg:adonisjs-patterns` | AdonisJS v5 routes, Lucid ORM, Japa tests, VineJS validation, and Edge templates |
+| `kbg:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / MySQL / SQLite |
+| `kbg:effect-ts-patterns` | Effect-TS layers, services, typed error channels, and functional pipelines |
+| `kbg:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes |
+| `kbg:hono-patterns` | Hono routes, middleware, validation, and deployment for Bun / Node.js / edge runtimes |
+| `kbg:langchain-langgraph-patterns` | LangChain chains, agents, RAG pipelines, and LangGraph stateful multi-step workflows |
+| `kbg:tauri-v2-patterns` | Tauri v2 IPC commands, capabilities / permissions model, Rust app state, events, and plugins |
 
 ---
 
