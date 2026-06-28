@@ -181,48 +181,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `kbg:thinking` |
 | kbg-native | MIT | 9 skills · 1 agent · 4 commands · 2 output styles · 1 theme |
 
-<details>
-<summary>mattpocock/skills — 17 skills</summary>
-
-`ask-matt` · `codebase-design` · `diagnosing-bugs` · `domain-modeling` · `grilling` (expanded with modes) · `handoff` · `implement` · `improve-codebase-architecture` · `prototype` · `resolving-merge-conflicts` · `setup-matt-pocock-skills` · `tdd` · `teach` · `to-issues` · `to-prd` · `triage` · `writing-great-skills`
-
-</details>
-
-<details>
-<summary>affaan-m/everything-claude-code — 85 skills</summary>
-
-`agent-architecture-audit` · `agent-eval` · `agent-harness-construction` · `agent-self-evaluation` · `agent-sort` · `agentic-engineering` · `angular-developer` · `api-design` · `architecture-decision-records` · `autonomous-loops` · `backend-patterns` · `benchmark` · `bun-runtime` · `code-tour` · `codebase-onboarding` · `coding-standards` · `context-budget` · `cost-aware-llm-pipeline` · `cpp-coding-standards` · `cpp-testing` · `dart-flutter-patterns` · `database-migrations` · `deep-research` · `deployment-patterns` · `django-patterns` · `django-security` · `django-tdd` · `docker-patterns` · `documentation-lookup` · `dotnet-patterns` · `e2e-testing` · `error-handling` · `eval-harness` · `fastapi-patterns` · `flutter-dart-code-review` · `frontend-a11y` · `frontend-patterns` · `gateguard` · `git-workflow` · `github-ops` · `golang-patterns` · `golang-testing` · `hexagonal-architecture` · `intent-driven-development` · `java-coding-standards` · `knowledge-ops` · `kotlin-coroutines-flows` · `kotlin-exposed-patterns` · `kotlin-ktor-patterns` · `kotlin-patterns` · `kotlin-testing` · `kubernetes-patterns` · `latency-critical-systems` · `mysql-patterns` · `nestjs-patterns` · `nuxt4-patterns` · `orch-add-feature` · `orch-build-mvp` · `orch-change-feature` · `orch-fix-defect` · `orch-pipeline` · `orch-refine-code` · `postgres-patterns` · `production-audit` · `python-patterns` · `python-testing` · `react-patterns` · `react-performance` · `react-testing` · `redis-patterns` · `repo-scan` · `rules-distill` · `rust-patterns` · `rust-testing` · `safety-guard` · `search-first` · `security-review` · `springboot-patterns` · `springboot-security` · `springboot-tdd` · `strategic-compact` · `swift-concurrency-6-2` · `swiftui-patterns` · `team-agent-orchestration` · `terminal-ops` · `verification-loop` · `vue-patterns`
-
-</details>
-
-<details>
-<summary>affaan-m/everything-claude-code — 48 agents</summary>
-
-`a11y-architect` · `architect` · `build-error-resolver` · `chief-of-staff` · `code-architect` · `code-explorer` · `code-reviewer` · `code-simplifier` · `comment-analyzer` · `conversation-analyzer` · `cpp-build-resolver` · `cpp-reviewer` · `dart-build-resolver` · `database-reviewer` · `django-build-resolver` · `django-reviewer` · `doc-updater` · `docs-lookup` · `e2e-runner` · `fastapi-reviewer` · `flutter-reviewer` · `go-build-resolver` · `go-reviewer` · `harness-optimizer` · `java-build-resolver` · `java-reviewer` · `kotlin-build-resolver` · `kotlin-reviewer` · `loop-operator` · `mle-reviewer` · `performance-optimizer` · `planner` · `pr-test-analyzer` · `python-reviewer` · `react-build-resolver` · `react-reviewer` · `refactor-cleaner` · `rust-build-resolver` · `rust-reviewer` · `security-reviewer` · `silent-failure-hunter` · `spec-miner` · `swift-build-resolver` · `swift-reviewer` · `tdd-guide` · `type-design-analyzer` · `typescript-reviewer` · `vue-reviewer`
-
-</details>
-
-<details>
-<summary>affaan-m/everything-claude-code — 64 commands</summary>
-
-`aside` · `build-fix` · `checkpoint` · `code-review` · `cost-report` · `cpp-build` · `cpp-review` · `cpp-test` · `epic-publish` · `epic-review` · `epic-sync` · `epic-unblock` · `epic-validate` · `fastapi-review` · `feature-dev` · `flutter-build` · `flutter-review` · `flutter-test` · `go-build` · `go-review` · `go-test` · `jira` · `kotlin-build` · `kotlin-review` · `kotlin-test` · `learn` · `learn-eval` · `multi-backend` · `multi-execute` · `multi-frontend` · `multi-plan` · `multi-workflow` · `orch-add-feature` · `orch-build-mvp` · `orch-change-feature` · `orch-fix-defect` · `orch-refine-code` · `plan` · `plan-prd` · `pr` · `project-init` · `prp-commit` · `prp-implement` · `prp-plan` · `prp-pr` · `prp-prd` · `python-review` · `quality-gate` · `react-build` · `react-review` · `react-test` · `refactor-clean` · `resume-session` · `review-pr` · `rust-build` · `rust-review` · `rust-test` · `save-session` · `skill-create` · `skill-health` · `test-coverage` · `update-codemaps` · `update-docs` · `vue-review`
-
-</details>
-
-<details>
-<summary>kbg-native surfaces</summary>
-
-**Skills (9):** `decide` · `thinking` · `adonisjs-patterns` · `drizzle-patterns` · `effect-ts-patterns` · `grpc-node-patterns` · `hono-patterns` · `langchain-langgraph-patterns` · `tauri-v2-patterns`
-
-**Agents (1):** `agent-evaluator`
-
-**Commands (4):** `epic-claim` · `epic-decompose` · `pm2` · `security-scan`
-
-**Output Styles (2):** `senior-eng` · `staff-eng`
-
-**Themes (1):** `catppuccin-mocha`
-
-</details>
+Component names follow the `origin:` frontmatter field in each surface file. To browse what's available: `ls skills/`, `ls agents/`, `ls commands/`.
 
 ---
 
