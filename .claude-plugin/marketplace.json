@@ -10,7 +10,7 @@
       "name": "kbg",
       "version": "v0.1.0",
       "source": ".",
-      "description": "Personal Claude Code harness: 31 specialist agents, 71 workflow skills (incl. thinking, decide, orch-* orchestrator family, kubernetes-patterns, intent-driven-development, context-budget, agent-architecture-audit, eval-harness, and domain/language specialists), 42 commands (incl. review-pr, learn, plan, feature-dev, orch-add-feature, orch-build-mvp, orch-fix-defect, orch-refine-code, and flutter/react/rust/python workflow commands), 2 output-style registers (senior-eng default, staff-eng opt-in), 1 theme (catppuccin-mocha). Governance hooks pending rebuild. Components auto-discover from agents/, skills/, commands/, hooks/, output-styles/, themes/.",
+      "description": "Personal Claude Code harness: 49 specialist agents, 106 workflow skills (incl. thinking, decide, orch-* orchestrator family, golang/kotlin/java/swift/cpp/vue/angular/django/dotnet/nestjs/springboot language tracks, kubernetes-patterns, intent-driven-development, context-budget, agent-architecture-audit, eval-harness, deep-research, codebase-onboarding, and domain/language specialists), 68 commands (incl. review-pr, learn, plan, feature-dev, orch-*, go/kotlin/cpp/vue/flutter/react/rust/python workflow commands, quality-gate, skill-create, epic-*, and multi-* multi-model commands), 2 output-style registers (senior-eng default, staff-eng opt-in), 1 theme (catppuccin-mocha). Governance hooks pending rebuild. Components auto-discover from agents/, skills/, commands/, hooks/, output-styles/, themes/.",
       "author": {
         "name": "KOBIG"
       },
