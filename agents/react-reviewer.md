@@ -1,6 +1,6 @@
 ---
 name: react-reviewer
-description: React/JSX reviewer: hook correctness, render performance, server/client boundaries, accessibility, and React security. Use for .tsx/.jsx changes.
+description: "React/JSX reviewer: hook correctness, render performance, server/client boundaries, accessibility, and React security. Use for .tsx/.jsx changes."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 ---

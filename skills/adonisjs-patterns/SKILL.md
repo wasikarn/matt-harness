@@ -1,6 +1,6 @@
 ---
 name: adonisjs-patterns
-description: AdonisJS v5 patterns: IoC container, Lucid ORM (ActiveRecord), Japa tests, VineJS validation, middleware, auth guards, and ace CLI commands.
+description: "AdonisJS v5 patterns: IoC container, Lucid ORM (ActiveRecord), Japa tests, VineJS validation, middleware, auth guards, and ace CLI commands."
 metadata:
   origin: kbg
   tathep_projects:

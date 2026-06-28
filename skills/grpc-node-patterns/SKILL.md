@@ -1,6 +1,6 @@
 ---
 name: grpc-node-patterns
-description: gRPC patterns for Node.js and Bun: proto definition, @grpc/grpc-js client and server, TypeScript codegen, streaming, error codes, and deadlines/metadata.
+description: "gRPC patterns for Node.js and Bun: proto definition, @grpc/grpc-js client and server, TypeScript codegen, streaming, error codes, and deadlines/metadata."
 metadata:
   origin: kbg
   tathep_projects:

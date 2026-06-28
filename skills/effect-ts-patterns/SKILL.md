@@ -1,6 +1,6 @@
 ---
 name: effect-ts-patterns
-description: Effect-ts patterns: Effect<A,E,R> type, Effect.gen, Layer DI, Schema validation, fiber concurrency, and @effect/platform HTTP. For typed-effect-system codebases.
+description: "Effect-ts patterns: Effect<A,E,R> type, Effect.gen, Layer DI, Schema validation, fiber concurrency, and @effect/platform HTTP. For typed-effect-system codebases."
 metadata:
   origin: kbg
   tathep_projects:

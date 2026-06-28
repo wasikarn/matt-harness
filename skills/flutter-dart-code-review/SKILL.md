@@ -1,6 +1,6 @@
 ---
 name: flutter-dart-code-review
-description: Flutter/Dart review checklist: widget best practices, state management (BLoC, Riverpod, Provider, GetX, MobX, Signals), Dart idioms, and architecture.
+description: "Flutter/Dart review checklist: widget best practices, state management (BLoC, Riverpod, Provider, GetX, MobX, Signals), Dart idioms, and architecture."
 metadata:
   origin: ECC
 ---

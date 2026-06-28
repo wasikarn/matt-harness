@@ -1,6 +1,6 @@
 ---
 name: orch-change-feature
-description: Change existing behavior: update tests to new spec, fix implementation to match, review, gated commit. Use when behavior is not broken but should be different.
+description: "Change existing behavior: update tests to new spec, fix implementation to match, review, gated commit. Use when behavior is not broken but should be different."
 metadata:
   origin: ECC
 ---

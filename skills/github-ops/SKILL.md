@@ -1,6 +1,6 @@
 ---
 name: github-ops
-description: GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git.
+description: "GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git."
 metadata:
   origin: ECC
 ---

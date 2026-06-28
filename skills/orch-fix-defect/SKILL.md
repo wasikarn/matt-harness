@@ -1,6 +1,6 @@
 ---
 name: orch-fix-defect
-description: Fix a bug: write a failing regression test, fix to green, review, gated commit. Use when existing behavior is broken.
+description: "Fix a bug: write a failing regression test, fix to green, review, gated commit. Use when existing behavior is broken."
 metadata:
   origin: ECC
 ---

@@ -1,5 +1,5 @@
 ---
-description: Change an existing feature to new behavior: update tests, fix impl, review, gated commit. Wrapper for orch-change-feature.
+description: "Change an existing feature to new behavior: update tests, fix impl, review, gated commit. Wrapper for orch-change-feature."
 ---
 
 # /orch-change-feature

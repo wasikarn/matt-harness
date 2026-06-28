@@ -1,6 +1,6 @@
 ---
 name: orch-build-mvp
-description: Turn a design or spec doc into a running MVP: slice → scaffold → TDD → review → gated commit.
+description: "Turn a design or spec doc into a running MVP: slice → scaffold → TDD → review → gated commit."
 metadata:
   origin: ECC
 ---

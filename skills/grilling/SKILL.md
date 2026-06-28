@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: Relentless interview to stress-test a plan or design. Modes: basic (default, interview only) or with-docs (also produces ADRs + domain glossary).
+description: "Relentless interview to stress-test a plan or design. Modes: basic (default, interview only) or with-docs (also produces ADRs + domain glossary)."
 ---
 
 Interview the user relentlessly about every aspect of the plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.

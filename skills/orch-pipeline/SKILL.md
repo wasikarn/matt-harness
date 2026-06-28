@@ -1,6 +1,6 @@
 ---
 name: orch-pipeline
-description: Shared engine for the orch-* skill family: gated Research→Plan→TDD→Review→Commit pipeline, size classifier, agent map. Not invoked directly.
+description: "Shared engine for the orch-* skill family: gated Research→Plan→TDD→Review→Commit pipeline, size classifier, agent map. Not invoked directly."
 metadata:
   origin: ECC
 ---

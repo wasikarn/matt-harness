@@ -1,6 +1,6 @@
 ---
 name: orch-refine-code
-description: Behavior-preserving refactor: confirm tests green, restructure, keep green, review, gated commit. Use when structure should improve but behavior must not change.
+description: "Behavior-preserving refactor: confirm tests green, restructure, keep green, review, gated commit. Use when structure should improve but behavior must not change."
 metadata:
   origin: ECC
 ---

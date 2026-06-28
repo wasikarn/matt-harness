@@ -1,6 +1,6 @@
 ---
 name: decide
-description: Judgment Ladder decision support. Modes: probe (analyze before committing), decide (5-rung ladder), strategize (irreversible choices). Produces a decision record.
+description: "Judgment Ladder decision support. Modes: probe (analyze before committing), decide (5-rung ladder), strategize (irreversible choices). Produces a decision record."
 metadata:
   origin: kbg
   references:

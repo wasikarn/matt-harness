@@ -1,6 +1,6 @@
 ---
 name: hono-patterns
-description: Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters.
+description: "Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters."
 metadata:
   origin: kbg
   tathep_projects:
