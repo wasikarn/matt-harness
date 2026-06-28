@@ -123,15 +123,15 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | via-negativa | `thinking-via-negativa` | applied | skills/decommission, skills/memory-trim | named in footer: removal/absence as via-negativa |
 | ooda | `thinking-ooda` | applied | skills/incident | named in incident footer (detect→assess→mitigate→monitor); the skill's hotfix path inherits via handoff |
 | cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
-| regret-minimization | `thinking-regret-minimization` | considered | — | no kbg anchor |
+| regret-minimization | `thinking-regret-minimization` | applied | skills/regret-minimization | asymmetry lens: recoverable downside vs permanently foregone upside; complements skills/adr for timing-sensitive decisions |
 | kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
 | triz | `thinking-triz` | considered | — | no kbg anchor |
 | archetypes | `thinking-archetypes` | considered | — | no kbg anchor |
 | effectuation | `thinking-effectuation` | considered | — | no kbg anchor |
-| dual-process | `thinking-dual-process` | considered | — | no kbg anchor |
-| fermi-estimation | `thinking-fermi-estimation` | considered | — | no kbg anchor |
+| dual-process | `thinking-dual-process` | applied | skills/dual-process | (1) verification trigger: easy answer + high stakes → deliberate pass; (2) AI agent path design: fast-path (Haiku, no gate) vs slow-path (Sonnet + interrupt) |
+| fermi-estimation | `thinking-fermi-estimation` | applied | skills/fermi-estimation | capacity planning, Redis/TimescaleDB sizing, ANPR throughput estimates before instrumentation exists |
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
-| leverage-points | `thinking-leverage-points` | considered | — | no direct anchor beyond systems-thinking / kbg:decide probe mode |
+| leverage-points | `thinking-leverage-points` | applied | skills/leverage-points | Meadows' 12-level hierarchy; when parameter tuning keeps not sticking, move up the hierarchy |
 
 ## kbg-native reasoning scaffolds
 
@@ -210,22 +210,22 @@ Cross-analysis of thinking models against the tathep project stack (10 repos: an
 | New module boundary in platform-api | circle-of-competence | `skills/decide` |
 | Pages → App Router migration scope | reversibility | `skills/adr` |
 
-### No-anchor gaps (tathep-specific; no kbg surface today)
+### Previously-gap models (now applied via dedicated skills)
 
-These four patterns recur in tathep but have no named kbg surface. Apply them manually using the named model from `docs/reference/thinking-skills/skills/`.
+These four patterns recur in tathep and now have dedicated kbg surfaces. Use the skill directly.
 
-**`fermi-estimation`** — most acute gap. Three direct uses in anpr-service:
+**`fermi-estimation`** → `skills/fermi-estimation`. Three direct uses in anpr-service:
 - plate-read rate per camera at peak → calibrate PASS_GAP_SECONDS without instrumentation
 - Redis sorted-set memory growth per day (`50 cameras × 100k entries × ~50 bytes ≈ 250 MB/day`)
 - TimescaleDB chunk compression trigger point
 
 Quick order-of-magnitude check unlocks the engineering decision in 30 seconds. Currently deferred to instrumentation.
 
-**`dual-process`** — specific to tathep-ai-agent-python LangGraph design. Every `interrupt()` placement decision is a System 1 / System 2 question: fast-path (Haiku + no interrupt) vs slow-path (Sonnet + interrupt + human confirmation). Naming the model makes the design axis explicit without re-deriving it per session.
+**`dual-process`** → `skills/dual-process`. Every `interrupt()` placement decision is a System 1 / System 2 question: fast-path (Haiku + no interrupt) vs slow-path (Sonnet + interrupt + human confirmation).
 
-**`regret-minimization`** — for irreversible product and data-model decisions: session model evolution, whether to expose plate-level analytics in platform-api (adds PDPA surface area), new module boundary commitments. Frame as "which option leaves fewer regrets in 2 years?" — add to ADR when the reversibility answer alone isn't enough.
+**`regret-minimization`** → `skills/regret-minimization`. For product and data-model decisions where both paths seem viable: whether to expose plate-level analytics (adds PDPA surface area, but opportunity closes), new module boundary commitments. Applies the asymmetry: recoverable downside vs permanently foregone upside.
 
-**`leverage-points`** — anpr-service has exactly one: plate-read rate. Improving it moves every downstream metric (accuracy, billing quality, leaderboard quality, session fidelity) simultaneously. Partially covered by `systems-thinking` probe mode but the single-point leverage framing is not named, so "improve counting model" and "improve plate detection rate" compete as equal options when the latter dominates by ~1.2× on all metrics.
+**`leverage-points`** → `skills/leverage-points`. anpr-service has exactly one high-leverage point: plate-read rate. Improving it moves every downstream metric simultaneously. Use when parameter tuning keeps not sticking — move up Meadows' hierarchy instead of tuning the same parameter again.
 
 ### What thinking models cannot fill for tathep
 
