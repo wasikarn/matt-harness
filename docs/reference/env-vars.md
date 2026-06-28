@@ -103,6 +103,20 @@ Use `/mcp` in-session to disable unused servers. Prefer keeping heavy-schema MCP
 
 **Agent teams cost:** each teammate agent consumes tokens independently. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"` disables agent-team spawning. Already set ✅.
 
+### Strategic Compaction
+
+Use `/compact` at **logical breakpoints** — don't rely on auto-compaction at 95%.
+
+| Compact? | When |
+|---|---|
+| ✅ Yes | After research/exploration, before implementation |
+| ✅ Yes | After completing a milestone, before starting the next |
+| ✅ Yes | After debugging, before continuing feature work |
+| ✅ Yes | After a failed approach, before trying a new one |
+| ❌ No | Mid-implementation (you'll lose variable names, file paths, partial state) |
+
+Full decision guide: `skills/strategic-compact/SKILL.md`.
+
 ## Vendor levers the harness honors (Claude Code owns these; listed for completeness)
 
 | Var | Default | Effect |
