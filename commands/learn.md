@@ -60,11 +60,17 @@ Create a skill file at `~/.claude/skills/learned/[pattern-name].md`:
 
 ## Process
 
-1. Review the session for extractable patterns
-2. Identify the most valuable/reusable insight
-3. Draft the skill file
-4. Ask user to confirm before saving
-5. Save to `~/.claude/skills/learned/`
+1. **Gather observations** — find the project observation log:
+   ```bash
+   git remote get-url origin 2>/dev/null | python3 -c \
+     "import sys,hashlib; h=hashlib.sha256(sys.stdin.read().strip().encode()).hexdigest()[:12]; print(f'$HOME/.local/share/kbg/projects/{h}/observations.jsonl')"
+   ```
+   If the file exists, `tail -n 200 <path>` and use those tool-call records as raw context before extracting.
+2. Review the session (and observations if present) for extractable patterns
+3. Identify the most valuable/reusable insight
+4. Draft the skill file
+5. Ask user to confirm before saving
+6. Save to `~/.claude/skills/learned/`
 
 ## Notes
 
