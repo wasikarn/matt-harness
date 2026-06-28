@@ -15,7 +15,7 @@ Plugin manifest is the only live validation gate. `scripts/run-gauntlet.sh` is a
 **Auto-discovered directories:** `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`.
 
 1. Create the file(s) following the pattern of an existing component in the same directory.
-2. For hooks: register in `hooks/hooks.json` and add tests for any gate. (`hooks/` is currently empty — rebuild pending.)
+2. For hooks: register in `hooks/hooks.json` and add tests for any gate.
 3. **Bump both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (the `version` field). Same-version edits to a cached plugin are silent no-ops.
 4. Run validation.
 5. Commit and push.
@@ -44,9 +44,9 @@ Before writing a new skill, command, or agent from scratch, check the upstream E
 
 The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
 
-**Doctrine injection** (when hooks are wired): `hooks/session/doctrine-bootstrap.sh` fires on every SessionStart and injects four L1 doctrine files. Currently not active — `hooks/` is empty in the v0.1.0 rebuild.
+**Doctrine injection** (pending): `hooks/session/doctrine-bootstrap.sh` will fire on SessionStart to inject L1 doctrine files. Not yet implemented.
 
-**Operating model** (target, pending hook rebuild): deny the irrecoverable set computationally (gates in `hooks/gates/`), advise on the rest (sensors in `hooks/advisory/`). Advisory sensors never emit `permissionDecision`. The L2–L5 autonomy ladder is retired.
+**Operating model:** deny the irrecoverable set computationally (gates in `hooks/gates/`), advise on the rest (sensors in `hooks/advisory/`). Advisory sensors never emit `permissionDecision`. The L2–L5 autonomy ladder is retired.
 
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), post-tool/ (audit), lifecycle/ (enforce), maintenance/ (upkeep). Governance events append to `~/.claude/governance-events.jsonl`.
 

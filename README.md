@@ -63,7 +63,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
 
-> Governance hooks are pending rebuild; `hooks/` is intentionally empty in v0.1.0.
+> v0.2.0 ships two PreToolUse gates: `irrecoverable` (rm -rf, push --force, --no-verify, reset --hard) and `path-hardcode` (/Users/ in .sh/.py). Session-inject and advisory sensors are planned.
 
 ---
 
@@ -138,7 +138,7 @@ kbg-harness/
 ├── agents/               # 49 specialist subagents (.md each)
 ├── skills/               # 113 workflow skills (SKILL.md per directory)
 ├── commands/             # 68 slash commands
-├── hooks/                # Empty — governance hooks pending rebuild
+├── hooks/                # PreToolUse gates: irrecoverable + path-hardcode
 ├── output-styles/        # senior-eng (default), staff-eng (opt-in)
 ├── contexts/             # dev / review / research session frames
 ├── themes/               # catppuccin-mocha.json
