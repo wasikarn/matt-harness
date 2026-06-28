@@ -161,7 +161,7 @@ kbg-harness/
 # Only live validation gate
 claude plugin validate --strict .
 
-# Full gauntlet (stub in v0.1.0)
+# Full gauntlet (plugin-validate + shell-lint + JSON lint + harness-audit)
 bash scripts/run-gauntlet.sh
 ```
 

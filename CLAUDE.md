@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 claude plugin validate --strict
 ```
 
-Plugin manifest is the only live validation gate. `scripts/run-gauntlet.sh` is a v0.1.0 stub. Hook tests, harness-audit, and eval harness are pending rebuild.
+Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit in parallel. Critical-hooks behavioral suite and eval gate are pending rebuild.
 
 ## Adding or removing a surface
 
