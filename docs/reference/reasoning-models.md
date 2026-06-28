@@ -182,3 +182,57 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
 - **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (read the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). It may still appear as *framing* inside an applied surface.
+
+## Tathep domain scenarios
+
+Cross-analysis of thinking models against the tathep project stack (10 repos: anpr-service, ai-agent-python, platform-api, website, admin, video-processing, player, app, bluedragon-eye-analytics-api, tathep-player). Use this table as a shortcut — when a tathep decision arises, find the scenario row and reach for the named surface.
+
+### Already-covered scenarios (models embedded in existing kbg surfaces)
+
+| Tathep scenario | Model | kbg surface |
+|----------------|-------|-------------|
+| Change PASS_GAP_SECONDS in production | pre-mortem + reversibility | `skills/decide` probe mode |
+| Drop a TimescaleDB continuous_aggregate | reversibility | `skills/adr` |
+| Leaderboard over-count root cause | scientific-method + five-whys | `commands/fix-bug` |
+| ANPR throughput bottleneck (BullMQ / plate-read rate) | theory-of-constraints | `skills/latency-critical-systems` |
+| Plate hashing algorithm change (SHA-256 → HMAC) | pre-mortem + reversibility | `skills/decide` + `skills/adr` |
+| LangGraph retry scope (which errors are retryable?) | second-order | `skills/cost-aware-llm-pipeline` |
+| LangGraph agent loop diverges (debugging) | scientific-method | `skills/agentic-engineering` |
+| LLM model routing (Haiku vs Sonnet) | opportunity-cost | `skills/cost-aware-llm-pipeline` |
+| LangGraph tool result contains untrusted content | red-team | `skills/critical-eval` |
+| Effect-TS TryCatch consistency across 21 modules | systems-thinking | `skills/decide` |
+| BullMQ failure — dead-letter vs retry | second-order | `skills/decide` |
+| React Query cache invalidation strategy | second-order | `skills/decide` |
+| Before every Cloudflare Pages deploy | pre-mortem | `skills/decide` |
+| Dio interceptor error propagation (Flutter) | second-order | `skills/decide` |
+| Firebase push notification routing (Flutter) | ooda | `skills/incident` |
+| New campaign creation flow (advertiser JTBD) | jobs-to-be-done | `agents/product-analyst` |
+| New module boundary in platform-api | circle-of-competence | `skills/decide` |
+| Pages → App Router migration scope | reversibility | `skills/adr` |
+
+### No-anchor gaps (tathep-specific; no kbg surface today)
+
+These four patterns recur in tathep but have no named kbg surface. Apply them manually using the named model from `docs/reference/thinking-skills/skills/`.
+
+**`fermi-estimation`** — most acute gap. Three direct uses in anpr-service:
+- plate-read rate per camera at peak → calibrate PASS_GAP_SECONDS without instrumentation
+- Redis sorted-set memory growth per day (`50 cameras × 100k entries × ~50 bytes ≈ 250 MB/day`)
+- TimescaleDB chunk compression trigger point
+
+Quick order-of-magnitude check unlocks the engineering decision in 30 seconds. Currently deferred to instrumentation.
+
+**`dual-process`** — specific to tathep-ai-agent-python LangGraph design. Every `interrupt()` placement decision is a System 1 / System 2 question: fast-path (Haiku + no interrupt) vs slow-path (Sonnet + interrupt + human confirmation). Naming the model makes the design axis explicit without re-deriving it per session.
+
+**`regret-minimization`** — for irreversible product and data-model decisions: session model evolution, whether to expose plate-level analytics in platform-api (adds PDPA surface area), new module boundary commitments. Frame as "which option leaves fewer regrets in 2 years?" — add to ADR when the reversibility answer alone isn't enough.
+
+**`leverage-points`** — anpr-service has exactly one: plate-read rate. Improving it moves every downstream metric (accuracy, billing quality, leaderboard quality, session fidelity) simultaneously. Partially covered by `systems-thinking` probe mode but the single-point leverage framing is not named, so "improve counting model" and "improve plate detection rate" compete as equal options when the latter dominates by ~1.2× on all metrics.
+
+### What thinking models cannot fill for tathep
+
+These belong in repo-local CLAUDE.md files or the tathep wiki — not thinking-model territory:
+- DOOH measurement standards (Geopath OTS/VAC formulas, IAB impression counting)
+- Thai plate recognition edge cases (motorcycle plates, front-plate-only vehicles, occlusion patterns)
+- BullMQ backpressure semantics (queue depth limits, stalled job recovery, priority ceiling)
+- TimescaleDB cagg refresh watermark behavior across compressed vs uncompressed chunks
+- LangGraph StateGraph conditional edge patterns (use context7 for current docs)
+- Effect-TS pipe/flatMap composition idioms (reference, not model territory)
