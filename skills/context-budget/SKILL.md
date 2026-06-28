@@ -87,7 +87,7 @@ Potential savings: ~XX,XXX tokens (XX% of current overhead)
 ## kbg baseline (2026-06-28)
 
 Owner global `skillOverrides.maxSkills = 0.08` → ~2.25× headroom vs default.
-Current surface count: ~64 skills, ~37 commands, ~31 agents.
+Current surface count: ~63 skills, ~37 commands, ~31 agents.
 MCP is the dominant variable — check active server count with `/doctor`.
 
 ## Guardrail
