@@ -74,6 +74,23 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | `KBG_IDEATE_OLLAMA_TIMEOUT` | `8` | Ollama request timeout (seconds). | ideate convergence/memory capture |
 | `KBG_IDEATE_EMBEDDING_MODEL` | `all-minilm:latest` | Embedding model name. | ideate convergence/memory capture |
 
+## Token-optimization settings (set in `~/.claude/settings.json` → `env`)
+
+Recommended values for context/cost efficiency, sourced from ECC token-optimization guide:
+
+| Var | Recommended | Current | Effect |
+|---|---|---|---|
+| `MAX_THINKING_TOKENS` | `10000` | `10000` ✅ | Extended thinking reserves up to 31,999 output tokens for internal reasoning. 10k cuts hidden cost ~70% vs the default. Set to `0` for trivial tasks. Toggle with **Option+T** (macOS). |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | `haiku` | `haiku` ✅ | Model for subagents spawned via the Task tool. Haiku is ~80% cheaper and sufficient for exploration, file reading, and test running. Switch the main session to `opus` for complex reasoning without changing this. |
+| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | _unset_ | `70` ⚠️ | Overrides the auto-compaction threshold. Community reports suggest values below the CC default may compact **earlier** rather than later. If sessions compact unexpectedly, remove this key and rely on manual `/compact` + `kbg:strategic-compact`. |
+
+Use the right model per task mid-session:
+```
+/model haiku    # quick lookups, file reading
+/model sonnet   # day-to-day coding (default)
+/model opus     # complex architecture, multi-step reasoning
+```
+
 ## Vendor levers the harness honors (Claude Code owns these; listed for completeness)
 
 | Var | Default | Effect |
