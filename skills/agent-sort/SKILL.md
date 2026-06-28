@@ -1,6 +1,6 @@
 ---
 name: agent-sort
-description: Build an evidence-backed ECC install plan for a specific repo by sorting skills, commands, rules, hooks, and extras into DAILY vs LIBRARY buckets using parallel repo-aware review passes. Use when ECC should be trimmed to what a project actually needs instead of loading the full bundle.
+description: Sort ECC surfaces into DAILY vs LIBRARY buckets for a repo. Use to trim ECC to what a project actually needs.
 metadata:
   origin: ECC
 ---

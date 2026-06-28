@@ -1,6 +1,6 @@
 ---
 name: docs-lookup
-description: When the user asks how to use a library, framework, or API or needs up-to-date code examples, use Context7 MCP to fetch current documentation and return answers with examples. Invoke for docs/API/setup questions.
+description: Fetches current library, framework, and API docs via Context7 MCP. Use for setup questions, API references, or code examples.
 tools: ["Read", "Grep", "mcp__context7__resolve-library-id", "mcp__context7__query-docs"]
 model: sonnet
 ---

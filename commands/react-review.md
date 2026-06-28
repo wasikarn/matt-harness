@@ -1,5 +1,5 @@
 ---
-description: Comprehensive React/JSX code review for hook correctness, render performance, server/client component boundaries, accessibility, and React-specific security. Invokes the react-reviewer agent (and typescript-reviewer alongside on TSX/JSX changes).
+description: React/JSX code review for hooks, performance, boundaries, accessibility, and security. Invokes react-reviewer (and typescript-reviewer on TSX changes).
 ---
 
 # React Code Review

@@ -1,6 +1,6 @@
 ---
 name: flutter-dart-code-review
-description: Library-agnostic Flutter/Dart code review checklist covering widget best practices, state management patterns (BLoC, Riverpod, Provider, GetX, MobX, Signals), Dart idioms, performance, accessibility, security, and clean architecture.
+description: Flutter/Dart review checklist: widget best practices, state management (BLoC, Riverpod, Provider, GetX, MobX, Signals), Dart idioms, and architecture.
 metadata:
   origin: ECC
 ---

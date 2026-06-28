@@ -1,6 +1,6 @@
 ---
 name: dart-flutter-patterns
-description: Production-ready Dart and Flutter patterns covering null safety, immutable state, async composition, widget architecture, popular state management frameworks (BLoC, Riverpod, Provider), GoRouter navigation, Dio networking, Freezed code generation, and clean architecture.
+description: Dart/Flutter production patterns: null safety, state management (BLoC, Riverpod, Provider), GoRouter, Dio, Freezed, and clean architecture.
 metadata:
   origin: ECC
 ---

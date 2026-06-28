@@ -1,5 +1,5 @@
 ---
-description: Fix React build failures (Vite, webpack, Next.js, CRA, Parcel, esbuild, Bun) incrementally — JSX/TSX compile errors, hydration mismatches, server/client component boundary failures, missing types. Invokes the react-build-resolver agent for minimal, surgical fixes.
+description: Fix React build failures (Vite, webpack, Next.js, CRA, esbuild, Bun) — JSX errors, hydration mismatches, boundary failures. Invokes react-build-resolver agent.
 ---
 
 # React Build and Fix

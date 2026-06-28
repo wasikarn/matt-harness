@@ -28,8 +28,8 @@ Run the sizing triad first:
 | Read-only: understand before committing | `probe` |
 | Reversible choice, analyzable trade-offs | `decide` (default — Judgment Ladder) |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
-| Chaos or incident | Stop — use `kbg:incident` instead |
-| Decision already made, needs a record | `kbg:adr` directly |
+| Chaos or incident | Stop — use `kbg:triage` instead |
+| Decision already made, needs a record | `kbg:architecture-decision-records` directly |
 
 ---
 
@@ -129,7 +129,7 @@ Trade-offs accepted: ...
 - Bias guards applied: framing / anchoring / confirmation / sunk-cost
 ```
 
-Persist via `kbg:adr` when the decision warrants a durable ADR.
+Persist via `kbg:architecture-decision-records` when the decision warrants a durable ADR.
 
 ## Guardrails
 
