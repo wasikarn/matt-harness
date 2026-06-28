@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-hooks.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "id": "gate:bash:irrecoverable",
+        "matcher": "Bash",
+        "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/gates/irrecoverable.sh\""
+          }
+        ]
+      },
+      {
+        "id": "gate:write:path-hardcode",
+        "matcher": "Write|Edit|MultiEdit",
+        "description": "Gate: block hardcoded /Users/<name> paths in .sh/.py files",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/gates/path-hardcode.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
