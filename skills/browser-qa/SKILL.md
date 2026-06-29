@@ -1,6 +1,6 @@
 ---
 name: browser-qa
-description: Use this skill to automate visual testing and UI interaction verification using browser automation after deploying features.
+description: Use this skill to automate visual testing and UI interaction verification using browser automation after deploying features. Use when adding Playwright/Cypress/Puppeteer visual or interaction tests, or when verifying a UI change against deployed pages. Don't use for unit tests, type checks, or backend E2E (use kbg:test-engineer).
 metadata:
   origin: ECC
 ---

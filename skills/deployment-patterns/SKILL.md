@@ -1,6 +1,6 @@
 ---
 name: deployment-patterns
-description: Deployment workflows, CI/CD pipeline patterns, Docker containerization, health checks, rollback strategies, and production readiness checklists for web applications.
+description: Deployment workflows, CI/CD pipeline patterns, Docker containerization, health checks, rollback strategies, and production readiness checklists for web applications. Use when designing a deploy pipeline, adding health checks, or planning a rollback strategy. Don't use for K8s manifests (use kbg:kubernetes-patterns) or for local-dev Docker (use kbg:docker-patterns).
 metadata:
   origin: ECC
 ---

@@ -1,6 +1,6 @@
 ---
 name: autonomous-loops
-description: "Choose an autonomous-loop architecture for a task, then dispatch to native Workflow / /loop / Cron. From simple sequential pipelines to RFC-driven multi-agent DAG orchestration."
+description: "Choose an autonomous-loop architecture for a task, then dispatch to native Workflow / /loop / Cron. From simple sequential pipelines to RFC-driven multi-agent DAG orchestration. Use when designing or debugging an autonomous development loop (CI/CD, nightly codegen, multi-agent DAG). Don't use for one-shot interactive Claude sessions — that's the default Claude Code mode."
 metadata:
   origin: ECC
 ---

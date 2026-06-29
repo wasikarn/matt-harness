@@ -2,7 +2,9 @@
 name: token-budget-advisor
 description: >-
   Present depth options (25/50/75/100%) before answering when user wants
-  to control response length or token usage.
+  to control response length or token usage. Use when the user asks to
+  trim, shorten, or budget an upcoming response. Don't use for
+  already-running answers where the depth was not negotiated first.
 metadata:
   origin: community
   upstream: https://github.com/Xabilimon1/Token-Budget-Advisor-Claude-Code-

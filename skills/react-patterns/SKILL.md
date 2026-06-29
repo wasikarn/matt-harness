@@ -1,6 +1,6 @@
 ---
 name: react-patterns
-description: "React 18/19 patterns: hooks, server/client boundaries, Suspense, form actions, data fetching, state management, and accessibility. Use when writing or reviewing components."
+description: "React 18/19 patterns: hooks, server/client boundaries, Suspense, form actions, data fetching, state management, and accessibility. Use when writing or reviewing React components. Don't use for performance-only work (see kbg:react-performance) or testing-only work (see kbg:react-testing)."
 metadata:
   origin: ECC
 ---

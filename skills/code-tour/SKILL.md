@@ -1,6 +1,6 @@
 ---
 name: code-tour
-description: "Create CodeTour .tour files: persona-targeted walkthroughs with real file and line anchors. For onboarding, architecture, PR, and RCA tours."
+description: "Create CodeTour .tour files: persona-targeted walkthroughs with real file and line anchors. For onboarding, architecture, PR, and RCA tours. Use when generating a guided tour of a codebase area for a new contributor or for explaining a complex PR. Don't use for general documentation (use kbg:doc-updater)."
 metadata:
   origin: ECC
 ---

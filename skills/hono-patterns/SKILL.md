@@ -1,6 +1,6 @@
 ---
 name: hono-patterns
-description: "Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters."
+description: "Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters. Use when building or maintaining Hono web services on Bun or Node. Don't use for Express, Fastify, NestJS, or other non-Hono frameworks."
 metadata:
   origin: kbg
   tathep_projects:

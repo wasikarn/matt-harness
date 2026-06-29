@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: "Multi-source deep research: web search, synthesis, and cited reports with source attribution. Use when thorough research with evidence is needed."
+description: "Multi-source deep research: web search, synthesis, and cited reports with source attribution. Use when thorough research with evidence and citations is needed. Don't use for simple lookups or codebase-only exploration (use kbg:documentation-lookup instead)."
 metadata:
   origin: ECC
 ---

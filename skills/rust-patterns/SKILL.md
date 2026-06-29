@@ -1,6 +1,6 @@
 ---
 name: rust-patterns
-description: Idiomatic Rust patterns, ownership, error handling, traits, concurrency, and best practices for building safe, performant applications.
+description: Idiomatic Rust patterns, ownership, error handling, traits, concurrency, and best practices for building safe, performant applications. Use when building or maintaining Rust applications. Don't use for non-Rust backends (see kbg:<language>-patterns).
 metadata:
   origin: ECC
 ---

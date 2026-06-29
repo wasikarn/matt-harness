@@ -1,6 +1,6 @@
 ---
 name: production-audit
-description: Local-evidence production readiness audit for pre-launch reviews, post-merge checks, and prod-failure questions. No external service.
+description: Local-evidence production readiness audit for pre-launch reviews, post-merge checks, and prod-failure questions. No external service. Use when the user asks whether an application is ready to ship or what must be fixed before launch. Don't use for in-flight feature work (use orch-* skills) or non-readiness assessments."
 metadata:
   origin: community
 ---

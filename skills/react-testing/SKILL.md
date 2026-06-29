@@ -1,6 +1,6 @@
 ---
 name: react-testing
-description: React testing with RTL, Vitest/Jest, MSW, and axe. Covers component tests vs E2E decision boundary. Use when writing or fixing React tests.
+description: React testing with RTL, Vitest/Jest, MSW, and axe. Covers component tests vs E2E decision boundary. Use when writing or fixing React tests. Don't use for general React patterns (see kbg:react-patterns) or performance-only work (see kbg:react-performance).
 metadata:
   origin: ECC
 ---

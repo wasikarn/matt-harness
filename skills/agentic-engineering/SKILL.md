@@ -1,6 +1,6 @@
 ---
 name: agentic-engineering
-description: Operate as an agentic engineer using eval-first execution, decomposition, and cost-aware model routing.
+description: Operate as an agentic engineer using eval-first execution, decomposition, and cost-aware model routing. Use when starting a long-horizon engineering task and you need a process for planning, executing, and measuring the loop. Don't use for one-shot scripts or for writing the implementation itself (use the framework-specific skills).
 metadata:
   origin: ECC
 ---

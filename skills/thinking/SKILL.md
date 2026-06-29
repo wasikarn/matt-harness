@@ -1,6 +1,6 @@
 ---
 name: thinking
-description: On-demand index of 39 mental models. Read before reasoning on any complex, ambiguous, or high-stakes problem to pick the right scaffold.
+description: On-demand index of 39 mental models. Read before reasoning on any complex, ambiguous, or high-stakes problem to pick the right scaffold. Use when facing a non-trivial decision or reasoning task. Don't use for simple, well-defined lookups or pure code generation.
 metadata:
   origin: kbg
   sources: docs/reference/thinking-skills/skills/

@@ -1,6 +1,6 @@
 ---
 name: orch-add-feature
-description: "Gated pipeline for a net-new capability: research → plan → TDD → review → commit. Delegates each phase to matching ECC agents."
+description: "Gated pipeline for a net-new capability: research → plan → TDD → review → commit. Delegates each phase to matching ECC agents. Use when the user wants a capability that does not exist yet. Don't use for fixes, refactors, or behavior changes (use orch-fix-defect, orch-refine-code, orch-change-feature)."
 metadata:
   origin: ECC
 ---

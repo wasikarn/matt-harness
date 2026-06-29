@@ -1,6 +1,6 @@
 ---
 name: docker-patterns
-description: Docker and Docker Compose patterns for local development, container security, networking, volume strategies, and multi-service orchestration.
+description: Docker and Docker Compose patterns for local development, container security, networking, volume strategies, and multi-service orchestration. Use when authoring or reviewing Dockerfiles / compose files for local dev. Don't use for K8s production manifests (use kbg:kubernetes-patterns) or for build pipelines (use kbg:deployment-patterns).
 metadata:
   origin: ECC
 ---

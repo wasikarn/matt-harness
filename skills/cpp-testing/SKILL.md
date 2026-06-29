@@ -1,6 +1,6 @@
 ---
 name: cpp-testing
-description: Use only when writing/updating/fixing C++ tests, configuring GoogleTest/CTest, diagnosing failing or flaky tests, or adding coverage/sanitizers.
+description: Use when writing/updating/fixing C++ tests, configuring GoogleTest/CTest, diagnosing failing or flaky tests, or adding coverage/sanitizers. Don't use for general C++ review (use kbg:cpp-reviewer), build errors (use kbg:cpp-build-resolver), or non-C++ languages.
 metadata:
   origin: ECC
 ---

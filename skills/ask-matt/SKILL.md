@@ -1,7 +1,8 @@
 ---
 name: ask-matt
-description: Ask which skill or flow fits your situation. A router over the user-invoked skills in this repo.
+description: Ask which skill or flow fits your situation. A router over the user-invoked skills in this repo. Use when you're unsure which kbg skill to start with or which command fits a vague request. Don't use for surfacing specific known skills (just type /<name>).
 disable-model-invocation: true
+disable-model-invocation-reason: router skill — the model should not auto-select a flow without the user's situation being asked
 ---
 
 # Ask Matt

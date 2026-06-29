@@ -1,6 +1,6 @@
 ---
 name: tauri-v2-patterns
-description: "Tauri v2 desktop app patterns: IPC commands, capabilities/permissions model, state management, events, plugins, and tauri.conf.json. Covers v2 breaking changes from v1."
+description: "Tauri v2 desktop app patterns: IPC commands, capabilities/permissions model, state management, events, plugins, and tauri.conf.json. Covers v2 breaking changes from v1. Use when building or upgrading Tauri desktop apps to v2. Don't use for Tauri v1 projects or non-Tauri Rust apps (use kbg:rust-patterns)."
 metadata:
   origin: kbg
   tathep_projects:

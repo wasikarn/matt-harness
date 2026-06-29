@@ -1,6 +1,6 @@
 ---
 name: redis-patterns
-description: Redis data structure patterns, caching strategies, distributed locks, rate limiting, pub/sub, and connection management for production applications.
+description: Redis data structure patterns, caching strategies, distributed locks, rate limiting, pub/sub, and connection management for production applications. Use when designing or troubleshooting Redis-backed caching, locking, pub/sub, or rate limiting. Don't use for non-Redis databases (see kbg:mysql-patterns, kbg:postgres-patterns) or in-memory caching inside a single process."
 metadata:
   origin: ECC
 ---

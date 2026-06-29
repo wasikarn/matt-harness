@@ -1,6 +1,6 @@
 ---
 name: architecture-decision-records
-description: Capture architectural decisions as structured ADRs. Auto-detects decision moments, records context, alternatives, and rationale. Maintains an ADR log.
+description: Capture architectural decisions as structured ADRs. Auto-detects decision moments, records context, alternatives, and rationale. Maintains an ADR log. Use when a non-trivial trade-off is being decided (library, pattern, infrastructure) and the reasoning should outlive the chat. Don't use for implementation choices that are obvious or already documented in code.
 metadata:
   origin: ECC
 ---

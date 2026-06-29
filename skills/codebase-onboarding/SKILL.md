@@ -1,6 +1,6 @@
 ---
 name: codebase-onboarding
-description: "Analyze an unfamiliar codebase and generate a structured onboarding guide with architecture map, key entry points, and conventions."
+description: "Analyze an unfamiliar codebase and generate a structured onboarding guide with architecture map, key entry points, and conventions. Use when joining a new repo, taking over a project, or teaching a colleague the codebase. Don't use for code-tour walkthroughs (use kbg:code-tour) or for general exploration."
 metadata:
   origin: ECC
 ---

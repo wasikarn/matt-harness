@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: "In-flow security checklist while coding auth, user input, secrets, API endpoints, or payment features. Guides the current change. For a standalone full-codebase threat-model audit use kbg:security-auditor."
+description: "In-flow security checklist while coding auth, user input, secrets, API endpoints, or payment features. Guides the current change. Use when writing or reviewing code that handles trust boundaries. Don't use for a full-codebase threat-model audit (use kbg:security-auditor instead)."
 metadata:
   origin: ECC
 ---

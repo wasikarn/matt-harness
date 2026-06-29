@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes.
+description: Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes. Use when designing or reviewing a Node.js backend service or Next.js API route. Don't use for Python/Java/Go/Rust backends (see kbg:django-patterns, kbg:fastapi-patterns, kbg:go-reviewer, kbg:java-reviewer).
 metadata:
   origin: ECC
 ---

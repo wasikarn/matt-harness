@@ -1,6 +1,6 @@
 ---
 name: verification-loop
-description: "A comprehensive verification system for Claude Code sessions."
+description: "A comprehensive verification system for Claude Code sessions. Use when running a long-running autonomous process or any task that needs explicit proof of completion. Don't use for one-shot interactive sessions or trivial edits."
 metadata:
   origin: ECC
 ---

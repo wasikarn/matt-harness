@@ -1,6 +1,6 @@
 ---
 name: documentation-lookup
-description: "Host-model skill for current library/framework docs via Context7 MCP: resolve-library-id → query-docs → answer. For a fresh-context isolated lookup spawn the docs-lookup agent instead."
+description: "Host-model skill for current library/framework docs via Context7 MCP: resolve-library-id → query-docs → answer. Use when you need authoritative docs for a library/SDK/API right now and training data may be stale. Don't use for non-library questions (general programming, design, project-specific code) — for those, use the framework-specific skill."
 metadata:
   origin: ECC
 ---

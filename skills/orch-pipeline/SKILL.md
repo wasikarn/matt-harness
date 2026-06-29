@@ -1,6 +1,6 @@
 ---
 name: orch-pipeline
-description: "Shared engine for the orch-* skill family: gated Research→Plan→TDD→Review→Commit pipeline, size classifier, agent map. Not invoked directly."
+description: "Shared engine for the orch-* skill family: gated Research→Plan→TDD→Review→Commit pipeline, size classifier, agent map. Not invoked directly. Use when an orch-* operation skill routes to a phase. Don't use for end-user prompts (invoke orch-add-feature, orch-fix-defect, orch-change-feature, orch-refine-code, or orch-build-mvp instead)."
 metadata:
   origin: ECC
 ---

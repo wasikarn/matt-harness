@@ -1,6 +1,6 @@
 ---
 name: prompt-optimizer
-description: Analyze a draft prompt, diagnose gaps, match ECC components, and output a ready-to-paste optimized prompt. Advisory only.
+description: Analyze a draft prompt, diagnose gaps, match ECC components, and output a ready-to-paste optimized prompt. Advisory only. Use when the user wants to improve or audit a prompt before sending it to a model. Don't use for executing the underlying task or for runtime prompt engineering inside an agent loop.
 ---
 
 # Prompt Optimizer

@@ -1,6 +1,6 @@
 ---
 name: kotlin-testing
-description: Kotlin testing patterns with Kotest, MockK, coroutine testing, property-based testing, and Kover coverage. Follows TDD methodology with idiomatic Kotlin practices.
+description: Kotlin testing patterns with Kotest, MockK, coroutine testing, property-based testing, and Kover coverage. Follows TDD methodology with idiomatic Kotlin practices. Use when writing or reviewing Kotlin tests with Kotest or MockK. Don't use for non-Kotlin testing (see kbg:python-testing, kbg:react-testing).
 metadata:
   origin: ECC
 ---

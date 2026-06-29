@@ -1,6 +1,6 @@
 ---
 name: benchmark
-description: Use this skill to measure performance baselines, detect regressions before/after PRs, and compare stack alternatives.
+description: Measure performance baselines, detect regressions before/after PRs, and compare stack alternatives. Use when running a perf comparison or validating that a change is non-regressing. Don't use for memory/leak debugging (use kbg:performance-optimizer) or for general code review.
 metadata:
   origin: ECC
 ---

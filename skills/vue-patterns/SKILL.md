@@ -1,6 +1,6 @@
 ---
 name: vue-patterns
-description: "Vue.js 3 Composition API, Pinia state, Vue Router, and Nuxt SSR patterns. Activates for Vue, Nuxt, Vite, or Pinia projects."
+description: "Vue.js 3 Composition API, Pinia state, Vue Router, and Nuxt SSR patterns. Activates for Vue, Nuxt, Vite, or Pinia projects. Use when building or maintaining Vue/Nuxt applications. Don't use for React or other non-Vue front-ends (use kbg:<framework>-patterns)."
 origin: ECC
 ---
 

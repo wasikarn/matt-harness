@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: Baseline cross-project coding conventions for naming, readability, immutability, and code-quality review. Use detailed frontend or backend skills for framework-specific patterns.
+description: Baseline cross-project coding conventions for naming, readability, immutability, and code-quality review. Use when reviewing for general code quality across any language. Don't use for framework-specific patterns — see kbg:react-patterns, kbg:django-patterns, kbg:fastapi-patterns, etc.
 metadata:
   origin: ECC
 ---

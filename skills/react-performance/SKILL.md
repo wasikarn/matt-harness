@@ -1,6 +1,6 @@
 ---
 name: react-performance
-description: "React/Next.js performance patterns: 70+ rules across waterfalls, bundle size, server-side, re-render, and micro-perf. Use when optimizing React/Next.js code."
+description: "React/Next.js performance patterns: 70+ rules across waterfalls, bundle size, server-side, re-render, and micro-perf. Use when optimizing React/Next.js code. Don't use for general React patterns (see kbg:react-patterns) or non-performance testing."
 metadata:
   origin: ECC
 ---

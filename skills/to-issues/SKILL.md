@@ -1,7 +1,8 @@
 ---
 name: to-issues
-description: Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices.
+description: Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices. Use when ready to publish a deployment plan as ticket-size tasks. Don't use for ad-hoc TODOs or single-issue change requests.
 disable-model-invocation: true
+disable-model-invocation-reason: publishes new issues to the project tracker — user-driven decomposition, not model-self-issued
 ---
 
 # To Issues

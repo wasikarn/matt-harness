@@ -1,6 +1,6 @@
 ---
 name: dart-flutter-patterns
-description: "Dart/Flutter production patterns: null safety, state management (BLoC, Riverpod, Provider), GoRouter, Dio, Freezed, and clean architecture."
+description: "Dart/Flutter production patterns: null safety, state management (BLoC, Riverpod, Provider), GoRouter, Dio, Freezed, and clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for non-Dart mobile work (use kbg:swift-patterns or kbg:kotlin-patterns) or for web-only frontend."
 metadata:
   origin: ECC
 ---

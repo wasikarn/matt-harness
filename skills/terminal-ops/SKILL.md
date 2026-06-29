@@ -1,6 +1,6 @@
 ---
 name: terminal-ops
-description: Evidence-first repo execution. Use when running commands, checking CI failures, or pushing narrow fixes with proof of what was verified.
+description: Evidence-first repo execution. Use when running commands, checking CI failures, or pushing narrow fixes with proof of what was verified. Don't use for design or planning tasks that don't need terminal execution.
 metadata:
   origin: ECC
 ---

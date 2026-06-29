@@ -1,6 +1,6 @@
 ---
 name: skill-stocktake
-description: Audit installed skills for quality; supports Quick Scan (changed only) and Full Stocktake modes.
+description: Audit installed skills for quality; supports Quick Scan (changed only) and Full Stocktake modes. Use when reviewing the skill library for quality and coverage. Don't use for authoring a new single skill (use kbg:writing-great-skills).
 ---
 
 # Skill Stocktake

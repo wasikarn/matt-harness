@@ -1,6 +1,6 @@
 ---
 name: agent-sort
-description: Sort ECC surfaces into DAILY vs LIBRARY buckets for a repo. Use to trim ECC to what a project actually needs.
+description: Sort ECC surfaces into DAILY vs LIBRARY buckets for a repo. Use when trimming ECC to what a project actually needs. Don't use for general ECC navigation or feature discovery (use kbg:ask-matt or kbg:skill-stocktake).
 metadata:
   origin: ECC
 ---

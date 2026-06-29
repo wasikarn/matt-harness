@@ -1,6 +1,6 @@
 ---
 name: domain-modeling
-description: Build and sharpen a project's domain model, ubiquitous language, and terminology. Use when pinning down domain concepts or maintaining the model.
+description: Build and sharpen a project's domain model, ubiquitous language, and terminology. Use when pinning down domain concepts or maintaining the model. Don't use for one-off vocabulary lookups without changing the model.
 ---
 
 # Domain Modeling

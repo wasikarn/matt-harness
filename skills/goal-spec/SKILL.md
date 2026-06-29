@@ -1,6 +1,6 @@
 ---
 name: goal-spec
-description: "Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior."
+description: "Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior. Use when starting a multi-iteration job or loop with persistence (e.g. /ship-task). Don't use for single-step interactive work."
 metadata:
   origin: kbg-native
 ---

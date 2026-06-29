@@ -1,6 +1,6 @@
 ---
 name: drizzle-patterns
-description: "Drizzle ORM patterns: schema definition, type inference, drizzle-kit migrations, query builder, relations, transactions, and prepared statements for PostgreSQL/SQLite."
+description: "Drizzle ORM patterns: schema definition, type inference, drizzle-kit migrations, query builder, relations, transactions, and prepared statements for PostgreSQL/SQLite. Use when building or maintaining Drizzle ORM applications on PostgreSQL or SQLite. Don't use for Prisma, TypeORM, or other non-Drizzle ORMs."
 metadata:
   origin: kbg
   tathep_projects:

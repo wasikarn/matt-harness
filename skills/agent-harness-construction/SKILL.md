@@ -1,6 +1,6 @@
 ---
 name: agent-harness-construction
-description: Design and optimize AI agent action spaces, tool definitions, and observation formatting for higher completion rates.
+description: Design and optimize AI agent action spaces, tool definitions, and observation formatting for higher completion rates. Use when authoring a new agent or diagnosing why an existing one under-performs on a defined task. Don't use for cross-agent comparison (use kbg:agent-eval) or self-scoring your own output.
 metadata:
   origin: ECC
 ---

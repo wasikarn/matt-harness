@@ -1,6 +1,6 @@
 ---
 name: django-patterns
-description: Django architecture patterns, REST API design with DRF, ORM best practices, caching, signals, middleware, and production-grade Django apps.
+description: Django architecture patterns, REST API design with DRF, ORM best practices, caching, signals, middleware, and production-grade Django apps. Use when building or maintaining Django web applications or DRF APIs. Don't use for non-Django Python backends like FastAPI or Flask — use kbg:fastapi-patterns or kbg:flask-patterns instead.
 metadata:
   origin: ECC
 ---

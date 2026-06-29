@@ -1,7 +1,8 @@
 ---
 name: improve-codebase-architecture
-description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
+description: Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. Use when the user wants to surface and prioritise architecture deepening opportunities. Don't use for routine feature work or single-file refactors.
 disable-model-invocation: true
+disable-model-invocation-reason: generates an HTML report and grills the user through one deepening — user-driven prioritization, not model-driven
 ---
 
 # Improve Codebase Architecture

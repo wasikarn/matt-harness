@@ -1,6 +1,6 @@
 ---
 name: python-testing
-description: Python testing strategies using pytest, TDD methodology, fixtures, mocking, parametrization, and coverage requirements.
+description: Python testing strategies using pytest, TDD methodology, fixtures, mocking, parametrization, and coverage requirements. Use when writing or designing Python tests with pytest. Don't use for non-Python testing (see kbg:react-testing, kbg:kotlin-testing) or production-only scripting."
 metadata:
   origin: ECC
 ---

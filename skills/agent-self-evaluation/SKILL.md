@@ -1,6 +1,6 @@
 ---
 name: agent-self-evaluation
-description: "Self-evaluation after completing your own task: scores YOUR output on 5 axes (accuracy, completeness, clarity, actionability, conciseness), 1-5 scorecard + improvements. To evaluate ANOTHER agent's output use the agent-evaluator agent."
+description: "Self-evaluation after completing your own task: scores YOUR output on 5 axes (accuracy, completeness, clarity, actionability, conciseness), 1-5 scorecard + improvements. Use after finishing a non-trivial task to catch gaps before the user does. To evaluate ANOTHER agent's output use the kbg:agent-evaluator agent. Don't use for code review (use kbg:code-reviewer)."
 metadata:
   origin: ECC
 ---

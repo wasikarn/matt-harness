@@ -1,6 +1,6 @@
 ---
 name: intent-driven-development
-description: Clarify ambiguous requests into verifiable acceptance criteria before implementation. Targets security, data, migration, and integration changes. Skip for trivial edits or clear implementations.
+description: Clarify ambiguous requests into verifiable acceptance criteria before implementation. Targets security, data, migration, and integration changes. Use when the request is ambiguous, high-risk, or touches security/data/migration/integration surfaces. Don't use for trivial edits or already-clear implementations.
 ---
 
 # Intent-Driven Development

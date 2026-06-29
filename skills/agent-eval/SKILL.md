@@ -1,6 +1,6 @@
 ---
 name: agent-eval
-description: Head-to-head comparison of coding agents (Claude Code, Aider, Codex, etc.) on custom tasks with pass rate, cost, time, and consistency metrics
+description: Head-to-head comparison of coding agents (Claude Code, Aider, Codex, etc.) on custom tasks with pass rate, cost, time, and consistency metrics. Use when picking between agents for a project or when measuring whether a workflow change moved the needle. Don't use for single-agent tuning (use kbg:agent-harness-construction) or one-off task scoring (use kbg:agent-self-evaluation).
 metadata:
   origin: ECC
 tools: Read, Write, Edit, Bash, Grep, Glob

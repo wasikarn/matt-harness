@@ -1,6 +1,6 @@
 ---
 name: api-design
-description: REST API design patterns including resource naming, status codes, pagination, filtering, error responses, versioning, and rate limiting for production APIs.
+description: REST API design patterns including resource naming, status codes, pagination, filtering, error responses, versioning, and rate limiting for production APIs. Use when designing a new HTTP API surface or reviewing an existing one for consistency. Don't use for GraphQL or RPC-style APIs (use kbg:api-doc-specialist for OpenAPI generation instead).
 metadata:
   origin: ECC
 ---

@@ -1,6 +1,6 @@
 ---
 name: latency-critical-systems
-description: Use for latency-sensitive systems such as realtime dashboards, market data, streaming agents, execution gateways, queues, caches, or HFT-like infrastructure where freshness and p95 latency matter.
+description: Use when designing, reviewing, or debugging latency-sensitive systems such as realtime dashboards, market data, streaming agents, execution gateways, queues, caches, or HFT-like infrastructure where freshness and p95 latency matter. Don't use for batch-only systems or offline processing.
 metadata:
   origin: ECC
 tools: Read, Write, Edit, Bash, Grep, Glob

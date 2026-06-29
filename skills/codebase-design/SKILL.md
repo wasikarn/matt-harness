@@ -1,6 +1,6 @@
 ---
 name: codebase-design
-description: Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, placing seams, or making code more testable.
+description: Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, placing seams, or making code more testable. Don't use for language-specific syntax or framework patterns (see kbg:<framework>-patterns).
 ---
 
 # Codebase Design

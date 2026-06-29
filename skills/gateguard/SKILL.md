@@ -1,6 +1,6 @@
 ---
 name: gateguard
-description: Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift.
+description: Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift. Use when running a long-running autonomous process where fact-forcing gates are needed. Don't use for one-shot interactive sessions."
 metadata:
   origin: community
 ---

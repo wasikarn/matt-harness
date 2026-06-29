@@ -1,6 +1,6 @@
 ---
 name: langchain-langgraph-patterns
-description: "LangChain and LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, Pinecone RAG, and LangSmith tracing."
+description: "LangChain and LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, Pinecone RAG, and LangSmith tracing. Use when building LangChain or LangGraph applications or agents. Don't use for non-LangChain LLM frameworks."
 metadata:
   origin: kbg
   tathep_projects:

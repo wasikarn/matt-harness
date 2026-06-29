@@ -1,6 +1,6 @@
 ---
 name: angular-developer
-description: "Angular code generation and architecture guidance. Covers signals, forms, DI, routing, SSR, accessibility, animations, and CLI tooling."
+description: "Angular code generation and architecture guidance. Covers signals, forms, DI, routing, SSR, accessibility, animations, and CLI tooling. Use when building, scaffolding, or maintaining an Angular project. Don't use for React/Vue/Svelte projects — use the framework-specific skill."
 metadata:
   origin: ECC
 ---

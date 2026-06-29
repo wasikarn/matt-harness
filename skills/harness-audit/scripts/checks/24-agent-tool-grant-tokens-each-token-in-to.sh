@@ -21,6 +21,10 @@ done < <(
       # syntax (`["Read", "Write"]`) validates as `Read Write`.
       tok="${tok#[}"; tok="${tok%]}"; tok="${tok%\"}"; tok="${tok#\"}"
       base="${tok%%(*}"
+      # MCP tools (mcp__<server>__<tool>) are first-class per Claude Code
+      # tools-reference — any `mcp__X__Y` token is valid by namespace, not by
+      # whitelist. Accept them so agents like docs-lookup (mcp__context7__*) pass.
+      if [[ "$base" == mcp__*__* ]]; then continue; fi
       case " $VALID_TOOLS " in
         *" $base "*) ;;
         *) echo "agent '$name' tools: token '$tok' is not a known Claude Code tool" ;;
