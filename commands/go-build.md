@@ -1,5 +1,6 @@
 ---
 description: Fix Go build errors, go vet warnings, and linter issues incrementally. Invokes the go-build-resolver agent for minimal, surgical fixes.
+name: go-build
 ---
 
 # Go Build and Fix

@@ -1,5 +1,6 @@
 ---
 description: Review Flutter/Dart code for idiomatic patterns, widget best practices, state management, performance, accessibility, and security. Invokes the flutter-reviewer agent.
+name: flutter-review
 ---
 
 # Flutter Code Review

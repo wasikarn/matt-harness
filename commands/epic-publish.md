@@ -1,5 +1,6 @@
 ---
 description: Publish a validated epic update back to the issue and local cache.
+name: epic-publish
 ---
 
 # /epic-publish

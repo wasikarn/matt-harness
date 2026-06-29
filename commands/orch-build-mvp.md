@@ -1,5 +1,6 @@
 ---
 description: "Bootstrap an MVP from a design/spec doc: slice, scaffold, TDD, review, gated commit. Wrapper for the orch-build-mvp skill."
+name: orch-build-mvp
 ---
 
 # /orch-build-mvp

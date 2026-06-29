@@ -1,5 +1,6 @@
 ---
 description: Enforce TDD workflow for C++. Write GoogleTest tests first, then implement. Verify coverage with gcov/lcov.
+name: cpp-test
 ---
 
 # C++ TDD Command

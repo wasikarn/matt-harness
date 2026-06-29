@@ -1,5 +1,6 @@
 ---
 description: "Interactive PRD generator - problem-first, hypothesis-driven product spec with back-and-forth questioning"
+name: prp-prd
 argument-hint: "[feature/product idea] (blank = start with questions)"
 ---
 

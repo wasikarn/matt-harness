@@ -1,5 +1,6 @@
 ---
 description: "Vue.js code review: Composition API, reactivity, composable patterns, template security, accessibility, and performance. Invokes vue-reviewer and typescript-reviewer."
+name: vue-review
 ---
 
 # Vue Code Review

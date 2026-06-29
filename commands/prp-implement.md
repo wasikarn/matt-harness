@@ -1,5 +1,6 @@
 ---
 description: Execute an implementation plan with rigorous validation loops
+name: prp-implement
 argument-hint: <path/to/plan.md>
 ---
 

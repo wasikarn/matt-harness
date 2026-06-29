@@ -1,5 +1,6 @@
 ---
 description: React/JSX code review for hooks, performance, boundaries, accessibility, and security. Invokes react-reviewer (and typescript-reviewer on TSX changes).
+name: react-review
 ---
 
 # React Code Review

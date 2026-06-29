@@ -1,5 +1,6 @@
 ---
 description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces.
+name: security-scan
 agent: everything-claude-code:security-reviewer
 subtask: true
 metadata:

@@ -1,5 +1,6 @@
 ---
 description: Create comprehensive feature implementation plan with codebase analysis and pattern extraction
+name: prp-plan
 argument-hint: <feature description | path/to/prd.md>
 ---
 

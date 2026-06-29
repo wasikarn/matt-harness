@@ -1,5 +1,6 @@
 ---
 description: Claim an epic issue, stamp coordination state, and sync local ownership.
+name: epic-claim
 ---
 
 # /epic-claim

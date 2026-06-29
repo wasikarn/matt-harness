@@ -1,5 +1,6 @@
 ---
 description: Analyze a project and generate PM2 service commands for detected frontend, backend, or database services.
+name: pm2
 metadata:
   origin: ECC
 ---

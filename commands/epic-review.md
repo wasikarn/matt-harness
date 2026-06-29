@@ -1,5 +1,6 @@
 ---
 description: Mark epic review requested, approved, or changes requested.
+name: epic-review
 ---
 
 # /epic-review

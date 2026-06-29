@@ -1,5 +1,6 @@
 ---
 description: Sweep blocked epic issues and reopen anything whose dependencies are closed.
+name: epic-unblock
 ---
 
 # /epic-unblock

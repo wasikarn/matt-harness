@@ -1,5 +1,6 @@
 ---
 description: Sync epic issue bodies, labels, and local coordination snapshots from GitHub.
+name: epic-sync
 ---
 
 # /epic-sync

@@ -1,5 +1,6 @@
 ---
-description: Orchestrate fixing a bug — reproduce it as a failing regression test, fix to green, review, gated commit. Wrapper for the orch-fix-defect skill.
+description: Manual launcher for the orch-fix-defect orchestrator (bug → red regression test → green fix → review → gated commit). Use when behavior is broken/wrong. Don't use for intentional behavior changes (orch-change-feature), new features (orch-add-feature), or behavior-preserving refactors (orch-refine-code).
+name: orch-fix-defect
 ---
 
 # /orch-fix-defect

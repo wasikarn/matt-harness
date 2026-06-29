@@ -1,5 +1,6 @@
 ---
 description: Execute a multi-model implementation plan while preserving Claude as the only filesystem writer.
+name: multi-execute
 ---
 
 # Execute - Multi-Model Collaborative Execution

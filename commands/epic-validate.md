@@ -1,5 +1,6 @@
 ---
 description: Validate epic readiness, dependencies, and coordination policy.
+name: epic-validate
 ---
 
 # /epic-validate

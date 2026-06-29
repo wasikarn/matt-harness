@@ -1,5 +1,6 @@
 ---
 description: Fix React build failures (Vite, webpack, Next.js, CRA, esbuild, Bun) — JSX errors, hydration mismatches, boundary failures. Invokes react-build-resolver agent.
+name: react-build
 ---
 
 # React Build and Fix

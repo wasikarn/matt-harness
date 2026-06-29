@@ -1,5 +1,6 @@
 ---
 description: Run a full multi-model development workflow with research, planning, execution, optimization, and review.
+name: multi-workflow
 ---
 
 # Workflow - Multi-Model Collaborative Development

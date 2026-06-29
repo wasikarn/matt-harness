@@ -1,5 +1,6 @@
 ---
 description: Review a FastAPI application for architecture, async correctness, dependency injection, Pydantic schemas, security, performance, and testability.
+name: fastapi-review
 ---
 
 # FastAPI Review

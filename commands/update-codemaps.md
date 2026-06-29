@@ -1,5 +1,6 @@
 ---
 description: Scan project structure and generate token-lean architecture codemaps.
+name: update-codemaps
 ---
 
 # Update Codemaps

@@ -1,5 +1,6 @@
 ---
 description: Orchestrate building a brand-new feature end to end — research, plan, TDD, review, gated commit. Wrapper that kicks off the orch-add-feature skill.
+name: orch-add-feature
 ---
 
 # /orch-add-feature

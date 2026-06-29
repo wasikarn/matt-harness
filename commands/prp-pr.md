@@ -1,5 +1,6 @@
 ---
 description: "Forward to /pr — use /pr directly for all PR creation (covers .claude/PRPs/* artifact paths)."
+name: prp-pr
 argument-hint: "[base-branch] (default: main)"
 ---
 

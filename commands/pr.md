@@ -1,5 +1,6 @@
 ---
 description: "Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans from `.claude/prds/`, `.claude/plans/`, and the legacy `.claude/PRPs/` artifact paths, analyzes changes, pushes."
+name: pr
 argument-hint: "[base-branch] (default: main)"
 ---
 

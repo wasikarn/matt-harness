@@ -1,5 +1,6 @@
 ---
 description: "Inline code review — local uncommitted changes (no args) or GitHub PR by number/URL. Single-mode, no multi-agent stack. For specialized multi-agent PR review use the kbg:review-pr skill."
+name: code-review
 argument-hint: [pr-number | pr-url | blank for local review]
 ---
 

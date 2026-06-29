@@ -1,5 +1,6 @@
 ---
 description: Run a backend-focused multi-model workflow for APIs, algorithms, data, and business logic.
+name: multi-backend
 ---
 
 # Backend - Backend-Focused Development

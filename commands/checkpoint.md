@@ -1,5 +1,6 @@
 ---
 description: Record and list named session checkpoints (timestamp + git SHA).
+name: checkpoint
 ---
 
 # Checkpoint Command

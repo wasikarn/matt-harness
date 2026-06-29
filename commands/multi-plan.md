@@ -1,5 +1,6 @@
 ---
 description: Create a multi-model implementation plan without modifying production code.
+name: multi-plan
 ---
 
 # Plan - Multi-Model Collaborative Planning

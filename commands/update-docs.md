@@ -1,5 +1,6 @@
 ---
 description: Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports.
+name: update-docs
 ---
 
 # Update Documentation

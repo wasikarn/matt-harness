@@ -1,5 +1,6 @@
 ---
 description: Safely identify and remove dead code with verification after each change.
+name: refactor-clean
 ---
 
 # Refactor Clean

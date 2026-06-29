@@ -1,5 +1,6 @@
 ---
 description: Run a frontend-focused multi-model workflow for components, layouts, animation, and UI polish.
+name: multi-frontend
 ---
 
 # Frontend - Frontend-Focused Development

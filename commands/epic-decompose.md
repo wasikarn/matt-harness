@@ -1,5 +1,6 @@
 ---
 description: Break an epic into task children without creating task branches.
+name: epic-decompose
 ---
 
 # /epic-decompose
