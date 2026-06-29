@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs. Use when new issues or PRs arrive on the project tracker and need categorisation. Don't use for issue implementation, fixes, or comments that aren't triage moves.
+description: Triage state machine — categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive on the project tracker. Don't use for issue implementation or non-triage comments.
 disable-model-invocation: true
 disable-model-invocation-reason: posts AI-authored comments to the issue tracker — governance rule, every comment must start with the disclaimer and the user decides when to triage
 ---

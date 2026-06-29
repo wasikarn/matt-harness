@@ -1,6 +1,6 @@
 ---
 name: setup-matt-pocock-skills
-description: Configure this repo for Matt Pocock's engineering skills — issue tracker, triage labels, and doc layout. Run once before first use. Use when onboarding a repo to the engineering-skills workflow. Don't use for re-running on an already-configured repo or for unrelated setup.
+description: One-time repo bootstrap — map matt-pocock skills to your project (issue tracker, triage labels, ADR format). Run once at onboarding; never again. Don't use for re-running on an already-configured repo.
 disable-model-invocation: true
 disable-model-invocation-reason: one-time repo configuration that writes tracker labels + doc layout — destructive on a configured repo
 ---

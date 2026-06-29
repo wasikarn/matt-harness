@@ -1,6 +1,6 @@
 ---
 name: to-prd
-description: Turn the current conversation into a PRD and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed. Use when the user asks for a PRD draft from a prior discussion. Don't use for greenfield designs that need requirements elicitation first.
+description: Synthesise the current conversation into a PRD and publish to the project issue tracker — no interview, just synthesis. Use when the user asks for a PRD from a prior discussion. Don't use for greenfield designs.
 disable-model-invocation: true
 disable-model-invocation-reason: publishes a PRD to the project issue tracker — user opts into the artifact
 ---

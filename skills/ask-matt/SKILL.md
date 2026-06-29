@@ -1,6 +1,6 @@
 ---
 name: ask-matt
-description: Ask which skill or flow fits your situation. A router over the user-invoked skills in this repo. Use when you're unsure which kbg skill to start with or which command fits a vague request. Don't use for surfacing specific known skills (just type /<name>).
+description: Router over the matt-pocock engineering flow — ask, grill, plan, slice, ship. Use when starting non-trivial work and unsure which skill or command fits. Don't use for known-skill flows (invoke the skill directly).
 disable-model-invocation: true
 disable-model-invocation-reason: router skill — the model should not auto-select a flow without the user's situation being asked
 ---
@@ -15,7 +15,7 @@ A **flow** is a path through the skills. Most paths run along one **main flow**,
 
 The route most work travels. You have an idea and want it built.
 
-1. **`/grill-with-docs`** — sharpen the idea by interview. Start here when you **have a codebase**: it's stateful, retaining what it learns in `CONTEXT.md` and ADRs. (No codebase? Use `/grill-me` — see Standalone.)
+1. **`/grilling`** — sharpen the idea by interview. Start here when you **have a codebase**: pass `--with-docs` to make it stateful, retaining what it learns in `CONTEXT.md` and ADRs. (No codebase, stateless interview only? Default mode is fine.)
 2. **Branch — can you settle every question in conversation?** If a question needs a runnable answer (state, business logic, a UI you have to see), detour through a prototype, bridged by **`/handoff`** in both directions (see Crossing sessions):
    - **`/handoff`** out, then open a fresh session against that file,
    - **`/prototype`** to answer the question with throwaway code,
@@ -42,7 +42,7 @@ A starting situation that generates work, then merges onto the main flow.
 
 Not feature work — upkeep.
 
-- **`/improve-codebase-architecture`** — run whenever you have a spare moment to keep the codebase good for agents to operate in. It surfaces deepening opportunities; picking one _generates an idea_ you can take into the main flow at `/grill-with-docs`.
+- **`/improve-codebase-architecture`** — run whenever you have a spare moment to keep the codebase good for agents to operate in. It surfaces deepening opportunities; picking one _generates an idea_ you can take into the main flow at `/grilling`.
 
 ## Crossing sessions
 
@@ -53,7 +53,7 @@ Not feature work — upkeep.
 
 Off the main flow entirely.
 
-- **`/grill-me`** — the same relentless interview as `/grill-with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
+- **`/grilling`** (default mode) — the same relentless interview as `--with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
 - **`/teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
 - **`/writing-great-skills`** — reference for writing and editing skills well.
 
