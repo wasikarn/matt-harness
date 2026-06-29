@@ -29,93 +29,10 @@ jobs:
       - name: validate plugin manifest (strict)
         run: claude plugin validate --strict .
 
-  eval-harness:
-    name: eval harness --gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: checkout
-        uses: actions/checkout@v5
-
-      - name: setup python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: setup node
-        uses: actions/setup-node@v5
-        with:
-          node-version: "20"
-
-      - name: install claude code
-        run: npm install -g @anthropic-ai/claude-code@2.1.173
-
-      - name: install python dependencies
-        run: |
-          pip install pyyaml
-
-      - name: setup plugin cache stub for audit
-        run: |
-          # audit.sh checks ~/.claude/plugins/cache/kobig/kbg/<version>/
-          # so the F1 check passes for plugin-delivered skills on CI.
-          # The cache entry must be a direct symlink to the repo root
-          # (not a "repo" subdirectory) because is_plugin_delivered()
-          # looks for skills/<name>/SKILL.md under the cache version dir.
-          mkdir -p "$HOME/.claude/plugins/cache/kobig/kbg"
-          ln -sfn "$PWD" "$HOME/.claude/plugins/cache/kobig/kbg/0.2.90"
-
-      - name: seed memory store for memory-trim evals
-        run: |
-          # memory-trim.sh auto-derives the store from git repo root
-          enc="-home-runner-work-kbg-harness-kbg-harness"
-          store="$HOME/.claude/projects/${enc}/memory"
-          mkdir -p "$store"
-          cat > "$store/MEMORY.md" <<'EOF'
-          # Memory index
-
-          - [test-topic](test-topic.md) — test memory entry
-          EOF
-          cat > "$store/test-topic.md" <<'EOF'
-          ---
-          name: test-topic
-          description: test memory topic
-          ---
-
-          Test content.
-          EOF
-
-      - name: seed acceptance fixture for evals
-        run: |
-          # .scratch is gitignored; evals need the phase-1 acceptance contract.
-          # This step SEEDS acceptance-results.json for the eval harness; it is not
-          # the gate (the "run eval harness" step is). `|| true` mirrors the
-          # blocked-only seed step below: one contract criterion runs the full
-          # critical-hooks suite (300s+ on CI runners) and is expected to time out
-          # here, which must not fail the seed. The suite is verified by the
-          # pre-commit gate; the eval fixtures only need >=1 criterion to pass.
-          mkdir -p ".scratch/phase-1-safety-fixes-2026-06-12"
-          cp "eval/fixtures/phase-1-safety-fixes-2026-06-12-ACCEPTANCE.md" \
-             ".scratch/phase-1-safety-fixes-2026-06-12/ACCEPTANCE.md"
-          python3 scripts/evals/run-acceptance.py phase-1-safety-fixes-2026-06-12 || true
-
-      - name: seed blocked-only acceptance fixture for regression
-        run: |
-          mkdir -p ".scratch/acceptance-blocked-only"
-          cp "eval/fixtures/acceptance-blocked-only/ACCEPTANCE.md" \
-             ".scratch/acceptance-blocked-only/ACCEPTANCE.md"
-          python3 scripts/evals/run-acceptance.py acceptance-blocked-only || true
-
-      - name: run eval harness
-        run: python3 eval/run-eval.py --dataset eval/datasets/ --regression --gate
-
-      - name: upload results
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: eval-results
-          path: eval/results/*/summary.json
-
-  # NOTE: the critical-hooks suite is NOT run in CI. It is ~121s locally but ~20 min
+  # NOTE: the eval-harness job was removed — it referenced eval/, scripts/evals/,
+  # and eval/run-eval.py, all deleted in the c452102 reset. The eval gate is
+  # pending rebuild (per CLAUDE.md); re-add a job here when eval/ is restored.
+  # The critical-hooks suite is also NOT run in CI. It is ~121s locally but ~20 min
   # on GitHub runners (subprocess-spawn amplification: 8 audit.sh runs + many
   # verification-gate scans + a python3 cold-start per test), too slow + fragile for
   # a recurring job. It is verified by the local pre-commit gate, and Linux-only
