@@ -23,7 +23,7 @@ Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs p
 
 When `skills/inventory/` is present, regenerate the capability map with:
 `bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md`
-(STDOUT-only — `>` redirect mandatory. Currently: script not yet rebuilt.)
+(STDOUT-only — `>` redirect mandatory. Run `bash skills/inventory/scripts/inventory.sh` first for the unified cross-layer listing; see `skills/inventory/reference.md` for witness + boundary details.)
 
 ## Git hooks
 

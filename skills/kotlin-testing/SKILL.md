@@ -35,11 +35,11 @@ The following sections contain detailed, runnable examples for each testing patt
 
 - **Kotest specs** — StringSpec, FunSpec, BehaviorSpec, DescribeSpec examples in [Kotest Spec Styles](#kotest-spec-styles)
 - **Mocking** — MockK setup, coroutine mocking, argument capture in [MockK](#mockk)
-- **TDD walkthrough** — Full RED/GREEN/REFACTOR cycle with EmailValidator in [TDD Workflow for Kotlin](#tdd-workflow-for-kotlin)
+- **TDD walkthrough** — Full RED/GREEN/REFACTOR cycle with EmailValidator in [TDD for Kotlin](#tdd-for-kotlin)
 - **Coverage** — Kover configuration and commands in [Kover Coverage](#kover-coverage)
 - **Ktor testing** — testApplication setup in [Ktor testApplication Testing](#ktor-testapplication-testing)
 
-### TDD Workflow for Kotlin
+### TDD for Kotlin
 
 #### The RED-GREEN-REFACTOR Cycle
 

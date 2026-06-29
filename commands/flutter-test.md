@@ -135,7 +135,7 @@ Test Status: PASS ✓
 
 - `/flutter-build` — Fix build errors before running tests
 - `/flutter-review` — Review code after tests pass
-- `tdd-workflow` skill — Test-driven development workflow
+- `tdd` skill — Test-driven development workflow
 
 ## Related
 

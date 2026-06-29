@@ -1,6 +1,6 @@
 ---
 name: django-tdd
-description: Django testing strategies with pytest-django, TDD methodology, factory_boy, mocking, coverage, and testing Django REST Framework APIs. Use when writing or refactoring tests in a Django codebase, or when setting up TDD on a new Django project. Don't use for non-Django Python (use kbg:tdd-workflow) or for review of test quality alone (use kbg:code-reviewer).
+description: Django testing strategies with pytest-django, TDD methodology, factory_boy, mocking, coverage, and testing Django REST Framework APIs. Use when writing or refactoring tests in a Django codebase, or when setting up TDD on a new Django project. Don't use for non-Django Python (use kbg:tdd) or for review of test quality alone (use kbg:code-reviewer).
 metadata:
   origin: ECC
 ---

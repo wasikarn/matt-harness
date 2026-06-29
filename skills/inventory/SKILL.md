@@ -15,6 +15,16 @@ bash "${CLAUDE_SKILL_DIR}/scripts/inventory.sh"
 
 That's it. No env var, no path argument, no setup. From inside a git repo you get two sections (Project-local + Global). From outside one, you get Global only.
 
+### Boundary map (committed snapshot)
+
+For the canonical repo-local artifact map — agents, skills, hooks, with plugin-delivered / project-local markers and the witness trail — regenerate `BOUNDARY.md` from the script's STDOUT:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/inventory-boundary.sh" --repo-only > BOUNDARY.md
+```
+
+The boundary script's output is **STDOUT-only** — the `> BOUNDARY.md` redirect is mandatory; without it the dump goes to your terminal and `BOUNDARY.md` is never written. Witness/drift detection lives in `scripts/inventory-witness.sh` — see `reference.md` for both.
+
 For a specific dir (e.g. inspecting dotfiles source where the originals live):
 
 ```bash

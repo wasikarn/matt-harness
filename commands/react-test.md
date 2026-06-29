@@ -261,6 +261,6 @@ CI=true vitest run --coverage
 
 ## Related
 
-- Skills: `skills/react-testing/`, `skills/tdd-workflow/`, `skills/accessibility/`, `skills/e2e-testing/`
+- Skills: `skills/react-testing/`, `skills/tdd/`, `skills/accessibility/`, `skills/e2e-testing/`
 - Rules: `rules/react/testing.md`
 - Agents: `react-reviewer` (reviews test quality), `tdd-guide` (enforces TDD process)

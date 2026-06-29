@@ -16,7 +16,7 @@ This skill is intentionally narrower than general coding guidance. It is an oper
 Pull these ECC-native skills into the workflow when relevant:
 
 - `verification-loop` for exact proving steps after changes
-- `tdd-workflow` when the right fix needs regression coverage
+- `tdd` when the right fix needs regression coverage
 - `security-review` when secrets, auth, or external inputs are involved
 
 ## When to Use

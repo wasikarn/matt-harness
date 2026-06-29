@@ -149,7 +149,7 @@ Next step: /plan-artifact .claude/prds/{name}.prd.md
 ## Integration
 
 - `/plan-artifact <prd-path>` — consume the PRD and produce an implementation plan for the next pending milestone.
-- `tdd-workflow` skill — implement the plan test-first.
+- `tdd` skill — implement the plan test-first.
 - `/pr` — open a PR that references the PRD and plan.
 
 ## Success criteria

@@ -182,14 +182,14 @@ If you want changes, respond with:
 ## Integration with Other Commands
 
 After planning:
-- Use the `tdd-workflow` skill to implement with test-driven development
+- Use the `tdd` skill to implement with test-driven development
 - Use `/build-fix` if build errors occur
 - Use `/code-review` to review completed implementation
 - Use `/pr` to open a pull request (covers PRP artifact paths)
 
 > **Need requirements first?** Use `/plan-prd` for a lean PRD at `.claude/prds/{name}.prd.md`.
 >
-> **Need rigorous validation during implementation?** Use the `tdd-workflow` skill (red-green-refactor) and `kbg:verification-loop` (Build→Types→Lint→Tests→Security→Diff).
+> **Need rigorous validation during implementation?** Use the `tdd` skill (red-green-refactor) and `kbg:verification-loop` (Build→Types→Lint→Tests→Security→Diff).
 
 ## Optional Planner Agent
 

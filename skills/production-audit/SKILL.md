@@ -203,5 +203,5 @@ Next action: Want me to patch webhook idempotency first?
 - Skill: `security-review`
 - Skill: `deployment-patterns`
 - Skill: `e2e-testing`
-- Skill: `tdd-workflow`
+- Skill: `tdd`
 - Skill: `verification-loop`

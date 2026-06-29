@@ -32,7 +32,7 @@ each phase to an existing ECC agent or command. This file is that pipeline.
 
 > These wrappers **compose** existing ECC commands rather than replace them:
 > `/feature-dev`, `/plan-artifact`, `/code-review`, `/build-fix`, `/refactor-clean`, and
-> `/gan-build`, plus the `tdd-workflow` skill. The orch-* family adds the shared
+> `/gan-build`, plus the `tdd` skill. The orch-* family adds the shared
 > size classifier and the two gates
 > on top of them, so one umbrella covers all five operations consistently.
 
@@ -66,7 +66,7 @@ Each phase delegates — it does not do the work inline.
   `code-architect` for structural decisions). Output a `task_list` ordered as
   thin vertical slices. → **GATE 1.**
 - **3. Scaffold** — `orch-build-mvp` only: stand up the first end-to-end slice.
-- **4. Implement (TDD)** — drive each task through the `tdd-guide` agent (or the `tdd-workflow` skill):
+- **4. Implement (TDD)** — drive each task through the `tdd-guide` agent (or the `tdd` skill):
   red → green → refactor. Honor the operation's first-move rule.
 - **5. Review** — `code-reviewer` agent / `/code-review`. Add `security-reviewer`
   whenever the diff touches a security trigger (below).
@@ -90,7 +90,7 @@ Everything between the gates flows without stopping.
 |-------|---------|----------------------|
 | Intake / understand | `Explore` | trace existing paths before a tweak, fix, or refactor |
 | Plan | `planner` | `architect`, `code-architect` for structural calls |
-| Implement | `tdd-guide` (or `tdd-workflow` skill) | `build-error-resolver` / `/build-fix` on build breaks |
+| Implement | `tdd-guide` (or `tdd` skill) | `build-error-resolver` / `/build-fix` on build breaks |
 | Review | `code-reviewer` / `/code-review` | language reviewer (`python-reviewer`, `typescript-reviewer`, …) |
 | Security | `security-reviewer` | — |
 | MVP inner loop | `/gan-build "<brief>" --skip-planner` | drives `gan-generator` → `gan-evaluator`; tune `--max-iterations` / `--pass-threshold` |
