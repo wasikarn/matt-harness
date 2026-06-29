@@ -3,7 +3,7 @@
 # Output goes to stdout → CC injects it as system context for the session.
 set -uo pipefail
 
-METHODOLOGY="${CLAUDE_PLUGIN_DIR}/docs/METHODOLOGY.md"
+METHODOLOGY="${CLAUDE_PLUGIN_ROOT}/docs/METHODOLOGY.md"
 
 if [[ -f "$METHODOLOGY" ]]; then
   echo "<!-- kbg:doctrine-bootstrap -->"

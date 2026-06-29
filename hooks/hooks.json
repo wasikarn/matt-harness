@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/session/doctrine-bootstrap.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/doctrine-bootstrap.sh\""
           }
         ],
         "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context"
@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/advisory/observe.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/observe.sh\""
           }
         ]
       }
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/lifecycle/pre-compact.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/pre-compact.sh\""
           }
         ]
       }
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/gates/irrecoverable.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/irrecoverable.sh\""
           }
         ]
       },
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/gates/path-hardcode.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/path-hardcode.sh\""
           }
         ]
       }
@@ -69,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/stop/cost-tracker.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh\"",
             "async": true,
             "timeout": 10
           }
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/stop/desktop-notify.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/desktop-notify.sh\"",
             "async": true,
             "timeout": 10
           }
