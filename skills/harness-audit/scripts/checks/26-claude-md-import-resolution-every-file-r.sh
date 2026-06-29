@@ -14,8 +14,16 @@ while IFS= read -r cmd; do
     ref="${line#@}"
     ref="${ref%%[[:space:]]*}"
     [ -n "$ref" ] || continue
+    # Expand leading tilde (~/) to $HOME before the case so tilde doesn't
+    # silently fail to expand inside shell-quoted patterns. The case itself
+    # has to quote the pattern (shell syntax requirement); disable SC2088
+    # because the post-statement will already have $HOME substituted in.
+    # shellcheck disable=SC2088
     case "$ref" in
-      '~/'*) target="$HOME/${ref#'~/'}" ;;
+      "~/"*) ref="$HOME/${ref#"~/"}" ;;
+    esac
+    # shellcheck disable=SC2088  # literal-pattern requirement; tilde already expanded above
+    case "$ref" in
       /*)    target="$ref" ;;
       *)     target="$cmd_dir/$ref" ;;
     esac

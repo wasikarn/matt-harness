@@ -7,7 +7,12 @@
 # (not CRITs) on missing pieces. The regression fixture
 # eval/regressions/ideate-fanout-cap.json is the load-bearing guard; this check
 # is the inline fallback for editor / pre-commit visibility.
-IDEATE_CMD="$CLAUDE_DIR/commands/ideate.md"
+# Command file lives at one of two paths per code.claude.com/docs/en/slash-commands:
+# - commands/ideate.md                              (legacy flat form)
+# - commands/ideate/COMMAND.md                      (subdir form for supporting files)
+IDEATE_CMD=""
+[ -f "$CLAUDE_DIR/commands/ideate.md" ] && IDEATE_CMD="$CLAUDE_DIR/commands/ideate.md"
+[ -f "$CLAUDE_DIR/commands/ideate/COMMAND.md" ] && IDEATE_CMD="$CLAUDE_DIR/commands/ideate/COMMAND.md"
 if [ -f "$IDEATE_CMD" ]; then
   if [ -z "$(fm_get "$IDEATE_CMD" "name" --block)" ]; then
     warn "ideate command missing 'name:' in frontmatter"

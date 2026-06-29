@@ -34,7 +34,13 @@ if [ -d "$REPO_ROOT/claude" ]; then
 else
   CLAUDE_DIR="$REPO_ROOT"
 fi
+# SETTINGS + MEMORY_DIR are read by sourced checks; shellcheck can't see across
+# the sourced-files boundary and flags both as unused. Disable SC2034 here.
+# shellcheck disable=SC2034
 SETTINGS="$CLAUDE_DIR/settings.json"
+# MEMORY_DIR is the per-project memory dir derived from REPO_ROOT; reserved for
+# future hooks that need to write audit findings into session memory.
+# shellcheck disable=SC2034
 MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|/|_|g')/memory"
 
 # AUDIT-1: --staleness-only flag — emit a JSON list of {name, last_fired,
@@ -189,7 +195,21 @@ fi
 if [ -z "$PLUGIN_CACHE_ARG" ]; then
   _KBG_CACHE_DIR="$HOME/.claude/plugins/cache/kobig/kbg"
   if [ -d "$_KBG_CACHE_DIR" ]; then
-    _LATEST=$(ls -1 "$_KBG_CACHE_DIR" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+    # Glob + for-loop (avoiding SC2010 ls|grep). Picks the highest semver of any
+    # subdirectory matching X.Y.Z or vX.Y.Z, so a version bump (0.1.0 -> 0.1.1
+    # -> 0.1.2) never silently disables F1 plugin-aware bypass. The `v` prefix
+    # matches what `claude plugin install` writes to the cache.
+    _LATEST=""
+    for _entry in "$_KBG_CACHE_DIR"/*/; do
+      [ -d "$_entry" ] || continue
+      _ver=$(basename "$_entry")
+      _norm="${_ver#v}"   # strip optional 'v' prefix for comparison
+      [[ "$_norm" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+      if [ -z "$_LATEST" ] || \
+         [ "$(printf '%s\n%s\n' "$_LATEST" "$_ver" | sort -V | tail -1)" = "$_ver" ]; then
+        _LATEST="$_ver"
+      fi
+    done
     if [ -n "$_LATEST" ]; then
       PLUGIN_CACHE="$_KBG_CACHE_DIR/$_LATEST"
     else
@@ -201,11 +221,16 @@ if [ -z "$PLUGIN_CACHE_ARG" ]; then
 else
   PLUGIN_CACHE="$PLUGIN_CACHE_ARG"
 fi
-unset _KBG_CACHE_DIR _LATEST
+unset _KBG_CACHE_DIR _LATEST _ver _entry _norm
+# PLUGIN_ACTIVE is read by checks 02 / 03 via the shared audit scope; shellcheck
+# can't see across the sourced check files, so disable SC2034 here.
+# shellcheck disable=SC2034
 PLUGIN_ACTIVE=0
 if [ -d "$PLUGIN_CACHE/agents" ] || [ -d "$PLUGIN_CACHE/skills" ] || \
    [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ] || \
    [ -d "$PLUGIN_CACHE/output-styles" ]; then
+  # SC2034: PLUGIN_ACTIVE is reassigned here but read by sourced checks.
+  # shellcheck disable=SC2034
   PLUGIN_ACTIVE=1
 fi
 # is_plugin_delivered <kind> <name> — returns 0 if a component named <name>
@@ -300,4 +325,12 @@ echo "Info:     $INFO_COUNT"
 TOTAL=$((CRIT_COUNT + WARN_COUNT))
 echo ""
 echo "Exit: $TOTAL"
-exit $TOTAL
+# Exit policy: CRITs are blocking (nonzero), WARNs are informational (zero).
+# This matches the gauntlet's blocking gate (CRITs only) and the in-CC sensor
+# visibility (WARNs print to stderr so editors still see them). The pre-push
+# gauntlet reports the full count via its own summary; it does NOT depend on
+# the audit's exit code to know the count.
+if [ "$CRIT_COUNT" -gt 0 ]; then
+  exit "$CRIT_COUNT"
+fi
+exit 0
