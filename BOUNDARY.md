@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (137)
+### Skills (128)
   ◇ acli                           Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports. Thai: 'ย้ายสถานะหลายตัว', 'แก้ label/assignee หลายรายการ', 'อัปเดตหลาย ticket', 'export JQL'. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-ticket instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers.
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC container, Lucid ORM (ActiveRecord), Japa tests, VineJS validation, middleware, auth guards, and ace CLI commands.
   ◇ agent-architecture-audit       12-layer agent stack diagnostic. Audits wrapper regression, memory pollution, tool discipline failures, and repair loops. Produces severity-ranked findings.
@@ -20,11 +20,10 @@ _Personals/kbg-harness_
   ◇ api-design                     REST API design patterns including resource naming, status codes, pagination, filtering, error responses, versioning, and rate limiting for production APIs.
   ◇ architecture-decision-records  Capture architectural decisions as structured ADRs. Auto-detects decision moments, records context, alternatives, and rationale. Maintains an ADR log.
   ◇ ask-matt                       Ask which skill or flow fits your situation. A router over the user-invoked skills in this repo.
-  ◇ autonomous-loops               Patterns and architectures for autonomous Claude Code loops — from simple sequential pipelines to RFC-driven multi-agent DAG systems.
+  ◇ autonomous-loops               Choose an autonomous-loop architecture for a task, then dispatch to native Workflow / /loop / Cron. From simple sequential pipelines to RFC-driven multi-agent DAG orchestration.
   ◇ backend-patterns               Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes.
   ◇ benchmark                      Use this skill to measure performance baselines, detect regressions before/after PRs, and compare stack alternatives.
   ◇ browser-qa                     Use this skill to automate visual testing and UI interaction verification using browser automation after deploying features.
-  ◇ bun-runtime                    Bun as runtime, package manager, bundler, and test runner. When to choose Bun vs Node, migration notes, and Vercel support.
   ◇ clarify-first                  Ask the structured 3-step question (analyze, recommend, ask) BEFORE dispatching write-capable agents or starting multi-file changes where a wrong assumption wastes work. Trigger when a task is named but scope is unstated — 'fix the bug', 'refactor X', 'add Y', 'make it faster' with no file/metric/layer; or it spans subsystems with no clear boundary. Thai: 'clarify ก่อน', 'ถามก่อนเริ่ม', 'scope ยังไงดี', 'ยังไม่ชัดเจน'. Don't use for: explicit file paths, single-value changes, read-only requests, or rhetorical questions.
   ◇ code-tour                      Create CodeTour .tour files: persona-targeted walkthroughs with real file and line anchors. For onboarding, architecture, PR, and RCA tours.
   ◇ codebase-design                Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, placing seams, or making code more testable.
@@ -60,8 +59,6 @@ _Personals/kbg-harness_
   ◇ frontend-a11y                  Accessibility patterns for React and Next.js: semantic HTML, ARIA, form labeling, keyboard navigation, focus management, and screen reader support.
   ◇ frontend-patterns              Frontend development patterns for React, Next.js, state management, performance optimization, and UI best practices.
   ◇ gateguard                      Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift.
-  ◇ git-workflow                   Git workflow patterns including branching strategies, commit conventions, merge vs rebase, conflict resolution, and collaborative development best practices for teams of all sizes.
-  ◇ github-ops                     GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git.
   ◇ goal-spec                      Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior.
   ◇ golang-patterns                Idiomatic Go patterns, best practices, and conventions for building robust, efficient, and maintainable Go applications.
   ◇ golang-testing                 Go testing patterns including table-driven tests, subtests, benchmarks, fuzzing, and test coverage. Follows TDD methodology with idiomatic Go practices.
@@ -72,13 +69,11 @@ _Personals/kbg-harness_
   ◇ harness-nav                    L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Thai: 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-audit --health).
   ◇ hexagonal-architecture         Design, implement, and refactor Ports & Adapters systems with clear domain boundaries, dependency inversion, and testable use-case orchestration across TypeScript, Java, Kotlin, and Go services.
   ◇ hono-patterns                  Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters.
-  ◇ implement                      Implement a piece of work based on a PRD or set of issues.
   ◇ improve-codebase-architecture  Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.
   ◇ incident                       Manage a live production incident end-to-end, including the hotfix path when rollback/kill-switch is insufficient. Use when alerts fire, monitors show red, users report widespread issues, error rates spike, or the user asks for a hotfix / P0 fix. Thai: 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม', 'hotfix', 'แก้ด่วน', 'P0'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (STOP — redirect to security-reviewer first), or post-incident documentation (use /post-mortem after resolution).
   ◇ intent-driven-development      Clarify ambiguous requests into verifiable acceptance criteria before implementation. Targets security, data, migration, and integration changes. Skip for trivial edits or clear implementations.
   ◇ inventory                      Show what Claude Code skills, agents, commands, and hooks are loadable from the current project and global layers. Use when exploring available capabilities or verifying what the kbg@kobig plugin delivered. Thai: 'inventory', 'ดู skill ทั้งหมด', 'มี skill อะไรบ้าง'. Don't use for: a single-layer list (use /skills, /agents, or /hooks), capability routing when a skill is already known (use it directly), or governance health queries (kbg:harness-audit --health). Use inventory for the unified cross-layer view (project-local + global in one render) with plugin-delivered markers.
   ◇ java-coding-standards          Java coding standards for Spring Boot and Quarkus: naming, immutability, Optional, streams, exceptions, generics, CDI, and reactive patterns.
-  ◇ knowledge-ops                  Knowledge base management across local files, MCP memory, vector stores, and Git repos. Use to save, sync, deduplicate, or search knowledge.
   ◇ kotlin-coroutines-flows        Kotlin Coroutines and Flow patterns for Android and KMP — structured concurrency, Flow operators, StateFlow, error handling, and testing.
   ◇ kotlin-exposed-patterns        JetBrains Exposed ORM patterns including DSL queries, DAO pattern, transactions, HikariCP connection pooling, Flyway migrations, and repository pattern.
   ◇ kotlin-ktor-patterns           Ktor server patterns including routing DSL, plugins, authentication, Koin DI, kotlinx.serialization, WebSockets, and testApplication testing.
@@ -101,7 +96,6 @@ _Personals/kbg-harness_
   ◇ orch-refine-code               Behavior-preserving refactor: confirm tests green, restructure, keep green, review, gated commit. Use when structure should improve but behavior must not change.
   ◇ orchestrate                    Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, spans independent sub-tasks or sequential phases, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', or 'จัดpriority'. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/ship-task), or single-file coding (inline).
   ◇ parallel-execution-optimizer   Parallelize independent work into lanes: batched reads, concurrent agents, isolated worktrees, or verification passes — without write-surface conflicts.
-  ◇ postgres-patterns              PostgreSQL database patterns for query optimization, schema design, indexing, and security. Based on Supabase best practices.
   ◇ production-audit               Local-evidence production readiness audit for pre-launch reviews, post-merge checks, and prod-failure questions. No external service.
   ◇ prompt-optimizer               Analyze a draft prompt, diagnose gaps, match ECC components, and output a ready-to-paste optimized prompt. Advisory only.
   ◇ prototype                      Build throwaway prototypes — terminal apps for logic questions, or radically different UI variations on one route.
@@ -113,12 +107,10 @@ _Personals/kbg-harness_
   ◇ recursive-improve              Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /ship-task), external tool research (use kbg:article-mine), or any self-launching / scheduled / unattended loop (every iteration is human-gated at an AskUserQuestion gate before any mutation).
   ◇ redis-patterns                 Redis data structure patterns, caching strategies, distributed locks, rate limiting, pub/sub, and connection management for production applications.
   ◇ repo-scan                      Cross-stack source code asset audit — classifies every file, detects embedded third-party libraries, and delivers actionable four-level verdicts per module with interactive HTML reports.
-  ◇ resolving-merge-conflicts      Use when you need to resolve an in-progress git merge/rebase conflict.
   ◇ review-pr                      Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready, after addressing feedback, or when asked to review changes/aspects. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: a quick diff review (use /code-review, optionally --fix/--comment/ultra) or a single GitHub PR (use /review), single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool).
   ◇ rules-distill                  Scan skills to extract cross-cutting principles and distill them into rules — append, revise, or create new rule files
   ◇ rust-patterns                  Idiomatic Rust patterns, ownership, error handling, traits, concurrency, and best practices for building safe, performant applications.
   ◇ rust-testing                   Rust testing patterns including unit tests, integration tests, async testing, property-based testing, mocking, and coverage. Follows TDD methodology.
-  ◇ safety-guard                   Use this skill to prevent destructive operations when working on production systems or running agents autonomously.
   ◇ search-first                   Research-before-coding workflow. Search for existing tools, libraries, and patterns before writing custom code. Invokes the researcher agent.
   ◇ security-auditor               Standalone security audit — deep threat-model + remediation for auth, secrets, external input, file uploads, or dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. Thai: 'ตรวจ security', 'ช่องโหว่', 'security audit', 'เช็คความปลอดภัย'. The security-reviewer agent is the fast flag spawned inside kbg:review-pr — run one, not both. Don't use for: a quick branch-wide security check of pending changes (use /security-review), code review (kbg:review-pr), incidents (kbg:incident), or non-code security (infra, policy).
   ◇ security-review                In-flow security checklist while coding auth, user input, secrets, API endpoints, or payment features. Guides the current change. For a standalone full-codebase threat-model audit use kbg:security-auditor.
@@ -129,7 +121,6 @@ _Personals/kbg-harness_
   ◇ springboot-patterns            Spring Boot architecture patterns, REST API design, layered services, data access, caching, async processing, and logging. Use for Java Spring Boot backend work.
   ◇ springboot-security            Spring Security best practices for authn/authz, validation, CSRF, secrets, headers, rate limiting, and dependency security in Java Spring Boot services.
   ◇ springboot-tdd                 Test-driven development for Spring Boot using JUnit 5, Mockito, MockMvc, Testcontainers, and JaCoCo. Use when adding features, fixing bugs, or refactoring.
-  ◇ strategic-compact              Suggests manual context compaction at logical intervals to preserve context through task phases rather than arbitrary auto-compaction.
   ◇ swift-concurrency-6-2          Swift 6.2 Approachable Concurrency — single-threaded by default, @concurrent for explicit background offloading, isolated conformances for main actor types.
   ◇ swiftui-patterns               SwiftUI architecture patterns, state management with @Observable, view composition, navigation, performance optimization, and modern iOS/macOS UI best practices.
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC commands, capabilities/permissions model, state management, events, plugins, and tauri.conf.json. Covers v2 breaking changes from v1.
@@ -146,12 +137,12 @@ _Personals/kbg-harness_
   ◇ vue-patterns                   Vue.js 3 Composition API, Pinia state, Vue Router, and Nuxt SSR patterns. Activates for Vue, Nuxt, Vite, or Pinia projects.
   ◇ writing-great-skills           Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable.
 
-### Commands (80)
+### Commands (76)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ aside                          Answer a quick side question without interrupting or losing context from the current task. Resume work automatically after answering.
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes.
-  ◇ checkpoint                     Create, verify, or list workflow checkpoints after running verification checks.
-  ◇ code-review                    Inline code review — local uncommitted changes (no args) or GitHub PR by number/URL. Single-mode, no multi-agent stack. For specialized multi-agent PR review use /review-pr.
+  ◇ checkpoint                     Record and list named session checkpoints (timestamp + git SHA).
+  ◇ code-review                    Inline code review — local uncommitted changes (no args) or GitHub PR by number/URL. Single-mode, no multi-agent stack. For specialized multi-agent PR review use the kbg:review-pr skill.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
   ◇ cpp-build                      Fix C++ build errors, CMake issues, and linker problems incrementally. Invokes the cpp-build-resolver agent for minimal, surgical fixes.
   ◇ cpp-review                     Comprehensive C++ code review for memory safety, modern C++ idioms, concurrency, and security. Invokes the cpp-reviewer agent.
@@ -176,7 +167,6 @@ _Personals/kbg-harness_
   ◇ go-review                      Comprehensive Go code review for idiomatic patterns, concurrency safety, error handling, and security. Invokes the go-reviewer agent.
   ◇ go-test                        Enforce TDD workflow for Go. Write table-driven tests first, then implement. Verify 80%+ coverage with go test -cover.
   ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. or when the user says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
-  ◇ jira                           Retrieve a Jira ticket, analyze requirements, update status, or add comments. Uses the jira-integration skill and MCP or REST API.
   ◇ kbg-help                       Quick reference card for kbg-harness skills, commands, agents, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands', or when the user says 'ช่วยเหลือ', 'มีอะไรบ้าง', 'ใช้ kbg ยังไง'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-audit --health). One-shot display, read-only.
   ◇ kotlin-build                   Fix Kotlin/Gradle build errors, compiler warnings, and dependency issues incrementally. Invokes the kotlin-build-resolver agent for minimal, surgical fixes.
   ◇ kotlin-review                  Comprehensive Kotlin code review for idiomatic patterns, null safety, coroutine safety, and security. Invokes the kotlin-reviewer agent.
@@ -198,12 +188,11 @@ _Personals/kbg-harness_
   ◇ plan                           Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.
   ◇ pm2                            Analyze a project and generate PM2 service commands for detected frontend, backend, or database services.
   ◇ post-mortem                    Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report', or when the user says 'เขียน post-mortem', 'บันทึกบั๊ก', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead).
-  ◇ pr                             Create a GitHub PR from current branch — general-purpose: validates, discovers templates, links PRDs/plans from multiple artifact paths, analyzes changes, pushes. For the PRP-workflow variant use /prp-pr.
-  ◇ project-init                   Detect a project's stack and produce a dry-run ECC onboarding plan using the repository's install manifests and stack mappings.
+  ◇ pr                             Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans from `.claude/prds/`, `.claude/plans/`, and the legacy `.claude/PRPs/` artifact paths, analyzes changes, pushes.
   ◇ prp-commit                     Quick commit with natural language file targeting — describe what to commit in plain English
   ◇ prp-implement                  Execute an implementation plan with rigorous validation loops
   ◇ prp-plan                       Create comprehensive feature implementation plan with codebase analysis and pattern extraction
-  ◇ prp-pr                         Create a GitHub PR in the PRPs-agentic-eng workflow: links `.claude/PRPs/` artifacts (reports/plans/prds), discovers templates, analyzes changes, pushes. Use after /prp-commit. For general PRs use /pr.
+  ◇ prp-pr                         Forward to /pr — use /pr directly for all PR creation (covers .claude/PRPs/* artifact paths).
   ◇ prp-prd                        Interactive PRD generator - problem-first, hypothesis-driven product spec with back-and-forth questioning
   ◇ python-review                  Comprehensive Python code review for PEP 8 compliance, type hints, security, and Pythonic idioms. Invokes the python-reviewer agent.
   ◇ quality-gate                   Run the ECC formatter quality gate for a single file and report remediation steps.
@@ -212,7 +201,6 @@ _Personals/kbg-harness_
   ◇ react-test                     Enforce TDD workflow for React. Write React Testing Library tests first (behavior-focused, accessibility-first), then implement components. Detects Vitest or Jest and verifies coverage targets.
   ◇ refactor-clean                 Safely identify and remove dead code with verification after each change.
   ◇ resume-session                 Load the most recent session file from ~/.claude/session-data/ and resume work with full context from where the last session ended.
-  ◇ review-pr                      Multi-agent PR review: code quality, tests, comments, types. Usage: /review-pr [PR-number|URL] [--focus=code|tests|comments|types|errors|simplify]. Reviews current branch PR if no PR specified.
   ◇ rust-build                     Fix Rust build errors, borrow checker issues, and dependency problems incrementally. Invokes the rust-build-resolver agent for minimal, surgical fixes.
   ◇ rust-review                    Comprehensive Rust code review for ownership, lifetimes, error handling, unsafe usage, and idiomatic patterns. Invokes the rust-reviewer agent.
   ◇ rust-test                      Enforce TDD workflow for Rust. Write tests first, then implement. Verify 80%+ coverage with cargo-llvm-cov.
@@ -221,7 +209,6 @@ _Personals/kbg-harness_
   ◇ ship-merge                     Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate, or when the user says 'merge PR', 'ship it', 'รวมโค้ด'. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use kbg:incident hotfix path).
   ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging, or when the user says 'ปล่อยเวอร์ชัน', 'release', 'ship release'. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use kbg:incident hotfix path), or when there is no release branch / tag strategy defined.
   ◇ skill-create                   Analyze local git history to extract coding patterns and generate SKILL.md files. Local version of the Skill Creator GitHub App.
-  ◇ skill-health                   Show skill portfolio health dashboard with charts and analytics
   ◇ status-update                  Rewrite operator-supplied engineering content for leadership (VPs, directors, PMs) and shape for channel — JIRA, Slack, standup, email, or talking-points. Rewrites text you provide; does NOT fetch from Jira/Confluence. Use when user asks to write/rewrite for management/exec/VP/PM, asks for executive summary / leadership update, or wants a channel-specific version, or when the user says 'สรุปผู้บริหาร', 'status update', 'รายงานผู้บริหาร'. Don't use for: a report generated FROM Jira issues (use atlassian:generate-status-report), technical documentation (defer to technical-writer), tone humanization (use kbg:tech-humanize), or peer-level standup notes.
   ◇ test-coverage                  Analyze coverage, identify gaps, and generate missing tests toward the target threshold.
   ◇ update-codemaps                Scan project structure and generate token-lean architecture codemaps.
@@ -362,11 +349,10 @@ _Personals/kbg-harness_
 | api-design | REST API design patterns including resource naming, status codes, pagination, filtering, error responses, versioning, and rate limiting for production APIs. | inline | auto |
 | architecture-decision-records | Capture architectural decisions as structured ADRs. Auto-detects decision moments, records context, alternatives, and rationale. Maintains an ADR log. | inline | auto |
 | ask-matt | Ask which skill or flow fits your situation. A router over the user-invoked skills in this repo. | inline | manual |
-| autonomous-loops | Patterns and architectures for autonomous Claude Code loops — from simple sequential pipelines to RFC-driven multi-agent DAG systems. | inline | auto |
+| autonomous-loops | Choose an autonomous-loop architecture for a task, then dispatch to native Workflow / /loop / Cron. From simple sequential pipelines to RFC-driven multi-agent DAG orchestration. | inline | auto |
 | backend-patterns | Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes. | inline | auto |
 | benchmark | Use this skill to measure performance baselines, detect regressions before/after PRs, and compare stack alternatives. | inline | auto |
 | browser-qa | Use this skill to automate visual testing and UI interaction verification using browser automation after deploying features. | inline | auto |
-| bun-runtime | Bun as runtime, package manager, bundler, and test runner. When to choose Bun vs Node, migration notes, and Vercel support. | inline | auto |
 | clarify-first | Ask the structured 3-step question (analyze, recommend, ask) BEFORE dispatching write-capable agents or starting multi-file changes where a wrong assumption wastes work. Trigger when a task is named but scope is unstated — 'fix the bug', 'refactor X', 'add Y', 'make it faster' with no file/metric/layer; or it spans subsystems with no clear boundary. Thai: 'clarify ก่อน', 'ถามก่อนเริ่ม', 'scope ยังไงดี', 'ยังไม่ชัดเจน'. Don't use for: explicit file paths, single-value changes, read-only requests, or rhetorical questions. | inline | auto |
 | code-tour | Create CodeTour .tour files: persona-targeted walkthroughs with real file and line anchors. For onboarding, architecture, PR, and RCA tours. | inline | auto |
 | codebase-design | Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, placing seams, or making code more testable. | inline | auto |
@@ -402,8 +388,6 @@ _Personals/kbg-harness_
 | frontend-a11y | Accessibility patterns for React and Next.js: semantic HTML, ARIA, form labeling, keyboard navigation, focus management, and screen reader support. | inline | auto |
 | frontend-patterns | Frontend development patterns for React, Next.js, state management, performance optimization, and UI best practices. | inline | auto |
 | gateguard | Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift. | inline | auto |
-| git-workflow | Git workflow patterns including branching strategies, commit conventions, merge vs rebase, conflict resolution, and collaborative development best practices for teams of all sizes. | inline | auto |
-| github-ops | GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git. | inline | auto |
 | goal-spec | Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior. | inline | auto |
 | golang-patterns | Idiomatic Go patterns, best practices, and conventions for building robust, efficient, and maintainable Go applications. | inline | auto |
 | golang-testing | Go testing patterns including table-driven tests, subtests, benchmarks, fuzzing, and test coverage. Follows TDD methodology with idiomatic Go practices. | inline | auto |
@@ -414,13 +398,11 @@ _Personals/kbg-harness_
 | harness-nav | L3 escape hatch for kbg-harness capability discovery. Use when no known skill, command, or agent clearly covers your task — teaches grep recipes to mine BOUNDARY.md, skills/, agents/, commands/ for the right capability. Returns the nearest match or confirms none exists. Thai: 'หา skill', 'navigate', 'skill ไหนเหมาะ', 'มีอะไรช่วยได้'. Don't use for: tasks where the right skill is already known (use it directly), or operational health queries (use kbg:harness-audit --health). | inline | auto |
 | hexagonal-architecture | Design, implement, and refactor Ports & Adapters systems with clear domain boundaries, dependency inversion, and testable use-case orchestration across TypeScript, Java, Kotlin, and Go services. | inline | auto |
 | hono-patterns | Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters. | inline | auto |
-| implement | Implement a piece of work based on a PRD or set of issues. | inline | manual |
 | improve-codebase-architecture | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. | inline | manual |
 | incident | Manage a live production incident end-to-end, including the hotfix path when rollback/kill-switch is insufficient. Use when alerts fire, monitors show red, users report widespread issues, error rates spike, or the user asks for a hotfix / P0 fix. Thai: 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม', 'hotfix', 'แก้ด่วน', 'P0'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (STOP — redirect to security-reviewer first), or post-incident documentation (use /post-mortem after resolution). | inline | auto |
 | intent-driven-development | Clarify ambiguous requests into verifiable acceptance criteria before implementation. Targets security, data, migration, and integration changes. Skip for trivial edits or clear implementations. | inline | auto |
 | inventory | Show what Claude Code skills, agents, commands, and hooks are loadable from the current project and global layers. Use when exploring available capabilities or verifying what the kbg@kobig plugin delivered. Thai: 'inventory', 'ดู skill ทั้งหมด', 'มี skill อะไรบ้าง'. Don't use for: a single-layer list (use /skills, /agents, or /hooks), capability routing when a skill is already known (use it directly), or governance health queries (kbg:harness-audit --health). Use inventory for the unified cross-layer view (project-local + global in one render) with plugin-delivered markers. | inline | auto |
 | java-coding-standards | Java coding standards for Spring Boot and Quarkus: naming, immutability, Optional, streams, exceptions, generics, CDI, and reactive patterns. | inline | auto |
-| knowledge-ops | Knowledge base management across local files, MCP memory, vector stores, and Git repos. Use to save, sync, deduplicate, or search knowledge. | inline | auto |
 | kotlin-coroutines-flows | Kotlin Coroutines and Flow patterns for Android and KMP — structured concurrency, Flow operators, StateFlow, error handling, and testing. | inline | auto |
 | kotlin-exposed-patterns | JetBrains Exposed ORM patterns including DSL queries, DAO pattern, transactions, HikariCP connection pooling, Flyway migrations, and repository pattern. | inline | auto |
 | kotlin-ktor-patterns | Ktor server patterns including routing DSL, plugins, authentication, Koin DI, kotlinx.serialization, WebSockets, and testApplication testing. | inline | auto |
@@ -443,7 +425,6 @@ _Personals/kbg-harness_
 | orch-refine-code | Behavior-preserving refactor: confirm tests green, restructure, keep green, review, gated commit. Use when structure should improve but behavior must not change. | inline | auto |
 | orchestrate | Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, spans independent sub-tasks or sequential phases, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', or 'จัดpriority'. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/ship-task), or single-file coding (inline). | inline | auto |
 | parallel-execution-optimizer | Parallelize independent work into lanes: batched reads, concurrent agents, isolated worktrees, or verification passes — without write-surface conflicts. | inline | auto |
-| postgres-patterns | PostgreSQL database patterns for query optimization, schema design, indexing, and security. Based on Supabase best practices. | inline | auto |
 | production-audit | Local-evidence production readiness audit for pre-launch reviews, post-merge checks, and prod-failure questions. No external service. | inline | auto |
 | prompt-optimizer | Analyze a draft prompt, diagnose gaps, match ECC components, and output a ready-to-paste optimized prompt. Advisory only. | inline | auto |
 | prototype | Build throwaway prototypes — terminal apps for logic questions, or radically different UI variations on one route. | inline | manual |
@@ -455,12 +436,10 @@ _Personals/kbg-harness_
 | recursive-improve | Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /ship-task), external tool research (use kbg:article-mine), or any self-launching / scheduled / unattended loop (every iteration is human-gated at an AskUserQuestion gate before any mutation). | inline | manual |
 | redis-patterns | Redis data structure patterns, caching strategies, distributed locks, rate limiting, pub/sub, and connection management for production applications. | inline | auto |
 | repo-scan | Cross-stack source code asset audit — classifies every file, detects embedded third-party libraries, and delivers actionable four-level verdicts per module with interactive HTML reports. | inline | auto |
-| resolving-merge-conflicts | Use when you need to resolve an in-progress git merge/rebase conflict. | inline | auto |
 | review-pr | Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready, after addressing feedback, or when asked to review changes/aspects. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: a quick diff review (use /code-review, optionally --fix/--comment/ultra) or a single GitHub PR (use /review), single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool). | inline | auto |
 | rules-distill | Scan skills to extract cross-cutting principles and distill them into rules — append, revise, or create new rule files | inline | auto |
 | rust-patterns | Idiomatic Rust patterns, ownership, error handling, traits, concurrency, and best practices for building safe, performant applications. | inline | auto |
 | rust-testing | Rust testing patterns including unit tests, integration tests, async testing, property-based testing, mocking, and coverage. Follows TDD methodology. | inline | auto |
-| safety-guard | Use this skill to prevent destructive operations when working on production systems or running agents autonomously. | inline | auto |
 | search-first | Research-before-coding workflow. Search for existing tools, libraries, and patterns before writing custom code. Invokes the researcher agent. | inline | auto |
 | security-auditor | Standalone security audit — deep threat-model + remediation for auth, secrets, external input, file uploads, or dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. Thai: 'ตรวจ security', 'ช่องโหว่', 'security audit', 'เช็คความปลอดภัย'. The security-reviewer agent is the fast flag spawned inside kbg:review-pr — run one, not both. Don't use for: a quick branch-wide security check of pending changes (use /security-review), code review (kbg:review-pr), incidents (kbg:incident), or non-code security (infra, policy). | inline | auto |
 | security-review | In-flow security checklist while coding auth, user input, secrets, API endpoints, or payment features. Guides the current change. For a standalone full-codebase threat-model audit use kbg:security-auditor. | inline | auto |
@@ -471,7 +450,6 @@ _Personals/kbg-harness_
 | springboot-patterns | Spring Boot architecture patterns, REST API design, layered services, data access, caching, async processing, and logging. Use for Java Spring Boot backend work. | inline | auto |
 | springboot-security | Spring Security best practices for authn/authz, validation, CSRF, secrets, headers, rate limiting, and dependency security in Java Spring Boot services. | inline | auto |
 | springboot-tdd | Test-driven development for Spring Boot using JUnit 5, Mockito, MockMvc, Testcontainers, and JaCoCo. Use when adding features, fixing bugs, or refactoring. | inline | auto |
-| strategic-compact | Suggests manual context compaction at logical intervals to preserve context through task phases rather than arbitrary auto-compaction. | inline | auto |
 | swift-concurrency-6-2 | Swift 6.2 Approachable Concurrency — single-threaded by default, @concurrent for explicit background offloading, isolated conformances for main actor types. | inline | auto |
 | swiftui-patterns | SwiftUI architecture patterns, state management with @Observable, view composition, navigation, performance optimization, and modern iOS/macOS UI best practices. | inline | auto |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC commands, capabilities/permissions model, state management, events, plugins, and tauri.conf.json. Covers v2 breaking changes from v1. | inline | auto |
@@ -501,7 +479,7 @@ to control response length or token usage. | inline | auto |
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-29T04:03:01Z_
+_Generated: 2026-06-29T05:45:20Z_
 
 ---
 
