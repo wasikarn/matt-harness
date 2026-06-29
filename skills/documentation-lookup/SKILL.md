@@ -1,6 +1,6 @@
 ---
 name: documentation-lookup
-description: Fetch up-to-date library and framework docs via Context7 MCP for setup, API references, or code examples.
+description: "Host-model skill for current library/framework docs via Context7 MCP: resolve-library-id → query-docs → answer. For a fresh-context isolated lookup spawn the docs-lookup agent instead."
 metadata:
   origin: ECC
 ---

@@ -1,6 +1,6 @@
 ---
 name: docs-lookup
-description: Fetches current library, framework, and API docs via Context7 MCP. Use for setup questions, API references, or code examples.
+description: "Spawnable agent for current library/framework/API docs via Context7 MCP. Fresh context, locked tools — use when an isolated doc lookup is needed. For host-model guided lookup use kbg:documentation-lookup skill instead."
 tools: ["Read", "Grep", "mcp__context7__resolve-library-id", "mcp__context7__query-docs"]
 model: sonnet
 ---

@@ -1,5 +1,5 @@
 ---
-description: Code review — local uncommitted changes or GitHub PR (pass PR number/URL for PR mode)
+description: "Inline code review — local uncommitted changes (no args) or GitHub PR by number/URL. Single-mode, no multi-agent stack. For specialized multi-agent PR review use /review-pr."
 argument-hint: [pr-number | pr-url | blank for local review]
 ---
 

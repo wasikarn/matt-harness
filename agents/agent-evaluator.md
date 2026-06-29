@@ -1,6 +1,6 @@
 ---
 name: agent-evaluator
-description: Evaluates agent output against 5-axis rubric (accuracy, completeness, clarity, actionability, conciseness). Produces a scored report with evidence and a VERDICT line.
+description: "External evaluator: scores ANOTHER agent's output on 5-axis rubric (accuracy, completeness, clarity, actionability, conciseness), with evidence and VERDICT. For self-evaluation after your own task use kbg:agent-self-evaluation skill."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 metadata:

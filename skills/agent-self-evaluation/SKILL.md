@@ -1,6 +1,6 @@
 ---
 name: agent-self-evaluation
-description: "Post-task self-evaluation on 5 axes: accuracy, completeness, clarity, actionability, conciseness. Produces a 1-5 scorecard with improvement suggestions."
+description: "Self-evaluation after completing your own task: scores YOUR output on 5 axes (accuracy, completeness, clarity, actionability, conciseness), 1-5 scorecard + improvements. To evaluate ANOTHER agent's output use the agent-evaluator agent."
 metadata:
   origin: ECC
 ---

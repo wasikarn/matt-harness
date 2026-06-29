@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Use this skill when adding authentication, handling user input, working with secrets, creating API endpoints, or implementing payment/sensitive features. Provides comprehensive security checklist and patterns.
+description: "In-flow security checklist while coding auth, user input, secrets, API endpoints, or payment features. Guides the current change. For a standalone full-codebase threat-model audit use kbg:security-auditor."
 metadata:
   origin: ECC
 ---

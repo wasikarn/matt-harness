@@ -1,5 +1,5 @@
 ---
-description: Comprehensive PR review using specialized agents
+description: "Multi-agent PR review: code quality, tests, comments, types. Usage: /review-pr [PR-number|URL] [--focus=code|tests|comments|types|errors|simplify]. Reviews current branch PR if no PR specified."
 ---
 
 Run a comprehensive multi-perspective review of a pull request.
