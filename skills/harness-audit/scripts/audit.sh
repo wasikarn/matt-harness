@@ -136,18 +136,17 @@ PY
 fi
 
 # AUDIT-2: --only <id> — run exactly ONE check by id (design §5 R3). The per-check
-# runner the loop-guard's --assert-cage-intact shells every cycle to re-assert cage
-# completeness cheaply. Supported ids: 43 (cage-completeness → scripts/l4/cage-
-# intact.sh). Exits non-zero on CRIT, fail-closed. Extensible: add a case per id.
+# runner the retired loop-guard's --assert-cage-intact once shelled each cycle to
+# re-assert cage completeness cheaply. The sole supported id (43 →
+# scripts/l4/cage-intact.sh) was removed when ADR 0006 retired the L2–L5 ratchet
+# (2026-06-26): scripts/l4/ and scripts/loop-guard.py were deleted, so --only has
+# no live consumer and no supported id. The arg + dispatch stay as extensible
+# infrastructure (add a case per id); until one is wired, every id exits 2.
 # Unsupported id → exit 2 (honest about what's supported, not a silent fallthrough).
 if [ -n "$ONLY_ID" ]; then
   case "$ONLY_ID" in
-    43)
-      bash "$REPO_ROOT/scripts/l4/cage-intact.sh" "$REPO_ROOT"
-      exit $?
-      ;;
     *)
-      echo "audit --only: unsupported id '$ONLY_ID' (supported: 43)" >&2
+      echo "audit --only: unsupported id '$ONLY_ID' (no supported ids — 43 retired with the L4 machinery)" >&2
       exit 2
       ;;
   esac
