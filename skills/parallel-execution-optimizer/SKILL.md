@@ -1,6 +1,6 @@
 ---
 name: parallel-execution-optimizer
-description: Parallelize independent work into lanes: batched reads, concurrent agents, isolated worktrees, or verification passes — without write-surface conflicts.
+description: "Parallelize independent work into lanes: batched reads, concurrent agents, isolated worktrees, or verification passes — without write-surface conflicts."
 metadata:
   origin: ECC
 tools: Read, Write, Edit, Bash, Grep, Glob
