@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# pre-push — run the full parallel validation gauntlet before allowing push,
-# then the CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2 tripwire (design §10, #32).
+# pre-push — run the full parallel validation gauntlet before allowing push.
 #
 # This is the heavy gate. It runs plugin-validate, self-audit, the full
-# critical-hooks behavioral suite, and the eval gate (all datasets + all
+# critical-hook behavioral suite, and the eval gate (all datasets + all
 # regressions) in parallel. Failures are reported with log tails.
 #
-# After the gauntlet, exit-tripwire.sh independently checks the pushed commits
-# for an L4-authored commit that touched a caged safety surface — the cage
-# cannot be its own witness (CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2). Computational (git log +
-# grep), not a model gate; a CRIT aborts the push. Lives OUTSIDE the cage's own
-# assertion path (scripts/l4/exit-tripwire.sh, not cage-intact.sh).
+# Note: the L4 autonomy exit-tripwire backstop (scripts/l4/exit-tripwire.sh)
+# was removed when ADR 0006 retired the L2–L5 bounded-autonomy ratchet
+# (2026-06-26). The gauntlet + scoped denials (block-dangerous-git.sh /
+# block-dangerous-bash.sh) are the live guardrails; there is no autonomy
+# flag and no enforced maker-checker ship-gate (CLAUDE.md §The operating model).
 #
 # For a faster local check on every commit, see git-hooks/pre-commit.
 
@@ -18,11 +17,6 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
-TRIPWIRE="$ROOT/scripts/l4/exit-tripwire.sh"
-
-# Capture the pushed ref lines before the gauntlet could consume stdin.
-# git feeds one line per ref: <local-ref> <local-sha> <remote-ref> <remote-sha>
-PUSH_REFS=$(cat)
 
 if [ ! -x "$GAUNTLET" ]; then
   echo "pre-push: gauntlet script not found or not executable: $GAUNTLET" >&2
@@ -31,27 +25,3 @@ fi
 
 echo "pre-push: running full validation gauntlet..."
 bash "$GAUNTLET"
-
-# CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2: did an L4-authored commit in the pushed range touch a
-# security gate? The cage should have prevented it; this independent detector
-# catches a silent cage failure. Abort the push on a CRIT — a safety surface
-# changed under an armed run must not reach origin.
-if [ -x "$TRIPWIRE" ]; then
-  RANGE=""
-  while IFS=' ' read -r _lref _lsha _rref _rsha; do
-    [ -n "$_lsha" ] && [ "$_lsha" != "0000000000000000000000000000000000000000" ] || continue
-    if [ "$_rsha" = "0000000000000000000000000000000000000000" ]; then
-      _rsha="HEAD~1"   # new branch: no prior remote tip — check from parent
-    fi
-    RANGE="$_rsha..$_lsha"
-    break   # single-branch repo: the first pushed ref's range is the one that matters
-  done <<<"$PUSH_REFS"
-  [ -n "$RANGE" ] || RANGE="HEAD~1..HEAD"
-  echo "pre-push: exit-tripwire on $RANGE..."
-  bash "$TRIPWIRE" "$RANGE" || {
-    echo "pre-push: exit-tripwire CRIT — an L4-authored commit in $RANGE touched a security gate (CLAUDE.md §The operating model (was L4 self-launch, retired) exit-trigger-2). Push aborted." >&2
-    exit 1
-  }
-else
-  echo "pre-push: exit-tripwire.sh not executable — backstop skipped (cage + gauntlet remain primary)" >&2
-fi
