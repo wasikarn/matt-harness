@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 25. Agent skills: references resolve to a real skill — repo or installed global
 # (~/.claude/skills/). code.claude.com/docs/en/sub-agents: the skills: array
 # names skills made available to the agent. A dangling ref (after a rename or

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 2. Symlink integrity — skills
 for d in "$CLAUDE_DIR/skills"/*/; do
   [ -d "$d" ] || continue

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 24. Agent tool-grant tokens — each token in tools: must be a real Claude Code
 # tool. code.claude.com/docs/en/tools-reference. Strips a (specifier) suffix
 # before checking, so 'Bash(git:*)' validates as 'Bash'. Catches typos that

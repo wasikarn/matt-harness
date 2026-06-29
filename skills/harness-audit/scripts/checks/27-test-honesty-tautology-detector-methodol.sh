@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 27. Test-honesty / tautology detector — METHODOLOGY Rule 9 static check.
 # Catches "test that can't fail when behavior changes" by greppable patterns
 # in test files only. Paired with claude/rules/test-honesty.md (write-time hint)

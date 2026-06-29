@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 34. fake-done guard — goal-spec skill + ship-task verifier (arXiv 2606.10209
 # §3 failure modes: Ralph Wiggum loop = no goal spec on disk, agent re-plans
 # the same step on every resume; confident garbage = task-completion skill with

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 11. Orphaned hooks (in filesystem but not in settings.json)
 if [ -f "$SETTINGS" ]; then
   for f in "$CLAUDE_DIR/hooks"/**/*; do

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 22. Hook config validity — settings.json (checks C–F).
 # Verified against code.claude.com/docs/en/hooks (31-event canonical set, fetched
 # 2026-05-30). Findings are WARN not CRIT: vendor docs lag features (Rule 1), so

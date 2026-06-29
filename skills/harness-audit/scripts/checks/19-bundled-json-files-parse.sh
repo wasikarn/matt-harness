@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 19. Bundled JSON files parse
 while IFS= read -r f; do
   if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" 2>/dev/null; then

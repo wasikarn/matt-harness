@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 29. Skill description injection-risk + imperative-intensity scan.
 # Checks that no SKILL.md description: field contains prompt-injection patterns
 # (override instructions, persona hijack, system-prompt escape attempts).

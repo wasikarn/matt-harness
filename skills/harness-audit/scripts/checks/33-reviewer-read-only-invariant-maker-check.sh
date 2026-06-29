@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 33. Reviewer read-only invariant (maker≠checker). An agent whose NAME marks it a
 # reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge) must NOT grant
 # Write or Edit: a verifier that can mutate what it reviews defeats the fresh-context

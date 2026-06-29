@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 18. Bundled shell scripts pass syntax check
 while IFS= read -r f; do
   if ! bash -n "$f" 2>/dev/null; then

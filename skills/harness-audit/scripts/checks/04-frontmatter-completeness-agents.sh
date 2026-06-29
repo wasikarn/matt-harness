@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 4. Frontmatter completeness — agents
 for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue

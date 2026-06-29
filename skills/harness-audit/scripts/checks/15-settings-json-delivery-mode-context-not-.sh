@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 15. settings.json delivery mode — context, NOT a finding. In the single
 # plugin-delivery path (the plugin-delivery model section in CLAUDE.md) settings.json carries only `hooks`; the
 # commands/agents/skills arrays are absent BY DESIGN (loaded from the plugin

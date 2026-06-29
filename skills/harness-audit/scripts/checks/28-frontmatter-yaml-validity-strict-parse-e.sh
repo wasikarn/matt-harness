@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 28. Frontmatter YAML validity — strict-parse every agent/skill/command
 # frontmatter. The grep-based fm_get reads `name:` even out of a malformed
 # block, so a broken double-quoted description (a stray `"` mid-string) or an

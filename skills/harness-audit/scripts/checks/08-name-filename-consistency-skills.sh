@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 8. Name/filename consistency — skills
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   [ -f "$f" ] || continue

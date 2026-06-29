@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 3. Symlink integrity — hooks (recurse: hooks live in gates/, advisory/, …)
 # globstar with set -e exits if the directory is empty and the pattern expands
 # literally to itself; use find so empty/minimal fixtures don't kill the audit.

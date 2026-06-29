@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 10. Duplicate tools in agent grants
 for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue

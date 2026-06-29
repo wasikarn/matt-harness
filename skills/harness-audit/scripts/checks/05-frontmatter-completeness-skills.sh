@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 5. Frontmatter completeness — skills
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   [ -f "$f" ] || continue

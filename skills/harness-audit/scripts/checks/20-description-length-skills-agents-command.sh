@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 20. Description length — skills, agents, commands.
 # code.claude.com/docs/en/skills + /sub-agents: description max 1536 chars
 # (combined with when_to_use). Over-limit is silently truncated by the runtime,

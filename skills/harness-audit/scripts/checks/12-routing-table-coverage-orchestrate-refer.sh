@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 12. Routing table coverage (orchestrate references all agents)
 # The agent fleet list lives in reference.md; SKILL.md carries only inline
 # examples (SKILL.md:49 points to reference.md). Check both — an agent

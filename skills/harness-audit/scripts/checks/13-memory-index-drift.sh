@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 13. Memory index drift
 # Process substitution (not a pipe) keeps the loop in the current shell so
 # crit() increments propagate — a `grep | while` runs in a subshell and the

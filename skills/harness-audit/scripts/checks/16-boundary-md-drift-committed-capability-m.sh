@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 16. BOUNDARY.md drift — committed capability map vs live fleet
 # The map is a generated snapshot; if a skill/agent/hook is added or its
 # description changes without regenerating, the canonical map goes stale.

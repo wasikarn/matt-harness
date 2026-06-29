@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 21. Agent model value — must be a documented alias or a full claude-* model ID.
 # code.claude.com/docs/en/model-config: aliases sonnet|opus|haiku|fable|inherit,
 # or a full ID (claude-opus-4-8, claude-sonnet-4-6, ...). model is optional

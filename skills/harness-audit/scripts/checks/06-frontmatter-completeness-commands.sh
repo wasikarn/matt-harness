@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 6. Frontmatter completeness — commands
 for f in "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue

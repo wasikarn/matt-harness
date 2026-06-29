@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 26. CLAUDE.md @-import resolution — every `@file` reference at line start must
 # resolve to a real file relative to the importing CLAUDE.md. Claude Code inlines
 # these on load; a dangling ref (after an imported doctrine file is renamed or

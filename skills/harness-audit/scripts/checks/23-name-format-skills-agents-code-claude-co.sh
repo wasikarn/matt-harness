@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 23. Name format — skills + agents. code.claude.com/docs/en/skills + /sub-agents:
 # name = lowercase letters, digits, hyphens only; max 64 chars. A bad name breaks
 # discovery/namespacing. Scaffolds (_*) ship placeholder names — skipped.

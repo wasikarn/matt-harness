@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 32. Reasoning-models index drift — the unified 39-model table in
 # docs/reference/reasoning-models.md must list one row for every vendored
 # thinking-*/SKILL.md directory under docs/reference/thinking-skills/skills/.
