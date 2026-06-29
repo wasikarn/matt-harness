@@ -27,12 +27,16 @@ Show the user a summary of what's changed (added, modified, deleted, untracked).
 
 Interpret `$ARGUMENTS` to determine what to stage:
 
+> **kbg policy: never `git add -A` or `git add .`** — stage by explicit path. For
+> "everything", enumerate the changed paths from `git status --short` and add them
+> by name (show the list first).
+
 | Input | Interpretation | Git Command |
 |---|---|---|
-| *(blank / empty)* | Stage everything | `git add -A` |
+| *(blank / empty)* | Stage every changed path, by name | `git status --short`, then `git add <each listed path>` |
 | `staged` | Use whatever is already staged | *(no git add)* |
 | `*.ts` or `*.py` etc. | Stage matching glob | `git add '*.ts'` |
-| `except tests` | Stage all, then unstage tests | `git add -A && git reset -- '**/*.test.*' '**/*.spec.*' '**/test_*' 2>/dev/null \|\| true` |
+| `except tests` | Stage changed non-test paths, by name | enumerate `git status --short`, drop `*.test.* / *.spec.* / test_*`, `git add <remaining paths>` |
 | `only new files` | Stage untracked files only | `git ls-files --others --exclude-standard \| grep . && git ls-files --others --exclude-standard \| xargs git add` |
 | `the auth changes` | Interpret from status/diff — find auth-related files | `git add <matched files>` |
 | Specific filenames | Stage those files | `git add <files>` |
@@ -94,7 +98,7 @@ Files:     {count} file(s) changed
 
 Next steps:
   - git push           → push to remote
-  - /prp-pr            → create a pull request
+  - /pr                → create a pull request
   - /code-review       → review before pushing
 ```
 

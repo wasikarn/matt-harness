@@ -69,8 +69,12 @@ Create a skill file at `~/.claude/skills/learned/[pattern-name].md`:
 2. Review the session (and observations if present) for extractable patterns
 3. Identify the most valuable/reusable insight
 4. Draft the skill file
-5. Ask user to confirm before saving
-6. Save to `~/.claude/skills/learned/`
+5. **Scan for duplicates** — before saving, search for overlap:
+   - Grep `~/.claude/skills/` and `~/.claude/CLAUDE.md` for pattern name and keywords
+   - Check `~/.claude/projects/*/memory/` for similar learnings
+   - If overlap found, **AskUserQuestion** to confirm this pattern is unique; otherwise proceed
+6. Ask user to confirm before saving
+7. Save to `~/.claude/skills/learned/`
 
 ## Notes
 

@@ -9,6 +9,10 @@ metadata:
 
 Quick reference for Redis best practices across common backend use cases.
 
+## Live Docs
+
+For current Redis command reference, client-library APIs (redis-py, node-redis), and cluster/sentinel config, see the [Redis docs](https://redis.io/docs/latest/) via context7.
+
 ## How It Works
 
 Redis is an in-memory data structure store that supports strings, hashes, lists, sets, sorted sets, streams, and more. Individual Redis commands are atomic on a single instance; multi-step workflows require Lua scripts, MULTI/EXEC transactions, or explicit synchronization to stay atomic. Data is optionally persisted via RDB snapshots or AOF logs. Clients communicate over TCP using the RESP protocol; connection pools are essential to avoid per-request handshake overhead.
@@ -37,84 +41,13 @@ Redis is an in-memory data structure store that supports strings, hashes, lists,
 
 ## Core Patterns
 
-### Cache-Aside (Lazy Loading)
+**Cache-Aside (Lazy Loading):** Check cache first; if miss, fetch from database and backfill with `setex()`. Tolerates staleness; simple to reason about. Use for read-heavy, non-critical data.
 
-```python
-import redis
-import json
+**Write-Through Cache:** Update database first, then synchronously update cache. Guarantees cache coherence but adds write latency. Use when consistency is required.
 
-r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+**Cache Invalidation:** Tag-based invalidation groups related keys in a set; invalidate the tag to clear all derived cache keys at once. Prefer to TTL-only invalidation when categories need coordinated expiry.
 
-def get_product(product_id: int):
-    cache_key = f"product:{product_id}"
-    cached = r.get(cache_key)
-
-    if cached:
-        return json.loads(cached)
-
-    product = db.query("SELECT * FROM products WHERE id = %s", product_id)
-    r.setex(cache_key, 3600, json.dumps(product))  # TTL: 1 hour
-    return product
-```
-
-### Write-Through Cache
-
-```python
-def update_product(product_id: int, data: dict):
-    # Write to DB first
-    db.execute("UPDATE products SET ... WHERE id = %s", product_id)
-
-    # Immediately update cache
-    cache_key = f"product:{product_id}"
-    r.setex(cache_key, 3600, json.dumps(data))
-```
-
-### Cache Invalidation
-
-```python
-# Tag-based invalidation — group related keys under a set
-def cache_product(product_id: int, category_id: int, data: dict):
-    key = f"product:{product_id}"
-    tag = f"tag:category:{category_id}"
-    pipe = r.pipeline(transaction=True)
-    pipe.setex(key, 3600, json.dumps(data))
-    pipe.sadd(tag, key)
-    pipe.expire(tag, 3600)
-    pipe.execute()
-
-def invalidate_category(category_id: int):
-    tag = f"tag:category:{category_id}"
-    keys = r.smembers(tag)
-    if keys:
-        r.delete(*keys)
-    r.delete(tag)
-```
-
-### Session Storage
-
-```python
-import time
-import uuid
-
-def create_session(user_id: int, ttl: int = 86400) -> str:
-    session_id = str(uuid.uuid4())
-    key = f"session:{session_id}"
-    pipe = r.pipeline(transaction=True)
-    pipe.hset(key, mapping={
-        "user_id": user_id,
-        "created_at": int(time.time()),
-    })
-    pipe.expire(key, ttl)
-    pipe.execute()
-    return session_id
-
-def get_session(session_id: str) -> dict | None:
-    data = r.hgetall(f"session:{session_id}")
-    return data if data else None
-
-def delete_session(session_id: str):
-    r.delete(f"session:{session_id}")
-```
+**Session Storage:** Store user sessions in a Redis hash (`HSET` fields for user_id, created_at, etc.) with per-session expiry. Use `HGETALL` to load; delete on logout. Avoids database round-trip on every request.
 
 ## Rate Limiting
 

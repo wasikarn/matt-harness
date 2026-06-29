@@ -9,6 +9,10 @@ metadata:
 
 Production-grade Kubernetes patterns for deploying, managing, and debugging workloads reliably.
 
+## Live Docs
+
+For current API versions, manifest schemas, and operator patterns, see the [Kubernetes docs](https://kubernetes.io/docs/) via context7.
+
 ## When to Activate
 
 - Writing Kubernetes manifests (Deployments, Services, Ingress, Jobs)
@@ -54,110 +58,18 @@ See the sections below for complete, runnable examples. Quick references:
 
 ## Core Workload Patterns
 
-### Deployment — Production Template
+### Deployment — Key Decisions
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-app
-  namespace: my-namespace
-  labels:
-    app: my-app
-    version: "1.0.0"
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: my-app
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1          # Allow 1 extra pod during update
-      maxUnavailable: 0    # Never reduce below desired count
-  template:
-    metadata:
-      labels:
-        app: my-app
-        version: "1.0.0"
-    spec:
-      # Security context at pod level
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
-        fsGroup: 1001
+A production Deployment combines:
+- **Replicas**: ≥2 for HA; HPA will scale based on metrics
+- **Rolling update strategy**: `maxSurge: 1, maxUnavailable: 0` prevents service degradation
+- **Security context**: non-root user, read-only root FS where possible, dropped all capabilities
+- **Probes**: startup (slow-start tolerance) → liveness (deadlock detection) → readiness (traffic-eligible)
+- **Resource requests AND limits**: required for scheduling and OOM safety
+- **Config/Secret injection**: `envFrom` for ConfigMap, `valueFrom.secretKeyRef` for sensitive data
+- **Graceful shutdown**: `terminationGracePeriodSeconds: 30` allows clean connection drains
 
-      # Graceful shutdown
-      terminationGracePeriodSeconds: 30
-
-      containers:
-        - name: my-app
-          image: ghcr.io/org/my-app:1.0.0   # Never use :latest
-          imagePullPolicy: IfNotPresent
-
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-
-          # Resource requests AND limits are both required
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "256Mi"
-
-          # Container security context
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-
-          # Probes (see Probes section below)
-          startupProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            failureThreshold: 30
-            periodSeconds: 5
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 0
-            periodSeconds: 30
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /ready
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            failureThreshold: 2
-
-          # Environment from ConfigMap and Secret
-          envFrom:
-            - configMapRef:
-                name: my-app-config
-          env:
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: my-app-secrets
-                  key: db-password
-
-          # Writable tmp directory when readOnlyRootFilesystem: true
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-
-      volumes:
-        - name: tmp
-          emptyDir: {}
-```
+See official [Kubernetes Deployment docs](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) for full YAML schema.
 
 ---
 

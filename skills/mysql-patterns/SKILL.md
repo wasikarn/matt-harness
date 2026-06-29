@@ -13,6 +13,10 @@ production database configuration. Prefer exact version checks before applying a
 feature-specific pattern because MySQL and MariaDB have diverged in several SQL
 details.
 
+## Live Docs
+
+For current MySQL/MariaDB version-specific syntax (window functions, JSON, generated columns, replication), see the [MySQL docs](https://dev.mysql.com/doc/) or MariaDB equivalent via context7.
+
 ## Activation
 
 - Designing MySQL or MariaDB tables, indexes, and constraints
@@ -23,14 +27,7 @@ details.
 
 ## Version Check
 
-Start by identifying the engine and version:
-
-```sql
-SELECT VERSION();
-SHOW VARIABLES LIKE 'version_comment';
-```
-
-Keep MySQL and MariaDB guidance separate when syntax differs:
+Identify the engine and version before applying patterns (MySQL and MariaDB have diverged in several SQL details). Key differences:
 
 - MySQL documents row aliases as the replacement for `VALUES(col)` in
   `ON DUPLICATE KEY UPDATE`; `VALUES(col)` is deprecated there.
@@ -41,23 +38,6 @@ Keep MySQL and MariaDB guidance separate when syntax differs:
   or integrity-sensitive reads.
 
 ## Schema Defaults
-
-```sql
-CREATE TABLE orders (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    account_id BIGINT UNSIGNED NOT NULL,
-    status VARCHAR(32) NOT NULL,
-    total DECIMAL(15, 2) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at DATETIME NULL,
-    PRIMARY KEY (id),
-    KEY idx_orders_account_status_created (account_id, status, created_at),
-    KEY idx_orders_active (account_id, deleted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Default choices:
 
 | Use Case | Prefer | Avoid |
 | --- | --- | --- |
@@ -71,34 +51,9 @@ Default choices:
 
 ## Indexing
 
-Composite index order usually follows equality predicates first, then range or
-sort columns:
+Composite index order usually follows equality predicates first, then range or sort columns. Use `EXPLAIN` before adding or changing an index to detect:
 
-```sql
-CREATE INDEX idx_orders_account_status_created
-    ON orders (account_id, status, created_at);
-
-SELECT id, total
-FROM orders
-WHERE account_id = ?
-  AND status = 'pending'
-  AND created_at >= ?
-ORDER BY created_at DESC
-LIMIT 50;
-```
-
-Use `EXPLAIN` before adding or changing an index:
-
-```sql
-EXPLAIN
-SELECT id, total
-FROM orders
-WHERE account_id = 123 AND status = 'pending'
-ORDER BY created_at DESC
-LIMIT 50;
-```
-
-Signals to investigate:
+**Signals to investigate:**
 
 | Field | Risk Signal |
 | --- | --- |

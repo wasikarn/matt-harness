@@ -8,22 +8,11 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 # Ship Merge
 
-Land a PR safely. Validation gates are non-negotiable — a merge without checks is a rollback waiting to happen.
-
-## Core Principles
-
-- **Validate before merge.** CI green, approvals in, no conflicts. Check every time.
-- **Rebase before merge.** Stay current with the base branch to avoid post-merge surprises.
-- **Squash and clean.** One commit per PR, delete branch automatically.
-- **Monitor post-merge.** CI on the merged commit can differ from CI on the branch.
-
----
-
 ## Phase 1: Validate
 
-**Goal**: Confirm the PR is ready to merge.
+**Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.
 
-**Actions**:
+
 1. Resolve PR: `gh pr view` (current branch) or `gh pr view <n>`.
 2. Check CI: `gh pr checks <n>`. All required checks must pass.
 3. Check approvals: `gh pr view <n> --json reviews`. At least one approval, no CHANGES_REQUESTED from a required reviewer.
@@ -35,19 +24,13 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
    - If no review ran → say so plainly and pass; **never fabricate a clean result.** The agent's self-report is not ground truth — re-check against the PR, not memory.
    - The machine layer is **authoritative for criteria it can check**; the human layer handles prose criteria and findings beyond the contract.
 
-**Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.
-
-**Next**: Phase 2 (Merge).
-
 ---
 
 ## Phase 2: Merge (GitHub Server-Side Only)
 
-**Goal**: Keep the branch current, then let GitHub perform the squash-merge and auto-delete.
-
 **Rule**: Merge must happen via GitHub (`gh pr merge`). Never run `git merge` locally and push the result.
 
-**Actions**:
+
 1. Fetch latest: `git fetch origin`
 2. Rebase onto base branch: `git rebase origin/<base-branch>`
    - Gate: rebase produces conflicts → STOP. Tell user to resolve manually and retry.
@@ -65,27 +48,18 @@ Land a PR safely. Validation gates are non-negotiable — a merge without checks
 6. Pull the result locally: `git checkout <base-branch> && git pull`
 7. Verify merge landed: `git log --oneline -3` on target branch.
 
-**Next**: Phase 3 (Clean Up).
-
 ---
 
 ## Phase 3: Clean Up
 
-**Goal**: Tidy local references after merge.
-
-**Actions**:
 1. Prune local refs: `git fetch --prune`.
 2. If the branch was checked out locally, switch to the target branch and pull.
-
-**Next**: Phase 4 (Monitor).
 
 ---
 
 ## Phase 4: Monitor
 
-**Goal**: Confirm the merged commit is healthy.
 
-**Actions**:
 1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. If failures appear post-merge, be ready to revert or invoke `kbg:incident` (hotfix path).
 3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. (For a user-facing merge/release note, route the prose through the `tech-humanize` skill to strip AI-flavor tells.)

@@ -20,18 +20,6 @@ Examples:
 /orch-change-feature instead of sorting by date, sort by priority
 ```
 
-## What It Does
-
-Invoke the `orch-change-feature` skill with `$ARGUMENTS` as the request. The skill
-(via the shared `orch-pipeline` engine) will:
-
-1. Classify size (default floor: small) and state the tier.
-2. Light plan only if the new behavior needs research. → **GATE 1** (approve changed-test plan).
-3. **Update the existing tests** to express the new behavior, then change the
-   implementation until green. (Changing the tests first is what makes this a
-   tweak, not a fix.)
-4. `code-reviewer` (+ `security-reviewer` on a security trigger), then commit. → **GATE 2**.
-
 Use this only when the feature **works** but should behave differently — not for
 bugs (`/orch-fix-defect`) or net-new capability (`/orch-add-feature`).
 

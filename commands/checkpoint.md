@@ -1,78 +1,34 @@
 ---
-description: Create, verify, or list workflow checkpoints after running verification checks.
+description: Record and list named session checkpoints (timestamp + git SHA).
 ---
 
 # Checkpoint Command
 
-Create or verify a checkpoint in your workflow.
+Session-scoped metadata logger for named checkpoints.
 
 ## Usage
 
-`/checkpoint [create|verify|list] [name]`
+`/checkpoint [create|list] [name]`
 
 ## Create Checkpoint
 
-When creating a checkpoint:
-
-1. Run `/verify quick` to ensure current state is clean
-2. Create a git stash or commit with checkpoint name
-3. Log checkpoint to `.claude/checkpoints.log`:
+Log a named checkpoint with timestamp and current git SHA:
 
 ```bash
-echo "$(date +%Y-%m-%d-%H:%M) | $CHECKPOINT_NAME | $(git rev-parse --short HEAD)" >> .claude/checkpoints.log
+echo "$(date +%Y-%m-%d-%H:%M) | $CHECKPOINT_NAME | $(git rev-parse --short HEAD)" >> .claude/session-checkpoints.log
 ```
 
-4. Report checkpoint created
-
-## Verify Checkpoint
-
-When verifying against a checkpoint:
-
-1. Read checkpoint from log
-2. Compare current state to checkpoint:
-   - Files added since checkpoint
-   - Files modified since checkpoint
-   - Test pass rate now vs then
-   - Coverage now vs then
-
-3. Report:
-```
-CHECKPOINT COMPARISON: $NAME
-============================
-Files changed: X
-Tests: +Y passed / -Z failed
-Coverage: +X% / -Y%
-Build: [PASS/FAIL]
-```
+Session checkpoints are **not** git snapshots — use native `git stash`, `git commit`, or `git tag` for actual state capture.
 
 ## List Checkpoints
 
-Show all checkpoints with:
+Show all checkpoints for this session:
 - Name
 - Timestamp
 - Git SHA
-- Status (current, behind, ahead)
-
-## Workflow
-
-Typical checkpoint flow:
-
-```
-[Start] --> /checkpoint create "feature-start"
-   |
-[Implement] --> /checkpoint create "core-done"
-   |
-[Test] --> /checkpoint verify "core-done"
-   |
-[Refactor] --> /checkpoint create "refactor-done"
-   |
-[PR] --> /checkpoint verify "feature-start"
-```
 
 ## Arguments
 
 $ARGUMENTS:
 - `create <name>` - Create named checkpoint
-- `verify <name>` - Verify against named checkpoint
 - `list` - Show all checkpoints
-- `clear` - Remove old checkpoints (keeps last 5)

@@ -20,4 +20,4 @@ What this does:
 Compatibility aliases:
 
 - `/pr`
-- `/prp-pr`
+- `/pr`

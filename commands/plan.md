@@ -184,7 +184,7 @@ After planning:
 - Use the `tdd-workflow` skill to implement with test-driven development
 - Use `/build-fix` if build errors occur
 - Use `/code-review` to review completed implementation
-- Use `/pr` or `/prp-pr` to open a pull request
+- Use `/pr` to open a pull request (covers PRP artifact paths)
 
 > **Need requirements first?** Use `/plan-prd` for a lean PRD at `.claude/prds/{name}.prd.md`.
 >
