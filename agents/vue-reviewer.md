@@ -1,7 +1,7 @@
 ---
 name: vue-reviewer
 description: "Expert Vue.js reviewer: Composition API, reactivity pitfalls, component architecture, template security, and performance. Use for Vue/Pinia/Nuxt changes. MUST BE USED for Vue projects."
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 

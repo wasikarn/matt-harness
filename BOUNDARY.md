@@ -332,7 +332,7 @@ _Personals/kbg-harness_
 | tdd-guide | Test-Driven Development specialist enforcing write-tests-first methodology. Use PROACTIVELY when writing new features, fixing bugs, or refactoring code. Ensures 80%+ test coverage. | ["Read", "Write", "Edit", "Bash", "Grep"] | yes |
 | type-design-analyzer | Analyze type design for encapsulation, invariant expression, usefulness, and enforcement. | [Read, Grep, Glob] | no |
 | typescript-reviewer | Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
-| vue-reviewer | Expert Vue.js reviewer: Composition API, reactivity pitfalls, component architecture, template security, and performance. Use for Vue/Pinia/Nuxt changes. MUST BE USED for Vue projects. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| vue-reviewer | Expert Vue.js reviewer: Composition API, reactivity pitfalls, component architecture, template security, and performance. Use for Vue/Pinia/Nuxt changes. MUST BE USED for Vue projects. | Read, Grep, Glob, Bash | yes |
 
 ## Skills — Repo
 | Skill | Description | Agent | Invoke |
@@ -479,7 +479,7 @@ to control response length or token usage. | inline | auto |
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-29T05:45:20Z_
+_Generated: 2026-06-29T06:38:29Z_
 
 ---
 
