@@ -61,6 +61,32 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "id": "stop:cost-tracker",
+        "description": "Stop: track cumulative token and cost metrics per session; appends to ~/.local/share/kbg/metrics/costs.jsonl",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/stop/cost-tracker.sh\"",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "id": "stop:desktop-notify",
+        "description": "Stop: send macOS desktop notification with first line of last assistant response",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/stop/desktop-notify.sh\"",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
