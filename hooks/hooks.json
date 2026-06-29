@@ -74,18 +74,6 @@
             "timeout": 10
           }
         ]
-      },
-      {
-        "id": "stop:desktop-notify",
-        "description": "Stop: send macOS desktop notification with first line of last assistant response",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/desktop-notify.sh\"",
-            "async": true,
-            "timeout": 10
-          }
-        ]
       }
     ]
   }
