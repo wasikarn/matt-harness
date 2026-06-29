@@ -44,7 +44,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/shi
 2. **Prioritize** with the right matrix (below). Classify each item.
 3. **Route** each item to an execution path (routing table below).
 4. **Propose, then dispatch.** Present the allocation first.
-   - **Ungated** — only agents with no mutation tools (`code-reviewer`, `code-architect`, `code-explorer` — read/search/web only, no `Edit`/`Write`/`Bash`) dispatch without a gate.
+   - **Ungated** — only agents with no mutation tools (`code-reviewer`, `code-architect` — read/search/web only, no `Edit`/`Write`/`Bash`) dispatch without a gate.
    - **Gated — AskUserQuestion required** — any agent holding `Edit`, `Write`, **or `Bash`** (Bash mutates via shell: `git push`, `sed -i`, `rm`). That is the write-capable engineers, **and** the Bash-holding review/research agents (`security-reviewer`, `researcher`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`). A planning question ("what should I work on") is not authorization to execute. **This gate operates at the conversation level and is mandatory regardless of auto-approve settings.** Present the allocation, **analyze** each task's blast radius and dependency chain, **recommend** the safest dispatch order, then **AskUserQuestion** single-select: "[N] tasks allocated: [list]. Blast radius: [low/medium/high]. Dependencies: [none / chain]. My recommendation: [dispatch order]. Approve?"
      - `Approve dispatch — all write-capable agents (Recommended when tasks are independent and blast radius is low)`
      - `Revise — remove or add items (Recommended when dependencies are misordered or scope is off)`
@@ -402,7 +402,7 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 | pnpm move | Q2 important, not urgent | `researcher` — compare + report, don't migrate |
 | dark-mode toggle | Q4 neither | **drop** — mark `wontfix`; outside current roadmap |
 
-Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`/`code-explorer`, none needed here). CSV inline. Dark-mode dropped.
+Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`, none needed here). CSV inline. Dark-mode dropped.
 
 ## METHODOLOGY alignment
 

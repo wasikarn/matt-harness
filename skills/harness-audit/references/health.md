@@ -9,7 +9,8 @@ Read-only query layer over `~/.claude/governance-events.jsonl` (the
 governance evidence journal per `hooks/JOURNAL-SCHEMA.md`) and
 `hooks/sensors.json` (the sensor registry). Surfaces the
 `inferential-structural_verdict` event stream emitted by the
-SessionEnd hook (`hooks/session/inferential-structural-judge-on-session-end.sh`),
+SessionEnd hook (`hooks/session/inferential-structural-judge-on-session-end.sh`
+— **currently dormant: hook not wired and script absent; re-wire is a pending follow-up, see `docs/research/inferential-structural-judge-design.md`**),
 plus per-sensor staleness / fire-count derived by joining the journal
 to the registry.
 
@@ -277,8 +278,8 @@ Per the design doc §6 (the upstream contract) and the task spec:
   schema), §6 (failure modes), §7 (SURF-1 bullet — the surfacing
   contract this skill implements).
 - **Source of events:** `hooks/session/inferential-structural-judge-on-session-end.sh`
-  (HOOK-1) — emits `inferential_structural_verdict` and
-  `inferential_structural_verdict_skipped` events.
+  (HOOK-1) — **currently dormant (hook unwired, script absent); emits `inferential_structural_verdict` and
+  `inferential_structural_verdict_skipped` events when re-wired per the design doc.**
 - **Producer agent:** `agents/inferential-structural-judge.md`
   (AGENT-1) — scores the diff; this skill surfaces the scores.
 - **Journal schema:** `hooks/JOURNAL-SCHEMA.md` "Envelope (nested)" —

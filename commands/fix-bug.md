@@ -65,7 +65,7 @@ Initial report: $ARGUMENTS
 1. Use `code-review-graph` MCP for structural queries — callers, callees, impact radius from the failing function/symbol.
 2. Use `git log -S '<symbol>'` or `git log -p <file>` to see when the behavior changed. The last commit to touch the failing code is often the suspect.
 3. Read the suspect files end-to-end (not just grep snippets).
-4. If the surface is wide (>3 files involved), spawn 1-2 `code-explorer` agents in parallel: each takes a different angle (call sites / data flow / similar past bugs).
+4. If the surface is wide (>3 files involved), spawn 1-2 `Explore` agents in parallel: each takes a different angle (call sites / data flow / similar past bugs).
 5. Output: a short list of code locations + one-line explanation of each location's role in the failure.
 
 ---

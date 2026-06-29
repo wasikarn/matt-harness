@@ -14,7 +14,7 @@ No phase is skipped. No autonomous loops — every fix iteration requires explic
 
 | Phase | Steps | Action | Gate |
 |-------|-------|--------|------|
-| 1 | 1 | **Explore** — `code-explorer` agent, read-only recon | Map returned |
+| 1 | 1 | **Explore** — `Explore` agent, read-only recon | Map returned |
 | 2 | 2 | **Clarify** — `kbg:clarify-first`, 3-step scope gate | All Q answered |
 | 3 | 3 | **Accept** — `kbg:accept-task`, lock ACCEPTANCE.md | Contract written |
 | 4 | 4 | **Implement** — inline feature work or `/fix-bug`, TDD discipline | Command done |
@@ -31,7 +31,7 @@ No phase is skipped. No autonomous loops — every fix iteration requires explic
 
 **Actions**:
 1. Identify the codebase area the task touches (auth, API, hooks, UI, data layer, etc.).
-2. Spawn the `code-explorer` agent with a prompt like:
+2. Spawn the `Explore` agent with a prompt like:
    > "Explore how [area] works across this codebase. Map the files involved, the data flow, and anything fragile. Don't change anything."
 3. Wait for the agent's map.
 4. From the map: identify load-bearing files, fragile spots, and the simplest implementation path.
@@ -78,7 +78,7 @@ cat "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}/accept-last.json"
 **Actions**:
 1. Classify: bug fix → `/fix-bug`; new feature or refactor → continue below.
 2. **Discovery** — analyze `$ARGUMENTS`, identify ambiguities, and decompose if the request spans independent subsystems.
-3. **Codebase exploration** — spawn 2–3 `code-explorer` agents in parallel (similar features, architecture, extension points) and read the key files they identify.
+3. **Codebase exploration** — spawn 2–3 `Explore` agents in parallel (similar features, architecture, extension points) and read the key files they identify.
 4. **Clarifying questions** — present all underspecified aspects to the user and wait for answers before designing. Re-invoke `kbg:accept-task` if the scope changes materially.
 5. **Architecture design** — spawn 2–3 `code-architect` agents in parallel (minimal changes, clean architecture, pragmatic balance), self-review the chosen approach for placeholder/scope/ambiguity, and ask the user to pick.
 6. **Implementation** — wait for explicit approval, then default to TDD red → green → refactor unless one of the documented opt-out criteria applies (visual-only change, hard race with named tool, integration boundary with stated harness rejection, 1-line cosmetic).

@@ -40,7 +40,7 @@ Single kbg research surface. Produces an actionable brief with cited sources (fi
 **Goal**: Extract everything relevant from the codebase.
 
 **Actions**:
-1. Launch `code-explorer` agent(s) with focused angles:
+1. Launch `Explore` agent(s) with focused angles:
    - "Find all auth-related files and trace the request flow"
    - "Identify patterns for session management"
    - "Find tests that exercise auth behavior"
@@ -104,7 +104,7 @@ Single kbg research surface. Produces an actionable brief with cited sources (fi
 
 ## Implementation Note
 
-This command is the **research surface**. It runs the 5-phase UX (Scope → Local → External → Synthesize → Archive) inline, forking the `researcher` agent for the external-search phase and the `code-explorer` agent for the local phase as needed. The formerly separate `research-brief` skill was merged into this command; all cross-references now resolve to `/deep-dive`.
+This command is the **research surface**. It runs the 5-phase UX (Scope → Local → External → Synthesize → Archive) inline, forking the `researcher` agent for the external-search phase and the `Explore` agent for the local phase as needed. The formerly separate `research-brief` skill was merged into this command; all cross-references now resolve to `/deep-dive`.
 
 Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, and `skills/adr/SKILL.md` all point at `/deep-dive` as the user-invoked entry point. They remain valid because this command still ships and still produces a brief.
 
@@ -112,7 +112,7 @@ Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, and `sk
 
 | Phase | Command / Action | When |
 |---|---|---|
-| 1 → 2 | Launch `code-explorer` agents | After thesis defined |
+| 1 → 2 | Launch `Explore` agents | After thesis defined |
 | 2 → 3 | Web search / QMD query | If gaps remain |
 | 3 → 4 | Synthesize brief | After all sources gathered |
 | 4 → 5 | Save to `.scratch/research/` | If user wants archival |

@@ -29,7 +29,7 @@ engine in [`orch-pipeline`](../orch-pipeline/SKILL.md).
 ## How It Works
 
 1. Run the `orch-pipeline` engine with the settings above.
-2. If the root cause is unclear, scope it with `code-explorer` before the red
+2. If the root cause is unclear, scope it with `Explore` before the red
    test; escalate build breaks to `build-error-resolver` / `/build-fix`.
 3. Stop at **Gate 1** (only if a plan was produced) and **Gate 2** (pre-commit).
 4. Add `security-reviewer` if the defect sits in a security-sensitive path.

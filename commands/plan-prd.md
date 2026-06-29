@@ -1,12 +1,12 @@
 ---
-description: "Generate a lean, problem-first PRD and hand off to /plan for implementation planning."
+description: "Generate a lean, problem-first PRD and hand off to /plan-artifact for implementation planning."
 name: plan-prd
 argument-hint: "[product/feature idea] (blank = start with questions)"
 ---
 
 # PRD Command
 
-Produces a **Product Requirements Document** — the requirements-phase artifact of the SDLC. Captures *what* must be true for success and *why*, and stops before *how*. Implementation decomposition is delegated to `/plan`.
+Produces a **Product Requirements Document** — the requirements-phase artifact of the SDLC. Captures *what* must be true for success and *why*, and stops before *how*. Implementation decomposition is delegated to `/plan-artifact`.
 
 **Input**: `$ARGUMENTS`
 
@@ -17,9 +17,9 @@ Produces a **Product Requirements Document** — the requirements-phase artifact
 | Frame the problem and users | Design the architecture |
 | Capture success criteria and scope | Pick files or write patterns |
 | List open questions and risks | Enumerate implementation tasks |
-| Write `.claude/prds/{name}.prd.md` | Produce an implementation plan — that's `/plan` |
+| Write `.claude/prds/{name}.prd.md` | Produce an implementation plan — that's `/plan-artifact` |
 
-If you find yourself writing implementation detail, stop and cut it. It belongs in `/plan`.
+If you find yourself writing implementation detail, stop and cut it. It belongs in `/plan-artifact`.
 
 **Anti-fluff rule**: When information is missing, write `TBD — needs validation via {method}`. Never invent plausible-sounding requirements.
 
@@ -107,7 +107,7 @@ We'll know we're right when **{measurable outcome}**.
 - {item} — {why deferred}
 
 ## Delivery Milestones
-<!-- Business outcomes, not engineering tasks. /plan turns each into a plan. -->
+<!-- Business outcomes, not engineering tasks. /plan-artifact turns each into a plan. -->
 <!-- Status: pending | in-progress | complete -->
 
 | # | Milestone | Outcome | Status | Plan |
@@ -123,7 +123,7 @@ We'll know we're right when **{measurable outcome}**.
 |---|---|---|---|
 
 ---
-*Status: DRAFT — requirements only. Implementation planning pending via /plan.*
+*Status: DRAFT — requirements only. Implementation planning pending via /plan-artifact.*
 ```
 
 #### Report to user
@@ -142,13 +142,13 @@ Validation status:
 
 Open questions: {count}
 
-Next step: /plan .claude/prds/{name}.prd.md
-  → /plan will pick the next pending milestone and produce an implementation plan.
+Next step: /plan-artifact .claude/prds/{name}.prd.md
+  → /plan-artifact will pick the next pending milestone and produce an implementation plan.
 ```
 
 ## Integration
 
-- `/plan <prd-path>` — consume the PRD and produce an implementation plan for the next pending milestone.
+- `/plan-artifact <prd-path>` — consume the PRD and produce an implementation plan for the next pending milestone.
 - `tdd-workflow` skill — implement the plan test-first.
 - `/pr` — open a PR that references the PRD and plan.
 
@@ -158,4 +158,4 @@ Next step: /plan .claude/prds/{name}.prd.md
 - **USER_CONCRETE**: primary user is a specific role, not "users".
 - **HYPOTHESIS_TESTABLE**: measurable outcome included.
 - **SCOPE_BOUNDED**: explicit MVP and explicit out-of-scope.
-- **NO_IMPLEMENTATION_DETAIL**: file paths, libraries, or task breakdowns are absent — if they appeared, move them to the `/plan` step.
+- **NO_IMPLEMENTATION_DETAIL**: file paths, libraries, or task breakdowns are absent — if they appeared, move them to the `/plan-artifact` step.

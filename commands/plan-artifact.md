@@ -1,6 +1,6 @@
 ---
 description: Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.
-name: plan
+name: plan-artifact
 argument-hint: "[feature description | path/to/*.prd.md]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[feature description | path/to/*.prd.md]"
 
 This command creates a comprehensive implementation plan before writing any code. It accepts either free-form requirements or a PRD markdown file.
 
-Run inline by default. Do not call the Task tool or any subagent by default. This keeps `/plan` usable from plugin installs that ship commands without agent files.
+Run inline by default. Do not call the Task tool or any subagent by default. This keeps `/plan-artifact` usable from plugin installs that ship commands without agent files.
 
 ## What This Command Does
 
@@ -19,7 +19,7 @@ Run inline by default. Do not call the Task tool or any subagent by default. Thi
 
 ## When to Use
 
-Use `/plan` when:
+Use `/plan-artifact` when:
 - Starting a new feature
 - Making significant architectural changes
 - Working on complex refactoring
@@ -115,7 +115,7 @@ After writing the artifact, report its path and WAIT for confirmation before wri
 ## Example Usage
 
 ```
-User: /plan I need to add real-time notifications when markets resolve
+User: /plan-artifact I need to add real-time notifications when markets resolve
 
 Assistant:
 # Implementation Plan: Real-Time Market Resolution Notifications
@@ -189,7 +189,7 @@ After planning:
 
 > **Need requirements first?** Use `/plan-prd` for a lean PRD at `.claude/prds/{name}.prd.md`.
 >
-> **Need the legacy PRP flow?** Use `/prp-plan` for deep PRP planning with `.claude/PRPs/` artifacts. Use `/prp-implement` to execute those plans with rigorous validation loops.
+> **Need rigorous validation during implementation?** Use the `tdd-workflow` skill (red-green-refactor) and `kbg:verification-loop` (Build→Types→Lint→Tests→Security→Diff).
 
 ## Optional Planner Agent
 

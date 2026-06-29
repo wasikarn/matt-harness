@@ -28,7 +28,7 @@ The 29-agent fleet is grouped by **discipline/ownership** (each agent owns one c
 
 | Stage | Agent specialists |
 |-------|-------------------|
-| **DEFINE** | `product-analyst` (requirements/AC) · `code-explorer` (trace existing code) · `researcher` (external options) |
+| **DEFINE** | `product-analyst` (requirements/AC) · `Explore` (trace existing code) · `researcher` (external options) |
 | **DESIGN** | `code-architect` (blueprint) · `type-design-analyzer` (contracts/encapsulation) |
 | **BUILD** | `backend-engineer` · `frontend-engineer` · `mobile-engineer` · `data-engineer` · `ml-engineer` · `platform-engineer` · `devops-engineer` · domain: `i18n-specialist` · `compliance-engineer` · `finops-engineer` |
 | **VERIFY** | `test-engineer` (write tests) · `pr-test-analyzer` (coverage gaps) |

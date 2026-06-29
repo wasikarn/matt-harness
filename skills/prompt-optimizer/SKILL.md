@@ -53,7 +53,7 @@ List what context would improve the result:
 ## Phase 5 — Workflow / model recommendation
 
 Suggest:
-- **Model**: haiku / sonnet / opus (per `/model-route` heuristics)
+- **Model**: haiku / sonnet / opus (per native `/model` + `/effort`)
 - **Workflow**: single shot / iterative / multi-agent
 - **Skill to invoke**: if an ECC/kbg skill matches, name it
 

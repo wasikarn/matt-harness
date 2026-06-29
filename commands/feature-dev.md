@@ -15,7 +15,7 @@ A structured feature-development workflow that emphasizes understanding existing
 
 ### 2. Codebase Exploration
 
-- use `code-explorer` to analyze the relevant existing code
+- use `Explore` to analyze the relevant existing code
 - trace execution paths and architecture layers
 - understand integration points and conventions
 

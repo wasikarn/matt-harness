@@ -208,7 +208,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `api-doc-specialist` | `openapi/`, `docs/api/`, `sdk/`, `swagger/` | |
 | `backend-engineer` | `api/`, `middleware/`, `models/`, `routes/`, `services/`, `tests/` | |
 | `code-architect` | `CLAUDE.md (doctrine home) `, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
-| `code-explorer` | any file | Read-only trace |
+| `Explore` | any file | Read-only trace |
 | `code-reviewer` | any file | Read-only review |
 | `comment-analyzer` | any file | Read-only comment audit |
 | `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |

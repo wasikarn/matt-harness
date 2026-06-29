@@ -31,7 +31,7 @@ each phase to an existing ECC agent or command. This file is that pipeline.
 | `orch-build-mvp` | mvp | bootstrap from a design/spec doc | ingest doc → vertical slices |
 
 > These wrappers **compose** existing ECC commands rather than replace them:
-> `/feature-dev`, `/plan`, `/code-review`, `/build-fix`, `/refactor-clean`, and
+> `/feature-dev`, `/plan-artifact`, `/code-review`, `/build-fix`, `/refactor-clean`, and
 > `/gan-build`, plus the `tdd-workflow` skill. The orch-* family adds the shared
 > size classifier and the two gates
 > on top of them, so one umbrella covers all five operations consistently.
@@ -88,7 +88,7 @@ Everything between the gates flows without stopping.
 
 | Phase | Primary | Fallback / escalation |
 |-------|---------|----------------------|
-| Intake / understand | `code-explorer` | trace existing paths before a tweak, fix, or refactor |
+| Intake / understand | `Explore` | trace existing paths before a tweak, fix, or refactor |
 | Plan | `planner` | `architect`, `code-architect` for structural calls |
 | Implement | `tdd-guide` (or `tdd-workflow` skill) | `build-error-resolver` / `/build-fix` on build breaks |
 | Review | `code-reviewer` / `/code-review` | language reviewer (`python-reviewer`, `typescript-reviewer`, …) |

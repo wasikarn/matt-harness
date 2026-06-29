@@ -1,6 +1,6 @@
 ---
 name: django-security
-description: Django security best practices, authentication, authorization, CSRF protection, SQL injection prevention, XSS prevention, and secure deployment configurations. Use when auditing a Django app for security gaps or implementing auth/permission flows. Don't use for general security review (use kbg:security-review) or non-Django codebases.
+description: Django security best practices, authentication, authorization, CSRF protection, SQL injection prevention, XSS prevention, and secure deployment configurations. Use when auditing a Django app for security gaps or implementing auth/permission flows. Don't use for general security review (use native `/security-review`) or non-Django codebases.
 metadata:
   origin: ECC
 ---
