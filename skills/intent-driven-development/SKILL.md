@@ -22,12 +22,11 @@ code review requests, or implementation requests whose acceptance conditions are
 
 ## How It Works
 
-1. **Inspect context first** — reads the repository, docs, schemas, and test infrastructure for technical facts before asking any question, while treating product/business constraints as something only the user or a product artifact can supply
-2. **Choose depth** — selects Quick Capture (3-7 criteria, low/moderate risk) or Full Acceptance Brief (security, data, migration, cross-system changes) based on the risk profile
-3. **Ask minimally** — only asks questions whose answers cannot be inferred and that materially change scope or behavior
-4. **Write observable criteria** — each AC-NNN describes a starting condition, trigger, expected outcome, prohibited side effect, verification method, and priority; no vague words like "correctly" or "securely" without evidence
-5. **Proceed or hand off** — for clear requests with no blocking risks, records criteria and continues; for risky changes, presents blockers and waits for confirmation
-6. **Handle revision** — if an AC fails mid-implementation due to architectural constraints, marks it `[revised]`, updates scope or verification method, increments the revision number, and re-presents only the changed criteria
+1. **Choose depth** — selects Quick Capture (3-7 criteria, low/moderate risk) or Full Acceptance Brief (security, data, migration, cross-system changes) based on the risk profile
+2. **Ask minimally** — only asks questions whose answers cannot be inferred and that materially change scope or behavior
+3. **Write observable criteria** — each AC-NNN describes a starting condition, trigger, expected outcome, prohibited side effect, verification method, and priority; no vague words like "correctly" or "securely" without evidence
+4. **Proceed or hand off** — for clear requests with no blocking risks, records criteria and continues; for risky changes, presents blockers and waits for confirmation
+5. **Handle revision** — if an AC fails mid-implementation due to architectural constraints, marks it `[revised]`, updates scope or verification method, increments the revision number, and re-presents only the changed criteria
 
 ## Examples
 
@@ -141,23 +140,6 @@ Extract or ask for:
 
 Avoid asking generic questions about irrelevant risks.
 
-### 2. Discover Context
-
-When local or connected artifacts are available, inspect only what is needed:
-
-- Existing behavior and directly related files or interfaces.
-- Repository conventions, product docs, API contracts, data schemas, or migration history.
-- Existing verification infrastructure and realistic commands.
-- External dependencies and whether they are testable in isolation.
-
-Record discovered facts separately from user-provided assumptions. If context cannot be
-inspected, say what is unknown and ask focused questions.
-
-The repository reveals technical facts — how the system behaves today, its conventions, and
-its contracts. It does not reveal product or business constraints: business rules, compliance
-and regulatory obligations, contractual SLAs, pricing, data-retention policy, prioritization,
-and target users. Never reconstruct these from code or naming. Capture them only from the user
-or an authoritative product artifact, and list them as assumptions to confirm until then.
 
 ### 3. Define Scope
 

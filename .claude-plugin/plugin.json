@@ -1,6 +1,6 @@
 {
   "name": "kbg",
-  "version": "v0.1.0",
+  "version": "v0.1.1",
   "description": "137 skills · 55 agents · 82 commands. Composer-not-creator harness for the Tathep platform: ECC-bundled + kbg-native surfaces (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). Loop engineering (goal-spec, fake-done guard, harness-audit). PreToolUse deny-gates, advisory sensors, and SessionStart doctrine injection.",
   "author": {
     "name": "KOBIG"
