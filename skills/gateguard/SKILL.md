@@ -129,5 +129,4 @@ This adds `.gateguard.yml` for per-project configuration (custom messages, ignor
 
 ## Related Skills
 
-- `safety-guard` — Runtime safety checks (complementary, not overlapping)
 - `code-reviewer` — Post-edit review (GateGuard is pre-edit investigation)

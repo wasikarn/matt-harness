@@ -115,7 +115,7 @@ Use `/compact` at **logical breakpoints** — don't rely on auto-compaction at 9
 | ✅ Yes | After a failed approach, before trying a new one |
 | ❌ No | Mid-implementation (you'll lose variable names, file paths, partial state) |
 
-Full decision guide: `skills/strategic-compact/SKILL.md`.
+Context management is native: use the `/compact` command and auto-compaction.
 
 ## Vendor levers the harness honors (Claude Code owns these; listed for completeness)
 

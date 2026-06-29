@@ -192,7 +192,6 @@ If the next step is overlap cleanup or catalog review, hand off to:
 
 If the next step is broader context trimming, hand off to:
 
-- `strategic-compact`
 
 ## Output Format
 

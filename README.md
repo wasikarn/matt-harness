@@ -56,9 +56,9 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 113 | `kbg:<skill>` — e.g. `kbg:thinking`, `kbg:decide`, `kbg:grilling` |
-| **Agents** | 49 | Spawned by Claude or via the `Task` tool — e.g. `kbg:code-architect` |
-| **Commands** | 68 | `/<command>` — e.g. `/review-pr`, `/plan`, `/feature-dev` |
+| **Skills** | 128 | `kbg:<skill>` — e.g. `kbg:thinking`, `kbg:decide`, `kbg:grilling` |
+| **Agents** | 55 | Spawned by Claude or via the `Task` tool — e.g. `kbg:code-architect` |
+| **Commands** | 78 | `/<command>` — e.g. `/code-review`, `/plan`, `/feature-dev` |
 | **Output Styles** | 2 | `senior-eng` (default) · `staff-eng` (opt-in for cross-boundary decisions) |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -73,7 +73,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Command | What it does |
 |---|---|
-| `/review-pr` | Multi-dimension PR review — code, tests, security, and types over the diff |
+| `kbg:review-pr` (skill) | Multi-dimension PR review — code, tests, security, and types over the diff |
 | `/code-review` | Deep review for the current file or selection |
 | `/plan` | Structured implementation plan |
 | `/feature-dev` | Full feature loop: plan → implement → verify |

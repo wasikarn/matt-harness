@@ -19,5 +19,5 @@ What this does:
 
 Compatibility aliases:
 
-- `/review-pr`
+- `kbg:review-pr` (skill)
 - `/code-review`
