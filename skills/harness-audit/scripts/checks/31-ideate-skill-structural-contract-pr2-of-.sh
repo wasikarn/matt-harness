@@ -1,4 +1,4 @@
-# 36. ideate command — structural contract (PR2 of ideate-adhd-port). The
+# 31. ideate command — structural contract (PR2 of ideate-adhd-port). The
 # surface is now a slash command (`/ideate`) ported from the upstream ADHD skill
 # (docs/research/kbg-vs-adhd.md). The structural contract must hold or the next
 # refactor will silently collapse the algorithm (the 2026-06-12 44→105-agent

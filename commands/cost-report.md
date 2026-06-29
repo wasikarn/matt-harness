@@ -11,7 +11,7 @@ log that ECC's `stop:cost-tracker` hook writes.
 ## Where the data lives
 
 The tracker appends one JSON object per session-stop to
-`~/.claude/metrics/costs.jsonl`. Each row is a **cumulative snapshot for that
+`~/.local/share/kbg/metrics/costs.jsonl`. Each row is a **cumulative snapshot for that
 session**, so the report takes the **latest row per `session_id`** and sums
 across sessions (summing every row would multiply-count).
 
@@ -20,7 +20,7 @@ Row schema:
 
 ## What this command does
 
-1. Check that `~/.claude/metrics/costs.jsonl` exists. If it does not, tell the
+1. Check that `~/.local/share/kbg/metrics/costs.jsonl` exists. If it does not, tell the
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
 2. Reduce rows to the latest snapshot per session and aggregate.
@@ -34,7 +34,7 @@ Linux, and Windows.
 ```bash
 node -e '
 const fs=require("fs"),os=require("os"),path=require("path");
-const f=path.join(os.homedir(),".claude","metrics","costs.jsonl");
+const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
 const bySession=new Map();
@@ -63,7 +63,7 @@ const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(
 ```bash
 node -e '
 const fs=require("fs"),os=require("os"),path=require("path");
-const f=path.join(os.homedir(),".claude","metrics","costs.jsonl");
+const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
 console.log("timestamp,session_id,model,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,estimated_cost_usd");

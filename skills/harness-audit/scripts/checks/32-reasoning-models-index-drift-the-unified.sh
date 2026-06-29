@@ -1,4 +1,4 @@
-# 42. Reasoning-models index drift — the unified 39-model table in
+# 32. Reasoning-models index drift — the unified 39-model table in
 # docs/reference/reasoning-models.md must list one row for every vendored
 # thinking-*/SKILL.md directory under docs/reference/thinking-skills/skills/.
 # A mismatch means a model was added/removed/renamed without updating the catalog.

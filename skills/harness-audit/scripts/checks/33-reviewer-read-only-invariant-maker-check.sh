@@ -1,4 +1,4 @@
-# 45. Reviewer read-only invariant (maker≠checker). An agent whose NAME marks it a
+# 33. Reviewer read-only invariant (maker≠checker). An agent whose NAME marks it a
 # reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge) must NOT grant
 # Write or Edit: a verifier that can mutate what it reviews defeats the fresh-context
 # independence maker≠checker depends on. Load-bearing at L3 (CLAUDE.md §The operating model (was L3 bounded autonomy, retired)) — these agents

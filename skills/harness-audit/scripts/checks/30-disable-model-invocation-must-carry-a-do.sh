@@ -1,4 +1,4 @@
-# 35. disable-model-invocation must carry a documented reason (DETERMINISTIC).
+# 30. disable-model-invocation must carry a documented reason (DETERMINISTIC).
 # The flag is a per-surface judgment (CLAUDE.md selection criterion); a flag
 # WITHOUT a recorded reason is an undocumented decision — and in practice the
 # audit found these were often dir-of-origin residue ("all commands flagged")

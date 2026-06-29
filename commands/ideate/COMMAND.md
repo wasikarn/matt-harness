@@ -97,9 +97,10 @@ user can search past ideate runs with:
 ```
 
 This is a read-only, local-memory feature. It does not influence the
-ideation algorithm; it only makes prior runs recallable. The companion script
-`${KBG_PLUGIN_ROOT}/scripts/ideate-memory.py` owns `init`, `capture`, `index`, `search`, and
-`status`.
+ideation algorithm; it only makes prior runs recallable. Past `/ideate` runs are
+saved as markdown under the ideate-memory location and indexed by the
+`ideate-memory` qmd collection; `/ideate-search` queries that collection
+directly via the qmd MCP tool.
 
 ## 2-wave fan-out (load-bearing)
 

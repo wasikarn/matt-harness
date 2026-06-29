@@ -23,12 +23,11 @@ search helper and return the ranked results exactly as-is.
 ## Behaviour
 
 1. Extract the query text from the command invocation (everything after `/ideate-search`).
-2. Run:
-   ```bash
-   python3 "${KBG_PLUGIN_ROOT}/scripts/ideate-memory.py" search "<query>"
-   ```
-   The path resolves from `${KBG_PLUGIN_ROOT}`.
-3. Return the output to the user verbatim.
+2. Search the `ideate-memory` qmd collection via the qmd MCP tool: run both a
+   lexical (`type:'lex'`) and a semantic (`type:'vec'`) sub-query for the
+   extracted text, `intent` set to "Find a past /ideate run matching this
+   query", and `minScore: 0.5` to drop weak hits.
+3. Return the ranked results to the user verbatim.
 
 ## What this command does NOT do
 
