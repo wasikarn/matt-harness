@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (136)
+### Skills (137)
   ◇ acli                           Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports. Thai: 'ย้ายสถานะหลายตัว', 'แก้ label/assignee หลายรายการ', 'อัปเดตหลาย ticket', 'export JQL'. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-ticket instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers.
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC container, Lucid ORM (ActiveRecord), Japa tests, VineJS validation, middleware, auth guards, and ace CLI commands.
   ◇ agent-architecture-audit       12-layer agent stack diagnostic. Audits wrapper regression, memory pollution, tool discipline failures, and repair loops. Produces severity-ranked findings.
@@ -62,6 +62,7 @@ _Personals/kbg-harness_
   ◇ gateguard                      Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift.
   ◇ git-workflow                   Git workflow patterns including branching strategies, commit conventions, merge vs rebase, conflict resolution, and collaborative development best practices for teams of all sizes.
   ◇ github-ops                     GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git.
+  ◇ goal-spec                      Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior.
   ◇ golang-patterns                Idiomatic Go patterns, best practices, and conventions for building robust, efficient, and maintainable Go applications.
   ◇ golang-testing                 Go testing patterns including table-driven tests, subtests, benchmarks, fuzzing, and test coverage. Follows TDD methodology with idiomatic Go practices.
   ◇ grilling                       Relentless interview to stress-test a plan or design. Modes: basic (default, interview only) or with-docs (also produces ADRs + domain glossary).
@@ -403,6 +404,7 @@ _Personals/kbg-harness_
 | gateguard | Fact-forcing gate that blocks Edit/Write/Bash until concrete investigation of importers, schemas, and context is complete. +2.25 point quality lift. | inline | auto |
 | git-workflow | Git workflow patterns including branching strategies, commit conventions, merge vs rebase, conflict resolution, and collaborative development best practices for teams of all sizes. | inline | auto |
 | github-ops | GitHub operations via gh CLI: issue triage, PR management, CI/CD, releases, and security monitoring. Use for any GitHub task beyond git. | inline | auto |
+| goal-spec | Before a multi-step loop: writes PROMPT.md goal spec (Goal, Done-when, Never-touch, Stop-if) to anchor agent behavior. | inline | auto |
 | golang-patterns | Idiomatic Go patterns, best practices, and conventions for building robust, efficient, and maintainable Go applications. | inline | auto |
 | golang-testing | Go testing patterns including table-driven tests, subtests, benchmarks, fuzzing, and test coverage. Follows TDD methodology with idiomatic Go practices. | inline | auto |
 | grilling | Relentless interview to stress-test a plan or design. Modes: basic (default, interview only) or with-docs (also produces ADRs + domain glossary). | inline | auto |
@@ -499,7 +501,7 @@ to control response length or token usage. | inline | auto |
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-29T03:50:00Z_
+_Generated: 2026-06-29T04:03:01Z_
 
 ---
 

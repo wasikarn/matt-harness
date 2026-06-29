@@ -8,9 +8,9 @@
   "plugins": [
     {
       "name": "kbg",
-      "version": "v0.1.0",
+      "version": "v0.1.1",
       "source": ".",
-      "description": "136 skills · 55 agents · 82 commands. Composer-not-creator harness for the Tathep platform: ECC-bundled, Tathep-extended (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). PreToolUse safety gates, Stop hooks (cost tracking + desktop notify), and SessionStart doctrine injection.",
+      "description": "137 skills · 55 agents · 82 commands. Composer-not-creator harness for the Tathep platform: ECC-bundled, Tathep-extended (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). PreToolUse safety gates, Stop hooks (cost tracking + desktop notify), and SessionStart doctrine injection.",
       "author": {
         "name": "KOBIG"
       },
