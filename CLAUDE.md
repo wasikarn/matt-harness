@@ -48,6 +48,8 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 **Operating model:** deny the irrecoverable set computationally (gates in `hooks/gates/`), advise on the rest (sensors in `hooks/advisory/`). Advisory sensors never emit `permissionDecision`. The L2–L5 autonomy ladder is retired.
 
+**Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
+
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), post-tool/ (audit), lifecycle/ (enforce), maintenance/ (upkeep). Governance events append to `~/.claude/governance-events.jsonl`.
 
 ## Skill authoring doctrine (matt-pocock)
