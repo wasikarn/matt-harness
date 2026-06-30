@@ -33,7 +33,7 @@ The 12-agent fleet is grouped by **discipline/ownership** (each agent owns one c
 | **BUILD** | `build-error-resolver` (auto-detects build system, fixes build/type errors) |
 | **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
 | **OPERATE** | `refactor-cleaner` (dead-code removal, behavior-preserving refactor) |
-| **Cross-cutting** | `chief-of-staff` (prioritize + route) · `ideate-critic` (fresh-context critics/sensors) |
+| **Cross-cutting** | `ideate-critic` (fresh-context critics/sensors) |
 
 You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spawn the right specialists for you. This lens is for when you want one on purpose.
 

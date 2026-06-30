@@ -89,7 +89,6 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | `kbg:thinking` | Index of 39 mental models — pick 1–3 for any complex or ambiguous problem |
 | `kbg:decide` | Judgment Ladder: `probe` / `decide` / `strategize` modes |
 | `kbg:grilling` | Relentless interview to stress-test a plan; `with-docs` also produces ADRs |
-| `kbg:gateguard` | Fact-forcing gate — demands concrete investigation before any write or edit |
 | `kbg:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops |
 | `kbg:eval-harness` | Formal EDD framework with pass@k metrics for LLM system evaluation |
 | `kbg:context-budget` | Token usage audit — finds bloat and produces prioritized savings |
