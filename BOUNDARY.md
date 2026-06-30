@@ -56,7 +56,7 @@ _Personals/kbg-harness_
   ◇ triage                         Triage state machine — categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive on the project tracker. Don't use for issue implementation or non-triage comments.
   ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
-### Commands (22)
+### Commands (21)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
@@ -65,7 +65,6 @@ _Personals/kbg-harness_
   ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-dev) or changing voice register (use /output-style).
   ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
   ◇ kbg-help                       kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'.
-  ◇ learn                          Extract reusable patterns from the current session and save them as candidate skills or guidance.
   ◇ pm2                            Analyze a project and generate PM2 service commands for detected frontend, backend, or database services.
   ◇ post-mortem                    Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report', or when the user says 'เขียน post-mortem', 'บันทึกบั๊ก', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead).
   ◇ pr                             Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes.
@@ -174,7 +173,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-30T13:47:46Z_
+_Generated: 2026-06-30T14:10:15Z_
 
 ---
 

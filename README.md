@@ -79,7 +79,6 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | `/feature-dev` | Full feature loop: plan → implement → verify |
 | `/pr` | GitHub PR with auto-generated title and body |
 | `/security-scan` | Vulnerability scan via the `security-auditor` agent |
-| `/learn` | Capture durable session learnings into memory |
 | `/checkpoint` | Snapshot session state for resume |
 
 ### Skills

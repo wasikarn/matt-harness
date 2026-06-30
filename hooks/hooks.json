@@ -13,19 +13,6 @@
         "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context"
       }
     ],
-    "PostToolUse": [
-      {
-        "id": "advisory:observe",
-        "matcher": "Bash|Write|Edit|MultiEdit",
-        "description": "Advisory: append tool-call observations to per-project observations.jsonl for /learn context",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/observe.sh\""
-          }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "id": "advisory:flow-nudge",
