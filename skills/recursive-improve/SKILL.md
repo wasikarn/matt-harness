@@ -1,6 +1,6 @@
 ---
 name: recursive-improve
-description: "Bounded human-gated harness-improvement loop. Use when the user explicitly asks to improve or audit the harness, or when verification posture reveals a concrete gap, including 'ปรับปรุง harness', 'recursive improve', 'แก้ harness'. Don't use for: single named bugs (use /fix-bug), new capabilities (use /ship-task), external tool research (use kbg:article-mine), or any self-launching / scheduled / unattended loop (every iteration is human-gated at an AskUserQuestion gate before any mutation)."
+description: "Cage: human-gated, anti-unattended harness loop. Use only when the user asks to improve or audit the harness. Not for bug fixes or new surfaces."
 disable-model-invocation: true
 disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---

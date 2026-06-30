@@ -1,6 +1,6 @@
 ---
 name: writing-great-skills
-description: Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable. Use when authoring, editing, or reviewing skill files. Don't use for end-user tasks (read by humans, not invoked mid-task).
+description: Doctrine for writing and editing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring or reviewing skill files.
 disable-model-invocation: true
 disable-model-invocation-reason: reference for writing skills — meta content; the model must not invoke it mid-task, the user reads it when authoring
 ---
@@ -81,3 +81,25 @@ Use these to diagnose issues the user may be having with the skill.
 - **Sediment** — stale layers that settle because adding feels safe and removing feels risky. The default fate of any skill without a pruning discipline.
 - **Sprawl** — a skill simply too long, even when every line is live and unique. Hurts readability and maintainability and wastes tokens. The cure is the ladder: disclose **reference** behind pointers, and split by **branch** or sequence so each path carries only what it needs.
 - **No-op** — a line the model already obeys by default, so you pay load to say nothing. The test: does it change behaviour versus the default? A weak leading word (_be thorough_ when the agent is already thorough-ish) is a no-op; the fix is a stronger word (_relentless_), not a different technique.
+
+## Applying the doctrine (inline patterns for OTHER skills)
+
+This skill is all **reference** — it carries no procedure of its own. The procedure lives in the SKILLs that READ this one. The two patterns that turn doctrine into behaviour, used in those readers:
+
+**1. Inline completion criterion at every numbered step.** A procedure step is "done" only when its criterion is _checkable_ and _exhaustive_. The pattern:
+
+> 3. Draft the vertical slices.
+>
+> **Success criterion:** every slice is a vertical path (schema → API → UI → tests), not a horizontal layer. Failure mode to avoid: producing a layer-by-layer split that delivers no end-to-end behaviour.
+
+The criterion is _checkable_ (the agent can compare the draft to "vertical path vs horizontal layer"). It is _exhaustive_ ("every slice" not "most slices"). The failure-mode line names the drift the criterion resists — premature completion in this case.
+
+**2. Inline failure-mode guard at every drift step.** Where the procedure makes a claim that has a known wrong path, name the drift inline — not only in a header at the top. The pattern:
+
+> Ask the questions one at a time.
+>
+> Failure mode to avoid: firing a batch of questions in one turn — the user picks the easiest to answer, not the most important.
+
+The failure mode is named _at the step that drifts_, not in a separate "Failure modes" appendix the agent may not re-read. This is the seam between doctrine and execution: the rule lives here, the agent meets it at the step.
+
+**done when applying this doctrine:** a skill's body shows the pattern at every numbered step (criterion + failure-mode pair), and the description opens with a **leading word** that recruits a prior the rest of the body can lean on. If either half is missing, the skill is _declared_ compliant but drift-prone in practice.

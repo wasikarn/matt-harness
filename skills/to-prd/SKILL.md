@@ -1,6 +1,6 @@
 ---
 name: to-prd
-description: Synthesise the current conversation into a PRD and publish to the project issue tracker — no interview, just synthesis. Use when the user asks for a PRD from a prior discussion. Don't use for greenfield designs.
+description: "Synthesise-seam: turn a prior discussion into a published PRD without re-interviewing. Use when the user asks for a PRD from what was just decided."
 disable-model-invocation: true
 disable-model-invocation-reason: publishes a PRD to the project issue tracker — user opts into the artifact
 ---
@@ -13,9 +13,11 @@ The issue tracker and triage label vocabulary should have been provided to you �
 
 1. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
-Check with the user that these seams match their expectations.
+**done when:** seams are explicit, the user has agreed them, and an agent can implement against them without further interview. Failure mode to avoid: publishing a PRD whose seams the agent will later re-litigate — that puts synthesis work on the implementer's shoulders instead of yours.
 
 2. Write the PRD using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+
+**done when:** the issue exists on the tracker with the agreed seams, user stories, and testing decisions; the body matches the template shape; further cycles return to step 1 (seams) before step 2 (publish). Failure mode to avoid: silent re-opening of seams mid-publish — that is premature completion on the gathering path.
 
 <prd-template>
 
