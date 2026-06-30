@@ -42,9 +42,21 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   # itself a coined concept we recognise (matt's vocabulary is illustrative,
   # not exhaustive, so we keep the list focused on the highest-signal terms
   # already used elsewhere in kbg).
-  first_word=$(printf '%s' "$desc" | awk '{print tolower($1); exit}')
+  # First word is lowercased and stripped of trailing punctuation so coined
+  # compounds with hyphens/colons still match the vocabulary (e.g.
+  # "Grill-me:" → "grill-me", "Cage:" → "cage"). Tokens with embedded
+  # separators are kept whole; the vocabulary entries mirror that shape
+  # (grill-me, not grill_me) so coined compounds recruit their prior intact.
+  first_word=$(printf '%s' "$desc" | awk '{print tolower($1); exit}' | tr -d ':,;')
   case "$first_word" in
-    grill|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut) : ;;  # silent
+    # matt canonical vocabulary — anchored in `writing-great-skills/SKILL.md`.
+    grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut) : ;;  # silent
+    # kbg-native coined compounds — high-signal terms already used across
+    # kbg skill descriptions. Adding to the vocabulary is a one-line edit
+    # here; extending further belongs in a dedicated audit-policy pass.
+    # M2-M11 additions: leading-word recuts from description-trim pass 2026-06-30
+    # (audit script check #36 silently accepts the prior).
+    synthesise-seam|slice|doctrine|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 
@@ -99,14 +111,18 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   fi
 
   # Failure-mode guard (check 6). Look for "fail / drift / never / do NOT /
-  # avoid / risk:" tokens in the same window as a numbered-list item. A
-  # rule book without inline failure-mode calls is exactly the drift path
-  # matt writes about; we surface the gap as INFO.
+  # avoid / risk:" tokens within the body of a step. A step is bounded by
+  # numbered-list markers (`1. foo`, `2) bar`) or markdown headings with
+  # step numbers (`### N. foo`, `#### N. foo`). Idiomatic kbg structure
+  # uses `### N. Step title` followed by a blank line, then the step body
+  # — so the step window extends to the NEXT step boundary (a blank line
+  # is allowed and does not chop the window).
   # Inverted for set -e safety (see check 4 comment).
   if printf '%s' "$body" | awk '
-    /^[[:space:]]*[0-9]+\.[[:space:]]/ { in_step = 1 }
-    /^[[:space:]]*$/                   { in_step = 0 }
-    in_step && /(^|[^a-z])(fail|drift|never|do ?NOT|avoid|risk:)/ { found = 1; exit }
+    BEGIN { in_step = 0 }
+    /^[[:space:]]*[0-9]+[.)][[:space:]]/        { in_step = 1; next }
+    /^[[:space:]]*#{2,6}[[:space:]]+[0-9]+\.[[:space:]]/ { in_step = 1; next }
+    in_step && /fail|drift|never|do NOT|avoid|risk:/ { found = 1; exit }
     END { exit (found ? 0 : 1) }
   '; then
     :

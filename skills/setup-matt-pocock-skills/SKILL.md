@@ -1,6 +1,7 @@
 ---
 name: setup-matt-pocock-skills
 description: One-time repo bootstrap — map matt-pocock skills to your project (issue tracker, triage labels, ADR format). Run once at onboarding; never again. Don't use for re-running on an already-configured repo.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: one-time repo configuration that writes tracker labels + doc layout — destructive on a configured repo
 ---

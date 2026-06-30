@@ -1,6 +1,7 @@
 ---
 name: prototype
-description: Build throwaway prototypes — terminal apps for logic questions, or radically different UI variations on one route. Use when the user wants a quick throwaway prototype to answer a question, not ship. Don't use for production-bound code or persistent feature implementation (use orch-add-feature).
+description: Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: builds throwaway prototype artifacts in the repo — user opts in to that temporary work
 ---

@@ -1,6 +1,7 @@
 ---
 name: teach
-description: Teach the user a new skill or concept, within this workspace. Use when the user asks to learn a topic over multiple sessions. Don't use for one-shot factual questions or for non-teaching asks.
+description: Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: writes HTML lessons into the user's learning workspace — the model must not start a teaching session on its own
 argument-hint: "What would you like to learn about?"

@@ -1,6 +1,7 @@
 ---
 name: diagnosing-bugs
-description: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow. Don't use for trivial typos or one-line fixes (use the fix-defect command instead).
+description: Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos.
+metadata.origin: matt-pocock
 ---
 
 # Diagnosing Bugs

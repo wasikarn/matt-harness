@@ -1,6 +1,7 @@
 ---
 name: to-prd
-description: "Synthesise-seam: turn a prior discussion into a published PRD without re-interviewing. Use when the user asks for a PRD from what was just decided."
+description: "Synthesise-seam: turn a prior discussion into a published PRD without re-interviewing. Use when the user asks for a PRD. Don't use for undecided scope."
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: publishes a PRD to the project issue tracker — user opts into the artifact
 ---

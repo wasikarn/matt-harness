@@ -1,6 +1,7 @@
 ---
 name: writing-great-skills
-description: Doctrine for writing and editing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring or reviewing skill files.
+description: Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: reference for writing skills — meta content; the model must not invoke it mid-task, the user reads it when authoring
 ---

@@ -1,6 +1,7 @@
 ---
 name: triage
 description: Triage state machine — categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive on the project tracker. Don't use for issue implementation or non-triage comments.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: posts AI-authored comments to the issue tracker — governance rule, every comment must start with the disclaimer and the user decides when to triage
 ---

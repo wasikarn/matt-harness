@@ -1,6 +1,7 @@
 ---
 name: ask-matt
 description: Router over the matt-pocock engineering flow — ask, grill, plan, slice, ship. Use when starting non-trivial work and unsure which skill or command fits. Don't use for known-skill flows (invoke the skill directly).
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: router skill — the model should not auto-select a flow without the user's situation being asked
 ---

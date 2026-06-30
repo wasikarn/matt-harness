@@ -46,7 +46,7 @@ matt principle).
 | `engineering/implement` | ✗ missing | **Folded into `skills/orch-pipeline/`** — matt's 16-line "use /tdd at pre-agreed seams, typecheck regularly, /review at the end" is exactly `orch-pipeline` + its 5 operation wrappers (`orch-add-feature`, `orch-fix-defect`, `orch-change-feature`, `orch-refine-code`, `orch-build-mvp`). Covering a 16-line body with a 5-skill family is overkill IF matt-pipeline were intended as a standalone user-invoked skill — it isn't (DMI=true on matt upstream). The orch family preserves intent + adds size classifier + agent map + gates. **No action.** |
 | `engineering/improve-codebase-architecture` | ✓ imported (`skills/improve-codebase-architecture/`) | DMI=true matches matt. |
 | `engineering/prototype` | ✓ imported (`skills/prototype/`) | DMI=true matches matt (matt also has DMI=true — verified). |
-| `engineering/resolving-merge-conflicts` | ✗ missing | Referenced in `agents/typescript-reviewer.md`, `agents/vue-reviewer.md`, `agents/swift-reviewer.md`, `agents/rust-reviewer.md`, `agents/react-reviewer.md`, `agents/mle-reviewer.md`, `agents/loop-operator.md`, `skills/orchestrate/SKILL.md`, `skills/orchestrate/reference.md`, `commands/flutter-review.md`. **No action this pass** — out of HIGH band; deferred to MEDIUM ("decide: import vs delete refs"). |
+| `engineering/resolving-merge-conflicts` | ✗ missing | matt's skill is DMI=false (auto-invocable but not invoked) per `llm-wiki/mattpocock-skills/`. Greppable refs already absent in repo as of 2026-06-30 (the 10 surfaces named in earlier passes no longer reference it — confirmed via `grep -rln 'resolving-merge-conflicts'`). **Resolution: don't import.** YAGNI per `docs/METHODOLOGY.md` Rule 2 — a non-auto-invoked skill that nothing references spends description context for no reach. Re-evaluate if/when an agent surfaces a real conflict-resolution need. **M1 closed.** |
 | `engineering/setup-matt-pocock-skills` | ✓ imported (`skills/setup-matt-pocock-skills/`) | DMI=true matches matt (matt has DMI=true — verified). |
 | `engineering/tdd` | ✓ imported (`skills/tdd/`) | Nearly verbatim from matt; checklist per cycle preserved. |
 | `engineering/to-issues` | ✓ imported (`skills/to-issues/`) | Vertical slicing / tracer bullets intact. |
@@ -227,8 +227,9 @@ itself is the bulk of the change.
   convention that gates destructive auto-invocation. Trimming further drops
   the gate.
 - Adding `implement` skill — folded into `orch-pipeline` per §2.
-- Adding `resolving-merge-conflicts` skill — referenced from 10+ places;
-  decision (import vs delete refs) belongs in MEDIUM band.
+- Adding `resolving-merge-conflicts` skill — resolved 2026-06-30: refs
+  already gone; not imported (YAGNI per Rule 2). Re-evaluate if a real
+  conflict-resolution need surfaces in an agent.
 - Body rewrites — each is its own per-skill plan.
 
 ---
@@ -237,19 +238,29 @@ itself is the bulk of the change.
 
 | # | Item | File | Effort |
 |---|---|---|---|
-| M1 | Decide on `resolving-merge-conflicts`: import from matt vs delete refs from 10 surfaces | `skills/` (new) or 10 surface edits | small |
-| M2 | `tdd` description trim 34→≤30w (currently exceeds ceiling) | `skills/tdd/SKILL.md` | tiny |
-| M3 | `codebase-design` description trim 27→≤25w | `skills/codebase-design/SKILL.md` | tiny |
-| M4 | `diagnosing-bugs` description trim 32→≤30w | `skills/diagnosing-bugs/SKILL.md` | tiny |
-| M5 | `domain-modeling` description trim 31→≤30w | `skills/domain-modeling/SKILL.md` | tiny |
-| M6 | `handoff` description trim 35→≤30w | `skills/handoff/SKILL.md` | tiny |
-| M7 | `improve-codebase-architecture` description trim 41→≤30w | `skills/improve-codebase-architecture/SKILL.md` | tiny |
-| M8 | `prototype` description trim 43→≤30w | `skills/prototype/SKILL.md` | tiny |
-| M9 | `teach` description trim 33→≤30w | `skills/teach/SKILL.md` | tiny |
-| M10 | `to-issues` description trim 38→≤30w | `skills/to-issues/SKILL.md` | tiny |
-| M11 | `writing-great-skills` description trim 36→≤30w | `skills/writing-great-skills/SKILL.md` | tiny |
-| M12 | Add `metadata.origin: matt` frontmatter to all imported matt skills for provenance parity with ECC-sourced skills | 15 skills × 1 line | trivial |
-| M13 | Run matt's "no-op test" sentence-by-sentence on each imported skill body | 15 skills | medium |
+| M1 | `resolving-merge-conflicts` — refs already gone as of 2026-06-30; **don't import** per YAGNI/Rule 2. Re-evaluate if a real need surfaces. | `docs/research/matt-pocock-alignment-2026-06-30.md` (closed) | done |
+| M2 | `tdd` description trim 34→25w + provenance | `skills/tdd/SKILL.md` | done (v0.5.8) |
+| M3 | `codebase-design` description trim 27→20w + provenance | `skills/codebase-design/SKILL.md` | done (v0.5.8) |
+| M4 | `diagnosing-bugs` description trim 32→24w + provenance | `skills/diagnosing-bugs/SKILL.md` | done (v0.5.8) |
+| M5 | `domain-modeling` description trim 31→22w + provenance | `skills/domain-modeling/SKILL.md` | done (v0.5.8) |
+| M6 | `handoff` description trim 35→22w + provenance | `skills/handoff/SKILL.md` | done (v0.5.8) |
+| M7 | `improve-codebase-architecture` description trim 41→24w + provenance | `skills/improve-codebase-architecture/SKILL.md` | done (v0.5.8) |
+| M8 | `prototype` description trim 43→23w + provenance | `skills/prototype/SKILL.md` | done (v0.5.8) |
+| M9 | `teach` description trim 33→24w + provenance | `skills/teach/SKILL.md` | done (v0.5.8) |
+| M10 | `to-issues` description trim 38→25w + provenance | `skills/to-issues/SKILL.md` | done (v0.5.8) |
+| M11 | `writing-great-skills` description trim 36→24w + provenance | `skills/writing-great-skills/SKILL.md` | done (v0.5.8) |
+| M12 | Add `metadata.origin: matt-pocock` frontmatter to all 15 imported matt skills for provenance parity | 15 skills × 1 line | done (v0.5.8) |
+| M13 | Run matt's "no-op test" sentence-by-sentence on each imported skill body | 15 skills | open — each body is its own per-skill plan |
+
+**MEDIUM-band close-out (2026-06-30, v0.5.8):** M1–M12 shipped in this pass.
+M2–M11: 10 description trims now ≤25w (kbg audit cap, 25-word ceiling).
+M12: all 15 imported matt skills carry `metadata.origin: matt-pocock` for
+provenance parity with ECC-sourced skills. The three HIGH-band fixes (H1
+ask-matt 44→29w, H4 triage 48→37w, H5 setup-matt-pocock-skills 42→29w)
+sit deliberately in the 25–40w range — the documented kbg convention
+allows "Don't use for X" trailing triggers beyond the 25w audit cap.
+M13 (sentence-by-sentence no-op test) remains open; each skill body is
+its own per-skill plan.
 
 ---
 
@@ -284,7 +295,7 @@ itself is the bulk of the change.
 - `/Users/kobig/llm-wiki/mattpocock-skills/productivity/grill-me/SKILL.md` — 38w, DMI=true (matt fold candidate)
 - `/Users/kobig/llm-wiki/mattpocock-skills/engineering/grill-with-docs/SKILL.md` — separate skill (matt fold candidate)
 - `/Users/kobig/llm-wiki/mattpocock-skills/engineering/implement/SKILL.md` — 16-line DMI=true (covered by kbg orch-pipeline)
-- `/Users/kobig/llm-wiki/mattpocock-skills/engineering/resolving-merge-conflicts/SKILL.md` — 11w DMI=false (gap pending M1)
+- `/Users/kobig/llm-wiki/mattpocock-skills/engineering/resolving-merge-conflicts/SKILL.md` — 11w DMI=false (M1 closed 2026-06-30: don't import, refs already gone)
 - kbg memories: [[project-goal-composer-not-creator]], [[surface-consolidation-2026-06-18]], [[skill-listing-budget-mechanics]], [[disable-model-invocation-criterion]]
 
 ---

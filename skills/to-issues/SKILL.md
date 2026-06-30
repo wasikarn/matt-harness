@@ -1,6 +1,7 @@
 ---
 name: to-issues
-description: Slice a plan into independently-grabbable issues using tracer-bullet vertical cuts through every layer. Use when a deployment plan is ready to publish as ticket-size tasks.
+description: Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates.
+metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: publishes new issues to the project tracker — user-driven decomposition, not model-self-issued
 ---
