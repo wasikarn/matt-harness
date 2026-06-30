@@ -8,12 +8,12 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-29 subagents, 28 skills, 17 commands, governance hooks, and mandatory doctrine
-injection. See [`DOMAINS.md`](../DOMAINS.md) for the bounded-context model.
+13 subagents, 49 skills, 25 commands, governance hooks, and mandatory doctrine
+injection.
 
 ## The 4 doctrine files (read in this order)
 
-1. [`METHODOLOGY.md`](../METHODOLOGY.md) — 13-rule behavioral doctrine. **Start here.**
+1. [`METHODOLOGY.md`](../METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.**
 2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
 3. `CLAUDE.md` §The operating model — the current operating model (scoped denials + advisory review + operator-as-authority; no autonomy flag, no maker-checker ship-gate, no model self-start). The L2–L5 autonomy ratchet that previously lived in `METHODOLOGY.md or CLAUDE.md` through `0005-...` is retired — see CLAUDE.md §The operating model for what survives (the no-model-self-start rule) and what was retired (L3 cage, L4 self-launch, L5 auto-push). Four model-/cage-removing variants stay out of scope by design.
 4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).

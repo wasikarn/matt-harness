@@ -59,7 +59,7 @@ reasoning scaffold when the call is hard," added v0.3.5) — `clarify-first` / `
 `strategize` / `critical-eval` / `doubt-driven`, split by reversibility. This catalog and its
 tables below (model→home, workflow-pattern→models) are **reference**, not a competing
 situation-router; for the 9 reference-only frames that no kbg skill applies, the on-demand path is
-`kbg:harness-nav` §6.
+`kbg:inventory` (discovery escape hatch) + `docs/reference/thinking-skills/`.
 
 To read the full upstream write-up for any model, run the Bash recipes in the next section.
 **Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path** — the variable expands
@@ -195,11 +195,11 @@ Cross-analysis of thinking models against the tathep project stack (10 repos: an
 | Drop a TimescaleDB continuous_aggregate | reversibility | `skills/adr` |
 | Leaderboard over-count root cause | scientific-method + five-whys | `commands/fix-bug` |
 | ANPR throughput bottleneck (BullMQ / plate-read rate) | theory-of-constraints | `skills/latency-critical-systems` |
-| Plate hashing algorithm change (SHA-256 → HMAC) | pre-mortem + reversibility | `skills/decide` + `skills/adr` |
+| Plate hashing algorithm change (SHA-256 → HMAC) | pre-mortem + reversibility | `skills/decide` + `skills/domain-modeling` (ADR) |
 | LangGraph retry scope (which errors are retryable?) | second-order | `skills/cost-aware-llm-pipeline` |
-| LangGraph agent loop diverges (debugging) | scientific-method | `skills/agentic-engineering` |
+| LangGraph agent loop diverges (debugging) | scientific-method | `skills/diagnosing-bugs` |
 | LLM model routing (Haiku vs Sonnet) | opportunity-cost | `skills/cost-aware-llm-pipeline` |
-| LangGraph tool result contains untrusted content | red-team | `skills/critical-eval` |
+| LangGraph tool result contains untrusted content | red-team | `skills/decide` |
 | Effect-TS TryCatch consistency across 21 modules | systems-thinking | `skills/decide` |
 | BullMQ failure — dead-letter vs retry | second-order | `skills/decide` |
 | React Query cache invalidation strategy | second-order | `skills/decide` |

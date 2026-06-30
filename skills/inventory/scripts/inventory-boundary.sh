@@ -209,28 +209,23 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `backend-engineer` | `api/`, `middleware/`, `models/`, `routes/`, `services/`, `tests/` | |
 | `code-architect` | `CLAUDE.md (doctrine home) `, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
 | `Explore` | any file | Read-only trace |
-| `code-reviewer` | any file | Read-only review |
-| `comment-analyzer` | any file | Read-only comment audit |
+| `code-reviewer` | any file | Read-only review (carries comment-accuracy / type-design / test-coverage / UX lenses) |
 | `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |
 | `data-engineer` | `migrations/`, `etl/`, `analytics/`, `warehouse/`, `dbt/`, `spark/` | Beyond OLTP |
 | `devops-engineer` | `.github/`, `docker/`, `k8s/`, `terraform/`, `helm/`, `ci/` | |
 | `finops-engineer` | `infra/cost/`, `budgets/`, `docs/finops/` | Read-only + Bash for cost queries |
 | `frontend-engineer` | `src/components/`, `src/pages/`, `styles/`, `public/`, `assets/`, `src/hooks/` | |
 | `i18n-specialist` | `locales/`, `translations/`, `i18n/`, `src/i18n/`, `l10n/` | |
-| `incident-commander` | `docs/incidents/`, `runbooks/`, `alerts/`, `oncall/` | Read-only + coordination |
 | `maintenance-engineer` | any file | Refactor / deprecation scope |
 | `ml-engineer` | `ml/`, `models/`, `features/`, `pipelines/`, `serving/`, `inference/` | |
 | `mobile-engineer` | `ios/`, `android/`, `mobile/`, `react-native/`, `flutter/` | |
 | `platform-engineer` | `platform/`, `proto/`, `gateway/`, `mesh/`, `grpc/`, `event-bus/` | |
-| `pr-test-analyzer` | any file | Read-only test-coverage audit |
 | `product-analyst` | `docs/requirements/`, `prd/`, `user-stories/` | Read-only + Bash |
 | `researcher` | any file | Read-only research |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | Read-only audit |
 | `silent-failure-hunter` | any file | Read-only error-handling audit |
 | `technical-writer` | `docs/`, `README*`, `CHANGELOG*`, `*.md`, `guides/`, `runbooks/` | |
 | `test-engineer` | `tests/`, `*.test.*`, `*.spec.*`, `test_*.py`, `e2e/`, `integration/` | |
-| `type-design-analyzer` | any file | Read-only type audit |
-| `ux-reviewer` | `src/components/`, `src/pages/`, `e2e/ux/`, `a11y/` | Read-only UX audit |
 
 XREF3
 fi

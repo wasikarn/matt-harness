@@ -15,7 +15,7 @@ auto-prune**. Both the measure and the delete decision are human-gated.
 For each component, the load-bearing question is: *what model limitation does
 this compensate for?* Record that assumption. Examples:
 
-- a `clarify-first` gate compensates for "the model guesses instead of asking";
+- a `decide` clarify-mode gate compensates for "the model guesses instead of asking";
 - a verbose doctrine block compensates for "the model forgets the convention";
 - a maker≠checker reviewer agent does **not** compensate for a limitation — see
   the guard below.

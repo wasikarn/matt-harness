@@ -115,7 +115,7 @@ jest --ci                           # Tests (Jest)
 
 ## Reference
 
-This repo does not yet ship a dedicated `typescript-patterns` skill. For detailed TypeScript and JavaScript patterns, use `backend-patterns` plus `frontend-patterns` based on the code being reviewed.
+This repo does not ship a dedicated `typescript-patterns` skill. For detailed TypeScript/JavaScript patterns, use `backend-patterns` (the kept TS/backend base) plus the model's native knowledge.
 
 ---
 

@@ -81,7 +81,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-explorer,code-architect,comment-analyzer,pr-test-analyzer,silent-failure-hunter,type-design-analyzer,ux-reviewer,researcher,inferential-structural-judge,incident-commander,finops-engineer,product-analyst}.md 2>/dev/null
+  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-architect,silent-failure-hunter,typescript-reviewer,python-reviewer,inferential-structural-judge,ideate-critic,spec-miner}.md 2>/dev/null
 grep -c "VALIDATOR-BASH" "${KBG_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh"
 ```
 

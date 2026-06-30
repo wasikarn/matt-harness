@@ -30,7 +30,7 @@ validated and may be omitted:
 | Field | Used when | Example | Meaning |
 |---|---|---|---|
 | `red_green` | `tdd-provenance` | `aaa111 → bbb222` | the failing→passing commit pair, as human-readable evidence of a real red→green cycle |
-| `pr_test_analyzer` | `analyzer-pass` | `pass` / `not-run` | the `pr-test-analyzer` result, for the record |
+| `pr_test_analyzer` | `analyzer-pass` | `pass` / `not-run` | the code-reviewer test-coverage lens result, for the record |
 
 ## Tiers (evidence strength, strongest first)
 
@@ -38,7 +38,7 @@ validated and may be omitted:
   (record the `red_green` shas as evidence). Consumers take the **declared** tier
   at face value — it is read only from an explicit trail, never inferred; the
   strongest signal.
-- **`analyzer-pass`** — no red→green provenance, but the `pr-test-analyzer` gate
+- **`analyzer-pass`** — no red→green provenance, but the code-reviewer test-coverage lens
   vouched for the test coverage.
 - **`no-trail`** — no test provenance. Legitimate for doc-only / no-behavior
   work **if** `optout_reason` names why. A `no-trail` with a **blank**

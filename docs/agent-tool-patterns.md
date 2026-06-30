@@ -99,9 +99,8 @@ disallowedTools: Write, Edit, NotebookEdit
 | Agent | `tools:` | Why this set |
 |-------|----------|--------------|
 | `code-reviewer` | `Read, Grep, Glob, Bash` | Read-only inspection + Bash for `git diff` / `git log`. No `Write`/`Edit` — review is observational, not mutational. |
-| `backend-engineer` | `Read, Grep, Glob, Edit, Write, Bash` | Implementation role — needs to read existing code + write new code + run commands. |
+| `build-error-resolver` | `Read, Write, Edit, Bash, Grep, Glob` | Implementation role — reads existing code + writes minimal fixes + runs the build. |
 | `security-reviewer` | `Read, Grep, Glob, Bash, WebFetch, WebSearch` | Read-only audit + Bash for `git log`/manifest probes + Web for CVE lookups. No `Write` — review is observational. |
-| `incident-commander` | `Read, Grep, Glob, Bash, WebFetch` | Read-only situational awareness + Bash for triage commands (e.g. `kubectl get`, `aws s3 ls`). Mutations go through `devops-engineer` or `platform-engineer` per role boundaries. |
 
 ---
 

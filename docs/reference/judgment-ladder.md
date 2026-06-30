@@ -231,10 +231,10 @@ is most dangerous.
 ## kbg surfaces
 
 - `kbg:decide` — interactive walk through the ladder
-- `kbg:adr` — record the decision after the ladder
+- `kbg:domain-modeling` — record the decision as an ADR after the ladder
 - `kbg:decide` probe mode — systems-thinking analysis before the ladder
-- `kbg:clarify-first` — when the decision itself is still ambiguous
-- `kbg:critical-eval` — stress-test reasoning in a decision or ADR
+- `kbg:decide` clarify mode — when the decision itself is still ambiguous
+- `kbg:decide` critique mode — stress-test reasoning in a decision or ADR
 - `kbg:decide (strategize mode)` — upstream lens for irreversible / long-horizon commitments
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
