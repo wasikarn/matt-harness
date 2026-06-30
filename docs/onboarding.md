@@ -8,7 +8,7 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-13 subagents, 49 skills, 25 commands, governance hooks, and mandatory doctrine
+12 subagents, 47 skills, 24 commands, governance hooks, and mandatory doctrine
 injection.
 
 ## The 4 doctrine files (read in this order)

@@ -24,7 +24,7 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 
 ### ...and which specialist (agent) per stage
 
-The 13-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
+The 12-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
 
 | Stage | Agent specialists |
 |-------|-------------------|
@@ -33,7 +33,7 @@ The 13-agent fleet is grouped by **discipline/ownership** (each agent owns one c
 | **BUILD** | `build-error-resolver` (auto-detects build system, fixes build/type errors) |
 | **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
 | **OPERATE** | `refactor-cleaner` (dead-code removal, behavior-preserving refactor) |
-| **Cross-cutting** | `chief-of-staff` (prioritize + route) · `ideate-critic` · `inferential-structural-judge` (fresh-context critics/sensors) |
+| **Cross-cutting** | `chief-of-staff` (prioritize + route) · `ideate-critic` (fresh-context critics/sensors) |
 
 You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spawn the right specialists for you. This lens is for when you want one on purpose.
 
@@ -44,7 +44,6 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 | Don't know which skill/command covers a task | `kbg:inventory` |
 | Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
 | Read-only governance journal / verdicts / silent sensors | `kbg:harness-audit --health` |
-| 12-cell coverage decay grid (quarter-end) | `kbg:harness-audit --coverage` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
 | Mental-model reference library (39 cc-thinking-skills + workflow-pattern map) | Read `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` via Bash, or run `kbg:inventory` to locate "reasoning-models" |
 
