@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# 36. matt-pocock doctrine conformance — emit INFO findings when a skill's
+# description + body fails one or more of the 6 doctrine checks from
+# CLAUDE.md § "Skill authoring doctrine (matt-pocock)" and the
+# docs/skill-template/SKILL.md "## Design checks" block:
+#
+#   1. Leading word — coined term in the first 10 words of description.
+#      Matt vocabulary: grill, seam, vertical slice, premature completion,
+#      two-cut, no-op, recursion-ceiling, cage, deep-fake, unfake, ratchet.
+#   2. Description ≤ 25 words (CLAUDE.md cap; check #20 measures chars).
+#   3. One trigger per branch — ≥ 2 "Use when / Trigger when / Trigger on /
+#      Invoke when / ALWAYS" clauses smells like synonym-rewriting.
+#   4. Completion criterion — body has a "Verify / Confirm / Check that /
+#      Expect / Validate" token in at least one procedure step. Hardest
+#      to detect mechanically; we report absence as an INFO hint, never CRIT.
+#   5. No-op test — body has a substantive procedure step (≥ 3 lines under
+#      "## " headings); a skill that is all-intro and no procedure is
+#      candidate for the no-op test rewrite.
+#   6. Failure-mode guard — body carries a "fail / drift / never / do NOT /
+#      avoid / risk:" token near a step boundary (within 10 lines of a
+#      numbered list marker).
+#
+# Per memory `harness-audit-gauntlet-policy`, this is INFO-only. The check is
+# the visibility layer for the doctrine rule in CLAUDE.md; tightening to
+# WARN/CRIT deliberately rejects the WARN→CRIT escalation trap.
+# Excluded: harness-audit (self-references the check); kbg-help + ideate (skill
+# + command twins with shared descriptions would false-positive on every leg).
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
+  [ -f "$f" ] || continue
+  case "$f" in */skills/_*) continue ;; esac
+  name=$(basename "$(dirname "$f")")
+  case "$name" in
+    harness-audit|kbg-help|ideate) continue ;;
+  esac
+
+  desc=$(fm_get "$f" "description" --block)
+
+  # Coined-term leading word (check 1). Letter-only before the first comma
+  # or period inside the description. We test the FIRST word token only —
+  # if it's in the matt vocabulary, check passes silently. Otherwise we
+  # emit an INFO; downstream the user judges whether the leading word is
+  # itself a coined concept we recognise (matt's vocabulary is illustrative,
+  # not exhaustive, so we keep the list focused on the highest-signal terms
+  # already used elsewhere in kbg).
+  first_word=$(printf '%s' "$desc" | awk '{print tolower($1); exit}')
+  case "$first_word" in
+    grill|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut) : ;;  # silent
+    *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
+  esac
+
+  # Word-count cap (check 2). CLAUDE.md says ≤25 words. We compute on the
+  # description's body text (block scalar stripped of indent by fm_get).
+  desc_wc=$(printf '%s' "$desc" | wc -w | tr -d ' ')
+  if [ "$desc_wc" -gt 25 ]; then
+    info "$name: description is $desc_wc words (>25 cap from CLAUDE.md — trims context load; check #20 measures chars not words, this is the word-count twin)"
+  fi
+
+  # Trigger repetition (check 3). Multiple "Use when…" / "Trigger when…" /
+  # "Trigger on…" clauses indicate the same branch rewritten as synonyms
+  # — a synonym-rewrite smell. Aim is to flag over-specification, not to
+  # mandate ≤1 (a skill that genuinely has two routes can have two
+  # triggers, but four is a rewrite). We treat ≥3 as INFO-worthy.
+  # `|| true` neutralises `set -e` propagation when the pipe returns 1
+  # (no trigger matches at all) — under pipefail the substitution would
+  # otherwise exit 1 and kill the for-loop iteration.
+  triggers=$(printf '%s' "$desc" | grep -oiE 'use when|trigger when|trigger on|invoke when|use proactively when|always trigger|use after' | sort -u | wc -l | tr -d ' ') || true
+  if [ "$triggers" -ge 3 ]; then
+    info "$name: description has $triggers distinct trigger clauses — matt's one-trigger-per-branch treats synonym rewrites as duplication; consolidate or branch"
+  fi
+
+  # Body-side checks (4, 5, 6). Read the whole file once; tests are line-scoped.
+  body=$(cat "$f")
+
+  # Completion criterion (check 4). An absent verify/confirm/check token in
+  # the body means there is no sentence telling the agent "the work is
+  # done when X". We can't LLM-judge the criterion's quality; we flag the
+  # absence as INFO so the author can read the skill and decide.
+  # Inverted to `if cmd; then : ; else info; fi` so both branches end with
+  # status 0; `if ! cmd; then info; fi` returns 1 when cmd succeeds (the
+  # taken branch is the empty `else`), tripping set -e in the for-loop.
+  if printf '%s' "$body" | grep -qE '\b(verify|confirm|check that|expect|validate|done when)\b'; then
+    :
+  else
+    info "$name: body has no 'verify / confirm / done when' token — matt's completion-criterion rule requires every procedure to end on a checkable signal"
+  fi
+
+  # No-op test (check 5). A skill with fewer than 5 substantive body lines
+  # (post-frontmatter, blank-line-stripped) is a candidate for the no-op
+  # rewrite — every sentence must change behaviour vs the default.
+  body_lines=$(printf '%s' "$body" | awk '
+    /^---/ { in_fm = !in_fm; next }
+    in_fm   { next }
+    /^[[:space:]]*$/ { next }
+    { c++ }
+    END { print c + 0 }
+  ')
+  if [ "$body_lines" -lt 5 ]; then
+    info "$name: body has only $body_lines substantive lines — matt's no-op test says every sentence must change behaviour; very-thin skills often have stale scaffolding"
+  fi
+
+  # Failure-mode guard (check 6). Look for "fail / drift / never / do NOT /
+  # avoid / risk:" tokens in the same window as a numbered-list item. A
+  # rule book without inline failure-mode calls is exactly the drift path
+  # matt writes about; we surface the gap as INFO.
+  # Inverted for set -e safety (see check 4 comment).
+  if printf '%s' "$body" | awk '
+    /^[[:space:]]*[0-9]+\.[[:space:]]/ { in_step = 1 }
+    /^[[:space:]]*$/                   { in_step = 0 }
+    in_step && /(^|[^a-z])(fail|drift|never|do ?NOT|avoid|risk:)/ { found = 1; exit }
+    END { exit (found ? 0 : 1) }
+  '; then
+    :
+  else
+    info "$name: no failure-mode guard inline at a numbered procedure step — matt's failure-mode rule requires the drift mode named next to the action, not only in a header"
+  fi
+done
