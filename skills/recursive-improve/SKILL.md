@@ -45,44 +45,19 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 
 ### 1. Observe — gather signals (read-only)
 
-- Run the verification-posture reader:
-  `python3 "${KBG_PLUGIN_ROOT}/scripts/pr/recursive-improve-observe.py"`
-  → prints three sections, in this order:
-    1. **loop posture** (wedged-Bash / stale-ScheduleWakeup from `loop-status.py`)
-    2. **comprehension debt ledger** (open_prs + unverified_changes + unreviewed_audit_findings)
-    3. **verification posture** (latest `verification_summary` per session + sessions whose `gaps > 0`)
-  The three are the metric / drift-guard baseline.
-- **Stall gate (SYNTHESIS #11 / P2.1):** if the `loop posture` section flags
-  `STALLED` with an oldest signal ≥ the threshold (default 10m), **pause and
-  surface to the operator** before proceeding. A wedged session corrupts the
-  verification signal (the metric for THIS session may itself be stale), so the
-  gaps table below is not trustworthy. The script does NOT auto-pause
-  (`recursive-improve-observe.py:check_stall` returns a posture dict, never
-  raises — the in-loop gate stays computational, never a model self-deciding;
-  CLAUDE.md §The operating model (current) principle). Suggested action strings are
-  advisory; the operator decides.
-- **Debt-ceiling gate (SYNTHESIS #41 / spec §4.4):** if the `comprehension debt
-  ledger` section reports `DEBT-CEILING BREACHED` (debt_count > `KBG_DEBT_CEILING`,
-  default 5), **pause and drain the queue before proposing new candidates**.
-  The ledger sums three sources of "what stays manual":
-    - `open_prs` (env var `KBG_DEBT_OPEN_PRS` — the journal has no `pr_opened`
-      event, so this is operator-supplied; honest reflection of local PR count).
-    - `unverified_changes` (sum of `gaps` across the latest `verification_summary`
-      per session — features shipped `no-trail` without a named `optout_reason`).
-    - `unreviewed_audit_findings` (`security_finding` + `review_finding` events
-      in the last 30d that have no matching `verification_verdict.subject_id`).
-  Same invariant: the script does NOT block. The `BREACHED` warning is
-  the operator-facing pause signal; the threshold is configurable via
-  `KBG_DEBT_CEILING` env var (or `--debt-ceiling` flag).
-- Run `harness-audit` (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`)
-  → concrete CRIT / WARN / INFO findings. This is the candidate detail (what to actually fix);
-  the reader says *that* improvement is warranted, the audit says *what*.
+- Run `harness-audit` (the deterministic verifier): `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`
+  → concrete CRIT / WARN / INFO findings. The audit exit count is the loop's branchable score —
+  it is both the *that* (improvement is warranted) and the *what* (which `file:line` to fix).
+- Read `MEMORY.md` for recorded decisions, deferred candidates, and regressions accepted in prior
+  cycles — the durable WHY backlog the audit does not encode.
+- Scan the session transcript for recent operator corrections or repeated workflows that signal a
+  harness gap the audit doesn't catch.
 - Take a witness pre-snapshot:
   `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh" /tmp/ri-BEFORE.md`
-  → records the fleet/boundary state so Surface can attest exactly what the iteration changed.
-- **Success criterion:** a written list of candidate findings, each anchored to a `file:line`,
-  a journal session, or an audit finding id. If both signals are clean → **say so and stop**:
-  a clean harness is not an invitation to invent work (Rule 2).
+  → records the fleet/boundary state so Step 6 can attest exactly what the iteration changed.
+- **Success criterion:** a written list of candidate findings, each anchored to a `file:line`, a
+  MEMORY.md entry, or an audit finding id. If the audit is clean and no transcript/Memory signal
+  surfaces → **say so and stop**: a clean harness is not an invitation to invent work (Rule 2).
 
 ### 2. Propose — decompose + rank (model judgment)
 
@@ -129,12 +104,15 @@ proposal to a human and wait, **stop** — do not proceed plan-only into executi
 
 ### 5. Verify — did it actually improve? (drift guard)
 
-- Re-run the reader **and** `harness-audit`. Compare to the Observe baseline.
-- **Drift guard:** if no signal improved — `gaps` not down, audit finding count not down, and
-  no other named metric moved — the iteration did **not** help. Do **not** report success.
-  Surface the flat/negative delta and treat it as the rollback decision (Step 6).
-- Run the relevant deterministic check on any code touched (`bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"`,
-  `py_compile`, `bash -n`).
+- Re-run `harness-audit` (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`). Compare the CRIT/WARN
+  counts to the Observe baseline.
+- **Drift guard:** if no signal improved — audit finding count not down, and no other named metric
+  moved — the iteration did **not** help. Do **not** report success. Surface the flat/negative delta
+  and treat it as the rollback decision (Step 6). The audit exit count is the deterministic stop
+  condition (score, not feel).
+- Run the relevant deterministic check on any code touched: `bash scripts/run-gauntlet.sh`
+  (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash hooks/tests/test-gates.sh`
+  (the 3 deny-gates), `bash -n` / `py_compile` on edited scripts.
 - **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated, not
   assumed.
 
@@ -191,18 +169,18 @@ recursive-improve — iteration <N> report
 ## Integration Notes (Project-Specific)
 
 - **METHODOLOGY:** Rule 4 (this skill *is* the loop-until-verified instrument for the harness) ·
-  Rule 5 (deterministic journal aggregation lives in `recursive-improve-observe.py`; ranking/judgment
-  lives here) · Rule 7 (drift guard picks the measured delta over the optimistic claim) · Rule 12
+  Rule 7 (drift guard picks the measured audit delta over the optimistic claim) · Rule 12
   (surface flat/negative deltas and regressions, never bury them) · Rule 13 (decompose → route →
   verify → combine, inline).
-- **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit` (the
-  candidate-detail signal) · `recursive-improve-observe.py` (the verification metric) · the witness
-  scripts under `inventory/` (pre/post attestation) · `/ship-task` (escrow for over-scope candidates) ·
-  the harness-decay cadence (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its
+- **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit`
+  (both the candidate-detail signal and the deterministic verification metric — its exit count is
+  the loop's branchable score) · the witness scripts under `inventory/` (pre/post attestation) ·
+  `/ship-task` (escrow for over-scope candidates) · the harness-decay cadence
+  (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its
   `## Permission re-audit` section for tool-grant decay candidates).
-- **Reads, never writes, the journal.** The reader is read-only; this skill does not emit a journal
-  event. Iteration evidence is the witness BOUNDARY diff + a memory entry, not a new journal stream
-  (kept minimal per Rule 2 — revisit only if a durable per-iteration history is actually needed).
-- **Origin & locked decisions:** `.scratch/harness-recursive-improvement/phase-4-recursive-loop.md`
-  (metric = `verification_summary` gaps + harness-audit findings; cap = 5; rollback = surface + ask).
-  The autonomous-vs-human-gated question is resolved: **human-gated at the per-mutation gate** — never model-gated, never self-launching (CLAUDE.md §The operating model (current)).
+- **Reads, never writes, the journal.** This skill does not emit a journal event. Iteration evidence
+  is the witness BOUNDARY diff + a memory entry, not a journal stream (kept minimal per Rule 2 —
+  revisit only if a durable per-iteration history is actually needed).
+- **Origin & locked decisions:** metric = harness-audit findings (CRIT/WARN/INFO counts); cap = 5;
+  rollback = surface + ask. The autonomous-vs-human-gated question is resolved: **human-gated at the
+  per-mutation gate** — never model-gated, never self-launching (CLAUDE.md §The operating model).

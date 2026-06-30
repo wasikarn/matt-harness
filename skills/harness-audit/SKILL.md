@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Single harness-state surface with two modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode queries the governance journal (formerly kbg:harness-health). Use when running a harness audit or querying verdicts/sensors. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness'. Don't use for: general repo lint or security audits (kbg:security-auditor)."
+description: "Single harness-state surface with two modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode surfaces per-session token cost from the live cost ledger (formerly kbg:harness-health). Use when running a harness audit or querying session token cost. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness'. Don't use for: general repo lint or security audits (kbg:security-auditor)."
 ---
 
 # Harness Audit
@@ -8,14 +8,14 @@ description: "Single harness-state surface with two modes. Default mode runs a d
 Single harness-state surface with two modes:
 
 - **Default (audit)** — deterministic fleet/schema/structural check. Detects drift before it becomes a silent failure.
-- **--health mode** — read-only governance-journal query (formerly `kbg:harness-health`). See `references/health.md`.
+- **--health mode** — per-session token cost from the live cost ledger (formerly `kbg:harness-health`). See `references/health.md`.
 
 ## Mode selection
 
 | User asks for | Mode | Entry |
 |---|---|---|
 | "audit harness", "fleet check", "manifest drift" | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
-| "harness health", "last verdicts", "sensor staleness", "token cost" | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
+| "harness health", "token cost", "session cost" | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
 
 
 ## Quick start

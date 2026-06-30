@@ -1,7 +1,7 @@
 {
   "name": "kbg",
-  "version": "v0.6.5",
-  "description": "46 skills · 11 agents · 24 commands. Matt-Pocock-first harness for the Tathep platform: the idea→ship flow (grill → prototype → PRD → issues → ship) plus Tathep stacks (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). Computational deny-gates, advisory sensors, SessionStart doctrine injection, harness-audit.",
+  "version": "v0.6.6",
+  "description": "47 skills · 11 agents · 24 commands. Matt-Pocock-first harness for the Tathep platform: the idea→ship flow (grill → prototype → PRD → issues → ship) plus Tathep stacks (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). Computational deny-gates, advisory sensors, SessionStart doctrine injection, harness-audit.",
   "author": {
     "name": "KOBIG"
   },

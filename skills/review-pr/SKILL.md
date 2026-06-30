@@ -148,16 +148,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
-   **Acceptance-contract check** (only if the task locked one via `kbg:accept-task`): look for `.scratch/<slug>/ACCEPTANCE.md`. If absent, skip this silently. If present, **run machine-checkable criteria first**, then cross-check findings:
-   1. **Machine layer:** Run `python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug>` (or invoke `/ship-task <slug>` and let Phase 5 run the acceptance gate). Read `acceptance-results.json`.
-      - Any `failed` or `blocked` criteria → treat as **Critical [acceptance-gap]** regardless of review findings. The contract is broken.
-      - Skipped criteria (prose/manual) → proceed to human layer below.
-   2. **Human layer:** Cross-check each Critical/Important review finding against the locked `## Criteria`:
-      - **`[acceptance-gap]`** — the finding leaves a locked criterion unmet or violated. This is *rework* (the contract was not met), not a new improvement — flag it `[acceptance-gap]` inline and treat as must-fix regardless of its tier.
-      - **improvement** — the finding is beyond the contract (edge case, polish). Normal tiering applies.
-
-   Surface a one-line count above the decision: `Acceptance: 4/5 criteria met · 1 gap (must-fix) · machine-check: 3/3 passed`. The machine-check count comes from the runner; it is independent of the review findings.
-
    **Proof-verification check** (METHODOLOGY Rule 4 sub-rule): look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
 
 2. **Branch on review target (from Phase 1):**

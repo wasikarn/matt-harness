@@ -85,18 +85,11 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 1. **Collect proof artifacts** (at least one required per METHODOLOGY Rule 4 sub-rule):
    - Run tests and capture output: `npm test`, `pytest`, `go test`, etc. Save output to `.scratch/<slug>/proofs/test-output.txt`.
    - Run type-checker / linter: `tsc --noEmit`, `flake8`, `cargo check`. Save output to `.scratch/<slug>/proofs/typecheck.txt`.
-   - Run deterministic acceptance: `bash "${CLAUDE_SKILL_DIR}/scripts/run-acceptance.sh" <slug>`. Save `acceptance-results.json` to `.scratch/<slug>/proofs/`.
    - Fresh-context adversarial review: spawn `code-reviewer` or `security-reviewer` with no prior context, capture findings to `.scratch/<slug>/proofs/adversarial-review.md`.
    - **Gate**: if NONE of the above are available → STOP. Tell user: "Proof missing. Run at least one verification step before merge."
-2. **Verify acceptance contract** (if the task locked one via `kbg:accept-task`):
-   - Run `python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug> --verbose` and read `.scratch/<slug>/acceptance-results.json`.
-   - If RED (any failed/blocked criteria) → fix before merge.
-   - If AMBER (only manual/prose criteria skipped) → confirm manual criteria are met.
-   - If GREEN (all machine-checkable criteria passed) → proceed.
-   - Detailed gate semantics are in `commands/ship-task/references/pre-ship-verify.md`.
-3. Tell user: "Run `/ship-merge` when CI is green and approvals are in."
-4. Wait for `/ship-merge` to complete.
-5. Summarize: what changed, files touched, key decisions, proof artifacts collected, and any follow-up items.
+2. Tell user: "Run `/ship-merge` when CI is green and approvals are in."
+3. Wait for `/ship-merge` to complete.
+4. Summarize: what changed, files touched, key decisions, proof artifacts collected, and any follow-up items.
 
 **Done.**
 

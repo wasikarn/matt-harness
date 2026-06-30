@@ -1,84 +1,84 @@
-# Pre-ship acceptance verification
+# Pre-ship verification
 
-This is the detailed reference for the deterministic acceptance gate that `/ship-task` runs in Phase 5. It was formerly the standalone `/pre-ship-verify` command.
+Detailed reference for the deterministic verification gate `/ship-task` runs in Phase 5. It was formerly the standalone `/pre-ship-verify` command.
 
 ## When this runs
 
-`/ship-task` Phase 5 invokes this gate after Phase 4 (Implement) completes and the `post-edit-test` hook has run. The gate reports GREEN / AMBER / RED; RED stops the pipeline before Phase 6.
+`/ship-task` Phase 5 invokes this gate after Phase 4 (Implement) completes. The gate reports GREEN / AMBER / RED; RED stops the pipeline before Phase 6.
 
 ## Core principles
 
-- **Acceptance is the contract.** If criteria fail, the task is not done.
-- **Machine-checkable first.** Commands, test exits, file states are verified automatically. Prose criteria are surfaced for human judgment.
+- **Done is deterministic.** The project's test suite + type-check are the machine-checkable signal; the Phase 3 criteria are cross-checked against them.
+- **Machine-checkable first.** Test exits, type-check, file states are verified automatically. Prose/manual criteria are surfaced for human judgment.
 - **Never auto-ship.** This gate reports; it does not merge, push, or release.
-- **One task at a time.** A single acceptance contract per `/ship-task` invocation.
+- **One task at a time.** A single criteria set per `/ship-task` invocation.
 
-## Phase 1 — Discover the contract
+## Phase 1 — Run the deterministic gates
 
-1. If the user provided a slug argument, use `.scratch/<slug>/ACCEPTANCE.md`.
-2. Otherwise, auto-detect:
-   - List `.scratch/*/` directories by mtime (newest first).
-   - Pick the first directory containing `ACCEPTANCE.md`.
-   - If multiple recent tasks exist, present the top 3 and ask the user to confirm.
-3. If no `ACCEPTANCE.md` exists → STOP: "Run `kbg:accept-task` to lock a contract before shipping."
-4. Read contract metadata (`task`, `accepted`, `start-sha`) and surface them.
+1. **Test suite** — auto-detect the runner and run it from the repo root:
 
-## Phase 2 — Execute
+   | Signal | Detected via | Command |
+   |--------|--------------|---------|
+   | npm | `package.json` + `scripts.test` | `npm test` |
+   | pnpm | `pnpm-lock.yaml` | `pnpm test` |
+   | yarn | `yarn.lock` | `yarn test` |
+   | python | `pyproject.toml`/`pytest.ini`/`setup.cfg` | `pytest` |
+   | go | `go.mod` | `go test ./...` |
+   | rust | `Cargo.toml` | `cargo test` |
 
-Run:
+   If the project has no test runner, state that and rely on the type-check + manual verification.
 
-```bash
-python3 "${KBG_PLUGIN_ROOT}/scripts/evals/run-acceptance.py" <slug> --verbose
-```
+2. **Type-check** if the stack has one:
 
-- Working directory: repo root.
-- Timeout: default (30s per criterion).
+   | Stack | Command |
+   |-------|---------|
+   | TypeScript | `tsc --noEmit` (or `vue-tsc --noEmit`) |
+   | Python | `mypy .` (if configured) |
+   | Go | `go vet ./...` |
+   | Rust | `cargo check` |
 
-Read `.scratch/<slug>/acceptance-results.json`. Parse:
+## Phase 2 — Cross-check the Phase 3 criteria
 
-- `passed`: criteria that exited 0.
-- `failed`: criteria that exited non-zero.
-- `skipped`: prose or manual criteria.
-- `blocked`: safety-denied commands (e.g., `git push`).
+For each Phase 3 criterion, confirm a deterministic signal satisfies it (a test that passed, a clean type-check, a file now present). Mark each PASS / MANUAL / FAIL:
+
+- **PASS**: a machine signal confirms it.
+- **MANUAL**: the criterion is inherently human (visual/UX, a runbook step, a doc review) — surfaced for the user.
+- **FAIL**: a signal contradicts it (a test failed, the type-check errors, the expected file is absent).
 
 ## Phase 3 — Report + gate
-
-Summarize:
 
 ```markdown
 ## Pre-Ship Verification: <task-name>
 
-| Status | Count |
-|--------|-------|
-| ✅ Passed | N |
-| ❌ Failed | N |
-| ⏭️ Skipped (manual/prose) | N |
-| 🚫 Blocked (safety) | N |
+Tests: <runner result — pass/fail counts>
+Type-check: <clean / N errors>
+
+Criteria: <PASS N · MANUAL N · FAIL N>
 
 **Result**: [GREEN / AMBER / RED]
-- GREEN: all machine-checkable criteria passed (failed=0, blocked=0).
-- AMBER: some criteria skipped (manual only), no failures.
-- RED: any failed or blocked.
+- GREEN: tests pass + type-check clean + every criterion PASS (FAIL=0).
+- AMBER: tests + type-check pass, but some criteria are MANUAL (no failures).
+- RED: any test fails, type-check errors, or a criterion FAILs.
 ```
 
-**RED:** list each failed/blocked criterion with command and exit code. Recommend fixing before re-running Phase 5. Do NOT proceed to Phase 6.
+**RED:** list each failure with the failing test/command and exit code. Recommend fixing before re-running Phase 5. Do NOT proceed to Phase 6.
 
-**AMBER:** list skipped criteria and ask the user to confirm manual verification.
+**AMBER:** list the MANUAL criteria and ask the user to confirm them before proceeding.
 
-**GREEN:** state the contract is satisfied. Suggest next step:
+**GREEN:** state the change is verified. Suggest next step:
 - PR exists → proceed to Phase 6 (`kbg:review-pr`).
-- No PR yet → create or push branch before Phase 6.
+- No PR yet → create or push the branch before Phase 6.
 
 ## Phase 4 — Audit trail
 
 Append to `.scratch/<slug>/verification-log.jsonl`:
 
 ```json
-{"timestamp":"2026-06-12T14:23:00Z","command":"/ship-task Phase 5","slug":"<slug>","passed":N,"failed":N,"skipped":N,"blocked":N,"result":"green|amber|red"}
+{"timestamp":"<ISO>","command":"/ship-task Phase 5","slug":"<slug>","tests":"pass","typecheck":"clean","criteria":{"pass":N,"manual":N,"fail":N},"result":"green|amber|red"}
 ```
 
 ## Anti-patterns
 
-- Running without a contract.
-- Ignoring blocked commands (they test guardrails).
+- Running without the project test suite when one exists.
+- Ignoring a failing type-check ("just types, not a real bug").
 - Auto-proceeding on AMBER without manual confirmation.

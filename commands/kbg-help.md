@@ -43,7 +43,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 |------|-----------|
 | Don't know which skill/command covers a task | `kbg:inventory` |
 | Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
-| Read-only governance journal / verdicts / silent sensors | `kbg:harness-audit --health` |
+| Per-session token cost (live cost ledger) | `kbg:harness-audit --health` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
 | Mental-model reference library (39 cc-thinking-skills + workflow-pattern map) | Read `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` via Bash, or run `kbg:inventory` to locate "reasoning-models" |
 

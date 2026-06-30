@@ -101,7 +101,7 @@ Initial report: $ARGUMENTS
 **Actions**:
 1. Two shapes:
    - **Surgical (default)** — minimal change exactly where the bug is. No nearby cleanup, no opportunistic refactor.
-   - **Structural** — only if the bug is a symptom of a missing seam or wrong abstraction, AND the user agrees the refactor is in scope. For structural fixes, delegate to the `refactor-cleaner` agent (via `/refactor-clean`) instead of doing it inline. **Optional:** for a multi-file or structural fix, consider invoking `kbg:accept-task` to lock `.scratch/<slug>/ACCEPTANCE.md` before choosing the strategy — the review's acceptance-gap check verifies against it later. Skip it for a surgical single-function fix; its Phase 6 regression gate is already the locked criterion.
+   - **Structural** — only if the bug is a symptom of a missing seam or wrong abstraction, AND the user agrees the refactor is in scope. For structural fixes, delegate to the `refactor-cleaner` agent (via `/refactor-clean`) instead of doing it inline.
 2. Present chosen strategy to the user — surgical change at <file:line> doing X, OR structural change with refactor scope Y.
 3. **Analyze**: scope of buggy code (single function vs cross-module), presence of missing seam/abstraction, regression-test feasibility. **Recommend** the shape with lowest blast radius that still fixes the root cause.
 4. **AskUserQuestion** single-select: "Phase 4: the buggy code is at [file:line] — [scope description]. Which fix shape do you prefer?"

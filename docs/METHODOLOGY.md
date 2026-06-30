@@ -51,6 +51,21 @@ Decompose → route → verify → combine.
 
 ---
 
+## Rule 14 — Decision scoring (explainable decisions)
+
+Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence. **Score, not feel.** This generalizes the score-not-feel loop stop-condition (CLAUDE.md §the unifying crux) from loop exits to *every* decision.
+
+- State the criteria and each one's weight **before** scoring.
+- Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.
+- A pass threshold **and** a fatal-weakness floor (no criterion below the floor) — both must hold.
+- A score change must be traceable: which criterion moved, and why.
+- Evidence > assumption · measurement > feeling · verification > opinion.
+- If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
+
+The `kbg:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
+
+---
+
 ## Governing constraint
 
 Matching effort to stakes IS the staff move. Overthinking a low-stakes reversible act wastes time. Underthinking a one-way door is how incidents happen.
