@@ -52,7 +52,7 @@
       {
         "id": "gate:write:verifier-protect",
         "matcher": "Write|Edit|MultiEdit",
-        "description": "Gate: ask the human to approve edits to verifier surfaces (hooks/gates/**, hooks/hooks.json) — the model cannot edit the gates that judge it (tamper-resistance). Emits permissionDecision: ask (no env-var bypass).",
+        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/hooks.json (deny-gates + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass).",
         "hooks": [
           {
             "type": "command",

@@ -14,7 +14,7 @@ Apply the Decision Scoring Framework (METHODOLOGY Rule 14) to a pending decision
 
 ### 1. Frame the decision
 
-State, in one line: the decision being scored, the options (if ≥2), and what a "pass" would authorize. If there is no real decision to make (the choice is trivial or already made), **say so and stop** — do not manufacture a score (no-op test).
+State, in one line: the decision being scored, the options (if ≥2), and what a "pass" would authorize. If there is no real decision to make (the choice is trivial or already made), **say so and stop** — do not manufacture a score (no-op test). If the task is to **rank/recommend** across ≥2 options, score each against the *same* rubric (Steps 2–4) and rank by weighted sum — see **Ranking** below.
 
 ### 2. Set the criteria + weights
 
@@ -67,9 +67,27 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 **Blocked**: ข้อมูลไม่เพียงพอ on <criterion> — <what's needed to score it>
 ```
 
+## Ranking (≥2 options)
+
+When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable.
+
+```markdown
+## Decision Score: <decision> — rank <N> options
+
+| Option | Weighted | Floor | Verdict |
+|---|---|---|---|
+| A | NN | ✓ | PASS |
+| B | NN | ✗ (Risk 25) | DISQ — below floor |
+
+**Recommend**: Option A — highest weighted among floor-passing.
+**Leverage**: <which criterion would flip A vs the runner-up, and what evidence would move it>
+
+— then render Option A's full criterion table (the single-decision format above).
+```
+
 ## Completion criterion
 
-A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit.
+A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit. **For ranking**: a ranked table with the per-option floor verdict, a named recommendation among floor-passing options, and the recommended option's full criterion breakdown.
 
 ## Failure modes
 
@@ -77,6 +95,7 @@ A Decision Score table with every criterion scored (or explicitly blocked), a we
 - **Guessing past missing data.** If you cannot honestly score a criterion, block — do not fill the gap with a vibe.
 - **Weighted sum without the floor.** A 75 weighted score with one criterion at 20 is not a pass — the floor is a gate, not a suggestion.
 - **Scoring a non-decision.** Applying the rubric to a trivial/already-made choice manufactures ceremony (the #31.1 trap). Exit early.
+- **Ranking by weighted sum alone.** A top-ranked option that fails the per-option floor is disqualified — do not recommend it. The floor is a gate in ranking too, not a tiebreaker.
 
 ## Don't duplicate canon
 

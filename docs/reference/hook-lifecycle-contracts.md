@@ -39,7 +39,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 | UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `/grilling` → `/to-prd` → `/to-issues` → `/ship-task`. Never blocks. |
 | PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`). Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `path-hardcode.sh` | FF / computational | Deny hardcoded `/Users/<name>` paths in `.sh`/`.py` content. Emit `permissionDecision`. |
-| PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | `ask` edits to verifier surfaces (`hooks/gates/**`, `hooks/hooks.json`) — the model cannot edit the gates that judge it (tamper-resistance); Claude Code surfaces a live Approve/Deny prompt to the operator. No env-var bypass. |
+| PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | `ask` edits to BOTH non-model verifiers — `hooks/gates/**` + `hooks/hooks.json` (the deny-gates + wiring) AND `skills/harness-audit/scripts/audit.sh` + `checks/**` (the audit grader). Tamper-resistance: the model cannot edit the code that judges it. Both verifiers guarded — a half-protected perimeter is worse than none. `--health` reporter (`harness-health.py`/`health.sh`) is NOT a grader, stays unguarded. No env-var bypass. |
 | Stop | `cost-tracker.sh` | FB / computational | Track cumulative token/cost metrics per session; append to `~/.local/share/kbg/metrics/costs.jsonl`. Async; no enforcement. |
 
 **No `TaskCompleted`, `SessionEnd`, or `PostToolUse` hooks are registered.** The retired F7 TaskCompleted gate

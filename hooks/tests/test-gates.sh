@@ -116,6 +116,16 @@ test_ask   "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
   "$(write_payload 'hooks/hooks.json' 'neutered-wiring')"
 test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
   "$(write_payload "$ROOT/hooks/gates/path-hardcode.sh" 'echo neutered')"
+test_ask   "$VERIFIER_PROTECT" "Write to audit.sh (non-model verifier runner)" \
+  "$(write_payload 'skills/harness-audit/scripts/audit.sh' 'echo neutered')"
+test_ask   "$VERIFIER_PROTECT" "Edit to a check file (grading logic)" \
+  "$(edit_payload 'skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh' 'echo neutered')"
+test_ask   "$VERIFIER_PROTECT" "Write to a check via absolute path" \
+  "$(write_payload "$ROOT/skills/harness-audit/scripts/checks/01-fleet-count.sh" 'echo neutered')"
+test_allow "$VERIFIER_PROTECT" "Write to --health reporter (NOT a grader, out of scope)" \
+  "$(write_payload 'skills/harness-audit/scripts/harness-health.py' 'print(1)')"
+test_allow "$VERIFIER_PROTECT" "Write to health.sh (NOT a grader, out of scope)" \
+  "$(write_payload 'skills/harness-audit/scripts/health.sh' 'echo ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
   "$(write_payload 'skills/foo/SKILL.md' '# ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a command (normal work)" \
