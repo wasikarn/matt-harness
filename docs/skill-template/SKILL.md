@@ -12,6 +12,19 @@ description: "Action + scenario + quoted triggers. Use when the user says 'X', '
 #   docs/harness-decay-cadence.md) walks every skill with this field.
 ---
 
+## Design checks (matt-pocock authoring doctrine)
+
+Run before publishing. Each item must be checkable. See CLAUDE.md § "Skill authoring doctrine" for the full rule.
+
+- [ ] **Leading word** — frontmatter description opens with a coined term that recruits a pretrained prior.
+- [ ] **≤25 words** in description (trim, do not remove triggers).
+- [ ] **One trigger** per branch in description (no synonym-rewrite).
+- [ ] **Completion criterion** on every procedure step (resists premature completion).
+- [ ] **No-op test** passed — each sentence changes behaviour vs default; remove the ones that don't.
+- [ ] **Two-cut check** — split-by-invocation or split-by-sequence only when the cut earns it; otherwise sharpen the criterion (kbg is MAXIMAL-BOUNDED).
+- [ ] **Failure mode** named at the drift step inline, not only in a header.
+- [ ] **Provenance** — if imported from matt-pocock, ECC, or another upstream, add `metadata.origin: <upstream>` to frontmatter.
+
 # Your Skill Title
 
 One-line summary of what this skill does and why it exists.

@@ -38,6 +38,19 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "id": "advisory:flow-nudge",
+        "matcher": "*",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge /grilling → /to-prd → /to-issues → /ship-task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/advisory/flow-nudge.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "id": "gate:bash:irrecoverable",

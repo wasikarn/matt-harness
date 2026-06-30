@@ -50,6 +50,19 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), post-tool/ (audit), lifecycle/ (enforce), maintenance/ (upkeep). Governance events append to `~/.claude/governance-events.jsonl`.
 
+## Skill authoring doctrine (matt-pocock)
+
+When creating or editing a skill under `skills/`, apply matt-pocock's `writing-great-skills` doctrine (canonical: `skills/writing-great-skills/SKILL.md`):
+
+1. **Leading word** — frontmatter `description:` opens with a coined term that recruits a pretrained prior (e.g. *grill*, *seam*, *premature completion*, *vertical slice*). One trigger per branch — no synonym rewrites of the same condition.
+2. **Description length** — ≤25 words (cap above). Trim, do not remove triggers.
+3. **Completion criterion** — every procedure step ends with a verifiable checkable signal. Resists premature completion.
+4. **No-op test** — each sentence changes behaviour vs default; delete sentences that don't.
+5. **Two cuts** — split-by-invocation or split-by-sequence only when the cut earns it. Default to criterion-sharpening over structural split (kbg is MAXIMAL-BOUNDED — see memory `surface-consolidation-2026-06-18`).
+6. **Failure-mode guard** — name the failure mode the skill prevents inline at the drift step, not only in a header.
+
+The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks` section. New skills that don't carry it are audit-flagged by `skills/harness-audit` on next pass.
+
 ## Branching model
 
 Single branch: `develop` only. No feature branches. Commit and push direct.
