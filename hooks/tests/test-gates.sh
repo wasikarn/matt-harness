@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
-# Gate unit tests: simulates PreToolUse JSON payloads and asserts allow/deny.
-# Each test_deny call expects exit 2; test_allow expects exit 0.
+# Gate unit tests: simulates PreToolUse JSON payloads and asserts allow/deny/ask.
+# Each test_deny call expects exit 2; test_allow expects exit 0 + empty stdout;
+# test_ask expects exit 0 + a permissionDecision: ask JSON on stdout.
 # Run standalone: bash hooks/tests/test-gates.sh
 set -uo pipefail
 
@@ -42,7 +43,7 @@ test_deny() {
   fi
 }
 
-# Expect the gate to ALLOW (exit 0).
+# Expect the gate to ALLOW (exit 0 + empty stdout — no permissionDecision JSON).
 test_allow() {
   local gate="$1" desc="$2" payload="$3"
   local rc
@@ -52,6 +53,20 @@ test_allow() {
     pass=$((pass + 1))
   else
     echo "  ❌ ALLOW EXPECTED but got exit $rc: $desc" >&2
+    fail=$((fail + 1))
+  fi
+}
+
+# Expect the gate to ASK (exit 0 + permissionDecision: ask JSON on stdout).
+test_ask() {
+  local gate="$1" desc="$2" payload="$3"
+  local out rc
+  out=$(echo "$payload" | bash "$gate" 2>/dev/null); rc=$?
+  if [[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
+    echo "  ✅ ASK: $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ ASK EXPECTED but got exit $rc out='$out': $desc" >&2
     fail=$((fail + 1))
   fi
 }
@@ -92,26 +107,19 @@ test_allow "$PATH_HARDCODE" "normal .sh content" \
   "$(write_payload 'run.sh' 'set -uo pipefail\necho hello')"
 
 echo ""
-echo "=== verifier-protect gate (tamper-resistance on the deny-gates) ==="
-test_deny  "$VERIFIER_PROTECT" "Write to hooks/gates/irrecoverable.sh" \
+echo "=== verifier-protect gate (tamper-resistance: human approves each verifier-surface edit) ==="
+test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/irrecoverable.sh" \
   "$(write_payload 'hooks/gates/irrecoverable.sh' 'echo neutered')"
-test_deny  "$VERIFIER_PROTECT" "Edit to hooks/gates/verifier-protect.sh (self)" \
+test_ask   "$VERIFIER_PROTECT" "Edit to hooks/gates/verifier-protect.sh (self)" \
   "$(edit_payload 'hooks/gates/verifier-protect.sh' 'exit 0')"
-test_deny  "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
+test_ask   "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
   "$(write_payload 'hooks/hooks.json' 'neutered-wiring')"
-test_deny  "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
+test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
   "$(write_payload "$ROOT/hooks/gates/path-hardcode.sh" 'echo neutered')"
 test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
   "$(write_payload 'skills/foo/SKILL.md' '# ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a command (normal work)" \
   "$(write_payload 'commands/pr.md' '# ok')"
-# Bypass: developer env var (model cannot set parent-env mid-session).
-rc=$(echo "$(write_payload 'hooks/gates/irrecoverable.sh' 'echo neutered')" | KBG_ALLOW_VERIFIER_EDIT=1 bash "$VERIFIER_PROTECT" 2>/dev/null; echo $?)
-if [[ "$rc" == "0" ]]; then
-  echo "  ✅ ALLOW (bypass): KBG_ALLOW_VERIFIER_EDIT=1 edits hooks/gates/"; pass=$((pass + 1))
-else
-  echo "  ❌ ALLOW EXPECTED (bypass) but got exit $rc: KBG_ALLOW_VERIFIER_EDIT=1" >&2; fail=$((fail + 1))
-fi
 
 echo ""
 total=$((pass + fail))

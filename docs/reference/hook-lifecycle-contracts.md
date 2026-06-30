@@ -39,7 +39,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 | UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `/grilling` → `/to-prd` → `/to-issues` → `/ship-task`. Never blocks. |
 | PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`). Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `path-hardcode.sh` | FF / computational | Deny hardcoded `/Users/<name>` paths in `.sh`/`.py` content. Emit `permissionDecision`. |
-| PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | Deny edits to verifier surfaces (`hooks/gates/**`, `hooks/hooks.json`) — the model cannot edit the gates that judge it (tamper-resistance). Bypass: `KBG_ALLOW_VERIFIER_EDIT=1`. |
+| PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | `ask` edits to verifier surfaces (`hooks/gates/**`, `hooks/hooks.json`) — the model cannot edit the gates that judge it (tamper-resistance); Claude Code surfaces a live Approve/Deny prompt to the operator. No env-var bypass. |
 | Stop | `cost-tracker.sh` | FB / computational | Track cumulative token/cost metrics per session; append to `~/.local/share/kbg/metrics/costs.jsonl`. Async; no enforcement. |
 
 **No `TaskCompleted`, `SessionEnd`, or `PostToolUse` hooks are registered.** The retired F7 TaskCompleted gate

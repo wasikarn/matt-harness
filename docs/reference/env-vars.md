@@ -21,7 +21,6 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Key class | Settable where | Why |
 |---|---|---|
 | **Tuning** (`KBG_IDEATE_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
-| **`KBG_ALLOW_VERIFIER_EDIT`** | Project / Local only — never persist `=1` user-global. | A global `=1` disarms the verifier-protect gate in every repo. |
 
 ## Autonomy flags — RETIRED 2026-06-26 (ADR 0006)
 
@@ -30,12 +29,6 @@ The `KBG_AUTONOMY` arming key, the `KBG_REVIEW_DONE` Gate-2 override, and the ol
 enforced maker-checker ship-gate. The harness denies the irrecoverable set computationally (the
 PreToolUse gates in `hooks/gates/`, no operator flag) and advises on the rest; the operator is the
 authority at every irreversible boundary. Do not re-arm.
-
-## Live user-facing knob
-
-| Var | Default | Effect | Read by |
-|---|---|---|---|
-| `KBG_ALLOW_VERIFIER_EDIT` | `0` | `=1` lets a trusted session edit the verifier-protected files (`hooks/hooks.json`, `hooks/gates/**`) for one operation. Never persist `=1`. | `hooks/gates/verifier-protect.sh` |
 
 ## Ideate cluster (model-honored)
 

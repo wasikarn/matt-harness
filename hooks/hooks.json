@@ -52,7 +52,7 @@
       {
         "id": "gate:write:verifier-protect",
         "matcher": "Write|Edit|MultiEdit",
-        "description": "Gate: block edits to verifier surfaces (hooks/gates/**, hooks/hooks.json) — the model cannot edit the gates that judge it (tamper-resistance). Bypass: KBG_ALLOW_VERIFIER_EDIT=1",
+        "description": "Gate: ask the human to approve edits to verifier surfaces (hooks/gates/**, hooks/hooks.json) — the model cannot edit the gates that judge it (tamper-resistance). Emits permissionDecision: ask (no env-var bypass).",
         "hooks": [
           {
             "type": "command",
