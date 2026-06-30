@@ -1,7 +1,7 @@
 ---
 description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces.
 name: security-scan
-agent: everything-claude-code:security-reviewer
+agent: security-reviewer
 subtask: true
 metadata:
   origin: ECC
@@ -84,7 +84,6 @@ Use AgentShield in GitHub Actions for enforced gates:
 
 ## Links
 
-- Skill: `skills/security-scan/SKILL.md`
 - Agent: `agents/security-reviewer.md`
 - Scanner: <https://github.com/affaan-m/agentshield>
 

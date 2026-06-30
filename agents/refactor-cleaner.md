@@ -1,6 +1,6 @@
 ---
 name: refactor-cleaner
-description: Dead code cleanup specialist. Uses knip, depcheck, and ts-prune to identify and remove unused code and duplicates.
+description: Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 ---
@@ -28,11 +28,16 @@ You are an expert refactoring specialist focused on code cleanup and consolidati
 ## Detection Commands
 
 ```bash
-npx knip                                    # Unused files, exports, dependencies
-npx depcheck                                # Unused npm dependencies
+npx knip                                    # Unused files, exports, dependencies (JS/TS)
+npx depcheck                                # Unused npm dependencies (JS/TS)
 npx ts-prune                                # Unused TypeScript exports
 npx eslint . --report-unused-disable-directives  # Unused eslint directives
+vulture src/                                # Unused Python code
+deadcode ./...                              # Unused Go code
+cargo +nightly udeps                        # Unused Rust dependencies
 ```
+
+If a tool is unavailable, fall back to Grep: find exports/definitions, then check each for zero imports/references (including dynamic `import()` / `require()` / `__import__` / string-ref route names).
 
 ## Workflow
 
