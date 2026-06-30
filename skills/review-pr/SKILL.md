@@ -115,8 +115,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 4. **Blanket approval rejection — clean exits must be auditable.** A bare "LGTM" with no file:line findings is treated as "no findings returned", not a clean bill of health — you can't distinguish "checked and clean" from "didn't check". A clean exit only counts as a green light when the agent names what it verified (e.g. "traced the DB+API path — no transaction gap; auth predicate unchanged"). Surface to the user which agents returned auditable-clean, which returned findings, and which returned only a bare LGTM.
 5. **Apply ledger-driven tightening (if eligible).** Read `policy.md` § Threshold and the rolling 10-session aggregation. If any Q is eligible (≥50% rejection rate, ≥5 sessions), apply the *tightened* check from the policy table for that Q *this session only*. Surface a note: `Q3 tightened for this session (67% rejection over 10 sessions — was 45%)`. The user can override by saying "skip the policy" — the default SCRUTINIZE-4 check is then used and the ledger records `policy_skipped: true`.
 6. **Write the ledger entry.** Sibling of `rejected.md`, in the same `.scratch/review-pr-<UTC-timestamp>/` dir. See `ledger.md` for the schema. Per-Q counters (Rejected / Survived / %), agents dispatched, scope identifier, and `policy_skipped: true` if applicable. **Prune first** — count existing `ledger.md` files, FIFO-remove oldest until count ≤ 199, then write the new entry. This keeps the rolling window bounded per `ledger.md` § Retention.
-7. **(Phase II schema reminder)** The data for `findings.jsonl` is now complete: every finding has `file`, `line`, `tier`, `agent`, `disposition`, `rejected_reason`, `summary` populated. The `decision` field is the user's call (Phase 6) — so the actual WRITE happens once at end of Phase 6, not here. Do NOT write a draft `findings.jsonl` in Phase 5; the single write is in Phase 6 step 4. Use `jq -nc` per line, append, no prettier. Per-line shape: `{local_id, file, line, tier, disposition, decision, agent, rejected_reason, summary}` (9 fields). The schema SSOT is `hooks/JOURNAL-SCHEMA.md` § "Event registry" — the `tier` enum is `Critical|Important|Minor`, `disposition` is `survived|rejected`, `decision` is `fix-now|fix-later|proceed`. The journaler validates these on emit and surfaces a `WARNING` on stderr for a miss, but does NOT block the emit (Q3=a "silent FYI, never unwinds" — the journaler is best-effort). `local_id` is your scratch-dedup id; the journal's own `id` is minted by `journal_append` and is unrelated.
-8. Surface a tier-grouped finding table to the orchestrator (you), not yet to user — Phase 6 handles user presentation.
+7. Surface a tier-grouped finding table to the orchestrator (you), not yet to user — Phase 6 handles user presentation.
 
 ---
 
@@ -178,7 +177,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **Fix later** (branch A) — capture as a follow-up.
    - **Post line-level / Post summary** (branch B) — Phase 7 runs the recorded submit (no second gate).
    - **Proceed as-is / Skip** — document the rationale; nothing posted.
-4. **(Phase II: single write of `findings.jsonl`)** Now that the user has picked the decision (or it was implicit on the user-flow branch), materialize one JSON object per finding with all 9 fields populated (`local_id, file, line, tier, disposition, decision, agent, rejected_reason, summary`). Rebuild fresh each time — `rm -f .scratch/review-pr-<ts>/findings.jsonl` then write. One object per line via `jq -nc`, appended. For findings that have no `file:line` (review-body candidates), set `file` to `""`, `line` to `null`, and `tier` to `""` (the journaler accepts empty tier as a review-body marker; `disposition` and `decision` still must be one of the SCRUTINIZE-4 enum values, or the journaler emits a WARNING to stderr but still emits) — the journaler's jq path normalizes them. The journaler (Phase 7 step 4) reads this file; if it goes missing between this write and Phase 7, the journaler exits 2 and the journal gets a silent FYI (per step 4's "never unwinds submit" guarantee). Do NOT write the file in two passes — this single Phase 6 step is the canonical write. The journaler is **fail-loud on missing jq / wrong arg count / missing findings.jsonl** (exit 2) but **best-effort on enum-typed field misses** (WARNING to stderr, emits anyway) — match this in any local re-emit logic.
 
 ---
 
@@ -231,19 +229,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      | gh api repos/{owner}/{repo}/pulls/<n>/reviews --method POST --input -
    ```
    `<#>` = target PR number, or current branch's PR (`gh pr view --json number -q .number`). If no PR exists yet, skip (nothing to submit to).
-4. **(Phase II: journal the findings — best-effort, NEVER blocks submit).** Two-layer design (see `hooks/JOURNAL-SCHEMA.md`):
-   - **Layer 2 — pre-emit validator (ask-gate, additive):** run BEFORE the journaler.
-     ```bash
-     python3 "${KBG_PLUGIN_ROOT}/scripts/pr/review-pr-journal-pre-emit-validator.py" ".scratch/review-pr-<UTC-timestamp>/"
-     ```
-     Exits **0** if every finding passes enum validation (or is already in the manifest), **2** if any finding has an enum-miss (bad `tier` / `disposition` / `decision` / `local_id`) NOT already in the manifest. On exit 2: **AskUserQuestion** the human with the validator's named summary — *"validator found N enum-miss (e.g. `local_id=b: tier='CRITICAL_TYPO'`); the journaler is best-effort and would still emit, but this drift will pollute the governance stream. Proceed anyway, or pause to fix the finding first?"* Options: *Proceed — emit anyway (downgrade to journaler WARNING)* / *Pause — fix the finding first* / *Cancel — abort journal step*. The validator is **additive, not authoritative** — its exit-2 path is an ASK gate, not a deny, per the autonomy invariant (the user keeps the choice to proceed with degraded data; the default is to pause).
-   - **Layer 1 — journaler (best-effort, never unwinds):** run after the validator clears (or the user overrides).
-     ```bash
-     python3 "${KBG_PLUGIN_ROOT}/scripts/pr/review-pr-journal.py" ".scratch/review-pr-<UTC-timestamp>/"
-     ```
-     If the script exits **0**, the `findings.jsonl` is now a stable set of `review_finding` + `verification_verdict` pairs in `~/.claude/governance-events.jsonl`, linked by `verdict.subject_id == finding.id`. A `.journaled` marker in the scratch dir prevents re-runs. **If the script exits 2** (malformed JSON, missing `findings.jsonl`), capture the error verbatim in the Phase 7 summary under `Journaler:` as a silent FYI — the submit (step 3) and the worktree cleanup (step 5) are NOT unwound. The user's review is still posted; the journal just isn't. Re-runnable on the next `kbg:review-pr` call (the marker is the only state; nothing in the journal itself blocks re-emit). This step runs AFTER the submit (so a journaler failure cannot prevent the user-visible review) and BEFORE the worktree cleanup (so the scratch dir still exists when the script reads it).
-5. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.
-6. **Clear the review-pr-marker** so the PostToolUse:Bash hook stops nudging after the session ends:
+4. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.
+5. **Clear the review-pr-marker** so the PostToolUse:Bash hook stops nudging after the session ends:
    ```bash
    rm -f "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-active"
    ```

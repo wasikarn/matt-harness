@@ -1,6 +1,6 @@
 ---
 name: grilling
-description: "Grill-me: walk the design tree one question at a time, each with your recommended answer. Use to stress-test a plan before committing."
+description: "Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation."
 metadata.origin: matt-pocock
 ---
 
