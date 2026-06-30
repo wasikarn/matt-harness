@@ -22,7 +22,7 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 | Phase | Goal | Next |
 |-------|------|------|
 | 1 | Classify (bug / feature / refactor) | → 2 |
-| 2 | Implement via `/fix-bug`, `/ship-task`, or `maintenance-engineer` | → 3 |
+| 2 | Implement via `/fix-bug`, `/ship-task`, or `/refactor-clean` | → 3 |
 | 3 | Self-review via `kbg:review-pr` (zero Critical findings gate) | → 4 |
 | 4 | Address feedback via `/address-review` (all threads resolved gate) | → 3 or 5 |
 | 5 | Merge via `/ship-merge` (CI green + approvals gate) | Done |
@@ -31,7 +31,7 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 
 | Phase | Command | When |
 |---|---|---|
-| 1 → 2 | `/fix-bug`, `/ship-task`, or spawn `maintenance-engineer` agent | After classification |
+| 1 → 2 | `/fix-bug`, `/ship-task`, or `/refactor-clean` | After classification |
 | 2 → 3 | `kbg:review-pr` | After implementation done |
 | 3 → 4 | Open PR; `/address-review` if comments arrive | After zero Critical findings |
 | 4 → 3 | `kbg:review-pr` again | After `/address-review` fixes |

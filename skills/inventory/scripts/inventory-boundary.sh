@@ -216,7 +216,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `finops-engineer` | `infra/cost/`, `budgets/`, `docs/finops/` | Read-only + Bash for cost queries |
 | `frontend-engineer` | `src/components/`, `src/pages/`, `styles/`, `public/`, `assets/`, `src/hooks/` | |
 | `i18n-specialist` | `locales/`, `translations/`, `i18n/`, `src/i18n/`, `l10n/` | |
-| `maintenance-engineer` | any file | Refactor / deprecation scope |
+| `refactor-cleaner` | any file | Refactor / deprecation scope |
 | `ml-engineer` | `ml/`, `models/`, `features/`, `pipelines/`, `serving/`, `inference/` | |
 | `mobile-engineer` | `ios/`, `android/`, `mobile/`, `react-native/`, `flutter/` | |
 | `platform-engineer` | `platform/`, `proto/`, `gateway/`, `mesh/`, `grpc/`, `event-bus/` | |

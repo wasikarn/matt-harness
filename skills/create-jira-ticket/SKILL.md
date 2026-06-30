@@ -1,6 +1,6 @@
 ---
 name: create-jira-ticket
-description: "Create a single Jira Bug or Story using the team's Thai PO/QA-readable template. Use when the user says 'create bug'/'create story', 'report a bug', 'file a Jira bug', 'new Jira story', 'write a story', 'สร้างบั๊ก', 'แจ้งบั๊ก', 'เปิดบั๊ก', 'เปิดตั๋วบั๊ก', 'สร้าง story', 'เปิด story', 'เขียน story', 'ออก ticket bug', 'ออก story', or wants a structured Thai ticket. Don't use for: de-duping/triaging before filing (use atlassian:triage-issue), converting a spec/Confluence page to a backlog (use atlassian:spec-to-backlog), bulk creation (use acli), editing an existing ticket (use acli), technical tasks without PO-facing AC (use acli), security incidents (use kbg:incident), or non-Jira trackers."
+description: "Create a single Jira Bug or Story using the team's Thai PO/QA-readable template. Use when the user says 'create a bug'/'create a story' or 'สร้างบั๊ก'/'สร้าง story', or wants a structured Thai ticket. Don't use for: de-duping/triaging before filing (use atlassian:triage-issue), converting a spec/Confluence page to a backlog (use atlassian:spec-to-backlog), bulk creation (use acli), editing an existing ticket (use acli), technical tasks without PO-facing AC (use acli), security incidents (use kbg:incident), or non-Jira trackers."
 ---
 
 # Create Jira Ticket

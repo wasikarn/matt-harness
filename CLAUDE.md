@@ -38,7 +38,7 @@ pre-push: full gauntlet (all validation layers in parallel).
 
 ## Composer-not-creator doctrine
 
-Before writing a new skill, command, or agent from scratch, check the upstream ECC repo at `/Users/kobig/Codes/Personals/ECC` (HEAD `2bc924fa`). Cherry-pick and adapt from there. Create kbg-native surfaces only when no upstream fit exists.
+Before writing a new skill, command, or agent from scratch, check the upstream ECC repo at `/Users/kobig/Codes/Personals/ECC`. Cherry-pick and adapt from there. Create kbg-native surfaces only when no upstream fit exists. (A hand-pinned HEAD hash is structurally doomed to re-stale; the path is the stable anchor — run `git rev-parse HEAD` there when you need the current commit.)
 
 ## Architecture
 

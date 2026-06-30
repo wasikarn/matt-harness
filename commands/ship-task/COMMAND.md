@@ -82,7 +82,7 @@ cat "${ACCEPT_TASK_STATE_DIR:-$HOME/.claude/state}/accept-last.json"
 4. **Clarifying questions** — present all underspecified aspects to the user and wait for answers before designing. Re-invoke `kbg:accept-task` if the scope changes materially.
 5. **Architecture design** — spawn 2–3 `code-architect` agents in parallel (minimal changes, clean architecture, pragmatic balance), self-review the chosen approach for placeholder/scope/ambiguity, and ask the user to pick.
 6. **Implementation** — wait for explicit approval, then default to TDD red → green → refactor unless one of the documented opt-out criteria applies (visual-only change, hard race with named tool, integration boundary with stated harness rejection, 1-line cosmetic).
-7. **Quality review** — spawn conditional reviewers (code-reviewer always — covers type-design and test-coverage lenses; security-reviewer, silent-failure-hunter, ux-reviewer as needed), consolidate findings into Critical/Important/Minor, and ask the user how to proceed.
+7. **Quality review** — spawn conditional reviewers (code-reviewer always — covers type-design and test-coverage lenses; security-reviewer, silent-failure-hunter as needed), consolidate findings into Critical/Important/Minor, and ask the user how to proceed.
 8. **Summary** — mark todos complete, document decisions, files modified, and next steps.
 
 **Carve-out**: genuinely trivial work (a one-liner, a copy tweak) may skip the design-approval gate and implement directly, per METHODOLOGY Rule 1. Don't manufacture a design for a one-line change.

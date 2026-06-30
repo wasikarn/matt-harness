@@ -29,7 +29,7 @@ On-demand detail for `ship-change` skill. Loaded when the agent needs full phase
 **Actions**:
 1. **Bug fix** → tell user to run `/fix-bug <arguments>`. Wait for it to complete.
 2. **New feature** → tell user to run `/ship-task <arguments>`. Wait for it to complete.
-3. **Refactor** → spawn `maintenance-engineer` agent. Wait for it to complete.
+3. **Refactor** → run `/refactor-clean`. Wait for it to complete.
 4. Do NOT proceed to Phase 3 until the implementation command returns.
 
 **Precondition gate**: if implementation was abandoned or re-scoped, return to Phase 1.
