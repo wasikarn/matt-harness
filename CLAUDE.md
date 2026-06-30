@@ -52,14 +52,7 @@ When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), pos
 
 ## Skill authoring doctrine (matt-pocock)
 
-When creating or editing a skill under `skills/`, apply matt-pocock's `writing-great-skills` doctrine (canonical: `skills/writing-great-skills/SKILL.md`):
-
-1. **Leading word** — frontmatter `description:` opens with a coined term that recruits a pretrained prior (e.g. *grill*, *seam*, *premature completion*, *vertical slice*). One trigger per branch — no synonym rewrites of the same condition.
-2. **Description length** — ≤25 words (cap above). Trim, do not remove triggers.
-3. **Completion criterion** — every procedure step ends with a verifiable checkable signal. Resists premature completion.
-4. **No-op test** — each sentence changes behaviour vs default; delete sentences that don't.
-5. **Two cuts** — split-by-invocation or split-by-sequence only when the cut earns it. Default to criterion-sharpening over structural split (kbg is MAXIMAL-BOUNDED — see memory `surface-consolidation-2026-06-18`).
-6. **Failure-mode guard** — name the failure mode the skill prevents inline at the drift step, not only in a header.
+When creating or editing a skill under `skills/`, follow matt-pocock's `writing-great-skills` doctrine — canonical: `skills/writing-great-skills/SKILL.md` (leading word, ≤25-word description, completion criterion, no-op test, two-cuts, failure-mode guard).
 
 The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks` section. New skills that don't carry it are audit-flagged by `skills/harness-audit` on next pass.
 
@@ -80,4 +73,4 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 - **Never `--no-verify`** on commits or pushes.
 - **Stage by name:** never `git add -A` or `git add .`.
 - **Skill descriptions load on every Task spawn** (~words×1.3 tokens). Keep descriptions ≤25 words.
-- **Thinking models:** invoke `kbg:thinking` before complex/ambiguous reasoning — it's a compact index of 39 on-demand mental models. The full model files live in `docs/reference/thinking-skills/skills/` (never move to `skills/` — would break fleet count).
+- **Thinking models:** reach for `kbg:decide` for the decision scaffold; the 39 on-demand mental-model files live in `docs/reference/thinking-skills/skills/` (never move to `skills/` — would break fleet count).

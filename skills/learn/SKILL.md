@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping/lint (use kbg:memory-lint / kbg:memory-trim), or unprompted auto-*apply*. Operator-invoked only; nothing is written without your approval at the gate."
+description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping (use kbg:memory-lint), or unprompted auto-*apply*. Operator-invoked only; nothing is written without your approval at the gate."
 ---
 
 # Skill: learn
@@ -63,11 +63,11 @@ notices what belongs in it.
 
 - You already know the single fact to record → just write the memory file directly.
 - Harness health / self-improvement → `kbg:recursive-improve`.
-- Cleaning or trimming existing memory → `kbg:memory-lint` / `kbg:memory-trim`.
+- Cleaning or trimming existing memory → `kbg:memory-lint` (use `--trim` to archive bloat).
 - Unprompted, mid-task → don't; this is a deliberate end-of-work reflection, operator-initiated.
 
 ## See also
 
 - `kbg:recursive-improve` — the harness-health sibling (mutation loop, flagged, human-gated).
-- `kbg:memory-lint` / `kbg:memory-trim` — memory bookkeeping the write step relies on.
+- `kbg:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
 - The memory rules in the session system prompt — the authoritative format + what-to-save contract.

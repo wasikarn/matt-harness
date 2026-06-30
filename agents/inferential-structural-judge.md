@@ -1,6 +1,6 @@
 ---
 name: inferential-structural-judge
-description: "Session-end inferential-FB sensor that scores a session's diff on over_engineering, arch_drift, test_pattern, and doctrine_conformance. Currently DORMANT — the SessionEnd hook is not wired and the invoking script is absent; re-wire is a pending follow-up. Can be invoked directly when the user says 'ตัดสินโครงสร้าง', 'structural judge', 'verdict'. Journals an advisory verdict to governance-events.jsonl; never blocks or mutates code. Don't use for: deep PR review (use kbg:review-pr), security audit (defer to security-reviewer), test coverage (defer to pr-test-analyzer), or live diff review (defer to code-reviewer)."
+description: "Session-end sensor scoring a diff on over_engineering, arch_drift, test_pattern, doctrine_conformance. DORMANT (hook unwired). Invoke directly: 'structural judge', 'verdict', 'ตัดสินโครงสร้าง'. Journals advisory verdict; never mutates."
 tools: Read, Grep, Bash
 model: sonnet
 effort: high

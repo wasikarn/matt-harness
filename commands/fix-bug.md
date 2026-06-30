@@ -158,9 +158,9 @@ Update todos as you progress.
 **Actions**:
 1. Conditional routing — launch in parallel based on what the fix touched:
    - **Error-handling** (new/modified try-catch, fallbacks, exception flow) → `silent-failure-hunter`
-   - **Tests added/modified** → `pr-test-analyzer`
+   - **Tests added/modified** → `code-reviewer` (behavioral test-coverage lens)
    - **Auth / secrets / external input** → `security-reviewer`
-   - **Comments added/modified** → `comment-analyzer`
+   - **Comments added/modified** → `code-reviewer` (comment-accuracy lens)
    - If the fix touched none of the above (rare for non-trivial bugs) → route to `code-reviewer` agent for a general correctness pass against Phase 4 strategy.
 2. Consolidate findings into severity tiers + present to user. For each finding, assign a tier by asking *"if this ships as-is, what's the worst that could happen?"* — production breaks / a 2am page / silent data corruption / users see errors → **Critical**; a real but contained issue → **Important**; only "the code is slightly less clean" → **Minor**:
    - **Critical** — must fix before merge (security, data integrity, broken functionality)
@@ -188,5 +188,5 @@ Update todos as you progress.
   - Use standalone `/tdd` for greenfield TDD on new features, not bug fixes.
 - **assert-presence skill**: Phase 7 optional — sign a load-bearing fix so a later session detects regression. Don't assert-presence every fix (ceremony); assert-presence only fragile ones.
 - **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically. Don't bypass.
-- **Agent routing reference**: silent-failure-hunter (error-handling audit), pr-test-analyzer (test-coverage gaps), security-reviewer (auth/secrets/OWASP), comment-analyzer (docstring/inline comment accuracy).
+- **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
 - **Named model**: the reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

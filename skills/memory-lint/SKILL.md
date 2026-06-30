@@ -1,6 +1,6 @@
 ---
 name: memory-lint
-description: "Deterministic bookkeeping check for the memory store: catch dangling [[links]], orphaned facts, and index drift. Use after writing, editing, or removing memories. Thai: 'memory lint', 'ตรวจ memory', 'เช็คลิงก์ memory'. Don't use for: writing a memory (just write it), semantic content review, or harness ecosystem health (kbg:harness-audit)."
+description: "Bookkeeping check for the memory store: dangling [[links]], orphans, index drift, plus a --trim mode to archive bloat. Use after writing/editing/removing memories or when MEMORY.md is over cap. Thai: 'memory lint', 'ตรวจ memory', 'ย่อ memory'. Don't use for: semantic content review or harness ecosystem health (kbg:harness-audit)."
 ---
 
 # memory-lint
@@ -30,7 +30,7 @@ Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`)
 
 ## Action mode (`--auto-archive`)
 
-Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]). This is the **canonical home of the rubric** — [[memory-trim]] wraps this engine and points here instead of restating it.
+Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]). This engine is the **canonical home of the trim workflow** — the `--trim` aliases below wrap it; there is no separate trim skill.
 
 - **<2KB delta per session** — never collapse the whole store; trim only the worst
 - **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix
@@ -46,7 +46,15 @@ Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-0
 
 Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the prompt (use for CI/scripts). `--json` produces machine-readable output (mode-aware: detector JSON for plain lint, action-plan JSON for `--auto-archive --dry-run`).
 
-For the wrapper skill (`plan` / `apply` / `status` subcommands + before/after size deltas), see [[memory-trim]].
+### `--trim` mode (plan / apply / status)
+
+The trim workflow is `--auto-archive` under three intents — no separate skill:
+
+- **plan** — `--auto-archive --dry-run --json` → the action plan (what would move, projected before/after size) without touching the store.
+- **apply** — `--auto-archive --yes` → executes the reversible `mv`s (collapsed pointers stay grep-able in `_archive/`).
+- **status** — `python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py"` (detector mode) → current finding count + load-budget %; run before and after an apply to read the size delta.
+
+Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big session; for routine link/index checks the default detector is enough.
 
 ## Consuming audit drafts (companion to lint)
 
@@ -88,10 +96,9 @@ sits unread, the next audit run will overwrite it — treat drafts as
 
 - **Rule 12 (fail loud):** a broken cross-link or orphan is silent rot; exit code = finding count makes it visible.
 - **Rule 8 (read before write):** before adding a memory, lint surfaces an existing one it should link to or supersede.
-- **Memory authoring format:** one lesson per file, frontmatter (`name:`, `description:`), body with the fact plus `**Why:**` and `**How to apply:**`, link related memories with `[[slug]]`; dedupe against existing files before writing, and never delete — archive under `_archive/` (see `memory-trim` A3 rubric).
+- **Memory authoring format:** one lesson per file, frontmatter (`name:`, `description:`), body with the fact plus `**Why:**` and `**How to apply:**`, link related memories with `[[slug]]`; dedupe against existing files before writing, and never delete — archive under `_archive/` (see the A3 rubric above).
 
 ## Related
 
 - `harness-audit` — same shape for the skill/agent/hook ecosystem (check 13 covers MEMORY.md pointer→file; this covers the reverse + links)
 - `inventory` — lists artifacts; doesn't judge memory health
-- `memory-trim` — wraps action mode with `plan` / `apply` / `status` subcommands + before/after size deltas

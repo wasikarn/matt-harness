@@ -1,6 +1,6 @@
 ---
 name: mysql-patterns
-description: MySQL and MariaDB schema, query, indexing, transaction, replication, and connection-pool patterns for production backends. Use when designing or troubleshooting MySQL or MariaDB schema, queries, indexing, replication, or pooling. Don't use for non-MySQL/MariaDB databases (see kbg:redis-patterns, kbg:postgres-patterns)."
+description: MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases (see kbg:postgres-patterns).
 metadata:
   origin: ECC
 ---
@@ -361,7 +361,6 @@ When this skill is used for review, return:
 
 ## Related
 
-- Skill: `database-migrations` - migration planning and rollout safety
 - Skill: `backend-patterns` - API and service-layer patterns
 - Skill: `security-review` - secret handling, auth, and least privilege
-- Agent: `database-reviewer` - broader database review workflow
+- Agent: `code-reviewer` - broader review workflow

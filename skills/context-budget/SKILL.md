@@ -1,6 +1,6 @@
 ---
 name: context-budget
-description: Audits Claude Code context window consumption across agents, skills, MCP servers, and rules. Identifies bloat, redundant components, and produces prioritized token-savings recommendations. Use when session costs are climbing, context feels full, or the plugin loads slow. Don't use for one-shot tasks (use kbg:token-budget-advisor for per-call advice).
+description: Audits context-window consumption across agents, skills, MCP servers, and rules; flags bloat and top token savings. Use when context feels full or session costs climb. Don't use for one-off per-response length trimming.
 metadata:
   origin: ECC
 tools: Read, Bash, Glob

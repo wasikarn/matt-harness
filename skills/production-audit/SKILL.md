@@ -1,6 +1,6 @@
 ---
 name: production-audit
-description: Local-evidence production readiness audit for pre-launch reviews, post-merge checks, and prod-failure questions. No external service. Use when the user asks whether an application is ready to ship or what must be fixed before launch. Don't use for in-flight feature work (use orch-* skills) or non-readiness assessments."
+description: Production readiness audit for pre-launch reviews. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
 metadata:
   origin: community
 ---
@@ -201,7 +201,5 @@ Next action: Want me to patch webhook idempotency first?
 ## See Also
 
 - Skill: `security-review`
-- Skill: `deployment-patterns`
-- Skill: `e2e-testing`
 - Skill: `tdd`
-- Skill: `verification-loop`
+- Skill: `eval-harness`

@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture patterns, API design, database optimization, and server-side best practices for Node.js, Express, and Next.js API routes. Use when designing or reviewing a Node.js backend service or Next.js API route. Don't use for Python/Java/Go/Rust backends (see kbg:django-patterns, kbg:fastapi-patterns, kbg:go-reviewer, kbg:java-reviewer).
+description: Backend architecture, API design, and DB optimization for Node.js/Express/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends.
 metadata:
   origin: ECC
 ---
@@ -436,9 +436,8 @@ platform's native limiter. Do not use per-process in-memory counters for
 production APIs: they reset on deploy, split across replicas, and fail open in
 serverless or multi-instance environments.
 
-Keep the backend layer responsible for choosing the integration point and error
-shape; use `api-design` for the HTTP contract and `security-review` for abuse
-case review.
+Keep the backend layer responsible for choosing the integration point, the HTTP
+contract, and the error shape; use `security-review` for abuse case review.
 
 ## Background Jobs & Queues
 

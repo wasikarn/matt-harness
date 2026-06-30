@@ -1,6 +1,6 @@
 ---
 name: inventory
-description: "Show what Claude Code skills, agents, commands, and hooks are loadable from the current project and global layers. Use when exploring available capabilities or verifying what the kbg@kobig plugin delivered. Thai: 'inventory', 'ดู skill ทั้งหมด', 'มี skill อะไรบ้าง'. Don't use for: a single-layer list (use /skills, /agents, or /hooks), capability routing when a skill is already known (use it directly), or governance health queries (kbg:harness-audit --health). Use inventory for the unified cross-layer view (project-local + global in one render) with plugin-delivered markers."
+description: "Unified cross-layer list of loadable skills, agents, commands, hooks (project + global), plus the escape hatch when no known skill fits. Use when exploring capabilities or stuck on routing. Thai: 'มี skill อะไรบ้าง', 'หา skill ไหนเหมาะ'. Don't use for single-layer lists (/skills, /agents) or governance health (kbg:harness-audit --health)."
 ---
 
 # Inventory
@@ -70,6 +70,16 @@ _~/.claude_
 Empty subdirs are skipped silently. No artifacts → no section.
 
 Reference: `reference.md` (description extraction, boundary map, witness details)
+
+## Discovery escape hatch (stuck-on-routing)
+
+When no known skill, command, or agent clearly covers a task, this listing is the place to start: run the inventory, then grep the rendered output (or `BOUNDARY.md`) for keywords from the task to find the nearest match — or confirm none exists.
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/scripts/inventory.sh" | /usr/bin/grep -i '<keyword>'
+```
+
+Each row carries its description, so a keyword scan surfaces the right capability without opening every SKILL.md. If nothing matches, the gap is real — fall back to native tooling rather than inventing a surface.
 
 ## When this skill pays back
 

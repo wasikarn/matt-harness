@@ -1,6 +1,6 @@
 ---
 name: python-patterns
-description: Pythonic idioms, PEP 8 standards, type hints, and best practices for building robust, efficient, and maintainable Python applications. Use when writing or reviewing Python code for idiomatic style and best practices. Don't use for framework-specific Python (use kbg:fastapi-patterns, kbg:django-patterns, kbg:python-testing)."
+description: Pythonic idioms, PEP 8, and type hints. Use when writing or reviewing Python for idiomatic style. Don't use for framework-specific Python (use kbg:fastapi-patterns).
 metadata:
   origin: ECC
 ---

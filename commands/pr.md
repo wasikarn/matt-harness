@@ -1,5 +1,5 @@
 ---
-description: "Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans from `.claude/prds/`, `.claude/plans/`, and the legacy `.claude/PRPs/` artifact paths, analyzes changes, pushes."
+description: "Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes."
 name: pr
 argument-hint: "[base-branch] (default: main)"
 ---
@@ -72,7 +72,7 @@ Categorize changed files: source, tests, docs, config, migrations.
 
 ### Planning Artifacts
 
-Check for related artifacts produced by `/plan-prd`, `/plan`, or the legacy PRP workflow:
+Check for related artifacts produced by `/to-prd`, `/to-issues`, or the legacy PRP workflow:
 - `.claude/prds/` — PRDs this PR implements a milestone of
 - `.claude/plans/` — Plans executed by this PR
 - `.claude/PRPs/prds/` — legacy PRP PRDs

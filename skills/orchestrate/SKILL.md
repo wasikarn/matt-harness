@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what should I work on' or 'what's the priority', plans a day/week/sprint, feels overwhelmed, spans independent sub-tasks or sequential phases, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', or 'จัดpriority'. Don't use for: single-issue triage (triage), PR review (kbg:review-pr), one feature (/ship-task), or single-file coding (inline)."
+description: "Prioritize competing tasks, then route each to inline / batch-parallel / pipeline-sequential / drop. Use when the user lists competing tasks, asks 'what's the priority', plans a sprint, feels overwhelmed, or says 'orchestrate', 'จัดสรรงาน', 'ประชุมจัดลำดับ', 'ลำดับความสำคัญ', 'จัดpriority'. Don't use for: single-issue triage, PR review (kbg:review-pr), one feature (/ship-task), or single-file coding."
 ---
 
 # Orchestrate
@@ -45,7 +45,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/shi
 3. **Route** each item to an execution path (routing table below).
 4. **Propose, then dispatch.** Present the allocation first.
    - **Ungated** — only agents with no mutation tools (`code-reviewer`, `code-architect` — read/search/web only, no `Edit`/`Write`/`Bash`) dispatch without a gate.
-   - **Gated — AskUserQuestion required** — any agent holding `Edit`, `Write`, **or `Bash`** (Bash mutates via shell: `git push`, `sed -i`, `rm`). That is the write-capable engineers, **and** the Bash-holding review/research agents (`security-reviewer`, `researcher`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`). A planning question ("what should I work on") is not authorization to execute. **This gate operates at the conversation level and is mandatory regardless of auto-approve settings.** Present the allocation, **analyze** each task's blast radius and dependency chain, **recommend** the safest dispatch order, then **AskUserQuestion** single-select: "[N] tasks allocated: [list]. Blast radius: [low/medium/high]. Dependencies: [none / chain]. My recommendation: [dispatch order]. Approve?"
+   - **Gated — AskUserQuestion required** — any agent holding `Edit`, `Write`, **or `Bash`** (Bash mutates via shell: `git push`, `sed -i`, `rm`). That is the write-capable engineers, **and** the Bash-holding review agents (`security-reviewer`, `silent-failure-hunter`). A planning question ("what should I work on") is not authorization to execute. **This gate operates at the conversation level and is mandatory regardless of auto-approve settings.** Present the allocation, **analyze** each task's blast radius and dependency chain, **recommend** the safest dispatch order, then **AskUserQuestion** single-select: "[N] tasks allocated: [list]. Blast radius: [low/medium/high]. Dependencies: [none / chain]. My recommendation: [dispatch order]. Approve?"
      - `Approve dispatch — all write-capable agents (Recommended when tasks are independent and blast radius is low)`
      - `Revise — remove or add items (Recommended when dependencies are misordered or scope is off)`
      - `Reject — keep as plan only (Recommended when user only asked for prioritization, not execution)`
@@ -133,9 +133,9 @@ This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol e
 
 ### Concept
 
-1. **Step A — Builder implements.** A write-capable agent (e.g. `backend-engineer`) produces the artifact.
+1. **Step A — Builder implements.** A write-capable agent produces the artifact.
 2. **Step B — Validator reviews.** A read-only agent (e.g. `code-reviewer`) checks quality; `security-reviewer` checks OWASP.
-3. **Step C — Fixer repairs (conditional).** If the validator rejects, the builder or `backend-engineer` (clarity-only scope) addresses the findings.
+3. **Step C — Fixer repairs (conditional).** If the validator rejects, the builder (clarity-only scope) addresses the findings.
 4. **Step D — Re-validator confirms.** The same or a different validator verifies the fix.
 
 The chain is a DAG in the board: `A → B → F → D`. Each edge is `depends_on` + `recompute_blocked()`.
@@ -396,10 +396,10 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 
 | Task | Quadrant | Route |
 |---|---|---|
-| prod 500s | Q1 urgent + important, specialized | `backend-engineer` (write — confirm first) — done-when: errors gone + root cause in commit |
-| auth refactor | Q2 + touches auth | **security precedence**: `security-reviewer` reviews first → then `backend-engineer` (clarity-only scope) applies (both gated — confirm before each) |
+| prod 500s | Q1 urgent + important, specialized | a write-capable agent (write — confirm first) — done-when: errors gone + root cause in commit |
+| auth refactor | Q2 + touches auth | **security precedence**: `security-reviewer` reviews first → then a write-capable agent (clarity-only scope) applies (both gated — confirm before each) |
 | signups CSV | Q3 urgent, not important | **inline** — trivial query; orchestrating costs more (guardrail) |
-| pnpm move | Q2 important, not urgent | `researcher` — compare + report, don't migrate |
+| pnpm move | Q2 important, not urgent | `/deep-dive` — compare + report, don't migrate |
 | dark-mode toggle | Q4 neither | **drop** — mark `wontfix`; outside current roadmap |
 
 Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`, none needed here). CSV inline. Dark-mode dropped.

@@ -8,14 +8,14 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 
 | Aspect arg | Routes to | Notes |
 |---|---|---|
-| `code` | `code-reviewer` ONLY | general quality pass, doesn't include test / security / etc |
-| `tests` | `pr-test-analyzer` | only if test files changed (Phase 3 condition) |
-| `comments` | `comment-analyzer` | only if docs/comments added |
+| `code` | `code-reviewer` (general-quality lens) ONLY | general quality pass, doesn't include test / security / etc |
+| `tests` | `code-reviewer` (behavioral test-coverage lens) | only if test files changed (Phase 3 condition) |
+| `comments` | `code-reviewer` (comment-accuracy lens) | only if docs/comments added |
 | `errors` | `silent-failure-hunter` | only if error handling changed |
 | `security` | `security-reviewer` | only if auth/secrets/input touched |
-| `types` | `type-design-analyzer` | only if types/interfaces/DTOs/schemas/models changed |
-| `ux` | `ux-reviewer` | only if user-facing UI/components/flows changed |
-| `simplify` | NOT a reviewer | invoke `backend-engineer` (clarity-only scope) separately after review decisions land (Phase 7 next-step) — see `kbg:progressive-refine` Pass 2 |
+| `types` | `code-reviewer` (type-design lens) | only if types/interfaces/DTOs/schemas/models changed |
+| `ux` | `code-reviewer` (UX/a11y lens) | only if user-facing UI/components/flows changed |
+| `simplify` | NOT a reviewer | run native `/simplify` (clarity-only) separately after review decisions land (Phase 7 next-step) |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
 
 ## Agent Descriptions
@@ -24,14 +24,10 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 
 | Agent | Specialty |
 |---|---|
-| `comment-analyzer` | Comment accuracy + rot detection + doc completeness |
-| `pr-test-analyzer` | Behavioral test-coverage gaps (rated 1-10 by criticality, not by line %) |
 | `silent-failure-hunter` | Silent failures + broad catches + unjustified fallbacks |
 | `security-reviewer` | OWASP + auth + secrets + supply chain — flags with severity, doesn't fix |
-| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80 |
-| `type-design-analyzer` | Type/DTO/schema encapsulation + invariants + API-contract honesty (rated 1-10) |
-| `ux-reviewer` | UX friction + cognitive load + WCAG 2.1 AA accessibility + interaction flow |
-| `backend-engineer` post-review polish (clarity-only scope, **not** a reviewer) | Clarity/readability refactor without behavior change |
+| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80. Also carries the **comment-accuracy lens** (comment accuracy + rot + doc completeness), the **type-design lens** (type/DTO/schema encapsulation + invariants + illegal-states-unrepresentable), the **behavioral test-coverage lens** (test gaps by criticality, not line %), and the **UX/a11y lens** (interaction flow + WCAG basics) |
+| native `/simplify` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
 ## Tips
 

@@ -289,26 +289,11 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
-// BAD: Holding references in closures
-const Component = () => {
-  const largeData = useLargeData();
-  useEffect(() => {
-    eventEmitter.on('update', () => {
-      console.log(largeData); // Closure keeps reference
-    });
-  }, [largeData]);
-};
-
-// GOOD: Use refs or proper dependencies
-const largeDataRef = useRef(largeData);
+// BAD: subscription without teardown keeps the closure (and its captured
+// data) alive — always return an unsubscribe from useEffect.
+// GOOD: capture via a ref, subscribe a named handler, off() in cleanup.
 useEffect(() => {
-  largeDataRef.current = largeData;
-}, [largeData]);
-
-useEffect(() => {
-  const handleUpdate = () => {
-    console.log(largeDataRef.current);
-  };
+  const handleUpdate = () => console.log(dataRef.current);
   eventEmitter.on('update', handleUpdate);
   return () => eventEmitter.off('update', handleUpdate);
 }, []);
@@ -372,58 +357,9 @@ onFCP(console.log);  // First Contentful Paint
 onTTFB(console.log); // Time to First Byte
 ```
 
-## Performance Report Template
+## Performance Report Format
 
-````markdown
-# Performance Audit Report
-
-## Executive Summary
-- **Overall Score**: X/100
-- **Critical Issues**: X
-- **Recommendations**: X
-
-## Bundle Analysis
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| Total Size (gzip) | XXX KB | < 200 KB | WARNING: |
-| Main Bundle | XXX KB | < 100 KB | PASS: |
-| Vendor Bundle | XXX KB | < 150 KB | WARNING: |
-
-## Web Vitals
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| LCP | X.Xs | < 2.5s | PASS: |
-| INP | XXms | < 200ms | PASS: |
-| CLS | X.XX | < 0.1 | WARNING: |
-
-## Critical Issues
-
-### 1. [Issue Title]
-**File**: path/to/file.ts:42
-**Impact**: High - Causes XXXms delay
-**Fix**: [Description of fix]
-
-```typescript
-// Before (slow)
-const slowCode = ...;
-
-// After (optimized)
-const fastCode = ...;
-```
-
-### 2. [Issue Title]
-...
-
-## Recommendations
-1. [Priority recommendation]
-2. [Priority recommendation]
-3. [Priority recommendation]
-
-## Estimated Impact
-- Bundle size reduction: XX KB (XX%)
-- LCP improvement: XXms
-- Time to Interactive improvement: XXms
-````
+Report per finding: **file:line**, **impact** (measured delay/size), **fix** (before/after snippet). Lead with a summary line (overall score, critical-issue count) and an estimated-impact line (bundle KB saved, LCP/TTI ms improved).
 
 ## When to Run
 

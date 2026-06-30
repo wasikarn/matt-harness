@@ -36,8 +36,8 @@ stages:
         done_when: "report.json exists at .scratch/review-pr/security.json"
       - id: test-coverage
         type: agent
-        agent_type: pr-test-analyzer
-        prompt: "Score the diff 1-10 on behavioral criticality of untested paths. Emit a JSON report with untested_paths and risk_rating."
+        agent_type: code-reviewer
+        prompt: "Behavioral test-coverage lens: score the diff 1-10 on behavioral criticality of untested paths. Emit a JSON report with untested_paths and risk_rating."
         done_when: "report.json exists at .scratch/review-pr/coverage.json"
       - id: error-handling
         type: agent
@@ -46,8 +46,8 @@ stages:
         done_when: "report.json exists at .scratch/review-pr/errors.json"
       - id: comments
         type: agent
-        agent_type: comment-analyzer
-        prompt: "Audit the diff's docstrings and inline comments for accuracy and value. Emit a JSON report: {stale: [{file, line, comment}]}."
+        agent_type: code-reviewer
+        prompt: "Comment-accuracy lens: audit the diff's docstrings and inline comments for accuracy and value. Emit a JSON report: {stale: [{file, line, comment}]}."
         done_when: "report.json exists at .scratch/review-pr/comments.json"
 
   - id: merge-reports
@@ -64,7 +64,7 @@ stages:
     body:
       - id: apply-fixes
         type: agent
-        agent_type: backend-engineer
+        agent_type: build-error-resolver
         prompt: "Apply the merged action plan from merged-report.json. Do NOT re-review; just apply. Files you own are listed in the action plan's owner column."
         done_when: "diff matches the action plan's 'edits' list"
       - id: re-validate

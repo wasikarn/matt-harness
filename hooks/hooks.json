@@ -26,18 +26,6 @@
         ]
       }
     ],
-    "PreCompact": [
-      {
-        "id": "lifecycle:pre-compact",
-        "description": "Lifecycle: log compaction events to ~/.local/share/kbg/compaction-log.txt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/pre-compact.sh\""
-          }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "id": "advisory:flow-nudge",

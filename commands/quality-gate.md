@@ -23,7 +23,7 @@ The gate is a single-file formatter check driven by hook input, not CLI flags:
     `post-edit-format` already runs `biome check --write`)
   - `.go` - `gofmt`
   - `.py` - `ruff format`
-- Lint and type checks are not part of this gate. Use the `verification-loop`
+- Lint and type checks are not part of this gate. Use the `eval-harness`
   skill or the language verification skills for lint/type/test pipelines.
 
 ## Usage

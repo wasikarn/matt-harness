@@ -8,9 +8,9 @@
   "plugins": [
     {
       "name": "kbg",
-      "version": "v0.5.8",
+      "version": "v0.6.0",
       "source": ".",
-      "description": "126 skills · 54 agents · 63 commands. Composer-not-creator harness for the Tathep platform: ECC-bundled + kbg-native surfaces (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). Loop engineering (goal-spec, fake-done guard, harness-audit). PreToolUse deny-gates, advisory sensors, and SessionStart doctrine injection.",
+      "description": "49 skills · 13 agents · 25 commands. Matt-Pocock-first harness for the Tathep platform: the idea→ship flow (grill → prototype → PRD → issues → ship) plus Tathep stacks (AdonisJS, Drizzle, Effect-TS, Hono, Tauri v2, LangGraph, gRPC). Computational deny-gates, advisory sensors, SessionStart doctrine injection, harness-audit.",
       "author": {
         "name": "KOBIG"
       },

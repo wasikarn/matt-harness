@@ -44,7 +44,7 @@ stages:
   - id: merge-agent
     type: agent
     depends_on: [test]
-    agent_type: backend-engineer
+    agent_type: build-error-resolver
     prompt: |
       Open a PR with the diff from `build → validate → test`. The
       validation chain has passed; your job is the merge commit and

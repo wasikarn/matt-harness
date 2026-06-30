@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Judgment Ladder decision support. Modes: probe (analyze before committing), decide (5-rung ladder), strategize (irreversible choices). Produces a decision record. Use when facing a non-trivial choice with multiple defensible options. Don't use for obvious picks or when the user has already decided."
+description: "Judgment Ladder decision support — clarify scope, stress-test reasoning, pick among defensible options (modes: probe, decide, strategize). Use when facing a non-trivial choice. Don't use for obvious picks or already-decided calls."
 metadata:
   origin: kbg
   references:
@@ -24,12 +24,12 @@ Run the sizing triad first:
 
 | Situation | Mode |
 |---|---|
-| Scope or assumptions still unclear | `clarify-first` — stop, don't decide yet |
+| Scope or assumptions still unclear | Stop — ask the structured clarifying question (analyze → recommend → ask) before deciding |
 | Read-only: understand before committing | `probe` |
 | Reversible choice, analyzable trade-offs | `decide` (default — Judgment Ladder) |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
 | Chaos or incident | Stop — use `kbg:triage` instead |
-| Decision already made, needs a record | `kbg:architecture-decision-records` directly |
+| Decision already made, needs a record | `kbg:domain-modeling` directly (owns the ADR rule) |
 
 ---
 
@@ -69,7 +69,7 @@ Systems-thinking analysis *before* committing to a frame. Use when the diagnosis
 itself is contested or the problem space is complex/emergent.
 
 1. Map the system: actors, flows, feedback loops, delays.
-2. Name the leverage points (see `kbg:thinking` → leverage-points model).
+2. Name the leverage points — the highest-impact spots to intervene (see `docs/reference/thinking-skills/`).
 3. Stress-test the diagnosis: what would prove the current frame wrong?
 4. Output: a framing memo, not a decision — hand off to `decide` or `strategize`.
 
@@ -129,7 +129,7 @@ Trade-offs accepted: ...
 - Bias guards applied: framing / anchoring / confirmation / sunk-cost
 ```
 
-Persist via `kbg:architecture-decision-records` when the decision warrants a durable ADR.
+Persist via `kbg:domain-modeling` (owns the ADR rule) when the decision warrants a durable ADR.
 
 ## Guardrails
 

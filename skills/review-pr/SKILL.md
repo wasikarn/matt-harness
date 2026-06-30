@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before opening a PR, when a PR is ready, after addressing feedback, or when asked to review changes/aspects. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: a quick diff review (use /code-review, optionally --fix/--comment/ultra) or a single GitHub PR (use /review), single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool)."
+description: "Run multi-agent PR review across code quality, tests, comments, errors, security, types, accessibility/UX, and simplification. Use when finishing changes before a PR, when a PR is ready, or after addressing feedback. Thai: 'review PR', 'ตรวจ PR', 'ดู PR นี้', 'รีวิว code'. Don't use for: a quick diff review (use /code-review) or a single GitHub PR (use /review), single-file diffs (review inline), security-only audits (kbg:security-auditor), post-merge retrospectives, or invoking a single agent (use Agent tool)."
 ---
 
 # Comprehensive PR Review
@@ -64,17 +64,17 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 **Actions**:
 1. Route per conditional rules — each rule fires only if BOTH (a) Phase 2's file list matches the file-type condition AND (b) Phase 1's aspect arg includes the corresponding aspect (or `all`):
-   - `code` aspect (or `all`) → **always**: `code-reviewer` (general quality — no file-type condition)
-   - `tests` aspect (or `all`) AND (test files changed **OR** files under `claude/{agents,skills,commands,hooks}/` changed) → `pr-test-analyzer` (the harness's own code is the one place an untested change is highest-risk, so it defaults on for harness diffs even with no test files in the change)
-   - `comments` aspect (or `all`) AND comments/docs added → `comment-analyzer`
+   - `code` aspect (or `all`) → **always**: `code-reviewer` (general-quality lens — no file-type condition)
+   - `tests` aspect (or `all`) AND (test files changed **OR** files under `claude/{agents,skills,commands,hooks}/` changed) → `code-reviewer` with the **behavioral test-coverage lens** (the harness's own code is the one place an untested change is highest-risk, so it defaults on for harness diffs even with no test files in the change)
+   - `comments` aspect (or `all`) AND comments/docs added → `code-reviewer` with the **comment-accuracy lens**
    - `errors` aspect (or `all`) AND error handling changed → `silent-failure-hunter`
    - `security` aspect (or `all`) AND changes touch auth/secrets/external input → `security-reviewer`
-   - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `type-design-analyzer`
-   - `ux` aspect (or `all`) AND user-facing UI/components/copy/flows changed → `ux-reviewer`
-2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY pr-test-analyzer (even though code-reviewer is "always applicable" under `all`). `kbg:review-pr code tests` runs code-reviewer + pr-test-analyzer.
+   - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `code-reviewer` with the **type-design lens** (encapsulation, invariants, illegal-states-unrepresentable)
+   - `ux` aspect (or `all`) AND user-facing UI/components/copy/flows changed → `code-reviewer` with the **UX/a11y lens** (interaction flow, WCAG basics)
+2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY code-reviewer's behavioral test-coverage lens (not the general-quality lens). `kbg:review-pr code tests` runs code-reviewer with both the general-quality and test-coverage lenses.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
 
-**Note**: code simplification is **NOT a reviewer** — it's an optional post-review polish step. See Phase 7 step 2 next-step suggestions (uses `backend-engineer` with clarity-only scope).
+**Note**: code simplification is **NOT a reviewer** — it's an optional post-review polish step. See Phase 7 step 2 next-step suggestions (uses the native `/simplify` with clarity-only scope).
 
 ---
 
@@ -214,7 +214,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - Agents dispatched + their tier counts (e.g. "code-reviewer: 2 Critical / 3 Important / 0 Minor")
    - User decision (author flow: fixed-now / deferred / proceeded-as-is; reviewer flow: posted line-level / posted summary / fixed+pushed / skipped)
    - **Suggested next steps** (pick what applies):
-     - Wants clarity polish after fixes → invoke `backend-engineer` (clarity-only scope) as follow-up (NOT part of kbg:review-pr itself; see `kbg:progressive-refine` Pass 2)
+     - Wants clarity polish after fixes → run the native `/simplify` (clarity-only, behavior-preserving) as follow-up (NOT part of kbg:review-pr itself)
      - At PR-ready → `/ship-merge` (or push for review)
      - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA window)
      - Reviewer comments came back externally → `/address-review`
@@ -277,13 +277,13 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **METHODOLOGY alignment**:
   - Rule 1 (Think before coding) → **Phase 1 scope** + **Phase 2 pinned window** establish what's under review before agents dispatch
   - Rule 7 (Surface conflicts, don't average) → **Phase 5** preserves per-agent attribution; do NOT blend or dedupe across agents. Scrutinize gate challenges intent before tiering — simpler alternatives are surfaced, not averaged away.
-  - Rule 9 (Tests verify intent) → pr-test-analyzer focuses on behavioral coverage, not line coverage
+  - Rule 9 (Tests verify intent) → code-reviewer's behavioral test-coverage lens focuses on behavioral coverage, not line coverage
   - Rule 12 (Fail loud) → silent-failure-hunter catches hidden failures before merge. Phase 5 blanket-approval rejection prevents false confidence from empty "LGTM" agents.
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: secret-scan runs on all diffs automatically. doctrine-edit-gate protects CLAUDE.md/METHODOLOGY.md from mid-session edits.
 - **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
-- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests → pr-test-analyzer. Comments → comment-analyzer. Error handling → silent-failure-hunter. Polish → `backend-engineer` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
+- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests, comments, types → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design lens. Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship-task`, `/fix-bug`, and `kbg:review-pr` — normalized in commit `9e89bf2`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.

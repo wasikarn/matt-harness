@@ -1,6 +1,6 @@
 ---
 name: kbg-help
-description: "Quick reference card for kbg-harness skills, commands, agents, validation pipeline, and context tiers. Use when the user asks 'help', 'what can you do', 'list skills', 'how do I use kbg', or 'kbg commands', or when the user says 'ช่วยเหลือ', 'มีอะไรบ้าง', 'ใช้ kbg ยังไง'. Don't use for: deep capability discovery (use kbg:harness-nav) or governance journal queries (use kbg:harness-audit --health). One-shot display, read-only."
+description: "kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'."
 ---
 
 # /kbg-help — kbg-harness quick reference
@@ -9,32 +9,31 @@ Display this reference card. One-shot, read-only. Do not change mode, write file
 
 ## Where do I start? (by stage)
 
-You don't memorize surfaces — describe what you're doing and the harness auto-routes via each surface's `description:`. The table below is the **stable entry point** per stage; the full, always-current inventory of every surface is generated in `BOUNDARY.md`, and `kbg:harness-nav` mines it when nothing here fits.
+You don't memorize surfaces — describe what you're doing and the harness auto-routes via each surface's `description:`. The table below is the **stable entry point** per stage; the full, always-current inventory of every surface is generated in `BOUNDARY.md`, and `kbg:inventory` lists every loadable surface when nothing here fits.
 
 | Stage | Entry points |
 |-------|--------------|
-| **DEFINE** — idea, scope, research | `/ideate` · `kbg:clarify-first` · `/deep-dive` |
+| **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `/deep-dive` |
 | **PLAN** — spec, prioritize | `kbg:orchestrate` · `kbg:triage` · `kbg:decide` |
 | **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-dev` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `kbg:review-pr` (per-task validation) |
-| **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:critical-eval` |
+| **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
 | **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
 
 Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship-task`, `/deep-dive`, `kbg:decide` probe mode).
 
 ### ...and which specialist (agent) per stage
 
-The 29-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
+The 13-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
 
 | Stage | Agent specialists |
 |-------|-------------------|
-| **DEFINE** | `product-analyst` (requirements/AC) · `Explore` (trace existing code) · `researcher` (external options) |
-| **DESIGN** | `code-architect` (blueprint) · `type-design-analyzer` (contracts/encapsulation) |
-| **BUILD** | `backend-engineer` · `frontend-engineer` · `mobile-engineer` · `data-engineer` · `ml-engineer` · `platform-engineer` · `devops-engineer` · domain: `i18n-specialist` · `compliance-engineer` · `finops-engineer` |
-| **VERIFY** | `test-engineer` (write tests) · `pr-test-analyzer` (coverage gaps) |
-| **REVIEW** | `code-reviewer` · `security-reviewer` · `silent-failure-hunter` · `comment-analyzer` · `ux-reviewer` (simplification: `backend-engineer` with clarity-only scope — see `kbg:progressive-refine` Pass 2) |
-| **OPERATE** | `incident-commander` (live incident) · `maintenance-engineer` (debt/refactor post-ship) |
-| **Cross-cutting** | `technical-writer` · `api-doc-specialist` (docs, any stage) · `ideate-critic` · `inferential-structural-judge` (fresh-context critics/sensors) |
+| **DEFINE** | `spec-miner` (requirements/spec/AC mining) |
+| **DESIGN** | `code-architect` (blueprint, interfaces, seams) |
+| **BUILD** | `build-error-resolver` (auto-detects build system, fixes build/type errors) |
+| **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
+| **OPERATE** | `refactor-cleaner` (dead-code removal, behavior-preserving refactor) |
+| **Cross-cutting** | `chief-of-staff` (prioritize + route) · `ideate-critic` · `inferential-structural-judge` (fresh-context critics/sensors) |
 
 You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spawn the right specialists for you. This lens is for when you want one on purpose.
 
@@ -42,12 +41,12 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 
 | Need | Reach for |
 |------|-----------|
-| Don't know which skill/command covers a task | `kbg:harness-nav` |
+| Don't know which skill/command covers a task | `kbg:inventory` |
 | Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
 | Read-only governance journal / verdicts / silent sensors | `kbg:harness-audit --health` |
 | 12-cell coverage decay grid (quarter-end) | `kbg:harness-audit --coverage` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
-| Mental-model reference library (39 cc-thinking-skills + workflow-pattern map) | Read `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` via Bash, or run `kbg:harness-nav` and search for "reasoning-models" |
+| Mental-model reference library (39 cc-thinking-skills + workflow-pattern map) | Read `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` via Bash, or run `kbg:inventory` to locate "reasoning-models" |
 
 ## Context tiers
 
@@ -55,7 +54,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 |------|-----------------|--------------|
 | **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md  + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
 | **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship-task`) or skill-nudge keyword |
-| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:harness-nav` mines the inventory when you don't know the right surface |
+| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:inventory` lists every loadable surface when you don't know the right one |
 
 ## Validation shortcuts
 
@@ -98,4 +97,4 @@ Run these from any project CWD because `${KBG_PLUGIN_ROOT}` resolves to the plug
 - Agents: `ls "${KBG_PLUGIN_ROOT}/agents"/*.md | xargs -n1 basename | sed 's|\.md||'`
 - Hooks: `jq '.hooks[].name' "${KBG_PLUGIN_ROOT}/hooks/hooks.json"`
 
-For deeper discovery, run `kbg:harness-nav`.
+For deeper discovery, run `kbg:inventory`.
