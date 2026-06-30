@@ -1,6 +1,6 @@
 ---
 name: setup-matt-pocock-skills
-description: "One-time bootstrap — map matt-pocock skills to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo."
+description: "Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo."
 metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: one-time repo configuration that writes tracker labels + doc layout — destructive on a configured repo
@@ -127,3 +127,6 @@ For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch us
 ### 5. Done
 
 Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later — re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+
+1. confirm each config file the matt skills read from now exists and is non-empty.
+   If a mapping drifts from the project's real tracker/labels or a file is left empty, the downstream skills will misfire — never declare setup complete until every file the skills read is populated.

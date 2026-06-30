@@ -1,6 +1,6 @@
 ---
 name: latency-critical-systems
-description: Use when designing, reviewing, or debugging latency-sensitive systems — realtime dashboards, market data, streaming, queues, caches, or HFT-like infra. Don't use for batch or offline processing.
+description: Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline.
 metadata:
   origin: ECC
 tools: Read, Write, Edit, Bash, Grep, Glob
@@ -72,3 +72,6 @@ ready.
 - Do not run live orders, destructive migrations, or customer-impacting deploys
   without an explicit approval gate.
 - Keep secrets and private payloads out of logs and benchmark artifacts.
+
+1. confirm the latency budget holds under realistic load — verify the p99 stays inside the SLO across the canary window.
+   If a fix drifts the bottleneck elsewhere or the canary shows degraded providers, avoid declaring victory — never close without a green canary run.

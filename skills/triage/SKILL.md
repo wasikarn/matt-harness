@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Triage state machine — categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive on the project tracker. Don't use for issue implementation or non-triage comments.
+description: "Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments."
 metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: posts AI-authored comments to the issue tracker — governance rule, every comment must start with the disclaimer and the user decides when to triage
@@ -112,3 +112,6 @@ Capture everything resolved during grilling under "established so far" so the wo
 ## Resuming a previous session
 
 If prior triage notes exist on the issue or PR, read them, check whether the reporter has answered any outstanding questions, and present an updated picture before continuing. Don't re-ask resolved questions.
+
+1. confirm every issue has a disposition before closing — categorise → verify → brief, or drop explicitly.
+   If triage drifts into implementing the fix or re-asks a resolved question, stop: triage owns routing, never the fix.

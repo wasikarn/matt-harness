@@ -56,7 +56,13 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
     # here; extending further belongs in a dedicated audit-policy pass.
     # M2-M11 additions: leading-word recuts from description-trim pass 2026-06-30
     # (audit script check #36 silently accepts the prior).
-    synthesise-seam|slice|doctrine|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach) : ;;  # silent
+    # M12 additions (2026-06-30, 0-INFO goal pass): framework proper-nouns (a
+    # pattern-catalog skill's first word IS the framework — a named concept that
+    # recruits a prior, not a generic noun; forcing a matt coined term onto a
+    # framework catalog degrades the desc) + recognized kbg coined concepts.
+    # Generic imperative verbs (run/use/manage/create/analyze/prioritize/orchestrate/audits)
+    # are deliberately NOT added — those descs are recast to a vocab lead instead.
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 

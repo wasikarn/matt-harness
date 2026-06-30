@@ -1,6 +1,6 @@
 ---
 name: hono-patterns
-description: "Hono web framework patterns: typed routing, Zod validation, middleware, RPC client, context variables, and Bun/Node runtime adapters. Use when building or maintaining Hono web services on Bun or Node. Don't use for Express, Fastify, NestJS, or other non-Hono frameworks."
+description: "Hono patterns: typed routing, Zod validation, middleware, RPC client, context vars. Use when building Hono services on Bun/Node. Don't use for Express, Fastify, or NestJS."
 metadata:
   origin: kbg
   tathep_projects:
@@ -210,3 +210,8 @@ expect(body).toMatchObject({ users: expect.any(Array) })
 - **`c.set()` type inference** — the `Variables` generic on `new Hono<{ Variables: ... }>()` must be consistent across the app and sub-routers. A sub-router without the generic loses type safety on `c.var`.
 - **RPC export type** — the RPC client type is `typeof router`, NOT the Hono instance type. Export `type AppType = typeof app` from the entry file.
 - **`app.route()` strips base path** — when a sub-router is mounted at `/users`, the sub-router's handlers receive paths relative to `/users` (e.g., `/:id` not `/users/:id`).
+
+## Verify before use
+
+1. Before applying, verify any pattern against Hono's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

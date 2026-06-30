@@ -1,6 +1,6 @@
 ---
 name: adonisjs-patterns
-description: "AdonisJS v5 patterns: IoC container, Lucid ORM (ActiveRecord), Japa tests, VineJS validation, middleware, auth guards, and ace CLI commands. Use when building or maintaining an AdonisJS v5 backend (Tathep platform-api uses this). Don't use for general Node.js or non-AdonisJS frameworks — see kbg:hono-patterns or kbg:fastapi-patterns."
+description: "AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks."
 metadata:
   origin: kbg
   tathep_projects:
@@ -185,3 +185,8 @@ node ace db:seed                            # run seeders
 - **`@column.dateTime`** — always use `DateTime` (from Luxon) not `Date`. Lucid serializes/deserializes via Luxon automatically.
 - **Japa `client` fixture** — requires `apiClient` plugin. Must be in `tests/bootstrap.ts` plugins array.
 - **Migration file naming** — must match `YYYYMMDDHHMMSS_description.ts`; ace generates this automatically.
+
+## Verify before use
+
+1. Before applying, verify any pattern against AdonisJS v5's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

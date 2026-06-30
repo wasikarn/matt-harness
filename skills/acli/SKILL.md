@@ -1,6 +1,6 @@
 ---
 name: acli
-description: "Use when handling bulk Jira work-item operations and Confluence space/page/blog management from the terminal. Covers transitions, labels, assignments, comments, clones, archives, bulk-edit fields, JQL exports. Thai: 'ย้ายสถานะหลายตัว', 'แก้ label/assignee หลายรายการ', 'อัปเดตหลาย ticket', 'export JQL'. For creating a single Thai-format Bug or Story with guided AC, use kbg:create-jira-ticket instead. Don't use for single-ticket reads, JQL syntax help, install/config/auth, cheat sheets, GitHub/GitLab, or non-Atlassian trackers."
+description: "Compact Jira/Confluence bulk ops + ADF→markdown (~80% token cut). Use when bulk-editing work-items/pages. Thai: 'ย้ายสถานะหลายตัว', 'export JQL'. Don't use for single-ticket reads/creates, config, non-Atlassian trackers."
 ---
 
 # acli — Atlassian Cloud CLI

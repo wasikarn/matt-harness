@@ -1,6 +1,6 @@
 ---
 name: codebase-onboarding
-description: "Analyze an unfamiliar codebase into a structured onboarding guide — architecture map, entry points, conventions. Use when joining a new repo or taking over a project. Don't use for single-file lookups (just read the file)."
+description: "Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups."
 metadata:
   origin: ECC
 ---
@@ -232,3 +232,6 @@ Generate or update a project-specific CLAUDE.md based on detected conventions. I
 **User**: "Update the CLAUDE.md with current project conventions"
 **Action**: Read existing CLAUDE.md, run Phases 1-3, merge new findings
 **Output**: Updated `CLAUDE.md` with additions clearly marked
+
+1. verify the onboarding guide against the live code — confirm every entry point + convention named actually exists in the repo.
+   If a claim drifts from what the code does (detected vs actual differ), trust the code — never ship a guide that guesses when it could verify.

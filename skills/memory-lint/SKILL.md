@@ -1,6 +1,6 @@
 ---
 name: memory-lint
-description: "Bookkeeping check for the memory store: dangling [[links]], orphans, index drift, plus a --trim mode to archive bloat. Use after writing/editing/removing memories or when MEMORY.md is over cap. Thai: 'memory lint', 'ตรวจ memory', 'ย่อ memory'. Don't use for: semantic content review or harness ecosystem health (kbg:harness-audit)."
+description: "Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health."
 ---
 
 # memory-lint
@@ -10,8 +10,6 @@ Karpathy's llm-wiki **Lint** operation for the memory store: catch the bookkeepi
 **When to use:** after writing/editing/removing memories, or on demand to check memory health.
 
 **When NOT to use:** writing a memory (just Write it + add the MEMORY.md line), semantic review of memory *content*, or skill-ecosystem health (use `harness-audit`).
-
----
 
 ## Run
 

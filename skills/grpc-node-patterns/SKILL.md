@@ -1,6 +1,6 @@
 ---
 name: grpc-node-patterns
-description: "gRPC patterns for Node.js and Bun: proto definition, @grpc/grpc-js client and server, TypeScript codegen, streaming, error codes, and deadlines/metadata. Use when building or maintaining gRPC services in Node.js or Bun. Don't use for REST/HTTP APIs or non-Node.js gRPC (use grpc-node-patterns analogues)."
+description: "gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC."
 metadata:
   origin: kbg
   tathep_projects:
@@ -255,3 +255,8 @@ import * as protoLoader from '@grpc/proto-loader'
 - **Proto field naming** — protobuf uses `snake_case`; TypeScript codegen converts to `camelCase`. `image_data` in proto → `imageData` in TS.
 - **Stream `cancel` vs `destroy`** — `stream.cancel()` sends a `CANCELLED` status to the server gracefully. `stream.destroy()` is a local-only teardown.
 - **`UNAVAILABLE` is retryable** — implement exponential backoff for `UNAVAILABLE` and `DEADLINE_EXCEEDED` errors.
+
+## Verify before use
+
+1. Before applying, verify any pattern against @grpc/grpc-js's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

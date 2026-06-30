@@ -1,6 +1,6 @@
 ---
 name: ship-change
-description: "Orchestrate a scoped change — add, fix, change, refactor, or build-MVP — through classify → implement → review → address → merge. Use when a change is scoped and ready to sequence. Don't use for blank-slate discovery (use /ship-task) or one-line fixes. Thai: 'ship change', 'พร้อม merge', 'ขึ้น production'."
+description: "Slice a scoped change (add/fix/refactor/build-MVP) through classify→implement→review→merge. Use when a change is scoped and ready to sequence. Don't use for blank-slate discovery or one-line fixes."
 ---
 
 # Ship Change
@@ -38,3 +38,8 @@ Guide the user through the complete change lifecycle. This is a meta-orchestrato
 | 4 → 5 | `/ship-merge` | After all threads resolved + CI green |
 
 See `reference.md` for: full Phase 1–5 procedures, precondition gates, and failure modes to avoid.
+
+## Done when
+
+1. verify the change is merged after Phase 5 review — confirm CI is green and the PR addresses the original slice scope.
+   If a phase gate is skipped or scope drifts beyond the slice, stop: merging unreviewed or out-of-scope work fails the slice discipline. never bypass a precondition gate to ship faster.

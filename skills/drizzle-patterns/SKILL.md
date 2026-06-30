@@ -1,6 +1,6 @@
 ---
 name: drizzle-patterns
-description: "Drizzle ORM patterns: schema definition, type inference, drizzle-kit migrations, query builder, relations, transactions, and prepared statements for PostgreSQL/SQLite. Use when building or maintaining Drizzle ORM applications on PostgreSQL or SQLite. Don't use for Prisma, TypeORM, or other non-Drizzle ORMs."
+description: "Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM."
 metadata:
   origin: kbg
   tathep_projects:
@@ -220,3 +220,8 @@ await migrate(db, { migrationsFolder: './drizzle' })
 - **Returning clause required for insert result** — `db.insert(...).values(...).returning()` returns an array. Without `.returning()`, insert returns no rows.
 - **`.$inferSelect` vs `.$inferInsert`** — infer types from schema, not manually. `$inferInsert` makes all fields with defaults optional.
 - **Drizzle Studio port** — defaults to port 4983. Don't confuse with the app dev server.
+
+## Verify before use
+
+1. Before applying, verify any pattern against Drizzle's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

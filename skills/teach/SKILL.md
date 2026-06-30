@@ -140,3 +140,8 @@ Glossaries, in particular, are an essential reference. Once one is created, it s
 ## `NOTES.md`
 
 The user will sometimes express preferences of how they want to be taught, or things you should keep in mind. This is the place to record those preferences, so you can refer back to them when designing lessons or working with the user.
+
+## Done when
+
+1. verify the learner completes the target task unaided — confirm by asking them to take the next step without your prompt.
+   If they stall or you drift into lecturing past their zone of proximal development, stop: over-teaching fails the lesson as surely as skipping it. never condescend to the level you assume they're at — ask, don't guess.

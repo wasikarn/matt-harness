@@ -1,6 +1,6 @@
 ---
 name: langchain-langgraph-patterns
-description: "LangChain and LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, Pinecone RAG, and LangSmith tracing. Use when building LangChain or LangGraph applications or agents. Don't use for non-LangChain LLM frameworks."
+description: "LangChain + LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, RAG, tracing. Use when building LangChain/LangGraph agents. Don't use for non-LangChain LLM frameworks."
 metadata:
   origin: kbg
   tathep_projects:
@@ -190,3 +190,8 @@ def my_retrieval(query: str) -> list:
 - **Tool schema from docstring** — `@tool` extracts the JSON schema from the function signature and docstring. Missing or vague docstrings produce bad tool descriptions for the LLM.
 - **Streaming vs async** — `graph.stream()` is sync; `graph.astream()` is async. In FastAPI/async contexts, always use the async variants.
 - **`State` must be serializable** — checkpointers serialize state via JSON/pickle. Don't put raw DB connections, file handles, or unserializable objects in `State`.
+
+## Verify before use
+
+1. Before applying, verify any pattern against LangChain/LangGraph's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

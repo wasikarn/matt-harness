@@ -1,6 +1,6 @@
 ---
 name: create-jira-ticket
-description: "Create a single Jira Bug or Story using the team's Thai PO/QA-readable template. Use when the user says 'create a bug'/'create a story' or 'สร้างบั๊ก'/'สร้าง story', or wants a structured Thai ticket. Don't use for: de-duping/triaging before filing (use atlassian:triage-issue), converting a spec/Confluence page to a backlog (use atlassian:spec-to-backlog), bulk creation (use acli), editing an existing ticket (use acli), technical tasks without PO-facing AC (use acli), security incidents (use kbg:incident), or non-Jira trackers."
+description: "Build a single Jira Bug/Story from the Thai PO/QA template. Use when the user says 'สร้างบั๊ก'/'สร้าง story'. Don't use for triage, bulk, edits, or non-Jira."
 ---
 
 # Create Jira Ticket
@@ -134,3 +134,6 @@ After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/brows
 - `kbg:incident` — production outages and security incidents.
 - `atlassian:triage-issue` — de-duping/triaging before filing.
 - `atlassian:spec-to-backlog` — converting a spec/Confluence page into a backlog of epics + tickets.
+
+1. confirm the ticket's AC covers error + boundary + regression paths, not just the happy path.
+   If the AC drifts into implementation detail or omits the error case, the ticket fails review — never file a Bug/Story whose AC a QA can't verify against.

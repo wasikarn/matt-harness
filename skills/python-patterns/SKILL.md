@@ -749,3 +749,8 @@ except SpecificError as e:
 ```
 
 __Remember__: Python code should be readable, explicit, and follow the principle of least surprise. When in doubt, prioritize clarity over cleverness.
+
+## Verify before use
+
+1. Before applying, verify any idiom against the Python version in use.
+   Idioms drift across versions; if one has moved, the Anti-Patterns to Avoid above name where each silently degrades — never copy unverified, avoid drift by checking the version docs.

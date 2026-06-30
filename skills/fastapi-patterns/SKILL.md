@@ -1,6 +1,6 @@
 ---
 name: fastapi-patterns
-description: FastAPI best practices covering project structure, Pydantic v2 schemas, dependency injection, async handlers, authentication, authorization, transactional service layers, and testing with httpx and pytest. Use when building or maintaining FastAPI applications in Python. Don't use for non-FastAPI Python backends (Flask, Django, Litestar).
+description: "FastAPI patterns: structure, Pydantic v2, dependency injection, async handlers, auth, service layers. Use when building FastAPI apps. Don't use for non-FastAPI backends (Flask/Django)."
 metadata:
   origin: ECC
 ---
@@ -111,3 +111,8 @@ async def list_items(db: AsyncSession = Depends(get_db)):
 - Parse JWT parameters defensively, expecting potential string/integer cast mismatches from modern payload variations.
 - Enforce deterministic sorting (e.g., `.order_by(Model.id)`) on all offset/limit paginated endpoints to avoid data skips.
 - Isolate authorization checks from core authentication dependencies to provide precise REST status signals (`401` vs `403`).
+
+## Verify before use
+
+1. Before applying, verify any pattern against FastAPI's current docs.
+   APIs drift across versions; if one has moved, the Anti-Patterns above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

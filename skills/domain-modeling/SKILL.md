@@ -73,3 +73,6 @@ Only offer to create an ADR when all three are true:
 3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+1. verify the model before committing — confirm each entity earns its place by a real behavior, not a guess.
+   If an entity drifts toward speculative future needs, skip it: modeling what isn't proven fails the model as surely as missing what is. never add an entity without a behavior that exercises it.

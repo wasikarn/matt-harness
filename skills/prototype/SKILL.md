@@ -31,3 +31,6 @@ The two branches produce very different artifacts — getting this wrong wastes 
 ## When done
 
 The _answer_ is the only thing worth keeping from a prototype. Capture it somewhere durable (commit message, ADR, issue, or a `NOTES.md` next to the prototype) along with the question it was answering. If the user is around, that capture is a quick conversation; if not, leave the placeholder so they (or you, on the next pass) can fill in the verdict before deleting the prototype.
+
+1. verify the prototype answered its question before deleting — confirm the captured verdict names what was learned.
+   If the build drifts from its question or you delete it without capturing the answer, the prototype was wasted — never skip the capture step.

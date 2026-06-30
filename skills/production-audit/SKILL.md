@@ -1,6 +1,6 @@
 ---
 name: production-audit
-description: Production readiness audit for pre-launch reviews. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
+description: Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
 metadata:
   origin: community
 ---

@@ -1,6 +1,6 @@
 ---
 name: cost-aware-llm-pipeline
-description: Cost optimization patterns for LLM API usage — model routing by task complexity, budget tracking, retry logic, and prompt caching. Use when designing or reviewing a multi-model LLM pipeline where cost, latency, or reliability matters. Don't use for single-call LLM usage or for end-user prompting tips.
+description: "Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips."
 metadata:
   origin: ECC
 ---
@@ -182,3 +182,7 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
 - Batch processing pipelines where cost adds up quickly
 - Multi-model architectures that need intelligent routing
 - Production systems that need budget guardrails
+
+## Done when
+
+Each cost lever is measured against a real budget and the pipeline's spend is traceable — verify a spike surfaces a named cause, not a vibe.

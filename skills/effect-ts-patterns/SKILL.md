@@ -1,6 +1,6 @@
 ---
 name: effect-ts-patterns
-description: "Effect-ts patterns: Effect<A,E,R> type, Effect.gen, Layer DI, Schema validation, fiber concurrency, and @effect/platform HTTP. For typed-effect-system codebases. Use when building or maintaining Effect-ts applications in TypeScript. Don't use for vanilla Promise/async codebases without Effect."
+description: "Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases."
 metadata:
   origin: kbg
   tathep_projects:
@@ -192,3 +192,8 @@ const value = Effect.runSync(Effect.succeed(42))
 - **Layer sharing** — `Layer.memoize` (default) means a service is constructed once per layer composition. If you need fresh instances, use `Layer.fresh`.
 - **`Data.TaggedError` _tag field** — `_tag` is automatically set to the class name. Use `Effect.catchTag('MyError', ...)` — the string must match exactly.
 - **Schema vs Type** — `Schema.Schema.Type<typeof S>` gives the TS type; `Schema.decodeUnknown(S)` validates at runtime. They are different concerns.
+
+## Verify before use
+
+1. Before applying, verify any pattern against Effect's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

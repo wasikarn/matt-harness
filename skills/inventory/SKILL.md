@@ -1,6 +1,6 @@
 ---
 name: inventory
-description: "Unified cross-layer list of loadable skills, agents, commands, hooks (project + global), plus the escape hatch when no known skill fits. Use when exploring capabilities or stuck on routing. Thai: 'มี skill อะไรบ้าง', 'หา skill ไหนเหมาะ'. Don't use for single-layer lists (/skills, /agents) or governance health (kbg:harness-audit --health)."
+description: "Catalogue loadable skills/agents/commands/hooks + the escape hatch. Use when stuck on routing. Thai: 'หา skill ไหนเหมาะ'. Don't use for single-layer lists or governance health."
 ---
 
 # Inventory
@@ -88,3 +88,6 @@ Each row carries its description, so a keyword scan surfaces the right capabilit
 - Verify that custom skills authored in dotfiles actually showed up in `~/.claude/` (look for `→` markers)
 - Post-audit — confirm agent tool-grant fixes landed everywhere (use boundary map)
 - Drift detection — committed `BOUNDARY.md` snapshot catches silent fleet changes
+
+1. confirm the cross-layer list matches what Claude Code actually surfaces — verify a few entries load via /skills or /agents.
+   If the list drifts from the live fleet (a surface added/removed since last regen), avoid routing from stale data — never present a capability that isn't loadable.

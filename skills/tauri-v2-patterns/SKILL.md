@@ -266,3 +266,8 @@ pnpm tauri add store
 - **Blocking in async commands** — never call `std::thread::sleep` or sync blocking IO in `async fn` commands. Use `tokio::time::sleep` and `tokio::fs` instead.
 - **Event listener cleanup** — `listen()` returns an `UnlistenFn`. Always call it on component unmount or you'll accumulate listeners across hot reloads.
 - **CSP blocks local assets** — add `asset: https://asset.localhost` to CSP for local file access via `convertFileSrc()`.
+
+## Verify before use
+
+1. Before applying, verify any pattern against Tauri v2's current docs.
+   APIs drift across versions; if one has moved, the Common Pitfalls above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

@@ -113,3 +113,6 @@ Good interfaces make testing natural:
 
 - **Deepening a cluster given its dependencies** — see [DEEPENING.md](DEEPENING.md): dependency categories, seam discipline, and replace-don't-layer testing.
 - **Exploring alternative interfaces** — see [DESIGN-IT-TWICE.md](DESIGN-IT-TWICE.md): spin up parallel sub-agents to design the interface several radically different ways, then compare on depth, locality, and seam placement.
+
+1. verify each design choice against the codebase's real seams — confirm the boundary you're drawing matches an existing dependency edge.
+   If a seam drifts toward a speculative interface, stop: designing what isn't needed fails the deep-module discipline as surely as a shallow one. never draw a boundary no caller crosses.

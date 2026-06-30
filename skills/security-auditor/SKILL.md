@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "Standalone security audit — deep threat-model + remediation for auth, secrets, external input, file uploads, or dependencies. Covers injection, XSS/CSRF/SSRF, path traversal, broken access control, secret leaks, or vulnerable components. Use when PRs touch auth, APIs, admin panels, payments, or dep manifests. Thai: 'ตรวจ security', 'ช่องโหว่', 'security audit', 'เช็คความปลอดภัย'. The security-reviewer agent is the fast flag spawned inside kbg:review-pr — run one, not both. Don't use for: a quick branch-wide security check of pending changes (use /security-review), code review (kbg:review-pr), incidents (kbg:incident), or non-code security (infra, policy)."
+description: "Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review."
 ---
 
 # Security Auditor

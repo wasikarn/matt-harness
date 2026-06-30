@@ -23,3 +23,6 @@ Failure mode to avoid: asking the user what the codebase already answers — tha
 **basic (default):** Interview only — no artifacts produced. Covers both stateless (no codebase) and live-code sessions; flips to `with-docs` when state retention is wanted.
 
 **with-docs:** Same interview, and also run the `domain-modeling` skill in parallel to produce ADRs and a domain glossary as the session progresses.
+
+1. confirm the user's answers actually constrain the design — each question should narrow the space, not restate it.
+   If the interview drifts into generic Q&A or the answers don't reduce ambiguity, stop: grilling that doesn't converge never produces a buildable spec.

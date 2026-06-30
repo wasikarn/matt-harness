@@ -559,3 +559,8 @@ export async function GET(request: Request) {
 ```
 
 **Remember**: Backend patterns enable scalable, maintainable server-side applications. Choose patterns that fit your complexity level.
+
+## Verify before use
+
+1. Before adopting any pattern, verify it against your system's real load and failure modes.
+   Patterns drift from your constraints; if a pattern's stated trade-off fails under your load, avoid it — never adopt a pattern unverified against the failure mode it claims to solve.

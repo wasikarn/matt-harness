@@ -364,3 +364,8 @@ When this skill is used for review, return:
 - Skill: `backend-patterns` - API and service-layer patterns
 - Skill: `security-review` - secret handling, auth, and least privilege
 - Agent: `code-reviewer` - broader review workflow
+
+## Verify before use
+
+1. Before applying, verify any pattern against your MySQL/MariaDB version's docs.
+   APIs drift across versions; if one has moved, the Anti-Patterns above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

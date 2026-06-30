@@ -1,6 +1,6 @@
 ---
 name: incident
-description: "Manage a live production incident end-to-end, including the hotfix path when rollback/kill-switch is insufficient. Use when alerts fire, monitors show red, users report widespread issues, error rates spike, or the user asks for a hotfix / P0 fix. Thai: 'incident', 'เหตุฉุกเฉิน', 'production เสีย', 'ระบบล่ม', 'hotfix', 'แก้ด่วน', 'P0'. Do NOT use for: non-production bugs (use /fix-bug), planned maintenance, security incidents requiring special handling (STOP — redirect to security-reviewer first), or post-incident documentation (use /post-mortem after resolution)."
+description: "Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem."
 ---
 
 # Incident
@@ -10,8 +10,6 @@ Run a production incident from first alert to resolution. **Incident response is
 **When to use:** Alerts fire, monitors red, widespread user issues, error rate spikes.
 
 **When NOT to use:** Non-production bugs, planned maintenance, security incidents requiring special handling (STOP — redirect to `security-reviewer` first), post-incident docs.
-
----
 
 ## Procedure
 
@@ -81,3 +79,7 @@ If the incident involves unauthorized access, data exfiltration, or any security
 - `/ship-merge` — deploying fix PR after resolution
 
 **Named model** (cc-thinking-skills): the detect → assess → mitigate → monitor loop is *ooda* (observe-orient-decide-act under time pressure). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
+## Done when
+
+The incident is mitigated and monitors stay green under load — verify the rollback or fix held before declaring resolution. confirm the post-mortem is filed as a separate step; never close an incident on a single green datapoint.

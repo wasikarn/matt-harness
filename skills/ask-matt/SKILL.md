@@ -1,6 +1,6 @@
 ---
 name: ask-matt
-description: Router over the matt-pocock flow — ask, grill, plan, slice, ship. Use when starting non-trivial work and unsure which skill fits. Don't use for known flows.
+description: "Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows."
 metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: router skill — the model should not auto-select a flow without the user's situation being asked
@@ -61,3 +61,7 @@ Off the main flow entirely.
 ## Precondition
 
 **`/setup-matt-pocock-skills`** — run before your first engineering flow to configure the issue tracker, triage labels, and doc layout the other skills assume. Custom issue trackers also work.
+
+## Done when
+
+The user is routed to the single correct next skill (or told none fits) — verify the chosen skill's trigger matches the user's actual ask.

@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Mine the current session for durable, reusable learnings — operator corrections, repeated workflows, stated preferences/conventions, decisions with rationale — and, ONLY after an AskUserQuestion approval gate, save the chosen ones as memory files. Use when the user explicitly asks to capture what was learned: 'learn from this session', 'remember how we did this', 'capture these learnings', 'save what you learned', or Thai 'จำไว้', 'เรียนจาก session นี้', 'บันทึกสิ่งที่เรียนรู้'. Don't use for: writing a single memory you already know (just write it directly), harness self-improvement (use kbg:recursive-improve), memory bookkeeping (use kbg:memory-lint), or unprompted auto-*apply*. Operator-invoked only; nothing is written without your approval at the gate."
+description: "Catalogue durable session learnings; save as memory after an AskUserQuestion gate. Use when asked to capture learnings. Don't use for single known memories or self-improvement."
 ---
 
 # Skill: learn
@@ -71,3 +71,7 @@ notices what belongs in it.
 - `kbg:recursive-improve` — the harness-health sibling (mutation loop, flagged, human-gated).
 - `kbg:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
 - The memory rules in the session system prompt — the authoritative format + what-to-save contract.
+
+## Done when
+
+The chosen learnings are saved as memory files with the operator's gate approval — verify each file is linked from MEMORY.md before stopping.

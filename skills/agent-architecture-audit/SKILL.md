@@ -1,6 +1,6 @@
 ---
 name: agent-architecture-audit
-description: 12-layer agent stack diagnostic. Audits wrapper regression, memory pollution, tool discipline failures, and repair loops. Produces severity-ranked findings. Use when debugging a misbehaving agent harness (stuck loops, memory rot, wrong-tool fire, drift) and you need a severity-ranked layer-by-layer report. Don't use for general code review (use kbg:code-reviewer) or single-layer audits.
+description: Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
 metadata:
   origin: oh-my-agent-check (via ECC)
 tools: Read, Bash, Grep, Glob

@@ -16,3 +16,6 @@ Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs,
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
+
+1. verify the handoff doc lets a fresh session resume unaided — confirm it names the current state + the next action.
+   If the doc drifts into narrative or omits the next action, the handoff fails: never hand off without a concrete resume point.
