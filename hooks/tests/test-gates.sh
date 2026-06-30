@@ -8,6 +8,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
 PATH_HARDCODE="$ROOT/hooks/gates/path-hardcode.sh"
+VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 
 pass=0
 fail=0
@@ -89,6 +90,28 @@ test_allow "$PATH_HARDCODE" "/Users/ in .json file (not gated)" \
   "$(write_payload 'config.json' '{\"path\":\"/Users/kobig\"}')"
 test_allow "$PATH_HARDCODE" "normal .sh content" \
   "$(write_payload 'run.sh' 'set -uo pipefail\necho hello')"
+
+echo ""
+echo "=== verifier-protect gate (tamper-resistance on the deny-gates) ==="
+test_deny  "$VERIFIER_PROTECT" "Write to hooks/gates/irrecoverable.sh" \
+  "$(write_payload 'hooks/gates/irrecoverable.sh' 'echo neutered')"
+test_deny  "$VERIFIER_PROTECT" "Edit to hooks/gates/verifier-protect.sh (self)" \
+  "$(edit_payload 'hooks/gates/verifier-protect.sh' 'exit 0')"
+test_deny  "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
+  "$(write_payload 'hooks/hooks.json' 'neutered-wiring')"
+test_deny  "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
+  "$(write_payload "$ROOT/hooks/gates/path-hardcode.sh" 'echo neutered')"
+test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
+  "$(write_payload 'skills/foo/SKILL.md' '# ok')"
+test_allow "$VERIFIER_PROTECT" "Write to a command (normal work)" \
+  "$(write_payload 'commands/pr.md' '# ok')"
+# Bypass: developer env var (model cannot set parent-env mid-session).
+rc=$(echo "$(write_payload 'hooks/gates/irrecoverable.sh' 'echo neutered')" | KBG_ALLOW_VERIFIER_EDIT=1 bash "$VERIFIER_PROTECT" 2>/dev/null; echo $?)
+if [[ "$rc" == "0" ]]; then
+  echo "  ✅ ALLOW (bypass): KBG_ALLOW_VERIFIER_EDIT=1 edits hooks/gates/"; pass=$((pass + 1))
+else
+  echo "  ❌ ALLOW EXPECTED (bypass) but got exit $rc: KBG_ALLOW_VERIFIER_EDIT=1" >&2; fail=$((fail + 1))
+fi
 
 echo ""
 total=$((pass + fail))
