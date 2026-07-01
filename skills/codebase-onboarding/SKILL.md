@@ -65,17 +65,7 @@ From the reconnaissance data, identify:
 - API style: REST, GraphQL, gRPC, tRPC
 
 **Key Directories**
-Map the top-level directories to their purpose:
-
-<!-- Example for a React project — replace with detected directories -->
-```
-src/components/  → React UI components
-src/api/         → API route handlers
-src/lib/         → Shared utilities
-src/db/          → Database models and migrations
-tests/           → Test suites
-scripts/         → Build and deployment scripts
-```
+Map the top-level directories to their purpose, using what reconnaissance actually detected — not a template. A directory whose purpose isn't confidently inferable from its contents gets flagged, not guessed.
 
 **Data Flow**
 Trace one request from entry to response:
@@ -111,6 +101,8 @@ Produce two outputs:
 
 #### Output 1: Onboarding Guide
 
+Structure (every field populated from what reconnaissance actually detected, never a fabricated example):
+
 ```markdown
 # Onboarding Guide: [Project Name]
 
@@ -118,24 +110,13 @@ Produce two outputs:
 [2-3 sentences: what this project does and who it serves]
 
 ## Tech Stack
-<!-- Example for a Next.js project — replace with detected stack -->
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Language | TypeScript | 5.x |
-| Framework | Next.js | 14.x |
-| Database | PostgreSQL | 16 |
-| ORM | Prisma | 5.x |
-| Testing | Jest + Playwright | - |
+[Detected language, framework, database, ORM, test runner — with versions]
 
 ## Architecture
 [Diagram or description of how components connect]
 
 ## Key Entry Points
-<!-- Example for a Next.js project — replace with detected paths -->
-- **API routes**: `src/app/api/` — Next.js route handlers
-- **UI pages**: `src/app/(dashboard)/` — authenticated pages
-- **Database**: `prisma/schema.prisma` — data model source of truth
-- **Config**: `next.config.ts` — build and runtime config
+[Detected route handlers, pages, data-model source of truth, build config]
 
 ## Directory Map
 [Top-level directory → purpose mapping]
@@ -150,22 +131,10 @@ Produce two outputs:
 - [Git workflow]
 
 ## Common Tasks
-<!-- Example for a Node.js project — replace with detected commands -->
-- **Run dev server**: `npm run dev`
-- **Run tests**: `npm test`
-- **Run linter**: `npm run lint`
-- **Database migrations**: `npx prisma migrate dev`
-- **Build for production**: `npm run build`
+[Detected dev/test/lint/migrate/build commands]
 
 ## Where to Look
-<!-- Example for a Next.js project — replace with detected paths -->
-| I want to... | Look at... |
-|--------------|-----------|
-| Add an API endpoint | `src/app/api/` |
-| Add a UI page | `src/app/(dashboard)/` |
-| Add a database table | `prisma/schema.prisma` |
-| Add a test | `tests/` matching the source path |
-| Change build config | `next.config.ts` |
+[I-want-to → file-path table, populated from Key Entry Points + Directory Map]
 ```
 
 #### Output 2: Starter CLAUDE.md

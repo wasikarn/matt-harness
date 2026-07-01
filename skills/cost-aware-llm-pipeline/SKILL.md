@@ -23,7 +23,9 @@ Patterns for controlling LLM API costs while maintaining quality. Combines model
 Automatically select cheaper models for simple tasks, reserving expensive models for complex ones.
 
 ```python
-MODEL_SONNET = "claude-sonnet-4-6"
+# Model ids drift across releases — use the claude-api skill as the source
+# of truth and pass the current ids in here rather than hardcoding.
+MODEL_SONNET = "claude-sonnet-5"
 MODEL_HAIKU = "claude-haiku-4-5-20251001"
 
 _SONNET_TEXT_THRESHOLD = 10_000  # chars
@@ -152,13 +154,14 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
     return parse_result(response), tracker
 ```
 
-## Pricing Reference (2025-2026)
+## Relative Cost
 
-| Model | Input ($/1M tokens) | Output ($/1M tokens) | Relative Cost |
-|-------|---------------------|----------------------|---------------|
-| Haiku 4.5 | $0.80 | $4.00 | 1x |
-| Sonnet 4.6 | $3.00 | $15.00 | ~4x |
-| Opus 4.5 | $15.00 | $75.00 | ~19x |
+The routing intuition this pattern exploits — Haiku-tier models run roughly
+1x, Sonnet-tier ~4x, Opus-tier ~19x per token — is what motivates routing
+simple tasks to the cheapest model. **For current model ids and exact
+per-token pricing, use the `claude-api` skill** — absolute prices and model
+ids change across releases; this skill owns the routing pattern, not the
+price sheet.
 
 ## Best Practices
 

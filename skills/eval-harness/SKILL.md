@@ -67,7 +67,14 @@ npm test -- --testPathPattern="auth" && echo "PASS" || echo "FAIL"
 npm run build && echo "PASS" || echo "FAIL"
 ```
 
-### 2. Model-Based Grader
+### 2. Rule-Based Grader
+Regex or schema constraints — deterministic but pattern-based rather than exact:
+```bash
+# Check output matches expected JSON schema
+python3 -c "import json,sys; json.load(sys.stdin)" < output.json && echo "PASS" || echo "FAIL"
+```
+
+### 3. Model-Based Grader
 Use Claude to evaluate open-ended outputs:
 ```markdown
 [MODEL GRADER PROMPT]
@@ -81,7 +88,7 @@ Score: 1-5 (1=poor, 5=excellent)
 Reasoning: [explanation]
 ```
 
-### 3. Human Grader
+### 4. Human Grader
 Flag for manual review:
 ```markdown
 [HUMAN REVIEW REQUIRED]
@@ -103,6 +110,8 @@ Risk Level: LOW/MEDIUM/HIGH
 - Higher bar for reliability
 - pass^3: 3 consecutive successes
 - Use for critical paths
+
+**Recommended thresholds:** capability evals pass@3 >= 0.90; regression evals pass^3 = 1.00 for release-critical paths.
 
 ## Eval Workflow
 
@@ -163,26 +172,6 @@ Metrics:
 Status: READY FOR REVIEW
 ```
 
-## Integration Patterns
-
-### Pre-Implementation
-```
-/eval define feature-name
-```
-Creates eval definition file at `.claude/evals/feature-name.md`
-
-### During Implementation
-```
-/eval check feature-name
-```
-Runs current evals and reports status
-
-### Post-Implementation
-```
-/eval report feature-name
-```
-Generates full eval report
-
 ## Eval Storage
 
 Store evals in project:
@@ -226,7 +215,7 @@ Regression Evals:
 [Write code]
 
 ### Phase 3: Evaluate
-Run: /eval check add-authentication
+Run each capability + regression eval and record PASS/FAIL.
 
 ### Phase 4: Report
 EVAL REPORT: add-authentication
@@ -236,35 +225,14 @@ Regression: 3/3 passed (pass^3: 100%)
 Status: SHIP IT
 ```
 
-## Product Evals (v1.8)
-
-Use product evals when behavior quality cannot be captured by unit tests alone.
-
-### Grader Types
-
-1. Code grader (deterministic assertions)
-2. Rule grader (regex/schema constraints)
-3. Model grader (LLM-as-judge rubric)
-4. Human grader (manual adjudication for ambiguous outputs)
-
-### pass@k Guidance
-
-- `pass@1`: direct reliability
-- `pass@3`: practical reliability under controlled retries
-- `pass^3`: stability test (all 3 runs must pass)
-
-Recommended thresholds:
-- Capability evals: pass@3 >= 0.90
-- Regression evals: pass^3 = 1.00 for release-critical paths
-
-### Eval Anti-Patterns
+## Eval Anti-Patterns
 
 - Overfitting prompts to known eval examples
 - Measuring only happy-path outputs
 - Ignoring cost and latency drift while chasing pass rates
 - Allowing flaky graders in release gates
 
-### Minimal Eval Artifact Layout
+## Minimal Eval Artifact Layout
 
 - `.claude/evals/<feature>.md` definition
 - `.claude/evals/<feature>.log` run history
