@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Full pre-push gauntlet: heavier than pre-commit, blocks on any failure.
-# Runs in parallel: plugin-validate, full shell lint, JSON validation, harness-audit.
-# Critical-hooks behavioral suite and eval gate deferred until harness rebuilt.
+# Runs in parallel: plugin-validate, full shell lint, JSON validation, harness-audit,
+# hook behavioral suite (deny-gate + advisory-sensor unit tests).
+# The broader fleet critical-hooks suite and the eval dataset gate remain deferred
+# until rebuilt; the deny-gate behavioral tests below are the safety-critical subset.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -58,11 +60,25 @@ run_audit() {
   eval "$audit_cmd" 2>&1
 }
 
+# ---- hook behavioral suite (deny-gate + advisory-sensor unit tests) ----
+# Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask.
+# This is the safety-critical net: a regression in irrecoverable.sh / verifier-protect.sh
+# / path-hardcode.sh fails here instead of shipping green. Graceful-skip if absent.
+run_hook_tests() {
+  local rc=0 t
+  for t in "$ROOT/hooks/tests/test-gates.sh" "$ROOT/hooks/tests/test-flow-nudge.sh"; do
+    [ -f "$t" ] || continue
+    bash "$t" 2>&1 || rc=1
+  done
+  return "$rc"
+}
+
 # Launch all layers in parallel.
 run_validate  > "$WORK_TMP/validate.log"  2>&1 &  PID_VAL=$!
 run_shell_lint > "$WORK_TMP/lint.log"     2>&1 &  PID_LINT=$!
 run_json_lint  > "$WORK_TMP/json.log"     2>&1 &  PID_JSON=$!
 run_audit      > "$WORK_TMP/audit.log"    2>&1 &  PID_AUDIT=$!
+run_hook_tests > "$WORK_TMP/hooktests.log" 2>&1 & PID_HOOK=$!
 
 wait_layer() {
   local name="$1" pid="$2" log="$3"
@@ -79,6 +95,7 @@ wait_layer "plugin-validate" "$PID_VAL"   "$WORK_TMP/validate.log"
 wait_layer "shell-lint"      "$PID_LINT"  "$WORK_TMP/lint.log"
 wait_layer "json-lint"       "$PID_JSON"  "$WORK_TMP/json.log"
 wait_layer "harness-audit"   "$PID_AUDIT" "$WORK_TMP/audit.log"
+wait_layer "hook-tests"      "$PID_HOOK"  "$WORK_TMP/hooktests.log"
 
 if [ "$fail" -ne 0 ]; then
   echo "" >&2

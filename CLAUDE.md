@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 claude plugin validate --strict
 ```
 
-Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit in parallel. Critical-hooks behavioral suite and eval gate are pending rebuild.
+Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit + the hook behavioral suite (`hooks/tests/test-gates.sh` + `test-flow-nudge.sh` — deny-gate + advisory-sensor unit tests) in parallel. The broader fleet critical-hooks suite and the eval dataset gate are pending rebuild.
 
 ## Adding or removing a surface
 
