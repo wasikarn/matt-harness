@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (46)
+### Skills (45)
   ◇ acli                           Compact Jira/Confluence bulk ops + ADF→markdown (~80% token cut). Use when bulk-editing work-items/pages. Thai: 'ย้ายสถานะหลายตัว', 'export JQL'. Don't use for single-ticket reads/creates, config, non-Atlassian trackers.
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
@@ -39,14 +39,13 @@ _Personals/kbg-harness_
   ◇ memory-lint                    Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health.
   ◇ mysql-patterns                 MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases.
   ◇ orchestrate                    Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review.
-  ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
+  ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
   ◇ review-pr                      Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
   ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo.
-  ◇ ship-change                    Slice a scoped change (add/fix/refactor/build-MVP) through classify→implement→review→merge. Use when a change is scoped and ready to sequence. Don't use for blank-slate discovery or one-line fixes.
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
   ◇ tdd                            Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
   ◇ teach                          Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
@@ -59,7 +58,7 @@ _Personals/kbg-harness_
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
-  ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use kbg:ship-change or /fix-bug), or security audits (use kbg:security-auditor).
+  ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship or /fix-bug), or security audits (use kbg:security-auditor).
   ◇ fix-bug                        Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-patterns), greenfield TDD (use kbg:backend-patterns), or refactors not driven by a bug (use `/refactor-clean`).
   ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-patterns) or changing voice register (use /output-style).
   ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
@@ -77,7 +76,7 @@ _Personals/kbg-harness_
   ◇ update-codemaps                Scan project structure and generate token-lean architecture codemaps.
   ◇ update-docs                    Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports.
   ◇ COMMAND                        Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — or when the user explicitly types /ideate, asks to brainstorm, or says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Spawns 5 isolated agent calls under rotating cognitive frames (15-frame pool, 5 per run), scores on novelty/viability/fit, prunes traps, deepens top 3, with a fresh-context critic option. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook').
-  ◇ COMMAND                        9-step senior-engineer loop from scratch: explore → clarify → define-done → implement → test → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate, or when the user says 'ทำงานใหม่', 'ship task', 'เริ่มต้นทำงาน'. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration.
+  ◇ COMMAND                        Land any code change end-to-end: classify (blank-slate vs already-scoped, then bug/feature/refactor) → implement → test → review → fix-loop → merge. Use when starting a non-trivial task or landing a scoped change, or when the user says 'ship this', 'land this change', 'ship task', 'ทำงานใหม่', 'เริ่มต้นทำงาน'. Don't use for: one-line fixes, pure research/exploration, version/release cuts (use /ship-release), or an already-approved PR ready to land (use /ship-merge directly).
 
 ### Agents (11)
   ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
@@ -151,14 +150,13 @@ _Personals/kbg-harness_
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
-| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change). | inline | auto |
+| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
 | review-pr | Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
-| ship-change | Slice a scoped change (add/fix/refactor/build-MVP) through classify→implement→review→merge. Use when a change is scoped and ready to sequence. Don't use for blank-slate discovery or one-line fixes. | inline | auto |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
 | tdd | Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
 | teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
@@ -186,7 +184,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-01T03:39:32Z_
+_Generated: 2026-07-01T04:28:15Z_
 
 ---
 
@@ -209,7 +207,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `kbg:ship-change` (single-agent) instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -295,7 +293,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X", "scope this change" | `kbg:ship-change` | Classify → implement → review → merge |
+| "build one feature", "implement X", "scope this change" | `/ship` | Classify → implement → review → merge |
 | "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |

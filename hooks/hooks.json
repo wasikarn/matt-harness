@@ -17,7 +17,7 @@
       {
         "id": "advisory:flow-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge /grilling → /to-prd → /to-issues → /ship-task",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge /grilling → /to-prd → /to-issues → /ship",
         "hooks": [
           {
             "type": "command",

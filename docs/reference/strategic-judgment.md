@@ -10,7 +10,7 @@ Use it when the diagnosis is contested, the rivals adapt, the resources are cons
 | --- | --- | --- |
 | Goal-setting | A destination without a diagnosis or policy | — |
 | Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
-| Execution planning | Sequencing tasks after the strategy is set | `kbg:ship-task`, `kbg:adr` |
+| Execution planning | Sequencing tasks after the strategy is set | `/ship`, `kbg:adr` |
 | Chaos response | Stabilize first, decide fast | `kbg:incident` |
 | Research | Gathering intelligence before committing | `/deep-dive`, `kbg:decide` probe mode |
 

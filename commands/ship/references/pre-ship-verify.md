@@ -1,17 +1,17 @@
 # Pre-ship verification
 
-Detailed reference for the deterministic verification gate `/ship-task` runs in Phase 5. It was formerly the standalone `/pre-ship-verify` command.
+Detailed reference for the deterministic verification gate `/ship` runs in Phase 5. It was formerly the standalone `/pre-ship-verify` command.
 
 ## When this runs
 
-`/ship-task` Phase 5 invokes this gate after Phase 4 (Implement) completes. The gate reports GREEN / AMBER / RED; RED stops the pipeline before Phase 6.
+`/ship` Phase 5 invokes this gate after Phase 4 (Implement) completes. The gate reports GREEN / AMBER / RED; RED stops the pipeline before Phase 6.
 
 ## Core principles
 
 - **Done is deterministic.** The project's test suite + type-check are the machine-checkable signal; the Phase 3 criteria are cross-checked against them.
 - **Machine-checkable first.** Test exits, type-check, file states are verified automatically. Prose/manual criteria are surfaced for human judgment.
 - **Never auto-ship.** This gate reports; it does not merge, push, or release.
-- **One task at a time.** A single criteria set per `/ship-task` invocation.
+- **One task at a time.** A single criteria set per `/ship` invocation.
 
 ## Phase 1 — Run the deterministic gates
 
@@ -74,7 +74,7 @@ Criteria: <PASS N · MANUAL N · FAIL N>
 Append to `.scratch/<slug>/verification-log.jsonl`:
 
 ```json
-{"timestamp":"<ISO>","command":"/ship-task Phase 5","slug":"<slug>","tests":"pass","typecheck":"clean","criteria":{"pass":N,"manual":N,"fail":N},"result":"green|amber|red"}
+{"timestamp":"<ISO>","command":"/ship Phase 5","slug":"<slug>","tests":"pass","typecheck":"clean","criteria":{"pass":N,"manual":N,"fail":N},"result":"green|amber|red"}
 ```
 
 ## Anti-patterns

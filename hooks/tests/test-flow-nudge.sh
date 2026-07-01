@@ -66,7 +66,7 @@ echo "--- non-trivial prompts (must fire nudge) ---"
 test_nudge  "explicit 'build a new feature' verb" \
   "build a new skill called playwright-coach for visual regression"
 test_nudge  "long + multi-sentence feature request" \
-  "I want to build a feature. It involves a database migration. Then a REST endpoint. Then CLI wiring. Can you plan it for me so we can ship-task it next sprint?"
+  "I want to build a feature. It involves a database migration. Then a REST endpoint. Then CLI wiring. Can you plan it for me so we can ship it next sprint?"
 test_nudge  "refactor verb" \
   "refactor the audit script to use the new plugin architecture and shared library"
 test_nudge  "migrate verb" \

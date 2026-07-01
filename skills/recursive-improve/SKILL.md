@@ -26,7 +26,7 @@ context-exhaustion backstop. The operating model is CLAUDE.md §The operating mo
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
 deliberate cycle.
 
-**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/ship-task`), or
+**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/ship`), or
 anything unattended. If you cannot present the proposal to a human and wait, **stop** — do not
 proceed plan-only into execution.
 
@@ -68,9 +68,9 @@ proceed plan-only into execution.
   which agent), blast radius (low / medium / high), dependencies (none / chain).
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
   **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
-  it and hand it to `/ship-task`; do not smuggle a large change through this ritual.
+  it and hand it to `/ship`; do not smuggle a large change through this ritual.
 - **Success criterion:** a ranked candidate list ready to present, each within the scope guard
-  or explicitly flagged as "too big — route to /ship-task".
+  or explicitly flagged as "too big — route to /ship".
 
 ### 3. ASK — the gate (mandatory)
 
@@ -164,7 +164,7 @@ recursive-improve — iteration <N> report
 - **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask
   (Rule 12) — the regression is information.
 - **Scope creep through the side door.** A candidate over ~5 files / 200 lines is a feature, not a
-  loop iteration. Route it to `/ship-task`; do not let the ritual become an un-gated refactor.
+  loop iteration. Route it to `/ship`; do not let the ritual become an un-gated refactor.
 
 ## Integration Notes (Project-Specific)
 
@@ -175,7 +175,7 @@ recursive-improve — iteration <N> report
 - **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit`
   (both the candidate-detail signal and the deterministic verification metric — its exit count is
   the loop's branchable score) · the witness scripts under `inventory/` (pre/post attestation) ·
-  `/ship-task` (escrow for over-scope candidates) · the harness-decay cadence
+  `/ship` (escrow for over-scope candidates) · the harness-decay cadence
   (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its
   `## Permission re-audit` section for tool-grant decay candidates).
 - **Reads, never writes, the journal.** This skill does not emit a journal event. Iteration evidence

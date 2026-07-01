@@ -36,7 +36,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 | Event | Hook(s) | Type | Contract |
 |---|---|---|---|
 | SessionStart | `doctrine-bootstrap.sh` | FF / inferential | Inject `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context. Matcher-less. |
-| UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `/grilling` → `/to-prd` → `/to-issues` → `/ship-task`. Never blocks. |
+| UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `/grilling` → `/to-prd` → `/to-issues` → `/ship`. Never blocks. |
 | PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`). Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `path-hardcode.sh` | FF / computational | Deny hardcoded `/Users/<name>` paths in `.sh`/`.py` content. Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | `ask` edits to BOTH non-model verifiers — `hooks/gates/**` + `hooks/hooks.json` (the deny-gates + wiring) AND `skills/harness-audit/scripts/audit.sh` + `checks/**` (the audit grader). Tamper-resistance: the model cannot edit the code that judges it. Both verifiers guarded — a half-protected perimeter is worse than none. `--health` reporter (`harness-health.py`/`health.sh`) is NOT a grader, stays unguarded. No env-var bypass. |

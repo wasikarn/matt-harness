@@ -15,12 +15,12 @@ You don't memorize surfaces — describe what you're doing and the harness auto-
 |-------|--------------|
 | **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `/deep-dive` |
 | **PLAN** — spec, prioritize | `kbg:orchestrate` · `kbg:triage` · `kbg:decide` |
-| **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
-| **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `kbg:review-pr` (per-task validation) |
+| **BUILD** — implement | `/ship` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
+| **VERIFY** — test, debug | `/ship` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
-| **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
+| **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (already-approved PR) · `/ship-release` (version/tag cut) |
 
-Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship-task`, `/deep-dive`, `kbg:decide` probe mode).
+Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship`, `/deep-dive`, `kbg:decide` probe mode).
 
 ### ...and which specialist (agent) per stage
 
@@ -52,7 +52,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 | Tier | What's resident | How to reach |
 |------|-----------------|--------------|
 | **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md  + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
-| **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship-task`) or skill-nudge keyword |
+| **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship`) or skill-nudge keyword |
 | **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:inventory` lists every loadable surface when you don't know the right one |
 
 ## Validation shortcuts

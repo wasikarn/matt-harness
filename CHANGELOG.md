@@ -5,6 +5,72 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.9.0] — 2026-07-01
+
+Merged `/ship-task` (blank-slate, 9-step) and `kbg:ship-change` (already-scoped,
+5-phase) into a single `/ship` command. Owner-reported field signal: after
+using the harness for weeks, only `/ship-merge` was ever reached for — the
+other three ship-family surfaces were never used because it wasn't clear when
+to reach for which. Investigation confirmed a real cause: `ship-task` and
+`ship-change` shared the identical tail (implement → test → review →
+fix-loop → ship-merge) and even cross-referenced each other circularly
+("don't use ship-task for mid-flight work, use ship-change" / "implement via
+ship-task" from inside ship-change) — two top-level surfaces the user had to
+choose between, encoding what both really were: the same pipeline reached via
+two entry points that differ only in how much upfront discovery is needed.
+
+**This explicitly supersedes `[0.2.66] — 2026-06-18`'s "no surfaces merged...
+genuine layer / twin / aspect distinctions" call for this specific pair.**
+That pass fixed it by sharpening descriptions instead of merging — including
+the `kbg-help.md` SHIP-row table that still exists today. That mitigation is
+now field-tested and observed to have failed: the owner was looking directly
+at that table and still couldn't tell which surface to use. First-person
+lived-usage evidence outweighs a description-collision judgment call that was
+never tested against real usage. The distinction itself (blank-slate vs
+already-scoped) wasn't wrong — encoding it as two separate remembered
+surfaces was. `/ship-release` and `/ship-merge` were evaluated for the same
+merge and kept separate: genuinely different mechanics (semver/tags/deploy
+monitoring for `/ship-release`; the reused atomic merge primitive for
+`/ship-merge`, referenced by 17 other files), low coupling to the merged
+pair, and folding them in would risk the "dispatcher" anti-pattern
+`skills/writing-great-skills/GLOSSARY.md`'s Router Skill entry warns against.
+
+### Changed
+
+- **`commands/ship-task/` renamed to `commands/ship/`.** New Phase 0 entry
+  classification (blank-slate vs already-scoped) branches into what were
+  ship-task's Explore/Clarify/Define-done phases (Path A) or skips straight
+  to a lightweight define-done (Path B); both converge at Phase 4 onward,
+  which is ship-task's implement/test/review/fix-loop/ship phases verbatim.
+- **The bug/feature/refactor classify sub-procedure (formerly `ship-change`
+  Phase 1) is now written once**, in `commands/ship/references/classify.md`,
+  and called from both entry paths — the direct fix for the "duplicated
+  logic synced by comment only" defect class this repo already treats as
+  proven (see `MEMORY.md` → `sync-seam-defect-class`). Also corrected a real
+  behavior gap while merging: the old `ship-task` Phase 4 routed both
+  "new feature" and "refactor" through the same inline TDD loop; `ship-change`
+  had the right split (refactor → `/refactor-clean`) and that's what survived.
+- **`docs/onboarding.md`'s `/review-pr` entry fixed** — it documented
+  `/review-pr` as a slash command; it has always been a skill
+  (`kbg:review-pr`), no such command file exists. Same failure class as the
+  main fix (documented invocation doesn't match reality), fixed while the
+  file was already open for the `/ship` migration.
+- **`skills/production-audit/SKILL.md`'s description fixed** — same bug,
+  `(use /ship-change)` used slash-command syntax for what was a skill.
+- Fleet count corrected: 46 → 45 skills (`ship-change` retired, nothing
+  added). Agents (11) and commands (22) unchanged — `ship-task` and `ship`
+  are both one command directory.
+
+### Removed
+
+- **`skills/ship-change/` deleted outright** (`SKILL.md` + `reference.md`),
+  no redirect stub. Matches this repo's existing precedent for consolidation
+  (clean delete + content-fold, not a pointer left behind — see prior merges
+  of `probe`/`strategize`/`debate`/`harness-coverage`/`harness-health` etc.).
+  A stub whose only job is "go elsewhere" is itself the router-shape
+  `writing-great-skills`' GLOSSARY warns against; `kbg-help.md`'s entry-point
+  card already does the hinting.
+
 ## [0.8.1] — 2026-07-01
 
 Follow-up to v0.8.0's roadmap: widened harness-audit check 37's scan scope

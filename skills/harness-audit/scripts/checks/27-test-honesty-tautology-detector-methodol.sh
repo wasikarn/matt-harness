@@ -2,7 +2,7 @@
 # 27. Test-honesty / tautology detector — METHODOLOGY Rule 9 static check.
 # Catches "test that can't fail when behavior changes" by greppable patterns
 # in test files only. Paired with claude/rules/test-honesty.md (write-time hint)
-# and `/ship-task` Phase 5 TDD default (workflow gate).
+# and `/ship` Phase 5 TDD default (workflow gate).
 while IFS= read -r f; do
   [ -e "$f" ] || continue
   rel="${f#$REPO_ROOT/}"

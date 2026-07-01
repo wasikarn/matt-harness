@@ -8,7 +8,7 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-11 subagents, 46 skills, 22 commands, governance hooks, and mandatory doctrine
+11 subagents, 45 skills, 22 commands, governance hooks, and mandatory doctrine
 injection.
 
 ## The 3 doctrine files (read in this order)
@@ -21,8 +21,8 @@ injection.
 
 | Command | When | What it does |
 |---|---|---|
-| `/ship-task` | From idea to shipped | Full 9-step senior-engineer loop; embeds acceptance gating before the ship step. |
-| `/review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
+| `/ship` | From idea to shipped | Full loop from blank-slate or already-scoped (Phase 0 asks which); embeds acceptance gating before the ship step. |
+| `kbg:review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
 | `/ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
 
 Other useful ones: `/fix-bug`, `/deep-dive`, `/frame`,

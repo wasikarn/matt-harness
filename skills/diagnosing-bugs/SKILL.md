@@ -106,6 +106,12 @@ Tool preference:
 
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
 
+**Gate before writing the fix.** Once a hypothesis is confirmed (expected signal appeared, is falsifiable, and would look different if the hypothesis were wrong), don't proceed straight to Phase 5. **AskUserQuestion** single-select: "Confirmed: hypothesis '[H description]' is supported by [evidence summary]. Approve and proceed to the fix?"
+- `Approve — proceed to Phase 5 (Recommended when the instrumentation evidence is strong and reproducible)`
+- `Reject — need more investigation (Recommended when evidence is weak, contradicted, or an untested higher-ranked hypothesis remains)`
+
+This is the same checkpoint `/fix-bug` already runs when it mirrors this loop inline — applying to code has consequences a non-blocking ranking checkpoint (Phase 3) doesn't. Don't skip it just because this skill was invoked directly instead of through `/fix-bug`.
+
 ## Phase 5 — Fix + regression test
 
 Write the regression test **before the fix** — but only if there is a **correct seam** for it.

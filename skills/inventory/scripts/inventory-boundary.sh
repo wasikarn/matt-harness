@@ -186,7 +186,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `kbg:ship-change` (single-agent) instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -298,7 +298,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X", "scope this change" | `kbg:ship-change` | Classify → implement → review → merge |
+| "build one feature", "implement X", "scope this change" | `/ship` | Classify → implement → review → merge |
 | "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
