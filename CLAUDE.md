@@ -76,3 +76,5 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 - **Stage by name:** never `git add -A` or `git add .`.
 - **Skill descriptions load on every Task spawn** (~words×1.3 tokens). Keep descriptions ≤25 words.
 - **Thinking models:** reach for `kbg:decide` for the decision scaffold; the 39 on-demand mental-model files live in `docs/reference/thinking-skills/skills/` (never move to `skills/` — would break fleet count).
+- **`disable-model-invocation: true`:** `recursive-improve/SKILL.md`'s frontmatter is the one safety-load-bearing instance of this flag (no-model-self-start invariant). CRIT-guarded by `harness-audit` check 39 — dropping it fails the gate.
+- **`review_mode` in `ship-merge`:** `review-pr` tags its state write `pr-by-number` (isolated worktree) or `own-branch` (self-review). `ship-merge` caps the Critical-findings score at the fatal-weakness floor on sensitive-path (auth/secret/payment) diffs reviewed `own-branch` — an automation-bias guard against trusting a same-session self-review's severity tiering.

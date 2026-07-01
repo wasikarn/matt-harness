@@ -108,6 +108,7 @@ Agents run in a delegated sub-task context — Claude spawns them automatically 
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
 | `typescript-reviewer` · `python-reviewer` | Language-specific review — type safety, idioms, async correctness |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
+| `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 
 ### Tathep Platform
 
@@ -139,7 +140,7 @@ kbg-harness/
 ├── output-styles/        # senior-eng (default), staff-eng (opt-in)
 ├── contexts/             # dev / review / research session frames
 ├── themes/               # catppuccin-mocha.json
-├── scripts/              # Validation helpers (run-gauntlet.sh stub)
+├── scripts/              # Validation helpers (run-gauntlet.sh — full parallel gauntlet)
 ├── docs/
 │   ├── onboarding.md     # 10-minute cold-start
 │   └── reference/        # thinking-skills library, reasoning-models.md, env-vars.md
