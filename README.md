@@ -83,7 +83,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Skill | When to reach for it |
 |---|---|
-| `kbg:decide` | Judgment Ladder: `probe` / `decide` / `strategize` modes |
+| `kbg:decide` | Judgment Ladder: `clarify` / `probe` / `decide` / `strategize` / `critique` modes |
 | `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
 | `kbg:grilling` | Relentless interview to stress-test a plan before building |
 | `kbg:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
