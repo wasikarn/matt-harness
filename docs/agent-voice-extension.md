@@ -28,9 +28,9 @@ There are three situations where a command wrapper earns its place over direct a
 The command's value is a **procedure** the agent doesn't carry in its own body.
 
 **Example: a hypothetical `/debug` command.**
-- **What it would do:** invoke `diagnose` (the disciplined-diagnosis skill) — reproduce → minimise → hypothesise → instrument → fix → regression-test.
-- **Why a command is justified:** the user wants a 6-step **procedure**, not a 10-year-context senior-debugger voice. The skill `diagnose` carries the procedure. A `/debug` command would be the entry point that triggers the skill, then routes the output to whichever engineer is appropriate.
-- **Without the command:** the user types "debug this", the orchestrator routes to a generic agent, the procedure has to be invoked explicitly via `/diagnose` or remembered by the user.
+- **What it would do:** invoke `kbg:diagnosing-bugs` (the disciplined-diagnosis skill) — reproduce → minimise → hypothesise → instrument → fix → regression-test.
+- **Why a command is justified:** the user wants a 6-step **procedure**, not a 10-year-context senior-debugger voice. The skill `kbg:diagnosing-bugs` carries the procedure. A `/debug` command would be the entry point that triggers the skill, then routes the output to whichever engineer is appropriate.
+- **Without the command:** the user types "debug this", the orchestrator routes to a generic agent, the procedure has to be invoked explicitly via `kbg:diagnosing-bugs` or remembered by the user.
 
 **This is the strongest case for a personality command** — the personality (patient, evidence-driven) is in the agent, but the ritual lives in the command.
 
@@ -107,7 +107,7 @@ allowed-tools: Read, Grep, Glob, Bash
 ---
 ```
 
-The command's body invokes `skills/diagnose/SKILL.md` (a plugin-shipped skill, not in this harness's local `skills/`) as the procedure; the `agent:` field carries the domain-specific voice. The command is justified because the 6-step procedure is a ritual the agent doesn't carry inline.
+The command's body invokes `skills/diagnosing-bugs/SKILL.md` as the procedure; the `agent:` field carries the domain-specific voice. The command is justified because the 6-step procedure is a ritual the agent doesn't carry inline.
 
 ### `/architect` — case 2.2 (context pre-load)
 

@@ -40,7 +40,7 @@ These are non-negotiable ordering constraints derived from the debug-mantra disc
 
 ## Phase 1: Reproduce + Minimise
 
-**Goal**: Deterministic repro on the smallest failing case before any hypothesis. Mirrors `/diagnose`'s first two steps inline.
+**Goal**: Deterministic repro on the smallest failing case before any hypothesis. Mirrors `kbg:diagnosing-bugs`'s first two steps inline.
 
 Initial report: $ARGUMENTS
 
@@ -72,7 +72,7 @@ Initial report: $ARGUMENTS
 
 ## Phase 3: Hypothesize + Instrument
 
-**Goal**: ONE *confirmed* hypothesis — not just a ranked list. Mirrors `/diagnose`'s hypothesise → instrument loop inline.
+**Goal**: ONE *confirmed* hypothesis — not just a ranked list. Mirrors `kbg:diagnosing-bugs`'s hypothesise → instrument loop inline.
 
 **Actions**:
 1. List 2-3 candidate hypotheses based on Phase 2 findings.
@@ -181,11 +181,11 @@ Update todos as you progress.
 
 - **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3. Rule 3 (Surgical changes) → Phase 4 default. Rule 5 (Model only for judgment) → Phase 1 repro must be deterministic, not Claude-asserted. Rule 9 (Tests verify intent) → Phase 6 distinguishes-or-it-doesn't check. Rule 12 (Fail loud) → Phase 1 abort if no repro.
 - **code-review-graph MCP**: Phase 2 for structural lookup; the orchestrating session (not the reviewer agents, which have no MCP grant) runs impact-radius queries in Phase 7 before spawning review — `code-reviewer` itself escalates blast-radius depth via grep.
-- **`/diagnose` and `/tdd` are built in as DEFAULTS, not alternatives**:
-  - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `/diagnose`'s core loop so the full workflow lives in one document. Don't separately invoke `/diagnose` from within `/fix-bug` — it's already running.
-  - Phase 5 defaults to `/tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
-  - Use standalone `/diagnose` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
-  - Use standalone `/tdd` for greenfield TDD on new features, not bug fixes.
+- **`kbg:diagnosing-bugs` and `kbg:tdd` are built in as DEFAULTS, not alternatives**:
+  - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `kbg:diagnosing-bugs`'s core loop so the full workflow lives in one document. Don't separately invoke `kbg:diagnosing-bugs` from within `/fix-bug` — it's already running.
+  - Phase 5 defaults to `kbg:tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
+  - Use standalone `kbg:diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
+  - Use standalone `kbg:tdd` for greenfield TDD on new features, not bug fixes.
 - **assert-presence skill**: Phase 7 optional — sign a load-bearing fix so a later session detects regression. Don't assert-presence every fix (ceremony); assert-presence only fragile ones.
 - **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
