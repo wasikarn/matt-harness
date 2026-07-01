@@ -5,6 +5,11 @@
 **Author:** LEAD-D (code-architect) on the `sensor-fire-notification` plan
 **Date:** 2026-06-15
 
+> **Citations predate the v0.6.0 reset** (commit `c452102`); some rule numbers below (e.g.
+> `METHODOLOGY.md Rule N`) no longer resolve. `docs/agents/verification-trail.md`, which
+> this design cites, was later deleted as an orphaned doc (commit `30dfac9`, 2026-07-01).
+> Accurate as a snapshot of the harness at time of writing — not a live reference.
+
 ---
 
 ## 1. Context

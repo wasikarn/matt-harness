@@ -13,7 +13,7 @@ description: "Triage competing tasks and route each to inline/parallel/sequentia
 
 Turn a pile of work into a prioritized plan, then route each item to the cheapest correct executor. The main agent allocates; sub-agents do the heavy lifting. Prioritizing produces a **plan** — executing it, especially via write-capable agents, needs the user's go-ahead.
 
-The lead does the **judgment** — what to dispatch, in what order, with what F9 prompt — and dispatches each agent inline per the F9 spawn-prompt template. The lead never hands LLM dispatch to a background loop: that would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) forbids.
+The lead does the **judgment** — what to dispatch, in what order, with what F9 prompt — and dispatches each agent inline per the F9 spawn-prompt template. The lead never hands LLM dispatch to a background loop: that would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture) forbids.
 
 ## Procedure
 
@@ -294,7 +294,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 ## Bounded fan-out — hard cap (F8.5)
 
-**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
+**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
 
 **Hard rules:**
 

@@ -1,4 +1,4 @@
-> **RETIRED 2026-06-25 — see `CLAUDE.md` §The operating model (current).** The L4 self-launch machinery this design
+> **RETIRED 2026-06-25 — see `CLAUDE.md`'s Operating model, under §Architecture (current).** The L4 self-launch machinery this design
 > specifies was never run live and is fully retired; `scripts/l4/**`,
 > `scripts/loop-guard.py`, and the launchd plist
 > (`~/Library/LaunchAgents/com.kbg.l4-launcher.plist`) are deleted, and the

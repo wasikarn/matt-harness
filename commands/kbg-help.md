@@ -83,7 +83,7 @@ Skipping step 1 or 2 causes stale cache loads and `harness-audit` will CRIT-flag
 
 ## Load-bearing invariants
 
-- **Autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model):** no unattended self-repair loops. `kbg:recursive-improve` stops at a user `AskUserQuestion` gate before any mutation.
+- **Autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture):** no unattended self-repair loops. `kbg:recursive-improve` stops at a user `AskUserQuestion` gate before any mutation.
 - **Inferential feedback is advisory:** sensors like `verification-gate.sh` journal only — they never emit a `permissionDecision`.
 - **Cache-invalidation is manual:** version bump in both manifests + `claude plugin update kbg@kobig` + restart.
 

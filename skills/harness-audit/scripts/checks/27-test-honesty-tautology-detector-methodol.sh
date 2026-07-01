@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 27. Test-honesty / tautology detector — METHODOLOGY Rule 9 static check.
+# 27. Test-honesty / tautology detector — static check that tests verify intent, not just shape.
 # Catches "test that can't fail when behavior changes" by greppable patterns
 # in test files only. Paired with claude/rules/test-honesty.md (write-time hint)
 # and `/ship` Phase 5 TDD default (workflow gate).
@@ -13,7 +13,7 @@ while IFS= read -r f; do
   # 27.2 — identity / repr assertion: type(x) is type(x), repr(x) == repr(x),
   # isinstance(x, type(x)). Passes regardless of behavior.
   if grep -nE '(type\(.*\)[[:space:]]+(is|==)[[:space:]]+type\(|repr\(.*\)[[:space:]]*==[[:space:]]*repr|isinstance\(.*,[[:space:]]*type\()' "$f" >/dev/null 2>&1; then
-    warn "test-honesty: '$rel' asserts on identity/repr, not behavior (Rule 9)"
+    warn "test-honesty: '$rel' asserts on identity/repr, not behavior"
   fi
   # 27.3 — placeholder test name: smoke / basic / works / sanity / simple / temp
   if grep -nE 'def[[:space:]]+test_(smoke|basic|works?|sanity|simple|temp|placeholder)\b' "$f" >/dev/null 2>&1; then

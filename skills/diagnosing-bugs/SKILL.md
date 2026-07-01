@@ -104,6 +104,8 @@ Tool preference:
 2. **Targeted logs** at the boundaries that distinguish hypotheses.
 3. Never "log everything and grep".
 
+**Named bias guard — anchoring (discriminating evidence).** If the #1 and #2 ranked hypotheses could plausibly produce the *same* observed signal, a probe that only confirms #1 doesn't rule out #2 — the wrong root cause can pass the gate below and the bug recurs after the "fix" lands. When the top two are plausibly signal-equivalent, the probe must discriminate between them (a boundary where they'd predict different outcomes), not just confirm the first.
+
 **Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
 
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.

@@ -42,8 +42,8 @@ for f in files:
 PY
 )
 else
-  # Fail loud about the skip (Rule 12) — a silently-skipped validator is the
-  # exact failure mode this check exists to catch.
+  # Fail loud about the skip — a silently-skipped validator is the exact
+  # failure mode this check exists to catch.
   warn "frontmatter YAML validity check skipped — python3+PyYAML unavailable"
 fi
 

@@ -183,13 +183,15 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```bash
    mkdir -p "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
    CLEAN=$([ "${CRITICAL_COUNT:-0}" -eq 0 ] && echo "true" || echo "false")
-   printf '{"clean":%s,"critical_count":%s,"last_sha":"%s","branch":"%s","ts":"%s"}\n' \
+   REVIEW_MODE=$([ -n "${WT:-}" ] && echo "pr-by-number" || echo "own-branch")
+   printf '{"clean":%s,"critical_count":%s,"last_sha":"%s","branch":"%s","review_mode":"%s","ts":"%s"}\n' \
      "$CLEAN" "${CRITICAL_COUNT:-0}" "$HEAD_SHA" \
      "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')" \
+     "$REVIEW_MODE" \
      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
      > "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json"
    ```
-   `CRITICAL_COUNT` = number of Critical findings from Phase 5. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict.
+   `CRITICAL_COUNT` = number of Critical findings from Phase 5. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review, where Critical/Important tiering has no independent-verification step (see `/ship-merge` Phase 1 step 6 — this gates same-session self-tiering on sensitive diffs).
 2. Summarize:
    - PR # and URL (if applicable)
    - Review window: `BASE_SHA..HEAD_SHA`

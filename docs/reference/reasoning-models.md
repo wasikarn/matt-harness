@@ -101,11 +101,11 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
 | thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | skills/adr, skills/decide (probe mode), the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model | "hard to reverse?" and "reversible in hours/days/never" |
+| reversibility | `thinking-reversibility` | applied | skills/domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
 | socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
-| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
-| theory-of-constraints | `thinking-theory-of-constraints` | applied | skills/perf | profile → find the one bottleneck → fix that |
+| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/diagnosing-bugs | repro → hypothesize → instrument → falsify |
+| theory-of-constraints | `thinking-theory-of-constraints` | considered | — | profile-first bottleneck-finding is thematic; skills/perf (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
 | red-team | `thinking-red-team` | applied | skills/decide (critique mode) | Skeptic role: argue AGAINST and find risks |
 | steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -113,25 +113,25 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | opportunity-cost | `thinking-opportunity-cost` | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
 | circle-of-competence | `thinking-circle-of-competence` | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
-| jobs-to-be-done | `thinking-jobs-to-be-done` | applied | agents/product-analyst | named tradeoff: user story vs job-to-be-done |
+| jobs-to-be-done | `thinking-jobs-to-be-done` | considered | — | user-story-vs-job-to-be-done tradeoff is thematic; agents/product-analyst (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
 | bayesian | `thinking-bayesian` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
 | probabilistic | `thinking-probabilistic` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
 | bounded-rationality | `thinking-bounded-rationality` | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
-| margin-of-safety | `thinking-margin-of-safety` | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
+| margin-of-safety | `thinking-margin-of-safety` | considered | — | its former kbg home, agents/inferential-structural-judge, was deleted in the v0.6.3 Wave-B cut; measured to hurt accuracy −10pp in eval, not re-proposed |
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
 | map-territory | `thinking-map-territory` | considered | — | Read Before You Write, a METHODOLOGY rule dropped in the v0.6.0 reset; no live anchor |
-| via-negativa | `thinking-via-negativa` | applied | skills/decommission, skills/memory-trim | named in footer: removal/absence as via-negativa |
+| via-negativa | `thinking-via-negativa` | applied | skills/memory-lint (--trim mode) | named in footer: removal/absence as via-negativa |
 | ooda | `thinking-ooda` | applied | skills/incident | named in incident footer (detect→assess→mitigate→monitor); the skill's hotfix path inherits via handoff |
 | cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
-| regret-minimization | `thinking-regret-minimization` | applied | skills/regret-minimization | asymmetry lens: recoverable downside vs permanently foregone upside; complements skills/adr for timing-sensitive decisions |
+| regret-minimization | `thinking-regret-minimization` | considered | — | asymmetry lens: recoverable downside vs permanently foregone upside; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
 | triz | `thinking-triz` | considered | — | no kbg anchor |
 | archetypes | `thinking-archetypes` | considered | — | no kbg anchor |
 | effectuation | `thinking-effectuation` | considered | — | no kbg anchor |
-| dual-process | `thinking-dual-process` | applied | skills/dual-process | (1) verification trigger: easy answer + high stakes → deliberate pass; (2) AI agent path design: fast-path (Haiku, no gate) vs slow-path (Sonnet + interrupt) |
-| fermi-estimation | `thinking-fermi-estimation` | applied | skills/fermi-estimation | capacity planning, Redis/TimescaleDB sizing, ANPR throughput estimates before instrumentation exists |
+| dual-process | `thinking-dual-process` | considered | — | (1) verification trigger: easy answer + high stakes → deliberate pass; (2) AI agent path design: fast-path (Haiku, no gate) vs slow-path (Sonnet + interrupt); its former kbg home was deleted in the v0.6.0 reset, no live anchor |
+| fermi-estimation | `thinking-fermi-estimation` | considered | — | capacity planning, Redis/TimescaleDB sizing, ANPR throughput estimates before instrumentation exists; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
-| leverage-points | `thinking-leverage-points` | applied | skills/leverage-points | Meadows' 12-level hierarchy; when parameter tuning keeps not sticking, move up the hierarchy |
+| leverage-points | `thinking-leverage-points` | considered | — | Meadows' 12-level hierarchy; when parameter tuning keeps not sticking, move up the hierarchy; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 
 ## kbg-native reasoning scaffolds
 
@@ -154,7 +154,7 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model; read in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`).
+unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture; read in Bash: `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
@@ -181,7 +181,7 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (read the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture; read in Bash: `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). It may still appear as *framing* inside an applied surface.
 
 ## Tathep domain scenarios
 

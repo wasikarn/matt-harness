@@ -15,6 +15,11 @@ sources-distilled:
 lenses: 4 angles + 2 adversarial + 1 comparison
 ---
 
+> **Citations predate the v0.6.0 reset** (commit `c452102`). Some rule numbers, line
+> citations, and skill/command names below (e.g. `METHODOLOGY.md Rule N`, `kbg:perf`,
+> `/ship-task`, `/accept-task`) no longer resolve. Accurate as a snapshot of the harness
+> at time of writing — not a live reference.
+
 # Böckeler (2026): "Harness engineering for coding agent users" — 1-pager
 
 ## The mental model in 5 lines

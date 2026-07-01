@@ -17,7 +17,7 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 ## Procedure
 
-1. **Scope & Threat Model** — Parse scope. Identify assets, threat actors, trust boundaries.
+1. **Scope & Threat Model** — Parse scope. Identify assets, threat actors, trust boundaries. Name an adversary profile per trust boundary crossed (external unauthenticated / authenticated user / insider with elevated access) — this surfaces trust-boundary-crossing issues (IDOR, privilege escalation) that a per-file pattern scan alone misses.
 
 2. **Audit** — Deep review of relevant files, dependency manifest, config, prior security decisions. Map attack surface if scope >5 files. Specific checks:
    - **Collection access:** Scan for unguarded dict/collection lookups (`users_db[user_id]`, `data['field']`) without prior membership checks (`in`, `.get()`). These are silent crash vectors and potential DoS.
@@ -40,6 +40,8 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
    - **Critical** — must fix before merge (exploitable, data loss, auth bypass)
    - **Important** — should fix before merge (weakness, info disclosure, DoS vector)
    - **Minor** — nice to have (defense-in-depth gaps)
+
+   **Severity ceiling:** Critical/Important requires a demonstrated attack path — entry point → steps → realized impact, walked from the named adversary profile above. A pattern-matched issue with no demonstrated path (e.g. "missing HttpOnly flag" or "no rate limiting" cited on its own, with no chain to an actual exploit) is capped at Minor regardless of how the pattern looks — this is a defense-in-depth gap until a path is shown, not evidence of exploitability.
 
 4. **Remediation Plan** — Per Critical/Important: what to change, why vulnerable, how to verify. Prioritize by exploitability × blast radius.
 

@@ -66,7 +66,7 @@ For current fixture patterns and latest pytest-asyncio usage, see the [FastAPI t
 
 ## Live Docs
 
-For Pydantic v2 schema details, async SQLAlchemy usage, and FastAPI middleware/dependency docs, use [context7](context7.md).
+For Pydantic v2 schema details, async SQLAlchemy usage, and FastAPI middleware/dependency docs, use the context7 MCP tool.
 
 ## Anti-Patterns
 

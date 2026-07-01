@@ -6,6 +6,11 @@
 **Date:** 2026-06-15
 **Resolves:** all 12 Q items from the plan's Q&A log (per Q-table below)
 
+> **Citations predate the v0.6.0 reset** (commit `c452102`). Some rule numbers, line
+> citations, and skill/command names below (e.g. `METHODOLOGY.md Rule N`, `kbg:perf`,
+> `/ship-task`) no longer resolve. Accurate as a snapshot of the harness at time of
+> writing — not a live reference.
+
 ---
 
 ## 1. Purpose & placement in the harness

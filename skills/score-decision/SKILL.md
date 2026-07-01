@@ -31,7 +31,7 @@ Propose 4–6 judging criteria, each **measurable** (you can cite the evidence t
 
 ### 3. Score each criterion
 
-Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict).
+Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `docs/reference/judgment-ladder.md`'s "Estimate risk" rung); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
 
 ### 4. Verdict
 
@@ -68,6 +68,8 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 ```
 
 ## Ranking (≥2 options)
+
+Before scoring, name whether the option set was **generated exhaustively** or **handed to you** (selection bias — a confident rank over an incomplete set can't surface an absent, better option). If handed to you and the stakes are real, ask whether a completeness/reframe pass ran first; if not, say so in the output rather than silently ranking as if the set were complete.
 
 When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable.
 

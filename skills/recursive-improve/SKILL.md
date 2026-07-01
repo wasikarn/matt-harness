@@ -2,7 +2,7 @@
 name: recursive-improve
 description: "Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces."
 disable-model-invocation: true
-disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model), NOT taste — guarded by audit #32 CRIT; do not weaken via the CLAUDE.md selection criterion
+disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture), NOT taste — guarded by audit #39 CRIT; do not weaken via the CLAUDE.md selection criterion
 ---
 
 # Recursive Improve
@@ -69,7 +69,10 @@ proceed plan-only into execution.
 - **Named bias guard — anchoring.** The first finding scanned is not necessarily the highest-impact
   one; rank the full candidate set before committing to an order, don't just work top-to-bottom
   through the scan. For a numeric, traceable verdict instead of an ordinal rank, hand off to
-  `kbg:score-decision`.
+  `kbg:score-decision`. For a candidate set >3, this ranking is still a same-context, same-pass
+  judgment (the anchoring risk isn't fully closed by a prose reminder) — optionally dispatch a
+  fresh-context agent with only the candidate list (no Observe-phase narrative) to independently
+  re-rank before presenting at Step 3, mirroring `agents/ideate-critic.md`'s pattern.
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
   **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
   it and hand it to `/ship`; do not smuggle a large change through this ritual.
@@ -114,6 +117,11 @@ proceed plan-only into execution.
   moved — the iteration did **not** help. Do **not** report success. Surface the flat/negative delta
   and treat it as the rollback decision (Step 6). The audit exit count is the deterministic stop
   condition (score, not feel).
+- **Named bias guard — survivorship.** The drift guard is only as good as what `harness-audit`
+  measures. If the candidate's diff touched the verifier itself (`hooks/gates/**`,
+  `hooks/hooks.json`, `skills/harness-audit/**`, `checks/**`) a lower finding count could mean the
+  check got narrower, not that the underlying defect got fixed — apply extra scrutiny (read the
+  actual diff, don't trust the count alone) before calling that case "improved."
 - Run the relevant deterministic check on any code touched: `bash scripts/run-gauntlet.sh`
   (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash hooks/tests/test-gates.sh`
   (the 3 deny-gates), `bash -n` / `py_compile` on edited scripts.

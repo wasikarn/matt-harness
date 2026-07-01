@@ -128,12 +128,11 @@ The command pre-loads context the agent's voice block would otherwise ask for. M
 ---
 description: Stress-test a decision under multiple adversarial lenses and return an ADR-shaped critique (claim, counter-claim, evidence, verdict)
 argument-hint: <decision-or-claim>
-agent: critical-eval
 allowed-tools: Read, Grep, Glob
 ---
 ```
 
-The command's value is the **output shape** (ADR-shaped critique), not a new capability — `critical-eval` already stress-tests reasoning. The risk: this overlaps with the existing `commands/adr.md` ritual, which is the right command for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually to extend `critical-eval` or invoke `/adr` instead.
+The command's value is the **output shape** (ADR-shaped critique), not a new capability — `kbg:decide`'s critique mode already stress-tests reasoning (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent — it's a `decide` mode). The risk: this overlaps with the existing `kbg:domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually to extend `kbg:decide`'s critique mode or invoke `kbg:domain-modeling` instead.
 
 ---
 

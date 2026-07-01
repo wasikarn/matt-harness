@@ -9,6 +9,14 @@
 > that decide net value (drain-loop + harvest-precision), ADR re-homed to **0002** (not 0003), the
 > slug conflation resolved, and the secret-scrub pinned. See §10 for the audit→fix traceability map.
 > **Provenance:** 3 design workflows + 1 review/audit workflow this session + direct ECC/kbg reads.
+>
+> **Citations predate the v0.6.0 reset** (commit `c452102`) and a mechanical find-replace
+> pass in this document also garbled several sentences around governance-home citations
+> (§3 row 6, §4's `METHODOLOGY.md Rule 8` row) — read those as referring to the
+> no-model-self-start rule (`CLAUDE.md`'s Operating model under §Architecture, current),
+> not a live `METHODOLOGY.md` rule number. Accurate as a snapshot of the harness at time
+> of writing — not a live reference; the shipped feature this document describes is
+> unaffected.
 
 ## 1. Goal & operating point
 

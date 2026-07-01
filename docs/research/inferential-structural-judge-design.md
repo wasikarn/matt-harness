@@ -6,6 +6,11 @@
 **Date:** 2026-06-15
 **Resolves:** Q5 (verdict schema), Q6 (LLM-judge-circularity mitigations), Q8 (cost ceiling)
 
+> **Citations predate the v0.6.0 reset** (commit `c452102`); the agent this design
+> proposed was deleted in the v0.6.3 Wave-B cut and never rebuilt. Some rule numbers
+> and line citations below (e.g. `METHODOLOGY.md Rule N`) no longer resolve. Accurate
+> as a snapshot of the harness at time of writing — not a live reference.
+
 ---
 
 ## 1. Purpose & placement in the 2×2

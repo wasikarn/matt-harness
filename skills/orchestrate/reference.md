@@ -41,7 +41,7 @@
 
 Agent fleet → domain (the 11-agent survivor set): `code-reviewer` (review diff — carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `security-reviewer` (auth/secrets/OWASP) · `silent-failure-hunter` (error-handling audit) · `build-error-resolver` (build/typecheck minimal-diff fixes — auto-detects the build system, no architecture changes) · `code-architect` (new design/system design) · `spec-miner` (extract Requirement+Invariant blocks from brownfield codebases) · `refactor-cleaner` (dead code/duplicates via knip+depcheck+ts-prune) · `ideate-critic` (fresh-context critic for `/ideate`; skill-invoked, see below) · `typescript-reviewer` (TS narrowing/`any`/strict drift) · `python-reviewer` (mutability/GIL/generators/imports) · `performance-optimizer` (bottlenecks/bundle size/memory leaks/render issues).
 
-### Skill-invoked critics (NOT user-dispatched via /orchestrate)
+### Skill-invoked critics (NOT user-dispatched via kbg:orchestrate)
 
 These agents are invoked directly by a skill body, not by the user via `kbg:orchestrate`. They are fresh-context judges that reduce LLM-judge-circularity for expensive generation skills. Like sensors, they are **read-only** and **advisory only** — they score and report, they do not write or block.
 
@@ -80,7 +80,7 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 
 The top rung: work that runs **unattended and recurring** — handed to `/schedule` (remote cron routine), `/loop` (in-session interval), or `CronCreate` — instead of you re-running it each cycle. L4 is unattended but one-shot; L5 is unattended **and** repeating.
 
-L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model — read in Bash: `cat "${KBG_PLUGIN_ROOT}/METHODOLOGY.md"` and `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
+L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — read in Bash: `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
 
 **Route here only when ALL hold:**
 

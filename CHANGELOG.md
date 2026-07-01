@@ -5,6 +5,153 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.12.0] — 2026-07-01
+
+Third same-day drill-down: "verify + audit the whole project once more —
+don't trust the prior round's results without re-checking; fix everything
+found." 6 parallel evidence-gathering agents (decision coverage, thinking-skill
+fit, reference/traceability + consistency, bias, missing-opportunity,
+knowledge coverage), each instructed to grade fit-for-purpose rather than
+presence and to try to *refute* `[0.11.0]`'s "all fixed" claim rather than
+confirm it. It didn't hold: the same phantom-citation defect class survived
+in 11 more files, plus a separate 13-file/30+-site phantom citation
+("the no-model-self-start rule in `METHODOLOGY.md` and CLAUDE.md §The
+operating model") that predates `[0.11.0]` entirely and neither that round
+nor `[0.10.0]` caught.
+
+### Fixed — safety
+
+- **`disable-model-invocation`'s documented CRIT-guard didn't exist.** 3 files
+  (`skills/recursive-improve/SKILL.md`'s own frontmatter reason,
+  `docs/agent-tool-patterns.md`, check 30's header comment) claimed check
+  `#32` CRIT-guards this safety flag on `recursive-improve` — the one
+  safety-load-bearing instance of the no-model-self-start invariant. Check
+  `#32` is `32-reasoning-models-index-drift...sh`, unrelated and WARN-only;
+  the renumbering after the `[0.6.0]` checklist prune never got a real guard.
+  The flag was still correctly set — nothing was broken in production — but
+  nothing would have caught it being silently dropped. **New check 39**
+  (CRIT) closes this; all 3 stale citations repointed to it.
+
+### Fixed — automation-bias in the merge gate
+
+- **`ship-merge`'s Critical-findings criterion trusted a same-session
+  self-review's severity tiering without independent re-derivation.**
+  `review-last.json`'s `critical_count` had no field distinguishing an
+  isolated PR-by-number review (fresh worktree) from an author-flow
+  self-review on the current branch — a same-session under-tiering of a real
+  Critical could score 100/100 and pass the merge gate. Added a `review_mode`
+  field (`pr-by-number` / `own-branch`) to `review-pr`'s state write; on
+  sensitive-path diffs (`auth|secret|credential|payment|billing|token`)
+  reviewed `own-branch`, `ship-merge` now caps the Critical-findings
+  criterion at the floor regardless of the reported count.
+
+### Fixed — decision-quality gaps
+
+- **`agents/performance-optimizer.md`**: held the same Write/Edit/Bash grant
+  as `refactor-cleaner`/`build-error-resolver` with zero internal
+  guardrail — added a Guardrails section (regression-in-another-metric,
+  3-attempt-same-bottleneck, needs-architecture-change, can't-measure stop
+  conditions).
+- **`agents/code-architect.md`**: recommended a single architecture with no
+  trade-off field when invoked standalone — added a required "Trade-offs
+  Considered" section to its output format.
+- **`skills/security-auditor/SKILL.md`**: findings could reach
+  Critical/Important severity from a pattern match alone, with no
+  demonstrated attack path — added a named adversary-profile step and a
+  severity ceiling (no Critical/Important without entry→steps→impact; capped
+  at Minor otherwise).
+- **`docs/reference/judgment-ladder.md`**'s bias taxonomy never named
+  Automation, Selection, or Survivorship bias — and every concrete bias gap
+  this round found fell inside exactly that blind spot. Added all three to
+  the "Common biases by rung" table.
+- **`skills/score-decision/SKILL.md`**: Ranking mode had no check that the
+  option set was complete before a confident rank (selection bias); single
+  0–100 point scores had no confidence/range option (overconfidence,
+  contradicting the ladder's own "Estimate risk" guard). Both addressed.
+- **`skills/recursive-improve/SKILL.md`**: the anchoring guard on candidate
+  ranking was prose-only with no fresh-context option (unlike
+  `ideate-critic`'s pattern) — added an optional fresh-context re-rank for
+  candidate sets >3. The drift guard didn't flag extra scrutiny when a
+  candidate's diff touched the audit verifier itself — added (survivorship
+  bias: a narrower check reads as "improved").
+- **`skills/diagnosing-bugs/SKILL.md`**: Phase 4's gate only confirmed the
+  top hypothesis, not whether the evidence discriminated it from the
+  runner-up — added a discriminating-evidence requirement when the top two
+  are plausibly signal-equivalent.
+
+### Added
+
+- **Check 39** — `recursive-improve` must carry `disable-model-invocation:
+  true` (CRIT; see Fixed — safety above).
+- **Check 40** — general dead `kbg:<name>` reference guard (WARN). The
+  `kbg:adr`/`kbg:article-mine` defect class was hand-fixed once in `[0.8.0]`
+  and had to be fixed again in `[0.11.0]` — proof a manual sweep alone
+  doesn't hold. Caught 3 more live dead references on its first run
+  (`kbg:harness-health`, `kbg:hotfix`, `kbg:ship-change`); narrowed after
+  that run to exclude the legitimate `former(ly) kbg:X` rename-documentation
+  convention (3 clean uses found), avoiding the false-positive class check 38
+  was already narrowed to avoid.
+
+### Fixed — phantom references (11 files beyond `[0.11.0]`'s 18)
+
+- Dead `Rule N` / `METHODOLOGY.md:<line>` citations in
+  `skills/harness-audit/scripts/checks/{27,28}-*.sh`, `audit.sh`, and
+  `commands/ideate/COMMAND.md` (a near-miss — `[0.11.0]` fixed a different
+  phantom citation 10 lines above one of these in the same file).
+- The "no-model-self-start rule in `METHODOLOGY.md` and CLAUDE.md §The
+  operating model" citation — `METHODOLOGY.md` has zero autonomy content,
+  and `CLAUDE.md` has no heading called "The operating model" (it's a bold
+  lead-in phrase inside `## Architecture`) — repointed across all 13 sites
+  (`skills/{orchestrate/SKILL.md,orchestrate/reference.md,recursive-improve/SKILL.md}`,
+  `commands/kbg-help.md`, `docs/reference/reasoning-models.md`,
+  `skills/inventory/scripts/inventory-boundary.sh`'s `BOUNDARY.md` source,
+  and 7 `docs/research/*.md` design docs) to `CLAUDE.md`'s Operating model,
+  under §Architecture.
+- 10 phantom `skills/X`/`agents/X` pointers in `reasoning-models.md`'s "kbg
+  home" column (`skills/adr`, `skills/perf`, `agents/product-analyst`,
+  `agents/inferential-structural-judge`, `skills/decommission`,
+  `skills/memory-trim`, `skills/regret-minimization`, `skills/dual-process`,
+  `skills/fermi-estimation`, `skills/leverage-points`) — none existed;
+  repointed the 2 with clear live replacements, flipped the other 8 to
+  `considered` / no live anchor.
+- `agents/ideate-critic.md`'s fabricated "downstream eval fixture" claim —
+  same claim already retracted in the sibling `commands/ideate/COMMAND.md`
+  in `[0.8.0]`, but this agent file was missed (check 37 only matches
+  executable-script invocations, not prose claims).
+- Dead links: `skills/fastapi-patterns/SKILL.md` → nonexistent `context7.md`;
+  `docs/agent-voice-extension.md` → dead `/adr`, plus a hypothetical
+  `agent: critical-eval` framing inconsistent with the established
+  skill-not-agent binding; `skills/orchestrate/reference.md`'s bare
+  `/orchestrate` immediately contradicted by the correct `kbg:orchestrate`
+  on the next line.
+- `docs/agent-tool-patterns.md`'s stale tool-grant table (claimed
+  `security-reviewer` has `WebFetch`/`WebSearch`; actual frontmatter grants
+  neither).
+- Added a "citations predate the v0.6.0 reset" disclaimer to 6
+  `docs/research/*.md` design docs that were accurate when written
+  (comparison-pinned to a specific historical plugin version) and are
+  correctly excluded from checks 37/38/40 as dated snapshots — left their
+  content unrewritten rather than falsifying the historical record; fixed
+  `l4-machinery-design.md`'s existing RETIRED banner's own phantom-heading
+  citation.
+
+### Verified, not changed
+
+- `[0.10.0]`'s decision-scaffold reconciliation (5 `decide` modes,
+  `decision-doctrine-map.md` binding table) — holds under adversarial
+  re-check, 2 low-severity residuals only (both fixed above).
+- `Decision Score`/quality-gate/scoring terminology — zero conflicting
+  definitions found anywhere in the repo.
+- `score-decision`'s wiring into `ship-merge` — confirmed live, not just
+  documented.
+- `security-auditor`'s non-use of `score-decision` — a prior deliberate,
+  scored decision (62.3, below the 70 floor, per the 2026-07-01 round-2
+  audit), not an oversight.
+- 39 of 49 audited decision points needed no change (fit-for-purpose as-is);
+  fixed the 2 real gaps + 3 partial gaps found (`code-architect`,
+  `performance-optimizer`, plus the score-decision/recursive-improve/
+  diagnosing-bugs partials above).
+
 ## [0.11.0] — 2026-07-01
 
 Second drill-down pass requested immediately after `[0.10.0]`: verify + audit

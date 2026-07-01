@@ -63,6 +63,10 @@ Order the implementation by dependency:
 - Decision 1: [Rationale]
 - Decision 2: [Rationale]
 
+### Trade-offs Considered
+- Alternative considered: [approach] — rejected because [concrete reason: cost, risk, doesn't fit existing pattern, etc.]
+- (at least one real alternative — a recommendation with no stated alternative is unfalsifiable; if genuinely only one approach exists, say why the others don't apply)
+
 ### Files to Create
 | File | Purpose | Priority |
 |------|---------|----------|

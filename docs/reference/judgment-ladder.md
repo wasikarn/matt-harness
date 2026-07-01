@@ -223,10 +223,10 @@ is most dangerous.
 | Rung | Bias to watch | Counter |
 |---|---|---|
 | Recognize | Problem substitution, urgency bias | Write the decision statement before discussing solutions |
-| Frame | Narrow framing, anchoring, solution bias, framing bias | Force a third option before comparing A vs B |
+| Frame | Narrow framing, anchoring, solution bias, framing bias, **selection bias** (the option/evidence set considered may not be complete — was it generated exhaustively, or just handed to you?) | Force a third option before comparing A vs B; ask whether the option set was generated or given |
 | Test assumptions | Confirmation bias, availability bias, overconfidence | Assign a devil’s advocate; ask what would prove you wrong |
 | Estimate risk | Planning fallacy, base-rate neglect, false precision | Use 90% confidence intervals and reference-class forecasting |
-| Decide, commit & follow through | Sunk-cost fallacy, groupthink, soft commitment | Set kill criteria and action owners before leaving the room |
+| Decide, commit & follow through | Sunk-cost fallacy, groupthink, soft commitment, **automation bias** (trusting a self-generated score/tool output without independent re-derivation), **survivorship bias** (judging "improved" only by what the existing verifier happens to measure) | Set kill criteria and action owners before leaving the room; for a score you didn't independently re-derive, ask who verified it and how |
 
 ## kbg surfaces
 

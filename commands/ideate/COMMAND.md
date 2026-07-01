@@ -233,8 +233,8 @@ is high, re-point the critic pass at the `ideate-critic` agent
 starts from a fresh context, reducing the chance that the host
 Claude's own generation anchors the judgment. Output is still
 **advisory evidence**, not ground truth; the user remains the
-gate. See METHODOLOGY.md:74 on "the implementer agreeing with
-its own work."
+gate. See CLAUDE.md's Operating model, under §Architecture, on
+"the implementer agreeing with its own work."
 
 To use the critic agent, collect the Phase 1 `ideas[]` JSON and
 invoke `ideate-critic` with the Input Contract in
@@ -464,7 +464,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   deepen are engineered to be re-pointable at this fresh-context
   critic.
 - **Methodology on maker ≠ checker** —
-  `METHODOLOGY.md:74` — the implementer
+  CLAUDE.md's Operating model, under §Architecture — the implementer
   agreeing with its own work is not proof; the verifying agent
   must be given fresh context.
 - **Bounded-agent-spawning precedent** —

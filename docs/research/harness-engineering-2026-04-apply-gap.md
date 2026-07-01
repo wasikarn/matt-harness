@@ -5,6 +5,11 @@ comparison: kbg-harness-0.1.18
 date: 2026-06-15
 ---
 
+> **Citations predate the v0.6.0 reset** (commit `c452102`). Some rule numbers, line
+> citations, and skill/command names below (e.g. `METHODOLOGY.md Rule N`, `kbg:perf`,
+> `/ship-task`) no longer resolve. Accurate as a snapshot of the harness at time of
+> writing — not a live reference.
+
 # kbg-harness × Böckeler — apply/gap map
 
 ## 1. Three-circle model mapping

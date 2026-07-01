@@ -357,6 +357,14 @@ onFCP(console.log);  // First Contentful Paint
 onTTFB(console.log); // Time to First Byte
 ```
 
+## Guardrails
+
+Stop and ask the user if:
+- A change **regresses another metric** while improving the target one (e.g. a memoization that grows bundle size, a cache that adds a memory leak)
+- The **same bottleneck persists after 3 optimization attempts** (likely an architectural issue, not a local fix)
+- The fix requires **architectural changes** (data-layer redesign, framework swap) — not a local optimization
+- You can't **measure** the claimed improvement (no before/after benchmark, profiler trace, or bundle-size delta) — report the finding without applying an unverified fix
+
 ## Performance Report Format
 
 Report per finding: **file:line**, **impact** (measured delay/size), **fix** (before/after snippet). Lead with a summary line (overall score, critical-issue count) and an estimated-impact line (bundle KB saved, LCP/TTI ms improved).
