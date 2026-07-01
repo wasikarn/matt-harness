@@ -49,14 +49,14 @@ Any file that appears in the output is missing the boundary guard.
 
 **Root cause:** The builder did not read the vendor's baseline capability list or the harness's existing agent fleet before adding a new surface. Custom agents should encode *team-specific* expertise, not reimplement vendor primitives.
 
-**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to `code-explorer`, research synthesis to `/deep-dive`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 29 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
+**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `/deep-dive`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 11 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
 
-The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to `code-explorer` inline, not to a new agent.
+The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to the built-in `Explore` subagent inline, not to a new agent.
 
 **Self-check:**
 
 ```bash
-grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "code-explorer\|deep-dive"
+grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "Explore\|deep-dive"
 ```
 
 If the grep finds a command or agent whose description overlaps with an existing specialist, it is a candidate for consolidation.
@@ -71,9 +71,9 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 **Harness fix:** Two layers:
 
-1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The 14 validator-class agents (`code-reviewer`, `code-explorer`, `code-architect`, `comment-analyzer`, `pr-test-analyzer`, `silent-failure-hunter`, `security-reviewer`, `type-design-analyzer`, `ux-reviewer`, `researcher`, `inferential-structural-judge`, `incident-commander`, `finops-engineer`, `product-analyst` — see `validator-bash-guard.sh:54` for the canonical list) list `Read, Grep, Glob, Bash` at most — never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
+1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `code-reviewer`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
 
-2. **Runtime Bash guard.** `hooks/gates/validator-bash-guard.sh` is a `PreToolUse` hook that intercepts Bash commands from the 14 validator-class agents. It maintains an allow-list of read-only prefixes (`git diff`, `ls`, `cat`, `grep`, `pytest`, etc.) and a deny-list of mutation patterns (`rm`, `sed -i`, `git push`, `curl POST`, `mv`, `cp`, etc.). If a validator attempts a mutation pattern, the hook emits a `deny` decision with feedback: "Validators are read-only-by-doctrine." The hook is wired into `settings.json` and runs on every Bash invocation inside a subagent.
+2. **No runtime Bash guard today.** There is currently no `PreToolUse` hook that intercepts a validator's Bash commands and blocks mutation patterns at runtime — the allowlist frontmatter above is the only gate, and it is doctrine, not runtime-enforced. A validator that reformats code, runs `git commit`, or otherwise mutates state during review is a bug to file (fix the frontmatter or the prompt), not something a live hook currently catches.
 
 3. **Orchestrate dispatch gate.** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Procedure step 4) gates any agent holding `Edit`, `Write`, or `Bash` behind an `AskUserQuestion`. Read-only agents (no mutation tools) dispatch without a gate; write-capable agents require explicit approval. This means even if a validator accidentally had `Edit` added to its frontmatter, the orchestrator would not dispatch it without user consent.
 
@@ -81,11 +81,10 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${KBG_PLUGIN_ROOT}/agents"/{code-reviewer,security-reviewer,code-architect,silent-failure-hunter,typescript-reviewer,python-reviewer,inferential-structural-judge,ideate-critic,spec-miner}.md 2>/dev/null
-grep -c "VALIDATOR-BASH" "${KBG_PLUGIN_ROOT}/hooks/gates/validator-bash-guard.sh"
+  "${KBG_PLUGIN_ROOT}/agents"/{code-architect,code-reviewer,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
 ```
 
-The first grep should return no files. The second grep should return a non-zero count (the hook contains the validator class regex and deny patterns).
+The grep should return no files — if it does, a validator-class agent picked up a mutation tool and the frontmatter needs fixing.
 
 ---
 
@@ -153,6 +152,3 @@ All three should be non-zero / present. If any is missing, that gate is gone fro
 - [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, agent tool matrix
 - `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model — why maker≠checker separation is load-bearing
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 spawn-prompt template, bounded fan-out, validation chain, routing table
-- [`hooks/gates/validator-bash-guard.sh`](../hooks/gates/validator-bash-guard.sh) — runtime Bash mutation guard for validators
-- [`hooks/lifecycle/task-lifecycle.sh`](../hooks/lifecycle/task-lifecycle.sh) — F7 TaskCompleted test-claim gate
-- [`scripts/plan-linter.py`](../scripts/plan-linter.py) — pre-flight structural + risk validation

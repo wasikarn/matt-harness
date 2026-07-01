@@ -8,18 +8,14 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-12 subagents, 47 skills, 24 commands, governance hooks, and mandatory doctrine
+11 subagents, 46 skills, 22 commands, governance hooks, and mandatory doctrine
 injection.
 
-## The 4 doctrine files (read in this order)
+## The 3 doctrine files (read in this order)
 
-1. [`METHODOLOGY.md`](../METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.**
-2. [`DOMAINS.md`](../DOMAINS.md) — bounded-context dispatch table + cross-context orchestration rules.
-3. `CLAUDE.md` §The operating model — the current operating model (scoped denials + advisory review + operator-as-authority; no autonomy flag, no maker-checker ship-gate, no model self-start). The L2–L5 autonomy ratchet that previously lived in `METHODOLOGY.md or CLAUDE.md` through `0005-...` is retired — see CLAUDE.md §The operating model for what survives (the no-model-self-start rule) and what was retired (L3 cage, L4 self-launch, L5 auto-push). Four model-/cage-removing variants stay out of scope by design.
-4. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks).
-
-The four are auto-injected on every SessionStart by `hooks/session/doctrine-bootstrap.sh`.
-No manual `@import` needed.
+1. [`METHODOLOGY.md`](METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.** The only one auto-injected on every SessionStart, by `hooks/session/doctrine-bootstrap.sh` — no manual `@import` needed.
+2. `CLAUDE.md` §The operating model — the current operating model (scoped denials + advisory review + operator-as-authority; no autonomy flag, no maker-checker ship-gate, no model self-start). The L2–L5 autonomy ratchet that previously lived in `METHODOLOGY.md or CLAUDE.md` through `0005-...` is retired — see CLAUDE.md §The operating model for what survives (the no-model-self-start rule) and what was retired (L3 cage, L4 self-launch, L5 auto-push). Four model-/cage-removing variants stay out of scope by design. Read manually, not injected.
+3. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks). Read manually, not injected.
 
 ## The 3 commands you'll use most
 
@@ -55,8 +51,8 @@ or ship stays **computational, never a model**.
 ## If you only have 60 seconds
 
 Read this file's first three sections. If you have 5 more minutes, skim
-[`METHODOLOGY.md`](../METHODOLOGY.md). If you have 10 more, read
-[`DOMAINS.md`](../DOMAINS.md) and [`METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model`](METHODOLOGY.md or CLAUDE.md §"Rejected alternatives".
+[`METHODOLOGY.md`](METHODOLOGY.md). If you have 10 more, read `METHODOLOGY.md`
+Rule 8 and CLAUDE.md §The operating model (the "Rejected alternatives" notes).
 
 ## What we've shipped recently (2026-06-12)
 
@@ -70,4 +66,4 @@ Unreleased → Phase 1.1–2.5.
 - **`recursive-improve` skill** — stall detection + debt ceiling.
 - **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
 - **`scripts/governance/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
-- **[the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md or CLAUDE.md — 10 deferred items + L2 alternatives.
+- the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum — 10 deferred items + L2 alternatives.

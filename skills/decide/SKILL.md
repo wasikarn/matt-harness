@@ -134,5 +134,5 @@ Persist via `kbg:domain-modeling` (owns the ADR rule) when the decision warrants
 - A decision without a revisit trigger is not finished.
 - Match effort to stakes: trivial reversible choices skip to rung 5 directly.
 
-1. verify the decision is recorded with its score + revisit trigger — confirm a reader could re-derive the verdict from the trace.
+1. verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric) — confirm a reader could re-derive the Decision from the Frame and assumptions. For a numeric weighted verdict, hand off to `kbg:score-decision`.
    If the reasoning drifts from the stated criteria or the revisit trigger is missing, the decision is not finished — never close a choice without a re-open condition.

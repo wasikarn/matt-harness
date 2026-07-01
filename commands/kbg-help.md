@@ -15,7 +15,7 @@ You don't memorize surfaces — describe what you're doing and the harness auto-
 |-------|--------------|
 | **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `/deep-dive` |
 | **PLAN** — spec, prioritize | `kbg:orchestrate` · `kbg:triage` · `kbg:decide` |
-| **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-dev` · `kbg:incident` |
+| **BUILD** — implement | `/ship-task` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship-task` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
 | **SHIP** — merge, release | `/ship-task` (from scratch) · `kbg:ship-change` (already-scoped) · `/ship-merge` · `/ship-release` |
@@ -24,7 +24,7 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 
 ### ...and which specialist (agent) per stage
 
-The 12-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
+The 11-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
 
 | Stage | Agent specialists |
 |-------|-------------------|
@@ -63,10 +63,10 @@ These validation commands resolve paths from `${KBG_PLUGIN_ROOT}` and work from 
 bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + audit + affected evals
 bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: full parallel gauntlet
 bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh" --fast          # skip the slow critical-hooks suite
-bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"      # safety suite only
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
-python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate
 ```
+
+Critical-hooks behavioral suite and eval gate are pending rebuild (see `CLAUDE.md`) — not currently runnable, omitted above.
 
 ## Update the plugin after surface changes
 
@@ -94,6 +94,6 @@ Run these from any project CWD because `${KBG_PLUGIN_ROOT}` resolves to the plug
 - Skills: `ls "${KBG_PLUGIN_ROOT}/skills" | sed '/^_lib$/d'` or `grep -r "^name:" "${KBG_PLUGIN_ROOT}/skills"/*/SKILL.md`
 - Commands: `ls "${KBG_PLUGIN_ROOT}/commands"/*.md | xargs -n1 basename | sed 's|\.md||'`
 - Agents: `ls "${KBG_PLUGIN_ROOT}/agents"/*.md | xargs -n1 basename | sed 's|\.md||'`
-- Hooks: `jq '.hooks[].name' "${KBG_PLUGIN_ROOT}/hooks/hooks.json"`
+- Hooks: `jq '[.hooks[][].id]' "${KBG_PLUGIN_ROOT}/hooks/hooks.json"`
 
 For deeper discovery, run `kbg:inventory`.

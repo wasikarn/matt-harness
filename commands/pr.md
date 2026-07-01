@@ -1,7 +1,7 @@
 ---
 description: "Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes."
 name: pr
-argument-hint: "[base-branch] (default: main)"
+argument-hint: "[base-branch] (default: repo's default branch)"
 ---
 
 # Create Pull Request
@@ -11,7 +11,11 @@ argument-hint: "[base-branch] (default: main)"
 **Parse `$ARGUMENTS`**:
 - Extract any recognized flags (`--draft`)
 - Treat remaining non-flag text as the base branch name
-- Default base branch to `main` if none specified
+- If no base branch given, resolve the repo's actual default branch (don't assume `main`):
+  ```bash
+  gh repo view --json defaultBranchRef -q .defaultBranchRefName 2>/dev/null \
+    || git remote show origin | awk '/HEAD branch/ {print $NF}'
+  ```
 
 ---
 

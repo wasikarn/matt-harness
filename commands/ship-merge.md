@@ -18,9 +18,21 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 3. Check approvals: `gh pr view <n> --json reviews`. At least one approval, no CHANGES_REQUESTED from a required reviewer.
 4. Check mergeable state: no conflicts, no "merge requirements not met" flags.
 5. Check branch protection rules: is squash required? Is linear history required?
-6. **Review check**:
-   - Check whether a review ran on this PR (`kbg:review-pr` or `/address-review`). If yes → confirm **zero unresolved Critical findings** (mirrors `/ship-release`'s "Zero Critical findings" gate).
-   - If no review ran → say so plainly and pass; **never fabricate a clean result.** The agent's self-report is not ground truth — re-check against the PR, not memory.
+6. **Review check — scored gate (`kbg:score-decision`)**: a bare `review-last.json.clean` boolean read isn't a measurable quality gate (METHODOLOGY Rule 14) — it collapses tier, freshness, CI, and approval signal into one bit and can't distinguish "reviewed, 3 unresolved Criticals" from "never reviewed" from "reviewed, but for a commit 5 pushes ago." Score it instead:
+
+   Read `${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json` if it exists, and cross-check its `last_sha` against the PR's actual current HEAD SHA (`gh pr view <n> --json headRefOid`) — a review from an earlier commit certifies different code, not this merge.
+
+   | Criterion | Wt | Measures |
+   |---|---|---|
+   | Critical findings | 30 | 0 unresolved Critical findings in `review-last.json` (review-pr's own tier definition: production breaks / a 2am page / data corruption) |
+   | CI status | 25 | all required checks green (`gh pr checks <n>`) |
+   | Review freshness | 20 | `review-last.json`'s `last_sha` matches the PR's current HEAD SHA |
+   | Approval status | 15 | ≥1 approval, no CHANGES_REQUESTED from a required reviewer |
+   | Review coverage | 10 | a review actually ran (`review-last.json` exists for this PR) |
+
+   Pass threshold 70, fatal-weakness floor 40 (Rule 14) — no criterion below 40 regardless of weighted sum, so "great CI, zero review" and "reviewed but 3 unresolved Criticals" both fail on their own floor rather than averaging out. If no review ran, say so plainly and score Review coverage low — **never fabricate a clean result**; the agent's self-report is not ground truth, re-check against the PR, not memory.
+
+   **Gate**: FAIL (below threshold or below floor on any criterion) → STOP, tell the user which criterion failed and why. PASS → proceed to Phase 2.
 
 ---
 
@@ -60,7 +72,7 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. If failures appear post-merge, be ready to revert or invoke `kbg:incident` (hotfix path).
-3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. (For a user-facing merge/release note, route the prose through the `tech-humanize` skill to strip AI-flavor tells.)
+3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. Keep a user-facing merge/release note factual and free of AI-flavor tells (no self-congratulation, no hedging filler).
 
 **Done.**
 

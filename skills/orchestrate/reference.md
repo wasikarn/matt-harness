@@ -35,7 +35,7 @@
 | Low value + high risk | — | — | **avoid** — mark `wontfix` unless forced by external constraint |
 | **Any** touching auth, secrets, credentials, crypto, input validation, or dependencies | **YES** | **L3** | **security-reviewer first** — write agent takes it only after security findings land |
 
-**No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk. If N≥3 alternatives need ranking, use `kbg:adr` with a Pugh Matrix (+/S/-) instead of a numeric grid.
+**No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk here. If N≥3 alternatives need ranking, hand off to `kbg:score-decision`'s Ranking mode (weighted-sum + per-option fatal-weakness floor) rather than scoring this binary matrix numerically.
 
 **"Schedule" in the matrices above = temporal deferral** (do later, human-led) — *not* autonomous execution. Recurrence is an orthogonal axis: if an item is **recurring + unattended-safe** (any quadrant), route it to **L5 (Autonomous / Recurring Execution)** below instead of redoing it by hand each cycle.
 
@@ -131,10 +131,10 @@ The CC Workflow tool composes from 6 named patterns (trq212, "A harness for ever
 | Pattern | Use when | Failure mode it answers |
 |---|---|---|
 | **classify-and-act** | Decision is "which lane?" — task shape, security tier, priority quadrant. Often a static routing table. | agentic-laziness (explicit choice replaces "do the obvious") |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices; verifier merges. The headline of `article-mine`. | agentic-laziness (no single window can quit early), self-preferential-bias (N distinct lenses) |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices; verifier merges. | agentic-laziness (no single window can quit early), self-preferential-bias (N distinct lenses) |
 | **adversarial verification** | Producer's output judged by a fresh-context skeptic against a rubric. (`kbg:decide`, `doubt-driven-development`, `review-pr` Phase 5.) | self-preferential-bias |
 | **generate-and-filter** | Produce N candidates (names, designs, fixes), filter by rubric, return top-K. | goal-drift (rubric is the commitment, not the pool) |
-| **tournament** | N agents attempt the same task via different approaches; pairwise judges pick a winner. (`kbg:adr` Pugh Matrix is the static analog.) | self-preferential-bias (model + approach diversity) |
+| **tournament** | N agents attempt the same task via different approaches; pairwise judges pick a winner. (`kbg:score-decision`'s Ranking mode is the static analog — score N options against one rubric instead of dispatching agents.) | self-preferential-bias (model + approach diversity) |
 | **loop-until-done** | Unknown work size; spawn until stop condition (`no_new_findings`, `dry_count ≥ 2`, retry cap). | goal-drift (done-when is observable, not "it ran") |
 
 **Quarantine** is the *compositional glue*: when a step reads untrusted content (web, fork PR, external API), fence the read pass from the write pass — read-only agent for the read, separate write-capable agent for the act. Maps to the `isolate` verb in `feedback_file_trust_levels.md` (5-level refinement) — convergent design, formalized by Anthropic independently.

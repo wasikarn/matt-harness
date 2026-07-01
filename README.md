@@ -204,14 +204,17 @@ git config core.hooksPath git-hooks
 
 kbg-harness aggregates components from these upstream projects under their respective licenses.
 
+> **Point-in-time snapshot (counts as of 2026-07-01), not live-derived.** There is no
+> `origin:` frontmatter field on surface files to auto-regenerate this table — it's a
+> manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
+> `ls commands/` (real current fleet: 46 skills · 11 agents · 22 commands).
+
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `kbg:thinking` |
-| kbg-native | MIT | 9 skills · 1 agent · 4 commands · 2 output styles · 1 theme |
-
-Component names follow the `origin:` frontmatter field in each surface file. To browse what's available: `ls skills/`, `ls agents/`, `ls commands/`.
+| kbg-native | MIT | 46 skills · 11 agents · 22 commands |
 
 ---
 

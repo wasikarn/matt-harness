@@ -101,17 +101,26 @@ directly via the qmd MCP tool.
 > - **Phase 3 (Deepen)**: 3 parallel Agent calls, peak 3.
 >
 > **Peak concurrent = 5** (at the F8.5 hard cap per
-> `skills/orchestrate/SKILL.md:420-427`). The 2 waves are
-> sequential: Phase 1 → Phase 2 → Phase 3. Total Agent calls per
-> run ≈ 8 to 10. **Do not collapse into 1 wave.**
+> `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
+> (F8.5)", lines ~295-308). The 2 waves are sequential:
+> Phase 1 → Phase 2 → Phase 3. Total Agent calls per run ≈ 8 to
+> 10. **Do not collapse into 1 wave.**
 >
 > The 2026-06-12 audit caught a 44→105-agent failure mode where a
 > soft cap on a work-list was silently doubled by an audit + verify
 > layer (see `memory/bounded-agent-spawning.md` and
-> `memory/whole-repo-dig-2026-06-16.md`). The regression fixture
-> `eval/regressions/ideate-fanout-cap.json` (PR2) locks this
-> 2-wave structure in place — the fixture fails if either wave
-> is collapsed or if the peak concurrent exceeds 5.
+> `memory/whole-repo-dig-2026-06-16.md`). There is no eval/regression
+> fixture for this — `eval/` does not exist in this repo (CLAUDE.md:
+> "eval gate [is] pending rebuild"). What is actually code-enforced
+> is narrower than a fixture would claim: the F8.5 hard cap in
+> `skills/orchestrate/SKILL.md` clamps any single wave's work-list
+> to ≤5 before spawning ("the clamp is the JS work-list slice
+> before `parallel()`/`pipeline()`"). This command's Phase 1 (5)
+> and Phase 3 (3) sizes are written to sit inside that per-wave
+> clamp. The "exactly 2 waves, not 3+" shape is this command's own
+> design contract (see Phase 1 / Phase 2 / Phase 3 below), not
+> something F8.5 polices — F8.5 caps how big a wave can get, not
+> how many waves a skill runs.
 
 ## Phase 1 — Diverge
 
@@ -402,8 +411,10 @@ These are how this skill goes wrong. Watch for them.
 - **Collapsing Phase 1 + Phase 3 into one wave.** The 2-wave
   structure is a code contract, not a vibe. See
   [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing).
-  A single-wave variant breaks the F8.5 cap accounting and is
-  flagged by `eval/regressions/ideate-fanout-cap.json` (PR2).
+  A single-wave variant of 8 agents would exceed the F8.5 hard cap
+  (5 per wave) enforced in `skills/orchestrate/SKILL.md` §"Bounded
+  fan-out — hard cap (F8.5)" — there is no eval fixture for this,
+  `eval/` does not exist in this repo.
 - **Silent parse failures.** If a Diverge branch returns empty
   or unparseable, surface the failure to the user — do not
   pretend the run succeeded. The upstream `engine.ts:88-91`
@@ -435,14 +446,17 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
-  `skills/orchestrate/SKILL.md:420-427`
-  sets the peak-concurrent cap at 5 agents per wave. The 2-wave
+  `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
+  (F8.5)" (lines ~295-308)
+  sets the peak-concurrent cap at 5 agents per wave, enforced by
+  the lead clamping the work-list before spawning. The 2-wave
   structure in this skill is engineered to fit that cap exactly.
 - **Fresh-context critic pattern** —
-  `agents/inferential-structural-judge.md`
-  is the kbg-native precedent for the same-model-critic-circularity
-  caveat. Score + cluster + deepen are engineered to be
-  re-pointable at a fresh-context critic.
+  `agents/ideate-critic.md`
+  is the kbg-native critic used for the same-model-critic-circularity
+  caveat (see [Phase 2 — Focus](#phase-2--focus)). Score + cluster +
+  deepen are engineered to be re-pointable at this fresh-context
+  critic.
 - **Methodology on maker ≠ checker** —
   `METHODOLOGY.md:74` — the implementer
   agreeing with its own work is not proof; the verifying agent
@@ -451,10 +465,13 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   `memory/bounded-agent-spawning.md`
   — the 2026-06-12 44→105-agent failure mode this skill's 2-wave
   cap is designed to prevent.
-- **Regression fixture (PR2)** —
-  `eval/regressions/ideate-fanout-cap.json` locks the 2-wave
-  structure + the peak-5 cap. PR1 ships the contract; PR2 ships
-  the fixture.
+- **What actually enforces this (no fixture)** — `eval/` does not
+  exist in this repo, and CLAUDE.md states the eval gate is
+  "pending rebuild." Only the peak-5-per-wave part is code-held,
+  by the F8.5 clamp in `skills/orchestrate/SKILL.md`; the
+  "exactly 2 waves" shape is this command's own design, not
+  something F8.5 polices. Neither is backed by a regression
+  fixture. Do not cite a fixture that isn't built.
 - **Eval rigor limitation (explicit)** — this skill ports
   faithfully from an n=1 upstream demo. The
   `docs/research/kbg-vs-adhd.md`

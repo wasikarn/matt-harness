@@ -68,7 +68,7 @@ notices what belongs in it.
 
 ## See also
 
-- `kbg:recursive-improve` — the harness-health sibling (mutation loop, flagged, human-gated).
+- `kbg:recursive-improve` — the `kbg:harness-audit --health` sibling (mutation loop, flagged, human-gated).
 - `kbg:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
 - The memory rules in the session system prompt — the authoritative format + what-to-save contract.
 

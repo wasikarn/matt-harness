@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Single harness-state surface with two modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode surfaces per-session token cost from the live cost ledger (formerly kbg:harness-health). Use when running a harness audit or querying session token cost. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness'. Don't use for: general repo lint or security audits (kbg:security-auditor)."
+description: "Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor)."
 ---
 
 # Harness Audit
@@ -14,8 +14,8 @@ Single harness-state surface with two modes:
 
 | User asks for | Mode | Entry |
 |---|---|---|
-| "audit harness", "fleet check", "manifest drift" | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
-| "harness health", "token cost", "session cost" | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
+| "audit harness", "fleet check", "manifest drift", Thai: 'audit harness', 'ตรวจ harness' | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
+| "harness health", "token cost", "session cost", Thai: 'harness health', 'สุขภาพ harness' | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
 
 
 ## Quick start

@@ -306,7 +306,7 @@ never *authorize* a ship), so the ship-gate stays computational, never a model.
 **kbg exceeds ECC (safety) — verifiable today:** an immutable deny-by-default cage the loop physically
 cannot edit (ECC writes anywhere); a human push-gate at L2–L4 (ECC *can* auto-merge conflict-free
 worktrees — opt-in config bool + a computational readiness check, not unconditional), replaced at L5
-([CLAUDE.md §The operating model (was L5 auto-push, retired)](../METHODOLOGY.md or CLAUDE.md by a computational ship-gate (the gauntlet) — the human leaves
+(CLAUDE.md §The operating model — was L5 auto-push, retired) by a computational ship-gate (the gauntlet) — the human leaves
 the push loop but the authorizing gate stays computational, never a model; a flag captured-once
 so the loop cannot self-elevate (ECC's Haiku is told "just write"); decay implemented in code
 (`read-candidates.sh:74`) where **ECC's confidence is write-once-by-Haiku — no decay implementation was
@@ -320,7 +320,7 @@ deliverables in §5/§7/§10.
 
 **kbg is less capable than ECC (throughput — intentional at L2–L4; partially closed at L5):** at L2–L4
 no auto-merge / no parallel worktree fan-out and the human sits at the one irreversible (push) boundary;
-L5 ([CLAUDE.md §The operating model (was L5 auto-push, retired)](../METHODOLOGY.md or CLAUDE.md re-adds auto-push/auto-merge behind the computational
+L5 (CLAUDE.md §The operating model — was L5 auto-push, retired) re-adds auto-push/auto-merge behind the computational
 ship-gate, removing the human from the push loop. Still intentional at every level: cadence throttled
 well below ECC's heartbeat by R4; #3 trialed on one prose skill, not the whole corpus; and learnings
 become resident **next-session** (kbg writes a `memory/` file), not injected **mid-session** (ECC

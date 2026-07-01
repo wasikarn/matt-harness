@@ -151,7 +151,7 @@ is_plugin_delivered() {
   case "$kind" in
     skills)        [ -f "$PLUGIN_CACHE/skills/$name/SKILL.md" ] ;;
     agents)        [ -f "$PLUGIN_CACHE/agents/$name.md" ] ;;
-    commands)      [ -f "$PLUGIN_CACHE/commands/$name.md" ] ;;
+    commands)      [ -f "$PLUGIN_CACHE/commands/$name.md" ] || [ -f "$PLUGIN_CACHE/commands/$name/COMMAND.md" ] ;;
     hooks)         [ -f "$PLUGIN_CACHE/hooks/$name" ] ;;
     output-styles) [ -f "$PLUGIN_CACHE/output-styles/$name.md" ] ;;
     *) return 1 ;;

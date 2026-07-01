@@ -39,9 +39,9 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 
 ## Who owns which doctrine surface
 
-See `DOMAINS.md` → **Doctrine Ownership** for the per-file split (METHODOLOGY =
-process + thinking-loop; RTK = risk/gate; ACLI = Atlassian-contract; DBGATE =
-db-write; `CLAUDE.md (doctrine home) ` = autonomy decisions, cage-protected).
+Per-file split: METHODOLOGY = process + thinking-loop; RTK = risk/gate; ACLI =
+Atlassian-contract; DBGATE = db-write; `CLAUDE.md` (doctrine home) = autonomy
+decisions, cage-protected.
 
 ## Vendored thinking-skills (L3 reference, NOT promoted)
 

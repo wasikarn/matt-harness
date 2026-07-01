@@ -6,9 +6,10 @@
 # schema — it's a plugin-root `SKILL.md` construct. Warn-only for missing name:
 # (preserves audit visibility without blocking on a field the schema doesn't
 # require).
-for f in "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/commands"/*/COMMAND.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f" .md)
+  case "$f" in */COMMAND.md) name=$(basename "$(dirname "$f")") ;; esac
   if ! grep -q '^---' "$f"; then
     crit "command '$name' missing frontmatter"
   fi

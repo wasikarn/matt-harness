@@ -26,9 +26,9 @@ context-exhaustion backstop. The operating model is CLAUDE.md §The operating mo
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap worth a
 deliberate cycle.
 
-**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/ship-task`), an
-external tool/article (`kbg:article-mine`), or anything unattended. If you cannot present the
-proposal to a human and wait, **stop** — do not proceed plan-only into execution.
+**When NOT to use:** a single named bug (`/fix-bug`), a new capability (`/ship-task`), or
+anything unattended. If you cannot present the proposal to a human and wait, **stop** — do not
+proceed plan-only into execution.
 
 ---
 

@@ -59,7 +59,7 @@ can verify its own work now." The maker≠checker separation exists for
 maker cannot see — not because the model is too weak to check. That is exactly
 the boundary METHODOLOGY Rule 4's fresh-context-verification principle and
 the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle (preserved append-only by
-[CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)) protect. Collapsing the checker into the maker is the
+CLAUDE.md's operating-model section) protect. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no
@@ -67,7 +67,7 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
+**See CLAUDE.md's operating-model section** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
@@ -114,49 +114,59 @@ holds the full comparison (3-now / 3-later actions).
 
 ## Irreversible-action class (gates the harness already has)
 
-The corpus converges on a class-name: **irreversible actions** (writes to
-external state, reads of secrets, edits of config or doctrine) deserve a
-human gate. kbg-harness already has 4 class-shaped gates:
+The corpus converges on a class-name: **irreversible actions** (destructive
+commands, hardcoded-path leaks, edits to the code that judges the model)
+deserve a human gate. kbg-harness currently has 3 gate scripts, all under
+`hooks/gates/`:
 
-- **DB writes** — `hooks/gates/db-write-gate.sh` (gates `mcp__*__execute_sql_*`
-  non-SELECT writes; SELECT/EXPLAIN/information_schema pass through)
-- **Secret reads** — `hooks/gates/secret-read-guard.sh` (in `hooks/hooks.json`)
-- **Config edits** — `hooks/gates/config-protection.sh` (PreToolUse gate,
-  `hook_decision ask` on existing linter/formatter configs; blocks
-  the model from editing established config without human approval).
-  `hooks/advisory/config-change-log.sh` is a separate append-only audit trail
-  for external `ConfigChange` events (logger, not a gate — fires
-  after the fact, no `permissionDecision`, no enforcement).
-- **Doctrine edits** — `hooks/gates/doctrine-edit-gate.sh` +
-  `hooks/gates/block-bash-doctrine-write.sh` (gates Edit/Write on METHODOLOGY/CONTEXT/
-  RTK/ACLI/DBGATE)
+- **Irrecoverable Bash patterns** — `hooks/gates/irrecoverable.sh` (PreToolUse
+  on Bash; `exit 2`-blocks `rm -rf`, `git push --force`, `--no-verify`, `git
+  reset --hard`, and `git clean -f` — the destructive-command class, `deny`
+  not `ask`).
+- **Hardcoded home paths** — `hooks/gates/path-hardcode.sh` (PreToolUse on
+  Write/Edit; `exit 2`-blocks a literal `/Users/<name>` written into a `.sh`
+  or `.py` file — `$HOME`/`~` pass through).
+- **Verifier tamper-protection** — `hooks/gates/verifier-protect.sh`
+  (PreToolUse on Write/Edit/MultiEdit; emits `permissionDecision: ask` — not
+  deny — for edits to `hooks/gates/**`, `hooks/hooks.json`,
+  `skills/harness-audit/scripts/audit.sh`, and
+  `skills/harness-audit/scripts/checks/**`. The class is "the model editing
+  the code that judges it" — the gate forces a live human approve/deny
+  instead of a silent self-edit).
 
-**Pattern for future gates**: any new gate should be keyed on the
-**class** of mutation, not on a specific tool. `db-write-gate` matches
-`mcp__*__execute_sql_*` across servers (class: database mutation) — the
-analog for a future `deploy-gate` would match `Bash` invocations of
-`kubectl apply`, `terraform apply`, etc. (class: infrastructure mutation).
+There is no dedicated DB-write, secret-read, or config-edit gate today —
+those are candidate classes for a future gate, not gates the harness already
+ships.
+
+**Pattern for future gates**: any new gate should be keyed on the **class**
+of mutation, not on a specific tool. `irrecoverable.sh` matches a family of
+destructive Bash patterns rather than one exact command string — the analog
+for a future `deploy-gate` would match `Bash` invocations of `kubectl
+apply`, `terraform apply`, etc. (class: infrastructure mutation), following
+the same one-script-per-class shape.
 
 The pattern lives in the existing decay cadence because the gates
 themselves live in `hooks/`; this section is the map of which class each
 existing gate covers, so a future contributor can find the right
 precedent before adding a new one.
 
-`ask` is the default for human-supervised irreversible mutations; `deny`
-is reserved for actions the model should never be trusted to do even
-with human in-the-loop confirmation (e.g. secret-reads,
-doctrine-via-Bash). See `hooks/gates/secret-read-guard.sh:36-41` and
-`hooks/gates/block-bash-doctrine-write.sh:3-4` for the rationale pattern.
+`deny` (exit 2) is what `irrecoverable.sh` and `path-hardcode.sh` use —
+reserved for actions the model should never be trusted to do even with
+human in-the-loop confirmation. `ask` (`permissionDecision: ask`) is what
+`verifier-protect.sh` uses — a live approve/deny prompt for edits that are
+sometimes legitimate but always deserve a human look. Read the scripts
+themselves (`hooks/gates/irrecoverable.sh`, `hooks/gates/path-hardcode.sh`,
+`hooks/gates/verifier-protect.sh`) for the exact pattern list.
 
 ## Gate discipline review (judgment vs ceremony)
 
 *Pairs with the quarterly sweep above; see `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model for the rationale on gate discipline.*
 
-The gates mapped above (DB writes, secret reads, config edits, doctrine edits —
-plus the `recursive-improve` Step 3 gate) earn their place only by carrying
-judgment. A gate the operator approves every time without a recorded change of
+The gates mapped above (irrecoverable Bash patterns, hardcoded paths,
+verifier tamper-protection — plus the `recursive-improve` Step 3 gate) earn
+their place only by carrying judgment. A gate the operator approves every time without a recorded change of
 decision is **ceremony**, not judgment — and ceremony trains the atrophy the
-judgment-preservation principle (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only by [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)) exists to prevent. This review is the exit condition for the
+judgment-preservation principle (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only by CLAUDE.md's operating-model section) exists to prevent. This review is the exit condition for the
 gate *implementation* (the principle stays irreversible — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
 
 One question, folded into the quarterly pass: **which gates did the operator
@@ -201,7 +211,7 @@ same human-gated cadence applies. Two surfaces carry tool grants:
 - **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
   second, broader allowlist applied to every session in this harness).
 
-**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle, preserved by [CLAUDE.md §The operating model (current)](0006-ecc-aligned-operating-model.md)).
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle, preserved by CLAUDE.md's operating-model section).
 
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets
@@ -261,7 +271,7 @@ populated by sensors doing real work, or are some cells going silent?**
 question. It emits a 2×2 matrix of the 14 hook events ×
 {computational, inferential} × {feedforward, feedback}. Full design
 in
-[`docs/research/harness-coverage-metric-design.md`](../research/harness-coverage-metric-design.md);
+[`docs/research/harness-coverage-metric-design.md`](research/harness-coverage-metric-design.md);
 the human-cadence posture is restated below.
 
 ### Cadence
@@ -278,7 +288,7 @@ the human-cadence posture is restated below.
 A **decay candidate** is any 2×2 cell whose output falls
 **below 60%** of its expected sensor-fire count for the review window.
 "Expected" is per-cell in the
-[design doc](../research/harness-coverage-metric-design.md); a cell
+[design doc](research/harness-coverage-metric-design.md); a cell
 with no sensors (e.g. a hook event the harness has no entry for) is
 *not* a decay candidate — it is a deliberate gap, recorded as such.
 Sub-60% means a sensor exists but stopped firing, fires for inert
@@ -312,7 +322,7 @@ scheduled hook event, no model-as-own-gate. Same posture as the
 build-to-delete sweep + the permission re-audit; same posture ADR
 0006's operator-as-authority model (and the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation
 principle, preserved append-only) protects. The
-[2×2 section in `CLAUDE.md`](../../CLAUDE.md#hook-architecture-two-conventions)
+[operating-model section in `CLAUDE.md`](../CLAUDE.md#architecture)
 calls out the LLM-judge-circularity hazard of any inferential-FB
 sensor that emits a `permissionDecision` — a coverage-driven
 auto-prune would be the same hazard at the meta-decay layer.

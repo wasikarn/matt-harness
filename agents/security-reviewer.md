@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 ---
 
@@ -110,7 +110,7 @@ If you find a CRITICAL vulnerability:
 
 ## Reference
 
-For detailed vulnerability patterns, code examples, report templates, and PR review templates, see skill: `security-review`.
+For detailed vulnerability patterns, code examples, report templates, and PR review templates, see skill: `security-auditor`.
 
 ---
 

@@ -7,8 +7,7 @@ end of a feature/fix and read at session end by `verification-gate.sh`.
 
 It is the evidence-**strength** signal — a different axis from the severity
 `tier` (Critical/Important/Minor) used in review. It feeds the harness-health
-loop: `verification-gate.sh` → the `verification_summary` journal event (see
-[`hooks/JOURNAL-SCHEMA.md`](../../hooks/JOURNAL-SCHEMA.md)) →
+loop: `verification-gate.sh` → the `verification_summary` journal event →
 `recursive-improve-observe.py`.
 
 ## Format

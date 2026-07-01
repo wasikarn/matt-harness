@@ -2,7 +2,7 @@
 # 1. Fleet count
 AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
 SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills')
-COMMANDS=$(safe_count find "$CLAUDE_DIR/commands" -maxdepth 1 -name '*.md' -type f)
+COMMANDS=$(safe_count ls -1 "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md)
 HOOKS=$(safe_count find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*')
 OUTPUT_STYLES=$(safe_count find "$CLAUDE_DIR/output-styles" -maxdepth 1 -name '*.md' -type f)
 THEMES=$(safe_count find "$CLAUDE_DIR/themes" -maxdepth 1 -name '*.json' -type f)

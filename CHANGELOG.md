@@ -5,6 +5,73 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.8.0] — 2026-07-01
+
+Fresh engineering-constitution audit (second pass same day, post-v0.7.0 baseline)
+against an owner-supplied Matt-first constitution + audit guide. 9-dimension
+auditor fan-out + direct verification of every high-stakes claim before scoring.
+Six of nine dimensions came back clean; the yield concentrated in one real
+architecture gap, one real security-relevant gate weakness, and a large
+mechanical doc-rot batch.
+
+- **`kbg:score-decision` wired into `/ship-merge`'s Phase 1 review gate** (Rule 14
+  scored, criteria+weights stated before scoring: Critical findings 30 / CI status
+  25 / review freshness 20 / approvals 15 / review coverage 10; pass ≥70, floor 40).
+  The gate previously read a bare `review-last.json.clean` boolean — built correctly,
+  never wired into any pipeline. Also closes a real staleness gap: the new freshness
+  criterion checks `review-last.json`'s `last_sha` against the PR's current HEAD, so
+  a review from an earlier commit no longer certifies a later one.
+- **`hooks/gates/irrecoverable.sh` rewritten** from raw-substring regex to
+  shlex-tokenized command parsing. Fixed 2 empirically-verified false positives
+  (blocked safe commands merely mentioning `rm -rf` in quoted text) and 9
+  empirically-verified bypasses (quoted `rm`, `find -exec rm`, `git checkout --`,
+  `git switch --force`, `git commit --amend`, `git add -A`/`.`, `dd` to a raw
+  device, SQL `DROP TABLE`/`DATABASE`). 14 new regression assertions added to
+  `hooks/tests/test-gates.sh` (also fixed a pre-existing JSON-escaping bug in
+  that suite's own `bash_payload` helper, exposed by the new test cases).
+  45/45 gate tests pass.
+- **`/build-fix` and `build-error-resolver` consolidated** — two independent,
+  inconsistent implementations of the same workflow (one covered 7 build
+  ecosystems, the other claimed general coverage but was TS/JS-only). The
+  command now delegates via `agent:` frontmatter, matching `/refactor-clean`
+  and `/security-scan`'s existing pattern.
+- **`/ideate` retracted a false safety-guarantee claim** — 3 citations of a
+  "load-bearing" regression fixture (`eval/regressions/ideate-fanout-cap.json`)
+  that was never built (`eval/` doesn't exist). Repointed to the real
+  code-enforced fan-out cap in `skills/orchestrate/SKILL.md`'s F8.5 section.
+- **`skills/inventory`'s scripts and 4 `harness-audit` checks (01, 03, 06, 30)
+  fixed** — all shared the same shallow-glob bug undercounting nested
+  `commands/*/COMMAND.md` files (commands reported as 20, real 22; 2 real
+  commands were silently skipped by symlink-integrity, frontmatter, and
+  disable-model-invocation validation). `is_plugin_delivered`'s `commands`
+  case fixed too — it only checked the flat path, which would have produced
+  false CRITs for the two nested commands once check 03 started scanning them.
+- **Large doc-rot batch**: ~15 dead cross-references (`kbg:assert-presence`,
+  `tech-humanize`, `kbg:backend-dev`, `kbg:adr`, `kbg:article-mine`,
+  `DOMAINS.md`, phantom gate-script names, etc.), stale fleet counts across
+  8 files, ~10 broken/malformed links, and small isolated fixes (a
+  62-word skill description trimmed to 24, a vocabulary-drift fix in
+  `skills/decide`, an internal self-duplication cut in `skills/eval-harness`,
+  a tool over-grant dropped from `security-reviewer`, a hardcoded `main`
+  default branch in `/pr` replaced with a dynamic lookup).
+
+Harness-audit: 0 Critical / 0 Warning / 0 Info. Full gauntlet (plugin-validate
++ shell-lint + json-lint + harness-audit) green. Fleet: 46 skills, 11 agents,
+22 commands, 8 hook scripts — unchanged in count from v0.7.0 (this release is
+content and behavior fixes, no surfaces added/removed/renamed).
+
+> **Note (2026-07-01):** the `[0.7.0]`–`[0.9.0]` entries directly below are real
+> shipped history, but from a version-numbering epoch that was reset back to
+> `0.1.0` shortly after (`cb8f9a7 "chore: reset version to 0.1.0 (fresh rebuild
+> baseline)"`, following further `[0.9.1]`/`[0.10.0]` releases not recorded
+> here). Development continued forward from `0.1.0`, and the version counter
+> has since climbed back up and **reused these same numbers for unrelated
+> content** — the live `plugin.json` version today is `v0.7.0` again, but it
+> is a different release (constitution-audit doc-rot cleanup, commit
+> `8c1a78c`) than the `[0.7.0]` entry below (agent-teams decommission). Do not
+> use this block to infer the current version; check
+> `.claude-plugin/plugin.json` directly.
+
 ## [0.9.0] — 2026-06-26
 
 Tier-2 ECC adoption: 4 new senior-specialist agents, derived from the

@@ -78,19 +78,21 @@ print_boundary() {
     done
   fi
 
-  # Hooks (lightweight — just name + first comment)
+  # Hooks (lightweight — just name + first comment). Recursive: real hooks
+  # live under gates/advisory/session/stop/tests, not flat in hooks/ — a
+  # shallow glob only ever matched hooks.json (see inventory.sh hook-file mode).
   if [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; then
     echo ""
     echo "## Hooks — $label"
     echo "| Hook | Purpose |"
     echo "|---|---|"
-    for f in "$base/hooks"/*; do
+    while IFS= read -r f; do
       [ -f "$f" ] || continue
       local name purpose
       name=$(basename "$f")
       purpose=$(awk '/^# /&&!/^# !/{sub(/^# /,"");print;exit}' "$f")
       printf "| %s | %s |\n" "$name" "${purpose:-—}"
-    done
+    done < <(find "$base/hooks" -type f -name '*.sh' | sort)
   fi
 
   # Output styles — registered via /output-style <name>; same frontmatter
@@ -231,7 +233,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Cross-references
 
-- **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
+- **[Agent tool patterns: allowlist vs denylist](docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
 - **[@0xCodez 14-step harness roadmap](https://x.com/0xCodez/article/2066867539305459732)** — external framing (2026-06-16): harness → loop → self-improving system. Useful for onboarding; kbg keeps the 3-floor vocabulary but rejects the article's L3/L4 unattended-loop conclusion per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model. Keep/discard analysis is in [[0xcodez-harness-roadmap]] memory.
 - **[Sydney Runkle — The Art of Loop Engineering](https://x.com/sydneyrunkle/article/2066928783534289358)** — LangChain's 4-loop stack: agent loop, verification loop, event-driven loop, hill-climbing loop (2026-06-16). Good vocabulary for L1/L2 + human-in-the-loop; kbg rejects the L3/L4 unattended conclusion per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model. Keep/discard analysis is in [[sydney-runkle-loop-engineering]] memory.
 XREF

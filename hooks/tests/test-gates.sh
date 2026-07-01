@@ -14,8 +14,11 @@ VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 pass=0
 fail=0
 
-# Build a minimal Bash tool payload.
-bash_payload() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$1"; }
+# Build a minimal Bash tool payload. Uses json.dumps (not printf %s) so
+# commands containing quotes/backslashes (e.g. mysql -e "DROP TABLE...",
+# find -exec ... \;) don't produce malformed JSON that silently degrades
+# to an empty command downstream.
+bash_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[1]}}))' "$1"; }
 
 # Build a Write tool payload.
 write_payload() {
@@ -84,6 +87,39 @@ test_allow "$IRRECOVERABLE" "safe rm (no -rf)"          "$(bash_payload 'rm /tmp
 test_allow "$IRRECOVERABLE" "git push no force"         "$(bash_payload 'git push origin develop')"
 test_allow "$IRRECOVERABLE" "git reset soft"            "$(bash_payload 'git reset --soft HEAD~1')"
 test_allow "$IRRECOVERABLE" "normal bash command"       "$(bash_payload 'ls -la')"
+
+# 2026-07-01 constitution audit: raw-substring matching produced both false
+# positives (blocked safe commands merely mentioning a pattern in quoted
+# text) and bypasses (quoted/tokenization tricks slipped past the regex).
+# Fixed via shlex-based tokenization; these lock the fix in place.
+test_allow "$IRRECOVERABLE" "grep for rm -rf text (was a false positive)" \
+  "$(bash_payload 'grep -rn "rm -rf" scripts/')"
+test_allow "$IRRECOVERABLE" "commit msg mentioning rm -rf (was a false positive)" \
+  "$(bash_payload 'git commit -m "docs: warn against rm -rf usage"')"
+test_deny  "$IRRECOVERABLE" "quoted rm word (was a bypass)" \
+  "$(bash_payload "'rm' -rf /tmp/x")"
+test_deny  "$IRRECOVERABLE" "find -exec rm (was a bypass)" \
+  "$(bash_payload 'find /tmp/x -exec rm {} \;')"
+test_deny  "$IRRECOVERABLE" "git checkout -- discards changes (was a bypass)" \
+  "$(bash_payload 'git checkout -- .')"
+test_deny  "$IRRECOVERABLE" "git switch --force (was a bypass)" \
+  "$(bash_payload 'git switch --force main')"
+test_deny  "$IRRECOVERABLE" "git commit --amend (was a bypass)" \
+  "$(bash_payload 'git commit --amend')"
+test_deny  "$IRRECOVERABLE" "dd to raw device (was a bypass)" \
+  "$(bash_payload 'dd if=/dev/zero of=/dev/disk2')"
+test_deny  "$IRRECOVERABLE" "SQL DROP TABLE (was a bypass)" \
+  "$(bash_payload 'mysql -e "DROP TABLE users"')"
+test_deny  "$IRRECOVERABLE" "git add -A (was prose-only)" \
+  "$(bash_payload 'git add -A')"
+test_deny  "$IRRECOVERABLE" "git add . (was prose-only)" \
+  "$(bash_payload 'git add .')"
+test_allow "$IRRECOVERABLE" "git add named file (must not over-block)" \
+  "$(bash_payload 'git add foo.txt')"
+test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
+  "$(bash_payload 'git checkout main')"
+test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
+  "$(bash_payload 'git checkout -b new-branch')"
 
 echo ""
 echo "=== path-hardcode gate ==="

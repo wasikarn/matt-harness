@@ -1,6 +1,6 @@
 ---
 name: fix-bug
-description: "Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-dev), greenfield TDD (use kbg:backend-dev), or refactors not driven by a bug (use `/refactor-clean`)."
+description: "Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-patterns), greenfield TDD (use kbg:backend-patterns), or refactors not driven by a bug (use `/refactor-clean`)."
 argument-hint: Optional bug description or repro steps
 disable-model-invocation: true
 disable-model-invocation-reason: spawns agents and mutates — a fix the user commits to
@@ -151,9 +151,9 @@ Update todos as you progress.
 
 ---
 
-## Phase 7: Quality Review + Sign
+## Phase 7: Quality Review
 
-**Goal**: Route domain-specific reviewer agents + optionally pin the fix with a witness.
+**Goal**: Route domain-specific reviewer agents for a final quality pass.
 
 **Actions**:
 1. Conditional routing — launch in parallel based on what the fix touched:
@@ -167,9 +167,8 @@ Update todos as you progress.
    - **Important** — should fix before merge (real issues that don't block but shouldn't ship)
    - **Minor** — nice to have (style, optional refinements)
    - Ask per tier: fix now, defer, or proceed as-is.
-3. **Optional sign**: if the fix is load-bearing (subtle invariant, easy to regress in a future refactor, or worth pinning across sessions) → prompt the user to invoke `kbg:assert-presence <slug>` to sign a tamper-evident witness with `PRESENT_MARKER` on a unique fix-id comment. Default = skip; offer only when the fix is fragile.
-4. Summarize: what broke, root cause (one sentence), fix shape, regression test name, files touched.
-5. Suggest next step:
+3. Summarize: what broke, root cause (one sentence), fix shape, regression test name, files touched.
+4. Suggest next step:
    - If not yet reviewed → invoke `review-pr` skill
    - If review addressed and approved → `/ship-merge`
    - If documenting the fix → `/post-mortem`
@@ -186,7 +185,6 @@ Update todos as you progress.
   - Phase 5 defaults to `kbg:tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
   - Use standalone `kbg:diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
   - Use standalone `kbg:tdd` for greenfield TDD on new features, not bug fixes.
-- **assert-presence skill**: Phase 7 optional — sign a load-bearing fix so a later session detects regression. Don't assert-presence every fix (ceremony); assert-presence only fragile ones.
 - **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
 - **Named model**: the reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

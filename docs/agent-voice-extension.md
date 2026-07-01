@@ -1,7 +1,7 @@
 # Agent voice extensions: when (and when not) to wrap a personality in a command
 
 **Status:** Convention reference. Owned by the harness. Sibling of [`agent-tool-patterns.md`](./agent-tool-patterns.md).
-**Origin:** F5 voice blocks shipped in Phase 3 (commit `4d2ad91`) — 26/27 agents gained a `## Voice` section with `senior-eng` personality (uncertainty, tradeoff, reasoning, pattern recognition) inline. Phase 4 D6 (deferred from the 2026-06-12 audit spec) considered wrapping those personalities in `/debug`, `/architect`, `/perspectives` commands. Owner chose to **fold into this doc** rather than ship commands — F5 stays the single source of truth for "what does this agent sound like."
+**Origin:** F5 voice blocks shipped in Phase 3 (commit `4d2ad91`) against the fleet at the time. Of the current 11-agent fleet, 1/11 (`ideate-critic`) carries a `## Voice` section with `senior-eng` personality (uncertainty, tradeoff, reasoning, pattern recognition) inline. Phase 4 D6 (deferred from the 2026-06-12 audit spec) considered wrapping those personalities in `/debug`, `/architect`, `/perspectives` commands. Owner chose to **fold into this doc** rather than ship commands — F5 stays the single source of truth for "what does this agent sound like."
 
 The question this doc answers: **when a user types `/<personality>`, what should happen, and what shouldn't we build?**
 
@@ -54,7 +54,7 @@ The command's value is a **deliverable contract** — a specific output format t
 - **Why a command is justified:** the agent's voice block says "stress-test reasoning" but doesn't promise the output shape. The command gives the user a stable interface.
 - **Without the command:** the user asks for a stress-test, gets prose, has to ask "can you put that in a table" or similar.
 
-**This is the weakest of the three cases** — it overlaps with the existing 10 commands (`status-update`, `ship-merge`, etc.) which already encode output shape. If you find yourself wanting a `/perspectives` command, the right move is usually to extend `critical-eval`'s output-format guidance or write a new command that **isn't** personality-flavored.
+**This is the weakest of the three cases** — it overlaps with the existing 22 commands (`ship-merge`, `pr`, etc.) which already encode output shape. If you find yourself wanting a `/perspectives` command, the right move is usually to extend `critical-eval`'s output-format guidance or write a new command that **isn't** personality-flavored.
 
 ---
 
@@ -139,8 +139,8 @@ The command's value is the **output shape** (ADR-shaped critique), not a new cap
 
 ## 5. Cross-references
 
-- **[F5 voice blocks](./agent-tool-patterns.md#5-cross-references)** — the personality surface this doc protects. All 26/27 agents with `## Voice` blocks are documented in `agents/*.md`; this doc governs whether and how to wrap one in a command.
-- **[F5 ship commit `4d2ad91`](../../CHANGELOG.md)** — the Phase 3 commit that added voice blocks; the D6 decision was made in the context of what that commit shipped.
-- **[orchestrate router](../../skills/orchestrate/SKILL.md)** — the domain-routing layer. A personality command should not duplicate this routing; it should layer on top (pre-load context, enforce output shape) or below (trigger a procedure).
+- **[F5 voice blocks](./agent-tool-patterns.md#5-cross-references)** — the personality surface this doc protects. Agents with `## Voice` blocks are documented in `agents/*.md`; this doc governs whether and how to wrap one in a command.
+- **[F5 ship commit `4d2ad91`](../CHANGELOG.md)** — the Phase 3 commit that added voice blocks; the D6 decision was made in the context of what that commit shipped.
+- **[orchestrate router](../skills/orchestrate/SKILL.md)** — the domain-routing layer. A personality command should not duplicate this routing; it should layer on top (pre-load context, enforce output shape) or below (trigger a procedure).
 - **[diagnose skill](https://docs.claude.com)** (plugin-shipped, not in this harness) — the disciplined-diagnosis procedure referenced in the `/debug` worked example.
-- **[2026-06-12 audit spec, D6](../../.scratch/audit-2026-06-12/SPEC.md)** — the originating finding. Closed by this doc; SPEC.md § D6 marked RESOLVED → FOLDED INTO F5 EXTENSION.
+- **[2026-06-12 audit spec, D6](../.scratch/audit-2026-06-12/SPEC.md)** — the originating finding. Closed by this doc; SPEC.md § D6 marked RESOLVED → FOLDED INTO F5 EXTENSION.

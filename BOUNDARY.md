@@ -28,7 +28,7 @@ _Personals/kbg-harness_
   ◇ grilling                       Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation.
   ◇ grpc-node-patterns             gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC.
   ◇ handoff                        Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates.
-  ◇ harness-audit                  Single harness-state surface with two modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode surfaces per-session token cost from the live cost ledger (formerly kbg:harness-health). Use when running a harness audit or querying session token cost. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness'. Don't use for: general repo lint or security audits (kbg:security-auditor).
+  ◇ harness-audit                  Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor).
   ◇ hono-patterns                  Hono patterns: typed routing, Zod validation, middleware, RPC client, context vars. Use when building Hono services on Bun/Node. Don't use for Express, Fastify, or NestJS.
   ◇ improve-codebase-architecture  Scan a codebase for deepening opportunities and grill through one. Use when the user wants to prioritise architecture deepening. Don't use for routine features.
   ◇ incident                       Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem.
@@ -37,7 +37,7 @@ _Personals/kbg-harness_
   ◇ latency-critical-systems       Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline.
   ◇ learn                          Catalogue durable session learnings; save as memory after an AskUserQuestion gate. Use when asked to capture learnings. Don't use for single known memories or self-improvement.
   ◇ memory-lint                    Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health.
-  ◇ mysql-patterns                 MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases (see kbg:postgres-patterns).
+  ◇ mysql-patterns                 MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases.
   ◇ orchestrate                    Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review.
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
@@ -55,13 +55,13 @@ _Personals/kbg-harness_
   ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
   ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
-### Commands (20)
+### Commands (22)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
-  ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes.
+  ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
   ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use kbg:ship-change or /fix-bug), or security audits (use kbg:security-auditor).
-  ◇ fix-bug                        Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-dev), greenfield TDD (use kbg:backend-dev), or refactors not driven by a bug (use `/refactor-clean`).
-  ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-dev) or changing voice register (use /output-style).
+  ◇ fix-bug                        Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-patterns), greenfield TDD (use kbg:backend-patterns), or refactors not driven by a bug (use `/refactor-clean`).
+  ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-patterns) or changing voice register (use /output-style).
   ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
   ◇ kbg-help                       kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'.
   ◇ pm2                            Analyze a project and generate PM2 service commands for detected frontend, backend, or database services.
@@ -76,9 +76,11 @@ _Personals/kbg-harness_
   ◇ test-coverage                  Analyze coverage, identify gaps, and generate missing tests toward the target threshold.
   ◇ update-codemaps                Scan project structure and generate token-lean architecture codemaps.
   ◇ update-docs                    Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports.
+  ◇ COMMAND                        Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — or when the user explicitly types /ideate, asks to brainstorm, or says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Spawns 5 isolated agent calls under rotating cognitive frames (15-frame pool, 5 per run), scores on novelty/viability/fit, prunes traps, deepens top 3, with a fresh-context critic option. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook').
+  ◇ COMMAND                        9-step senior-engineer loop from scratch: explore → clarify → define-done → implement → test → review → fix-loop → ship. Use when starting a non-trivial task from a blank slate, or when the user says 'ทำงานใหม่', 'ship task', 'เริ่มต้นทำงาน'. Don't use for: tasks already mid-flight (use kbg:ship-change), one-line fixes, pure research/exploration.
 
 ### Agents (11)
-  ◇ build-error-resolver           Build and TypeScript error resolver. Fixes build/type errors with minimal diffs when builds fail. No architectural edits — just green builds.
+  ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
   ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code.
   ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
@@ -90,20 +92,27 @@ _Personals/kbg-harness_
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (1)
-  ◇ hooks.json                     (no description)
+### Hooks (8)
+  ◇ flow-nudge.sh                  shellcheck disable=SC2016  # python code in single quotes
+  ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
+  ◇ path-hardcode.sh               Gate: block hardcoded /Users/<name> paths being written into .sh or .py files.
+  ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier
+  ◇ doctrine-bootstrap.sh          SessionStart: inject METHODOLOGY.md doctrine into the session context.
+  ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
+  ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
+  ◇ test-gates.sh                  shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
 
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| build-error-resolver | Build and TypeScript error resolver. Fixes build/type errors with minimal diffs when builds fail. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| build-error-resolver | Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
 | code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
-| security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
 | silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. | [Read, Grep, Glob, Bash] | yes |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
 | typescript-reviewer | Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
@@ -131,7 +140,7 @@ _Personals/kbg-harness_
 | grilling | Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation. | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
 | handoff | Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates. | inline | manual |
-| harness-audit | Single harness-state surface with two modes. Default mode runs a deterministic fleet/schema/structural audit across the kbg-harness plugin. --health mode surfaces per-session token cost from the live cost ledger (formerly kbg:harness-health). Use when running a harness audit or querying session token cost. Thai: 'audit harness', 'ตรวจ harness', 'harness health', 'สุขภาพ harness'. Don't use for: general repo lint or security audits (kbg:security-auditor). | inline | auto |
+| harness-audit | Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor). | inline | auto |
 | hono-patterns | Hono patterns: typed routing, Zod validation, middleware, RPC client, context vars. Use when building Hono services on Bun/Node. Don't use for Express, Fastify, or NestJS. | inline | auto |
 | improve-codebase-architecture | Scan a codebase for deepening opportunities and grill through one. Use when the user wants to prioritise architecture deepening. Don't use for routine features. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
@@ -140,7 +149,7 @@ _Personals/kbg-harness_
 | latency-critical-systems | Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline. | inline | auto |
 | learn | Catalogue durable session learnings; save as memory after an AskUserQuestion gate. Use when asked to capture learnings. Don't use for single known memories or self-improvement. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
-| mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases (see kbg:postgres-patterns). | inline | auto |
+| mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
@@ -161,7 +170,14 @@ _Personals/kbg-harness_
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| hooks.json | — |
+| flow-nudge.sh | shellcheck disable=SC2016  # python code in single quotes |
+| irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
+| path-hardcode.sh | Gate: block hardcoded /Users/<name> paths being written into .sh or .py files. |
+| verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier |
+| doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. |
+| cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
+| test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
+| test-gates.sh | shellcheck disable=SC2016  # literal \$ in test payload strings is intentional |
 
 ## Output styles — Repo
 | Style | Description |
@@ -170,7 +186,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-01T00:50:03Z_
+_Generated: 2026-07-01T03:19:39Z_
 
 ---
 
@@ -231,7 +247,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 
 ## Cross-references
 
-- **[Agent tool patterns: allowlist vs denylist](../../docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
+- **[Agent tool patterns: allowlist vs denylist](docs/agent-tool-patterns.md)** — kbg-harness convention is `tools:` (allowlist) for new agents; reserve `disallowedTools:` (denylist) for cases where the allowlist would exceed 6-7 tools or the team explicitly opts into implicit-inheritance. The `Mutates` column above reflects `Edit`/`Write`/`Bash` grants.
 - **[@0xCodez 14-step harness roadmap](https://x.com/0xCodez/article/2066867539305459732)** — external framing (2026-06-16): harness → loop → self-improving system. Useful for onboarding; kbg keeps the 3-floor vocabulary but rejects the article's L3/L4 unattended-loop conclusion per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model. Keep/discard analysis is in [[0xcodez-harness-roadmap]] memory.
 - **[Sydney Runkle — The Art of Loop Engineering](https://x.com/sydneyrunkle/article/2066928783534289358)** — LangChain's 4-loop stack: agent loop, verification loop, event-driven loop, hill-climbing loop (2026-06-16). Good vocabulary for L1/L2 + human-in-the-loop; kbg rejects the L3/L4 unattended conclusion per the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model. Keep/discard analysis is in [[sydney-runkle-loop-engineering]] memory.
 

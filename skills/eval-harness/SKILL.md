@@ -113,65 +113,6 @@ Risk Level: LOW/MEDIUM/HIGH
 
 **Recommended thresholds:** capability evals pass@3 >= 0.90; regression evals pass^3 = 1.00 for release-critical paths.
 
-## Eval Workflow
-
-### 1. Define (Before Coding)
-```markdown
-## EVAL DEFINITION: feature-xyz
-
-### Capability Evals
-1. Can create new user account
-2. Can validate email format
-3. Can hash password securely
-
-### Regression Evals
-1. Existing login still works
-2. Session management unchanged
-3. Logout flow intact
-
-### Success Metrics
-- pass@3 > 90% for capability evals
-- pass^3 = 100% for regression evals
-```
-
-### 2. Implement
-Write code to pass the defined evals.
-
-### 3. Evaluate
-```bash
-# Run capability evals
-[Run each capability eval, record PASS/FAIL]
-
-# Run regression evals
-npm test -- --testPathPattern="existing"
-
-# Generate report
-```
-
-### 4. Report
-```markdown
-EVAL REPORT: feature-xyz
-========================
-
-Capability Evals:
-  create-user:     PASS (pass@1)
-  validate-email:  PASS (pass@2)
-  hash-password:   PASS (pass@1)
-  Overall:         3/3 passed
-
-Regression Evals:
-  login-flow:      PASS
-  session-mgmt:    PASS
-  logout-flow:     PASS
-  Overall:         3/3 passed
-
-Metrics:
-  pass@1: 67% (2/3)
-  pass@3: 100% (3/3)
-
-Status: READY FOR REVIEW
-```
-
 ## Eval Storage
 
 Store evals in project:
@@ -215,7 +156,7 @@ Regression Evals:
 [Write code]
 
 ### Phase 3: Evaluate
-Run each capability + regression eval and record PASS/FAIL.
+Run each capability eval manually or via script, record PASS/FAIL. Run regression evals through the existing test suite: `npm test -- --testPathPattern="auth"`
 
 ### Phase 4: Report
 EVAL REPORT: add-authentication
@@ -237,3 +178,7 @@ Status: SHIP IT
 - `.claude/evals/<feature>.md` definition
 - `.claude/evals/<feature>.log` run history
 - `docs/releases/<version>/eval-summary.md` release snapshot
+
+## Completion criterion
+
+Before calling an eval run done: verify every capability eval has a recorded PASS/FAIL, confirm every regression eval hits pass^k on release-critical paths, and check that the report states pass@k against its threshold — a run with no recorded verdict is abandoned, not done.

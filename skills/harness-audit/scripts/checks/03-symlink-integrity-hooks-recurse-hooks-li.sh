@@ -42,9 +42,11 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
     crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
-for f in "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/commands"/*/COMMAND.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
+  # A nested commands/<dir>/COMMAND.md loads by its parent dir name, not "COMMAND".
+  case "$f" in */COMMAND.md) name="$(basename "$(dirname "$f")").md" ;; esac
   if [ ! -L "$HOME/.claude/commands/$name" ] && ! is_plugin_delivered commands "${name%.md}"; then
     crit "command '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
