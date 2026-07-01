@@ -11,13 +11,23 @@
           }
         ],
         "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context"
+      },
+      {
+        "id": "session:command-root-anchor",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/command-root-anchor.sh\""
+          }
+        ],
+        "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${KBG_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably"
       }
     ],
     "UserPromptSubmit": [
       {
         "id": "advisory:flow-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge /grilling → /to-prd → /to-issues → /ship",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship",
         "hooks": [
           {
             "type": "command",

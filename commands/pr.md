@@ -76,7 +76,7 @@ Categorize changed files: source, tests, docs, config, migrations.
 
 ### Planning Artifacts
 
-Check for related artifacts produced by `/to-prd`, `/to-issues`, or the legacy PRP workflow:
+Check for related artifacts produced by `kbg:to-prd`, `kbg:to-issues`, or the legacy PRP workflow:
 - `.claude/prds/` — PRDs this PR implements a milestone of
 - `.claude/plans/` — Plans executed by this PR
 - `.claude/PRPs/prds/` — legacy PRP PRDs

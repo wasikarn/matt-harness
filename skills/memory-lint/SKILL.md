@@ -69,8 +69,8 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 
 ## METHODOLOGY
 
-- **Rule 12 (fail loud):** a broken cross-link or orphan is silent rot; exit code = finding count makes it visible.
-- **Rule 8 (read before write):** before adding a memory, lint surfaces an existing one it should link to or supersede.
+- **Fail loud:** a broken cross-link or orphan is silent rot; exit code = finding count makes it visible.
+- **Read before write:** before adding a memory, lint surfaces an existing one it should link to or supersede.
 - **Memory authoring format:** one lesson per file, frontmatter (`name:`, `description:`), body with the fact plus `**Why:**` and `**How to apply:**`, link related memories with `[[slug]]`; dedupe against existing files before writing, and never delete — archive under `_archive/` (see the A3 rubric above).
 
 ## Related

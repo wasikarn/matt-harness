@@ -8,7 +8,7 @@ metadata:
   origin: ECC
   ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
   ported: 2026-06-27
-  kbg_extension: "kbg expanded the thin ECC orch-fix-defect wrapper into a full 7-phase discipline — added No-repro-no-fix gate, Root-cause-over-symptom principle, Surgical-by-default, Tests-encode-intent (METHODOLOGY Rule 9), TodoWrite tracking, Sequential ledger, and Hard Sequencing Rules (no hypothesis before deterministic repro; no fix before confirmed hypothesis; no cleanup before regression test passes). kbg body 187L vs ecc wrapper 38L — kbg is the substantive implementation, ecc delegates to orch-fix-defect skill."
+  kbg_extension: "kbg expanded the thin ECC orch-fix-defect wrapper into a full 7-phase discipline — added No-repro-no-fix gate, Root-cause-over-symptom principle, Surgical-by-default, Tests-encode-intent, TodoWrite tracking, Sequential ledger, and Hard Sequencing Rules (no hypothesis before deterministic repro; no fix before confirmed hypothesis; no cleanup before regression test passes). kbg body 187L vs ecc wrapper 38L — kbg is the substantive implementation, ecc delegates to orch-fix-defect skill."
 ---
 
 # Fix Bug
@@ -17,10 +17,10 @@ You are helping a developer fix a bug. Follow the discipline: reproduce determin
 
 ## Core Principles
 
-- **No repro, no fix.** **Analyze**: reproducibility signal strength — does the failure happen ≥2 times with the same inputs? Is the environment pinned (OS, runtime, branch)? **Recommend** STOP and ask when the repro is flaky or environment is unknown; proceed only when the failure is deterministic and the trigger is isolated. Don't fix imagined bugs (METHODOLOGY Rule 12 — Fail loud).
+- **No repro, no fix.** **Analyze**: reproducibility signal strength — does the failure happen ≥2 times with the same inputs? Is the environment pinned (OS, runtime, branch)? **Recommend** STOP and ask when the repro is flaky or environment is unknown; proceed only when the failure is deterministic and the trigger is isolated. Don't fix imagined bugs — surface the uncertainty instead of guessing.
 - **Root cause over symptom.** A fix that makes the symptom go away without explaining WHY is not a fix.
-- **Surgical by default.** Smallest change near the bug beats refactoring nearby code (METHODOLOGY Rule 3). Refactor only if the bug exposes a structural weakness *and* the user agrees.
-- **Tests encode intent.** The regression test must fail on the bug and pass on the fix. If you can't write a test that distinguishes the two, you haven't actually fixed the bug (METHODOLOGY Rule 9).
+- **Surgical by default.** Smallest change near the bug beats refactoring nearby code. Refactor only if the bug exposes a structural weakness *and* the user agrees.
+- **Tests encode intent.** The regression test must fail on the bug and pass on the fix. If you can't write a test that distinguishes the two, you haven't actually fixed the bug.
 - **Use TodoWrite.** Track phases as todos so progress is visible.
 - **Sequential ledger.** Every run of the repro, every instrumentation result, every hypothesis test is a data point. Record them in order — new ideas are weighed against the complete history, not against memory alone.
 
@@ -78,8 +78,9 @@ Initial report: $ARGUMENTS
 1. List 2-3 candidate hypotheses based on Phase 2 findings.
 2. For each, state: what would have to be true for this to be the cause, and what evidence would distinguish it from the others.
 3. Rank by likelihood × cheapness-to-test. Pick the top one.
+   - **Named bias guard — anchoring + confirmation.** Requiring ≥2 candidates before ranking guards against anchoring on the first plausible story; requiring distinguishing evidence per hypothesis guards against confirming the top pick without looking for what would disprove it. Full rung detail: `docs/reference/judgment-ladder.md` §"3. Gather and test assumptions".
 4. **Confirm via instrumentation if not already proven by Phase 1's repro**: add logging / asserts / breakpoints → re-run the minimised repro → observe whether the expected evidence appears. If it doesn't, fall back to the next-ranked hypothesis and repeat. Don't write the fix on an unconfirmed hypothesis.
-   - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow the retry-cap vocabulary (Rule 12 escalate sub-rule), this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
+   - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow the retry-cap vocabulary, this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
      - **Stall** — two instrumentation rounds return the *same missing-evidence result for the same failure signal* → stop re-ranking and go to the gate. ("Same error twice in a row: you're guessing, not fixing.")
      - **Degrading** — confidence/progress goes *backwards* (each round contradicts the last), not just standing still → stop and go to the gate.
      - **Reachable-source skip** — don't exit "blocked" on an inference when a real source/log was reachable but unread; read it, or route the block to the gate. "Blocked" must mean a real wall, not an unchecked assumption.
@@ -111,17 +112,17 @@ Initial report: $ARGUMENTS
 
 ---
 
-## Phase 5: Implement (TDD by default — `/tdd` pattern)
+## Phase 5: Implement (TDD by default — `kbg:tdd` pattern)
 
 **Goal**: Make the minimised repro stop failing — with a regression test that fails on the pre-fix code.
 
 **DO NOT START WITHOUT USER APPROVAL FROM PHASE 4.**
 
-**Default: TDD red → green → refactor** (the `/tdd` skill's pattern, inlined here):
+**Default: TDD red → green → refactor** (the `kbg:tdd` skill's pattern, inlined here):
 
 1. **RED** — Write the regression test first. Assert the now-correct behavior. Run it → confirm it FAILS on the buggy code. If it doesn't fail, the test isn't catching the bug; rewrite the test before continuing.
 2. **GREEN** — Write the minimal fix per Phase 4 strategy. Run the test → confirm it PASSES. Re-run the minimised repro from Phase 1 → confirm the original failure signal is gone.
-3. **REFACTOR** — Clean up only if strictly required to keep the fix readable. No orthogonal cleanup (METHODOLOGY Rule 3).
+3. **REFACTOR** — Clean up only if strictly required to keep the fix readable. No orthogonal cleanup.
 4. Run the full test suite locally. Confirm no orthogonal regressions.
 
 **Opt out of TDD** (only when the test framework can't encode the bug type — visual regression, hard race condition needing dedicated tooling, integration boundary with no test harness):
@@ -178,13 +179,13 @@ Update todos as you progress.
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3. Rule 3 (Surgical changes) → Phase 4 default. Rule 5 (Model only for judgment) → Phase 1 repro must be deterministic, not Claude-asserted. Rule 9 (Tests verify intent) → Phase 6 distinguishes-or-it-doesn't check. Rule 12 (Fail loud) → Phase 1 abort if no repro.
+- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3. Surgical changes → Phase 4 default. Model only for judgment → Phase 1 repro must be deterministic, not Claude-asserted. Tests verify intent → Phase 6 distinguishes-or-it-doesn't check. Fail loud → Phase 1 abort if no repro.
 - **code-review-graph MCP**: Phase 2 for structural lookup; the orchestrating session (not the reviewer agents, which have no MCP grant) runs impact-radius queries in Phase 7 before spawning review — `code-reviewer` itself escalates blast-radius depth via grep.
 - **`kbg:diagnosing-bugs` and `kbg:tdd` are built in as DEFAULTS, not alternatives**:
   - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `kbg:diagnosing-bugs`'s core loop so the full workflow lives in one document. Don't separately invoke `kbg:diagnosing-bugs` from within `/fix-bug` — it's already running.
   - Phase 5 defaults to `kbg:tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
   - Use standalone `kbg:diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
   - Use standalone `kbg:tdd` for greenfield TDD on new features, not bug fixes.
-- **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically. Don't bypass.
+- **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/path-hardcode.sh` (hardcoded `/Users/` paths) run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
 - **Named model**: the reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

@@ -64,8 +64,8 @@ If the incident involves unauthorized access, data exfiltration, or any security
 
 - **Rule 1:** Assess before mitigate.
 - **Rule 4:** MTTR is the metric.
-- **Rule 10:** Each phase has a clear exit.
-- **Rule 12:** Blast radius expands = escalate immediately.
+- **Clear phase exits:** each phase has a well-defined stop condition before the next begins.
+- **Escalate, don't absorb:** blast radius expands = escalate immediately.
 
 ## References
 

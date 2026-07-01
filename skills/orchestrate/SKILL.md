@@ -191,7 +191,7 @@ A verdict file at `.scratch/health-review/verdict.md` with pass/fail and file:li
 - [ ] No edit to any file (read-only validation)
 ```
 
-Spawn **ungated** — validators are read-only. They do not hold Edit/Write/Bash. The `hooks/gates/validator-bash-guard.sh` hook prevents mutation even if the prompt drifts.
+Spawn **ungated** — validators are read-only by allowlist: they do not hold Edit/Write. They do hold `Bash` for read-only inspection (git diff/log, tests), but there is no runtime backstop if the prompt drifts toward a mutating command — the read-only-by-behavior guard (`hooks/gates/validator-bash-guard.sh`) was deleted in the v0.6.0 reset and not rebuilt. Read-only is enforced by the allowlist plus prompt doctrine only.
 
 **Task 3 — Fixer: address review findings (conditional)**
 
@@ -280,7 +280,7 @@ After spawning Task 1, the lead verifies its done-when (`GET /health` returns 20
 | Fixer (C) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
 | Re-validator (D) | **No** | Read-only; no AskUserQuestion |
 
-**Validator safety:** Even though validators are ungated, `hooks/gates/validator-bash-guard.sh` strips Bash from any validator session whose prompt drifts toward mutation. This is a defense-in-depth layer — the gate removes Bash at the tool-policy level, and the hook removes it at runtime if the policy is bypassed.
+**Validator safety:** Validators are ungated and hold `Bash`, so read-only is enforced by allowlist (no Edit/Write) plus prompt doctrine, not by a runtime backstop. A prior defense-in-depth layer (`hooks/gates/validator-bash-guard.sh`, which stripped Bash from a drifting validator session at runtime) was deleted in the v0.6.0 reset and not rebuilt — see `docs/agent-tool-patterns.md` §4 point 4.
 
 ### Upstream contract propagation
 
@@ -324,7 +324,7 @@ If ALL of these hold, **execute inline immediately** and skip all orchestration 
 - **Impact × Effort** — backlog with no real urgency. If everything is "not urgent," urgency is a degenerate axis — switch.
 - **Value × Risk** — architecture decisions, framework adoption, release planning, or any task where uncertainty is the primary concern. When the question is "should we build/adopt this at all?" rather than "when should we do it?"
 
-"Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 7).
+"Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 1, `clarify-first` — `kbg:decide` clarify mode).
 
 Full routing tables, agent fleet mapping, scripted execution details, and delegation guardrail: `reference.md`
 
@@ -346,9 +346,9 @@ Every agent dispatched here holds Bash or Edit/Write → present the plan, get o
 
 - **Rule 2 (Simplicity first):** fast path for single bounded tasks; don't orchestrate what's faster inline.
 - **Rule 4 (Goal-driven):** every dispatched agent gets explicit done-when criteria, not a vague topic.
-- **Rule 5 (Model for judgment only):** the matrix decides routing — don't re-litigate each item by vibe.
-- **Rule 10 (Checkpoint after every step):** validate before integration.
-- **Rule 12 (Fail loud):** report the full allocation including what was dropped and why; no silent de-scoping.
+- **Deterministic over vibe:** the matrix decides routing — don't re-litigate each item by vibe.
+- **Checkpoint before integrating:** validate before integration.
+- **Fail loud:** report the full allocation including what was dropped and why; no silent de-scoping.
 - **Rule 13 (Orchestrate, don't solo):** decompose → distribute pieces → verify results → combine into whole.
 
 **Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

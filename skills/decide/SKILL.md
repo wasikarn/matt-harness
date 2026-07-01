@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Doctrine-backed decision support, clarify scope, stress-test reasoning, pick among defensible options (probe/decide/strategize). Use when facing a non-trivial choice. Don't use for obvious or already-decided calls."
+description: "Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls."
 metadata:
   origin: kbg
   references:
@@ -12,7 +12,8 @@ metadata:
 # decide
 
 Structured decision support built on the Judgment Ladder (Decision Quality tradition).
-Three modes — pick by reversibility and diagnosis clarity.
+Five modes — pick by reversibility, diagnosis clarity, and whether the reasoning
+already exists or still needs to be built.
 
 ## Mode selection
 
@@ -20,12 +21,34 @@ Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session):
 
 | Situation | Mode |
 |---|---|
-| Scope or assumptions still unclear | Stop — ask the structured clarifying question (analyze → recommend → ask) before deciding |
+| Scope or assumptions still unstated | `clarify` |
 | Read-only: understand before committing | `probe` |
 | Reversible choice, analyzable trade-offs | `decide` (default — Judgment Ladder) |
+| Reasoning/plan/ADR already exists — stress-test it | `critique` |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
 | Chaos or incident | Stop — use `kbg:incident` instead |
 | Decision already made, needs a record | `kbg:domain-modeling` directly (owns the ADR rule) |
+| Disprove a confident output before committing to it | Stop — spawn an external fresh-context skeptic that has not seen the work (`doubt-driven` pattern; canonical instance is the adversarial pass in `kbg:review-pr`) — not a mode here, because the skeptic must not share this context |
+
+---
+
+## Mode: clarify
+
+Resolve unstated scope or assumptions before any other mode runs. Analyze → recommend
+→ ask — do not enumerate a long list of questions when a stated assumption will do.
+
+1. **Analyze.** Name what's actually ambiguous: scope boundary, success criterion, or
+   a load-bearing assumption the request leaves implicit.
+2. **Recommend.** State your working interpretation as a default, not a question.
+3. **Ask.** Only if the ambiguity is consequential enough that guessing wrong is
+   expensive — use `AskUserQuestion` for a genuine fork; otherwise proceed on the
+   stated default and flag it.
+
+**Bias to guard:** framing bias — a narrow first framing of the ask silently
+constrains every option considered downstream. Reframe test: "if the literal request
+did not exist, what problem is actually being solved?"
+
+Output: scope is resolved, then hand off to `probe`, `decide`, or `strategize`.
 
 ---
 
@@ -89,6 +112,30 @@ how to win → capabilities → management systems.
 
 ---
 
+## Mode: critique
+
+Adversarial stress-test of reasoning that **already exists** — a plan, an ADR, an RFC,
+a proposal on the table. Not for generating a new decision from scratch (`decide`/
+`strategize` do that); this mode only audits one that's already made.
+
+1. **Skeptic.** Argue against the proposal on its own terms: what load-bearing
+   assumption, if false, collapses it? What would a competent rival or reviewer
+   attack first? (red-team)
+2. **Steel-man.** State the strongest version of the opposing case, not the weakest —
+   the version that would actually change the decision if true. (steel-manning)
+3. **Synthesis.** Name any unconsidered alternative the Skeptic/Steel-man pass
+   surfaced. If the proposal survives, say why the strongest objection doesn't hold.
+   If it doesn't survive, name what changes.
+
+**Bias to guard:** confirmation bias — the proposal's author (possibly this session)
+is structurally motivated to find it sound. Ask: "what evidence would prove this
+proposal wrong, and did we look for it or just for evidence it's right?"
+
+Output: a verdict — the reasoning holds, holds with a named caveat, or needs rework —
+plus the one assumption most worth re-verifying.
+
+---
+
 ## Output format
 
 Produce a decision record at the end of any `decide` or `strategize` session:
@@ -98,7 +145,7 @@ Produce a decision record at the end of any `decide` or `strategize` session:
 
 - Date: YYYY-MM-DD
 - Owner: @name
-- Mode: decide | strategize
+- Mode: clarify | probe | decide | critique | strategize
 
 ## Decision statement
 <one sentence>

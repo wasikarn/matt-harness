@@ -24,14 +24,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 **Actions**:
 1. **Detect target PR.** If user prompt contains a bare integer token (e.g. `123`), that is the **PR number** to review — Phase 2 checks it out in an isolated worktree instead of reviewing the current branch. Strip it before the aspect parse. No integer → review the current branch (existing behaviour).
-2. **Write the review-pr-marker** so the PostToolUse:Bash hook (`hooks/post-tool/review-pr-marker.sh`) can remind you to push the commit / open a PR if you `git commit` while the session is active. 30-min TTL; cleared on Phase 7 cleanup:
-   ```bash
-   mkdir -p "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
-   printf 'pr=%s\nts=%s\n' "${PR_NUMBER:-}" "$(date -u +%s)" \
-     > "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-active"
-   ```
-3. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
-4. **Determine dispatch mode:**
+2. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
+3. **Determine dispatch mode:**
    - If user passed `parallel` keyword → mark for parallel dispatch in Phase 4.
    - If user passed `sequential` keyword → mark for sequential.
    - If **neither** keyword passed → **Analyze**: count routed agents (Phase 3), diff size (`git diff --stat`), file types touched.
@@ -94,7 +88,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Goal**: Consolidate findings, classify into severity tiers — **without** blending across agents. Apply outsider-perspective scrutiny before presenting.
 
 **Actions**:
-1. Collect all per-agent findings. **Do NOT blend findings across agents** (per METHODOLOGY Rule 7 — each agent's report stands independently. Overlap between agents on the same file:line = signal, not noise. Preserve attribution: "code-reviewer + security-reviewer both flagged this" tells the user something dedupe would erase.)
+1. Collect all per-agent findings. **Do NOT blend findings across agents** (surface conflicts, don't average — each agent's report stands independently. Overlap between agents on the same file:line = signal, not noise. Preserve attribution: "code-reviewer + security-reviewer both flagged this" tells the user something dedupe would erase.)
 2. **Apply SCRUTINIZE-4 to every finding** (named gate — the 4 questions are *falsifiable*, not vibes). A finding that fails any check goes to `.scratch/review-pr-<timestamp>/rejected.md` with the failing question + reason; the user sees the rejection tally, not the dropped finding:
 
    | # | Question | Falsifiable check (pass = ) | Reject if |
@@ -106,7 +100,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
    **Why named and tabular:** the prose version of this gate was skipped in real runs because it was exhausting. The named checks turn "did I scrutinize?" from a vibe into a yes/no per finding. The reject-and-log path means dropping a finding is *auditable* — the user can see what got filtered and why (vs the agent's confidence-threshold which is invisible).
 
-   **Audit trail — `rejected.md`.** The dropped findings are not issues (don't use `.scratch/<feature>/issue.md`); they are an ephemeral audit log of a single review session. Write them to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (e.g. `.scratch/review-pr-2026-06-08T15-30Z/rejected.md`) with one line per dropped finding: `- [Q3] hooks/post-tool/review-pr-marker.sh:50 — "happy path only, didn't trace stale-marker branch"`. The dir is gitignored-by-convention under the issue-tracker's "scratch is local" rule; the user sees only a tally `Rejected: 4 (Q1: 0, Q2: 1, Q3: 2, Q4: 1)`, not the dropped body.
+   **Audit trail — `rejected.md`.** The dropped findings are not issues (don't use `.scratch/<feature>/issue.md`); they are an ephemeral audit log of a single review session. Write them to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (e.g. `.scratch/review-pr-2026-06-08T15-30Z/rejected.md`) with one line per dropped finding: `- [Q3] hooks/gates/irrecoverable.sh:50 — "happy path only, didn't trace the sudo-wrapped branch"`. The dir is gitignored-by-convention under the issue-tracker's "scratch is local" rule; the user sees only a tally `Rejected: 4 (Q1: 0, Q2: 1, Q3: 2, Q4: 1)`, not the dropped body.
 
 3. **Consolidate into severity tiers.** For each finding, assign a tier by asking *"if this ships as-is, what's the worst that could happen?"* — production breaks / a 2am page / silent data corruption / users see errors → **Critical**; a real but contained issue → **Important**; only "the code is slightly less clean" → **Minor**:
    - **Critical** — must fix before merge (security, data integrity, broken functionality)
@@ -147,7 +141,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
-   **Proof-verification check** (METHODOLOGY Rule 4 sub-rule): look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
+   **Proof-verification check** (Rule 4 — define done, loop until verified): look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
 
 2. **Branch on review target (from Phase 1):**
 
@@ -230,10 +224,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```
    `<#>` = target PR number, or current branch's PR (`gh pr view --json number -q .number`). If no PR exists yet, skip (nothing to submit to).
 4. **Clean up the worktree** if Phase 2 created one: `cd` back to the original repo dir, then `git worktree remove "$WT" --force`.
-5. **Clear the review-pr-marker** so the PostToolUse:Bash hook stops nudging after the session ends:
-   ```bash
-   rm -f "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-active"
-   ```
 
 ---
 
@@ -253,12 +243,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 - **METHODOLOGY alignment**:
   - Rule 1 (Think before coding) → **Phase 1 scope** + **Phase 2 pinned window** establish what's under review before agents dispatch
-  - Rule 7 (Surface conflicts, don't average) → **Phase 5** preserves per-agent attribution; do NOT blend or dedupe across agents. Scrutinize gate challenges intent before tiering — simpler alternatives are surfaced, not averaged away.
-  - Rule 9 (Tests verify intent) → code-reviewer's behavioral test-coverage lens focuses on behavioral coverage, not line coverage
-  - Rule 12 (Fail loud) → silent-failure-hunter catches hidden failures before merge. Phase 5 blanket-approval rejection prevents false confidence from empty "LGTM" agents.
+  - Surface conflicts, don't average → **Phase 5** preserves per-agent attribution; do NOT blend or dedupe across agents. Scrutinize gate challenges intent before tiering — simpler alternatives are surfaced, not averaged away.
+  - Tests verify intent, not just behavior → code-reviewer's behavioral test-coverage lens focuses on behavioral coverage, not line coverage
+  - Fail loud → silent-failure-hunter catches hidden failures before merge. Phase 5 blanket-approval rejection prevents false confidence from empty "LGTM" agents.
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
-- **Hooks active**: secret-scan runs on all diffs automatically. doctrine-edit-gate protects CLAUDE.md/METHODOLOGY.md from mid-session edits.
+- **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
 - **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
 - **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests, comments, types → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design lens. Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr` — normalized in commit `9e89bf2`.

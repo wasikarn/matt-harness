@@ -55,8 +55,8 @@ Done.
 ## METHODOLOGY
 
 - **Rule 1:** Threat model before audit.
-- **Rule 7:** Security vs code quality — surface conflict, security wins unless user accepts risk.
-- **Rule 12:** Critical = block merge.
+- **Surface conflicts, don't average:** security vs code quality — surface conflict, security wins unless user accepts risk.
+- **Fail loud:** Critical = block merge.
 
 ## Related
 

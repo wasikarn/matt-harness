@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016  # python code in single quotes
-# Advisory: nudge /grilling → /to-prd → /to-issues → /ship when the
+# Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
 # user's prompt looks like non-trivial engineering work. UserPromptSubmit
 # hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
 # always exits 0. Errors are silently swallowed.
@@ -33,7 +33,7 @@ fi
 cat <<'EOF'
 
 [kbg:flow-nudge] Non-trivial work detected — consider matt's flow:
-  /grilling → /to-prd → /to-issues → /ship
+  kbg:grilling → kbg:to-prd → kbg:to-issues → /ship
 Skip the nudge if the work shape is already known (typo-fix / doc-tweak /
 direct skill invocation). The nudge is advisory; the model judges.
 EOF

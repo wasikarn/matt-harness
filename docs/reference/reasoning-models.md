@@ -39,8 +39,8 @@ This is exactly why kbg references rather than adopts. A named model is a **fram
 scaffold and a shared word**, not a correctness mechanism. The harness's correctness comes
 from its *computational* feedback — the critical-hooks suite, the audit checks, the eval
 gate — not from invoking a mental model. Same posture as the LLM-judge-circularity rule
-(`CLAUDE.md` §LLM-judge-circularity): **use a model to structure thinking; never cite "I
-applied model X" as evidence the work is right.**
+(`CLAUDE.md`'s "Why — the unifying crux", under §Architecture): **use a model to structure
+thinking; never cite "I applied model X" as evidence the work is right.**
 
 > **Do not open this catalog unprompted.** Reasoning models are framing scaffolds, not a
 > checklist to prepend to every task. Apply one only when the task explicitly calls for that
@@ -103,11 +103,11 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
 | reversibility | `thinking-reversibility` | applied | skills/adr, skills/decide (probe mode), the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model | "hard to reverse?" and "reversible in hours/days/never" |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
-| socratic | `thinking-socratic` | applied | skills/clarify-first | named method + "Socratic Trap" failure mode |
+| socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/perf | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | skills/perf | profile → find the one bottleneck → fix that |
-| red-team | `thinking-red-team` | applied | skills/critical-eval, kbg:decide (debate mode) | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/critical-eval, kbg:decide (debate mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
+| red-team | `thinking-red-team` | applied | skills/decide (critique mode) | Skeptic role: argue AGAINST and find risks |
+| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -119,7 +119,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | bounded-rationality | `thinking-bounded-rationality` | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
 | margin-of-safety | `thinking-margin-of-safety` | considered | agents/inferential-structural-judge | 5k-token headroom below budget; "agent depth caps" is thematic, not named |
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
-| map-territory | `thinking-map-territory` | considered | METHODOLOGY Rule 8 | Read Before You Write; no named stale-context-at-spawn surface |
+| map-territory | `thinking-map-territory` | considered | — | Read Before You Write, a METHODOLOGY rule dropped in the v0.6.0 reset; no live anchor |
 | via-negativa | `thinking-via-negativa` | applied | skills/decommission, skills/memory-trim | named in footer: removal/absence as via-negativa |
 | ooda | `thinking-ooda` | applied | skills/incident | named in incident footer (detect→assess→mitigate→monitor); the skill's hotfix path inherits via handoff |
 | cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
@@ -165,11 +165,11 @@ They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
-| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `kbg:triage`, `kbg:clarify-first` |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `/deep-dive`, `kbg:article-mine` |
-| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:critical-eval`, `kbg:decide` debate mode, `kbg:review-pr` |
-| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `kbg:adr`, `/ship` scoping |
-| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:adr` (Pugh Matrix), `kbg:decide` debate mode |
+| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `kbg:triage`, `kbg:decide` clarify mode |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `/deep-dive` |
+| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:decide` critique mode, `kbg:review-pr` |
+| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `kbg:domain-modeling`, `/ship` scoping |
+| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:domain-modeling` (Pugh Matrix), `kbg:decide` critique mode |
 | **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that

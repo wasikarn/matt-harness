@@ -14,7 +14,7 @@ injection.
 ## The 3 doctrine files (read in this order)
 
 1. [`METHODOLOGY.md`](METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.** The only one auto-injected on every SessionStart, by `hooks/session/doctrine-bootstrap.sh` — no manual `@import` needed.
-2. `CLAUDE.md` §The operating model — the current operating model (scoped denials + advisory review + operator-as-authority; no autonomy flag, no maker-checker ship-gate, no model self-start). The L2–L5 autonomy ratchet that previously lived in `METHODOLOGY.md or CLAUDE.md` through `0005-...` is retired — see CLAUDE.md §The operating model for what survives (the no-model-self-start rule) and what was retired (L3 cage, L4 self-launch, L5 auto-push). Four model-/cage-removing variants stay out of scope by design. Read manually, not injected.
+2. `CLAUDE.md`'s Operating model (under §Architecture) — the current operating model: computational deny-gates for the irrecoverable set (`hooks/gates/`), advisory sensors for the rest (`hooks/advisory/`), no autonomy flag, no maker-checker ship-gate, no model self-start. The L2–L5 autonomy ladder that previously lived here was retired in the v0.6.0 "reset: rebuild from scratch" cut — see CLAUDE.md's "Why — the unifying crux" for what replaced it (verifier-separation: an LLM judging its own output is circular, so gates stay deterministic shell, never a model). Read manually, not injected.
 3. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks). Read manually, not injected.
 
 ## The 3 commands you'll use most
@@ -30,17 +30,15 @@ Other useful ones: `/fix-bug`, `/deep-dive`, `/frame`,
 
 ## The 1 thing to never do
 
-**Do not relax the autonomy invariant past a deliberate superseding ADR.** The operating model
-turns only by a human-authored, recorded superseding decision — never a flag flip, never a loop
-self-edit (the cage forbids `CLAUDE.md`, `METHODOLOGY.md`, `RTK.md`, `ACLI.md`, `DBGATE.md`,
-`settings.json`, and any caged path in `scripts/cage.txt`). The L3–L5 ladder (L3 bounded autonomy,
-L4 self-launch within a cage, L5 auto-push behind a computational ship-gate) was retired when the
-L2–L5 ratchet was superseded — see `CLAUDE.md` §The operating model. Four variants stay
-**out of scope by design** (each would need a new superseding decision): the *model* self-launching
-the loop, a *model*-authorizing ship-gate, the loop authoring its own doctrine, and removing the
-cage. The invariant is load-bearing
-— it preserves the operator's judgment; the gate that authorizes a mutation
-or ship stays **computational, never a model**.
+**Do not let the model edit the code that judges it.** `hooks/gates/verifier-protect.sh`
+asks for explicit human approval before any edit to `hooks/gates/**`, `hooks/hooks.json`
+(the deny-gates + wiring), or the harness-audit verifier (`skills/harness-audit/scripts/audit.sh`
++ `checks/**`) — no env-var bypass. The L3–L5 autonomy ladder (bounded-autonomy cage, self-launch,
+auto-push ship-gate) that previously enforced this via a caged file list was retired in the v0.6.0
+reset; today's protection is this computational deny-gate, not a file-based cage. The invariant is
+load-bearing — the gate that authorizes a mutation or ship stays **computational, never a model**
+(see `CLAUDE.md`'s "Why — the unifying crux": an LLM judging its own output is circular —
+"two optimists agreeing").
 
 ## Recurring cadences (read once, never re-derive)
 
@@ -51,19 +49,11 @@ or ship stays **computational, never a model**.
 ## If you only have 60 seconds
 
 Read this file's first three sections. If you have 5 more minutes, skim
-[`METHODOLOGY.md`](METHODOLOGY.md). If you have 10 more, read `METHODOLOGY.md`
-Rule 8 and CLAUDE.md §The operating model (the "Rejected alternatives" notes).
+[`METHODOLOGY.md`](METHODOLOGY.md). If you have 10 more, read CLAUDE.md's
+Operating model, under §Architecture (the "Rejected alternatives" notes).
 
-## What we've shipped recently (2026-06-12)
+## What's shipped
 
-The 2026-06-12 closure work lifted 10 capabilities Partial → Present
-(SYNTHESIS audit). For *why*, see [`CHANGELOG.md`](../CHANGELOG.md) §
-Unreleased → Phase 1.1–2.5.
-
-- **`scripts/auth-health-check.py`** — gh/MCP/plugins health probe (3-state).
-- **`scripts/orchestrate-dispatch.py` + 3 specs** — coordination-as-code.
-- **`hooks/gates/db-write-gate.sh` + `KBG_ENFORCE_TASK_COMPLETED`** — opt-OUT task gate.
-- **`recursive-improve` skill** — stall detection + debt ceiling.
-- **`eval/run-eval.py` + 24 fixtures** — eval harness + anti-cheat exits.
-- **`scripts/governance/audit-to-memory.py` + `memory-lint`** — learning-memory loop.
-- the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum — 10 deferred items + L2 alternatives.
+See [`CHANGELOG.md`](../CHANGELOG.md) for the dated history. This file intentionally
+doesn't track "recently shipped" — a moving target here just goes stale (as this
+section itself did across the v0.6.0 "reset: rebuild from scratch" cut).

@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.6.11-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.11.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 47 workflow skills, and 21 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 45 workflow skills, and 22 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -56,9 +56,9 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 47 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Skills** | 45 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
 | **Agents** | 11 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 21 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
+| **Commands** | 22 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
 | **Output Styles** | 2 | `senior-eng` (default) · `staff-eng` (opt-in for cross-boundary decisions) |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -133,8 +133,8 @@ kbg-native skills for the Tathep project stack — created because no upstream f
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 11 specialist subagents (.md each)
-├── skills/               # 47 workflow skills (SKILL.md per directory)
-├── commands/             # 21 slash commands
+├── skills/               # 45 workflow skills (SKILL.md per directory)
+├── commands/             # 22 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # senior-eng (default), staff-eng (opt-in)
 ├── contexts/             # dev / review / research session frames
@@ -213,7 +213,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
-| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `kbg:thinking` |
+| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
 | kbg-native | MIT | 45 skills · 11 agents · 22 commands |
 
 ---

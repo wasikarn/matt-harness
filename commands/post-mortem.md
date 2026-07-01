@@ -12,7 +12,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 ## Core Principles
 
-- **Refuse to draft without 4 inputs.** **Analyze**: which of the 4 inputs are present in the conversation context vs. which are missing. **Recommend** STOP and ask only for the missing pieces; if 3/4 are present, ask for the remaining 1 rather than demanding all 4. Don't speculate (METHODOLOGY Rule 12 — Fail loud).
+- **Refuse to draft without 4 inputs.** **Analyze**: which of the 4 inputs are present in the conversation context vs. which are missing. **Recommend** STOP and ask only for the missing pieces; if 3/4 are present, ask for the remaining 1 rather than demanding all 4. Don't speculate — surface missing inputs rather than guessing.
 - **Blameless tone.** The goal is understanding, not blame. "The code assumed X" not "Alice forgot Y."
 - **Code identifiers welcome.** Function names, file paths, commit SHAs — future readers need to grep for these.
 - **No uncertain language.** "Appears to," "may have," "we believe" are banned. State what is known or explicitly mark what is still unknown.
@@ -140,8 +140,8 @@ Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream con
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phase 1 verifies inputs before drafting. Rule 9 (Tests verify intent) → Section 8 requires regression test proof. Rule 12 (Fail loud) → Phase 1 aborts if 4 inputs missing.
+- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phase 1 verifies inputs before drafting. Tests verify intent → Section 8 requires regression test proof. Fail loud → Phase 1 aborts if 4 inputs missing.
 - **Post-/fix-bug workflow**: `/fix-bug` Phase 7 produces a summary (what broke, root cause, fix shape, regression test, files touched). That summary IS the input to `/post-mortem` Phase 1. Run `/post-mortem` immediately after `/fix-bug` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity. Otherwise it's a standard engineering post-mortem.
-- **Hooks active**: doctrine-edit-gate protects CLAUDE.md/METHODOLOGY.md if archiving involves editing those.
+- **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces; it does not cover CLAUDE.md/METHODOLOGY.md directly.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).

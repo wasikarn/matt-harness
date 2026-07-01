@@ -66,6 +66,10 @@ proceed plan-only into execution.
   are entangled — split further or sequence them.
 - Rank by impact × cost × risk. State, per candidate: what changes, who executes (inline vs
   which agent), blast radius (low / medium / high), dependencies (none / chain).
+- **Named bias guard — anchoring.** The first finding scanned is not necessarily the highest-impact
+  one; rank the full candidate set before committing to an order, don't just work top-to-bottom
+  through the scan. For a numeric, traceable verdict instead of an ordinal rank, hand off to
+  `kbg:score-decision`.
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
   **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
   it and hand it to `/ship`; do not smuggle a large change through this ritual.
@@ -92,15 +96,15 @@ proceed plan-only into execution.
 - Route each approved candidate to the cheapest correct executor (inline for trivial; the
   matching senior agent for specialized work — gated per `orchestrate`). Give each a **done-when**:
   an observable output, not a topic.
-- **Repeated failure escalates, it does not retry (Rule 12 — escalate sub-rule).** A candidate's executor caps itself
+- **Repeated failure escalates, it does not retry (the escalate-not-retry principle — two identical failures means the session is guessing, not fixing).** A candidate's executor caps itself
   at one retry; on hitting the same failure it does **not** re-attempt — it records the candidate
-  not-done with the verbatim failure signal (Rule 12) and surfaces it at Step 6. There is no
+  not-done with the verbatim failure signal and surfaces it at Step 6. There is no
   failure counter, because Step 4 runs each candidate **once**: a "count to N" would presume a
   retry budget that does not exist and would normalize N silent unattended iterations. Escalate to
   the human gate instead of counting-then-retrying.
 - Apply changes one candidate at a time so Verify can attribute the metric delta.
 - **Success criterion:** each candidate's done-when is met, or it is recorded as not-done with a
-  reason (no silent drop — Rule 12).
+  reason (no silent drop).
 
 ### 5. Verify — did it actually improve? (drift guard)
 
@@ -161,17 +165,17 @@ recursive-improve — iteration <N> report
   per-mutation human gate**. The human gate at each iteration is the bound, not a license to drop it.
 - **Claiming success without a measured delta.** Step 5's drift guard exists because "I fixed it"
   is a hypothesis until the reader/audit confirms it. Flat delta = did not help.
-- **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask
-  (Rule 12) — the regression is information.
+- **Silent rollback.** Auto-reverting a regression hides the signal. Surface the delta and ask —
+  the regression is information.
 - **Scope creep through the side door.** A candidate over ~5 files / 200 lines is a feature, not a
   loop iteration. Route it to `/ship`; do not let the ritual become an un-gated refactor.
 
 ## Integration Notes (Project-Specific)
 
 - **METHODOLOGY:** Rule 4 (this skill *is* the loop-until-verified instrument for the harness) ·
-  Rule 7 (drift guard picks the measured audit delta over the optimistic claim) · Rule 12
-  (surface flat/negative deltas and regressions, never bury them) · Rule 13 (decompose → route →
-  verify → combine, inline).
+  surface conflicts, don't average (drift guard picks the measured audit delta over the optimistic
+  claim) · fail loud (surface flat/negative deltas and regressions, never bury them) · Rule 13
+  (decompose → route → verify → combine, inline).
 - **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit`
   (both the candidate-detail signal and the deterministic verification metric — its exit count is
   the loop's branchable score) · the witness scripts under `inventory/` (pre/post attestation) ·

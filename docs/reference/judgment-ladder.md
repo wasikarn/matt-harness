@@ -187,7 +187,7 @@ Use the ladder for **implementation and design choices inside an established arc
 **Quick coding flow:**
 1. Is the decision hard to reverse or long-lived? → `kbg:decide (strategize mode)`.
 2. Is it reversible within days and analyzable? → climb the ladder with `kbg:decide`.
-3. Is the answer already committed and only needs a record? → `kbg:adr`.
+3. Is the answer already committed and only needs a record? → `kbg:domain-modeling` (owns the ADR rule).
 
 ## Connection to Decision Quality
 

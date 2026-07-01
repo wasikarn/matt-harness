@@ -1,6 +1,6 @@
 # Rejection-Rate Ledger — Spec
 
-The ledger records **per-question rejection counts** for every `/review-pr` run. It is the state variable that lets SCRUTINIZE-4 **tighten over time** (when a question is being abused as a rubber stamp) without changing the rubric in code — the policy reads the ledger, the SKILL.md just respects what the policy says.
+The ledger records **per-question rejection counts** for every `kbg:review-pr` run. It is the state variable that lets SCRUTINIZE-4 **tighten over time** (when a question is being abused as a rubber stamp) without changing the rubric in code — the policy reads the ledger, the SKILL.md just respects what the policy says.
 
 ## Path
 

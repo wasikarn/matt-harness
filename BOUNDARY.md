@@ -18,7 +18,7 @@ _Personals/kbg-harness_
   ◇ context-budget                 Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
   ◇ cost-aware-llm-pipeline        Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips.
   ◇ create-jira-ticket             Build a single Jira Bug/Story from the Thai PO/QA template. Use when the user says 'สร้างบั๊ก'/'สร้าง story'. Don't use for triage, bulk, edits, or non-Jira.
-  ◇ decide                         Doctrine-backed decision support, clarify scope, stress-test reasoning, pick among defensible options (probe/decide/strategize). Use when facing a non-trivial choice. Don't use for obvious or already-decided calls.
+  ◇ decide                         Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls.
   ◇ diagnosing-bugs                Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos.
   ◇ domain-modeling                Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups.
   ◇ drizzle-patterns               Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM.
@@ -91,11 +91,12 @@ _Personals/kbg-harness_
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (8)
+### Hooks (9)
   ◇ flow-nudge.sh                  shellcheck disable=SC2016  # python code in single quotes
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ path-hardcode.sh               Gate: block hardcoded /Users/<name> paths being written into .sh or .py files.
   ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier
+  ◇ command-root-anchor.sh         command-root-anchor.sh — matcher-less SessionStart hook
   ◇ doctrine-bootstrap.sh          SessionStart: inject METHODOLOGY.md doctrine into the session context.
   ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
   ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
@@ -129,7 +130,7 @@ _Personals/kbg-harness_
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | create-jira-ticket | Build a single Jira Bug/Story from the Thai PO/QA template. Use when the user says 'สร้างบั๊ก'/'สร้าง story'. Don't use for triage, bulk, edits, or non-Jira. | inline | auto |
-| decide | Doctrine-backed decision support, clarify scope, stress-test reasoning, pick among defensible options (probe/decide/strategize). Use when facing a non-trivial choice. Don't use for obvious or already-decided calls. | inline | auto |
+| decide | Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls. | inline | auto |
 | diagnosing-bugs | Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos. | inline | auto |
 | domain-modeling | Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
@@ -172,6 +173,7 @@ _Personals/kbg-harness_
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
 | path-hardcode.sh | Gate: block hardcoded /Users/<name> paths being written into .sh or .py files. |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier |
+| command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. |
 | cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
@@ -184,7 +186,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-01T04:28:15Z_
+_Generated: 2026-07-01T08:44:12Z_
 
 ---
 
@@ -263,31 +265,29 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 - `output-styles/` — senior-eng (default), staff-eng (opt-in)
 - `themes/` — catppuccin-mocha
-- `eval/` — dataset + regression gate
 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` (expect 0 failures)
+- **Tests:** critical-hooks behavioral suite and eval gate are pending rebuild (removed in the v0.6.0 reset) — see `CLAUDE.md`'s Validation section
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
 - `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
 - `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
-- `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` — expect 0 failures
-- `python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate` — exit 0
+- critical-hooks behavioral suite + eval gate: pending rebuild, not currently runnable
 
 ---
 
 ## Trigger phrases
 
-Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
+Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the flow nudge (`hooks/advisory/flow-nudge.sh`) routes correctly.
 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` debate mode | Advocate + Skeptic + Synthesizer debate |
+| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` critique mode | Skeptic + Steel-man + Synthesis stress-test |
 | "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows

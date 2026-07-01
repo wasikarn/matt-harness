@@ -47,13 +47,37 @@ for w in windows:
         continue
     argv0, rest = basename(w[0]), w[1:]
 
+    # sudo/xargs wrap another command — unwrap one level so the checks below
+    # still fire. Found 2026-07-01: 'sudo rm -rf x' and 'find | xargs rm -rf'
+    # bypassed every check because argv0 was the wrapper, not the wrapped
+    # command — and these are everyday shell idioms, not adversarial
+    # obfuscation, so they're in scope for a habit-guard.
+    if argv0 == 'sudo':
+        i = 0
+        while i < len(rest) and rest[i].startswith('-'):
+            i += 1
+        if i < len(rest):
+            argv0, rest = basename(rest[i]), rest[i + 1:]
+    elif argv0 == 'xargs':
+        # Unlike git, xargs args are never a free-text commit message, so
+        # scanning for a known-dangerous basename anywhere in its args is
+        # safe (no quoted-prose false-positive risk).
+        for j, t in enumerate(rest):
+            if basename(t) in ('rm', 'find', 'dd'):
+                argv0, rest = basename(t), rest[j + 1:]
+                break
+
     if argv0 == 'rm':
-        flags = ''.join(t for t in rest if t.startswith('-'))
+        # Lowercase before matching: 'rm -Rf' / 'rm -R -f' bypassed the
+        # lowercase-only 'r'/'f' substring check (found 2026-07-01).
+        flags = ''.join(t for t in rest if t.startswith('-')).lower()
         if 'r' in flags and 'f' in flags:
             deny('rm -rf detected — use trash instead')
 
-    if argv0 == 'find' and '-exec' in rest and 'rm' in [basename(t) for t in rest]:
-        deny('find -exec rm detected — destructive delete, use trash or confirm with user')
+    if argv0 == 'find' and ('-exec' in rest or '-execdir' in rest) and 'rm' in [basename(t) for t in rest]:
+        deny('find -exec/-execdir rm detected — destructive delete, use trash or confirm with user')
+    if argv0 == 'find' and '-delete' in rest:
+        deny('find -delete detected — destructive delete, use trash or confirm with user')
 
     if argv0 == 'git' and rest:
         sub, args = rest[0], rest[1:]
@@ -69,14 +93,18 @@ for w in windows:
                 continue
             scan.append(t)
 
-        if sub == 'push' and any(t in ('-f', '--force') for t in scan):
-            deny('git push --force overwrites remote history — needs explicit user approval')
+        if sub == 'push' and any(
+            t in ('-f', '--force') or t.startswith('--force')
+            or (t.startswith('-') and not t.startswith('--') and 'f' in t)
+            for t in scan
+        ):
+            deny('git push --force (including --force-with-lease/bundled -f) overwrites remote history — needs explicit user approval')
         if sub == 'reset' and '--hard' in scan:
             deny('git reset --hard discards uncommitted work — confirm with user first')
         if sub == 'clean' and any(t.startswith('-') and 'f' in t for t in scan):
             deny('git clean -f deletes untracked files — confirm with user first')
-        if sub == 'checkout' and '--' in scan:
-            deny('git checkout -- discards working-tree changes — confirm with user first')
+        if sub == 'checkout' and ('--' in scan or '.' in scan):
+            deny('git checkout -- / git checkout . discards working-tree changes — confirm with user first')
         if sub == 'switch' and any(t in ('-f', '--force', '--discard-changes') for t in scan):
             deny('git switch --force discards working-tree changes — confirm with user first')
         if sub == 'commit' and '--amend' in scan:
@@ -90,8 +118,8 @@ for w in windows:
     if argv0 in ('mysql', 'psql', 'sqlite3'):
         # SQL genuinely lives inside -e/-c values, unlike git's free-text
         # messages — deliberately DO scan inside those here.
-        if re.search(r'DROP\s+(TABLE|DATABASE)', ' '.join(rest), re.IGNORECASE):
-            deny('destructive SQL (DROP TABLE/DATABASE) detected — confirm with user first')
+        if re.search(r'DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+TABLE', ' '.join(rest), re.IGNORECASE):
+            deny('destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE TABLE) detected — confirm with user first')
 
 if '--no-verify' in tokens:
     deny('--no-verify bypasses safety hooks')

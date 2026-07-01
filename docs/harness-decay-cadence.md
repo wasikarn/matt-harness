@@ -57,9 +57,8 @@ Decay reasoning must **never** retire a verifier on the argument that "the model
 can verify its own work now." The maker≠checker separation exists for
 **vouchability and independence** — a fresh-context checker catches what the
 maker cannot see — not because the model is too weak to check. That is exactly
-the boundary METHODOLOGY Rule 4's fresh-context-verification principle and
-the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle (preserved append-only by
-CLAUDE.md's operating-model section) protect. Collapsing the checker into the maker is the
+the boundary the no-model-self-start rule (`CLAUDE.md`'s Operating model, under
+§Architecture) protects. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no
@@ -67,50 +66,58 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See CLAUDE.md's operating-model section** (the current operating model) — the L2-L5 bounded-autonomy ratchet of ADRs 0003/0004/0005 is retired, but the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation *principle* is preserved append-only (operator judgment is load-bearing; never auto-prune a verifier). The "never auto-prune" guard is that principle's concrete expression in decay reasoning and holds unchanged: the harness denies the irrecoverable set computationally and advises on the rest, but a decay finding is always a candidate the operator reviews — no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md` is a context-exhaustion backstop (not the primary gate).
+**See `CLAUDE.md`'s Operating model** (under §Architecture) — the L2–L5
+bounded-autonomy ratchet was retired in the v0.6.0 "reset: rebuild from
+scratch" cut, but the no-model-self-start rule survives as the judgment-preservation
+principle (operator judgment is load-bearing; never auto-prune a verifier). The
+"never auto-prune" guard is that principle's concrete expression in decay reasoning
+and holds unchanged: the harness denies the irrecoverable set computationally and
+advises on the rest, but a decay finding is always a candidate the operator reviews
+— no autonomy flag, no auto-prune. The iteration soft cap in `recursive-improve/SKILL.md`
+is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
-The `2×2 harness mental model` documented in `CLAUDE.md` (after the
-Hook architecture section) has a load-bearing consequence for
-decay reasoning: **inferential-FB sensors share a model class with the
-generator**, so they cannot be trusted to emit `permissionDecision`s.
+`CLAUDE.md`'s "Why — the unifying crux" (under §Architecture) has a
+load-bearing consequence for decay reasoning: **an inferential sensor shares
+a model class with the generator**, so it cannot be trusted to emit
+`permissionDecision`s — an LLM judging its own output is circular ("two
+optimists agreeing").
 
 Böckeler (Thoughtworks, [harness-engineering
 2026-04](https://martinfowler.com/articles/harness-engineering.html))
 frames a coding-agent harness as a 2×2 of **direction** (feedforward /
 feedback) × **execution type** (computational / inferential). The
-article's L345 warning is symmetric: feedback-only = "agent that keeps
+article's warning is symmetric: feedback-only = "agent that keeps
 repeating the same mistakes"; feedforward-only = "agent that encodes
-rules but never finds out whether they worked." kbg populates all
-four cells — but the **inferential-FB cell** carries a specific decay
-hazard: a "smart" sensor that uses the same model class to judge work
-the model just produced inherits the generator's blind spots and can
-quietly self-confirm. A `permissionDecision: deny` from such a sensor
-is also a model-as-own-gate — the covert self-authorization
-pattern CLAUDE.md §The operating model (current) retires and audit #34 keeps guarding hermetically.
+rules but never finds out whether they worked." The **inferential-FB cell**
+carries a specific decay hazard: a "smart" sensor that uses the same model
+class to judge work the model just produced inherits the generator's blind
+spots and can quietly self-confirm. A `permissionDecision: deny` from such a
+sensor is also a model-as-own-gate — the covert self-authorization pattern
+`CLAUDE.md`'s Operating model retires.
 
-**kbg's posture, captured at the decay layer:**
+**kbg's current posture, captured at the decay layer:**
 
-1. All inferential-FB sensors in `hooks/` are **advisory only** — they
-   journal, they do not block. `verification-gate.sh` (SessionEnd) and
-   `fabrication-verdict-log.sh` (Stop) are the load-bearing examples;
-   the full inventory is in the CLAUDE.md 2×2 section.
-2. The critical-hooks suite + the audit checks are the
-   **computational** FB that does the enforcement — the cell that
-   *can* be trusted to emit `permissionDecision`s because it is
-   deterministic, fast, and cheap.
-3. When a model upgrade lands, the **first** lens to apply is on
-   inferential-FB components: is the upgrade a stronger *generator* or
-   a stronger *judge*? If only the former, the inferential-FB
-   layer gets *thinner*, not thicker — the right decay move is to
-   retire the sensor, not to lean on it. If both, the sensor is
-   decay-eligible on the same "coherence tax" axis as any other
-   non-load-bearing control.
+1. The only two hook categories that exist today are `hooks/gates/`
+   (computational, deny/ask, enforcing) and `hooks/advisory/` (journal only,
+   never a `permissionDecision`) — see `hooks/hooks.json` for the live
+   inventory. A prior, larger inferential-FB sensor set (`verification-gate.sh`,
+   `fabrication-verdict-log.sh`, and the coverage tooling below) was removed
+   in the v0.6.0 "reset: rebuild from scratch" cut and has not been rebuilt;
+   today's advisory layer is thinner than this section originally described.
+2. The harness-audit checks are the **computational** FB that does the
+   enforcement — the cell that *can* be trusted to emit `permissionDecision`s
+   because it is deterministic, fast, and cheap.
+3. When a model upgrade lands, the **first** lens to apply is on any
+   inferential-FB component that exists at the time: is the upgrade a
+   stronger *generator* or a stronger *judge*? If only the former, the
+   inferential-FB layer should get *thinner*, not thicker — the right decay
+   move is to retire the sensor, not to lean on it.
 
-This is the decay-perspective mirror of the CLAUDE.md 2×2 section.
-The 1-pager at `.scratch/research/harness-engineering-2026-04.md`
-holds the full comparison (3-now / 3-later actions).
+This is the decay-perspective mirror of `CLAUDE.md`'s operating-model
+discussion. The full comparison lives in
+[`docs/research/harness-engineering-2026-04.md`](research/harness-engineering-2026-04.md).
 
 ## Irreversible-action class (gates the harness already has)
 
@@ -160,21 +167,24 @@ themselves (`hooks/gates/irrecoverable.sh`, `hooks/gates/path-hardcode.sh`,
 
 ## Gate discipline review (judgment vs ceremony)
 
-*Pairs with the quarterly sweep above; see `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model for the rationale on gate discipline.*
+*Pairs with the quarterly sweep above; see `CLAUDE.md`'s Operating model (under
+§Architecture) for the rationale on gate discipline.*
 
 The gates mapped above (irrecoverable Bash patterns, hardcoded paths,
 verifier tamper-protection — plus the `recursive-improve` Step 3 gate) earn
 their place only by carrying judgment. A gate the operator approves every time without a recorded change of
 decision is **ceremony**, not judgment — and ceremony trains the atrophy the
-judgment-preservation principle (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model, preserved append-only by CLAUDE.md's operating-model section) exists to prevent. This review is the exit condition for the
-gate *implementation* (the principle stays irreversible — the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
+no-model-self-start rule's judgment-preservation principle exists to prevent.
+This review is the exit condition for the gate *implementation* (the principle
+itself stays irreversible).
 
 One question, folded into the quarterly pass: **which gates did the operator
-rubber-stamp this quarter?** The evidence is the `ask`-gate decisions the harness
-already logs (`governance-events.jsonl` + the verification-gate journal) — this is
-a reading task, no new machinery. If a gate's approvals aren't currently
-distinguishable in the journal, that gap is itself the first finding. For each
-gate:
+rubber-stamp this quarter?** There is no dedicated approval log today — the
+`governance-events.jsonl` + verification-gate journal this section originally
+pointed to were removed in the v0.6.0 reset and not rebuilt. Until a log
+exists, this is a recall-based review, not a reading task; a durable
+`ask`-decision log is itself a candidate the next build-to-delete pass should
+weigh. For each gate:
 
 - **fired and changed an outcome at least once** → judgment gate, keep.
 - **fired but always approved unchanged** → ceremony *candidate* (not an
@@ -208,10 +218,11 @@ same human-gated cadence applies. Two surfaces carry tool grants:
 
 - **Per-agent `tools:` frontmatter** under `agents/*.md` (each token is an
   explicit allowlist the agent's prompt then inherits as a real tool);
-- **The harness settings allowlist** at `dotfiles/claude/settings.json` (a
-  second, broader allowlist applied to every session in this harness).
+- **The harness settings allowlist** at `dotfiles/claude/settings.json` in the
+  sibling `dotfiles` repo, not this one (a second, broader allowlist applied
+  to every session in this harness).
 
-**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation principle, preserved by CLAUDE.md's operating-model section).
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule's judgment-preservation principle, `CLAUDE.md`'s Operating model under §Architecture).
 
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets
@@ -243,9 +254,9 @@ git diff <last-review-sha>..HEAD -- agents/ dotfiles/claude/settings.json \
 
 Walk the output line-by-line: for each added token, ask (a) is the agent /
 session actually using it, and (b) does the human-gate posture survive if
-the model uses it without checking? If both yes, keep. If either no, file
-a `decommission` ticket and revoke via the same `ABSENT_*` witness
-machinery.
+the model uses it without checking? If both yes, keep. If either no, revoke
+the grant and note why in the commit message — no dedicated ticket machinery
+exists for this today.
 
 ### Why this is here, not in `harness-audit`
 
@@ -254,75 +265,27 @@ machinery.
 grant still earned?" is a question only a human can answer well, and the
 answer depends on model-version state and recent work patterns that
 don't reduce to a regex. The audit's role is to keep the *envelope*
-honest (no duplicate `tools:` tokens, every token a real Claude Code
-tool — see `harness-audit/scripts/audit.sh` checks #6 / #22); the
+honest (no duplicate `tools:` tokens — check #10; every agent has explicit
+`tools:` — check #9; every token a real Claude Code tool — check #24); the
 re-audit's role is to keep the *contents* honest on the human cadence
 above. They are complements, not substitutes.
 
-## Harness-coverage quarterly review
+## Harness-coverage quarterly review (retired)
 
-*last_reviewed: 2026-06-15 (initial section, paired with the
-`harness-coverage-metric` build; revisit quarterly or on model upgrade).*
+*Retired 2026-07-01.* This section originally described a
+`scripts/evals/harness-coverage.py` tool that emitted a 2×2 matrix of hook
+events × {computational, inferential} × {feedforward, feedback}, with a
+sub-60%-of-expected-fire-count decay threshold. That tool and its design doc
+were removed in the v0.6.0 "reset: rebuild from scratch" cut and have not
+been rebuilt — there is currently no automated silent-cell detection.
 
-The build-to-delete sweep above asks "does each component still earn
-its place?" A sibling question: **is each quadrant of the 2×2 still
-populated by sensors doing real work, or are some cells going silent?**
-`scripts/evals/harness-coverage.py` is the quarterly-lens surface for that second
-question. It emits a 2×2 matrix of the 14 hook events ×
-{computational, inferential} × {feedforward, feedback}. Full design
-in
-[`docs/research/harness-coverage-metric-design.md`](research/harness-coverage-metric-design.md);
-the human-cadence posture is restated below.
-
-### Cadence
-
-- **Quarterly** — pair with the build-to-delete sweep + the permission
-  re-audit above so one human pass clears stale, over-permissioned,
-  *and* silent-cell candidates.
-- **On model upgrade** — a new tier shifts which cells the harness
-  needs to police (typically the inferential-FB cell thins, per the
-  LLM-judge-circularity section above).
-
-### Threshold
-
-A **decay candidate** is any 2×2 cell whose output falls
-**below 60%** of its expected sensor-fire count for the review window.
-"Expected" is per-cell in the
-[design doc](research/harness-coverage-metric-design.md); a cell
-with no sensors (e.g. a hook event the harness has no entry for) is
-*not* a decay candidate — it is a deliberate gap, recorded as such.
-Sub-60% means a sensor exists but stopped firing, fires for inert
-reasons, or is being routed around by a newer surface.
-
-### Action loop (operator, 3 steps)
-
-1. **Diagnose** — for each sub-60% cell, read the per-fire
-   evidence `scripts/evals/harness-coverage.py` emits (session IDs, matched
-   events, the upstream surface that *should* have triggered the
-   sensor). Ask *why* it is silent: broken, obsolete, or work
-   genuinely absent. The 2×2 framing in `CLAUDE.md` is the diagnosis
-   aid — a silent computational-FF cell and a silent inferential-FB
-   cell point to different root causes.
-2. **Plan a fix or document a deliberate gap** — broken/obsolete →
-   `decommission` ticket with the evidence attached. Work moved to a
-   non-harness surface → record the gap in the build-to-delete
-   sweep's "kept the assumption" form (*why* the cell is empty *now*,
-   baseline for the next upgrade).
-3. **Re-measure next quarter** — the verdict rolls into the next
-   pass's expected counts. A "deliberate gap" three quarters running
-   is itself removal-from-matrix-shape eligible (an `ABSENT_*`
-   witness through the same `decommission` flow).
-
-### Operator-authority posture (explicit)
-
-`scripts/evals/harness-coverage.py` does **not** auto-prune. The operator runs
-the surface on the cadence above, the surface emits a report, and
-the human decides what (if anything) to delete. No cron, no
-scheduled hook event, no model-as-own-gate. Same posture as the
-build-to-delete sweep + the permission re-audit; same posture ADR
-0006's operator-as-authority model (and the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model's judgment-preservation
-principle, preserved append-only) protects. The
-[operating-model section in `CLAUDE.md`](../CLAUDE.md#architecture)
-calls out the LLM-judge-circularity hazard of any inferential-FB
-sensor that emits a `permissionDecision` — a coverage-driven
-auto-prune would be the same hazard at the meta-decay layer.
+The underlying question is still worth asking by hand on the same quarterly
+cadence as the sections above: **is each hook category still doing real
+work, or has a hook gone silent** (routed around by a newer surface,
+firing on a condition that no longer occurs, or simply forgotten)? Until the
+coverage tool is rebuilt, answer it by reading `hooks/hooks.json` end to end
+against recent session behavior — there is no cell-level automation to lean
+on. Any rebuild of this tool stays operator-run and report-only, same as
+every other cadence in this file: no cron, no scheduled hook event, no
+model-as-own-gate — a coverage-driven auto-prune would be the same
+LLM-judge-circularity hazard this whole file guards against, one layer up.

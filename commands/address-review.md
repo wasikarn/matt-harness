@@ -99,7 +99,7 @@ Initial input: $ARGUMENTS
    - **Bug-shaped** → invoke `/fix-bug` with the reviewer's concern as the bug report. `/fix-bug` returns with its own commit sha. Capture it.
    - **Inline edit** → apply the fix directly, commit with a focused message (reference the thread: `fix(auth): null-check user_id (review #thread-1)`). Capture the sha.
    - **Wontfix / clarify / out-of-scope** → skip code; will be handled in Phase 5 reply only.
-3. **Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (per Rule 12 — escalate sub-rule)**; if they still fail, **stop that cluster** — don't keep patching. Re-classify its thread as `clarify` or `wontfix` with a note explaining the failed fix, and surface it in Phase 5. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
+3. **Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (same failure twice is guessing, not fixing — escalate, don't retry again)**; if they still fail, **stop that cluster** — don't keep patching. Re-classify its thread as `clarify` or `wontfix` with a note explaining the failed fix, and surface it in Phase 5. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
 4. Maintain a running mapping: `{sha: [thread-id, ...]}`. This is the input to Phase 5.
 5. Conditional agent routing **launched in parallel** for inline-edit clusters only (bug-shaped clusters get this routing from `/fix-bug`'s own Phase 7 — don't double-route):
    - Reviewer flagged error handling → `silent-failure-hunter` agent on the fix
@@ -166,12 +166,12 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3 (understand all threads + classify + plan before editing). Rule 7 (Surface conflicts, don't average) → Phase 2 forces explicit per-thread classification, never "kind of fix". Rule 9 (Tests verify intent) → Phase 4 cluster tests + Phase 6 CI check. Rule 12 (Fail loud) → Phase 5 verify-count gate aborts if any thread is missed.
+- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3 (understand all threads + classify + plan before editing). Surface conflicts, don't average → Phase 2 forces explicit per-thread classification, never "kind of fix". Tests verify intent → Phase 4 cluster tests + Phase 6 CI check. Fail loud → Phase 5 verify-count gate aborts if any thread is missed.
 - **Memory dependencies**:
   - `feedback_reply_after_pr_fix.md` — Phase 5 is the codified version of "per-thread reply + cite sha = part of done"
   - `feedback_prefer_gh_cli_for_github.md` — all GitHub ops via gh, not curl
 - **`/fix-bug` delegation**: Phase 4 invokes `/fix-bug` for bug-shaped comments. `/fix-bug` returns with its own commit sha — capture it for Phase 5 citation. Don't run /fix-bug recursively per-comment; cluster first, then one /fix-bug per cluster.
-- **Hooks active**: secret-scan, block-dangerous-git, block-bash-doctrine-write, doctrine-edit-gate run automatically during commits.
-- **Agent routing reference**: silent-failure-hunter (error-handling regressions in fixes), security-reviewer (auth/secrets fixes), code-reviewer (general correctness regression on fixes), comment-analyzer (if fix added/changed docstrings).
+- **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git patterns) runs automatically on every Bash call during commits.
+- **Agent routing reference**: silent-failure-hunter (error-handling regressions in fixes), security-reviewer (auth/secrets fixes), code-reviewer (general correctness regression on fixes, including its comment-accuracy lens if the fix added/changed docstrings).
 - **Does NOT auto-resolve threads**: GitHub's "Resolve conversation" button is separate from posting a reply. After Phase 5, surface to the user which threads can be resolved via the web UI (gh CLI's thread-resolve support is limited as of writing — verify current version).
 - **Fork PRs**: If the PR is from a fork, `gh api` calls need explicit `--repo <upstream-owner>/<repo>` to target the right repo. Phase 1 step 1 captures `nameWithOwner` for this purpose.

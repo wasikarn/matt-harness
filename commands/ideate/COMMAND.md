@@ -187,6 +187,12 @@ After all 5 Diverge branches return:
    NOT a score threshold (see
    [3-axis scoring rubric](#3-axis-scoring-rubric)).
 
+   **Named bias guard — anchoring + confirmation.** Score every idea against the
+   same three axes before ranking any of them — don't let the first idea scored
+   set the scale for the rest. The `trap` field is the confirmation guard: it
+   forces you to look for the reason an attractive-looking idea is wrong, not
+   just evidence it's right.
+
 2. **Cluster.** Group ideas into 3 to 6 clusters by their
    **underlying angle**, not by surface keywords. Label clusters
    by angle: "remove-the-server plays", "cache-shaped plays",
@@ -220,8 +226,8 @@ After all 5 Diverge branches return:
 **Fresh-context critic option (recommended for high-stakes runs).**
 By default Phase 2 + 3 run on the host Claude. That is the same
 model class as the generators, which carries the
-LLM-judge-circularity caveat documented in `CLAUDE.md`
-§"LLM-judge-circularity". For runs where the cost of a blind spot
+LLM-judge-circularity caveat documented in `CLAUDE.md`'s
+"Why — the unifying crux" (under §Architecture). For runs where the cost of a blind spot
 is high, re-point the critic pass at the `ideate-critic` agent
 (`agents/ideate-critic.md`). It uses the same scoring rubric but
 starts from a fresh context, reducing the chance that the host

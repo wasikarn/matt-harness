@@ -16,7 +16,7 @@ Infer the repo from `git remote -v` — `glab` does this automatically when run 
 
 ## Merge requests as a triage surface
 
-**MRs as a request surface: no.** _(Set to `yes` if this repo treats external merge requests as feature requests; `/triage` reads this flag.)_
+**MRs as a request surface: no.** _(Set to `yes` if this repo treats external merge requests as feature requests; `kbg:triage` reads this flag.)_
 
 When set to `yes`, MRs run through the same labels and states as issues, using the `glab mr` equivalents:
 

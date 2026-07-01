@@ -10,7 +10,7 @@ Use it when the diagnosis is contested, the rivals adapt, the resources are cons
 | --- | --- | --- |
 | Goal-setting | A destination without a diagnosis or policy | — |
 | Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
-| Execution planning | Sequencing tasks after the strategy is set | `/ship`, `kbg:adr` |
+| Execution planning | Sequencing tasks after the strategy is set | `/ship`, `kbg:domain-modeling` |
 | Chaos response | Stabilize first, decide fast | `kbg:incident` |
 | Research | Gathering intelligence before committing | `/deep-dive`, `kbg:decide` probe mode |
 
@@ -127,14 +127,13 @@ Software strategy is not about picking technologies. It is about choosing commit
 **Mapping to the kbg flow:**
 1. `kbg:decide (strategize mode)` answers "what game are we playing and how do we win it?" and produces a guiding policy.
 2. `kbg:decide` answers "which known option is best?" inside that policy.
-3. `kbg:adr` records the commitment, the tripwires, and the loop that revisits it.
+3. `kbg:domain-modeling` records the commitment, the tripwires, and the loop that revisits it.
 
 ## Related kbg surfaces
 
 - `kbg:decide` — Judgment Ladder for operational/consequential choices
-- `kbg:adr` — record a committed decision once the strategy is set
+- `kbg:domain-modeling` — record a committed decision once the strategy is set (owns the ADR rule)
 - `kbg:decide` probe mode — deep investigation of a slice before diagnosing
-- `/deep-dive` — external and competitive intelligence
-- `kbg:article-mine` — mine a strategy article or book chapter for doctrine
+- `/deep-dive` — external and competitive intelligence, including mining a strategy article or book chapter for doctrine
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

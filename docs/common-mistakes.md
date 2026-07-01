@@ -138,5 +138,5 @@ Should be non-zero. If it's zero, the one real gate this section describes is go
 ## Cross-references
 
 - [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, agent tool matrix
-- `METHODOLOGY.md` Rule 8 + `CLAUDE.md` §The operating model — why maker≠checker separation is load-bearing
+- `CLAUDE.md`'s Operating model (under §Architecture) — why maker≠checker separation is load-bearing
 - [`skills/orchestrate/SKILL.md`](../skills/orchestrate/SKILL.md) — F9 spawn-prompt template, bounded fan-out, validation chain, routing table

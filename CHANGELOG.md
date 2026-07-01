@@ -5,6 +5,193 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.11.0] — 2026-07-01
+
+Second drill-down pass requested immediately after `[0.10.0]`: verify + audit
+the whole project once more, fix everything found. 5 parallel audit agents
+(sync-seams, hooks correctness, docs-consistency, orphaned-surfaces, security)
+plus targeted follow-up investigation surfaced ~35 files touched by the same
+root cause — the `[0.6.0]` "reset: rebuild from scratch" cut deleted real,
+previously-hardened infrastructure and doc content without updating everything
+that cited it, leaving phantom references scattered across the repo.
+
+### Fixed — security
+
+- **`hooks/gates/verifier-protect.sh` fail-open on exception.** A trailing
+  `|| true` swallowed any Python exception in the tamper-resistance gate,
+  silently allowing an edit to `hooks/gates/**` / `hooks/hooks.json` /
+  `skills/harness-audit/scripts/audit.sh` + `checks/**` that should have
+  required human approval. Now wraps the body in try/except that emits
+  `permissionDecision: ask` on any exception.
+- **`hooks/gates/verifier-protect.sh` case-sensitive path matching** let the
+  same tamper-protected paths bypass the gate on macOS/APFS (case-insensitive
+  filesystem) via a differently-cased path. Both `norm` and `rel` now
+  lower-cased before comparison.
+
+### Fixed — gate coverage
+
+- **`hooks/gates/path-hardcode.sh`**: case-sensitive `.sh`/`.py` extension
+  check missed uppercase-extension files; MultiEdit's `edits[]` array was
+  never scanned at all (only single-edit `new_string` was checked), so a
+  hardcoded `/Users/<name>` path introduced via MultiEdit sailed through.
+  Both fixed.
+- **`hooks/gates/irrecoverable.sh`**: `sudo rm -rf` and `xargs rm`/`xargs
+  find`/`xargs dd` bypassed detection entirely (argv0 was `sudo`/`xargs`, not
+  the dangerous command) — added unwrap logic for both. Also: case-sensitive
+  `rm` flag matching, missing `find -execdir`/`-delete`, missing
+  `--force-with-lease` and bundled `-uf` push-force forms, bare `git checkout
+  .`, and `TRUNCATE TABLE`/`DROP SCHEMA` in the SQL-danger regex.
+
+### Restored
+
+- **`hooks/session/command-root-anchor.sh`** — deleted in the `[0.6.0]` reset,
+  never replaced. Exports `KBG_PLUGIN_ROOT` on SessionStart; ~17 files across
+  commands/skills/docs referenced this var while it sat unset. Re-added and
+  wired into `hooks/hooks.json` (`SessionStart`).
+
+### Removed
+
+- `docs/architecture-concerns-task-board.md` and `docs/agents/verification-trail.md`
+  (+ the now-empty `docs/agents/` dir) — fully orphaned, described subsystems
+  that don't exist, zero live references.
+- `/kbg:tech-humanize`, `hooks/gates/validator-bash-guard.sh`, and
+  `hooks/post-tool/review-pr-marker.sh` citations struck from every surface
+  that referenced them (`output-styles/{senior-eng,staff-eng}.md`,
+  `docs/agent-tool-patterns.md`, `skills/orchestrate/SKILL.md`,
+  `skills/review-pr/SKILL.md`, `docs/reference/decision-doctrine-map.md`) —
+  all three were real, substantially-built infrastructure deleted in
+  `[0.6.0]`, not fabrications. Struck rather than rebuilt: `tech-humanize` had
+  uncertain current scope, `validator-bash-guard.sh` depended on the deleted
+  `hooks/_lib.sh` and conflicting env-var-bypass doctrine, `review-pr-marker.sh`
+  would need new PostToolUse wiring for a UX-only nudge. Docs now describe
+  what was real and removed, not implying total fabrication.
+
+### Fixed — phantom references
+
+- **Phantom `METHODOLOGY.md` Rule-N citations, 43 sites across 18 files.**
+  The pre-reset root `METHODOLOGY.md` had 13 numbered rules; only 1, 2, 4, 13,
+  14 survived into `docs/METHODOLOGY.md`. 18 files still cited Rules 3, 5, 7,
+  9, 10, 12 by number. Two investigation agents recovered each dropped rule's
+  original text from `git show <pre-reset-sha>:METHODOLOGY.md` and classified
+  every citation: 3 repointed (the recurring "Rule 8" maker≠checker
+  miscitation — Rule 8 was always "Read Before You Write", never the
+  no-model-self-start rule — now correctly points at `CLAUDE.md`'s Operating
+  model), 40 rewritten in plain language with the dead number dropped, 0
+  required deletion. Touched: `agents/ideate-critic.md`,
+  `docs/{agent-tool-patterns,common-mistakes,onboarding}.md`,
+  `docs/reference/reasoning-models.md`, `commands/{post-mortem,
+  address-review,fix-bug}.md`, `skills/acli/SKILL.md`,
+  `skills/harness-audit/SKILL.md`, `skills/review-pr/SKILL.md`,
+  `skills/recursive-improve/SKILL.md`,
+  `skills/incident/{SKILL.md,references/hotfix-reference.md}`,
+  `skills/memory-lint/SKILL.md`, `skills/security-auditor/SKILL.md`,
+  `skills/orchestrate/{SKILL.md,reference.md}`.
+- **Phantom slash-prefix syntax** (`/skillname` implying command invocation
+  when the correct form is `kbg:skillname`) fixed across ~20 files.
+- **Phantom heading citations** — `CLAUDE.md §"LLM-judge-circularity"` and
+  similar never-existed heading names, all pointing at the actual inline
+  prose under `CLAUDE.md`'s `## Architecture` → "Why — the unifying crux".
+- **`kbg:adr` → `kbg:domain-modeling`** and **`kbg:article-mine` → `/deep-dive`**
+  (established historical resolutions, `ad78c29` / `f96e9e8`) applied
+  wherever the old names still appeared.
+- **Fleet-count self-contradiction in `README.md`** (47/21 vs. 45/22 —
+  the file disagreed with itself) and a phantom `kbg:thinking` reference,
+  corrected.
+- Wrong audit-check-number citations, a phantom `comment-analyzer` agent
+  reference (`commands/address-review.md`), a dead local anchor
+  (`docs/agent-tool-patterns.md`), and a stale hook name in
+  `skills/inventory/scripts/inventory-boundary.sh`'s BOUNDARY.md generator
+  (`hooks/orchestrator-nudge.sh` → `hooks/advisory/flow-nudge.sh`) — all
+  fixed.
+
+### Verified, not changed
+
+- 5 commands flagged medium-confidence orphan (`build-fix`, `pm2`,
+  `prp-commit`, `update-codemaps`, `update-docs`) — all valid, well-formed,
+  directly `/name`-invokable; commands don't need routing prose from other
+  docs the way skills do. Not a defect.
+- `hooks/tests/test-flow-nudge.sh` uninvoked by CI — sits in the
+  already-acknowledged dormant test tier (`CLAUDE.md`: "Critical-hooks
+  behavioral suite and eval gate are pending rebuild"). Ran it directly:
+  13/13 pass.
+- No secret-scanning hook exists in this fleet — a legitimate design gap
+  (Rule 2: don't build unrequested security infrastructure), not a defect.
+
+## [0.10.0] — 2026-07-01
+
+Drill-down audit of every decision-making surface in the harness against the
+Decision Quality doctrine (score/gate, thinking skill, principle/framework,
+traceable references, bias mitigation), requested after the `[0.9.0]` ship-
+family merge. Finding: the knowledge layer was already complete and current
+(`kbg:score-decision`, `kbg:decide`, `judgment-ladder.md`'s four-bias guard,
+`strategic-judgment.md`, the 39-model `reasoning-models.md` catalog with its
+honesty caveat, `decision-doctrine-map.md`) — the real defect was
+**referential rot, not absence**. The Rule 1 scaffold menu and its binding
+docs promised `clarify-first` / `critical-eval` / `kbg:decide` `clarify` /
+`critique` / `debate` modes that did not resolve to anything real — `decide`
+only implemented `probe` / `decide` / `strategize`. 8+ broken pointers,
+including one hardcoded into `inventory-boundary.sh` that regenerated into
+`BOUNDARY.md` on every run. Root cause: residue of the `[0.6.0]` 242→87
+surface cut, which folded scaffolds into `decide` but left old names
+dangling in the reference docs.
+
+Owner chose the full-coverage option: make every promised name real, not
+just repoint the docs to what already existed.
+
+### Added
+
+- **`kbg:decide` gained two modes — `clarify` and `critique`** — so all six
+  Rule 1 scaffold names (`clarify-first`, `probe`, `decide`, `strategize`,
+  `critical-eval`, `doubt-driven`) resolve to a real surface. `clarify`
+  promotes the skill's existing analyze→recommend→ask logic to a named mode.
+  `critique` is a Skeptic + Steel-man + Synthesis stress-test of reasoning
+  that already exists (a plan, ADR, RFC) — this is what `reasoning-models.md`
+  had been calling "debate mode"; canonicalized on `critique`.
+  `doubt-driven` stays explicitly **not** a `decide` mode — it requires a
+  fresh context with no view of the work, which can't happen inside `decide`'s
+  own session; documented as an external pattern, canonical instance is the
+  adversarial pass in `kbg:review-pr`.
+- **Named bias guards wired into the four surfaces that already do open-ended
+  weighted judgment** but never named the bias they were implicitly guarding
+  against: `skills/diagnosing-bugs` + `commands/fix-bug.md` (anchoring +
+  confirmation, at hypothesis ranking), `skills/recursive-improve` (anchoring,
+  at candidate ranking), `commands/ideate` + `agents/ideate-critic.md`
+  (anchoring + confirmation, at the 3-axis score). Deliberately **not** added
+  to classifiers/verifiers that apply a fixed rubric rather than an
+  open-ended judgment (the audit family, `triage`, `review-pr`,
+  `ship`/`ship-merge`/`orchestrate` — already anchored) — bias ceremony on a
+  deterministic gate is exactly the #31.1 trap `kbg:score-decision`'s own
+  failure-mode list warns against.
+- **`skills/harness-audit/scripts/checks/38-scaffold-pointer-doc-rot.sh`** —
+  deterministic regression fence, two rules: (a) WARNs if any doctrine-layer
+  file cites a `kbg:decide <word> mode` / `skills/decide (<word> mode)`
+  pointer with no matching `## Mode: <word>` heading in
+  `skills/decide/SKILL.md`; (b) WARNs on a bare `skills/`/`kbg:` reference to
+  `clarify-first`, `critical-eval`, or `doubt-driven` — none has a skill dir,
+  and `doubt-driven` must never be invoked as a surface (it's an external
+  fresh-context pattern by design). Prevents this exact rot from recurring
+  after the next surface cut. Advisory (WARN, not CRIT), matching check 37's
+  posture — a pure shell verifier, never a model grading its own decision
+  layer.
+
+### Changed
+
+- `decision-doctrine-map.md`, `judgment-ladder.md`, `reasoning-models.md`,
+  and `inventory-boundary.sh`'s trigger-phrase table repointed from the
+  phantom names to the real `kbg:decide` modes above.
+- `skills/decide/SKILL.md` description trimmed to fit the 25-word cap after
+  the mode-list expansion (CLAUDE.md: skill descriptions load on every Task
+  spawn).
+
+### Explicitly not done (scope discipline)
+
+No new scoring mechanism — `kbg:score-decision` already owns Rule 14; the new
+bias-guard pointers hand off to it rather than duplicating it. No auto-routing
+of decisions through the 39-model thinking-skills catalog — it stays on-demand
+reference (none of the 39 clear an accuracy bar per its own eval;
+`margin-of-safety` measurably *hurt* accuracy in that eval, −10pp). No
+model-as-gate — the one new gate (check 38) is deterministic shell.
+
 ## [0.9.0] — 2026-07-01
 
 Merged `/ship-task` (blank-slate, 9-step) and `kbg:ship-change` (already-scoped,

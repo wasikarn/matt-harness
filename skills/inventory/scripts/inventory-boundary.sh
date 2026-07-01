@@ -261,20 +261,18 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 - `output-styles/` — senior-eng (default), staff-eng (opt-in)
 - `themes/` — catppuccin-mocha
-- `eval/` — dataset + regression gate
 
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` (expect 0 failures)
+- **Tests:** critical-hooks behavioral suite and eval gate are pending rebuild (removed in the v0.6.0 reset) — see `CLAUDE.md`'s Validation section
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 
 ### Verification
 - `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
 - `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
-- `bash "${KBG_PLUGIN_ROOT}/tests/hooks/runners/test-critical-hooks.sh"` — expect 0 failures
-- `python3 "${KBG_PLUGIN_ROOT}/eval/run-eval.py" --dataset "${KBG_PLUGIN_ROOT}/eval/datasets/" --regression --gate` — exit 0
+- critical-hooks behavioral suite + eval gate: pending rebuild, not currently runnable
 XREF2
 fi
 
@@ -287,12 +285,12 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Trigger phrases
 
-Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the orchestrator nudge (`hooks/orchestrator-nudge.sh`) routes correctly.
+Map user intent → harness dispatch. Use these trigger phrases in `commands/`, `skills/`, and agent `description:` frontmatter so the flow nudge (`hooks/advisory/flow-nudge.sh`) routes correctly.
 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` debate mode | Advocate + Skeptic + Synthesizer debate |
+| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` critique mode | Skeptic + Steel-man + Synthesis stress-test |
 | "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows
