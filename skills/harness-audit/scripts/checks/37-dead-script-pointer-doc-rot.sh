@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # 37. Dead script-pointer doc-rot (skill/command/agent bodies invoke a script that does not exist)
 # Matt "beware doc-rot": a surface body that tells the model to run
 # `bash .../scripts/NAME.sh` (or a `python3 .../NAME.py` invocation) for a file
