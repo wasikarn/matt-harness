@@ -1,15 +1,6 @@
----
-name: hotfix
-description: "Use this skill for emergency production fixes requiring immediate code change. Trigger when user says 'production is down', 'critical bug', 'hotfix', 'emergency patch', 'P0', 'outage', or any production-wide incident. Thai: 'แก้ด่วน', 'production ด่วน', 'P0', 'ระบบพัง'. Rollback-first, severity-gated SLA, timeboxed execution. Do NOT use for: non-urgent bugs (use /fix-bug), subset-affecting issues, new features, or when rollback/kill-switch suffices."
----
+# Hotfix path (reference for `kbg:incident`)
 
-# Hotfix
-
-Ship a critical fix fast. This is a compressed version of `/fix-bug` + `kbg:review-pr` + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.**
-
-This skill produces a structured hotfix plan for the main agent to execute inline. It does not dispatch sub-agents — the main agent holds full context and acts with surgical speed.
-
-> **Why this skill is model-invokable (no `disable-model-invocation`) despite reaching `gh pr merge --admin`:** it is a *capability the operator reaches for under an incident* — invoked off an explicit "production is down / P0" request where speed is the whole point and a user-only gate would defeat it. The irreversible prod merge is reached only after the in-skill severity + review gates and runs through Bash, which carries its own guards. The safety here comes from those gates, not from making the skill user-only. (The non-urgent twin `/fix-bug` *is* user-only — there, deliberate timing is the right default.)
+The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `/fix-bug` + `kbg:review-pr` + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
 
 ## Core Principles
 
@@ -58,4 +49,4 @@ Infer from user input or ask explicitly.
 | 4 → 5 | `gh run watch` + repro against prod | After merge |
 | 5 → 6 | Tell user to schedule `/post-mortem` | After verify passes |
 
-See `reference.md` for: full Phase 0–6 procedures, output format (ledger), anti-patterns, and METHODOLOGY alignment.
+See `hotfix-reference.md` (same dir) for: full Phase 0–6 procedures, output format (ledger), anti-patterns, and METHODOLOGY alignment.

@@ -16,11 +16,7 @@ Three modes — pick by reversibility and diagnosis clarity.
 
 ## Mode selection
 
-Run the sizing triad first:
-
-1. **One-way door?** — if reversing is expensive, default to `strategize`.
-2. **Blast radius** — name what downstream breaks.
-3. **Riskiest assumption** — state it before building on it.
+Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session): one-way door? → blast radius → riskiest assumption. A one-way door defaults to `strategize`.
 
 | Situation | Mode |
 |---|---|
@@ -28,7 +24,7 @@ Run the sizing triad first:
 | Read-only: understand before committing | `probe` |
 | Reversible choice, analyzable trade-offs | `decide` (default — Judgment Ladder) |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
-| Chaos or incident | Stop — use `kbg:triage` instead |
+| Chaos or incident | Stop — use `kbg:incident` instead |
 | Decision already made, needs a record | `kbg:domain-modeling` directly (owns the ADR rule) |
 
 ---

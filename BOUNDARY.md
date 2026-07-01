@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (47)
+### Skills (46)
   ◇ acli                           Compact Jira/Confluence bulk ops + ADF→markdown (~80% token cut). Use when bulk-editing work-items/pages. Thai: 'ย้ายสถานะหลายตัว', 'export JQL'. Don't use for single-ticket reads/creates, config, non-Atlassian trackers.
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
@@ -41,7 +41,6 @@ _Personals/kbg-harness_
   ◇ orchestrate                    Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review.
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
-  ◇ python-patterns                Pythonic idioms, PEP 8, and type hints. Use when writing or reviewing Python for idiomatic style. Don't use for framework-specific Python (use kbg:fastapi-patterns).
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
   ◇ review-pr                      Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
@@ -56,11 +55,11 @@ _Personals/kbg-harness_
   ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
   ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
-### Commands (21)
+### Commands (20)
   ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
-  ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship-task or /fix-bug), or security audits (use kbg:security-auditor).
+  ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use kbg:ship-change or /fix-bug), or security audits (use kbg:security-auditor).
   ◇ fix-bug                        Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-dev), greenfield TDD (use kbg:backend-dev), or refactors not driven by a bug (use `/refactor-clean`).
   ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-dev) or changing voice register (use /output-style).
   ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
@@ -69,7 +68,6 @@ _Personals/kbg-harness_
   ◇ post-mortem                    Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report', or when the user says 'เขียน post-mortem', 'บันทึกบั๊ก', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead).
   ◇ pr                             Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes.
   ◇ prp-commit                     Quick commit with natural language file targeting — describe what to commit in plain English
-  ◇ quality-gate                   Run the ECC formatter quality gate for a single file and report remediation steps.
   ◇ refactor-clean                 Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent.
   ◇ save-session                   Save current session state to a dated file in ~/.claude/session-data/ so work can be resumed in a future session with full context.
   ◇ security-scan                  Run AgentShield against agent, hook, MCP, permission, and secret surfaces.
@@ -83,7 +81,7 @@ _Personals/kbg-harness_
   ◇ build-error-resolver           Build and TypeScript error resolver. Fixes build/type errors with minimal diffs when builds fail. No architectural edits — just green builds.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
   ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code.
-  ◇ ideate-critic                  Fresh-context critic for the /ideate command. Scores, clusters, and deepens divergent ideas produced by ideate Phase 1. Invoked by commands/ideate.md Phase 2 instead of running the critic pass on the host Claude, to reduce LLM-judge-circularity (CLAUDE.md §LLM-judge-circularity). Read-only: scores and reports, never blocks, never mutates the repo. Use when ideate needs a critic pass, or when the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
+  ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
   ◇ performance-optimizer          Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
   ◇ python-reviewer                Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes.
   ◇ refactor-cleaner               Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates.
@@ -101,7 +99,7 @@ _Personals/kbg-harness_
 | build-error-resolver | Build and TypeScript error resolver. Fixes build/type errors with minimal diffs when builds fail. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
 | code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
-| ideate-critic | Fresh-context critic for the /ideate command. Scores, clusters, and deepens divergent ideas produced by ideate Phase 1. Invoked by commands/ideate.md Phase 2 instead of running the critic pass on the host Claude, to reduce LLM-judge-circularity (CLAUDE.md §LLM-judge-circularity). Read-only: scores and reports, never blocks, never mutates the repo. Use when ideate needs a critic pass, or when the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
+| ideate-critic | Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
@@ -146,7 +144,6 @@ _Personals/kbg-harness_
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship-change). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
-| python-patterns | Pythonic idioms, PEP 8, and type hints. Use when writing or reviewing Python for idiomatic style. Don't use for framework-specific Python (use kbg:fastapi-patterns). | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
 | review-pr | Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
@@ -173,7 +170,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-06-30T17:02:47Z_
+_Generated: 2026-07-01T00:50:03Z_
 
 ---
 
@@ -196,7 +193,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship-task` (single-agent) instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `kbg:ship-change` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -213,31 +210,21 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites.
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 11-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
 
-| Agent | Canonical file patterns | Notes |
-|---|---|---|
-| `api-doc-specialist` | `openapi/`, `docs/api/`, `sdk/`, `swagger/` | |
-| `backend-engineer` | `api/`, `middleware/`, `models/`, `routes/`, `services/`, `tests/` | |
-| `code-architect` | `CLAUDE.md (doctrine home) `, `architecture/`, `*.md` (design docs) | Blueprints, not implementation |
-| `Explore` | any file | Read-only trace |
-| `code-reviewer` | any file | Read-only review (carries comment-accuracy / type-design / test-coverage / UX lenses) |
-| `compliance-engineer` | `docs/compliance/`, `policies/`, `data-retention/`, `gdpr/`, `hipaa/` | |
-| `data-engineer` | `migrations/`, `etl/`, `analytics/`, `warehouse/`, `dbt/`, `spark/` | Beyond OLTP |
-| `devops-engineer` | `.github/`, `docker/`, `k8s/`, `terraform/`, `helm/`, `ci/` | |
-| `finops-engineer` | `infra/cost/`, `budgets/`, `docs/finops/` | Read-only + Bash for cost queries |
-| `frontend-engineer` | `src/components/`, `src/pages/`, `styles/`, `public/`, `assets/`, `src/hooks/` | |
-| `i18n-specialist` | `locales/`, `translations/`, `i18n/`, `src/i18n/`, `l10n/` | |
-| `refactor-cleaner` | any file | Refactor / deprecation scope |
-| `ml-engineer` | `ml/`, `models/`, `features/`, `pipelines/`, `serving/`, `inference/` | |
-| `mobile-engineer` | `ios/`, `android/`, `mobile/`, `react-native/`, `flutter/` | |
-| `platform-engineer` | `platform/`, `proto/`, `gateway/`, `mesh/`, `grpc/`, `event-bus/` | |
-| `product-analyst` | `docs/requirements/`, `prd/`, `user-stories/` | Read-only + Bash |
-| `researcher` | any file | Read-only research |
-| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | Read-only audit |
-| `silent-failure-hunter` | any file | Read-only error-handling audit |
-| `technical-writer` | `docs/`, `README*`, `CHANGELOG*`, `*.md`, `guides/`, `runbooks/` | |
-| `test-engineer` | `tests/`, `*.test.*`, `*.spec.*`, `test_*.py`, `e2e/`, `integration/` | |
+| Agent | Canonical file patterns | Mutates | Notes |
+|---|---|---|---|
+| `code-architect` | `architecture/`, `*.md` (design docs) | no | Blueprints, not implementation (Read/Grep/Glob/Bash) |
+| `code-reviewer` | any file | no | Read-only review (comment-accuracy / type-design / test-coverage lenses) |
+| `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | no | Read-only TS/JS review — type safety, async correctness |
+| `python-reviewer` | `*.py`, `pyproject.toml` | no | Read-only Python review — PEP 8, idioms, type hints |
+| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection (holds Edit/Write/Bash) |
+| `silent-failure-hunter` | any file | no | Read-only error-handling audit |
+| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write) |
+| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope |
+| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes |
+| `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes |
+| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 |
 
 
 ---
@@ -255,12 +242,13 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 Module map + verification recipe for the harness. Inject these conventions when a freshly spawned subagent needs the same onboarding map the lead already holds.
 
 ### Module Boundaries
-- `agents/` — 29 senior-specialist agents
-- `skills/` — 28 workflow skills
-- `commands/` — 13 slash commands
-- `hooks/` — 49 hook scripts
-- `output-styles/` — 2 output styles (senior-eng default, staff-eng opt-in)
-- `themes/` — 0 themes (deliberate non-goal)
+For live per-layer counts, read the auto-generated inventory header at the top of this file (regenerated by `inventory-boundary.sh`) — it is the single source of truth; do not hardcode counts here (they drift).
+- `agents/` — specialist subagents (.md each)
+- `skills/` — workflow skills (SKILL.md per directory; `_lib` is a shared shell library, not an invokable skill)
+- `commands/` — slash commands
+- `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
+- `output-styles/` — senior-eng (default), staff-eng (opt-in)
+- `themes/` — catppuccin-mocha
 - `eval/` — dataset + regression gate
 
 ### Quick Context
@@ -291,7 +279,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X" | `/ship-task` | Single-agent ceremony |
+| "build one feature", "implement X", "scope this change" | `kbg:ship-change` | Classify → implement → review → merge |
 | "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
@@ -309,7 +297,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
-| "status update", "what did we ship" | `/status-update` | Status report |
+| "save my session", "hand off" | `/save-session` / `kbg:handoff` | Session state capture |
 
 
 ---

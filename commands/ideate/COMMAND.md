@@ -66,30 +66,19 @@ fall back to the deterministic picker in
 
 ## Convergence warning (advisory)
 
-A SessionEnd hook (`ideate-convergence-capture.sh`) computes a local
-embedding for each ideate problem via the Ollama API (`all-minilm:latest` by
-default) and stores it in `~/.claude/state/ideate-embeddings.jsonl`. If
-today's runs on similar problems have cosine similarity ≥ 0.85, the next
-session's `<ideate-convergence status="warning">` block warns that the same
-problem is being ideated repeatedly without new vantages.
-
-The default model is `all-minilm:latest`; override with
-`KBG_IDEATE_EMBEDDING_MODEL`, and the Ollama host with
-`KBG_IDEATE_OLLAMA_HOST`. If Ollama is not running or the model is absent,
-the hook silently degrades to `convergence_status=unknown`.
-
-This is a heuristic, not a quality judgment. Query the history with:
-
-```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/convergence.sh" --today
-```
+If the session context already carries an `<ideate-convergence status="warning">`
+block (injected upstream when today's runs on similar problems are converging),
+Step 0 honours it. The automated capture side of this feature — a SessionEnd
+embedding hook and its `convergence.sh` query script — is **not currently wired**
+(removed in the from-scratch reset); treat convergence as advisory-only unless
+that capture path is rebuilt.
 
 ## Ideate memory search (user command)
 
-A separate SessionEnd hook (`ideate-memory-capture.sh`) persists the problem
-and final output of every `kbg:ideate` run as a markdown file under
-`~/.claude/state/ideate-memory/`. A qmd collection indexes those files, so the
-user can search past ideate runs with:
+Past `kbg:ideate` runs are searchable through the `ideate-memory` qmd collection
+when a capture path populates it. The automated SessionEnd capture hook is **not
+currently wired** (removed in the reset); until it is rebuilt, search only
+returns runs captured by other means. Query with:
 
 ```
 /ideate-search caching

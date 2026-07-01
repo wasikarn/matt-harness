@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.6.11-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 49 specialist agents, 113 workflow skills, and 68 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 47 workflow skills, and 21 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -40,7 +40,7 @@ Run these commands inside Claude Code:
 # 4. Restart Claude Code (plugin cache loads on startup)
 
 # 5. Smoke-test
-kbg:thinking
+kbg:kbg-help
 ```
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
@@ -56,14 +56,14 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 128 | `kbg:<skill>` — e.g. `kbg:thinking`, `kbg:decide`, `kbg:grilling` |
-| **Agents** | 55 | Spawned by Claude or via the `Task` tool — e.g. `kbg:code-architect` |
-| **Commands** | 78 | `/<command>` — e.g. `/code-review`, `/plan`, `/feature-dev` |
+| **Skills** | 47 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Agents** | 11 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Commands** | 21 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
 | **Output Styles** | 2 | `senior-eng` (default) · `staff-eng` (opt-in for cross-boundary decisions) |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
 
-> v0.2.1 hooks: SessionStart doctrine injection (METHODOLOGY.md), two PreToolUse gates (`irrecoverable` + `path-hardcode`), and 20 gate unit tests. Advisory sensors planned.
+> Hooks: SessionStart doctrine injection (METHODOLOGY.md), PreToolUse gates in `hooks/gates/`, advisory sensors in `hooks/advisory/`, and cost tracking in `hooks/stop/`. The operating model: gates deny the irrecoverable set; sensors journal but never gate.
 
 ---
 
@@ -73,27 +73,25 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Command | What it does |
 |---|---|
-| `kbg:review-pr` (skill) | Multi-dimension PR review — code, tests, security, and types over the diff |
-| `/code-review` | Deep review for the current file or selection |
-| `/plan` | Structured implementation plan |
-| `/feature-dev` | Full feature loop: plan → implement → verify |
+| `/deep-dive` | Research across codebase, docs, and web → cited actionable brief |
+| `/fix-bug` | Guided 7-phase bug-fix with diagnostic + test-first patterns |
 | `/pr` | GitHub PR with auto-generated title and body |
-| `/security-scan` | Vulnerability scan via the `security-auditor` agent |
-| `/checkpoint` | Snapshot session state for resume |
+| `/security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
+| `/ship-merge` · `/ship-release` | Pre-merge gate · end-to-end release ceremony |
 
 ### Skills
 
 | Skill | When to reach for it |
 |---|---|
-| `kbg:thinking` | Index of 39 mental models — pick 1–3 for any complex or ambiguous problem |
 | `kbg:decide` | Judgment Ladder: `probe` / `decide` / `strategize` modes |
-| `kbg:grilling` | Relentless interview to stress-test a plan; `with-docs` also produces ADRs |
+| `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
+| `kbg:grilling` | Relentless interview to stress-test a plan before building |
+| `kbg:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
 | `kbg:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops |
-| `kbg:eval-harness` | Formal EDD framework with pass@k metrics for LLM system evaluation |
 | `kbg:context-budget` | Token usage audit — finds bloat and produces prioritized savings |
-| `kbg:security-review` | OWASP Top 10, secrets scanning, and auth review |
+| `kbg:security-auditor` | OWASP Top 10, secrets scanning, threat-model + remediation |
 | `kbg:production-audit` | Local-evidence production readiness check — no external service required |
-| `kbg:architecture-decision-records` | Capture decisions as structured ADRs during a session |
+| `kbg:harness-audit` | Deterministic fleet/schema/structural audit of this plugin |
 
 ### Agents
 
@@ -103,14 +101,13 @@ Agents run in a delegated sub-task context — Claude spawns them automatically 
 |---|---|
 | `code-architect` | System design, module boundaries, and dependency decisions |
 | `security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks |
-| `planner` | Implementation blueprints — breaks a goal into ordered, concrete steps |
 | `code-reviewer` | Quality, correctness, patterns, and missing edge cases |
 | `performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs |
-| `tdd-guide` | Enforces red → green → refactor; writes the failing test first |
 | `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
 | `silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns |
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
-| `type-design-analyzer` | Evaluates TypeScript type modelling — narrows `any`, improves generics |
+| `typescript-reviewer` · `python-reviewer` | Language-specific review — type safety, idioms, async correctness |
+| `build-error-resolver` | Fixes build/type errors with minimal diffs |
 
 ### Tathep Platform
 
@@ -124,6 +121,8 @@ kbg-native skills for the Tathep project stack — created because no upstream f
 | `kbg:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes |
 | `kbg:hono-patterns` | Hono routes, middleware, validation, and deployment for Bun / Node.js / edge runtimes |
 | `kbg:langchain-langgraph-patterns` | LangChain chains, agents, RAG pipelines, and LangGraph stateful multi-step workflows |
+| `kbg:fastapi-patterns` | FastAPI structure, Pydantic v2, dependency injection, async handlers, service layers |
+| `kbg:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns |
 | `kbg:tauri-v2-patterns` | Tauri v2 IPC commands, capabilities / permissions model, Rust app state, events, and plugins |
 
 ---
@@ -133,10 +132,10 @@ kbg-native skills for the Tathep project stack — created because no upstream f
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 49 specialist subagents (.md each)
-├── skills/               # 113 workflow skills (SKILL.md per directory)
-├── commands/             # 68 slash commands
-├── hooks/                # PreToolUse gates: irrecoverable + path-hardcode
+├── agents/               # 11 specialist subagents (.md each)
+├── skills/               # 47 workflow skills (SKILL.md per directory)
+├── commands/             # 21 slash commands
+├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # senior-eng (default), staff-eng (opt-in)
 ├── contexts/             # dev / review / research session frames
 ├── themes/               # catppuccin-mocha.json

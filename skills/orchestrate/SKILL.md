@@ -13,30 +13,7 @@ description: "Triage competing tasks and route each to inline/parallel/sequentia
 
 Turn a pile of work into a prioritized plan, then route each item to the cheapest correct executor. The main agent allocates; sub-agents do the heavy lifting. Prioritizing produces a **plan** — executing it, especially via write-capable agents, needs the user's go-ahead.
 
-## Coordination-as-code: `scripts/orchestrate-dispatch.py`
-
-The dispatcher is the **deterministic** half of the coordination contract. The lead (this skill) does the **judgment** half — what to dispatch, in what order, with what F9 prompt. The dispatcher does the **rendering** half — given a workflow spec (YAML/JSON), validate the schema, resolve the DAG into waves, surface F8.5 fan-out overflow, and emit a plan a downstream consumer can execute.
-
-**Why both layers matter:** without the dispatcher, the wave structure lives in the lead's model memory — a context-clearing session restart loses the plan, a different lead picks it up cold, and a 30-stage fan-out overshoots because the LLM forgot the F8.5 cap mid-spawn. With the dispatcher, the spec is on disk, the wave plan is machine-rendered, and a fresh session can resume from the same plan file. The model does judgment; the code does coordination.
-
-**Usage:**
-```bash
-# Render a human-readable wave plan (default; safe):
-bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml"
-
-# Emit a machine-readable plan (for the lead to dispatch inline, or pipe to a consumer):
-bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --emit-plan
-
-# Run command-typed stages in wave order (deterministic chain half):
-bash "${CLAUDE_SKILL_DIR}/scripts/dispatch.sh" "${CLAUDE_SKILL_DIR}/examples/ship-merge.yml" --execute
-```
-
-**What the dispatcher is NOT:** it does not spawn LLM agents. Agent-typed stages are emitted as "would-spawn" lines; the lead (you) dispatches them inline per the F9 spawn-prompt template. Putting LLM dispatch inside the dispatcher would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) forbids.
-
-**Example specs (in `skills/orchestrate/examples/`):**
-- `ship-merge.yml` — minimal "build → fan-out lint+typecheck → test → ship" workflow. 4 stages, 4 waves, exercises all 4 stage types (command, parallel, command, agent).
-- `review-pr.yml` — multi-lens PR review pipeline. 3 stages, 3 waves; demonstrates the fan-in (4 parallel validators → merge-reports command) + fix-loop pattern.
-- `harness-audit.yml` — the harness's self-audit pipeline. 3 stages, 3 waves; uses the harness's own tools (`audit.sh` + `eval/run-eval.py`) so the spec itself is a smoke test for the dispatcher.
+The lead does the **judgment** — what to dispatch, in what order, with what F9 prompt — and dispatches each agent inline per the F9 spawn-prompt template. The lead never hands LLM dispatch to a background loop: that would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model) forbids.
 
 ## Procedure
 
@@ -138,28 +115,7 @@ This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol e
 3. **Step C — Fixer repairs (conditional).** If the validator rejects, the builder (clarity-only scope) addresses the findings.
 4. **Step D — Re-validator confirms.** The same or a different validator verifies the fix.
 
-The chain is a DAG in the board: `A → B → F → D`. Each edge is `depends_on` + `recompute_blocked()`.
-
-### Task board integration
-
-Source `${CLAUDE_SKILL_DIR}/scripts/task-board-lib.sh` (a per-skill wrapper that resolves the plugin-wide library) for all state transitions. The lead is the **sole writer** of `board.json` (sub-agent Write/Edit may be silently discarded per GitHub #9458).
-
-- **Spawn Step A:** create the task with `status = "pending"` and `depends_on = []`. After claiming, set `task.status = "in_progress"` and write the board.
-- **Spawn Step B:** create the task with `depends_on = ["A-task-id"]`. `kbg_recompute_blocked` will set `status = "blocked"` and `blocked_by = ["A-task-id"]` until A completes. Once A is marked `completed`, recompute unblocks B to `pending`; the lead then sets `status = "in_progress"` when spawning the validator.
-- **Step B rejects:** create a fix task with `depends_on = ["B-task-id"]` and `status = "pending"`. Run `kbg_recompute_blocked` to derive `blocked_by`.
-- **Step D passes:** mark D `completed`. A, B, and F are already `completed` by this point; the lead verifies the whole chain is `completed` and updates the plan-level `status`.
-
-**Shell pattern for state transitions:**
-
-```bash
-# After builder finishes
-updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T1"].status = "completed"')
-kbg_board_write "$PLAN_DIR" "$updated"
-kbg_recompute_blocked "$PLAN_DIR"
-
-# Check if validator is now unblocked
-kbg_board_read "$PLAN_DIR" | jq '.tasks["T2"].status'  # should be "pending"
-```
+The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the native `TaskCreate` + `addBlockedBy` protocol (or an inline checklist for a short chain) — the lead is the **sole writer** of the plan state, since sub-agent Write/Edit may be silently discarded (GitHub #9458). Spawn B blocked on A; if B rejects, spawn a fix task F blocked on B; D confirms the fix. Advance each edge only when the upstream task is verified `completed` against its done-when.
 
 ### Worked example: health check endpoint
 
@@ -313,25 +269,7 @@ Spawn **ungated** — re-validators are read-only.
 
 **Lead check between waves**
 
-After spawning Task 1, the lead polls the board:
-
-```bash
-kbg_board_read "$PLAN_DIR" | jq '.tasks["T1"].status'
-# → "completed" ? proceed to T2
-```
-
-After Task 2 completes, the lead reads the verdict:
-
-```bash
-verdict=$(head -1 .scratch/health-review/verdict.md)
-if [[ "$verdict" == *"fail"* ]]; then
-  updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T3"].status = "pending"')
-else
-  updated=$(kbg_board_read "$PLAN_DIR" | jq '.tasks["T3"].status = "completed"')
-fi
-kbg_board_write "$PLAN_DIR" "$updated"
-kbg_recompute_blocked "$PLAN_DIR"
-```
+After spawning Task 1, the lead verifies its done-when (`GET /health` returns 200) before proceeding to Task 2. After Task 2 completes, the lead reads `.scratch/health-review/verdict.md`: if it says `fail`, spawn Task 3 (Fixer); otherwise skip straight to Task 4.
 
 ### Gating rules
 
@@ -352,7 +290,7 @@ kbg_recompute_blocked "$PLAN_DIR"
 
 Without these injections, each agent re-derives or assumes, which produces latent bugs and wasted work.
 
-**Cross-references:** this pattern uses the F9 spawn-prompt template above and the task board schema in `.scratch/task-board-architecture.md`. The `scripts/orchestrate-dispatch.py` dispatcher can render a YAML spec that encodes this exact 4-task chain.
+**Cross-references:** this pattern uses the F9 spawn-prompt template above; enforce the ordering with the native `TaskCreate` + `addBlockedBy` protocol.
 
 ## Bounded fan-out — hard cap (F8.5)
 
@@ -361,13 +299,13 @@ Without these injections, each agent re-derives or assumes, which produces laten
 **Hard rules:**
 
 1. **Hard cap = 5 agents per wave; advisory floor = 3 (F8.4).** Below 3: under-parallelized — lead does too much (F8.4 advisory; the dispatcher flags an agent fan-out `<3` but never blocks; a fixed diverse-lens panel like code-review + security-review = 2 sets `panel: true` on the `parallel` stage to opt out — it is not an under-split builder fan-out). Above 5: coordination overhead dominates and the audit goes wrong before it even starts (ref: [[bounded-agent-spawning]]). The lead MUST clamp any work-list >5 to 5 before spawning, and queue the rest in a `deferred-<date>.md` for a follow-up wave. (The cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5 on owner request — F8 band and F8.5 cap now coincide at 3-5.)
-2. **The cap is a number in code, not prose.** "Don't overspawn" is a vibe; `if len(worklist) > 5: worklist = worklist[:5]` is a contract. The audit fixture `eval/regressions/bounded-agent-spawning.json` greps for "cap" and "fan-out" in this file — if either phrase goes missing, the fixture fails and the lesson is gone.
+2. **The cap is a number in code, not prose.** "Don't overspawn" is a vibe; `if len(worklist) > 5: worklist = worklist[:5]` is a contract. When you fan out via the Workflow tool, the clamp is the JS work-list slice before `parallel()`/`pipeline()`; when you dispatch inline, you are the clamp.
 3. **Worklist count ≠ spawn count.** Audit + verify is a SECOND fan-out layer on top of the work-list. If the work-list already hit 44 and the audit doubles to 88, the cap on the work-list didn't help. The cap must be on TOTAL spawned agents across the entire plan lifetime, not on the work-list size.
 4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. Your dispatch code (clamping the work-list to the cap before spawning) is the enforcement point.
 
-**Why this is doctrine, not preference:** the 2026-06-12 audit at 105 agents was caused by a soft cap. The next agent author will write the same soft cap again unless the hard cap is a number in code AND a fixture that fails when the number is removed.
+**Why this is doctrine, not preference:** the 2026-06-12 audit at 105 agents was caused by a soft cap. The next agent author will write the same soft cap again unless the hard cap is a number in code at the dispatch boundary.
 
-**Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time. The `eval/regressions/bounded-agent-spawning.json` fixture locks this section in place.
+**Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time.
 
 ## Fast Path Gate
 

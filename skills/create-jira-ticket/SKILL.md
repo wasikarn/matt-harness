@@ -53,7 +53,12 @@ Resolve at runtime; never hardcode IDs except the default project key `TP`.
 
 ## Step 4 — Preview and confirm
 
-Show resolved metadata + Thai title + rendered description + chosen backend path. Show this as a review surface, then create **only on the user's explicit go-ahead**. This preview-and-confirm step is the safeguard against an unwanted ticket — never write to Jira before it.
+Before showing the preview, verify each gate in order:
+
+1. Confirm the AC covers error + boundary + regression paths, not just the happy path.
+   Failure mode to avoid: never file a Bug/Story whose AC a QA can't verify against — if the AC drifts into implementation detail or omits the error case, the ticket fails review.
+2. Show resolved metadata + Thai title + rendered description + chosen backend path as a review surface.
+3. Create **only on the user's explicit go-ahead** — this preview-and-confirm gate is the safeguard against an unwanted ticket.
 
 ## Step 5 — Create the issue
 
@@ -134,6 +139,3 @@ After creation reply: `✅ Created [PROJ-XXX](https://<site>.atlassian.net/brows
 - `kbg:incident` — production outages and security incidents.
 - `atlassian:triage-issue` — de-duping/triaging before filing.
 - `atlassian:spec-to-backlog` — converting a spec/Confluence page into a backlog of epics + tickets.
-
-1. confirm the ticket's AC covers error + boundary + regression paths, not just the happy path.
-   If the AC drifts into implementation detail or omits the error case, the ticket fails review — never file a Bug/Story whose AC a QA can't verify against.

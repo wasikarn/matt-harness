@@ -1,6 +1,6 @@
 ---
 name: ideate-critic
-description: "Fresh-context critic for the /ideate command. Scores, clusters, and deepens divergent ideas produced by ideate Phase 1. Invoked by commands/ideate.md Phase 2 instead of running the critic pass on the host Claude, to reduce LLM-judge-circularity (CLAUDE.md §LLM-judge-circularity). Read-only: scores and reports, never blocks, never mutates the repo. Use when ideate needs a critic pass, or when the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer)."
+description: "Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer)."
 tools: Read
 model: sonnet
 effort: high

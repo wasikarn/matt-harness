@@ -98,9 +98,7 @@ Fix: What to change
 - **FastAPI**: CORS config, Pydantic validation, response models, no blocking in async
 - **Flask**: Proper error handlers, CSRF protection
 
-## Reference
-
-For detailed Python patterns, security examples, and code samples, see skill: `python-patterns`.
+For framework-specific patterns, see the relevant kbg skill: `fastapi-patterns` (FastAPI/Pydantic services).
 
 ---
 

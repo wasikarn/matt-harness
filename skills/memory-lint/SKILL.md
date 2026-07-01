@@ -46,36 +46,13 @@ Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the p
 
 ### `--trim` mode (plan / apply / status)
 
-The trim workflow is `--auto-archive` under three intents — no separate skill:
+The trim workflow is `--auto-archive` under three intents — no separate skill. Run them in order:
 
-- **plan** — `--auto-archive --dry-run --json` → the action plan (what would move, projected before/after size) without touching the store.
-- **apply** — `--auto-archive --yes` → executes the reversible `mv`s (collapsed pointers stay grep-able in `_archive/`).
-- **status** — `python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py"` (detector mode) → current finding count + load-budget %; run before and after an apply to read the size delta.
+1. **plan** — `--auto-archive --dry-run --json` → the action plan (what would move, projected before/after size) without touching the store. Never skip straight to apply: drift the plan review and you `mv` entries you meant to keep.
+2. **apply** — `--auto-archive --yes` → executes the reversible `mv`s (collapsed pointers stay grep-able in `_archive/`; never `rm`).
+3. **status** — `python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py"` (detector mode) → current finding count + load-budget %; run before and after an apply to read the size delta.
 
 Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big session; for routine link/index checks the default detector is enough.
-
-## Consuming audit drafts (companion to lint)
-
-The `scripts/governance/audit-to-memory.py` script (in this repo's `scripts/`) generates
-a `draft-audit-findings.md` in this memory store after every audit. Treat it
-as a **separation-of-duties buffer** between "the audit ran" and "the lesson
-is in memory":
-
-1. **Lint first** (above) to surface what already exists.
-2. **Open the draft** — `~/.claude/projects/<enc>/memory/draft-audit-findings.md`.
-3. For each item, decide:
-   - **Promote** — write a dedicated `<slug>.md` with proper frontmatter + add a
-     1-line pointer to `MEMORY.md`. Reword the "Why" / "How to apply" sections;
-     the draft captures what the audit *said*, not what you should *remember*.
-   - **Discard** — the item was noise, rediscovery, or already captured.
-   - **Defer** — write a one-liner to `deferred-<date>.md` for a future audit
-     to revisit (e.g., items blocked by the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model).
-4. **Re-lint** to confirm the new entries are linked and the index is in sync.
-
-The script **never** writes to `MEMORY.md` directly (preserves the autonomy
-invariant: the human reviews, the model does not auto-promote). If a draft
-sits unread, the next audit run will overwrite it — treat drafts as
-**time-limited inputs**, not durable artifacts.
 
 ## Checks
 
