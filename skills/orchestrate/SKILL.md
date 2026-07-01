@@ -337,10 +337,19 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 | prod 500s | Q1 urgent + important, specialized | a write-capable agent (write — confirm first) — done-when: errors gone + root cause in commit |
 | auth refactor | Q2 + touches auth | **security precedence**: `security-reviewer` reviews first → then a write-capable agent (clarity-only scope) applies (both gated — confirm before each) |
 | signups CSV | Q3 urgent, not important | **inline** — trivial query; orchestrating costs more (guardrail) |
-| pnpm move | Q2 important, not urgent | `/deep-dive` — compare + report, don't migrate |
+| pnpm move | Q2 important, not urgent | `/deep-dive` — compare + report, don't migrate (staged: once the trade-off data exists, the actual reversible-choice reasoning is `kbg:decide`'s job, not orchestrate's — see below) |
 | dark-mode toggle | Q4 neither | **drop** — mark `wontfix`; outside current roadmap |
 
 Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`, none needed here). CSV inline. Dark-mode dropped.
+
+**Boundary with `kbg:decide`:** orchestrate decides *whether and how to spend effort* on
+an ask — inline / parallel / sequential / drop, and which surface receives it — before
+that ask is understood as a bounded decision. It doesn't itself reason through a
+trade-off. Once triage lands on "this needs research or a call between ≥2 viable
+options," that reasoning is `kbg:decide`'s job (its own mode-selection table classifies
+"reversible choice, analyzable trade-offs" as `decide` default), not orchestrate's. A
+multi-task inbox routes through orchestrate first; a single, already-bounded question
+goes straight to `kbg:decide`.
 
 ## METHODOLOGY alignment
 

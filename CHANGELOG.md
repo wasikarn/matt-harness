@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.14.0] — 2026-07-01
+
+User asked for a "Reasoning Governance System" — a 12-component generic meta-orchestration
+layer (Reasoning Planner, Skill Orchestrator, Confidence Governor, Budget Manager, Meta
+Governance, etc.) on top of a "Phase 1 Reasoning Assurance Framework." Neither exists in
+this repo (confirmed by grep — only a false-positive git-pack hit). Pushed back before
+building anything: this is the retired L2–L5 autonomy ladder (`ADR 0006`, "do not re-arm")
+under a new name; there's no runtime here to host a real policy/confidence engine (bash
+hooks + markdown prompts only, so any such engine is just more prompts — the thing the
+spec says to eliminate); a "Confidence Governor" computing confidence from qualitative
+factors is model-grading-itself, the exact pattern `[0.13.0]` just spent fixing; and most
+requested components already exist under other names (`kbg:decide`, `kbg:orchestrate`,
+`kbg:score-decision`, `harness-audit`). User agreed to de-scope to one real gap.
+
+### Fixed — orchestrate↔decide boundary
+
+- Research (grep + full reads of `decision-doctrine-map.md`, `orchestrate/SKILL.md`,
+  `decide/SKILL.md`, `score-decision/SKILL.md`, METHODOLOGY.md Rule 1) found the de-scoped
+  ask was itself smaller than expected: an explicit router across kbg's reasoning surfaces
+  was already proposed and rejected on 2026-06-18 (`[0.2.66]`, "90 surfaces, not the
+  ~1,000 where flat description-routing degrades"); `score-decision` is deliberately
+  excluded from auto-invocation by its own frontmatter, not an oversight. The one real,
+  evidence-backed gap: `orchestrate`'s own worked example ("should we move to pnpm?" →
+  `/deep-dive`) and `decide`'s own mode table (same situation → "reversible choice,
+  analyzable trade-offs → `decide` default") gave different answers for the same input,
+  with no stated relationship between the two surfaces.
+- Fixed with two small doc edits, no new router/engine: `orchestrate/SKILL.md` now states
+  the handoff explicitly (orchestrate decides whether/how to spend effort *before* a task
+  is understood as a bounded decision; `decide` reasons through it once triage lands
+  there) and annotates the pnpm example as staged, not competing. `decide/SKILL.md`'s
+  mode table gained a row: a pile of competing asks routes through `kbg:orchestrate`
+  first, not `decide`.
+
 ## [0.13.0] — 2026-07-01
 
 Fourth same-day round, different subsystem: research into where the "gates-not-vibes"
