@@ -165,6 +165,30 @@ sometimes legitimate but always deserve a human look. Read the scripts
 themselves (`hooks/gates/irrecoverable.sh`, `hooks/gates/path-hardcode.sh`,
 `hooks/gates/verifier-protect.sh`) for the exact pattern list.
 
+### Refused extension: mandatory verification of every reasoning event
+
+2026-07-01: a "verifier-first runtime" ask wanted the deny-gate model above
+generalized from *irreversible actions* to *every reasoning event* —
+auto-classify decision criticality, auto-select a verification policy,
+confidence-based gating, retry/re-plan/escalate on failure. Refused as
+specified:
+
+- classifying criticality or "verifying reasoning" at runtime needs either
+  an LLM doing the classifying (unverified reasoning gating reasoning —
+  the model grading itself, see `CLAUDE.md`'s "unifying crux") or
+  deterministic semantic understanding of free-form text (not buildable).
+- confidence-based gating uses model self-report as the gate signal — same
+  crux, "two optimists agreeing."
+- mandatory-verify-everything plus auto retry/re-plan/escalate is the
+  L2–L5 autonomy ladder under a new name — retired by ADR 0006, do not
+  re-arm.
+
+The gates above already are "verification an agent can't skip" for the one
+class that's actually verifiable by a deterministic script: irreversible
+actions. Extend by the existing pattern above (new gate = new
+*irreversible-action class*, found from a real gap) — not by building a
+runtime classifier for reasoning in general.
+
 ## Gate discipline review (judgment vs ceremony)
 
 *Pairs with the quarterly sweep above; see `CLAUDE.md`'s Operating model (under
