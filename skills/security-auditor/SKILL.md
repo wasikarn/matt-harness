@@ -45,7 +45,7 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 4. **Remediation Plan** — Per Critical/Important: what to change, why vulnerable, how to verify. Prioritize by exploitability × blast radius.
 
-5. **Verify Fixes** — Re-audit modified code. Run static analysis if available. Verify no secrets leaked. Confirm regression tests pass.
+5. **Verify Fixes** — Don't re-audit your own remediation. Spawn the `security-reviewer` agent (fresh context) as a Task-tool subagent against the remediated files — the same invocation shape `kbg:review-pr` already uses to route security findings. Run static analysis if available. Confirm regression tests pass.
 
 Done.
 

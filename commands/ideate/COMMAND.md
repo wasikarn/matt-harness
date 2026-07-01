@@ -223,18 +223,39 @@ After all 5 Diverge branches return:
    branch's output. See
    [Isolation invariant](#isolation-invariant).
 
-**Fresh-context critic option (recommended for high-stakes runs).**
-By default Phase 2 + 3 run on the host Claude. That is the same
-model class as the generators, which carries the
-LLM-judge-circularity caveat documented in `CLAUDE.md`'s
-"Why — the unifying crux" (under §Architecture). For runs where the cost of a blind spot
-is high, re-point the critic pass at the `ideate-critic` agent
-(`agents/ideate-critic.md`). It uses the same scoring rubric but
-starts from a fresh context, reducing the chance that the host
-Claude's own generation anchors the judgment. Output is still
-**advisory evidence**, not ground truth; the user remains the
-gate. See CLAUDE.md's Operating model, under §Architecture, on
-"the implementer agreeing with its own work."
+**Fresh-context critic — default on the auto-fire path.**
+Host-Claude scoring (Phase 2 + 3 run on the same model class as the
+Phase 1 generators) carries the LLM-judge-circularity caveat
+documented in `CLAUDE.md`'s "Why — the unifying crux" (under
+§Architecture). Step 2's self-judge gate already requires a YES
+answer to "high-stakes?" before this command can auto-fire — any
+run that reaches Phase 1 via Step 2 has, by construction, already
+been judged high-stakes, so:
+
+- **Auto-fired run (reached via Step 2):** default the critic pass
+  to the `ideate-critic` agent (`agents/ideate-critic.md`) instead
+  of host-Claude. No extra judgment call needed — Step 2 already
+  answered it.
+- **Explicit invocation (reached via Step 1, self-judge skipped):**
+  keep host-Claude as the default. Stakes aren't classified on this
+  path; the user opted in directly and can request the critic
+  explicitly for a run they know is high-stakes. Don't infer
+  high-stakes from prompt wording here — a lexical heuristic on
+  words like "critical"/"production" is the same weak-check pattern
+  this harness's `harness-audit` already flags as toothless
+  elsewhere.
+
+`ideate-critic` uses the same scoring rubric but starts from a
+fresh context, reducing the chance that the host Claude's own
+generation anchors the judgment. Output is still **advisory
+evidence**, not ground truth; the user remains the gate. See
+CLAUDE.md's Operating model, under §Architecture, on "the
+implementer agreeing with its own work."
+
+This routing change doesn't add a third fan-out wave: Phase 2 goes
+from 0 agent calls (host-inline) to 1 sequential agent call on the
+auto-fire path, not a parallel spawn — the "2-wave, peak-5" F8.5
+contract above is unaffected.
 
 To use the critic agent, collect the Phase 1 `ideas[]` JSON and
 invoke `ideate-critic` with the Input Contract in
@@ -438,7 +459,9 @@ These are how this skill goes wrong. Watch for them.
 ## Cost
 
 ≈ 8 to 10 Agent calls per run (5 diverge + 1 score + 1 cluster +
-3 deepen, with score + cluster on the host). About 5 to 10x a
+3 deepen, with score + cluster on the host) — or ≈ 9 to 11 on an
+auto-fired run, which adds 1 call for the `ideate-critic` pass (see
+[Phase 2 — Focus](#phase-2--focus)). About 5 to 10x a
 single-shot answer. The brief includes an advisory cost-estimate line
 so the operator sees the token envelope up front. Not for every
 keystroke. For decision points where the cost of the obvious answer is

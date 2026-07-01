@@ -5,6 +5,46 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.13.0] — 2026-07-01
+
+Fourth same-day round, different subsystem: research into where the "gates-not-vibes"
+doctrine (a model can't grade its own work) is upheld only in prose vs. actually enforced
+— *verification mechanics* across skills/agents/commands, not the phantom-reference
+doc-rot the prior 3 rounds covered. 3 parallel research agents surveyed all 45 skills, 33
+agents+commands, and the doctrine docs + `harness-audit` checks; findings were personally
+verified against source before treating them as a fix list — presenting unverified
+subagent claims as a roadmap on a task about verification would be self-undermining.
+
+### Fixed — same-context self-verification gaps
+
+- **`skills/security-auditor/SKILL.md`**: step 5 ("Verify Fixes") had the same agent that
+  wrote a remediation also re-audit it — no fresh context, no deterministic gate — despite
+  this skill explicitly targeting the highest-stakes surfaces (auth/payment/admin). A
+  fresh-context alternative (`security-reviewer` agent) already rides inside `kbg:review-pr`
+  for routine diffs; step 5 now spawns it instead of self-re-auditing.
+- **`commands/ship-merge.md`**'s automation-bias guard (shipped `[0.12.0]`, same day) only
+  capped the Critical-findings score on `auth|secret|credential|payment|billing|token`
+  diffs reviewed `own-branch` — missing the one path class this repo already treats as
+  maximally sensitive elsewhere (`hooks/gates/verifier-protect.sh` independently protects
+  `hooks/gates/**`, `hooks/hooks.json`, and `skills/harness-audit/scripts/{audit.sh,checks/**}`).
+  Widened the cap to cover those same paths, reusing `verifier-protect.sh`'s list rather
+  than defining a second one that could drift.
+- **`docs/reference/judgment-ladder.md`**: Automation Bias was named in the secondary
+  "Common biases by rung" table (`[0.12.0]`) but missing from the primary "Slingshot
+  four-bias guard" table — the one this whole round's findings are instances of. Added as
+  a 5th row; table renamed "five-bias guard."
+- **`commands/ideate/COMMAND.md`**: the fresh-context critic (`ideate-critic`) was
+  operator-invoked opt-in even on auto-fired runs, despite Step 2's self-judge gate already
+  requiring a "high-stakes: yes" answer to reach Phase 1 at all. Default routing now sends
+  auto-fired runs to `ideate-critic`; explicit `/ideate` invocations (Step 1, self-judge
+  skipped) keep host-Claude scoring, since stakes aren't classified on that path. No new
+  signal/plumbing added — Step 2's existing gate logic already implies the routing.
+
+Explicitly not built: a general audit check scanning for "verify/confirm" text near
+irreversible actions — check #34 already does a version of this and is criticized as
+toothless; a weak version of this check class manufactures false confidence, which is
+worse than the prose-only status quo.
+
 ## [0.12.0] — 2026-07-01
 
 Third same-day drill-down: "verify + audit the whole project once more —

@@ -205,11 +205,12 @@ The five rungs map to the six elements of the Decision Quality chain
 Use the ladder to walk a team through the process, then cross-check against the
 DQ chain to see if any element is weak.
 
-## The Slingshot four-bias guard
+## The Slingshot five-bias guard
 
 The Slingshot Group “Decision Bias” slide highlights four biases that map
-cleanly onto the ladder. Use them as a cross-check at the rung where each one
-is most dangerous.
+cleanly onto the ladder; Automation Bias is a fifth, added from this harness's
+own operating model (CLAUDE.md's "unifying crux" — a model can't grade its own
+work). Use them as a cross-check at the rung where each one is most dangerous.
 
 | Bias | Threatened rung | Slingshot-style guard | English counter |
 |---|---|---|---|
@@ -217,6 +218,7 @@ is most dangerous.
 | **Anchoring Bias** (อคติจากการยึดติด) | Frame / Estimate risk | ตัวเลข/ข้อมูล/ทางเลือกแรกที่เรายึดไว้ถูกทดสอบแล้วหรือยัง? | Ask for 90% CI; remove the favorite option and re-solve |
 | **Confirmation Bias** (อคติจากการมีธงในใจ) | Test assumptions | ข้อมูลที่มีน่าเชื่อถือแค่ไหน? | Assign a devil’s advocate; seek disconfirming evidence |
 | **Sunk Cost Bias** (อคติจากสิ่งที่ลงทุนไปแล้ว) | Decide, commit & follow through | ถ้าเริ่มใหม่วันนี้ ยังทำต่อไหม? | Set kill criteria; ask if you would start today from blank slate |
+| **Automation Bias** (อคติเชื่อผลลัพธ์อัตโนมัติ) | Decide, commit & follow through | ผลลัพธ์/คะแนนนี้มีใครตรวจสอบอย่างอิสระหรือยัง หรือเราแค่เชื่อเพราะมันออกมาจากระบบ? | Ask who verified it and how; no independent re-derivation → treat the score as unverified |
 
 ## Common biases by rung
 
