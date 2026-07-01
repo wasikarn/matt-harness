@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.8.1] — 2026-07-01
+
+Follow-up to v0.8.0's roadmap: widened harness-audit check 37's scan scope
+from skills/commands/agents to `docs/*.md` (+ `docs/agents/`, `docs/reference/`,
+`docs/skill-template/`; `docs/research/*.md` deliberately excluded as dated
+historical snapshots). First run under the wider scope caught a real instance:
+`docs/common-mistakes.md`'s "Mistake 5" section described a full 3-gate
+pipeline with runnable self-check commands, but 2 of the 3 gates
+(`scripts/plan-linter.py`, `hooks/lifecycle/task-lifecycle.sh`) were never
+built — fabricated tooling presented as live. Rewrote the section to describe
+only the one real gate (orchestrate's per-task validation chain).
+
+Harness-audit: 0C/0W/0I. Full gauntlet green.
+
 ## [0.8.0] — 2026-07-01
 
 Fresh engineering-constitution audit (second pass same day, post-v0.7.0 baseline)

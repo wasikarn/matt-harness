@@ -121,29 +121,17 @@ The count should be > 0 — orchestrate's F9 template embeds the Done-when contr
 
 **Root cause:** The planning phase optimistically assumed correctness; the execution phase had no post-work gate. Quality was eyes-only, not command-verified.
 
-**Harness fix:** Three gates, one pipeline:
+**Harness fix:** the real, currently-shipped gate is the per-task validation chain — after each wave completes, the lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain inline on each completed task before starting the next wave. The dispatch-side companion is the orchestrator's Step 4 blast-radius + dependency analysis (`skills/orchestrate/SKILL.md` § Procedure step 4), which catches overlapping file ownership and missing dependencies before a wave even starts.
 
-1. **Pre-flight plan linter** — `scripts/plan-linter.py`. Before any agent is spawned, the lead runs the linter against the plan file (`.claude/tasks/<slug>.md`) to catch pre-execution risks: overlapping file ownership, missing migration tasks, auth/secrets without a security reviewer, and absent integration validators. Bad plans are rejected with reasons; the user revises and re-runs. The orchestrator's Step 4 blast-radius + dependency analysis is the dispatch-side companion gate (`skills/orchestrate/SKILL.md` § Procedure step 4).
-
-2. **F7 test-claim gate** — in `hooks/lifecycle/task-lifecycle.sh` (Phase 2 F7, 2026-06-12). A subagent that claims "tests pass" or "pytest" in its task subject/description but does NOT include a runnable `validation_command:` field is blocked from completing (exit 2 + stderr feedback). The subagent must add the command and re-trigger completion. This is the post-execution half of the pipeline.
-
-3. **Per-task validation chain** — for single-task validation after each wave completes. The lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain inline on each completed task before starting the next wave.
-
-The plan linter can pre-check a plan before `orchestrate` dispatch:
-
-```bash
-python3 "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" .claude/tasks/<slug>.md --strict
-```
+A dedicated pre-flight plan linter and a standalone test-claim hook were previously drafted here as a fuller pipeline, but neither was ever built — no `scripts/plan-linter.py` or `hooks/lifecycle/task-lifecycle.sh` exists in this repo (a 2026-07-01 audit caught this section describing them as live). If a genuine gap shows up (bad plans repeatedly reaching dispatch, or tests claimed but not run), build the narrowest gate that actually fixes the observed failure — don't reintroduce these as documentation without shipping them.
 
 **Self-check:**
 
 ```bash
-grep -c "validation_command\|F7" "${KBG_PLUGIN_ROOT}/hooks/lifecycle/task-lifecycle.sh"
 grep -c "validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
-test -x "${KBG_PLUGIN_ROOT}/scripts/plan-linter.py" && echo "plan-linter present"
 ```
 
-All three should be non-zero / present. If any is missing, that gate is gone from the documented surface.
+Should be non-zero. If it's zero, the one real gate this section describes is gone from the documented surface.
 
 ---
 

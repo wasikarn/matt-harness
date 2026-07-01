@@ -14,7 +14,11 @@
 # journal; the CRIT set is reserved for the irrecoverable/tamper class).
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
           "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
-          "$CLAUDE_DIR"/agents/*.md; do
+          "$CLAUDE_DIR"/agents/*.md \
+          "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
+          "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md; do
+  # docs/research/*.md is excluded on purpose — those are dated design/analysis
+  # snapshots that correctly describe deleted surfaces as history, not doc-rot.
   [ -f "$_f" ] || continue
   # Pull interpreter-prefixed script paths: <interp> [flags] .../scripts/NAME.(sh|py|js)
   # Tolerate a ${VAR}/ or path prefix before scripts/; capture the basename.
