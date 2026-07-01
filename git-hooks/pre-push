@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # pre-push — run the full parallel validation gauntlet before allowing push.
 #
-# This is the heavy gate. It runs plugin-validate, self-audit, the full
-# critical-hook behavioral suite, and the eval gate (all datasets + all
-# regressions) in parallel. Failures are reported with log tails.
+# This is the heavy gate. It runs plugin-validate, self-audit, shell/JSON lint,
+# and the deny-gate behavioral suite (hooks/tests/) in parallel. The broader
+# fleet critical-hooks suite and eval dataset gate are pending rebuild.
+# Failures are reported with log tails.
 #
 # Note: the L4 autonomy exit-tripwire backstop (scripts/l4/exit-tripwire.sh)
 # was removed when ADR 0006 retired the L2–L5 bounded-autonomy ratchet

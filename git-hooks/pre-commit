@@ -10,12 +10,13 @@
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
-#   4. eval fixtures staged → run only the affected eval fixtures/datasets
-#      (selected by scripts/select-affected-fixtures.py).
+#   4. eval fixtures staged → run affected fixtures via the eval harness.
+#      Dormant: eval/run-eval.py + the selector were removed in the c452102
+#      reset, so this layer is a graceful no-op until the harness is rebuilt.
 #
-# The three heavy layers above run in parallel so the commit gate stays fast.
-# The full eval gate and critical-hooks behavioral suite are intentionally
-# deferred to the pre-push gauntlet.
+# The heavy layers above run in parallel so the commit gate stays fast.
+# The pre-push gauntlet adds the deny-gate behavioral suite; the broader
+# fleet critical-hooks suite and eval dataset gate are pending rebuild.
 #
 # Wired via: git config core.hooksPath git-hooks
 # Bypass:    git commit --no-verify  (use only when you know why)
