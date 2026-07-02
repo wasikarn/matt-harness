@@ -18,6 +18,7 @@ Compact a freeform task description into a single, paste-ready completion-condit
 1. **Intake**
    - Read the freeform task description passed as the skill argument, plus whatever repo/task context is already in the conversation.
    - Name the implied deliverable in one sentence, and note anything that reads as irreversible or too vague to check mechanically.
+   - Failure mode to avoid: inventing a deliverable the input doesn't support — if the description is too thin to name one, that's the signal to move to step 2's clarify, not to guess silently.
    - Done when: you can state the deliverable in one sentence, or you know exactly what's missing to state it.
 
 2. **Clarify only if consequential**
@@ -33,7 +34,7 @@ Compact a freeform task description into a single, paste-ready completion-condit
    - Done when: every clause in the draft names a command or artifact Claude will produce real output for — never a feeling.
 
 4. **One-way-door screen**
-   - Scan the compacted condition for irreversible-action language. This is a semantic screen, not literal string matching. Watch for: push, deploy, release, merge, delete/rm/drop/truncate, force-push/overwrite, send/email/notify/publish/post, pay/charge/refund/transfer, rollback/migrate against prod, close/tag/revoke/rotate credentials — and semantic equivalents in any language, including Thai (ปล่อย/deploy, ส่ง/send, ลบ/delete).
+   - Scan the compacted condition for irreversible-action language. This is a semantic screen, not literal string matching. Watch for: push, deploy, release, merge, delete/rm/drop/truncate/cancel, force-push/overwrite, send/email/notify/publish/post, pay/charge/refund/transfer, rollback/migrate (any schema or data migration, not just ones naming "prod" — a migration against a real database is a one-way door regardless of environment name), close/tag/revoke/rotate credentials — and semantic equivalents in any language, including Thai (ปล่อย/deploy, ส่ง/send, ลบ/delete).
    - Strip and flag by default — every one-way-door fragment gets its own excluded note; never bake it into the loop, never silently drop it either.
    - Failure mode to avoid: stripping a verb that's the task's own subject matter, not an action the loop would take — "fix the delete-account bug" names a bug, it does not ask the loop to delete anything. Only strip when the sentence's grammatical action is the irreversible verb.
    - Edge case: if stripping would empty the condition (the whole task was the one-way-door action, e.g. "deploy to prod"), do not print a bare `/goal` — tell the user this task is entirely a manual action and there is nothing left to loop on.
@@ -86,7 +87,7 @@ Input: `kbg:goal-craft "fix auth bug แล้ว deploy ให้ด้วย"`
 
 Output:
 ```
-/goal npm test ใน src/auth ผ่านหมด และ git status สะอาด, ไม่แก้ไฟล์นอก src/auth or stop after 15 turns
+/goal npm test ใน src/auth ผ่านหมด และ git status สะอาดนอก src/auth or stop after 15 turns
 ```
 ```
 ⚠ ตัดออก: "deploy" — เป็น one-way door ต้องอนุมัติเองหลัง goal เสร็จ
