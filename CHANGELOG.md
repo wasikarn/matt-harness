@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.22.1] — 2026-07-02
+
+`goal-craft`'s worked example shipped with broken Thai ("สะอาดนอก" — two words jammed
+with no connector, fixed `72e7a12`) and the user flagged this as a recurring pattern,
+not a one-off. Diagnosis: compression pressure colliding with Thai grammar, worst
+when mixing English technical terms into a terse Thai reply. This is a
+generation-quality issue, not a rule-adherence gap — natural-language naturalness
+can't be mechanically verified the way JSON/YAML syntax can, so no hook or regex
+"Thai linter" was built (would be verifier theater and would contradict this repo's
+own "score, not feel" doctrine).
+
+Added a one-line nudge to `output-styles/staff-eng.md`'s Voice section: prefer a
+complete natural clause over a jammed compound, use a full connective word instead of
+mashing terms together. Paired with a feedback memory that accumulates concrete
+caught patterns over time — abstract "write good Thai" is a no-op per matt-pocock
+doctrine, specific before/after pairs are the only lever that actually moves.
+
 ## [0.22.0] — 2026-07-02
 
 Added `skills/goal-craft/SKILL.md` — composes a paste-ready completion-condition
