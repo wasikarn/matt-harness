@@ -244,11 +244,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**:
-  - Rule 1 (Think before coding) → **Phase 1 scope** + **Phase 2 pinned window** establish what's under review before agents dispatch
-  - Surface conflicts, don't average → **Phase 5** preserves per-agent attribution; do NOT blend or dedupe across agents. Scrutinize gate challenges intent before tiering — simpler alternatives are surfaced, not averaged away.
-  - Tests verify intent, not just behavior → code-reviewer's behavioral test-coverage lens focuses on behavioral coverage, not line coverage
-  - Fail loud → silent-failure-hunter catches hidden failures before merge. Phase 5 blanket-approval rejection prevents false confidence from empty "LGTM" agents.
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.

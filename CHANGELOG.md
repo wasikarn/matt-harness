@@ -5,6 +5,50 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.24.0] — 2026-07-02
+
+Token-optimization pass across always-loaded and frequently-invoked surfaces,
+run via `/markdown-token-optimizer` (whole-project scope) then applied in full
+on user instruction. Trimmed duplication and generic-textbook boilerplate
+without cutting distinct guidance — every edit was verified by direct read
+before and after, not applied mechanically from the survey.
+
+**Tier 1 (every session):**
+
+- `output-styles/staff-eng.md` — deduped 3 pairs of near-identical Voice
+  bullets (~24 → ~21), folding restated content into the surviving bullet.
+- `docs/METHODOLOGY.md` — compressed Rule 1's evidence-citation parenthetical.
+
+**Tier 2 (on-demand, frequently invoked):**
+
+- `agents/performance-optimizer.md` — rewrote 6 sections from full BAD/GOOD
+  code snippets to checklists/tables (400 → 186 lines); kept the kbg-specific
+  contract content (Guardrails, Report Format, Red Flags, Success Metrics).
+- Prompt Defense Baseline block, 10 of 12 `agents/*.md` files (byte-identical
+  copy, no shared-include mechanism exists for agent markdown) — compressed
+  6 bullets to 3. `spec-miner.md`'s variant (extra repo-content-as-untrusted-
+  input + Bash-mutation-reject bullets) and `ideate-critic.md` (no PDB block)
+  were left as-is.
+- `skills/review-pr/SKILL.md`, `skills/orchestrate/SKILL.md` (worked example
+  trimmed to 1 full task block + 3 condensed stubs),
+  `skills/orchestrate/reference.md` (3 repeated security-override rows →
+  1 footnote), `skills/dart-flutter-patterns/SKILL.md` (duplicate teaser
+  snippets removed), `commands/ideate/COMMAND.md` (44→105-agent narrative
+  deduped to 1 telling + 2 cross-references), `agents/code-reviewer.md`
+  (BAD/GOOD snippets cut from ~10 to ~7, 1 representative per section).
+
+**Tier 3 (tech-humanize reference tier) — investigated, not touched:**
+
+The survey flagged `patterns-thai.md` (dead §41, sprawling §32.1–32.10),
+`patterns-universal.md` (30–40% trimmable before/afters), and `examples.md`
+(mergeable side-by-side tables) as candidates. Direct reading found none of
+the three premises held: §41 self-documents why it's retained, §32.1–32.10
+is a non-redundant taxonomy referenced by exact number elsewhere in the same
+file, the universal patterns are already near the format's floor, and the
+Thai/English side-by-side tables demonstrate two genuinely different worked
+examples, not duplicates. Left unchanged rather than force an edit the
+evidence didn't support.
+
 ## [0.23.0] — 2026-07-02
 
 Restored `skills/tech-humanize/` — de-AI-ifies dev/tech writing in English and Thai

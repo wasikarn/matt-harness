@@ -13,7 +13,6 @@
 | Urgent, not important, bounded + verifiable | — | **L4** | **scripted execution** — pipeline/batch via bash runner |
 | Urgent, not important, trivial | — | L2 | **inline** — orchestrating costs more (guardrail) |
 | Neither | — | — | **drop** — mark `wontfix` |
-| **Any** touching auth, secrets, credentials, crypto, input validation, or dependencies | **YES** | **L3** | **security-reviewer first** — write agent takes it only after security findings land |
 
 ### Impact × Effort (no genuine time pressure)
 
@@ -23,7 +22,6 @@
 | High impact + high effort | — | L3 | **schedule** — dispatch `code-architect` (or run `/deep-dive`) for deep prep before build |
 | Low impact + low effort | — | L3 | **delegate** to the right agent, or **inline** if trivial — batch similar items |
 | Low impact + high effort | — | — | **drop** — thankless task / money pit; mark `wontfix` unless user insists |
-| **Any** touching auth, secrets, credentials, crypto, input validation, or dependencies | **YES** | **L3** | **security-reviewer first** — write agent takes it only after security findings land |
 
 ### Value × Risk (architecture decisions, framework adoption, release bets)
 
@@ -33,7 +31,8 @@
 | High value + high risk | — | L3 | **mitigate then do** — run `/deep-dive` to de-risk, prototype, or ADR before committing |
 | Low value + low risk | — | L3 | **do last** — batch with similar items; delegate if bounded |
 | Low value + high risk | — | — | **avoid** — mark `wontfix` unless forced by external constraint |
-| **Any** touching auth, secrets, credentials, crypto, input validation, or dependencies | **YES** | **L3** | **security-reviewer first** — write agent takes it only after security findings land |
+
+**Security override — all three matrices above:** any item touching auth, secrets, credentials, crypto, input validation, or dependencies routes to `security-reviewer first` (L3) regardless of quadrant — the write agent takes it only after security findings land.
 
 **No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk here. If N≥3 alternatives need ranking, hand off to `kbg:score-decision`'s Ranking mode (weighted-sum + per-option fatal-weakness floor) rather than scoring this binary matrix numerically.
 

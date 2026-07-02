@@ -436,12 +436,10 @@ These are how this skill goes wrong. Watch for them.
   not done ideate. You have done a wider single thought. The
   Agent/Task tool gives each branch a fresh context. Use it.
 - **Collapsing Phase 1 + Phase 3 into one wave.** The 2-wave
-  structure is a code contract, not a vibe. See
-  [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing).
-  A single-wave variant of 8 agents would exceed the F8.5 hard cap
-  (5 per wave) enforced in `skills/orchestrate/SKILL.md` §"Bounded
-  fan-out — hard cap (F8.5)" — there is no eval fixture for this,
-  `eval/` does not exist in this repo.
+  structure is a code contract, not a vibe — a single-wave variant
+  of 8 agents would exceed the F8.5 hard cap (5 per wave). See
+  [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing)
+  for the full rationale and enforcement caveat.
 - **Silent parse failures.** If a Diverge branch returns empty
   or unparseable, surface the failure to the user — do not
   pretend the run succeeded. The upstream `engine.ts:88-91`
@@ -492,15 +490,11 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   must be given fresh context.
 - **Bounded-agent-spawning precedent** —
   `memory/bounded-agent-spawning.md`
-  — the 2026-06-12 44→105-agent failure mode this skill's 2-wave
-  cap is designed to prevent.
-- **What actually enforces this (no fixture)** — `eval/` does not
-  exist in this repo, and CLAUDE.md states the eval gate is
-  "pending rebuild." Only the peak-5-per-wave part is code-held,
-  by the F8.5 clamp in `skills/orchestrate/SKILL.md`; the
-  "exactly 2 waves" shape is this command's own design, not
-  something F8.5 polices. Neither is backed by a regression
-  fixture. Do not cite a fixture that isn't built.
+  — the failure mode this skill's 2-wave cap is designed to
+  prevent; full narrative + enforcement caveat in
+  [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing).
+  Not backed by a regression fixture — do not cite one that isn't
+  built.
 - **Eval rigor limitation (explicit)** — this skill ports
   faithfully from an n=1 upstream demo. The
   `docs/research/kbg-vs-adhd.md`

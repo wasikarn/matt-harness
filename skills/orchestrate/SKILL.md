@@ -157,113 +157,21 @@ Minimal blast radius — no new dependencies.
 
 Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
 
-**Task 2 — Validator: review PR**
+**Task 2 — Validator: review PR** (same template shape as Task 1, abbreviated here)
 
-```
-# Task: Review health endpoint PR
-
-## What
-Review `src/api/routes/health.py` for correctness, style, and test coverage.
-
-## Where
-`src/api/routes/health.py` and any tests that cover it.
-
-## Focus
-Correctness over speed.
-
-## Deliverable
-A verdict file at `.scratch/health-review/verdict.md` with pass/fail and file:line citations.
-
-## FILES YOU OWN
-(Validator is read-only — no owned files.)
-
-## UPSTREAM CONTRACTS
-- From task T1: `src/api/routes/health.py` — read from `tasks["T1"].files` in the board.
-
-## Files + Criteria + Constraints
-| File | Criterion | Constraint |
-|------|-----------|------------|
-| src/api/routes/health.py | passes `bash -n`, has tests, no secrets | read-only |
-
-## Done-when
-- [ ] Verdict file exists at `.scratch/health-review/verdict.md`
-- [ ] Every finding cites file:line
-- [ ] No edit to any file (read-only validation)
-```
+What: review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md` with pass/fail + file:line citations. Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, every finding cites file:line, no file was edited.
 
 Spawn **ungated** — validators are read-only by allowlist: they do not hold Edit/Write. They do hold `Bash` for read-only inspection (git diff/log, tests), but there is no runtime backstop if the prompt drifts toward a mutating command — the read-only-by-behavior guard (`hooks/gates/validator-bash-guard.sh`) was deleted in the v0.6.0 reset and not rebuilt. Read-only is enforced by the allowlist plus prompt doctrine only.
 
-**Task 3 — Fixer: address review findings (conditional)**
+**Task 3 — Fixer: address review findings** (conditional — only spawned if Task 2's verdict is `fail`)
 
-Only spawned if Task 2's verdict is `fail`.
-
-```
-# Task: Fix health endpoint review findings
-
-## What
-Address every finding from T2 verbatim.
-
-## Where
-`src/api/routes/health.py` and related tests.
-
-## Focus
-Precision over creativity — apply the fix exactly as described.
-
-## Deliverable
-`src/api/routes/health.py` passes all T2 findings.
-
-## FILES YOU OWN
-- src/api/routes/health.py
-
-## UPSTREAM CONTRACTS
-- From task T2: verbatim findings from `.scratch/health-review/verdict.md` — reproduce each in the fix commit message.
-
-## Files + Criteria + Constraints
-| File | Criterion | Constraint |
-|------|-----------|------------|
-| src/api/routes/health.py | T2 findings resolved | no regression |
-
-## Done-when
-- [ ] Every T2 finding is either fixed or explicitly rejected with reason
-- [ ] `bash -n src/api/routes/health.py` exits 0
-- [ ] No new files outside FILES YOU OWN
-```
+What: address every T2 finding verbatim. Upstream contract: the verbatim findings from `.scratch/health-review/verdict.md`, reproduced in the fix commit message. Done-when: every T2 finding is fixed or explicitly rejected with reason, no new files outside FILES YOU OWN.
 
 Spawn with `AskUserQuestion` (gated — fixer holds Edit/Write/Bash).
 
 **Task 4 — Re-validator: OWASP scan**
 
-```
-# Task: OWASP scan on final health endpoint
-
-## What
-Run security scan on the final `src/api/routes/health.py`.
-
-## Where
-`src/api/routes/health.py`
-
-## Focus
-Security correctness — no injection, no secret leakage.
-
-## Deliverable
-Security verdict at `.scratch/health-review/security-verdict.md`.
-
-## FILES YOU OWN
-(Validator is read-only.)
-
-## UPSTREAM CONTRACTS
-- From task T3: final diff — the lead runs `git diff` after Task 3 and pastes it here.
-- From task T1: `src/api/routes/health.py` — verify the final code does not re-introduce old patterns.
-
-## Files + Criteria + Constraints
-| File | Criterion | Constraint |
-|------|-----------|------------|
-| src/api/routes/health.py | no OWASP Top 10 patterns | read-only |
-
-## Done-when
-- [ ] Security verdict exists and is `pass`
-- [ ] No edit to any file
-```
+What: security scan on the final `src/api/routes/health.py`. Upstream contracts: the final diff from Task 3 (lead runs `git diff` after Task 3 and pastes it in) plus Task 1's file (verify the final code doesn't re-introduce old patterns). Done-when: security verdict exists and is `pass`, no file was edited.
 
 Spawn **ungated** — re-validators are read-only.
 
@@ -301,9 +209,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 1. **Hard cap = 5 agents per wave; advisory floor = 3 (F8.4).** Below 3: under-parallelized — lead does too much (F8.4 advisory; the dispatcher flags an agent fan-out `<3` but never blocks; a fixed diverse-lens panel like code-review + security-review = 2 sets `panel: true` on the `parallel` stage to opt out — it is not an under-split builder fan-out). Above 5: coordination overhead dominates and the audit goes wrong before it even starts (ref: [[bounded-agent-spawning]]). The lead MUST clamp any work-list >5 to 5 before spawning, and queue the rest in a `deferred-<date>.md` for a follow-up wave. (The cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5 on owner request — F8 band and F8.5 cap now coincide at 3-5.)
 2. **The cap is a number in code, not prose.** "Don't overspawn" is a vibe; `if len(worklist) > 5: worklist = worklist[:5]` is a contract. When you fan out via the Workflow tool, the clamp is the JS work-list slice before `parallel()`/`pipeline()`; when you dispatch inline, you are the clamp.
 3. **Worklist count ≠ spawn count.** Audit + verify is a SECOND fan-out layer on top of the work-list. If the work-list already hit 44 and the audit doubles to 88, the cap on the work-list didn't help. The cap must be on TOTAL spawned agents across the entire plan lifetime, not on the work-list size.
-4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. Your dispatch code (clamping the work-list to the cap before spawning) is the enforcement point.
-
-**Why this is doctrine, not preference:** the 2026-06-12 audit at 105 agents was caused by a soft cap. The next agent author will write the same soft cap again unless the hard cap is a number in code at the dispatch boundary.
+4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. Your dispatch code (clamping the work-list to the cap before spawning) is the enforcement point — doctrine, not preference, because the next agent author will write the same soft cap again unless the hard cap is a number in code.
 
 **Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time.
 
