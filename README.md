@@ -106,13 +106,14 @@ Agents run in a delegated sub-task context — Claude spawns them automatically 
 | `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
 | `silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns |
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
-| `typescript-reviewer` · `python-reviewer` | Language-specific review — type safety, idioms, async correctness |
+| `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` | Language-specific review — type safety, idioms, async correctness, Dart/Flutter widgets and state management |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
 | `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 
 ### Tathep Platform
 
-kbg-native skills for the Tathep project stack — created because no upstream fit existed.
+Tathep-scoped stack-pattern skills — kbg-native where no upstream fit existed,
+restored unmodified from ECC where it did (`dart-flutter-patterns`).
 
 | Skill | When to reach for it |
 |---|---|
@@ -125,6 +126,7 @@ kbg-native skills for the Tathep project stack — created because no upstream f
 | `kbg:fastapi-patterns` | FastAPI structure, Pydantic v2, dependency injection, async handlers, service layers |
 | `kbg:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns |
 | `kbg:tauri-v2-patterns` | Tauri v2 IPC commands, capabilities / permissions model, Rust app state, events, and plugins |
+| `kbg:dart-flutter-patterns` | Dart/Flutter null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture |
 
 ---
 
@@ -133,8 +135,8 @@ kbg-native skills for the Tathep project stack — created because no upstream f
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 11 specialist subagents (.md each)
-├── skills/               # 45 workflow skills (SKILL.md per directory)
+├── agents/               # 12 specialist subagents (.md each)
+├── skills/               # 44 workflow skills (SKILL.md per directory)
 ├── commands/             # 22 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # senior-eng (default), staff-eng (opt-in)
