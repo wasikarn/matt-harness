@@ -13,18 +13,11 @@ Before any non-trivial act, run:
 2. **Blast radius?** Scope the damage if this goes wrong. If it's wide, narrow the change or checkpoint first.
 3. **Riskiest assumption?** Name the thing most likely to invalidate the plan. Probe it before committing.
 
-### Reasoning-scaffold menu
+### Pressure-test before committing
 
-Pick the mode that matches the uncertainty:
+Run the triad inline, then call `advisor()` before substantive work and before declaring done — that is the check that is actually load-bearing (measured 2026-07-02: 0 `kbg:decide` invocations across 182 real sessions vs. 55 `advisor()` calls in the same corpus). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.
 
-| Mode | When to reach for it |
-|---|---|
-| `doubt-driven` | Starting a task — surface hidden assumptions before any writes |
-| `probe` | System with unknowns — trace causation, find leverage points |
-| `decide` | ≥2 viable options — force a recommendation, don't enumerate |
-| `strategize` | Long horizon — decompose into ordered bets, identify dependencies |
-| `critical-eval` | Plan or proposal on the table — stress-test it adversarially |
-| `clarify-first` | Ambiguous prompt — resolve scope before dispatch |
+For a genuinely hard, contested-diagnosis choice where the reasoning itself needs building from scratch (not just pressure-testing an existing call), `kbg:decide` is available on-demand — 5 modes (clarify/probe/decide/critique/strategize), see `skills/decide/SKILL.md`. Reach for it when `advisor()`-level pressure-testing isn't enough, not as a routine step.
 
 ---
 

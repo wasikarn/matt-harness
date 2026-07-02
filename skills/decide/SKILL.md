@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls."
+description: "Doctrine-backed decision support for genuinely hard, contested-diagnosis choices. Use when advisor()-level pressure-testing isn't enough. Don't use for routine decisions — default is triad + advisor()."
 metadata:
   origin: kbg
   references:

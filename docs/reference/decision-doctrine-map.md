@@ -11,6 +11,15 @@ The reasoning scaffolds are framing tools, **not** a proven accuracy boost — s
 `reasoning-models.md` for the honesty caveat. Pick by **reversibility**, the axis
 the Staff-Engineer Thinking Loop implies.
 
+**`kbg:decide` is de-scoped from the default path (2026-07-02).** It was originally
+presented here as the bound mechanism for most rows below. Measured evidence said
+otherwise: 0 invocations across 182 real production sessions and this repo's own
+dogfooding session, against 55 `advisor()` calls and 100 calls to other `kbg:` skills
+in the same corpus — `advisor()` + inline reasoning is what's actually load-bearing.
+The skill still exists (`skills/decide/SKILL.md`, not deleted) for the genuinely hard,
+contested-diagnosis case; it's no longer the default row for routine non-trivial
+decisions.
+
 ## Decision-sizing triad (run before any non-trivial act)
 
 Owned by **METHODOLOGY.md Rule 1, sub-rule "Size the decision before acting"**.
@@ -27,11 +36,9 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 
 | Situation | Scaffold | Bound to (real surface) | Owning doctrine |
 |---|---|---|---|
-| scope vague / assumptions unstated | `clarify-first` | `kbg:decide` clarify mode | METHODOLOGY Rule 1 (Think Before Coding) |
-| read-only analysis of a design choice before committing | `probe` | `kbg:decide` probe mode | METHODOLOGY Rule 1 |
-| a **reversible** choice worth a Judgment-Ladder pass | `decide` | `kbg:decide` decide mode (default) | METHODOLOGY Rule 1 + `judgment-ladder.md` |
-| an **irreversible** / long-horizon commitment under contested diagnosis | `strategize` | `kbg:decide` strategize mode | METHODOLOGY Rule 1 + `strategic-judgment.md` |
-| audit existing reasoning (plan, ADR, RFC) for hidden assumptions | `critical-eval` | `kbg:decide` critique mode | METHODOLOGY Rule 1 |
+| any non-trivial decision — pressure-test before committing | triad + `advisor()` | `advisor()` tool — measured load-bearing (55 calls across 182 real sessions vs. 0 for `kbg:decide` in the same corpus) | METHODOLOGY Rule 1 |
+| closing a consequential / hard-to-reverse decision | revisit trigger + progress metric | stated in the closing message — no dedicated artifact required | METHODOLOGY Rule 1 |
+| genuinely hard, contested diagnosis — reasoning needs building from scratch, not just pressure-testing | `kbg:decide` (clarify/probe/decide/critique/strategize) | `skills/decide/SKILL.md` — on-demand, not a routine step | METHODOLOGY Rule 1 + `judgment-ladder.md` / `strategic-judgment.md` |
 | disprove a confident output in fresh context before committing | `doubt-driven` (external) | spawn a fresh-context skeptic with no view of the work — not a `kbg:decide` mode, canonical instance is the adversarial pass in `kbg:review-pr` | METHODOLOGY Rule 1 |
 | a mutation or ship | the harness **denies the irrecoverable set computationally** (`hooks/gates/irrecoverable.sh` — destructive Bash/git/SQL patterns) and **advises on the rest** (`hooks/advisory/flow-nudge.sh`); the **operator is the authority at every irreversible boundary** | `CLAUDE.md`'s Operating model (under §Architecture) |
 | editing the code that judges the model (a gate, `hooks.json`, or the audit verifier) | `hooks/gates/verifier-protect.sh` — `permissionDecision: ask`, no env-var bypass | `CLAUDE.md`'s "Why — the unifying crux" (verifier-separation) |
