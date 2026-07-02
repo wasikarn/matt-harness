@@ -79,7 +79,7 @@ _Personals/kbg-harness_
 ### Agents (11)
   ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
-  ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code.
+  ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code.
   ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
   ◇ performance-optimizer          Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
   ◇ python-reviewer                Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes.
@@ -106,7 +106,7 @@ _Personals/kbg-harness_
 |---|---|---|---|
 | build-error-resolver | Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
-| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, and behavioral test-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
@@ -184,7 +184,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-02T01:59:51Z_
+_Generated: 2026-07-02T06:25:48Z_
 
 ---
 

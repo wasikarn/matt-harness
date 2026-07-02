@@ -65,6 +65,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - `security` aspect (or `all`) AND changes touch auth/secrets/external input → `security-reviewer`
    - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `code-reviewer` with the **type-design lens** (encapsulation, invariants, illegal-states-unrepresentable)
    - `ux` aspect (or `all`) AND user-facing UI/components/copy/flows changed → `code-reviewer` with the **UX/a11y lens** (interaction flow, WCAG basics)
+   - `db` aspect (or `all`) AND migrations/schema/query files changed (`.sql` files, Drizzle schema, or query-builder calls touched) → `code-reviewer` with the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety)
 2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY code-reviewer's behavioral test-coverage lens (not the general-quality lens). `kbg:review-pr code tests` runs code-reviewer with both the general-quality and test-coverage lenses.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
 
