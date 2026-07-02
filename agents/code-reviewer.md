@@ -154,6 +154,16 @@ const result = await db.query(query, [userId]);
 - **console.log statements** — Remove debug logging before merge
 - **Missing tests** — New code paths without test coverage
 - **Dead code** — Commented-out code, unused imports, unreachable branches
+- **Duplicated helper/util** — New code reimplements something that already
+  exists in the project (a formatter, validator, fetch wrapper, date util).
+  Before flagging, actually search (`grep`/`glob` for the likely name or
+  behavior in `utils/`, `lib/`, `helpers/`, or similar) — a hunch that "this
+  probably exists somewhere" without checking is exactly the kind of
+  unverified finding the Pre-Report Gate above exists to block.
+- **SRP violation** — A function or class doing multiple unrelated jobs (e.g.,
+  parsing input, sending an email, and writing to the DB in one function).
+  Split by responsibility, not by line count — a 15-line function doing three
+  unrelated things is a smaller violation than a 60-line function doing one.
 
 ```typescript
 // BAD: Deep nesting + mutation
