@@ -42,6 +42,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 **Goal**: Smallest surgical change that resolves the repro.
 
 **Actions**:
+0. **Branch setup:** resolve the production branch — the branch prod deploys/tags cut from (repo CLAUDE.md → deploy config → latest release tag; never assume the repo default branch — gitflow defaults are integration branches). Then `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`.
 1. Localize the bug — which file, which line.
 2. Implement the fix. **No refactors.** No "while I'm here" changes.
 3. Run the repro again — confirm it's fixed.
@@ -86,9 +87,9 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    Fixes #1234
    ```
 2. Push branch: `git push origin <branch>`
-3. Create PR with emergency labels:
+3. Create PR with emergency labels — **`--base` is the production branch the hotfix was cut from, never the integration branch (develop):**
    ```bash
-   gh pr create --title "hotfix(P0): ..." --body "Emergency fix for ...\n\nRepro: ...\nRollback path: ..." --label "hotfix" --label "P0"
+   gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body "Emergency fix for ...\n\nRepro: ...\nRollback path: ..." --label "hotfix" --label "P0"
    ```
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?"
    - `Merge now (Recommended when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge
@@ -101,8 +102,9 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - `--squash` collapses to one commit.
    - `--delete-branch` cleans up.
    - **Caveat:** If repo has merge queues with "Do not allow bypassing" enabled, `--admin` may be blocked. Escalate to repo admin or use a GitHub App token.
-6. Pull locally: `git checkout <base-branch> && git pull`
+6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from)
 7. Verify merge landed: `git log --oneline -3`
+8. If the repo has an integration branch (`develop`): backmerge `<prod-branch>` → `develop` immediately (merge commit, not rebase) — or open the backmerge PR now and record it in Phase 6 notes.
 
 ---
 
@@ -160,6 +162,7 @@ Phase 6: <post-mortem scheduled Y/N | due date>
 ## Anti-Patterns
 
 - **"Fix forward without trying rollback"** — The fastest fix is usually the previous commit. Try it first.
+- **Hotfix PR to the integration branch** — basing on `develop` (or PR-ing a main-cut branch to `develop`) ships nothing to production and drags unreleased work into the release. Cut from the production branch; PR back to the same branch.
 - **"While I'm here..."** — Hotfix is not the time for cleanup. Every extra line increases rollback risk.
 - **"Subset of users = hotfix"** — Affecting only some users (even enterprise ones) is a bug, not an incident. Route to `/fix-bug`.
 - **Skipping repro** — "I know what the bug is" without reproducing is a guess. Repro first.

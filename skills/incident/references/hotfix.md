@@ -5,6 +5,7 @@ The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-
 ## Core Principles
 
 - **Stop the bleeding first.** Rollback or kill-switch is always faster than code. Only hotfix when rollback is impossible or insufficient.
+- **Branch from the production branch — resolve it first.** The production branch is the one prod deploys/tags actually cut from (check repo CLAUDE.md → deploy config → latest release tag). Never assume the repo default branch: in gitflow-style repos the default is the integration branch (`develop`), and a hotfix based there ships unreleased work. `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`. The PR targets `<prod-branch>` — never the integration branch. After merge: backmerge `<prod-branch>` → `develop` (merge, not rebase) if an integration branch exists.
 - **Severity drives speed.** P0 = ship in <15 min. P1 = <1 hr. P2 = <4 hr.
 - **Smallest possible change.** One file, one line if possible. No refactors, no cleanups.
 - **Server-side merge only.** Never `git merge` locally + push. Use `gh pr merge --admin`.
@@ -43,7 +44,7 @@ Infer from user input or ask explicitly.
 | Phase | Action | When |
 |---|---|---|
 | 0 → 1 | Rollback or kill-switch check | Before any code change |
-| 1 → 2 | Fix inline | After repro confirmed ≤5 min |
+| 1 → 2 | Branch `hotfix/<ticket>-<slug>` from `origin/<prod-branch>`, then fix inline | After repro confirmed ≤5 min |
 | 2 → 3 | Launch `code-reviewer` (+ `security-reviewer` if needed) | After fix + regression test |
 | 3 → 4 | Commit + push + `gh pr merge --admin --squash --delete-branch` | After zero Block findings |
 | 4 → 5 | `gh run watch` + repro against prod | After merge |

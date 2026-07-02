@@ -11,7 +11,8 @@ argument-hint: "[base-branch] (default: repo's default branch)"
 **Parse `$ARGUMENTS`**:
 - Extract any recognized flags (`--draft`)
 - Treat remaining non-flag text as the base branch name
-- If no base branch given, resolve the repo's actual default branch (don't assume `main`):
+- **Hotfix guard:** if the current branch matches `hotfix/*` and no base branch was given — STOP and ask for the base. A hotfix PR targets the **production branch** it was cut from (usually `main`); the repo default branch is often the integration branch (`develop`) or even a stale legacy branch, so a silent default misroutes the fix.
+- If no base branch given (non-hotfix), resolve the repo's actual default branch (don't assume `main`):
   ```bash
   gh repo view --json defaultBranchRef -q .defaultBranchRefName 2>/dev/null \
     || git remote show origin | awk '/HEAD branch/ {print $NF}'
