@@ -184,11 +184,10 @@ _Personals/kbg-harness_
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| senior-eng | Senior-engineering register for daily terminal work: friendly, direct, and always on-point. Lead with conclusions, state the strongest reason, prefer plain English, and use structure only when it carries information. Escalate to staff-eng when ownership, cross-team boundaries, or long-term consequences matter. |
-| staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
+| staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-02T06:43:09Z_
+_Generated: 2026-07-02T08:06:18Z_
 
 ---
 
@@ -265,7 +264,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `skills/` — workflow skills (SKILL.md per directory; `_lib` is a shared shell library, not an invokable skill)
 - `commands/` — slash commands
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-- `output-styles/` — senior-eng (default), staff-eng (opt-in)
+- `output-styles/` — staff-eng (sole live-response register)
 - `themes/` — catppuccin-mocha
 
 ### Quick Context

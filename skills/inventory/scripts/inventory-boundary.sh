@@ -259,7 +259,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `skills/` — workflow skills (SKILL.md per directory; `_lib` is a shared shell library, not an invokable skill)
 - `commands/` — slash commands
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-- `output-styles/` — senior-eng (default), staff-eng (opt-in)
+- `output-styles/` — staff-eng (sole live-response register)
 - `themes/` — catppuccin-mocha
 
 ### Quick Context

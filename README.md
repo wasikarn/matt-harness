@@ -56,10 +56,10 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 45 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
-| **Agents** | 11 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Skills** | 44 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Agents** | 12 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 22 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
-| **Output Styles** | 2 | `senior-eng` (default) · `staff-eng` (opt-in for cross-boundary decisions) |
+| **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
 
@@ -139,7 +139,7 @@ kbg-harness/
 ├── skills/               # 44 workflow skills (SKILL.md per directory)
 ├── commands/             # 22 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-├── output-styles/        # senior-eng (default), staff-eng (opt-in)
+├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
 ├── themes/               # catppuccin-mocha.json
 ├── scripts/              # Validation helpers (run-gauntlet.sh — full parallel gauntlet)
