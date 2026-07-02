@@ -87,7 +87,7 @@ Input: `kbg:goal-craft "fix auth bug แล้ว deploy ให้ด้วย"`
 
 Output:
 ```
-/goal npm test ใน src/auth ผ่านหมด และ git status สะอาดนอก src/auth or stop after 15 turns
+/goal npm test ใน src/auth ผ่านหมด และ git status สะอาด ยกเว้นไฟล์ใน src/auth or stop after 15 turns
 ```
 ```
 ⚠ ตัดออก: "deploy" — เป็น one-way door ต้องอนุมัติเองหลัง goal เสร็จ
