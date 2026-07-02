@@ -2,6 +2,7 @@
 name: staff-eng
 description: "Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register."
 keep-coding-instructions: true
+force-for-plugin: true
 ---
 
 # staff-eng
