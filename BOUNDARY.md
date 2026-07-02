@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (44)
+### Skills (45)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -24,6 +24,7 @@ _Personals/kbg-harness_
   ◇ effect-ts-patterns             Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases.
   ◇ eval-harness                   Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work.
   ◇ fastapi-patterns               FastAPI patterns: structure, Pydantic v2, dependency injection, async handlers, auth, service layers. Use when building FastAPI apps. Don't use for non-FastAPI backends (Flask/Django).
+  ◇ goal-craft                     Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly).
   ◇ grilling                       Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation.
   ◇ grpc-node-patterns             gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC.
   ◇ handoff                        Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates.
@@ -138,6 +139,7 @@ _Personals/kbg-harness_
 | effect-ts-patterns | Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
 | fastapi-patterns | FastAPI patterns: structure, Pydantic v2, dependency injection, async handlers, auth, service layers. Use when building FastAPI apps. Don't use for non-FastAPI backends (Flask/Django). | inline | auto |
+| goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | manual |
 | grilling | Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation. | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
 | handoff | Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates. | inline | manual |
@@ -187,7 +189,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-02T09:01:05Z_
+_Generated: 2026-07-02T10:54:28Z_
 
 ---
 

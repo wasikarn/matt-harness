@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.22.0] — 2026-07-02
+
+Added `skills/goal-craft/SKILL.md` — composes a paste-ready completion-condition
+string for Claude Code's native `/goal` command from a freeform task description.
+User-invoked only (`disable-model-invocation: true`); it never calls `/goal`, shells
+out, or spawns a process — text out, human pastes it in, every time. Auto-*dispatch*
+(a script launching `claude -p "/goal ..."` unattended) was explicitly rejected as
+reopening the retired L4/L5 "no model self-start" invariant, and mechanically
+wouldn't even set a goal on the user's own session (`claude -p` forks a separate
+headless run).
+
+Adapted from this repo's own retired `goal-spec` skill (shipped `c35afcc`, cut a day
+later as an unwired orphan in the `a518ad1` 242→86 consolidation — not rejected on
+merits). `goal-spec` wrote a persistent `PROMPT.md` for a human to review before a
+multi-session loop; `/goal` has no such built-in review gate, so `goal-craft` adds
+what `goal-spec` never needed: a one-way-door screen that strips push/deploy/delete/
+merge/send-type language out of the condition before assembly, flagging it for manual
+approval after the loop finishes instead of baking it into an unattended loop.
+
+Every condition must carry a measurable end state, a stated check Claude will
+actually run and paste output from (the evaluator reads only the transcript, calls
+no tools), and a turn/time bound — mirrors Rule 14 ("score, not feel") and the
+fake-done-guard doctrine (harness-audit check 34, arXiv 2606.10209 §3).
+
+Skills 44→45. Audit: 0 Critical / 0 Warnings / 0 Info.
+
 ## [0.14.0] — 2026-07-01
 
 User asked for a "Reasoning Governance System" — a 12-component generic meta-orchestration
