@@ -36,13 +36,15 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
       --arg sid "$session_id" \
       --arg tp "$transcript" '
       def rate:
-        if (.model | ascii_downcase | test("haiku")) then {i:0.80,o:4.0,cw:1.00,cr:0.08}
-        elif (.model | ascii_downcase | test("opus")) then {i:15.0,o:75.0,cw:18.75,cr:1.50}
-        else {i:3.0,o:15.0,cw:3.75,cr:0.30} end;
+        if (.model | ascii_downcase | test("haiku")) then {i:0.80,o:4.0,cw:1.00,cr:0.08,v:true}
+        elif (.model | ascii_downcase | test("opus")) then {i:15.0,o:75.0,cw:18.75,cr:1.50,v:true}
+        elif (.model | ascii_downcase | test("sonnet")) then {i:3.0,o:15.0,cw:3.75,cr:0.30,v:true}
+        else {i:3.0,o:15.0,cw:3.75,cr:0.30,v:false} end;
       . as $u | rate as $r |
       { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
         input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
         cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
+        rate_verified: $r.v,
         estimated_cost_usd: (
           ($u.input_tokens / 1e6 * $r.i) + ($u.output_tokens / 1e6 * $r.o) +
           ($u.cache_write_tokens / 1e6 * $r.cw) + ($u.cache_read_tokens / 1e6 * $r.cr) |
