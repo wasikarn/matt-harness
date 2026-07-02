@@ -7,8 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (45)
-  ◇ acli                           Compact Jira/Confluence bulk ops + ADF→markdown (~80% token cut). Use when bulk-editing work-items/pages. Thai: 'ย้ายสถานะหลายตัว', 'export JQL'. Don't use for single-ticket reads/creates, config, non-Atlassian trackers.
+### Skills (43)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -17,7 +16,6 @@ _Personals/kbg-harness_
   ◇ codebase-onboarding            Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups.
   ◇ context-budget                 Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
   ◇ cost-aware-llm-pipeline        Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips.
-  ◇ create-jira-ticket             Build a single Jira Bug/Story from the Thai PO/QA template. Use when the user says 'สร้างบั๊ก'/'สร้าง story'. Don't use for triage, bulk, edits, or non-Jira.
   ◇ decide                         Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls.
   ◇ diagnosing-bugs                Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos.
   ◇ domain-modeling                Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups.
@@ -91,7 +89,7 @@ _Personals/kbg-harness_
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (9)
+### Hooks (10)
   ◇ flow-nudge.sh                  shellcheck disable=SC2016  # python code in single quotes
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ path-hardcode.sh               Gate: block hardcoded /Users/<name> paths being written into .sh or .py files.
@@ -101,6 +99,7 @@ _Personals/kbg-harness_
   ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
   ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
   ◇ test-gates.sh                  shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
+  ◇ test-session-stop.sh           Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
 
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
@@ -120,7 +119,6 @@ _Personals/kbg-harness_
 ## Skills — Repo
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| acli | Compact Jira/Confluence bulk ops + ADF→markdown (~80% token cut). Use when bulk-editing work-items/pages. Thai: 'ย้ายสถานะหลายตัว', 'export JQL'. Don't use for single-ticket reads/creates, config, non-Atlassian trackers. | inline | auto |
 | adonisjs-patterns | AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks. | inline | auto |
 | agent-architecture-audit | Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review. | inline | auto |
 | ask-matt | Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows. | inline | manual |
@@ -129,7 +127,6 @@ _Personals/kbg-harness_
 | codebase-onboarding | Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups. | inline | auto |
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
-| create-jira-ticket | Build a single Jira Bug/Story from the Thai PO/QA template. Use when the user says 'สร้างบั๊ก'/'สร้าง story'. Don't use for triage, bulk, edits, or non-Jira. | inline | auto |
 | decide | Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls. | inline | auto |
 | diagnosing-bugs | Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos. | inline | auto |
 | domain-modeling | Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups. | inline | auto |
@@ -178,6 +175,7 @@ _Personals/kbg-harness_
 | cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
 | test-gates.sh | shellcheck disable=SC2016  # literal \$ in test payload strings is intentional |
+| test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), |
 
 ## Output styles — Repo
 | Style | Description |
@@ -186,7 +184,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-01T09:51:42Z_
+_Generated: 2026-07-02T01:59:51Z_
 
 ---
 

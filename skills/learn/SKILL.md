@@ -25,8 +25,8 @@ notices what belongs in it.
   `AskUserQuestion` gate; the operator approves each one. Reject = nothing written.
 - **No flag, by design.** The skill is `disable-model-invocation`-free so the model can reach it
   when the operator expresses the intent ("remember how we did this") — the in-flow gate, not a
-  user-only lockout, is the safety. (Mirrors the create-jira-* skills; contrast recursive-improve,
-  which IS flagged because it is a *mutation loop* that must not self-start.)
+  user-only lockout, is the safety. (Contrast recursive-improve, which IS flagged because it is a
+  *mutation loop* that must not self-start.)
 
 ## Procedure
 
