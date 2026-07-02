@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (43)
+### Skills (44)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -16,6 +16,7 @@ _Personals/kbg-harness_
   ◇ codebase-onboarding            Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups.
   ◇ context-budget                 Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
   ◇ cost-aware-llm-pipeline        Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips.
+  ◇ dart-flutter-patterns          Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend.
   ◇ decide                         Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls.
   ◇ diagnosing-bugs                Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos.
   ◇ domain-modeling                Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups.
@@ -76,10 +77,11 @@ _Personals/kbg-harness_
   ◇ COMMAND                        Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — or when the user explicitly types /ideate, asks to brainstorm, or says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Spawns 5 isolated agent calls under rotating cognitive frames (15-frame pool, 5 per run), scores on novelty/viability/fit, prunes traps, deepens top 3, with a fresh-context critic option. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook').
   ◇ COMMAND                        Land any code change end-to-end: classify (blank-slate vs already-scoped, then bug/feature/refactor) → implement → test → review → fix-loop → merge. Use when starting a non-trivial task or landing a scoped change, or when the user says 'ship this', 'land this change', 'ship task', 'ทำงานใหม่', 'เริ่มต้นทำงาน'. Don't use for: one-line fixes, pure research/exploration, version/release cuts (use /ship-release), or an already-approved PR ready to land (use /ship-merge directly).
 
-### Agents (11)
-  ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
+### Agents (12)
+  ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
   ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code.
+  ◇ flutter-reviewer               Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic.
   ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
   ◇ performance-optimizer          Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
   ◇ python-reviewer                Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes.
@@ -104,9 +106,10 @@ _Personals/kbg-harness_
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| build-error-resolver | Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, and Python. Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| build-error-resolver | Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
 | code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| flutter-reviewer | Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
@@ -127,6 +130,7 @@ _Personals/kbg-harness_
 | codebase-onboarding | Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups. | inline | auto |
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
+| dart-flutter-patterns | Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend. | inline | auto |
 | decide | Doctrine-backed decision support: clarify scope, pick options, stress-test reasoning, commit to a strategy. Use when facing a non-trivial choice. Don't use for obvious calls. | inline | auto |
 | diagnosing-bugs | Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos. | inline | auto |
 | domain-modeling | Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups. | inline | auto |
@@ -184,7 +188,7 @@ _Personals/kbg-harness_
 | staff-eng | Organization-scale technical lead register for cross-boundary decisions and long-term consequences: decisive, systems-minded, and teaching-oriented. Lead with the decision plus the constraint that shaped it, name systems and owners, and leave the user with a reusable frame. Use via /style or when senior-eng escalates. |
 
 ---
-_Generated: 2026-07-02T06:25:48Z_
+_Generated: 2026-07-02T06:43:09Z_
 
 ---
 
