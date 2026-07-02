@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (45)
+### Skills (46)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -49,6 +49,7 @@ _Personals/kbg-harness_
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
   ◇ tdd                            Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
   ◇ teach                          Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
+  ◇ tech-humanize                  Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation.
   ◇ to-issues                      Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates.
   ◇ to-prd                         Synthesise-seam: turn a prior discussion into a published PRD without re-interviewing. Use when the user asks for a PRD. Don't use for undecided scope.
   ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
@@ -164,6 +165,7 @@ _Personals/kbg-harness_
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
 | tdd | Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
 | teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
+| tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
 | to-issues | Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates. | inline | manual |
 | to-prd | Synthesise-seam: turn a prior discussion into a published PRD without re-interviewing. Use when the user asks for a PRD. Don't use for undecided scope. | inline | manual |
 | triage | Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments. | inline | manual |
@@ -189,7 +191,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-02T10:54:28Z_
+_Generated: 2026-07-02T12:32:26Z_
 
 ---
 

@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 45 workflow skills, and 22 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 46 workflow skills, and 22 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -56,7 +56,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 44 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Skills** | 46 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
 | **Agents** | 12 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 22 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
@@ -136,7 +136,7 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 12 specialist subagents (.md each)
-├── skills/               # 44 workflow skills (SKILL.md per directory)
+├── skills/               # 46 workflow skills (SKILL.md per directory)
 ├── commands/             # 22 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
@@ -210,14 +210,14 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-02), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table — it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 45 skills · 12 agents · 22 commands).
+> `ls commands/` (real current fleet: 46 skills · 12 agents · 22 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 45 skills · 12 agents · 22 commands |
+| kbg-native | MIT | 46 skills · 12 agents · 22 commands |
 
 ---
 

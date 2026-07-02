@@ -5,6 +5,50 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.23.0] — 2026-07-02
+
+Restored `skills/tech-humanize/` — de-AI-ifies dev/tech writing in English and Thai
+(standups, PRs, commits, ADRs, UI copy). Shipped through v0.2.109 (`df012d8`,
+2026-06-20), then deleted along with 35 other skills in the 2026-06-27 "reset:
+rebuild from scratch" (`c452102`) and never rebuilt into the post-reset ECC-based
+fleet. Pulled back from git history after the user recalled prior Thai-humanizer
+work and asked for a full audit before restoring.
+
+30 universal patterns (from Wikipedia's "Signs of AI writing," WikiProject AI
+Cleanup) plus 12 Thai-specific patterns (register, code-switching, connectives,
+terminology/calques, anti-fabrication) and 3 mechanically-checkable eval cases.
+Independently confirmed via `github.com/blader/humanizer` (MIT, same Wikipedia
+lineage, 33 English-only patterns, no Thai coverage) that the Thai-specific work
+here is genuinely kbg-native, not derived from that project.
+
+Three fixes applied during restore, all surfaced by audit + adversarial
+deep-research before shipping:
+
+- **Fabricated citation removed.** `patterns-thai.md` §32.1–§32.10 and §33 cited
+  "research-brief-FINAL §3.x" six times — no such file was ever committed to this
+  repo (confirmed via full git-history search). Fails the file's own §32.3/§32.5
+  anti-fabrication citation standard. Dropped per its own T1-DROP rule rather than
+  hedged.
+- **Misattributed citation corrected.** `references.md` cited "Phatthiyaphaibun et
+  al. (2024) PyThaiNLP 4.0" as a paper — v4.0 was a software release (GitHub tag
+  v4.0.0, April 2023), never a paper. Corrected to the real citable paper:
+  Phatthiyaphaibun et al. (2023), NLP-OSS 2023 (EMNLP-colocated), ACL Anthology
+  `2023.nlposs-1.4`.
+- **Doctrine-conformance pass.** `writing-great-skills` (matt-pocock) was adopted
+  2026-06-28 — after this skill's last edit and deletion — so its Process/Output
+  steps never carried the current criterion + failure-mode pairing. Added. Also
+  trimmed the description from 59 to 24 words (CLAUDE.md's ≤25-word cap; check #36
+  is INFO-only and wasn't blocking, but the gap was real).
+
+Eval fixtures moved from the now-nonexistent top-level `tests/evals/skills/`
+tree (wiped in the same reset) into `skills/tech-humanize/evals/`, co-located
+with the skill rather than resurrecting a separate tree nothing else uses.
+
+Skills 45→46. `kbg:tech-humanize`'s own "sound natural" mandate is complementary
+to, not a duplicate of, the [0.22.1] compression-vs-grammar fix — that fix guards
+against over-compressing into broken grammar; this skill guards against the
+opposite extreme, AI-inflated excess.
+
 ## [0.22.1] — 2026-07-02
 
 `goal-craft`'s worked example shipped with broken Thai ("สะอาดนอก" — two words jammed
