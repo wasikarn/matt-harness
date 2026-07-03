@@ -215,6 +215,7 @@ When reviewing backend code:
 - **Missing timeouts** — External HTTP calls without timeout configuration
 - **Error message leakage** — Sending internal error details to clients
 - **Missing CORS configuration** — APIs accessible from unintended origins
+- **Process-lifetime reference retention** — `emitter.on` without a matching `off`, an unbounded `Map`/`Set` cache that never evicts, and closures capturing large objects are slow leaks that crash hours in, not request-scoped failures. Pair every `on` with `off`/`once`, use an LRU with `max` not a bare `Map`, and extract needed values from closed-over large objects instead of retaining them.
 
 ```typescript
 // BAD: N+1 query pattern
@@ -265,10 +266,11 @@ await db.transaction(async (tx) => {
 
 ### Performance (MEDIUM)
 
-- **Inefficient algorithms** — O(n^2) when O(n log n) or O(n) is possible
+- **Inefficient algorithms** — O(n^2) when O(n log n) or O(n) is possible — but size the flag to realistic n and whether the path is per-request hot. A 4-element nested loop is noise (over-flagging erodes trust); a 10k-row O(n^2) inside an AdonisJS/FastAPI request handler is a real p99 source. Benchmark before flagging small-n quadratic.
 - **Unnecessary re-renders** — Missing React.memo, useMemo, useCallback
 - **Large bundle sizes** — Importing entire libraries when tree-shakeable alternatives exist
 - **Missing caching** — Repeated expensive computations without memoization
+- **Caching auth/permission/session lookups is a correctness bug, not a perf win** — a Redis/memo cache on a permission or session read without a verified write-through invalidation path ships a stale-authz bypass. If anything permission-adjacent is cached, require that every mutating write invalidates the entry (or version-bumps the key) before approving; this is where MEDIUM perf filings hide CRITICAL authz misses.
 - **Unoptimized images** — Large images without compression or lazy loading
 - **Synchronous I/O** — Blocking operations in async contexts
 

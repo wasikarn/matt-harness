@@ -48,6 +48,8 @@ npx lighthouse https://your-app.com --output=json --output-path=./lighthouse.jso
 npx lighthouse https://your-app.com --only-categories=performance
 ```
 
+**Node is single-threaded: one sync call >10ms blocks every concurrent request on the event loop.** CPU-bound work (`pbkdf2Sync`, `readFileSync`, `JSON.parse` of >5MB, crypto over large buffers) belongs on pooled `worker_threads`, not the main thread — `--prof`/`--inspect` shows it as one long tick where every other request stalls. Raise `UV_THREADPOOL_SIZE` only when fs/crypto/dns saturate the default pool of 4 (async syscalls), not for CPU compute.
+
 ## Performance Review Workflow
 
 ### 1. Identify Performance Issues

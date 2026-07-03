@@ -41,7 +41,7 @@ Then measure each segment separately.
 ## Optimization Order
 
 1. Remove unnecessary round trips.
-2. Cache stable reads with freshness metadata.
+2. Cache stable reads with freshness metadata — and guard the re-warm: a hot key's TTL expiry triggers a thundering herd where every concurrent miss rebuilds the same value. Gate the recompute with a single-flight lock (`SETNX`/`nx` mutex) or probabilistic early refresh (XFetch) so only one request rebuilds; unguarded cache-aside rots p99 on every TTL tick.
 3. Batch small calls and writes.
 4. Move compute closer to the data or the user.
 5. Split hot and cold paths.
@@ -72,6 +72,7 @@ ready.
 - Do not run live orders, destructive migrations, or customer-impacting deploys
   without an explicit approval gate.
 - Keep secrets and private payloads out of logs and benchmark artifacts.
+- No per-event allocation in the hot path — per-event closures and object literals become GC pressure under load; at a load spike the GC pause is the p99 source, not round-trip. Profile with `--trace-gc` (Node) / the JVM/Go/.NET equivalent before attributing p99 to the network segment.
 
 1. confirm the latency budget holds under realistic load — verify the p99 stays inside the SLO across the canary window.
    If a fix drifts the bottleneck elsewhere or the canary shows degraded providers, avoid declaring victory — never close without a green canary run.

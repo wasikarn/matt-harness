@@ -166,6 +166,10 @@ markets.forEach(market => {
 })
 ```
 
+### Indexing & Pool Sizing
+
+For multi-column filters, one composite index beats two single-columns — Postgres bitmap-scan across two indexes is slower than one composite read. Order the composite equality-first, then range/sort, and carry the `SELECT` columns via an `INCLUDE` covering index to skip the heap fetch. For pool sizing on Supabase/Postgres, the aggregate `(pool_size + max_overflow) × instances` must stay under the server `max_connections` cap with ~20% headroom for replicas and migrations — sizing per-instance in isolation exhausts connections under multi-pod fan-out.
+
 ### Transaction Pattern
 
 ```typescript
@@ -262,6 +266,8 @@ async function getMarketWithCache(id: string): Promise<Market> {
 }
 ```
 
+**Stampede guard:** the snippet is textbook get-then-set with no protection on a miss — for a hot key, every concurrent request fires the DB fetch simultaneously on each TTL expiry (thundering herd). Guard the re-warm with a `SETNX` single-flight mutex (one request rebuilds, the rest wait or serve stale) or probabilistic early refresh (XFetch); without it the cache that should relieve the DB becomes the spike that kills it.
+
 ## Error Handling Patterns
 
 ### Centralized Error Handler
@@ -343,6 +349,8 @@ async function fetchWithRetry<T>(
 // Usage
 const data = await fetchWithRetry(() => fetchFromAPI())
 ```
+
+**Two fixes before shipping the above:** (1) add jitter — `delay + Math.random() * base` — so N replicas retrying at 1s/2s/4s don't form a synchronized retry storm that re-kills the recovering dependency; (2) gate retry on idempotency — `fn` is retried unconditionally, so a POST/create that failed after the write succeeded produces a duplicate. For non-idempotent verbs require an `Idempotency-Key` header or a dedupe row before retrying.
 
 ## Authentication & Authorization
 
@@ -493,6 +501,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true, message: 'Job queued' })
 }
 ```
+
+**The `JobQueue` above is unbounded — no depth cap, no backpressure.** Under bursty load it grows until heap exhaustion (OOM). Cap the queue depth and reject above a high-water mark with `503` + `Retry-After` instead of pushing forever; for cross-replica durability (jobs lost on crash, split across replicas) back the queue with Redis/BullMQ rather than an in-memory array.
 
 ## Logging & Monitoring
 

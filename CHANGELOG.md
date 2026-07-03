@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.0] — 2026-07-04
+
+Performance-correctness knowledge synthesis — 19 inline distillations across 7 performance surfaces (5 skills + 2 agents). Mined from llm-wiki algorithm/resource-efficiency docs via a 5-phase audit workflow (discover → read → map → adversarial-verify → synthesize; 39 gaps → 29 candidates → 20 verified → 19 edits, 9 killed as decorative), then synthesized as kbg-native, opinionated, tathep/backend-shaped decision text — NO llm-wiki paths, NO verbatim copies (value-add reframing, not a sync-seam). Each addition is 1-3 sentences colocated with the footgun it prevents; earns its place by naming a specific wrong call it changes.
+
+Clusters: cache-failure-modes (stampede/single-flight/invalidation), retry-correctness (jitter/idempotency), hot-path-complexity (O(n²) sizing), resource-retention (unbounded Map/emitter retention), zero-alloc-gc, mysql-indexing (covering/sargable/isolation/buffer-pool/pool-bound/parallel-apply), prompt-cache-economics, queue-backpressure.
+
+- `skills/latency-critical-systems` — cache-stampede guard on Optimization Order item 2; zero-alloc/GC guardrail.
+- `skills/backend-patterns` — new Indexing & Pool Sizing subsection (Postgres/Supabase); cache-aside stampede guard; retry jitter + idempotency gating; JobQueue backpressure/durability.
+- `skills/mysql-patterns` — covering-index goal + non-sargable predicate (merged); READ COMMITTED on insert-heavy hot paths; buffer-pool hit-rate sizing; aggregate pool bound; parallel-replica apply before pinning reads.
+- `skills/cost-aware-llm-pipeline` — backoff jitter for concurrent batch callers; prompt-cache write-premium amortization.
+- `agents/performance-optimizer` — Node single-threaded event-loop blocking / worker_threads / UV_THREADPOOL_SIZE.
+- `agents/code-reviewer` — O(n²) sizing to realistic n + hot-path; authz/session cache = correctness-bug bullet (CRITICAL-class catch filed where reviewers approve the perf win); process-lifetime reference retention.
+- `agents/typescript-reviewer` — O(n*m) membership-in-loop; backend accumulation leaks (distinct from React per-mount bullets).
+
+Token cost: per-surface +90 to +410 tokens (largest mysql-patterns ~14% of body); paid only on the narrow surface that fires. WHERE = inline (option C) — no cluster recurred across 4+ surfaces (max 3), so a docs/reference doc was not justified; the under-use failure mode (a side-doc read on-demand loses the decision moment) ruled it out.
+
+Caveats weighed: backend-patterns Indexing & mysql-patterns Indexing state the composite-index + aggregate-pool principle at different DB targets (Postgres vs MySQL) — kept both (different targets, not duplicates). code-reviewer authz-cache bullet kept in Performance (MEDIUM) where the approval-moment footgun lives; the text itself carries the CRITICAL framing.
+
 ## [0.31.1] — 2026-07-03
 
 Comment-only honesty fix — no runtime change. Post-v0.31.0 gauntlet profiling disproved a perf claim v0.31.0 propagated: the shellcheck batching was described as the "gauntlet long-pole," but harness-audit is (~8.4s vs shellcheck ~0.9s, measured 2026-07-03). Correcting the comment + this CHANGELOG line + the audit.sh fm_get-cache win estimate, which was also overstated.

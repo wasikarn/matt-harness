@@ -105,6 +105,8 @@ def call_with_retry(func, *, max_retries: int = _MAX_RETRIES):
     # AuthenticationError, BadRequestError etc. → raise immediately
 ```
 
+**Add jitter to the backoff for concurrent batch callers.** Pure `2 ** attempt` is synchronized across N parallel requests hitting the same 429 — they retry in lockstep at 1s/2s/4s, amplify the rate limit, and burn budget on waved attempts the `CostTracker` never records. Use `time.sleep((2 ** attempt) + random.uniform(0, base))` to decorrelate; the AWS SDK adds jitter by default for exactly this reason.
+
 ### 4. Prompt Caching
 
 Cache long system prompts to avoid resending them on every request.
@@ -127,6 +129,8 @@ messages = [
     }
 ]
 ```
+
+**Caching is a net win only when the prefix outlives enough reads to amortize the write premium.** Anthropic charges a ~25% surcharge on `cache_creation` and a discount on `cache_read` — a churn-heavy prefix (per-user system prompt, dynamic tool set) that changes per request costs more to write than it saves. Don't cache what changes per request; watch `cache_read` vs `cache_creation` in the usage response like uptime — negative net savings means stop caching, not cache harder.
 
 ## Composition
 

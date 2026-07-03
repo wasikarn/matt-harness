@@ -65,6 +65,8 @@ Composite index order usually follows equality predicates first, then range or s
 Avoid adding indexes blindly. Each index increases write cost, migration time,
 backup size, and buffer-pool pressure.
 
+**Target `Using index` in `Extra`, not just the absence of bad signals** — a covering composite that carries the `SELECT`ed columns serves the query index-only and skips the clustered-key lookup (one I/O per row saved); one covering composite beats two single-column indexes (avoids the slower `index_merge`). **Before adding any index for a full scan, check the predicate first**: `WHERE YEAR(col) = ?` / `WHERE LOWER(col) = ?` defeats an existing index (non-sargable — rewrite as a range or bare-column equality), and a string column compared to an int literal triggers implicit coercion and a scan. Fixing the predicate, not adding an index, is the call.
+
 ## Query Patterns
 
 ### Upsert
@@ -172,6 +174,7 @@ Deadlock and lock-wait checklist:
   budget.
 - Capture `SHOW ENGINE INNODB STATUS\G` soon after a deadlock; it is overwritten
   by later events.
+- Drop to `READ COMMITTED` on insert-heavy hot paths where phantom reads are tolerable — MySQL's default `REPEATABLE READ` uses next-key/gap locks that serialize concurrent inserts into a scanned range; `READ COMMITTED` releases the gap locks. Keep `REPEATABLE READ` for integrity-sensitive read-modify-write. Before diagnosing insert stalls as missing-index or lock-ordering, check the isolation level first.
 
 Queue-style worker claim:
 
@@ -240,6 +243,8 @@ Keep application pool recycling below the server `wait_timeout`. If the server
 uses `wait_timeout = 300`, a `pool_recycle` around 240 seconds is coherent;
 `pool_pre_ping` still helps recover from network and failover events.
 
+**Bound the aggregate, not just per-instance.** For multi-instance deploys (N AdonisJS/FastAPI/Node pods × `pool_size`), `(pool_size + max_overflow) × instances < max_connections` must hold with ~20% headroom for replicas and migrations — otherwise fan-out hits "Too many connections". Size the per-pod pool down from the server cap, not up from per-instance workload in isolation.
+
 ## Diagnostics
 
 Useful first-pass commands:
@@ -279,6 +284,8 @@ SHOW REPLICA STATUS\G;
 Check the engine/version before standardizing on one command. Monitor replica
 SQL thread health, IO thread health, and lag, not just whether the TCP
 connection is alive.
+
+**Before pinning read-after-write to primary on lag, tune parallel apply.** Set `replica_parallel_workers` + `replica_parallel_type=LOGICAL_CLOCK` — parallel apply often cuts lag an order of magnitude. Pinning reads to primary is the fallback (worse horizontal-read scaling), not the first move; the read-after-write rule above is correct, not step one.
 
 ## Security
 
@@ -334,6 +341,8 @@ binlog_expire_logs_seconds = 604800
 Treat configuration values as a prompt for review, not a universal preset. Size
 memory, connections, log retention, and durability settings from workload,
 hardware, backup policy, and recovery objectives.
+
+**Size `innodb_buffer_pool_size` on hit-rate, not RAM percentage.** Compute `1 - Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests` from `SHOW ENGINE INNODB STATUS\G`: `<99%` = grow the pool; `>=99%` = stop, the p99 is indexing or redo log, not RAM. Defaulting to "70-80% of RAM" wastes memory when the working set already fits.
 
 ## Anti-Patterns
 
