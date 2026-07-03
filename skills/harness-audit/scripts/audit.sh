@@ -197,6 +197,27 @@ shopt -s nullglob
 _checks=("$_AUDIT_DIR"/checks/[0-9][0-9]-*.sh)
 shopt -u nullglob
 [ "${#_checks[@]}" -gt 0 ] || err_die "audit: no check fragments in $_AUDIT_DIR/checks/ — split is broken (fail-closed, not fail-open)"
+
+# ── frontmatter cache build (perf, 2026-07-03) ────────────────────────
+# Pre-compute the common keys (name/description/tools, --block) for every fleet
+# surface ONCE here in the main shell. Sourced checks call fm_get inside $(...)
+# subshells, which inherit _FM_CACHE (declared in frontmatter-helpers.sh) by
+# fork-copy and hit instead of re-spawning awk per file per key (~460 redundant
+# awk spawns/run -> one build pass). fm_get falls back to awk on a miss, so any
+# key not pre-cached still works. Cuts ~1.5-2.5s off standalone audit (the
+# pre-commit long-pole, where audit is not parallel to a shellcheck-over-all-
+# files layer; on the pre-push gauntlet shellcheck is the long-pole so this is
+# CPU-only there). >/dev/null suppresses stdout; the write to _FM_CACHE
+# persists because this runs in the main shell, not a $(...) subshell.
+for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md \
+            "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!]*/COMMAND.md; do
+  [ -f "$_fmf" ] || continue
+  fm_get "$_fmf" name --block >/dev/null
+  fm_get "$_fmf" description --block >/dev/null
+  fm_get "$_fmf" tools --block >/dev/null
+done
+unset _fmf
+
 for _cf in "${_checks[@]}"; do
   # shellcheck source=/dev/null
   . "$_cf"

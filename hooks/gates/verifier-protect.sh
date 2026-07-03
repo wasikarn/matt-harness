@@ -32,6 +32,16 @@
 # "hooks/Gates/x.sh") that the filesystem still resolves into the real
 # protected directory. Lowercasing both sides only widens the match (more
 # prompts, never fewer) so it is safe on case-sensitive filesystems too.
+#
+# Folded path-hardcode deny (2026-07-03): the former gate:write:path-hardcode
+# hook (a separate parallel PreToolUse hook) is folded into this gate's Write
+# branch. It blocks a hardcoded /Users/<name> path written into a .sh or .py
+# file (case-insensitive endswith; scans content/new_string and MultiEdit
+# edits[]) by exiting 2 BEFORE the verifier ask — a block wins over an ask,
+# matching the prior parallel behavior where path-hardcode denied while this
+# gate asked. Folding removes one python3 spawn per Write/Edit (a CPU win,
+# not a felt-latency win: this gate's own python cold-start remains the
+# Write-matcher floor). path-hardcode.sh and its hooks.json entry are deleted.
 set -uo pipefail
 
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
@@ -164,6 +174,20 @@ try:
         sys.exit(0)
 
     fp = ti.get("file_path", "") or ti.get("notebook_path", "") or ""
+
+    # path-hardcode deny (folded 2026-07-03): block /Users/[a-zA-Z] in .sh/.py
+    # before the ask (a block exit 2 wins over an ask). Preserves the
+    # case-insensitive .sh/.py endswith gate, the content/new_string scan, and
+    # the MultiEdit edits[] accumulation.
+    if fp and fp.lower().endswith((".sh", ".py")):
+        content = ti.get("content") or ti.get("new_string") or ""
+        for edit in ti.get("edits") or []:
+            content += "\n" + (edit.get("new_string") or "")
+        if re.search(r"/Users/[a-zA-Z]", content):
+            print("[kbg:gate] BLOCKED: hardcoded /Users/ path in " + fp +
+                  " — use $HOME or ~ instead", file=sys.stderr)
+            sys.exit(2)
+
     if is_verifier_path(fp):
         emit_ask(fp)
 except Exception:

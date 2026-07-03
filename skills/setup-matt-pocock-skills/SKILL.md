@@ -1,6 +1,6 @@
 ---
 name: setup-matt-pocock-skills
-description: "Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo."
+description: "Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo."
 metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: one-time repo configuration that writes tracker labels + doc layout — destructive on a configured repo

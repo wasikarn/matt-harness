@@ -118,7 +118,14 @@ def main():
             if not git_ok(add_args, top):
                 if not git_ok(["worktree", "add", wt_dir, branch_name], top):  # branch already exists
                     return deny(repo, top, why)
-        rel = os.path.relpath(fp, top)
+        # Normalize both sides to realpath before relpath: fp is os.path.abspath
+        # (symlink-preserving, e.g. /var/... on macOS) while git rev-parse
+        # --show-toplevel resolves symlinks (/private/var/...). Mixing the two
+        # forms makes relpath climb to / and back, yielding a
+        # ../../../../../../../../../var/.../ws/repo1/f.txt that points back at
+        # the main checkout -- defeating the redirect. Found 2026-07-03 via the
+        # test-worktree-guard "main-checkout edit" case on a /var-folders TMP.
+        rel = os.path.relpath(os.path.realpath(fp), os.path.realpath(top))
         new_fp = os.path.join(wt_dir, rel)
     except Exception:
         return deny(repo, top, why)

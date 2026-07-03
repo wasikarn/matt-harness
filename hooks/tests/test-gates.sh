@@ -8,7 +8,6 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
-PATH_HARDCODE="$ROOT/hooks/gates/path-hardcode.sh"
 VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
 
@@ -163,7 +162,7 @@ test_ask   "$VP_BASH" "append >> into hooks/hooks.json" \
 test_ask   "$VP_BASH" "sed -i on an audit check" \
   "$(bash_payload 'sed -i s/a/b/ skills/harness-audit/scripts/checks/01-fleet-count.sh')"
 test_ask   "$VP_BASH" "tee into a gate file" \
-  "$(bash_payload 'echo x | tee hooks/gates/path-hardcode.sh')"
+  "$(bash_payload 'echo x | tee hooks/gates/verifier-protect.sh')"
 test_ask   "$VP_BASH" "cp over an audit check (dest is verifier path)" \
   "$(bash_payload 'cp foo skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
 test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
@@ -180,24 +179,28 @@ test_allow "$VP_BASH" "ls a gate file (no write)" \
   "$(bash_payload 'ls hooks/gates/irrecoverable.sh')"
 
 echo ""
-echo "=== path-hardcode gate ==="
+echo "=== path-hardcode deny (folded into verifier-protect Write branch) ==="
 # ponytail: split to avoid triggering the pre-commit /Users/<name>/ grep on test source
+# These run against verifier-protect.sh (the deny folded in 2026-07-03); the
+# file_paths are normal (non-verifier) so the ask branch does not fire -- only
+# the path-hardcode deny is exercised. $_UD avoids a literal /Users/<name> in
+# this test source (which the gate would otherwise block).
 _UP="/Users" _UN="testuser" _UD="$_UP/$_UN"
-test_deny  "$PATH_HARDCODE" "hardcoded /Users/ in .sh" \
+test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .sh" \
   "$(write_payload 'script.sh' "export PATH=$_UD/bin:\$PATH")"
-test_deny  "$PATH_HARDCODE" "hardcoded /Users/ in .py" \
+test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .py" \
   "$(write_payload 'setup.py' "BASE = $_UD/data")"
-test_deny  "$PATH_HARDCODE" "Edit new_string with /Users/ in .sh" \
+test_deny  "$VERIFIER_PROTECT" "Edit new_string with /Users/ in .sh" \
   "$(edit_payload 'deploy.sh' "cd $_UD/app")"
-test_allow "$PATH_HARDCODE" "\$HOME reference in .sh" \
+test_allow "$VERIFIER_PROTECT" "\$HOME reference in .sh" \
   "$(write_payload 'script.sh' 'export PATH=$HOME/bin:$PATH')"
-test_allow "$PATH_HARDCODE" "~ reference in .sh" \
+test_allow "$VERIFIER_PROTECT" "~ reference in .sh" \
   "$(write_payload 'script.sh' 'cd ~/projects')"
-test_allow "$PATH_HARDCODE" "/Users/ in .md file (not gated)" \
-  "$(write_payload 'README.md' 'see /Users/kobig for example')"
-test_allow "$PATH_HARDCODE" "/Users/ in .json file (not gated)" \
-  "$(write_payload 'config.json' '{\"path\":\"/Users/kobig\"}')"
-test_allow "$PATH_HARDCODE" "normal .sh content" \
+test_allow "$VERIFIER_PROTECT" "/Users/ in .md file (not gated)" \
+  "$(write_payload 'README.md' "see $_UD for example")"
+test_allow "$VERIFIER_PROTECT" "/Users/ in .json file (not gated)" \
+  "$(write_payload 'config.json' "{\\\"path\\\":\\\"$_UD\\\"}")"
+test_allow "$VERIFIER_PROTECT" "normal .sh content" \
   "$(write_payload 'run.sh' 'set -uo pipefail\necho hello')"
 
 echo ""
@@ -209,7 +212,7 @@ test_ask   "$VERIFIER_PROTECT" "Edit to hooks/gates/verifier-protect.sh (self)" 
 test_ask   "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
   "$(write_payload 'hooks/hooks.json' 'neutered-wiring')"
 test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
-  "$(write_payload "$ROOT/hooks/gates/path-hardcode.sh" 'echo neutered')"
+  "$(write_payload "$ROOT/hooks/gates/task-complete-separation.sh" 'echo neutered')"
 test_ask   "$VERIFIER_PROTECT" "Write to audit.sh (non-model verifier runner)" \
   "$(write_payload 'skills/harness-audit/scripts/audit.sh' 'echo neutered')"
 test_ask   "$VERIFIER_PROTECT" "Edit to a check file (grading logic)" \

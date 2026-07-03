@@ -49,20 +49,9 @@
         ]
       },
       {
-        "id": "gate:write:path-hardcode",
-        "matcher": "Write|Edit|MultiEdit",
-        "description": "Gate: block hardcoded /Users/<name> paths in .sh/.py files",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/path-hardcode.sh\""
-          }
-        ]
-      },
-      {
         "id": "gate:write:verifier-protect",
         "matcher": "Write|Edit|MultiEdit",
-        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/hooks.json (deny-gates + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass).",
+        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/hooks.json (deny-gates + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit.",
         "hooks": [
           {
             "type": "command",
@@ -95,11 +84,11 @@
       {
         "id": "gate:write:worktree-guard",
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02.",
+        "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when CLAUDE_PROJECT_DIR is known and outside the tathep workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the tathep path spawns python.",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\""
+            "command": "bash -c 'w=\"${TATHEP_WORKSPACE:-$HOME/Codes/Works/tathep}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
           }
         ]
       }

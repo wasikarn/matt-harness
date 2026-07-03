@@ -51,6 +51,19 @@
 SKIP_SCAFFOLD_GLOB='[!_]*/'
 export SKIP_SCAFFOLD_GLOB
 
+# _FM_CACHE — per-(file,key,flags) frontmatter memoization for audit/inventory.
+# Populated once in the caller's MAIN shell (audit.sh builds it before its checks
+# loop; see the build pass there). fm_get reads it first and falls back to awk
+# on a miss, so correctness never depends on the cache -- it is a pure speedup.
+# Checks call fm_get inside $(...) subshells, which inherit this array by
+# fork-copy, so a cache built in the main shell is visible (read-only) to every
+# subshell call without each subshell re-spawning awk (~460 redundant awk
+# spawns/audit run -> one build pass). Declared global (-g) so it survives
+# across the sourced-check-files boundary. Requires bash 4+ (associative
+# arrays); on older bash the declare no-ops and fm_get simply always falls
+# through to awk (correct, just unspeeded).
+declare -gA _FM_CACHE 2>/dev/null || true
+
 # fm_get — read a single frontmatter value.
 # Block-scalar handling: block scalars (|, |-, |+, >, >-, >+) start the body
 # on the NEXT line at indent > 0. We print the body line-by-line with the
@@ -61,8 +74,19 @@ export SKIP_SCAFFOLD_GLOB
 fm_get() {
   local file="$1" key="$2" want_block="${3:-}"
   [ -f "$file" ] || { return 0; }
+  local _ck="${file}|${key}|${want_block}"
+  # Cache hit: reproduce awk's exact stdout (non-empty value -> "value\n",
+  # absent key -> nothing) and return without spawning awk. The ${+set} form is
+  # safe under set -u and distinguishes a cached empty (set) from never-asked
+  # (unset), so absent keys are cached too and never re-spawn awk.
+  if [ -n "${_FM_CACHE[$_ck]+set}" ]; then
+    local _v="${_FM_CACHE[$_ck]}"
+    [ -n "$_v" ] && printf '%s\n' "$_v"
+    return 0
+  fi
+  local _out
   if [ "$want_block" = "--block" ]; then
-    awk -v k="$key" '
+    _out=$(awk -v k="$key" '
       BEGIN { in_fm = 0; block = 0 }
       /^---[[:space:]]*$/ { in_fm = !in_fm; if (!in_fm) exit; next }
       in_fm && $0 ~ "^"k":" {
@@ -79,9 +103,9 @@ fm_get() {
         sub(/^[[:space:]]*/, "", $0)
         print
       }
-    ' "$file"
+    ' "$file")
   else
-    awk -v k="$key" '
+    _out=$(awk -v k="$key" '
       BEGIN { in_fm = 0 }
       /^---[[:space:]]*$/ { in_fm = !in_fm; if (!in_fm) exit; next }
       in_fm && $0 ~ "^"k":" {
@@ -90,8 +114,13 @@ fm_get() {
         print
         exit
       }
-    ' "$file"
+    ' "$file")
   fi
+  # Write-through (persists in the main shell; a write inside a $(...) subshell
+  # is lost, which is harmless -- the pre-built cache is what the subshells read).
+  _FM_CACHE[$_ck]="$_out"
+  [ -n "$_out" ] && printf '%s\n' "$_out"
+  return 0
 }
 
 # fm_has — does a key exist in the first frontmatter block?

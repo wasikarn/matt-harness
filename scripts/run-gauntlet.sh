@@ -20,17 +20,25 @@ run_validate() {
 
 # ---- full shell lint (all tracked .sh files) ----
 run_shell_lint() {
-  local rc=0
+  local rc=0 files=()
   while IFS= read -r f; do
     [ -f "$ROOT/$f" ] || continue
+    files+=("$f")
     if ! bash -n "$ROOT/$f" 2>&1; then
       echo "  bash syntax error: $f" >&2
       rc=1
     fi
-    if ! shellcheck --severity=warning "$ROOT/$f" 2>&1; then
+  done < <(git -C "$ROOT" ls-files '*.sh')
+  # Batch shellcheck into one invocation over all files instead of spawning
+  # it per file -- shellcheck startup is the gauntlet long-pole (~1.2s saved
+  # over ~66 files; parse work still scales with file count). Whitespace-safe
+  # arg expansion (mapfile-style prefix). shellcheck includes the filename in
+  # each finding so per-file attribution is preserved.
+  if [ "${#files[@]}" -gt 0 ]; then
+    if ! shellcheck --severity=warning "${files[@]/#/$ROOT/}" 2>&1; then
       rc=1
     fi
-  done < <(git -C "$ROOT" ls-files '*.sh')
+  fi
   return "$rc"
 }
 
@@ -63,7 +71,7 @@ run_audit() {
 # ---- hook behavioral suite (deny-gate + advisory-sensor unit tests) ----
 # Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask.
 # This is the safety-critical net: a regression in irrecoverable.sh / verifier-protect.sh
-# / path-hardcode.sh fails here instead of shipping green. Graceful-skip if absent.
+# (incl. the folded path-hardcode deny) fails here instead of shipping green. Graceful-skip if absent.
 run_hook_tests() {
   local rc=0 t
   for t in "$ROOT/hooks/tests/test-gates.sh" "$ROOT/hooks/tests/test-worktree-create.sh" "$ROOT/hooks/tests/test-worktree-guard.sh" "$ROOT/hooks/tests/test-flow-nudge.sh" "$ROOT/hooks/tests/test-session-stop.sh"; do

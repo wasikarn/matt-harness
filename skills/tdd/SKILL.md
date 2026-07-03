@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
+description: Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
 metadata.origin: matt-pocock
 ---
 

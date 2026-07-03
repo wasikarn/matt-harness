@@ -45,9 +45,9 @@ _Personals/kbg-harness_
   ◇ review-pr                      Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
-  ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo.
+  ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo.
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
-  ◇ tdd                            Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
+  ◇ tdd                            Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
   ◇ teach                          Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
   ◇ tech-humanize                  Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation.
   ◇ to-issues                      Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates.
@@ -75,43 +75,45 @@ _Personals/kbg-harness_
   ◇ COMMAND                        Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge).
 
 ### Agents (12)
-  ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
+  ◇ build-error-resolver           Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
   ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code.
   ◇ flutter-reviewer               Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic.
-  ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
+  ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
   ◇ performance-optimizer          Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
   ◇ python-reviewer                Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes.
-  ◇ refactor-cleaner               Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates.
+  ◇ refactor-cleaner               Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates.
   ◇ security-reviewer              Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
   ◇ silent-failure-hunter          Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation.
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (11)
-  ◇ flow-nudge.sh                  shellcheck disable=SC2016  # python code in single quotes
+### Hooks (13)
+  ◇ flow-nudge.sh                  Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
-  ◇ path-hardcode.sh               Gate: block hardcoded /Users/<name> paths being written into .sh or .py files.
+  ◇ task-complete-separation.sh    Gate: a subagent may not mark its own task completed (maker≠checker).
   ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
+  ◇ worktree-create-block.sh       Gate: enforce kbg single-branch doctrine (no new non-develop branches via worktree).
   ◇ command-root-anchor.sh         command-root-anchor.sh — matcher-less SessionStart hook
   ◇ doctrine-bootstrap.sh          SessionStart: inject METHODOLOGY.md doctrine into the session context.
   ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
   ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
   ◇ test-gates.sh                  shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
   ◇ test-session-stop.sh           Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
+  ◇ test-worktree-create.sh        shellcheck disable=SC2016  # literal $ in test payload strings is intentional
   ◇ test-worktree-guard.sh         Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect).
 
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| build-error-resolver | Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
 | code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | flutter-reviewer | Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic. | ["Read", "Grep", "Glob", "Bash"] | yes |
-| ideate-critic | Fresh-context critic for /ideate Phase 2: scores, clusters, and deepens divergent ideas. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
+| ideate-critic | Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
-| refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
 | silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. | [Read, Grep, Glob, Bash] | yes |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
@@ -157,9 +159,9 @@ _Personals/kbg-harness_
 | review-pr | Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
-| setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
+| setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
-| tdd | Test-driven development — write the failing test first. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
+| tdd | Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
 | teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
 | to-issues | Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates. | inline | manual |
@@ -170,16 +172,18 @@ _Personals/kbg-harness_
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| flow-nudge.sh | shellcheck disable=SC2016  # python code in single quotes |
+| flow-nudge.sh | Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
-| path-hardcode.sh | Gate: block hardcoded /Users/<name> paths being written into .sh or .py files. |
+| task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated |
+| worktree-create-block.sh | Gate: enforce kbg single-branch doctrine (no new non-develop branches via worktree). |
 | command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. |
 | cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
 | test-gates.sh | shellcheck disable=SC2016  # literal \$ in test payload strings is intentional |
 | test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), |
+| test-worktree-create.sh | shellcheck disable=SC2016  # literal $ in test payload strings is intentional |
 | test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect). |
 
 ## Output styles — Repo
@@ -188,7 +192,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-03T05:53:22Z_
+_Generated: 2026-07-03T14:20:55Z_
 
 ---
 

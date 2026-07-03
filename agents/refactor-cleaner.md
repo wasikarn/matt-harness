@@ -1,6 +1,6 @@
 ---
 name: refactor-cleaner
-description: Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Uses knip/depcheck/ts-prune (JS/TS), vulture (Python), deadcode (Go), and cargo-udeps (Rust) to identify and remove unused code and duplicates.
+description: Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 ---

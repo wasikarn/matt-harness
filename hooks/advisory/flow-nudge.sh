@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2016  # python code in single quotes
 # Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
 # user's prompt looks like non-trivial engineering work. UserPromptSubmit
 # hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
@@ -12,24 +11,16 @@
 # Verified against the test in hooks/tests/test-flow-nudge.sh.
 set -uo pipefail
 
-prompt=$(python3 -c '
-import sys, json
-try:
-    d = json.load(sys.stdin)
-except Exception:
-    print("")
-    sys.exit(0)
-# UserPromptSubmit carries the prompt at the top level (not under tool_input
-# — found 2026-07-03: reading .tool_input.prompt made this sensor dead since
-# birth). Fall back to tool_input.prompt only for non-UserPromptSubmit events.
-print(d.get("prompt") or d.get("tool_input", {}).get("prompt", "") or "")
-' 2>/dev/null || echo "")
-
-[[ -z "$prompt" ]] && exit 0
-
-# Keyword match on matt-flow verbs + kbg surface-creation verbs.
+# ponytail: grep the raw JSON stdin directly instead of spawning python3 to
+# extract .prompt first. The flow verbs are alphabetic, so JSON escaping never
+# mangles them, and this hook is advisory-only (never blocks, always exit 0).
+# Tradeoff (accepted): raw grep scans every JSON field, so a cwd or
+# transcript_path containing a verb (e.g. a clone named refactor-cleaner)
+# over-triggers a spurious nudge line — low stakes. Restrict to the prompt
+# value with a bash regex if the over-nudge proves annoying. Saves the
+# python3 cold-start (~21ms) on every user prompt.
 # Whole-word boundaries; case-insensitive; extended regex (BSD grep -E).
-if ! printf '%s' "$prompt" | /usr/bin/grep -qiE '\b(implement|build a feature|refactor|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship)\b'; then
+if ! /usr/bin/grep -qiE '\b(implement|build a feature|refactor|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship)\b'; then
   exit 0
 fi
 
