@@ -30,10 +30,12 @@ run_shell_lint() {
     fi
   done < <(git -C "$ROOT" ls-files '*.sh')
   # Batch shellcheck into one invocation over all files instead of spawning
-  # it per file -- shellcheck startup is the gauntlet long-pole (~1.2s saved
-  # over ~66 files; parse work still scales with file count). Whitespace-safe
-  # arg expansion (mapfile-style prefix). shellcheck includes the filename in
-  # each finding so per-file attribution is preserved.
+  # it per file (~1.2s saved over ~66 files; parse work still scales with file
+  # count). Whitespace-safe arg expansion (mapfile-style prefix). shellcheck
+  # includes the filename in each finding so per-file attribution is preserved.
+  # Note: shellcheck is NOT the gauntlet long-pole — harness-audit is (~8.4s
+  # vs this layer's ~0.9s, measured 2026-07-03). Batching is still worth it,
+  # just not the felt-latency lever.
   if [ "${#files[@]}" -gt 0 ]; then
     if ! shellcheck --severity=warning "${files[@]/#/$ROOT/}" 2>&1; then
       rc=1

@@ -204,11 +204,18 @@ shopt -u nullglob
 # subshells, which inherit _FM_CACHE (declared in frontmatter-helpers.sh) by
 # fork-copy and hit instead of re-spawning awk per file per key (~460 redundant
 # awk spawns/run -> one build pass). fm_get falls back to awk on a miss, so any
-# key not pre-cached still works. Cuts ~1.5-2.5s off standalone audit (the
-# pre-commit long-pole, where audit is not parallel to a shellcheck-over-all-
-# files layer; on the pre-push gauntlet shellcheck is the long-pole so this is
-# CPU-only there). >/dev/null suppresses stdout; the write to _FM_CACHE
-# persists because this runs in the main shell, not a $(...) subshell.
+# key not pre-cached still works. Modest win: awk is ~0.7ms/spawn here (not the
+# 3-5ms a cold python3 is), so this cuts ~0.4s off the audit, not the 1.5-2.5s
+# earlier estimated (corrected 2026-07-03 after profiling). Gauntlet long-pole
+# is THIS audit (~8.4s, pre-commit AND pre-push), NOT shellcheck (~0.9s) —
+# measured 2026-07-03 after v0.31.0. The 8.4s is distributed across the 40
+# sourced checks (heaviest ~1s each: doc-rot, boundary-drift, description-
+# length, doctrine-conformance, refs-resolve); no single runaway to cut
+# surgically. The only further lever is a structural shared-fleet-manifest
+# refactor touching the 40-fragment integrity guard — declined at current
+# stakes (low commit-frequency repo; risk to a safety-closed guard > seconds
+# saved). >/dev/null suppresses stdout; the write to _FM_CACHE persists because
+# this runs in the main shell, not a $(...) subshell.
 for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md \
             "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!]*/COMMAND.md; do
   [ -f "$_fmf" ] || continue
