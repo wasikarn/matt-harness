@@ -16,6 +16,8 @@ When exploring the codebase, read `CONTEXT.md` (if it exists) to get a clear men
 
 Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
 
+**Named model** (cc-thinking-skills): the loop-first doctrine is *feedback-loops* (reinforcing/balancing) — tighten rate-of-feedback as the rate-limit on every later phase. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
 ### Ways to construct one — try them in roughly this order
 
 1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
@@ -115,6 +117,8 @@ Single-hypothesis anchoring is the obvious trap. The **subtler** one: a probe th
 
 **Don't probe before this matrix is filled in for the top two hypotheses.** A confirming probe on a signal-equivalent pair is the #1 way to ship a fix that doesn't fix anything.
 
+**Named models** (cc-thinking-skills): the matrix's "shared signal? / discriminating boundary?" pair is *debiasing* (anti-anchoring + anti-confirmation) — the probe must *disprove* H1, not just *confirm* it; the "what's the cost of being wrong?" branch is *reversibility* + *opportunity-cost*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
 ## Phase 4 — Instrument
 
 Each probe must map to a specific prediction from Phase 3. **Change one variable at a time.**
@@ -149,6 +153,8 @@ Tool preference:
 - `Reject — need more investigation (Recommended when evidence is weak, contradicted, or an untested higher-ranked hypothesis remains)`
 
 This is the same checkpoint `/fix-bug` already runs when it mirrors this loop inline — applying to code has consequences a non-blocking ranking checkpoint (Phase 3) doesn't. Don't skip it just because this skill was invoked directly instead of through `/fix-bug`.
+
+**Named model** (cc-thinking-skills): the 4-check threshold (signal specificity, falsifiability, 3× reproducibility, negative space) is *scientific-method* (hypotheses are world-claims, evidence must refute, not just fit) + *map-territory* (negative space = the territory your map misses). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 
 ## Phase 5 — Fix + regression test
 
@@ -194,6 +200,8 @@ Does the test fixture reproduce the exact input chain that triggered the bug?
 **The "would have caught this bug" check is the load-bearing one.** Replay the original symptom through the test in your head: does the assertion fire *for the same reason* the user saw the bug? If it fires for a different reason (a downstream error, a different code path), the test will pass when the bug returns, and you'll be debugging this again in three months.
 
 **If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is preventing the bug from being locked down. Flag this for the next phase.
+
+**Named model** (cc-thinking-skills): the tree's "is the test at the system boundary where the bug actually lives?" question is *systems-thinking* (seams = system boundaries; tests that straddle the wrong boundary measure the wrong thing); the "no correct seam → architecture handoff" branch is *theory-of-constraints* (where the test can't reach is the constraint). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 
 If a correct seam exists:
 
