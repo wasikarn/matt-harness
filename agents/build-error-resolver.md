@@ -1,6 +1,6 @@
 ---
 name: build-error-resolver
-description: Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
+description: Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 ---
@@ -86,11 +86,11 @@ Common fixes:
 Quick recovery:
 
 ```bash
-# Nuclear option: clear all caches
-rm -rf .next node_modules/.cache && npm run build
+# Clear caches safely (never rm -rf)
+trash .next node_modules/.cache && npm run build
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json && npm install
+# Reinstall dependencies safely
+trash node_modules package-lock.json && npm install
 
 # Fix ESLint auto-fixable
 npx eslint . --fix
