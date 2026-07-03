@@ -46,6 +46,8 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 - **Confidence** = derived from the two highest-weight criteria both being evidence-backed (high / medium / low).
 - **Trace**: name which single criterion, if it moved ~15 points, would flip the verdict — that is the leverage point to re-verify.
 
+**Named models** (cc-thinking-skills): the weighted-criteria + ranking loop is *tournament* (N options scored on the same rubric, winner by weighted sum) + *steel-manning* (the strongest version of each option is what gets scored — don't straw-man); the "single criterion that flips the verdict" trace is *leverage-points* (find the small number of places a change has outsized effect). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
 ## Output Format
 
 ```markdown

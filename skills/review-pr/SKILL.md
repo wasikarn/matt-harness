@@ -112,6 +112,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 6. **Write the ledger entry.** Sibling of `rejected.md`, in the same `.scratch/review-pr-<UTC-timestamp>/` dir. See `ledger.md` for the schema. Per-Q counters (Rejected / Survived / %), agents dispatched, scope identifier, and `policy_skipped: true` if applicable. **Prune first** — count existing `ledger.md` files, FIFO-remove oldest until count ≤ 199, then write the new entry. This keeps the rolling window bounded per `ledger.md` § Retention.
 7. Surface a tier-grouped finding table to the orchestrator (you), not yet to user — Phase 6 handles user presentation.
 
+**Named models** (cc-thinking-skills): the SCRUTINIZE-4 falsifiable checks + multi-agent overlap (don't blend, surface conflicts) are *red-team* (argue against the finding) + *steel-manning* (synthesize the strongest version of the reviewer's concern before deciding to reject); tier assignment by "worst that could happen" is *pre-mortem* (catastrophic-failure branch first, detection, rollback). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
 ---
 
 ## Phase 6: Present + User Decision
