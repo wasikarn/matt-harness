@@ -1,0 +1,6 @@
+# kbg-harness doctrine: no new non-develop branches via worktree (single branch develop only).
+# This file is the opt-in sentinel for the gate:worktree:develop-only + gate:bash:irrecoverable:git-worktree-add
+# hooks. While present, both deny `git worktree add -b <new-branch>` where <new-branch> != "develop".
+# Detached review-pr-<N> worktrees in $TMPDIR are explicitly allowlisted so the Phase 2 PR-by-number
+# review path keeps working. See CLAUDE.md § Branching and docs/reference/hook-lifecycle-contracts.md.
+# Remove this file to allow worktrees in this repo (not recommended — see branching-model.md memory).

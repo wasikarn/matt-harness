@@ -117,6 +117,30 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "id": "gate:worktree:develop-only",
+        "description": "Gate: enforce kbg single-branch doctrine — deny WorktreeCreate when /.kbg-no-worktree sentinel is present AND a new non-develop branch is being created. Allow detached review-pr worktrees, develop worktrees, and existing-branch worktrees. No-op in repos without the sentinel. Exit 2 + stderr; fail-safe allow on parse / resolution error.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-create-block.sh\""
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "id": "gate:worktree:develop-only-remove",
+        "description": "Gate: symmetric observer — WorktreeRemove has no decision control per CC docs, but wiring it lets future audit checks verify both events are registered. The script body is a no-op allow on this event.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-create-block.sh\""
+          }
+        ]
+      }
     ]
   }
 }

@@ -1,6 +1,6 @@
 # Hook Lifecycle Contracts
 
-Per-event **behavior contract** for the 4 hook events / 10 hooks kbg registers, separated
+Per-event **behavior contract** for the 6 hook events / 12 hooks kbg registers, separated
 from **execution** (`hooks/hooks.json` dispatch → which script fires on which event/matcher).
 This is the contract layer ECC separates as `memory-persistence/` (lifecycle definitions)
 from `hooks.json` (execution): this file is the *behavior* contract — what each event
@@ -38,11 +38,13 @@ of them requires a different model class than the maker and an advisory-only (ne
 | SessionStart | `doctrine-bootstrap.sh` | FF / inferential | Inject `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context. Matcher-less. |
 | SessionStart | `command-root-anchor.sh` | FF / computational | Bridge hook-only `${CLAUDE_PLUGIN_ROOT}` into the session as `${KBG_PLUGIN_ROOT}` (via `CLAUDE_ENV_FILE`) so command markdown can reference bundled scripts portably. Matcher-less. |
 | UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `kbg:grilling` → `kbg:to-prd` → `kbg:to-issues` → `/ship`. Never blocks. |
-| PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`). Emit `permissionDecision`. |
+| PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`, `git worktree add -b <new-branch>` when sentinel is present). Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `path-hardcode.sh` | FF / computational | Deny hardcoded `/Users/<name>` paths in `.sh`/`.py` content. Emit `permissionDecision`. |
 | PreToolUse (Write\|Edit\|MultiEdit) | `verifier-protect.sh` | FF / computational | `ask` edits to BOTH non-model verifiers — `hooks/gates/**` + `hooks/hooks.json` (the deny-gates + wiring) AND `skills/harness-audit/scripts/audit.sh` + `checks/**` (the audit grader). Tamper-resistance: the model cannot edit the code that judges it. Both verifiers guarded — a half-protected perimeter is worse than none. `--health` reporter (`harness-health.py`/`health.sh`) is NOT a grader, stays unguarded. No env-var bypass. |
 | PreToolUse (TaskUpdate) | `task-complete-separation.sh` | FF / computational | Deny `TaskUpdate(status="completed")` when `agent_type` is present (any subagent) — maker≠checker: a subagent cannot mark its own task completed. The main session (no `agent_type`) owns completion; validator subagents return verdicts to main. Enforces the orchestrate validation chain's B-pass-before-completion computationally. Exit 2 + stderr; fail-safe allow on parse error. (Uses PreToolUse on `TaskUpdate`, not the `TaskCompleted` event, because PreToolUse input is docs-confirmed to carry `tool_input.status` + `agent_type`.) |
 | Stop | `cost-tracker.sh` | FB / computational | Track cumulative token/cost metrics per session; append to `~/.local/share/kbg/metrics/costs.jsonl`. Async; no enforcement. |
+| WorktreeCreate | `worktree-create-block.sh` | FF / computational | Deny when `/.kbg-no-worktree` sentinel is present in the resolved repo root (`CLAUDE_PROJECT_DIR` env first, then walk-up to `.git` or sentinel, max 16 levels) **and** `tool_input.branch` is set **and** `branch != "develop"` **and** the request is NOT the review-pr allowlist shape (`detach=true` AND `path` matches `review-pr-<N>` AND no `-b` flag). Defensive `git rev-parse --verify develop` runs when `branch == "develop"`; a typo'd branch name like `developp` is denied. Fail-safe allow on parse error / unresolved root. Exit 2 + stderr. Matcher-less (silently ignored per CC docs). The companion `Bash` `git worktree add` deny is enforced by `irrecoverable.sh` above (the WorktreeCreate event does not fire for Bash-invoked worktree creation). |
+| WorktreeRemove | `worktree-create-block.sh` | FF / computational (observer) | No-op allow. Symmetric with `WorktreeCreate` so future audit checks can verify both events are wired. CC docs confirm `WorktreeRemove` has no decision control. |
 
 **No `TaskCompleted`, `SessionEnd`, or `PostToolUse` hooks are registered.** The retired F7 TaskCompleted gate
 and the SessionEnd inferential-FB sensors were removed in the v0.6.0 cut; the `PostToolUse` `observe.sh`
@@ -50,6 +52,6 @@ sensor (retired-L4 residue that wrote `observations.jsonl` for the removed `/lea
 v0.6.7. The maker≠checker enforcement the F7 gate failed to provide is now carried by
 `gate:task:complete-separation` on `PreToolUse:TaskUpdate` (above) — a deterministic shell gate, not a
 model-as-gate, so it does not re-arm the autonomy invariant the v0.6.0 cut retired. `hooks/hooks.json`
-wires only the 4 events above.
+wires only the 6 events above.
 
 The audit checks are `skills/harness-audit/scripts/audit.sh` (run on demand, not as a hook).

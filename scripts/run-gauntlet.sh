@@ -66,7 +66,7 @@ run_audit() {
 # / path-hardcode.sh fails here instead of shipping green. Graceful-skip if absent.
 run_hook_tests() {
   local rc=0 t
-  for t in "$ROOT/hooks/tests/test-gates.sh" "$ROOT/hooks/tests/test-worktree-guard.sh" "$ROOT/hooks/tests/test-flow-nudge.sh" "$ROOT/hooks/tests/test-session-stop.sh"; do
+  for t in "$ROOT/hooks/tests/test-gates.sh" "$ROOT/hooks/tests/test-worktree-create.sh" "$ROOT/hooks/tests/test-worktree-guard.sh" "$ROOT/hooks/tests/test-flow-nudge.sh" "$ROOT/hooks/tests/test-session-stop.sh"; do
     [ -f "$t" ] || continue
     bash "$t" 2>&1 || rc=1
   done
