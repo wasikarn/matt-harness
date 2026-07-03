@@ -94,6 +94,27 @@ If you cannot state the prediction, the hypothesis is a vibe — discard or shar
 
 **Show the ranked list to the user before testing.** They often have domain knowledge that re-ranks instantly ("we just deployed a change to #3"), or know hypotheses they've already ruled out. Cheap checkpoint, big time saver. Don't block on it — proceed with your ranking if the user is AFK.
 
+### Phase 3.5 — Probe discrimination (the gap that causes wrong root cause)
+
+Single-hypothesis anchoring is the obvious trap. The **subtler** one: a probe that confirms H1 also confirms H2 because they predict the same observed signal. The bug "fixes," recurs in production, and the real cause was never ruled out.
+
+**For each adjacent pair (H_n, H_{n+1})**, fill this before picking a probe:
+
+| Question | Write this |
+|---|---|
+| **Shared signal?** | Does H1 and H2 predict the *same* observation at the boundary you're about to probe? (Y → cannot discriminate here) |
+| **Discriminating boundary?** | Is there a *different* boundary where H1 and H2 predict *different* observations? (Y → probe there instead) |
+| **Falsifying evidence for H1?** | What observation, if it appeared, would *disprove* H1? (If you can't name one, H1 is a vibe — re-sharpen) |
+| **Cost of being wrong?** | If H1 is wrong, how much rework? Cheap → just probe. Expensive (data loss, security, multi-day fix) → must run adversarial verify or a discriminating probe |
+
+**Three viable moves when H1 and H2 are signal-equivalent at every obvious boundary:**
+
+1. **Find the discriminating boundary** — usually one layer deeper (the call *into* the suspect, not the call *out of* it; the row *before* the query, not the row *after*; the value *before* the transform, not *after*).
+2. **Run two probes in parallel** at different boundaries — the one that contradicts one hypothesis confirms the other.
+3. **Add the missing instrumentation that creates the boundary** — a counter, a log line at a seam that didn't exist, a throwaway assertion. This is the loop tightening the skill already prescribes; doing it for *discrimination* (not just confirmation) is the upgrade.
+
+**Don't probe before this matrix is filled in for the top two hypotheses.** A confirming probe on a signal-equivalent pair is the #1 way to ship a fix that doesn't fix anything.
+
 ## Phase 4 — Instrument
 
 Each probe must map to a specific prediction from Phase 3. **Change one variable at a time.**
@@ -108,6 +129,19 @@ Tool preference:
 
 **Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
 
+### Phase 4.5 — Evidence threshold (when is a hypothesis "confirmed"?)
+
+"Confirmed" without a threshold is how root cause slips. The probe ran, the expected signal appeared, you wrote the fix — but the signal you saw could equally have come from H2, and you never checked. The Phase 3.5 discrimination matrix tells you *which* probe to run; this checklist tells you *what counts as success*.
+
+**All four must hold before moving to Phase 5. If any is "no," the hypothesis is still a hypothesis — re-probe, fall back to the next-ranked, or stop and re-scope.**
+
+- [ ] **Signal specificity** — the observed evidence *uniquely* matches H_n's prediction. If the same evidence also fits the #2 hypothesis, you've confirmed *either* — not H_n. (Phase 3.5's matrix would have caught this; use it as a recheck if you skipped it.)
+- [ ] **Falsifiability demonstration** — you can name the observation that, if it had appeared, would have *disproved* H_n. If you can't, H_n wasn't really tested; the probe just "saw something." State the falsifier aloud (in the comment, in the commit message, in the chat with the user).
+- [ ] **Reproducible at least 3×** — the confirming observation has fired at least 3 times across independent runs (different inputs, different timing, or at minimum different process invocations). One observation is anecdote. Three is data. (For non-deterministic bugs: raise the repro rate first per Phase 1's "non-deterministic branch" — do not lower the bar.)
+- [ ] **Negative space checked** — at least one *adjacent* code path that's *not* affected by the bug was probed, and showed the expected "no signal" / "not the cause" result. This catches the "the bug is everywhere" false confirmation where H_n is true everywhere because the assumption is built into the codebase, not the bug.
+
+**The most-skipped check is negative space.** It's also the one that catches the "fix it in three places and the bug comes back" pattern. If you can't find an adjacent path that *doesn't* have the bug, your model of the system is wrong — go back to Phase 2 (Localize) before Phase 5 (Fix).
+
 **Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
 
 **Gate before writing the fix.** Once a hypothesis is confirmed (expected signal appeared, is falsifiable, and would look different if the hypothesis were wrong), don't proceed straight to Phase 5. **AskUserQuestion** single-select: "Confirmed: hypothesis '[H description]' is supported by [evidence summary]. Approve and proceed to the fix?"
@@ -121,6 +155,43 @@ This is the same checkpoint `/fix-bug` already runs when it mirrors this loop in
 Write the regression test **before the fix** — but only if there is a **correct seam** for it.
 
 A correct seam is one where the test exercises the **real bug pattern** as it occurs at the call site. If the only available seam is too shallow (single-caller test when the bug needs multiple callers, unit test that can't replicate the chain that triggered the bug), a regression test there gives false confidence.
+
+### Phase 5.5 — Seam decision tree (pick the right test seam)
+
+"Test seam" is binary in the skill today: exists or doesn't. Real life is graded. Walk this tree **before** writing the test — the wrong seam costs more than no test, because it gives green CI and zero protection.
+
+```
+Does the test fixture reproduce the exact input chain that triggered the bug?
+├── NO — fixture simplifies one element (one caller, one config, one env state)
+│   ├── Can the fixture be expanded cheaply? (≤30 min, no infra change)
+│   │   ├── YES → expand the fixture, write the test there
+│   │   └── NO  → STOP. No correct seam exists at this layer.
+│   │             Note it (this IS the finding — architecture handoff).
+│   │             Do not write a "best effort" test at the wrong seam.
+│   └──
+│
+├── YES — fixture matches the real chain
+│   ├── Does the test reach the code path that *actually* misbehaved?
+│   │   ├── NO — test stays above the bug; passes for the wrong reason
+│   │   │         → find a deeper seam, or accept "no correct seam"
+│   │   └── YES — the test would have caught this bug
+│   │       ├── Does the test have a single, named reason it can fail?
+│   │       │   (e.g. "expected output X", not "should not error")
+│   │       ├── NO  → sharpen the assertion. "Doesn't throw" is not a test.
+│   │       └── YES → write the test here, watch it fail, apply fix, watch it pass
+│   │
+│   └── Is the failure mode visible without a full app boot?
+│       ├── NO — bug only fires in real env (cluster of services, prod data shape)
+│       │         → see "no correct seam" below; this is a structural finding
+│       └── YES → seam is correct
+│
+└── NO correct seam at any layer (after the tree above)
+    → This is the finding. Don't paper over with a unit test.
+    → Note in the PR: "regression test for this bug is impossible at current seams"
+    → Hand off to /improve-codebase-architecture (Phase 6 last action).
+```
+
+**The "would have caught this bug" check is the load-bearing one.** Replay the original symptom through the test in your head: does the assertion fire *for the same reason* the user saw the bug? If it fires for a different reason (a downstream error, a different code path), the test will pass when the bug returns, and you'll be debugging this again in three months.
 
 **If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is preventing the bug from being locked down. Flag this for the next phase.
 
