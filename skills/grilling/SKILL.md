@@ -26,3 +26,15 @@ Failure mode to avoid: asking the user what the codebase already answers — tha
 
 1. confirm the user's answers actually constrain the design — each question should narrow the space, not restate it.
    If the interview drifts into generic Q&A or the answers don't reduce ambiguity, stop: grilling that doesn't converge never produces a buildable spec.
+
+---
+
+## Named Model
+
+This skill is a convergence surface, not a correctness oracle. The lenses it draws on (cc-thinking-skills):
+
+- *debiasing* — each recommended answer is a hypothesis to test, not a sales pitch.
+- *socratic* — the question sequence exposes contradictions the user already holds.
+- *steel-manning* — state the strongest version of the user's position before probing it.
+
+Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

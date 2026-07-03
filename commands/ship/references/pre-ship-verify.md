@@ -1,3 +1,8 @@
+---
+name: pre-ship-verify
+description: "Detailed reference for the deterministic verification gate /ship runs in Phase 5."
+---
+
 # Pre-ship verification
 
 Detailed reference for the deterministic verification gate `/ship` runs in Phase 5. It was formerly the standalone `/pre-ship-verify` command.

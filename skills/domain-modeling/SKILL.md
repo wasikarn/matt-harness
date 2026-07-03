@@ -76,3 +76,22 @@ If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](
 
 1. verify the model before committing — confirm each entity earns its place by a real behavior, not a guess.
    If an entity drifts toward speculative future needs, skip it: modeling what isn't proven fails the model as surely as missing what is. never add an entity without a behavior that exercises it.
+
+---
+
+## Completion criterion
+
+Done when:
+- `CONTEXT.md` lists every resolved term and the contradictions you named.
+- Every new ADR satisfies the 3-criteria gate (hard to reverse, surprising without context, result of a real trade-off) or is explicitly skipped with reason.
+- Any code/glossary contradiction is named or fixed.
+
+## Named Model
+
+This skill is a sense-making surface, not a correctness oracle. The lenses it draws on (cc-thinking-skills):
+
+- *cynefin* — where is this domain on the clear→complicated→complex map? That determines whether a precise glossary is even possible.
+- *reversibility* / *opportunity-cost* — frame the 3-criteria ADR gate: irreversible + surprising + traded-off decisions deserve an ADR.
+- *systems-thinking* — context boundaries: which terms belong inside this bounded context and which leak across seams.
+
+Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

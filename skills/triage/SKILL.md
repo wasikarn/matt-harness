@@ -115,3 +115,15 @@ If prior triage notes exist on the issue or PR, read them, check whether the rep
 
 1. confirm every issue has a disposition before closing — categorise → verify → brief, or drop explicitly.
    If triage drifts into implementing the fix or re-asks a resolved question, stop: triage owns routing, never the fix.
+
+---
+
+## Named Model
+
+This skill is a classify-and-act routing surface, not a correctness oracle. The lenses it draws on (cc-thinking-skills):
+
+- *model-router* / *model-selection* — which state/category role fits this request.
+- *circle-of-competence* — flag when the issue is outside the maintainer's declared scope.
+- *cynefin* — distinguish clear/simple/complicated/complex so you don't apply a mechanical triage script to an ambiguous problem.
+
+Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

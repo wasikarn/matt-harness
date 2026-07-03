@@ -1,3 +1,8 @@
+---
+name: ship-classify
+description: "Classify a change as bug fix, feature, or refactor and route to the right /ship sub-command."
+---
+
 # Ship — Classify Sub-Procedure
 
 Shared by both entry paths of `/ship` (Path A calls this inside Phase 4 step 1; Path B calls this at Phase 0 before skipping ahead). Written once so classification logic can't drift between entry points — see `sync-seam-defect-class` in project memory for why that drift is a proven, recurring failure mode in this repo.
