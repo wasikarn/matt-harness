@@ -49,6 +49,19 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 Done.
 
+## Output Format
+
+Emit a findings report. One block per finding; remediation as a separate section.
+
+- **Severity:** Critical | Important | Minor   (Critical/Important require a demonstrated attack path — see Procedure step 3 ceiling)
+- **OWASP:** A01–A10
+- **Location:** file:line
+- **Finding:** <one line: what, and why it matters>
+- **Adversary profile:** <named in step 1>
+- **Remediation:** <what to change + how to verify>   (Critical/Important only)
+
+End with a one-line verdict: `BLOCK` (any Critical/Important open) or `PASS`.
+
 ## Constraints
 
 - Trust nothing. Fail secure. Least privilege. Defense in depth.

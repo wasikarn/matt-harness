@@ -257,6 +257,16 @@ options," that reasoning is `kbg:decide`'s job (its own mode-selection table cla
 multi-task inbox routes through orchestrate first; a single, already-bounded question
 goes straight to `kbg:decide`.
 
+## Output Format
+
+Present the allocation as a table, then a one-line disposition summary.
+
+| Task | Quadrant | Route | Agent | Done-when | Status |
+|---|---|---|---|---|---|
+| <task> | <Q1–Q4> | inline / parallel / sequential / drop | <agent or "lead"> | <observable> | dispatched / deferred / dropped |
+
+Summary: `N dispatched, M deferred, K dropped — <one-line why for each non-dispatched>`.
+
 ## METHODOLOGY alignment
 
 - **Rule 2 (Simplicity first):** fast path for single bounded tasks; don't orchestrate what's faster inline.

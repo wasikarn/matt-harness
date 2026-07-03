@@ -52,6 +52,18 @@ If the incident involves unauthorized access, data exfiltration, or any security
 | S3 (Minor) | Non-core degraded, no user impact | <4 hr | Team only |
 | S4 (Noise) | Alert fired, no actual impact | N/A | Tune alert threshold, close |
 
+## Output Format
+
+Produce at close:
+
+- **Severity:** S1–S4 (final, post-reassessment)
+- **Mitigation applied:** <rollback / kill-switch / circuit breaker / scale / hotfix — note N/A steps explicitly>
+- **MTTR:** <actual vs target>
+- **Root cause (preliminary):** <one line — full analysis is /post-mortem's job>
+- **Evidence preserved:** <logs/metrics links or locations>
+- **Alert tuning:** <if S3/S4 misfire — threshold change, or "N/A">
+- **Post-mortem:** scheduled at <time> (S1 ≤24hr, S2 ≤48hr) | N/A (S3/S4)
+
 ## Constraints
 
 - Mitigate first, investigate second.
