@@ -82,6 +82,17 @@
         ]
       },
       {
+        "id": "gate:task:complete-separation",
+        "matcher": "TaskUpdate",
+        "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_type is present (subagent). Exit 2 + stderr; fail-safe allow on parse error.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/task-complete-separation.sh\""
+          }
+        ]
+      },
+      {
         "id": "gate:write:worktree-guard",
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02.",

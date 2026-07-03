@@ -10,6 +10,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
 PATH_HARDCODE="$ROOT/hooks/gates/path-hardcode.sh"
 VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
+TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
 
 pass=0
 fail=0
@@ -30,6 +31,23 @@ write_payload() {
 edit_payload() {
   local path="$1" new="$2"
   printf '{"tool_name":"Edit","tool_input":{"file_path":"%s","new_string":"%s"}}' "$path" "$new"
+}
+
+# Build a TaskUpdate payload. $1=status (or empty to omit the field),
+# $2=agent_type (or empty = main session, field omitted). Uses json.dumps so
+# the agent_type string is safely encoded.
+taskupdate_payload() {
+  python3 -c '
+import json, sys
+status, agent = sys.argv[1], sys.argv[2]
+ti = {"taskId": "T1"}
+if status:
+    ti["status"] = status
+d = {"tool_name": "TaskUpdate", "tool_input": ti}
+if agent:
+    d["agent_type"] = agent
+print(json.dumps(d))
+' "$1" "$2"
 }
 
 # Expect the gate to BLOCK (exit 2).
@@ -206,6 +224,26 @@ test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
   "$(write_payload 'skills/foo/SKILL.md' '# ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a command (normal work)" \
   "$(write_payload 'commands/pr.md' '# ok')"
+
+echo ""
+echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="
+# maker self-completion is the one thing the harness forbids — a subagent
+# (agent_type present) calling TaskUpdate(completed) is blocked at exit 2.
+# The main session (no agent_type) and any non-completion status pass.
+test_deny  "$TASK_COMPLETE" "subagent marks completed (maker self-grade)" \
+  "$(taskupdate_payload completed kbg:build-error-resolver)"
+test_allow "$TASK_COMPLETE" "main session marks completed (no agent_type)" \
+  "$(taskupdate_payload completed '')"
+test_allow "$TASK_COMPLETE" "subagent sets in_progress (not completion)" \
+  "$(taskupdate_payload in_progress kbg:build-error-resolver)"
+test_allow "$TASK_COMPLETE" "subagent sets pending (not completion)" \
+  "$(taskupdate_payload pending kbg:build-error-resolver)"
+test_allow "$TASK_COMPLETE" "subagent subject/desc update (no status field)" \
+  "$(taskupdate_payload '' kbg:build-error-resolver)"
+test_allow "$TASK_COMPLETE" "malformed stdin (fail-safe allow)" \
+  '{not valid json'
+test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
+  "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"kbg:build-error-resolver"}))')"
 
 echo ""
 total=$((pass + fail))

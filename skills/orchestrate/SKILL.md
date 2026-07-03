@@ -117,6 +117,8 @@ This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol e
 
 The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the native `TaskCreate` + `addBlockedBy` protocol (or an inline checklist for a short chain) — the lead is the **sole writer** of the plan state, since sub-agent Write/Edit may be silently discarded (GitHub #9458). Spawn B blocked on A; if B rejects, spawn a fix task F blocked on B; D confirms the fix. Advance each edge only when the upstream task is verified `completed` against its done-when.
 
+**Completion is owned by the main session, not the maker.** `addBlockedBy` gates *ordering*, but ordering alone does not stop a maker from marking its own task `completed` without B's pass — the maker-grading-its-own-work circularity. `gate:task:complete-separation` (`hooks/gates/task-complete-separation.sh`, wired on `PreToolUse:TaskUpdate`) closes that gap computationally: any subagent (`agent_type` present) that calls `TaskUpdate(status="completed")` is blocked at exit 2. So the maker (A) sets `in_progress` and **returns**; the validator (B) reviews and **returns its verdict to the main session**; the **main session** marks `completed` on B's pass. A subagent's `agent_type` is fixed at spawn and cannot be mutated, so a maker cannot forge completion — the only path is the main session (the operator proxy / trusted verifier of last resort). This is enforced at the hook, not by doctrine.
+
 ### Worked example: health check endpoint
 
 Concrete 4-task chain for implementing `GET /health`.
