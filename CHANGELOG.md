@@ -5,6 +5,79 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.30.5] — 2026-07-03
+
+INFO-level audit cleanup after the v0.30.2 named-model footer sweep.
+
+- `commands/post-mortem.md` — moved `## Named Model` footer out of Phase 3 body to the end.
+- `commands/fix-bug.md` — moved `## Named Model` footer out of Integration Notes to the end.
+- `commands/ideate/references/frames.md` — fixed stale link to `commands/ideate.md` → `commands/ideate/COMMAND.md`.
+- `CLAUDE.md` — added "Recent versions" section covering v0.25-v0.30.
+- `CHANGELOG.md` — caught up entries for v0.25-v0.30.
+
+## [0.30.4] — 2026-07-03
+
+Continued the v0.30.2 named-model footer sweep and fixed WARN/INFO findings.
+
+- Named Model footers added to `skills/triage`, `skills/domain-modeling`, `skills/grilling`.
+- YAML frontmatter added to `commands/ship/references/classify.md` and `commands/ship/references/pre-ship-verify.md`.
+- `CLAUDE.md` Skill authoring doctrine now references the 3-condition rubric and reasoning-models catalog.
+- `hooks/gates/worktree-guard.py` exec bit corrected (mode 100644 → 100755).
+- `memory/mental-models-sweep-v0302-2026-07-03.md` tally corrected.
+
+## [0.30.3] — 2026-07-03
+
+Blocker fix from full audit.
+
+- `agents/build-error-resolver.md`: `rm -rf` recipes replaced with `trash` (repo invariant).
+- `agents/build-error-resolver.md` description trimmed from 37 words to 24.
+
+## [0.30.2] — 2026-07-03
+
+Named Model footer sweep: 4 surfaces.
+
+- `skills/review-pr/SKILL.md`, `skills/score-decision/SKILL.md`, `commands/post-mortem.md`, `agents/performance-optimizer.md` — added `## Named Model` footers citing cc-thinking-skills lenses + reasoning-models catalog + honesty caveat.
+
+## [0.30.1] — 2026-07-03
+
+Named Model footer sweep: diagnosing-bugs.
+
+- `skills/diagnosing-bugs/SKILL.md` — removed 4 scattered inline named-model callouts, consolidated into a single `## Named Model` footer.
+
+## [0.30.0] — 2026-07-03
+
+Diagnosing-bugs gap fill.
+
+- Added Phase 2.5 probe discrimination, Phase 3.5 evidence threshold, and Phase 4.5 seam-tree steps to `skills/diagnosing-bugs/SKILL.md`.
+
+## [0.29.0] — 2026-07-02
+
+Computational worktree guard for kbg single-branch doctrine.
+
+- `gate:worktree:develop-only` (`WorktreeCreate` event) blocks worktrees to `develop` only.
+- `gate:bash:irrecoverable` denies `git worktree add -b`.
+- `review-pr-<N>` detached worktrees in `$TMPDIR` allowlisted for PR-by-number review path.
+
+## [0.28.0] — 2026-07-02
+
+Subagent completion separation.
+
+- `gate:task-complete-separation` denies subagent self-completion (`TaskComplete` event) — maker ≠ checker.
+
+## [0.27.0] — 2026-07-01
+
+Output Format added to 3 kbg-native skills with a real I/O gap.
+
+## [0.26.0] — 2026-07-01
+
+Misdirection/under-use audit.
+
+- Closed verifier perimeter gaps, removed dead-at-birth code, fixed contradictions and stale references.
+
+## [0.25.0] — 2026-07-01
+
+Adopted tathep worktree-guard as plugin gate + defined hotfix production-branch rule.
+
 ## [0.24.0] — 2026-07-02
 
 Token-optimization pass across always-loaded and frequently-invoked surfaces,

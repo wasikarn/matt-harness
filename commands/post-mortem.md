@@ -106,8 +106,6 @@ Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream con
 3. If a section is unknown (e.g., escape reason is still being investigated), write "Unknown — tracked in <follow-up issue>."
 4. Do NOT invent facts to make the narrative cleaner. If the mechanism is partially understood, state what IS known and mark the rest unknown.
 
-**Named model** (cc-thinking-skills): section 7 "Escape Reason" (how did this reach production? what check missed it?) is the *pre-mortem* lens — not "what did we miss" but "what catastrophic-failure branch + detection + rollback" was missing pre-incident; section 6 "Discovery Method" + section 8 "Validation Proof" together are *scientific-method* (repro → falsify → regression test). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
-
 ---
 
 ## Phase 4: Review
@@ -147,3 +145,9 @@ Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream con
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity. Otherwise it's a standard engineering post-mortem.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces; it does not cover CLAUDE.md/METHODOLOGY.md directly.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).
+
+---
+
+## Named Model
+
+Section 7 "Escape Reason" (how did this reach production? what check missed it?) is the *pre-mortem* lens — not "what did we miss" but "what catastrophic-failure branch + detection + rollback" was missing pre-incident. Section 6 "Discovery Method" + section 8 "Validation Proof" together are *scientific-method* (repro → falsify → regression test). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

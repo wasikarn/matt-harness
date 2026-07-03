@@ -84,3 +84,14 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 - **`review_mode` in `ship-merge`:** `review-pr` tags its state write `pr-by-number` (isolated worktree) or `own-branch` (self-review). `ship-merge` caps the Critical-findings score at the fatal-weakness floor on sensitive-path diffs reviewed `own-branch` — an automation-bias guard against trusting a same-session self-review's severity tiering. "Sensitive-path" covers both auth/secret/credential/payment/billing/token AND the harness's own verifier/gate code (`hooks/gates/**`, `hooks/hooks.json`, `skills/harness-audit/scripts/{audit.sh,checks/**}` — the same list `hooks/gates/verifier-protect.sh` protects).
 - **`orchestrate` vs `kbg:decide`:** orchestrate decides whether/how to spend effort on an ask (inline/parallel/sequential/drop, which surface receives it) *before* it's understood as a bounded decision; `decide` reasons through a bounded question once you're already committed to answering it. A pile of competing asks routes through `orchestrate` first; a single reversible-choice question goes straight to `decide`.
 - **`/goal` vs `goal-craft`:** `/goal` is Claude Code's own native completion-condition loop (v2.1.139+, session-scoped, judged each turn by a separate small model that reads only the transcript). kbg never wraps or auto-invokes it — `skills/goal-craft/SKILL.md` only composes a paste-ready condition string (mandatory one-way-door screen + turn bound); the user always types `/goal` themselves. Auto-dispatch (`claude -p "/goal ..."`) is a deliberate non-goal — it forks a separate headless session and reopens the retired L4/L5 "no model self-start" invariant.
+
+## Recent versions
+
+Quick orientation for the last few releases. For full notes see `CHANGELOG.md`.
+
+- **v0.30.x** — Named Model footer sweep across skills/commands/agents using the 3-condition rubric; `diagnosing-bugs` Phase 2/3/4/5.5 gap fills; audit cleanup of footer placement/format, stale links, and exec-bit drift.
+- **v0.29.0** — Computational worktree guard: `WorktreeCreate` blocked to `develop`-only + `git worktree add -b` denied, with `review-pr-<N>` `$TMPDIR` allowlist preserved.
+- **v0.28.0** — Subagent `task-complete` separation gate (maker ≠ checker).
+- **v0.27.0** — Output Format added to 3 kbg-native skills with a real I/O gap.
+- **v0.26.0** — Misdirection/under-use audit: verifier perimeter, dead-at-birth code, contradictions, stale refs.
+- **v0.25.0** — Adopted tathep worktree-guard as plugin gate + hotfix production-branch rule.

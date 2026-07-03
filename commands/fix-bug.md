@@ -188,4 +188,9 @@ Update todos as you progress.
   - Use standalone `kbg:tdd` for greenfield TDD on new features, not bug fixes.
 - **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/path-hardcode.sh` (hardcoded `/Users/` paths) run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
-- **Named model**: the reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
+---
+
+## Named Model
+
+The reproduce → hypothesize → instrument → falsify loop is the *scientific method*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
