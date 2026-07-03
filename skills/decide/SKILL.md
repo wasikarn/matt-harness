@@ -79,7 +79,7 @@ Document chosen and rejected options, trade-offs, revisit trigger, progress metr
 > Bias guards before closing: framing, anchoring, confirmation, sunk-cost.
 > "If we had not already started, would we start today?"
 
-**Full rung detail and decision record template:** `docs/reference/judgment-ladder.md`
+**Full rung detail and decision record template:** read via Bash — `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"` (the bare repo-relative path resolves nowhere in a foreign-project CWD; the plugin cache is the stable anchor).
 
 ---
 
@@ -109,7 +109,7 @@ A weak diagnosis produces a vague policy. If the three elements don't fit, loop.
 Cross-check with Lafley-Martin five choices: winning aspiration → where to play →
 how to win → capabilities → management systems.
 
-**Full model detail:** `docs/reference/strategic-judgment.md`
+**Full model detail:** read via Bash — `cat "${KBG_PLUGIN_ROOT}/docs/reference/strategic-judgment.md"`.
 
 ---
 

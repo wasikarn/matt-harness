@@ -31,7 +31,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   ' "$transcript" 2>/dev/null) || usage=''
 
   if [[ -n "$usage" && "$usage" != "null" ]]; then
-    row=$(printf '%s' "$usage" | jq \
+    row=$(printf '%s' "$usage" | jq -c \
       --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       --arg sid "$session_id" \
       --arg tp "$transcript" '

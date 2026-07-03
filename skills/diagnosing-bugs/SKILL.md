@@ -90,7 +90,7 @@ Each hypothesis must be **falsifiable**: state the prediction it makes.
 
 If you cannot state the prediction, the hypothesis is a vibe — discard or sharpen it.
 
-**Named bias guard — anchoring + confirmation.** The ranked-list requirement above is the anchoring guard (a single hypothesis anchors on the first plausible story); the falsifiability requirement is the confirmation guard (a hypothesis you can't disprove is one you'll unconsciously confirm). Full rung detail: `docs/reference/judgment-ladder.md` §"3. Gather and test assumptions".
+**Named bias guard — anchoring + confirmation.** The ranked-list requirement above is the anchoring guard (a single hypothesis anchors on the first plausible story); the falsifiability requirement is the confirmation guard (a hypothesis you can't disprove is one you'll unconsciously confirm). Full rung detail: `judgment-ladder.md` §"3. Gather and test assumptions" — read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`.
 
 **Show the ranked list to the user before testing.** They often have domain knowledge that re-ranks instantly ("we just deployed a change to #3"), or know hypotheses they've already ruled out. Cheap checkpoint, big time saver. Don't block on it — proceed with your ranking if the user is AFK.
 

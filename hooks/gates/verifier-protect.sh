@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier
-# surfaces — hooks/gates/**, hooks/hooks.json, AND the non-model audit verifier
+# Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
+# write (redirect, tee, sed -i, perl -i, cp, mv) — to the verifier surfaces:
+# hooks/gates/**, hooks/hooks.json, AND the non-model audit verifier
 # (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot
 # neuter the deny-gates OR weaken the audit checks that judge it without an
 # in-session human approval (the tamper-resistance principle: the agent cannot
 # edit the code that judges it). A gate/check the model can silently disable is
 # not a computational deny — and a half-protected perimeter is worse than none,
 # so BOTH deterministic verifiers (the gates AND the audit) are guarded.
+#
+# Bash mode (tool_name == Bash): the Write/Edit matchers above do not see Bash,
+# so `echo x > hooks/gates/irrecoverable.sh`, `sed -i …`, `tee`, `cp`/`mv` could
+# edit a verifier surface with zero prompt (found 2026-07-03). This gate scans
+# the Bash command for redirect targets and write-command file args that resolve
+# into the protected set. Bounded idiom set — a habit-guard, not an adversarial
+# sandbox; revisit if the threat model demands full Bash analysis.
 #
 # Emits a PreToolUse `permissionDecision: ask` JSON (exit 0) so Claude Code
 # surfaces a live Approve/Deny prompt to the operator — no env-var bypass, no
@@ -15,44 +23,39 @@
 # Reads the PreToolUse JSON payload from stdin. Exit 0 + ask JSON on hit
 # (JSON honored); exit 0 + no output on miss (clean allow); exit 0 + ask JSON
 # on internal error too (fail-safe: an unparseable payload must never resolve
-# to a silent allow on a tamper-resistance gate — found 2026-07-01, a bare
-# `|| true` around the whole interpreter call was swallowing every Python
-# exception, including json.JSONDecodeError on malformed stdin, into a silent
-# clean allow).
+# to a silent allow on a tamper-resistance gate).
 #
 # Path matching is case-INsensitive: macOS/APFS is case-insensitive but
 # case-preserving, and os.path.realpath() does not correct a path's casing to
 # match the on-disk directory-entry casing — so a case-sensitive substring
 # check can be bypassed by writing to a differently-cased path (e.g.
 # "hooks/Gates/x.sh") that the filesystem still resolves into the real
-# protected directory (found 2026-07-01). Lowercasing both sides only widens
-# the match (more prompts, never fewer) so it is safe on case-sensitive
-# filesystems too.
+# protected directory. Lowercasing both sides only widens the match (more
+# prompts, never fewer) so it is safe on case-sensitive filesystems too.
 set -uo pipefail
 
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 python3 -c '
-import sys, json, os
+import sys, json, os, shlex, re
+
+PROTECTED_REASON = (
+    "Editing a verifier surface — the deny-gates or audit checks that "
+    "judge the model live here. Tamper-resistance: the model cannot edit "
+    "the code that judges it without your approval."
+)
 
 def emit_ask(fp, reason=None):
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
-            "permissionDecisionReason": reason or (
-                "Editing a verifier surface (" + fp + ") — the deny-gates or "
-                "audit checks that judge the model live here. Tamper-resistance: "
-                "the model cannot edit the code that judges it without your "
-                "approval."
-            ),
+            "permissionDecisionReason": reason or (PROTECTED_REASON + " (" + fp + ")"),
         }
     }))
 
-try:
-    d = json.load(sys.stdin)
-    fp = d.get("tool_input", {}).get("file_path", "") or ""
-
-    # Normalize: strip leading "./" and realpath if it exists, else use as-is.
+def is_verifier_path(fp):
+    if not fp:
+        return False
     norm = fp.lstrip()
     if norm.startswith("./"):
         norm = norm[2:]
@@ -60,39 +63,108 @@ try:
         norm = os.path.realpath(norm)
     except Exception:
         pass
-    norm_l = norm.lower()
-
-    # Relative-form fallback (path not yet resolved / file does not exist yet)
+    nl = norm.lower()
     rel = fp.lstrip()
     if rel.startswith("./"):
         rel = rel[2:]
-    rel_l = rel.lower()
+    rl = rel.lower()
+    if "/hooks/gates/" in nl or nl.endswith("/hooks/gates"):
+        return True
+    if nl.endswith("/hooks/hooks.json"):
+        return True
+    if nl.endswith("/skills/harness-audit/scripts/audit.sh"):
+        return True
+    if "/skills/harness-audit/scripts/checks/" in nl or \
+       nl.endswith("/skills/harness-audit/scripts/checks"):
+        return True
+    if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/"):
+        return True
+    if rl == "skills/harness-audit/scripts/audit.sh" or \
+       rl.startswith("skills/harness-audit/scripts/checks/") or \
+       rl == "skills/harness-audit/scripts/checks":
+        return True
+    return False
 
-    # The verifier surfaces the model must not edit without human approval.
-    hit = False
-    # hooks/gates/** (the deny-gates themselves)
-    if "/hooks/gates/" in norm_l or norm_l.endswith("/hooks/gates"):
-        hit = True
-    # hooks/hooks.json (the wiring — disabling a hook = neutering the gate)
-    if norm_l.endswith("/hooks/hooks.json"):
-        hit = True
-    # skills/harness-audit/scripts/audit.sh + checks/** — the non-model audit
-    # verifier (the OTHER deterministic grader). Editing a check to weaken it =
-    # the maker grading its own work — the same circularity hooks.json
-    # protection stops.
-    if norm_l.endswith("/skills/harness-audit/scripts/audit.sh"):
-        hit = True
-    if "/skills/harness-audit/scripts/checks/" in norm_l or \
-       norm_l.endswith("/skills/harness-audit/scripts/checks"):
-        hit = True
-    if rel_l == "hooks/hooks.json" or rel_l.startswith("hooks/gates/"):
-        hit = True
-    if rel_l == "skills/harness-audit/scripts/audit.sh" or \
-       rel_l.startswith("skills/harness-audit/scripts/checks/") or \
-       rel_l == "skills/harness-audit/scripts/checks":
-        hit = True
+def bash_write_targets(cmd):
+    """Yield candidate file paths the Bash command writes to. Bounded idiom
+    set: redirects, tee, sed -i, perl -i, cp, mv. Not an adversarial sandbox."""
+    try:
+        lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+        tokens = list(lex)
+    except ValueError:
+        tokens = cmd.split()
+    # Split into windows on command separators so per-command argv0 logic works.
+    SEPS = {";", "&&", "||", "|", "&"}
+    windows, cur = [], []
+    for t in tokens:
+        if t in SEPS:
+            if cur:
+                windows.append(cur)
+            cur = []
+        else:
+            cur.append(t)
+    if cur:
+        windows.append(cur)
+    for w in windows:
+        if not w:
+            continue
+        argv0 = w[0].rsplit("/", 1)[-1]
+        rest = w[1:]
+        i = 0
+        # redirects inside this command window: >, >>, &>, >&  [target is next token]
+        while i < len(rest):
+            t = rest[i]
+            if t in (">", ">>", "&>", ">&"):
+                if i + 1 < len(rest):
+                    yield rest[i + 1]
+                i += 2
+                continue
+            if t.startswith(">"):
+                yield t.lstrip(">")
+                i += 1
+                continue
+            i += 1
+        # write-command idioms
+        nonflag = [t for t in rest if not t.startswith("-")]
+        if argv0 == "tee":
+            for t in nonflag:
+                yield t
+        elif argv0 in ("sed", "perl"):
+            if any(t in ("-i", "--in-place") or t == "-i" for t in rest) or \
+               any(t.startswith("-i") and t != "-i" for t in rest):
+                # skip -e/-i values; remaining nonflag args are the files
+                skipnext = False
+                for t in rest:
+                    if skipnext:
+                        skipnext = False
+                        continue
+                    if t in ("-e", "--expression"):
+                        skipnext = True
+                        continue
+                    if not t.startswith("-") and t not in ("-", ""):
+                        yield t
+        elif argv0 in ("cp", "mv"):
+            if nonflag:
+                yield nonflag[-1]  # destination
+        elif argv0 == "install":
+            if len(nonflag) >= 1:
+                yield nonflag[-1]
 
-    if hit:
+try:
+    d = json.load(sys.stdin)
+    tool = d.get("tool_name", "")
+    ti = d.get("tool_input", {}) or {}
+
+    if tool == "Bash":
+        cmd = ti.get("command", "") or ""
+        for p in bash_write_targets(cmd):
+            if is_verifier_path(p):
+                emit_ask(p, "Bash write to a verifier surface (" + p + ") — " + PROTECTED_REASON)
+                break
+        sys.exit(0)
+
+    fp = ti.get("file_path", "") or ti.get("notebook_path", "") or ""
+    if is_verifier_path(fp):
         emit_ask(fp)
 except Exception:
     # Cannot confirm this write is safe — fail toward asking, never toward a

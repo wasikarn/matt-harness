@@ -82,9 +82,14 @@ payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
 rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+# cost-tracker appends with `jq -c` → one compact JSON object per line (found
+# 2026-07-03: the old pretty-printed format broke every line-oriented reader).
+row=$(tail -1 "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
-  && /usr/bin/grep -q '"session_id": "test-session"' "$metrics_file" && ok=1 || ok=0
-assert "echoes payload through + appends a cost row for a valid transcript" "$ok"
+  && printf '%s' "$row" | /usr/bin/grep -q '"session_id":"test-session"' \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
+  && printf '%s' "$row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "echoes payload through + appends one compact JSONL cost row for a valid transcript" "$ok"
 rm -rf "$fake_home" "$transcript"
 
 fake_home=$(mktemp -d)

@@ -1,6 +1,6 @@
 ---
 name: frame
-description: "Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-patterns) or changing voice register (use /output-style)."
+description: "Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style."
 argument-hint: dev | review | research
 ---
 
@@ -12,10 +12,10 @@ Read the requested mode file and adopt that working posture for the rest of the 
 
 1. Parse `$ARGUMENTS` for the mode. Valid modes: `dev`, `review`, `research`.
 2. **If empty or unrecognized**, show the three options and stop — do not guess:
-   - `dev` — implementation posture (TDD, surgical diffs, verify before done)
-   - `review` — reviewer posture (confidence×severity, defer-don't-absorb)
+   - `dev` — implementation posture
+   - `review` — reviewer posture
    - `research` — exploration posture (read-before-write, cite evidence, no edits)
-3. Read `${KBG_PLUGIN_ROOT}/contexts/<mode>.md` and adopt the frame it describes for subsequent turns. Confirm in one line which frame is now active.
+3. Read the frame file via Bash (the Read tool does not expand env vars): `cat "${KBG_PLUGIN_ROOT}/contexts/<mode>.md"` and adopt the frame it describes for subsequent turns. Confirm in one line which frame is now active.
 
 Read-only posture-setter — it loads a frame, it does not run a workflow or edit files. The frame persists until another is loaded or the session ends.
 

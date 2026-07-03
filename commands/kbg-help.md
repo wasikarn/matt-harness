@@ -24,14 +24,14 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 
 ### ...and which specialist (agent) per stage
 
-The 11-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
+The 12-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
 
 | Stage | Agent specialists |
 |-------|-------------------|
 | **DEFINE** | `spec-miner` (requirements/spec/AC mining) |
 | **DESIGN** | `code-architect` (blueprint, interfaces, seams) |
 | **BUILD** | `build-error-resolver` (auto-detects build system, fixes build/type errors) |
-| **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
+| **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
 | **OPERATE** | `refactor-cleaner` (dead-code removal, behavior-preserving refactor) |
 | **Cross-cutting** | `ideate-critic` (fresh-context critics/sensors) |
 
@@ -51,7 +51,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 
 | Tier | What's resident | How to reach |
 |------|-----------------|--------------|
-| **L1** | METHODOLOGY / RTK / ACLI / DBGATE + CLAUDE.md + MEMORY.md  + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
+| **L1** | METHODOLOGY + CLAUDE.md + MEMORY.md + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
 | **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship`) or skill-nudge keyword |
 | **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:inventory` lists every loadable surface when you don't know the right one |
 
@@ -60,9 +60,8 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 These validation commands resolve paths from `${KBG_PLUGIN_ROOT}` and work from any CWD:
 
 ```bash
-bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + audit + affected evals
-bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: full parallel gauntlet
-bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh" --fast          # skip the slow critical-hooks suite
+bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + CRITICAL harness-audit
+bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: full parallel gauntlet (validate + lint + JSON + audit + hook suites)
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
 ```
 

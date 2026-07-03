@@ -120,6 +120,46 @@ test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
   "$(bash_payload 'git checkout -b new-branch')"
+# 2026-07-03 audit: newline and '&' are command separators in bash but shlex
+# ate newline as whitespace and '&' wasn't in OPERATORS — a dangerous command
+# after either hid inside the first command's window. Also --force-with-lease
+# (the safe variant) was caught by the --force prefix match.
+test_deny  "$IRRECOVERABLE" "dangerous cmd after newline" \
+  "$(bash_payload $'echo hi\nrm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "dangerous cmd after & (background)" \
+  "$(bash_payload 'echo done & rm -rf /tmp/x')"
+test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
+  "$(bash_payload 'git push --force-with-lease origin develop')"
+test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \
+  "$(bash_payload 'git push --force-with-lease=main:12345 origin develop')"
+test_allow "$IRRECOVERABLE" "git push normal (no force)" \
+  "$(bash_payload 'git push origin develop')"
+
+echo ""
+echo "=== verifier-protect Bash gate (redirect/tee/sed-i writes to verifier surfaces) ==="
+VP_BASH="$ROOT/hooks/gates/verifier-protect.sh"
+test_ask   "$VP_BASH" "redirect > into hooks/gates/" \
+  "$(bash_payload 'echo neutered > hooks/gates/irrecoverable.sh')"
+test_ask   "$VP_BASH" "append >> into hooks/hooks.json" \
+  "$(bash_payload 'echo x >> hooks/hooks.json')"
+test_ask   "$VP_BASH" "sed -i on an audit check" \
+  "$(bash_payload 'sed -i s/a/b/ skills/harness-audit/scripts/checks/01-fleet-count.sh')"
+test_ask   "$VP_BASH" "tee into a gate file" \
+  "$(bash_payload 'echo x | tee hooks/gates/path-hardcode.sh')"
+test_ask   "$VP_BASH" "cp over an audit check (dest is verifier path)" \
+  "$(bash_payload 'cp foo skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
+test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
+  "$(bash_payload "mv x $ROOT/hooks/gates/irrecoverable.sh")"
+test_allow "$VP_BASH" "redirect into a normal source file" \
+  "$(bash_payload 'echo x > skills/foo/SKILL.md')"
+test_allow "$VP_BASH" "cat a gate file (read, not write)" \
+  "$(bash_payload 'cat hooks/gates/irrecoverable.sh')"
+test_allow "$VP_BASH" "git apply a patch to a non-verifier path" \
+  "$(bash_payload 'git apply --check foo.patch')"
+test_allow "$VP_BASH" "sed -i on a normal project file" \
+  "$(bash_payload 'sed -i s/a/b/ src/index.ts')"
+test_allow "$VP_BASH" "ls a gate file (no write)" \
+  "$(bash_payload 'ls hooks/gates/irrecoverable.sh')"
 
 echo ""
 echo "=== path-hardcode gate ==="

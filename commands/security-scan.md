@@ -1,5 +1,5 @@
 ---
-description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces.
+description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor.
 name: security-scan
 agent: security-reviewer
 subtask: true

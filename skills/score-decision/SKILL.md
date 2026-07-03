@@ -31,7 +31,7 @@ Propose 4–6 judging criteria, each **measurable** (you can cite the evidence t
 
 ### 3. Score each criterion
 
-Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `docs/reference/judgment-ladder.md`'s "Estimate risk" rung); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
+Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `judgment-ladder.md`'s "Estimate risk" rung, read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
 
 ### 4. Verdict
 

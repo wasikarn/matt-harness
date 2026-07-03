@@ -42,7 +42,7 @@ _Personals/kbg-harness_
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
-  ◇ review-pr                      Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs.
+  ◇ review-pr                      Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
   ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo.
@@ -55,29 +55,24 @@ _Personals/kbg-harness_
   ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
   ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
-### Commands (22)
-  ◇ address-review                 Triage and respond to existing PR review comments — fetch threads via gh, classify (action/clarify/wontfix/out-of-scope), implement fixes (delegate to /fix-bug), reply per-thread with commit sha, re-request review. Use when a PR has open review threads, after kbg:review-pr returns findings, or user says 'address the review', or when the user says 'แก้ตามรีวิว', 'ตอบรีวิว', 'address review'. Don't use for: doing the review yourself (use kbg:review-pr), pre-PR cleanup, or merging post-approval (use /ship-merge).
+### Commands (17)
+  ◇ address-review                 Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
-  ◇ deep-dive                      Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship or /fix-bug), or security audits (use kbg:security-auditor).
-  ◇ fix-bug                        Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-patterns), greenfield TDD (use kbg:backend-patterns), or refactors not driven by a bug (use `/refactor-clean`).
-  ◇ frame                          Load a lightweight working-frame for the session — dev, review, or research. A posture-setter (how you work), lighter than running a full skill and distinct from output-styles (which set voice). Use when the user says 'dev mode', 'review mode', 'research mode', 'set context', 'switch frame', or 'โหมด dev', 'โหมด review', 'ตั้งโหมด'. Don't use for: running an actual workflow (use the matching skill — /deep-dive, kbg:review-pr, kbg:backend-patterns) or changing voice register (use /output-style).
-  ◇ ideate-search                  Search past /ideate runs by query against the local qmd collection. Use when the user asks to find a previous ideate session, search ideate memory, or says 'ค้นหาไอเดีย', 'ideate search', 'หาไอเดีย'. Don't use for: running a new ideation session (use /ideate), searching the codebase (use /deep-dive), or external web research (use /deep-dive).
+  ◇ deep-dive                      Research codebase/docs/web → concise cited brief (single kbg research surface). Say 'research/deep dive/วิจัย/สำรวจ'. Don't use for single-file lookups or security audits (kbg:security-auditor).
+  ◇ fix-bug                        Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (kbg:tdd), or refactors (/refactor-clean).
+  ◇ frame                          Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style.
+  ◇ ideate-search                  Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (/deep-dive).
   ◇ kbg-help                       kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'.
-  ◇ pm2                            Analyze a project and generate PM2 service commands for detected frontend, backend, or database services.
-  ◇ post-mortem                    Draft a canonical post-mortem for a resolved bug. Requires reproducible trigger, known mechanism, identified patch, and passing validation. Use after /fix-bug completes or when user says 'write post-mortem', 'document this bug', 'incident report', or when the user says 'เขียน post-mortem', 'บันทึกบั๊ก', 'incident report'. Don't use for: in-progress investigations (root cause must be known), hypothetical bugs (no validated fix), or non-technical incidents (use incident response template instead).
+  ◇ post-mortem                    Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents.
   ◇ pr                             Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes.
-  ◇ prp-commit                     Quick commit with natural language file targeting — describe what to commit in plain English
   ◇ refactor-clean                 Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent.
-  ◇ save-session                   Save current session state to a dated file in ~/.claude/session-data/ so work can be resumed in a future session with full context.
-  ◇ security-scan                  Run AgentShield against agent, hook, MCP, permission, and secret surfaces.
-  ◇ ship-merge                     Merge an approved PR safely: validate state, execute server-side merge, clean up branch, monitor CI post-merge. Use when the user says 'merge this PR', 'ship it', or after /address-review or /ship-release reaches the merge gate, or when the user says 'merge PR', 'ship it', 'รวมโค้ด'. Do NOT use for: unapproved PRs (wait for approval), PRs with failing CI (fix first), or hotfixes that need direct push (use kbg:incident hotfix path).
-  ◇ ship-release                   Cut a software release end-to-end: version bump → changelog → review gate → tag → merge → monitor. Use when the user says 'ship release', 'cut a release', 'prepare version X.Y.Z', or when a release branch is ready for tagging, or when the user says 'ปล่อยเวอร์ชัน', 'release', 'ship release'. Do NOT use for: one-off PR merges (use /ship-merge), hotfixes (use kbg:incident hotfix path), or when there is no release branch / tag strategy defined.
+  ◇ security-scan                  Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor.
+  ◇ ship-merge                     Merge an approved PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for unapproved PRs, failing CI, or hotfixes (kbg:incident).
+  ◇ ship-release                   Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (kbg:incident).
   ◇ test-coverage                  Analyze coverage, identify gaps, and generate missing tests toward the target threshold.
-  ◇ update-codemaps                Scan project structure and generate token-lean architecture codemaps.
-  ◇ update-docs                    Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports.
-  ◇ COMMAND                        Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — or when the user explicitly types /ideate, asks to brainstorm, or says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Spawns 5 isolated agent calls under rotating cognitive frames (15-frame pool, 5 per run), scores on novelty/viability/fit, prunes traps, deepens top 3, with a fresh-context critic option. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook').
-  ◇ COMMAND                        Land any code change end-to-end: classify (blank-slate vs already-scoped, then bug/feature/refactor) → implement → test → review → fix-loop → merge. Use when starting a non-trivial task or landing a scoped change, or when the user says 'ship this', 'land this change', 'ship task', 'ทำงานใหม่', 'เริ่มต้นทำงาน'. Don't use for: one-line fixes, pure research/exploration, version/release cuts (use /ship-release), or an already-approved PR ready to land (use /ship-merge directly).
+  ◇ COMMAND                        Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks.
+  ◇ COMMAND                        Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge).
 
 ### Agents (12)
   ◇ build-error-resolver           Build error resolver across npm/tsc, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter (pub, build_runner). Detects the build system, fixes build/type errors with minimal diffs, and guards against runaway fix loops. No architectural edits — just green builds.
@@ -93,17 +88,18 @@ _Personals/kbg-harness_
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (10)
+### Hooks (11)
   ◇ flow-nudge.sh                  shellcheck disable=SC2016  # python code in single quotes
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ path-hardcode.sh               Gate: block hardcoded /Users/<name> paths being written into .sh or .py files.
-  ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier
+  ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
   ◇ command-root-anchor.sh         command-root-anchor.sh — matcher-less SessionStart hook
   ◇ doctrine-bootstrap.sh          SessionStart: inject METHODOLOGY.md doctrine into the session context.
   ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
   ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
   ◇ test-gates.sh                  shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
   ◇ test-session-stop.sh           Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
+  ◇ test-worktree-guard.sh         Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect).
 
 ## Agents — Repo
 | Agent | Domain | Tools | Mutates |
@@ -158,7 +154,7 @@ _Personals/kbg-harness_
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
-| review-pr | Scan PRs across quality, tests, security, types, a11y via multi-agent review. Use when a PR is ready. Don't use for quick diffs or single PRs. | inline | auto |
+| review-pr | Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project (tracker, labels, ADR format). Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
@@ -177,13 +173,14 @@ _Personals/kbg-harness_
 | flow-nudge.sh | shellcheck disable=SC2016  # python code in single quotes |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
 | path-hardcode.sh | Gate: block hardcoded /Users/<name> paths being written into .sh or .py files. |
-| verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit to the verifier |
+| verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated |
 | command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. |
 | cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
 | test-gates.sh | shellcheck disable=SC2016  # literal \$ in test payload strings is intentional |
 | test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), |
+| test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect). |
 
 ## Output styles — Repo
 | Style | Description |
@@ -191,7 +188,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-02T12:32:26Z_
+_Generated: 2026-07-03T05:53:22Z_
 
 ---
 
@@ -231,7 +228,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 11-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 12-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
@@ -239,6 +236,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `code-reviewer` | any file | no | Read-only review (comment-accuracy / type-design / test-coverage lenses) |
 | `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | no | Read-only TS/JS review — type safety, async correctness |
 | `python-reviewer` | `*.py`, `pyproject.toml` | no | Read-only Python review — PEP 8, idioms, type hints |
+| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | no | Read-only Dart/Flutter review — widgets, state mgmt, Dart idioms |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection (holds Edit/Write/Bash) |
 | `silent-failure-hunter` | any file | no | Read-only error-handling audit |
 | `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write) |
@@ -316,7 +314,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
-| "save my session", "hand off" | `/save-session` / `kbg:handoff` | Session state capture |
+| "save my session", "hand off" | `kbg:handoff` | Session state capture |
 
 
 ---

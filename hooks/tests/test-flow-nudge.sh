@@ -12,13 +12,15 @@ HOOK="$ROOT/hooks/advisory/flow-nudge.sh"
 pass=0
 fail=0
 
-# Build a UserPromptSubmit payload. The user's prompt may contain JSON-hostile
-# characters (quotes, backslashes, newlines); escape them properly.
+# Build a UserPromptSubmit payload. The real CC payload carries `prompt` at the
+# TOP LEVEL (not under tool_input) — found 2026-07-03: the old fixture put it
+# under tool_input, matching the hook's same wrong read, so the suite validated
+# the bug and stayed green while the sensor never fired in production.
 user_prompt_payload() {
   python3 -c '
 import sys, json
 prompt = sys.argv[1]
-print(json.dumps({"tool_name": "UserPromptSubmit", "tool_input": {"prompt": prompt}}))
+print(json.dumps({"tool_name": "UserPromptSubmit", "prompt": prompt}))
 ' "$1"
 }
 

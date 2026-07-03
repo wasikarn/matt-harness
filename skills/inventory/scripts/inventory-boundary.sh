@@ -203,7 +203,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 11-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 12-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
@@ -211,6 +211,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `code-reviewer` | any file | no | Read-only review (comment-accuracy / type-design / test-coverage lenses) |
 | `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | no | Read-only TS/JS review — type safety, async correctness |
 | `python-reviewer` | `*.py`, `pyproject.toml` | no | Read-only Python review — PEP 8, idioms, type hints |
+| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | no | Read-only Dart/Flutter review — widgets, state mgmt, Dart idioms |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection (holds Edit/Write/Bash) |
 | `silent-failure-hunter` | any file | no | Read-only error-handling audit |
 | `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write) |
@@ -314,7 +315,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
-| "save my session", "hand off" | `/save-session` / `kbg:handoff` | Session state capture |
+| "save my session", "hand off" | `kbg:handoff` | Session state capture |
 
 XREF4
 fi

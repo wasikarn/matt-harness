@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: "Parallel divergent ideation. Use when prompts are open-ended (design, architecture, naming, API/SDK, fuzzy-debug) AND high-stakes AND open phrasing — or when the user explicitly types /ideate, asks to brainstorm, or says 'ระดมความคิด', 'brainstorm', 'คิดไอเดีย'. Spawns 5 isolated agent calls under rotating cognitive frames (15-frame pool, 5 per run), scores on novelty/viability/fit, prunes traps, deepens top 3, with a fresh-context critic option. Don't use for syntax, lookups, known-root-cause bugs, or closed phrasing ('quick', 'standard', 'canonical', 'textbook')."
+description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
 argument-hint: Problem statement to ideate on
 disable-model-invocation: false
 disable-model-invocation-reason: Auto-fire on vague open-ended prompts is the load-bearing use case (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout in this command's body — NOT by this flag.
@@ -168,8 +168,8 @@ For the problem P:
 Source for the algorithm shape: upstream
 `/tmp/adhd-repo/skills/adhd/SKILL.md:47-82` and
 `/tmp/adhd-repo/src/engine.ts:28-36, 61-101`. The
-`docs/research/kbg-vs-adhd.md`
-doc records the port decisions (deterministic frame pick replacing
+`kbg-vs-adhd.md` doc (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
+records the port decisions (deterministic frame pick replacing
 `Math.random()`, no zod, parse-failure surface-not-swallow).
 
 ## Phase 2 — Focus
@@ -452,7 +452,7 @@ These are how this skill goes wrong. Watch for them.
   scoring on the host Claude is the same model class as the
   generators. Treat it as advisory evidence, not ground truth —
   the user is the gate. See [Phase 2 — Focus](#phase-2--focus)
-  and CLAUDE.md §"LLM-judge circularity".
+  and CLAUDE.md §Architecture (the unifying crux: an LLM judging its own output is circular).
 
 ## Cost
 
@@ -469,7 +469,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
 
 ## Cross-references
 
-- **Why this exists** — `docs/research/kbg-vs-adhd.md`
+- **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
@@ -497,7 +497,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   built.
 - **Eval rigor limitation (explicit)** — this skill ports
   faithfully from an n=1 upstream demo. The
-  `docs/research/kbg-vs-adhd.md`
-  §"Eval rigor limitation" section is the load-bearing
+  `kbg-vs-adhd.md` §"Eval rigor limitation" section (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
+  is the load-bearing
   disclaimer: treat this as a structured brainstorming tool, not
   a quality-validated generator.

@@ -1,6 +1,6 @@
 ---
 name: deep-dive
-description: "Research a topic thoroughly across codebase, docs, and web, then synthesize findings into a concise actionable brief with sources. This is the single kbg research surface — both user-typed (/deep-dive) and auto-routed. Use when the user says 'research this', 'deep dive on X', 'compare Z approaches', 'how does Y work in this codebase', or any open-ended exploration. Thai: 'research', 'deep dive', 'วิจัย', 'สำรวจ', 'หาข้อมูล', 'compare วิธี', 'ศึกษา'. Don't use for: single-file lookups (just Read it), known answers (ask directly), implementation tasks (use /ship or /fix-bug), or security audits (use kbg:security-auditor)."
+description: "Research codebase/docs/web → concise cited brief (single kbg research surface). Say 'research/deep dive/วิจัย/สำรวจ'. Don't use for single-file lookups or security audits (kbg:security-auditor)."
 argument-hint: Optional topic or question
 ---
 
@@ -106,7 +106,7 @@ Single kbg research surface. Produces an actionable brief with cited sources (fi
 
 This command is the **research surface**. It runs the 5-phase UX (Scope → Local → External → Synthesize → Archive) inline, using the `Explore` agent for the local phase and native web search / QMD for the external-search phase as needed. The formerly separate `research-brief` skill was merged into this command; all cross-references now resolve to `/deep-dive`.
 
-Cross-references from `skills/perf/SKILL.md`, `skills/migrate/SKILL.md`, and `skills/adr/SKILL.md` all point at `/deep-dive` as the user-invoked entry point. They remain valid because this command still ships and still produces a brief.
+This command is the single research surface — any prior cross-references (e.g. from perf/migrate/adr skills that no longer ship) now resolve to `/deep-dive` as the user-invoked entry point. The command still ships and still produces a brief.
 
 ## Handoff Reference
 

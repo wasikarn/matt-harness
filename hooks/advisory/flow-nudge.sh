@@ -19,7 +19,10 @@ try:
 except Exception:
     print("")
     sys.exit(0)
-print(d.get("tool_input", {}).get("prompt", ""))
+# UserPromptSubmit carries the prompt at the top level (not under tool_input
+# — found 2026-07-03: reading .tool_input.prompt made this sensor dead since
+# birth). Fall back to tool_input.prompt only for non-UserPromptSubmit events.
+print(d.get("prompt") or d.get("tool_input", {}).get("prompt", "") or "")
 ' 2>/dev/null || echo "")
 
 [[ -z "$prompt" ]] && exit 0

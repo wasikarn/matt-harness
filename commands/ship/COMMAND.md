@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Land any code change end-to-end: classify (blank-slate vs already-scoped, then bug/feature/refactor) → implement → test → review → fix-loop → merge. Use when starting a non-trivial task or landing a scoped change, or when the user says 'ship this', 'land this change', 'ship task', 'ทำงานใหม่', 'เริ่มต้นทำงาน'. Don't use for: one-line fixes, pure research/exploration, version/release cuts (use /ship-release), or an already-approved PR ready to land (use /ship-merge directly)."
+description: "Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge)."
 argument-hint: Description of the task or change to ship
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external and spawns agents — full ship loop ending in merge

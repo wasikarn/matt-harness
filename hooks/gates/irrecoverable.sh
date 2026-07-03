@@ -22,20 +22,27 @@ def deny(reason):
 # ponytail: no command-substitution/eval unwrapping here — this is a
 # habit-guard for a single-operator harness, not an adversarial sandbox;
 # revisit if that threat model changes.
-try:
-    tokens = shlex.split(cmd, posix=True)
-except ValueError:
-    tokens = cmd.split()
-
-OPERATORS = {';', '&&', '||', '|'}
+# Newlines are command separators in bash but shlex eats them as whitespace,
+# so a dangerous command after a newline would otherwise hide inside the
+# first command's window (found 2026-07-03). Pre-split on \r?\n and tokenize
+# each line; '&' (background) is also a separator and is added to OPERATORS.
+OPERATORS = {';', '&&', '||', '|', '&'}
 windows, cur = [], []
-for tok in tokens:
-    if tok in OPERATORS:
-        if cur:
-            windows.append(cur)
+for line in re.split(r'\r?\n', cmd):
+    try:
+        tokens = shlex.split(line, posix=True)
+    except ValueError:
+        tokens = line.split()
+    for tok in tokens:
+        if tok in OPERATORS:
+            if cur:
+                windows.append(cur)
+            cur = []
+        else:
+            cur.append(tok)
+    if cur:
+        windows.append(cur)
         cur = []
-    else:
-        cur.append(tok)
 if cur:
     windows.append(cur)
 
@@ -94,11 +101,11 @@ for w in windows:
             scan.append(t)
 
         if sub == 'push' and any(
-            t in ('-f', '--force') or t.startswith('--force')
+            t in ('-f', '--force') or (t.startswith('--force') and not t.startswith('--force-with-lease'))
             or (t.startswith('-') and not t.startswith('--') and 'f' in t)
             for t in scan
         ):
-            deny('git push --force (including --force-with-lease/bundled -f) overwrites remote history — needs explicit user approval')
+            deny('git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)')
         if sub == 'reset' and '--hard' in scan:
             deny('git reset --hard discards uncommitted work — confirm with user first')
         if sub == 'clean' and any(t.startswith('-') and 'f' in t for t in scan):

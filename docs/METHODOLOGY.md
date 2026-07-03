@@ -17,7 +17,7 @@ Before any non-trivial act, run:
 
 Run the triad inline, then call `advisor()` before substantive work and before declaring done — that is the check that is actually load-bearing (2026-07-02: `kbg:decide`=0, `advisor()`=55, across 182 sessions). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.
 
-For a genuinely hard, contested-diagnosis choice where the reasoning itself needs building from scratch (not just pressure-testing an existing call), `kbg:decide` is available on-demand — 5 modes (clarify/probe/decide/critique/strategize), see `skills/decide/SKILL.md`. Reach for it when `advisor()`-level pressure-testing isn't enough, not as a routine step.
+For a genuinely hard, contested-diagnosis choice where the reasoning itself needs building from scratch (not just pressure-testing an existing call), `kbg:decide` is available on-demand — 5 modes (clarify/probe/decide/critique/strategize); load it by name (it resolves from any CWD — don't rely on a repo-relative path, which misses when the session runs in a foreign project). Reach for it when `advisor()`-level pressure-testing isn't enough, not as a routine step.
 
 ---
 
@@ -46,7 +46,7 @@ Decompose → route → verify → combine.
 
 ## Rule 14 — Decision scoring (explainable decisions)
 
-Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence. **Score, not feel.** This generalizes the score-not-feel loop stop-condition (CLAUDE.md §the unifying crux) from loop exits to *every* decision.
+Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence. **Score, not feel.** This generalizes the score-not-feel loop stop-condition (see CLAUDE.md's "the unifying crux" note under §Architecture) from loop exits to *every* decision.
 
 - State the criteria and each one's weight **before** scoring.
 - Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.

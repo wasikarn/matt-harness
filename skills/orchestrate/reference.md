@@ -44,7 +44,7 @@ Agent fleet → domain (the 12-agent survivor set): `code-reviewer` (review diff
 
 These agents are invoked directly by a skill body, not by the user via `kbg:orchestrate`. They are fresh-context judges that reduce LLM-judge-circularity for expensive generation skills. Like sensors, they are **read-only** and **advisory only** — they score and report, they do not write or block.
 
-- `ideate-critic` — Fresh-context critic for `/ideate`. Scores, clusters, and deepens the output of ideate Phase 1 (Diverge) so the critic pass does not run on the same host-context that just generated the ideas. Invoked by `commands/ideate.md` Phase 2. Uses the 3-axis rubric `novelty*0.35 + viability*0.40 + fit*0.25` per `agents/ideate-critic.md`.
+- `ideate-critic` — Fresh-context critic for `/ideate`. Scores, clusters, and deepens the output of ideate Phase 1 (Diverge) so the critic pass does not run on the same host-context that just generated the ideas. Invoked by `commands/ideate/COMMAND.md` Phase 2. Uses the 3-axis rubric `novelty*0.35 + viability*0.40 + fit*0.25` per `agents/ideate-critic.md`.
 
 ## Scripted Execution Modes (L4)
 

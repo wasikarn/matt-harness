@@ -1,6 +1,6 @@
 ---
 name: fix-bug
-description: "Guided 7-phase bug-fix workflow with diagnostic and test-first patterns built in. Use when fixing non-trivial bugs with non-obvious root causes, unclear blast radius, or need regression-test pinning, or when the user says 'แก้บั๊ก', 'fix bug', 'debug'. Don't use for: typos/one-line fixes (just fix it), known-cause bugs with obvious fixes (skip ceremony), diagnostic-only loops (use kbg:backend-patterns), greenfield TDD (use kbg:backend-patterns), or refactors not driven by a bug (use `/refactor-clean`)."
+description: "Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (kbg:tdd), or refactors (/refactor-clean)."
 argument-hint: Optional bug description or repro steps
 disable-model-invocation: true
 disable-model-invocation-reason: spawns agents and mutates — a fix the user commits to
@@ -78,7 +78,7 @@ Initial report: $ARGUMENTS
 1. List 2-3 candidate hypotheses based on Phase 2 findings.
 2. For each, state: what would have to be true for this to be the cause, and what evidence would distinguish it from the others.
 3. Rank by likelihood × cheapness-to-test. Pick the top one.
-   - **Named bias guard — anchoring + confirmation.** Requiring ≥2 candidates before ranking guards against anchoring on the first plausible story; requiring distinguishing evidence per hypothesis guards against confirming the top pick without looking for what would disprove it. Full rung detail: `docs/reference/judgment-ladder.md` §"3. Gather and test assumptions".
+   - **Named bias guard — anchoring + confirmation.** Requiring ≥2 candidates before ranking guards against anchoring on the first plausible story; requiring distinguishing evidence per hypothesis guards against confirming the top pick without looking for what would disprove it. Full rung detail: `judgment-ladder.md` §"3. Gather and test assumptions" — read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`.
 4. **Confirm via instrumentation if not already proven by Phase 1's repro**: add logging / asserts / breakpoints → re-run the minimised repro → observe whether the expected evidence appears. If it doesn't, fall back to the next-ranked hypothesis and repeat. Don't write the fix on an unconfirmed hypothesis.
    - **No-progress halts** (stagnation guards — NOT retry caps; don't borrow the retry-cap vocabulary, this is a different metric). Each routes to the step-7 gate's "Reject — need more investigation" branch, never to more unattended rounds:
      - **Stall** — two instrumentation rounds return the *same missing-evidence result for the same failure signal* → stop re-ranking and go to the gate. ("Same error twice in a row: you're guessing, not fixing.")
