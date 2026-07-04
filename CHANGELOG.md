@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.3] — 2026-07-04
+
+Post-v0.32.2 adversarial content-accuracy audit of pre-existing technical surfaces — 19 framework-patterns + reviewer-agent + perf skills audited (462 concrete claims checked), 13 clean, 6 surfaces with 16 actionable fixes (4 LOW ship-tolerable left). Error rate ~15% on flagged surfaces (lower fleet-wide: 13/19 clean), roughly half the v0.32.2 baseline (~31% on freshly-synthesized text). The 6 HIGHs were all snippet-correctness failures — code that errors on the declared stack, exactly the class a pattern-skill exists to prevent.
+
+HIGH (snippet won't run on declared stack):
+- `skills/tauri-v2-patterns` — fs scope identifier `fs:scope-app-local-data-recursive` → `fs:scope-applocaldata-recursive` (wrong identifier matched nothing, $APPLOCALDATA scope silently never applied); `new Window('settings')` → `WebviewWindow.getByLabel('settings')` (new creates a window, doesn't fetch existing; errors on duplicate label).
+- `skills/grpc-node-patterns` — Health Check `server.addService(healthImpl.service, healthImpl)` (v1.x) → `healthImpl.addToServer(server)` (v2.x); v1.x call on v2.x imports left `healthImpl.service` undefined → Health service never registered, k8s probes fail silently.
+- `skills/backend-patterns` — `INSERT INTO markets VALUES (market_data)` only runs on a single-jsonb-column table; real multi-column tables (serial id) reject it → `jsonb_populate_record` with explicit columns.
+- `agents/code-reviewer` — N+1 GOOD example used `json_agg`/`$1` (Postgres-only) on a file whose DB lens is MySQL/MariaDB → `JSON_ARRAYAGG(JSON_OBJECT(...))` + `?` placeholder + dialect note.
+- `agents/performance-optimizer` — `npx duplicate-package-checker-analyzer` references a nonexistent npm package → webpack plugin reference.
+
+MEDIUM (version/dialect missing-context → runtime/compile error on specific stack):
+- `agents/code-reviewer` — Security parameterized query `$1` (Postgres) on MySQL lens → `?` + dialect note.
+- `agents/performance-optimizer` — TTI removed from Lighthouse 10 scoring → marked deprecated, use TBT/INP.
+- `agents/typescript-reviewer` — `eslint . --ext ...` removed in ESLint 9 flat config (errors "Invalid option --ext") → both forms.
+- `skills/backend-patterns` — ZodError `.errors` removed in Zod v4 → `.issues` + note.
+- `skills/grpc-node-patterns` — blanket "retry UNAVAILABLE and DEADLINE_EXCEEDED" overstated (DEADLINE_EXCEEDED may have completed server-side, retry risks duplicates) → idempotent-only caveat.
+- `skills/tauri-v2-patterns` — State lifetime pitfall pointed at wrong cause (elided lifetimes are allow-by-default; `State<AppState>` compiles) → real gotcha is async+borrow+non-`Result` E0597.
+
+LOW:
+- `agents/code-reviewer` — "setState during render causes infinite loops" overstated (only unconditional; conditional is supported) → qualified.
+- `skills/grpc-node-patterns` — proto snake_case→camelCase pitfall contradicted by the file's own `keepCase: true` proto-loader setup → scoped to codegen path.
+- `skills/tauri-v2-patterns` — `app.emit`/`app.get_webview_window` need `use tauri::Emitter`/`use tauri::Manager` trait imports → added.
+- `skills/tauri-v2-patterns` — "capability missing → silent failure" contradicts file's own "not allowed" + over-scopes (custom `#[tauri::command]`s aren't capability-gated) → corrected.
+
+Ship-tolerable (left, no production consequence): backend-patterns INCLUDE covering-index VACUUM caveat; grpc-node codegen import illustrative + already carries "Verify before use" footer; performance-optimizer bundle-analyzer + bundlesize (canonical/successor listed one line away).
+
+Lesson reaffirmed: adversarial content-accuracy audit of pre-existing LLM-synthesized technical content finds a real (~15% on flagged surfaces) error rate — the same maker≠checker blind spot as v0.32.2, applied fleet-wide this time. The 13 clean surfaces confirm the methodology held where applied; the 6 flagged concentrate in framework-patterns skills where stack-specific snippets are hardest for an LLM to get right without verification.
+
 ## [0.32.2] — 2026-07-04
 
 Post-v0.32.0 adversarial accuracy fix — 6 of the 19 shipped perf-correctness texts contained plausible-but-wrong technical claims that the synthesize agent wrote and the gap-verify did not catch (the gap-verify checked gaps were real; the inserted text itself was not adversarially vetted — maker≠checker, corrected here). Fresh-context verifier per edit flagged 6; all fixed with localized rewords preserving the register + 1-3 sentence budget. 14 of 19 edits verified clean (ship-as-is).

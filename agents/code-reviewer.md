@@ -128,8 +128,8 @@ These MUST be flagged — they can cause real damage:
 // BAD: SQL injection via string concatenation
 const query = `SELECT * FROM users WHERE id = ${userId}`;
 
-// GOOD: Parameterized query
-const query = `SELECT * FROM users WHERE id = $1`;
+// GOOD: Parameterized query (MySQL/MariaDB ? — Postgres uses $1)
+const query = `SELECT * FROM users WHERE id = ?`;
 const result = await db.query(query, [userId]);
 ```
 
@@ -184,7 +184,7 @@ function processUsers(users) {
 When reviewing React/Next.js code, also check:
 
 - **Missing dependency arrays** — `useEffect`/`useMemo`/`useCallback` with incomplete deps
-- **State updates in render** — Calling setState during render causes infinite loops
+- **State updates in render** — Calling setState UNCONDITIONALLY during render causes infinite loops. Conditional setState during render (the "adjusting state when props change" pattern) is officially supported and safe.
 - **Missing keys in lists** — Using array index as key when items can reorder
 - **Prop drilling** — Props passed through 3+ levels (use context or composition)
 - **Unnecessary re-renders** — Missing memoization for expensive computations
@@ -218,15 +218,15 @@ When reviewing backend code:
 - **Process-lifetime reference retention** — `emitter.on` without a matching `off`, an unbounded `Map`/`Set` cache that never evicts, and closures capturing large objects are slow leaks that crash hours in, not request-scoped failures. Pair every `on` with `off`/`once`, use an LRU with `max` not a bare `Map`, and extract needed values from closed-over large objects instead of retaining them.
 
 ```typescript
-// BAD: N+1 query pattern
+// BAD: N+1 query pattern (MySQL/MariaDB ? placeholder — Postgres uses $1)
 const users = await db.query('SELECT * FROM users');
 for (const user of users) {
-  user.posts = await db.query('SELECT * FROM posts WHERE user_id = $1', [user.id]);
+  user.posts = await db.query('SELECT * FROM posts WHERE user_id = ?', [user.id]);
 }
 
-// GOOD: Single query with JOIN or batch
+// GOOD: Single query with JOIN or batch (MySQL/MariaDB — Postgres: jsonb_agg(p.*) + $1)
 const usersWithPosts = await db.query(`
-  SELECT u.*, json_agg(p.*) as posts
+  SELECT u.*, JSON_ARRAYAGG(JSON_OBJECT('id', p.id, 'title', p.title)) AS posts
   FROM users u
   LEFT JOIN posts p ON p.user_id = u.id
   GROUP BY u.id

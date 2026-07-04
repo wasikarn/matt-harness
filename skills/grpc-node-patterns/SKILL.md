@@ -231,7 +231,7 @@ const statusMap: ServingStatusMap = {
   'anpr.ANPRService': 'SERVING',
 }
 const healthImpl = new HealthImplementation(statusMap)
-server.addService(healthImpl.service, healthImpl)
+healthImpl.addToServer(server)  // v2.x registration (v1.x used server.addService(healthImpl.service, healthImpl))
 
 // Update status (e.g., when model loads)
 healthImpl.setStatus('anpr.ANPRService', 'SERVING')
@@ -252,9 +252,9 @@ import * as protoLoader from '@grpc/proto-loader'
 - **Create client once** — gRPC clients maintain a connection pool. Creating a new client per-request defeats the purpose. Create at startup and reuse.
 - **Always set deadlines** — a gRPC call without a deadline will hang indefinitely if the server is unresponsive.
 - **`callback(null, response)`** — the first argument to unary callbacks is the error (null on success). Don't call `callback(response)` — it treats the response as an error.
-- **Proto field naming** — protobuf uses `snake_case`; TypeScript codegen converts to `camelCase`. `image_data` in proto → `imageData` in TS.
+- **Proto field naming** — protobuf uses `snake_case`. Codegen (ts-proto/protobuf-ts) converts to `camelCase` by default (`image_data` → `imageData`). But proto-loader with `keepCase: true` (see above) KEEPS `snake_case` — so the path you choose determines the field name.
 - **Stream `cancel` vs `destroy`** — `stream.cancel()` sends a `CANCELLED` status to the server gracefully. `stream.destroy()` is a local-only teardown.
-- **`UNAVAILABLE` is retryable** — implement exponential backoff for `UNAVAILABLE` and `DEADLINE_EXCEEDED` errors.
+- **`UNAVAILABLE` is retryable** — implement exponential backoff for `UNAVAILABLE`. Retry `DEADLINE_EXCEEDED` only for idempotent operations — the deadline elapsed but the request may have completed server-side, so a blanket retry risks duplicates.
 
 ## Verify before use
 

@@ -196,9 +196,11 @@ RETURNS jsonb
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Start transaction automatically
-  INSERT INTO markets VALUES (market_data);
-  INSERT INTO positions VALUES (position_data);
+  -- Start transaction automatically; list columns explicitly (serial id not in payload)
+  INSERT INTO markets (creator_id, question, closes_at)
+    SELECT * FROM jsonb_populate_record(NULL::markets, market_data);
+  INSERT INTO positions (market_id, user_id, side, size)
+    SELECT * FROM jsonb_populate_record(NULL::positions, position_data);
   RETURN jsonb_build_object('success', true);
 EXCEPTION
   WHEN OTHERS THEN
@@ -296,7 +298,7 @@ export function errorHandler(error: unknown, req: Request): Response {
     return NextResponse.json({
       success: false,
       error: 'Validation failed',
-      details: error.errors
+      details: error.issues  // .errors was a v3 alias, removed in Zod v4
     }, { status: 400 })
   }
 

@@ -33,7 +33,7 @@ You are an expert performance specialist focused on identifying bottlenecks and 
 npx bundle-analyzer
 npx source-map-explorer build/static/js/*.js
 npx webpack-bundle-analyzer build/static/js/*.js
-npx duplicate-package-checker-analyzer
+# duplicate-package-checker-webpack-plugin (webpack plugin, not npx) — or use webpack-bundle-analyzer's duplicate view above
 du -sh node_modules/* | sort -hr | head -20  # largest deps
 
 # Node.js profiling
@@ -60,7 +60,7 @@ npx lighthouse https://your-app.com --only-categories=performance
 |--------|--------|-------------------|
 | First Contentful Paint | < 1.8s | Optimize critical path, inline critical CSS |
 | Largest Contentful Paint | < 2.5s | Lazy load images, optimize server response |
-| Time to Interactive | < 3.8s | Code splitting, reduce JavaScript |
+| Time to Interactive (deprecated) | < 3.8s | Removed from Lighthouse 10 scoring — use TBT/INP instead |
 | Cumulative Layout Shift | < 0.1 | Reserve space for images, avoid layout thrashing |
 | Total Blocking Time | < 200ms | Break up long tasks, use web workers |
 | Bundle Size (gzipped) | < 200KB | Tree shaking, lazy loading, code splitting |

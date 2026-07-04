@@ -25,7 +25,7 @@ The biggest v2 change is **capabilities** replacing the v1 allowlist. Every API 
     "core:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
-    "fs:scope-app-local-data-recursive",
+    "fs:scope-applocaldata-recursive",
     "shell:allow-open",
     "dialog:allow-open",
     "dialog:allow-save"
@@ -128,6 +128,9 @@ async fn pause(state: tauri::State<'_, AppState>) -> Result<(), String> {
 Use events for progress updates, background task results, or status changes:
 
 ```rust
+use tauri::Emitter;  // for emit/emit_to
+use tauri::Manager;   // for get_webview_window
+
 // Emit from Rust (to all windows)
 app.emit("video-progress", serde_json::json!({
     "percent": 42.5,
@@ -203,10 +206,11 @@ tauri::WebviewWindowBuilder::new(&app, "settings", tauri::WebviewUrl::App("setti
 ```
 
 ```typescript
-// From frontend
-import { Window } from '@tauri-apps/api/window'
+// From frontend — operate on a window Rust already built (getByLabel).
+// new Window(label)/new WebviewWindow(label) CREATE a new window; don't use them for an existing one.
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-const settingsWindow = new Window('settings')
+const settingsWindow = await WebviewWindow.getByLabel('settings')
 await settingsWindow.show()
 await settingsWindow.setFocus()
 ```
@@ -260,9 +264,9 @@ pnpm tauri add store
 
 ## Common Pitfalls
 
-- **Capability not added → silent failure** — frontend `invoke()` may silently fail or throw a generic error if the capability permission is missing. Add to `capabilities/*.json` first.
+- **Capability not added → `not allowed`** — a missing permission throws `not allowed` (not silent) for plugin/built-in commands. Add to `capabilities/*.json` first. Note: custom `#[tauri::command]`s registered via `invoke_handler` are NOT gated by capabilities at all — only plugin/built-in commands are.
 - **`#[tauri::command]` parameter naming** — Tauri converts camelCase frontend args to snake_case Rust params automatically. `{ myParam }` in JS → `my_param: T` in Rust.
-- **`tauri::State<'_>` lifetime** — always include the `'_` lifetime. `tauri::State<AppState>` (without lifetime) is a type error.
+- **Async commands + borrowed params need a `Result` return** — an `async fn` command taking `State`/`&str` only compiles when it returns `Result<T, E>`; without `Result` you get E0597 "does not live long enough". `State<AppState>` itself compiles fine (lifetime elision is allow-by-default); it's the async + borrow + non-`Result` combo that fails.
 - **Blocking in async commands** — never call `std::thread::sleep` or sync blocking IO in `async fn` commands. Use `tokio::time::sleep` and `tokio::fs` instead.
 - **Event listener cleanup** — `listen()` returns an `UnlistenFn`. Always call it on component unmount or you'll accumulate listeners across hot reloads.
 - **CSP blocks local assets** — add `asset: https://asset.localhost` to CSP for local file access via `convertFileSrc()`.

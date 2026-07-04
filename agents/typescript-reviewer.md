@@ -23,7 +23,7 @@ When invoked:
    - If the PR shows merge conflicts or a non-mergeable state, stop and report that conflicts must be resolved first.
    - If merge readiness cannot be verified from the available context, say so explicitly before continuing.
 3. Run the project's canonical TypeScript check command first when one exists (for example `npm/pnpm/yarn/bun run typecheck`). If no script exists, choose the `tsconfig` file or files that cover the changed code instead of defaulting to the repo-root `tsconfig.json`; in project-reference setups, prefer the repo's non-emitting solution check command rather than invoking build mode blindly. Otherwise use `tsc --noEmit -p <relevant-config>`. Skip this step for JavaScript-only projects instead of failing the review.
-4. Run `eslint . --ext .ts,.tsx,.js,.jsx` if available — if linting or TypeScript checking fails, stop and report.
+4. Run `eslint .` (flat config / ESLint 9+) or `eslint . --ext .ts,.tsx,.js,.jsx` (legacy eslintrc) if available — if linting or TypeScript checking fails, stop and report.
 5. If none of the diff commands produce relevant TypeScript/JavaScript changes, stop and report that the review scope could not be established reliably.
 6. Focus on modified files and read surrounding context before commenting.
 7. Begin review
@@ -99,7 +99,8 @@ You DO NOT refactor or rewrite code — you report findings only.
 ```bash
 npm run typecheck --if-present       # Canonical TypeScript check when the project defines one
 tsc --noEmit -p <relevant-config>    # Fallback type check for the tsconfig that owns the changed files
-eslint . --ext .ts,.tsx,.js,.jsx    # Linting
+eslint .                              # Linting (flat config / ESLint 9+)
+eslint . --ext .ts,.tsx,.js,.jsx     # Linting (legacy eslintrc)
 prettier --check .                  # Format check
 npm audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
 vitest run                          # Tests (Vitest)
