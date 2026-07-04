@@ -86,7 +86,7 @@ You DO NOT refactor or rewrite code — you report findings only.
 - **Missing `React.memo` / `useMemo`**: Expensive computations or components re-running on every render
 - **Large bundle imports**: `import _ from 'lodash'` — use named imports or tree-shakeable alternatives
 - **Synchronous membership lookup inside a loop is O(n*m)** — `arr.includes`/`Array.find` nested inside a `.filter`/`.map` over a >1k-item collection is a backend hot-path trap the React-shaped bullets above don't catch. Hoist the inner collection to a `Set`/`Map` before the loop for O(1) lookup.
-- **Resource leaks via accumulation (backend TS)** — unbounded module-level `Map`/`Set` caches (no LRU/TTL), `emitter.on` per request without a matching `off`/`once`, and `setInterval`/timers outliving their request or shutdown are leaks (heap growth or listener-cap OOM), not style nits. Flag when retention is unbounded by request scope; distinct from the React-render bullets, which are per-mount, not per-process.
+- **Resource leaks via accumulation (backend TS)** — unbounded module-level `Map`/`Set` caches (no LRU/TTL), `emitter.on` per request without a matching `off`/`once`, and `setInterval`/timers outliving their request or shutdown are leaks (heap growth from retained closures plus a `MaxListenersExceededWarning`), not style nits. Flag when retention is unbounded by request scope; distinct from the React-render bullets, which are per-mount, not per-process.
 
 ### MEDIUM -- Best Practices
 - **`console.log` left in production code**: Use a structured logger

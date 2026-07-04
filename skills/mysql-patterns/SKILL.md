@@ -285,7 +285,7 @@ Check the engine/version before standardizing on one command. Monitor replica
 SQL thread health, IO thread health, and lag, not just whether the TCP
 connection is alive.
 
-**Before pinning read-after-write to primary on lag, tune parallel apply.** Set `replica_parallel_workers` + `replica_parallel_type=LOGICAL_CLOCK` — parallel apply often cuts lag an order of magnitude. Pinning reads to primary is the fallback (worse horizontal-read scaling), not the first move; the read-after-write rule above is correct, not step one.
+**Before pinning read-after-write to primary on lag, tune parallel apply.** On the replica set `replica_parallel_workers` + `replica_parallel_type=LOGICAL_CLOCK` (MySQL 8.0.26+ `replica_` prefix; MariaDB uses `slave_parallel_workers`/`slave_parallel_type`), and on the MySQL primary set `binlog_transaction_dependency_tracking=WRITESET` with `binlog_format=ROW` for max parallelism — without the primary half it degrades to group-commit granularity. Parallel apply can cut lag by the parallelism factor when transactions are independent, and helps little on serial/hot-row workloads. Pinning reads to primary is the fallback (worse horizontal-read scaling), not the first move; the read-after-write rule above is correct, not step one.
 
 ## Security
 
@@ -342,7 +342,7 @@ Treat configuration values as a prompt for review, not a universal preset. Size
 memory, connections, log retention, and durability settings from workload,
 hardware, backup policy, and recovery objectives.
 
-**Size `innodb_buffer_pool_size` on hit-rate, not RAM percentage.** Compute `1 - Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests` from `SHOW ENGINE INNODB STATUS\G`: `<99%` = grow the pool; `>=99%` = stop, the p99 is indexing or redo log, not RAM. Defaulting to "70-80% of RAM" wastes memory when the working set already fits.
+**Size `innodb_buffer_pool_size` on hit-rate, not RAM percentage.** Compute `1 - Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests` from `SHOW GLOBAL STATUS` (or read the `Buffer pool hit rate: X / Y` line in `SHOW ENGINE INNODB STATUS\G`): `<99%` = grow the pool; `>=99%` = stop — p99 is bound elsewhere (query plan/indexing, redo-log flushing, lock waits, I/O), not RAM. Defaulting to "70-80% of RAM" wastes memory when the working set already fits.
 
 ## Anti-Patterns
 

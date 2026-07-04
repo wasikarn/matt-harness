@@ -5,6 +5,17 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.2] — 2026-07-04
+
+Post-v0.32.0 adversarial accuracy fix — 6 of the 19 shipped perf-correctness texts contained plausible-but-wrong technical claims that the synthesize agent wrote and the gap-verify did not catch (the gap-verify checked gaps were real; the inserted text itself was not adversarially vetted — maker≠checker, corrected here). Fresh-context verifier per edit flagged 6; all fixed with localized rewords preserving the register + 1-3 sentence budget. 14 of 19 edits verified clean (ship-as-is).
+
+- `skills/mysql-patterns` — edit 9 (HIGH): buffer-pool hit-rate formula is exposed by `SHOW GLOBAL STATUS`, not `SHOW ENGINE INNODB STATUS\G` (the latter prints a precomputed `Buffer pool hit rate: X / Y` line); removed false specificity that ≥99% hit-rate means p99 "is indexing or redo log" (it's only "not RAM" — p99 is also lock waits, log flushing, I/O, query-plan). edit 11 (HIGH): parallel-apply recipe incomplete — added primary-side `binlog_transaction_dependency_tracking=WRITESET` (without it parallelism degrades to group-commit), flagged MySQL 8.0.26+ `replica_` vs MariaDB `slave_` divergence, softened "order of magnitude" to "parallelism factor when independent, helps little on serial/hot-row".
+- `skills/latency-critical-systems` — edit 1 (MEDIUM): XFetch is probabilistic by design (spreads rebuilds, doesn't guarantee a single rebuild) — "so only one request rebuilds" now applies only to the SETNX mutex; XFetch described as "spread rebuilds and shrink the herd without a lock". edit 2 (LOW): internal contradiction — "GC pause is the p99 source" then "profile before attributing to network" self-refuted; softened to "can be".
+- `skills/cost-aware-llm-pipeline` — edit 12 (MEDIUM): "burn budget on waved attempts the CostTracker never records" was misleading (429 = no token charge = no USD spend omitted; omission is correct, not a tracking gap) — reframed as wall-clock/compute waste; "AWS SDK adds jitter by default" corrected to "full jitter in standard/adaptive retry mode".
+- `agents/typescript-reviewer` — edit 19 (MEDIUM): "listener-cap OOM" conflated EventEmitter's `MaxListenersExceededWarning` (a console warning, not a throw/OOM) with OOM — reframed as "heap growth from retained closures plus a MaxListenersExceededWarning".
+
+Lesson: a workflow that verifies GAPS are real does not verify the INSERTED TEXT is technically accurate — that needs a separate adversarial pass on the synthesized content itself. Same maker≠checker class as the v0.31.0/v0.31.1 gauntlet-longpole correction. Re-open trigger: future synthesis workflows must include a content-accuracy adversarial verify phase, not only a gap-realness verify phase.
+
 ## [0.32.1] — 2026-07-04
 
 Hook spawn-latency fix: convert 10 of 11 command hooks from shell form (`sh -c 'bash "script"'` = sh+bash two layers) to exec form (`command: "bash", args: ["${CLAUDE_PLUGIN_ROOT}/.../script.sh"]` = bash spawned directly, no shell wrapper). Cuts the `sh -c` fork+exec layer — ~2-4ms felt latency per hook on hot paths (PreToolUse Bash/Write), per CC docs ("Set args whenever the hook references a path placeholder"). The 11th hook (worktree-guard) stays shell form because its inline `${TATHEP_WORKSPACE:-...}` uses shell parameter expansion (`:-`) which exec form doesn't perform (no shell).

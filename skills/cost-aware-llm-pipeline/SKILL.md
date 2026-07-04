@@ -105,7 +105,7 @@ def call_with_retry(func, *, max_retries: int = _MAX_RETRIES):
     # AuthenticationError, BadRequestError etc. → raise immediately
 ```
 
-**Add jitter to the backoff for concurrent batch callers.** Pure `2 ** attempt` is synchronized across N parallel requests hitting the same 429 — they retry in lockstep at 1s/2s/4s, amplify the rate limit, and burn budget on waved attempts the `CostTracker` never records. Use `time.sleep((2 ** attempt) + random.uniform(0, base))` to decorrelate; the AWS SDK adds jitter by default for exactly this reason.
+**Add jitter to the backoff for concurrent batch callers.** Pure `2 ** attempt` is synchronized across N parallel requests hitting the same 429 — they retry in lockstep at 1s/2s/4s and amplify the rate limit, wasting wall-clock and compute on attempts that never reach the API (and therefore never produce a `CostRecord`). Use `time.sleep((2 ** attempt) + random.uniform(0, base))` to decorrelate; AWS SDKs add full jitter (`random.uniform(0, base)`) by default in standard/adaptive retry mode for exactly this reason.
 
 ### 4. Prompt Caching
 
