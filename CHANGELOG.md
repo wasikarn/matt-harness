@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.1] — 2026-07-04
+
+Hook spawn-latency fix: convert 10 of 11 command hooks from shell form (`sh -c 'bash "script"'` = sh+bash two layers) to exec form (`command: "bash", args: ["${CLAUDE_PLUGIN_ROOT}/.../script.sh"]` = bash spawned directly, no shell wrapper). Cuts the `sh -c` fork+exec layer — ~2-4ms felt latency per hook on hot paths (PreToolUse Bash/Write), per CC docs ("Set args whenever the hook references a path placeholder"). The 11th hook (worktree-guard) stays shell form because its inline `${TATHEP_WORKSPACE:-...}` uses shell parameter expansion (`:-`) which exec form doesn't perform (no shell).
+
+Confirmed safe via CC reference docs: "path placeholders like `${CLAUDE_PLUGIN_ROOT}` are substituted into `command` and into each `args` element as plain strings" in exec form — the env-expansion risk that gate-coded the change is resolved. Scripts unchanged (exec form only changes how CC spawns them); harness-audit orphaned-hooks check #11 still sees each script basename in the `args` path.
+
+- `hooks/hooks.json` — 10 hooks → exec form (doctrine-bootstrap, command-root-anchor, flow-nudge, irrecoverable, verifier-protect ×2, task-complete-separation, worktree-create-block ×2, cost-tracker); worktree-guard kept shell form.
+
+Verified: gauntlet 5/5 green (hook-tests invoke scripts directly, unaffected by the wiring change). Live confirmation requires `claude plugin update` + restart — the exec-form substitution is CC-side, proven by docs not by the gauntlet.
+
 ## [0.32.0] — 2026-07-04
 
 Performance-correctness knowledge synthesis — 19 inline distillations across 7 performance surfaces (5 skills + 2 agents). Mined from llm-wiki algorithm/resource-efficiency docs via a 5-phase audit workflow (discover → read → map → adversarial-verify → synthesize; 39 gaps → 29 candidates → 20 verified → 19 edits, 9 killed as decorative), then synthesized as kbg-native, opinionated, tathep/backend-shaped decision text — NO llm-wiki paths, NO verbatim copies (value-add reframing, not a sync-seam). Each addition is 1-3 sentences colocated with the footgun it prevents; earns its place by naming a specific wrong call it changes.
