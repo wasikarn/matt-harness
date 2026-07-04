@@ -198,9 +198,9 @@ AS $$
 BEGIN
   -- Start transaction automatically; list columns explicitly (serial id not in payload)
   INSERT INTO markets (creator_id, question, closes_at)
-    SELECT * FROM jsonb_populate_record(NULL::markets, market_data);
+    SELECT creator_id, question, closes_at FROM jsonb_populate_record(NULL::markets, market_data);
   INSERT INTO positions (market_id, user_id, side, size)
-    SELECT * FROM jsonb_populate_record(NULL::positions, position_data);
+    SELECT market_id, user_id, side, size FROM jsonb_populate_record(NULL::positions, position_data);
   RETURN jsonb_build_object('success', true);
 EXCEPTION
   WHEN OTHERS THEN

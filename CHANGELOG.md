@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.4] — 2026-07-04
+
+Closed the maker≠checker loop opened by v0.32.2/v0.32.3: re-verified all 22 corrected texts from both releases with a fresh adversarial pass (22 verifiers, web-checked framework specifics). 21/22 confirmed clean. 1 fix-introduced error found and corrected.
+
+- `skills/backend-patterns/SKILL.md` — the v0.32.3 fix for the Supabase RPC transaction snippet (`jsonb_populate_record`) named explicit target columns on the `INSERT` side (`creator_id, question, closes_at`) to keep the serial `id` out of the payload, but left `SELECT *` on the source side. `jsonb_populate_record(NULL::markets, market_data)` in a `FROM` clause exposes a virtual row with ALL of the table's columns, so `SELECT *` still returned every column while the `INSERT` named only 3 — a guaranteed "INSERT has more expressions than target columns" runtime error. Fixed by naming the same columns on the `SELECT` side for both `INSERT...SELECT` statements.
+
+Lesson: a corrected text is itself unverified content until it passes its own adversarial check — the same synthesize-then-verify discipline applies recursively. This closes the loop for now; the 21 clean corrections in v0.32.2/v0.32.3 hold.
+
 ## [0.32.3] — 2026-07-04
 
 Post-v0.32.2 adversarial content-accuracy audit of pre-existing technical surfaces — 19 framework-patterns + reviewer-agent + perf skills audited (462 concrete claims checked), 13 clean, 6 surfaces with 16 actionable fixes (4 LOW ship-tolerable left). Error rate ~15% on flagged surfaces (lower fleet-wide: 13/19 clean), roughly half the v0.32.2 baseline (~31% on freshly-synthesized text). The 6 HIGHs were all snippet-correctness failures — code that errors on the declared stack, exactly the class a pattern-skill exists to prevent.
