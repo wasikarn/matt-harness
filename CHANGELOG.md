@@ -1472,7 +1472,7 @@ Passive learning-capture is now **default-ON** (opt out with `KBG_LEARN_CAPTURE=
   the flag too). **Scope:** default-ON applies to **all projects** the plugin is active in;
   captures are secret-scrubbed, out-of-repo, apply-gated. Per-shell opt-out `KBG_LEARN_CAPTURE=0`;
   per-hook `CLAUDE_DISABLED_HOOKS=learn-capture`. See
-  [the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model) "Default flip".
+  the no-model-self-start rule in METHODOLOGY.md Rule 8 and CLAUDE.md §The operating model addendum ("Default flip").
 - `test-ch-learn-capture.sh` gains a default-ON capture case; the off case now sets `=0` explicitly.
 
 ## [0.3.8] — 2026-06-21
@@ -1506,7 +1506,7 @@ human-launched and already bounded by `--max-runs` / `--max-duration` / `--fail-
 Passive learning-capture (Phase 1) — the "เรียนรู้เองอัตโนมัติ" pillar at the owner-chosen
 **Maximal-bounded** point: adopt ECC's continuous-learning **capture half** (observe → queue),
 human-gate the **apply half**. Owner answered the §9.3 build-vs-hold call ("I forget to run
-kbg:learn") → BUILD. Governance: [the no-model-self-start rule in METHODOLOGY.md and CLAUDE.md §The operating model addendum](METHODOLOGY.md Rule 8 + CLAUDE.md §The operating model)
+kbg:learn") → BUILD. Governance: the no-model-self-start rule in METHODOLOGY.md Rule 8 and CLAUDE.md §The operating model addendum
 (not a superseding ADR — the advisory-sensor architecture is unchanged).
 
 ### Added
