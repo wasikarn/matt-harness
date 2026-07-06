@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (46)
+### Skills (47)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -42,10 +42,11 @@ _Personals/kbg-harness_
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
-  ◇ review-pr                      Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
+  ◇ review-pr                      Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
   ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo.
+  ◇ task-prep                      Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners.
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
   ◇ tdd                            Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
   ◇ teach                          Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
@@ -74,7 +75,7 @@ _Personals/kbg-harness_
   ◇ COMMAND                        Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks.
   ◇ COMMAND                        Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge).
 
-### Agents (12)
+### Agents (13)
   ◇ build-error-resolver           Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
   ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code.
@@ -86,10 +87,12 @@ _Personals/kbg-harness_
   ◇ security-reviewer              Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
   ◇ silent-failure-hunter          Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation.
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
+  ◇ task-prep-checker              Fresh-context verifier for a task-prep prompt. Runs the golden-rule colleague test against the 9-field handoff template; returns a structured gap list. Read-only — never edits, never invents.
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
-### Hooks (13)
+### Hooks (15)
   ◇ flow-nudge.sh                  Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
+  ◇ learn-nudge.sh                 Advisory: remind the operator that kbg:learn exists when a session had
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ task-complete-separation.sh    Gate: a subagent may not mark its own task completed (maker≠checker).
   ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
@@ -99,6 +102,7 @@ _Personals/kbg-harness_
   ◇ cost-tracker.sh                Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl
   ◇ test-flow-nudge.sh             shellcheck disable=SC2016  # literal \$ in payload strings is intentional
   ◇ test-gates.sh                  shellcheck disable=SC2016  # literal \$ in test payload strings is intentional
+  ◇ test-learn-nudge.sh            learn-nudge unit tests: simulates SessionEnd JSON payloads pointing at a
   ◇ test-session-stop.sh           Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
   ◇ test-worktree-create.sh        shellcheck disable=SC2016  # literal $ in test payload strings is intentional
   ◇ test-worktree-guard.sh         Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect).
@@ -117,6 +121,7 @@ _Personals/kbg-harness_
 | security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
 | silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. | [Read, Grep, Glob, Bash] | yes |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
+| task-prep-checker | Fresh-context verifier for a task-prep prompt. Runs the golden-rule colleague test against the 9-field handoff template; returns a structured gap list. Read-only — never edits, never invents. | ["Read", "Glob", "Grep"] | no |
 | typescript-reviewer | Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 
 ## Skills — Repo
@@ -156,10 +161,11 @@ _Personals/kbg-harness_
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
-| review-pr | Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
+| review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
+| task-prep | Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners. | inline | manual |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
 | tdd | Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
 | teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
@@ -173,6 +179,7 @@ _Personals/kbg-harness_
 | Hook | Purpose |
 |---|---|
 | flow-nudge.sh | Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the |
+| learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated |
@@ -182,6 +189,7 @@ _Personals/kbg-harness_
 | cost-tracker.sh | Stop: log cumulative session token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | test-flow-nudge.sh | shellcheck disable=SC2016  # literal \$ in payload strings is intentional |
 | test-gates.sh | shellcheck disable=SC2016  # literal \$ in test payload strings is intentional |
+| test-learn-nudge.sh | learn-nudge unit tests: simulates SessionEnd JSON payloads pointing at a |
 | test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), |
 | test-worktree-create.sh | shellcheck disable=SC2016  # literal $ in test payload strings is intentional |
 | test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect). |
@@ -192,7 +200,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-06T05:01:21Z_
+_Generated: 2026-07-06T17:19:15Z_
 
 ---
 
