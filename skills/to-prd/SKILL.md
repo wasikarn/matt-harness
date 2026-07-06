@@ -18,7 +18,9 @@ The issue tracker and triage label vocabulary should have been provided to you �
 
 2. Write the PRD using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
 
-**done when:** the issue exists on the tracker with the agreed seams, user stories, and testing decisions; the body matches the template shape; further cycles return to step 1 (seams) before step 2 (publish). Failure mode to avoid: silent re-opening of seams mid-publish — that is premature completion on the gathering path.
+**Publishing to Jira specifically:** this skill's template is a synthesis format, not the tracker's canonical content shape. Never call `acli`/an Atlassian MCP tool directly with this PRD text. If the project has the `jira-acli` plugin available, hand off to `jira-acli:jira-content` to reshape this PRD's content into its Bug/Story/Task/Epic template before the write — that skill owns the ADF-safety plumbing and the template standard this one doesn't. If `jira-acli` isn't available, say so before publishing rather than hand-building ADF.
+
+**done when:** the issue exists on the tracker with the agreed seams, user stories, and testing decisions; the body matches the template shape appropriate for that tracker (not just this skill's PRD shape); further cycles return to step 1 (seams) before step 2 (publish). Failure mode to avoid: silent re-opening of seams mid-publish — that is premature completion on the gathering path.
 
 <prd-template>
 
