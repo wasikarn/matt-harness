@@ -42,7 +42,7 @@ _Personals/kbg-harness_
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ prototype                      Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
-  ◇ review-pr                      Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
+  ◇ review-pr                      Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
   ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo.
@@ -156,7 +156,7 @@ _Personals/kbg-harness_
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | prototype | Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code. | inline | manual |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
-| review-pr | Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
+| review-pr | Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
@@ -192,7 +192,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-03T14:20:55Z_
+_Generated: 2026-07-06T05:01:21Z_
 
 ---
 
