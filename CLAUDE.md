@@ -38,7 +38,7 @@ pre-push: full gauntlet (all validation layers in parallel).
 
 ## Composer-not-creator doctrine
 
-Before writing a new skill, command, or agent from scratch, check the upstream ECC repo at `/Users/kobig/Codes/Personals/ECC`. Cherry-pick and adapt from there. Create kbg-native surfaces only when no upstream fit exists. (A hand-pinned HEAD hash is structurally doomed to re-stale; the path is the stable anchor — run `git rev-parse HEAD` there when you need the current commit.)
+Before writing a new skill, command, or agent from scratch, check the upstream ECC repo at `/Users/kobig/Codes/Personals/ECC` and the vendored superpowers checkout at `/Users/kobig/Codes/Personals/superpowers`. Cherry-pick and adapt from there. Create kbg-native surfaces only when no upstream fit exists. (A hand-pinned HEAD hash is structurally doomed to re-stale; the path is the stable anchor — run `git rev-parse HEAD` there when you need the current commit.)
 
 ## Architecture
 
@@ -77,7 +77,7 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 - **Output style:** `output-styles/staff-eng.md` is the sole live-response register — self-calibrates terse vs full decision-framing by stakes, not by switching files (the old `senior-eng.md`/`staff-eng.md` two-file split was collapsed 2026-07-02; the internal "Calibrate to stakes" rule replaces the escalation/fallback dance). `force-for-plugin: true` auto-activates it whenever `kbg@kobig` is enabled, overriding the user's own `outputStyle` setting — no `/output-style` selection needed, but it also means you can't run a different style while this plugin is on without disabling it first.
 - **Working frames:** `contexts/` holds `dev.md`, `review.md`, `research.md` — loaded by `/frame` to set session posture.
 - **`grep` is aliased** to `rtk grep` in this environment. Use `/usr/bin/grep` or `awk` for count/stat operations.
-- **Cache-invalidation:** same-version edits are no-ops. Always bump both manifests before `claude plugin update`.
+- **Cache-invalidation:** same-version edits are no-ops. Always bump both manifests before `claude plugin update`. CLAUDE.md-only edits skip the bump — it's dev-facing repo guidance, not cached plugin content (only `agents/`/`skills/`/`commands/`/`hooks/`/`output-styles/`/`themes/` ship per-version).
 - **`BOUNDARY.md` regen:** the script writes to STDOUT, not the file. The `> BOUNDARY.md` redirect is required every time.
 - **Never `rm -rf`:** use `trash` for deletions.
 - **Never `--no-verify`** on commits or pushes.
