@@ -170,7 +170,7 @@ Update todos as you progress.
    - Ask per tier: fix now, defer, or proceed as-is.
 3. Summarize: what broke, root cause (one sentence), fix shape, regression test name, files touched.
 4. Suggest next step:
-   - If not yet reviewed → invoke `review-pr` skill
+   - If not yet reviewed → invoke `kbg:review-pr`
    - If review addressed and approved → `/ship-merge`
    - If documenting the fix → `/post-mortem`
    - If fix touched auth/secrets → `kbg:security-auditor` for comprehensive audit before merge

@@ -23,7 +23,7 @@ The agent returns:
 2. Errors remaining, if any.
 3. New errors introduced (should be zero).
 4. Unresolved issues, if any — with a suggested next step per issue.
-5. Suggested next step (build green): a compiling build is not a passing one — run the test suite / /test-coverage before continuing.
+5. If no unresolved issues remain: suggested next step — a compiling build is not a passing one, run the test suite / /test-coverage before continuing.
 
 ## Arguments
 

@@ -174,7 +174,7 @@ Artifacts referenced:
   - <any PRDs/plans linked in PR body>
 
 Suggested next step:
-  - Needs review           → kbg:review-pr <number>
+  - Needs review           → kbg:review-pr
   - Reviewed + approved    → /ship-merge <number>
   - Reviewer left comments → /address-review <number>
   - Open in browser        → gh pr view <number> --web
