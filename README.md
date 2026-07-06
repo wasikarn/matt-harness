@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.14.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.34.4-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 11 specialist agents, 46 workflow skills, and 22 slash commands — plus two output-style registers and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 12 specialist agents, 46 workflow skills, and 17 slash commands — plus an output-style register and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -58,7 +58,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 |---|---|---|
 | **Skills** | 46 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
 | **Agents** | 12 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 22 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
+| **Commands** | 17 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -137,7 +137,7 @@ kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 12 specialist subagents (.md each)
 ├── skills/               # 46 workflow skills (SKILL.md per directory)
-├── commands/             # 22 slash commands
+├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
