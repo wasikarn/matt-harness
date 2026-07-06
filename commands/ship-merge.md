@@ -14,23 +14,23 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 
 1. Resolve PR: `gh pr view` (current branch) or `gh pr view <n>`.
-2. Check CI: `gh pr checks <n>`. All required checks must pass.
-3. Check approvals: `gh pr view <n> --json reviews`. At least one approval, no CHANGES_REQUESTED from a required reviewer.
-4. Check mergeable state: no conflicts, no "merge requirements not met" flags.
-5. Check branch protection rules: is squash required? Is linear history required?
+2. Check branch protection rules once, upfront — this drives steps 3–4 and the scored table below: `gh api repos/{owner}/{repo}/branches/<base>/protection 2>/dev/null` (404/error → no protection configured at all, treat both `required_status_checks` and `required_pull_request_reviews` as absent). Is squash required? Is linear history required?
+3. Check CI: `gh pr checks <n>`. If branch protection has no `required_status_checks` **and** `gh pr checks` reports zero registered checks (not pending, not red — genuinely none), the repo has no CI wired up at all — record **N/A**, not a failure; there is nothing to gate on. Otherwise, all required checks must pass.
+4. Check approvals: `gh pr view <n> --json reviews`. If branch protection has no `required_pull_request_reviews` (or `required_approving_review_count` is 0) — routine for solo-maintainer repos — record **N/A**, not a failure; the repo has no review policy to check against. Otherwise, at least one approval is required, no CHANGES_REQUESTED from a required reviewer.
+5. Check mergeable state: no conflicts, no "merge requirements not met" flags.
 6. **Review check — scored gate (`kbg:score-decision`)**: a bare `review-last.json.clean` boolean read isn't a measurable quality gate (METHODOLOGY Rule 14) — it collapses tier, freshness, CI, and approval signal into one bit and can't distinguish "reviewed, 3 unresolved Criticals" from "never reviewed" from "reviewed, but for a commit 5 pushes ago." Score it instead:
 
-   Read `${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json` if it exists, and cross-check its `last_sha` against the PR's actual current HEAD SHA (`gh pr view <n> --json headRefOid`) — a review from an earlier commit certifies different code, not this merge.
+   Read `${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-<n>.json` if it exists — `review-pr`'s Phase 7 keys PR-by-number reviews per PR precisely so two reviews run close together (e.g. #357 then #358) don't clobber a shared file before this gate reads it. Fall back to `review-last.json` (the unkeyed file `review-pr` writes for own-branch/author-flow reviews) only if the keyed file is absent. Whichever file is used, cross-check its `last_sha` against the PR's actual current HEAD SHA (`gh pr view <n> --json headRefOid`) — a review from an earlier commit certifies different code, not this merge.
 
    | Criterion | Wt | Measures |
    |---|---|---|
-   | Critical findings | 30 | 0 unresolved Critical findings in `review-last.json` (review-pr's own tier definition: production breaks / a 2am page / data corruption) |
-   | CI status | 25 | all required checks green (`gh pr checks <n>`) |
-   | Review freshness | 20 | `review-last.json`'s `last_sha` matches the PR's current HEAD SHA |
-   | Approval status | 15 | ≥1 approval, no CHANGES_REQUESTED from a required reviewer |
-   | Review coverage | 10 | a review actually ran (`review-last.json` exists for this PR) |
+   | Critical findings | 30 | 0 unresolved Critical findings in the review-state file (review-pr's own tier definition: production breaks / a 2am page / data corruption) |
+   | CI status | 25 | all required checks green (`gh pr checks <n>`) — **N/A** (step 3) when the repo has no CI configured at all |
+   | Review freshness | 20 | the review-state file's `last_sha` matches the PR's current HEAD SHA |
+   | Approval status | 15 | ≥1 approval, no CHANGES_REQUESTED from a required reviewer — **N/A** (step 4) when the repo has no required-review policy at all |
+   | Review coverage | 10 | a review actually ran (`review-pr-<n>.json` or a matching `review-last.json` exists for this PR) |
 
-   Pass threshold 70, fatal-weakness floor 40 (Rule 14) — no criterion below 40 regardless of weighted sum, so "great CI, zero review" and "reviewed but 3 unresolved Criticals" both fail on their own floor rather than averaging out. If no review ran, say so plainly and score Review coverage low — **never fabricate a clean result**; the agent's self-report is not ground truth, re-check against the PR, not memory.
+   **Verified-N/A criteria are excluded, not zeroed.** A criterion is N/A only when steps 2–4 *confirmed via the branch-protection API* that the repo has no policy to check — never from a `gh` call erroring for an unrelated reason (auth, rate limit, network), and never guessed. Confirmed-N/A criteria drop out of both the weighted sum and the floor check entirely: recompute the score as (Σ applicable criteria's weight × score) ÷ (Σ applicable weights) × 100, same 70 pass threshold, same 40 floor — but only across whatever's left. A solo-maintainer repo with no CI and no required reviews is scored on Critical findings / Review freshness / Review coverage alone (30+20+10=60 becomes the full weight base); it is not penalized for policies the repo never adopted. If no review ran, say so plainly and score Review coverage low — **never fabricate a clean result**; the agent's self-report is not ground truth, re-check against the PR, not memory.
 
    **Automation-bias guard on the Critical-findings criterion:** `review-last.json`'s `critical_count` is a same-session self-report when `review_mode` is `"own-branch"` — nothing independently re-derives whether the severity tiering was correct, only whether the file is fresh and present. Check the PR's changed file paths (`gh pr diff <n> --name-only`) against **either** (a) `auth|secret|credential|payment|billing|token`, **or** (b) the harness's own verifier/gate paths — under `hooks/gates/`, equal to `hooks/hooks.json`, equal to `skills/harness-audit/scripts/audit.sh`, or under `skills/harness-audit/scripts/checks/` (the exact set `hooks/gates/verifier-protect.sh` already treats as tamper-sensitive — reuse that list, don't redefine it). If any match AND `review_mode` is `"own-branch"` (not `"pr-by-number"`, which ran in an isolated worktree), cap the Critical-findings criterion at 40 (the floor) regardless of its reported `critical_count` — tell the user why ("sensitive-path diff, self-reviewed — re-review by PR number for an isolated pass before this can score above the floor") rather than trusting the self-tier.
 

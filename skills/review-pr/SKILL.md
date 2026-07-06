@@ -197,17 +197,28 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Actions**:
 1. Mark all todos complete. Write the review-state file so `/ship-merge`'s scored review gate can read it:
    ```bash
-   mkdir -p "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
+   STATE_DIR="${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
+   mkdir -p "$STATE_DIR"
    CLEAN=$([ "${CRITICAL_COUNT:-0}" -eq 0 ] && echo "true" || echo "false")
    REVIEW_MODE=$([ -n "${WT:-}" ] && echo "pr-by-number" || echo "own-branch")
+   # PR-by-number reviews are keyed per PR (recovered from $WT="<tmp>/review-pr-<#>",
+   # no new variable needed) — a single shared file would let a second PR's review
+   # clobber the first's before /ship-merge reads it (reported in production: #357
+   # overwritten by #358 from two reviews run close together). Own-branch reviews
+   # have only one active branch per working tree, so the shared file stays fine there.
+   if [ -n "${WT:-}" ]; then
+     STATE_FILE="$STATE_DIR/review-pr-${WT##*-}.json"
+   else
+     STATE_FILE="$STATE_DIR/review-last.json"
+   fi
    printf '{"clean":%s,"critical_count":%s,"last_sha":"%s","branch":"%s","review_mode":"%s","ts":"%s"}\n' \
      "$CLEAN" "${CRITICAL_COUNT:-0}" "$HEAD_SHA" \
      "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')" \
      "$REVIEW_MODE" \
      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-     > "${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-last.json"
+     > "$STATE_FILE"
    ```
-   `CRITICAL_COUNT` = number of Critical findings from Phase 5. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
+   `CRITICAL_COUNT` = number of Critical findings from Phase 5. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
 2. Summarize:
    - PR # and URL (if applicable)
    - Review window: `BASE_SHA..HEAD_SHA`
@@ -262,7 +273,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
-- **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
+- **GH CLI**: Use `gh pr view` to check PR state before launching review. `review-pr` reviews code, not CI status — plenty of repos have no CI wired up at all, so this skill never checks or gates on `gh pr checks` (that belongs to `/ship-merge`'s own required-checks gate, which only runs against repos that actually have branch protection configured). Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
 - **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` / `flutter-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.

@@ -5,7 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
-## [0.34.0] — 2026-07-06
+## [0.34.1] — 2026-07-06
+
+Two `review-pr` fixes from real-world use (PR #357's review-state getting clobbered by #358's, reviewed close together):
+
+- **Per-PR review-state file.** `review-pr` Phase 7 wrote a single shared `review-last.json` regardless of which PR was reviewed — two PR-by-number reviews run close together clobber each other's state before `/ship-merge`'s scored gate reads it. Now keyed per PR: `review-pr-<#>.json`, recovered from the existing `$WT="<tmp>/review-pr-<#>"` worktree path (no new variable threaded through). Own-branch (author-flow) reviews keep the shared `review-last.json` — only one branch is ever checked out in a given working tree, so there's no clobber risk there. `/ship-merge` Phase 1 step 6 now reads the PR-keyed file first, falling back to `review-last.json` only if it's absent.
+- **Dropped the CI-status mention from `review-pr`.** It never gated on `gh pr checks` — just a stray "see CI status before launching review" line — but plenty of target repos have no CI wired up at all, so even the suggestion was wrong there. `review-pr` reviews code, not CI; `/ship-merge`'s own required-checks gate is unchanged and still the right place for that.
+
+## [0.34.2] — 2026-07-06
+
+`/ship-merge` Phase 1's scored review gate (Rule 14) forced a solo-maintainer, no-CI repo to fail every merge on the "CI status" and "Approval status" criteria — a screenshot from real use showed exactly this: CI status `n/a`, Approval status `0` (below the 40 floor), forcing a `--admin` override on a routine merge. Neither criterion had a "genuinely doesn't apply here" path, only pass/fail — so a repo that never adopted CI or required-review policy was punished for it every time, turning the gate into permanent bypass theater rather than a real check.
+
+- Added a **verified-N/A disposition**, scoped to `ship-merge.md` only (not generalized into `METHODOLOGY.md`'s Rule 14 — kept local since other Rule-14 consumers weren't reported to have this gap). Phase 1 now checks branch protection once upfront (`gh api repos/{owner}/{repo}/branches/<base>/protection`) to see what the repo actually requires: no `required_status_checks` **and** zero registered checks on the PR → CI status is N/A; no `required_pull_request_reviews` (or a 0 required-approving-review-count) → Approval status is N/A.
+- **N/A is derived from the branch-protection API, never guessed** — a `gh` call failing for an unrelated reason (auth, rate limit, network) is not evidence of N/A, only a confirmed absent policy is.
+- Verified-N/A criteria are **excluded from both the weighted sum and the floor check**, not zeroed and not auto-passed — the score becomes (Σ applicable weight × score) ÷ (Σ applicable weight) × 100, same 70 threshold, same 40 floor, just over whatever criteria the repo's own policy actually asks for.
+
+## [0.34.1] — 2026-07-06
 
 Added `hooks/advisory/learn-nudge.sh` (`SessionEnd`) — reminds the operator that `kbg:learn` exists when a session had enough activity to plausibly contain a durable learning. Prompted by "can `learn` auto-learn like ECC's now" — answer was no (by deliberate doctrine, not a gap), and this is the advisory-only piece of that gap that's actually safe to close: a nudge toward the existing gated skill, not a new write path.
 
