@@ -87,6 +87,7 @@ Rules:
 - Only enough code to pass current test
 - Don't anticipate future tests
 - Keep tests focused on observable behavior
+- Confirm RED comes from the assertion actually failing, not a broken test setup, unrelated syntax error, or missing dependency — a test that never ran isn't RED
 
 ### 4. Refactor
 

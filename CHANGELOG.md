@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.6] — 2026-07-06
+
+Surveyed ECC's `tdd-workflow` skill + `tdd-guide` agent against kbg's `skills/tdd/`; one genuine gap survived, everything else was redundant or doctrine-conflicting.
+
+- `skills/tdd/SKILL.md` — added a false-RED guard to the Incremental Loop rules: confirm RED comes from the assertion actually failing, not a broken test setup, unrelated syntax error, or missing dependency.
+
+Not ported: 80% coverage quota + runner-detection (already `commands/test-coverage.md`), per-stage git checkpoint commits (conflicts with the "only commit when explicitly asked" rule), Jest/Playwright/Supabase/Redis/OpenAI snippets (stack-specific, belongs in `*-patterns` skills, no matching one exists), prompt-defense boilerplate + plan-sanitization block (generic ECC agent ceremony, not tdd-specific), the markdown "evidence report" ritual (conflicts with matt-pocock's no-boilerplate stance), and the eval-driven addendum (redundant with `skills/eval-harness`).
+
 ## [0.32.5] — 2026-07-06
 
 Mined 3 cherry-picks from an upstream matt-pocock/skills sync (43ea088..66f92b6), per the composer-not-creator doctrine — surveyed and selected, not bulk-imported.
