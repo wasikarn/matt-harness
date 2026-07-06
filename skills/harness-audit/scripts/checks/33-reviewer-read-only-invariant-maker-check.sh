@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 33. Reviewer read-only invariant (maker≠checker). An agent whose NAME marks it a
-# reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge) must NOT grant
+# reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge|checker) must NOT grant
 # Write or Edit: a verifier that can mutate what it reviews defeats the fresh-context
 # independence maker≠checker depends on. Load-bearing at L3 (CLAUDE.md §The operating model (was L3 bounded autonomy, retired)) — these agents
 # run unattended inside the loop's Gate-2 review. The source frontmatter is read-only
@@ -9,7 +9,7 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f" .md)
   case "$name" in
-    *reviewer*|*analyzer*|*analyst*|*hunter*|*critic*|*judge*) ;;
+    *reviewer*|*analyzer*|*analyst*|*hunter*|*critic*|*judge*|*checker*) ;;
     *) continue ;;
   esac
   tools=$(fm_get "$f" "tools" --block)

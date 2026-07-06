@@ -62,13 +62,25 @@ Evaluate the draft's shape. If any of these match, **stop and redirect** via the
 
 ### Step 3 — Phase 0: stack sniff
 
-Read `CLAUDE.md` (project + global) and the nearest manifest present (`package.json` / `go.mod` / `pyproject.toml` / `pubspec.yaml` / `Cargo.toml`). Note the detected stack (AdonisJS, Drizzle, Effect-TS, Hono, Flutter, LangGraph, gRPC, MySQL/MariaDB…). This is cheap and informs reference-finding (Step 5) and done-when shape (Step 6).
+Read the nearest manifest present (`package.json` / `go.mod` / `pyproject.toml` / `pubspec.yaml` / `Cargo.toml`) — `CLAUDE.md` (project + global) is already in your session context from SessionStart injection, so don't re-Read it. Note the detected stack (AdonisJS, Drizzle, Effect-TS, Hono, Flutter, LangGraph, gRPC, MySQL/MariaDB…). This informs reference-finding (Step 5) and done-when shape (Step 6).
 
 **Success criterion:** you can name the stack in one phrase, or "generic / no manifest."
 
 ### Step 4 — Map to the 9 fields
 
-Read `docs/reference/task-handoff-template.md` § "The template" for the canonical field definitions. For each of `<task>` `<context>` `<scope>` `<reference>` `<artifacts>` `<done-when>` `<constraints>` `<output>` `<edge-cases>`, mark: **present** (in the draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap).
+The 9 fields and their intent (canonical source: `docs/reference/task-handoff-template.md` § "The template" in the plugin cache — read it only if you need the worked example; the one-liners below are enough to map):
+
+- `<task>` — the outcome in one sentence, not the steps.
+- `<context>` — why this matters / the situation (lets Claude generalize, skip dead ends).
+- `<scope>` — files/areas in + explicitly out + `@`-refs to target files.
+- `<reference>` — an existing file/test/pattern to match.
+- `<artifacts>` — paste the error/log/screenshot directly, or `@file` (don't describe).
+- `<done-when>` — the check Claude can run itself + a measurable target when perf/coverage is the goal. **The one field that always costs if missing.**
+- `<constraints>` — only rules that differ from defaults (rest is noise).
+- `<output>` — format/length/audience for the answer.
+- `<edge-cases>` — gotchas you foresee, or "interview me for edge cases first."
+
+For each field, mark: **present** (in the draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap).
 
 **Success criterion:** a 9-row map with present/derivable/absent per field.
 
@@ -116,7 +128,7 @@ Never re-ask a field the user already provided. Never overwrite their wording. I
 
 ### Step 8 — Assemble the prompt
 
-Assemble in the 9-field XML shape from `docs/reference/task-handoff-template.md` § "The template". Use the **minimal 2-field version** (`<task>` + `<done-when>`) when scope is obvious and the fix is small. Keep empty fields out rather than padding them with "[optional]".
+Assemble in the 9-field XML shape (the field intents are in Step 4; full worked example in `docs/reference/task-handoff-template.md`). Use the **minimal 2-field version** (`<task>` + `<done-when>`) when scope is obvious and the fix is small. Keep empty fields out rather than padding them with "[optional]".
 
 **Success criterion:** a single code-block prompt in the template's XML shape, minimal or full as appropriate.
 
