@@ -164,7 +164,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
      - Fixes pushed, awaiting re-review → await reviewer; ping if urgent
      - Reviewer approves on push        → /ship-merge
      - Another pass wanted before merge → kbg:review-pr
-     - wontfix-heavy and abandoned      → close the PR
+     - wontfix-heavy and abandoned      → `gh pr close <n>`
 
 ---
 
