@@ -5,6 +5,10 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.34.5] — 2026-07-06
+
+Surveyed obra/superpowers a second time (adversarial re-check after a first pass concluded "little worth importing" — that held for 11 of 13 skills, but two items on a fresh-context re-read didn't). Added `skills/diagnosing-bugs/scripts/find-polluter.sh`, a bisection script that runs test files one at a time and stops at the first one that leaks a filesystem/state artifact onto tests run after it — a different axis from the existing commit/version bisection harness (Phase 1 item 8), which `diagnosing-bugs` had no equivalent for. Genericized from superpowers' original (hardcoded to `npm test`) to auto-detect the runner from project marker files (`package.json`/`Cargo.toml`/`go.mod`/`pubspec.yaml`/`pyproject.toml`), matching kbg's existing polyglot support (`build-fix`). No doctrine conflict — a plain diagnostic script, no autonomy/self-invocation/worktree entanglement. The three items that *did* conflict (`subagent-driven-development`'s unattended loop, `using-superpowers`' self-triggering mandate, `using-git-worktrees`) and the redundant items (`orchestrate`, `review-pr`/`address-review`, `tdd`, `pre-ship-verify`, native Plan Mode) were correctly excluded on both passes — don't re-import those without new evidence.
+
 ## [0.34.1] — 2026-07-06
 
 Two `review-pr` fixes from real-world use (PR #357's review-state getting clobbered by #358's, reviewed close together):

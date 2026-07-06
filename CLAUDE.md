@@ -90,6 +90,7 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 
 Quick orientation for the last few releases. For full notes see `CHANGELOG.md`.
 
+- **v0.34.5** — Second-pass superpowers survey (adversarial re-check) added `diagnosing-bugs/scripts/find-polluter.sh` — test-file pollution bisection, a different axis from the existing commit/version bisection harness. Genericized runner detection (npm/cargo/go/flutter/pytest); no doctrine conflict.
 - **v0.34.4** — Dropped dead `tools:` frontmatter key from 4 ECC-imported skills (cargo-culted subagent field, silently ignored by Claude Code; not renamed to `allowed-tools` since that auto-approves tools — a permission-loosening nobody asked for).
 - **v0.34.0–v0.34.3** — Advisory learn-nudge on `SessionEnd`; `review-pr`/`ship-merge` real-world fixes (per-PR review-state keying, verified-N/A disposition for CI/approval gates on solo/no-CI repos); `to-prd` hands off Jira publishing to `jira-acli`'s canonical template.
 - **v0.33.0** — `review-pr`: language-reviewer routing (typescript/python/flutter) + independent adversarial verifier per finding.
