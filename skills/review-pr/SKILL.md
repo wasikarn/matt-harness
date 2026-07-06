@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'."
+description: "Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'."
 ---
 
 # Comprehensive PR Review
