@@ -74,6 +74,15 @@ bandit -r .                                # Security scan
 pytest --cov=app --cov-report=term-missing # Test coverage
 ```
 
+## Noise Control
+
+Only report issues with >80% confidence. Flag correctness-affecting gaps; treat the rest as optional — the checklist above is a menu, not a mandate, and flooding a review with MEDIUM nitpicks (PEP 8 import order, missing docstrings) erodes trust faster than a missed `is None`.
+
+- Consolidate similar issues (e.g. "5 functions missing type hints" not 5 separate findings)
+- Skip stylistic preferences unless they violate project conventions or cause functional issues
+- Only flag unchanged code for CRITICAL security issues
+- Prioritize bugs, security, data loss, and correctness over style
+
 ## Review Output Format
 
 ```text

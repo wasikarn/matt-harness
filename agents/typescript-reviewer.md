@@ -107,6 +107,15 @@ vitest run                          # Tests (Vitest)
 jest --ci                           # Tests (Jest)
 ```
 
+## Noise Control
+
+Only report issues with >80% confidence. Flag correctness-affecting gaps; treat the rest as optional — the checklist above is a menu, not a mandate, and flooding a review with MEDIUM nitpicks erodes trust faster than a missed `console.log`.
+
+- Consolidate similar issues (e.g. "5 functions missing explicit return types" not 5 separate findings)
+- Skip stylistic preferences unless they violate project conventions or cause functional issues
+- Only flag unchanged code for CRITICAL security issues
+- Prioritize bugs, security, data loss, and correctness over style
+
 ## Approval Criteria
 
 - **Approve**: No CRITICAL or HIGH issues
