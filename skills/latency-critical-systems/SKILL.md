@@ -3,7 +3,6 @@ name: latency-critical-systems
 description: Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline.
 metadata:
   origin: ECC
-tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 # Latency Critical Systems

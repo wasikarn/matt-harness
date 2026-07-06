@@ -3,7 +3,6 @@ name: agent-architecture-audit
 description: Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
 metadata:
   origin: oh-my-agent-check (via ECC)
-tools: Read, Bash, Grep, Glob
 ---
 
 # Agent Architecture Audit

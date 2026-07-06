@@ -3,7 +3,6 @@ name: context-budget
 description: Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
 metadata:
   origin: ECC
-tools: Read, Bash, Glob
 ---
 
 # Context Budget
