@@ -39,7 +39,7 @@ A tightening event is **fully reversible** in one line. The user can:
 
 1. **Undo this session's tightening**: tell the orchestrator "skip the policy", the default SCRUTINIZE-4 check is used for all Qs this session. The ledger still records the session, but with a `policy_skipped: true` footer line.
 2. **Reset the ledger**: delete all `.scratch/review-pr-*/ledger.md` files. The next session starts with no history; eligibility is unreachable until 5 fresh sessions accumulate. Useful when the project changes scope (e.g. moved from `auth-refactor` work to `frontend-polish` — old rejection rates are stale).
-3. **Reset one Q's counter**: keep the ledger, but tag the last N ledgers as `Q3: ignored` so they're excluded from the rolling window. Surgical, not blanket.
+3. **Reset one Q's counter**: keep the ledger, but tag the last N ledgers as `Q3: ignored` (see `ledger.md` § Format) and drop those whole files from the `find`/`head -10` input when computing that Q's rate. Coarser than per-row (it excludes the tagged session's other 3 Qs too, for that run), but still narrower than a full ledger reset.
 
 ## Aggregation helper (awk one-liner)
 
@@ -51,10 +51,11 @@ find .scratch -path '*/review-pr-*/ledger.md' -type f -exec stat -f '%m %N' {} +
   | cut -d' ' -f2 \
   | xargs awk -F'|' '
     /^\| Q[0-9] / {
-      split($2, a, "Q"); split($3, b, "Q");
-      gsub(/ /, "", a[2]); gsub(/ /, "", b[2]);
-      rejected[substr(a[2],1,1)] = a[2]
-      survived[substr(b[2],1,1)] = b[2]
+      qnum = $2; gsub(/[^0-9]/, "", qnum)
+      rej = $3; gsub(/ /, "", rej)
+      sur = $4; gsub(/ /, "", sur)
+      rejected[qnum] += rej
+      survived[qnum] += sur
     }
     END {
       for (q in rejected) {

@@ -31,6 +31,8 @@ One file per session, append-only. Markdown with a 4-row table — one row per S
 - **Agents dispatched**: code-reviewer, silent-failure-hunter
 - **PR/scope**: PR #4821 / current branch
 - **Tightening policy check**: see `policy.md` § Threshold
+- **policy_skipped**: `true` only if the user said "skip the policy" this session (`policy.md` § Reversibility #1); omit the line entirely otherwise — its absence *is* "policy applied normally".
+- **Q<n>: ignored** (e.g. `Q3: ignored`): a manual marker for `policy.md` § Reversibility #3. The awk aggregation helper does not parse this tag — it's coarser than that: before running the aggregation for a Q you've marked, exclude that whole session's `ledger.md` from the `find`/`head -10` input for that run (drop the file, not just the one row). Absent by default.
 ```
 
 ## Counters

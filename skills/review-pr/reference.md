@@ -14,7 +14,7 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 | `errors` | `silent-failure-hunter` | only if error handling changed |
 | `security` | `security-reviewer` | only if auth/secrets/input touched |
 | `types` | `code-reviewer` (type-design lens) | only if types/interfaces/DTOs/schemas/models changed |
-| `ux` | `code-reviewer` (UX/a11y lens) | only if user-facing UI/components/flows changed |
+| `db` | `code-reviewer` (DB/SQL query-safety lens) | only if migrations/schema/query files changed (`.sql`, Drizzle schema, or query-builder calls) |
 | `simplify` | NOT a reviewer | run native `/simplify` (clarity-only) separately after review decisions land (Phase 7 next-step) |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
 
@@ -47,7 +47,7 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 |---|---|
 | `silent-failure-hunter` | Silent failures + broad catches + unjustified fallbacks |
 | `security-reviewer` | OWASP + auth + secrets + supply chain — flags with severity, doesn't fix |
-| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80. Also carries the **comment-accuracy lens** (comment accuracy + rot + doc completeness), the **type-design lens** (type/DTO/schema encapsulation + invariants + illegal-states-unrepresentable), the **behavioral test-coverage lens** (test gaps by criticality, not line %), and the **UX/a11y lens** (interaction flow + WCAG basics) |
+| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80. Also carries the **comment-accuracy lens** (comment accuracy + rot + doc completeness), the **type-design lens** (type/DTO/schema encapsulation + invariants + illegal-states-unrepresentable), the **behavioral test-coverage lens** (test gaps by criticality, not line %), and the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety) |
 | native `/simplify` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
 ## Tips
@@ -60,13 +60,7 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 
 ## Workflow Integration
 
-**Before committing:**
-```
-1. Write code
-2. Run: kbg:review-pr code errors
-3. Fix any Critical issues
-4. Commit
-```
+Phase 2 pins a committed range (`BASE_SHA..HEAD_SHA`) and Phase 4 hands agents exactly that range — there's no uncommitted-diff mode. Review after you commit (even a WIP commit), not before.
 
 **Before creating PR:**
 ```

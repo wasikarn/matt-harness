@@ -1,6 +1,6 @@
 ---
 name: review-pr
-description: "Multi-agent PR review (quality/tests/security/types/a11y). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'."
+description: "Multi-agent PR review (quality/tests/security/types/db). Use when a PR is ready — by number or current branch. Don't use for quick diffs. Thai: 'รีวิว PR'."
 ---
 
 # Comprehensive PR Review
@@ -24,7 +24,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 **Actions**:
 1. **Detect target PR.** If user prompt contains a bare integer token (e.g. `123`), that is the **PR number** to review — Phase 2 checks it out in an isolated worktree instead of reviewing the current branch. Strip it before the aspect parse. No integer → review the current branch (existing behaviour).
-2. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
+2. Parse remaining arguments — recognized aspects: `code / tests / comments / errors / security / types / db / simplify / all` (see Review Aspects Reference below for what each routes to). Default if no aspect = `all`.
 3. **Determine dispatch mode:**
    - If user passed `parallel` keyword → mark for parallel dispatch in Phase 4.
    - If user passed `sequential` keyword → mark for sequential.
@@ -33,7 +33,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **AskUserQuestion** single-select: "Phase 1: [N] agents routed, diff = [files changed / lines changed], auth-heavy = [yes/no]. My recommendation: [Parallel / Sequential]. Confirm dispatch mode?"
      - `Parallel (Recommended when diff is medium and no auth changes; fastest wall-clock time)` — agents are independent
      - `Sequential (Recommended when diff is auth-heavy or the user wants lower cognitive load)` — one complete report at a time
-5. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
+4. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
 
 ---
 
@@ -64,7 +64,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - `errors` aspect (or `all`) AND error handling changed → `silent-failure-hunter`
    - `security` aspect (or `all`) AND changes touch auth/secrets/external input → `security-reviewer`
    - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `code-reviewer` with the **type-design lens** (encapsulation, invariants, illegal-states-unrepresentable)
-   - `ux` aspect (or `all`) AND user-facing UI/components/copy/flows changed → `code-reviewer` with the **UX/a11y lens** (interaction flow, WCAG basics)
    - `db` aspect (or `all`) AND migrations/schema/query files changed (`.sql` files, Drizzle schema, or query-builder calls touched) → `code-reviewer` with the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety)
 2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY code-reviewer's behavioral test-coverage lens (not the general-quality lens). `kbg:review-pr code tests` runs code-reviewer with both the general-quality and test-coverage lenses.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
@@ -80,7 +79,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Actions**:
 1. **Parallel mode** (default — fastest wall-clock time; launch all routed agents simultaneously, results come back together).
 2. **Sequential mode** (when `sequential` keyword in args — one agent at a time, each report complete before next; lower cognitive load for interactive sessions).
-3. Wait for all dispatched agents to return. Capture per-agent findings with file:line references.
+3. **Pass the pinned window into every dispatch prompt**: state the exact range, `git diff $BASE_SHA..$HEAD_SHA` (Phase 2's pinned SHAs). An agent's own default context-gathering step (uncommitted `git diff --staged`/`git diff`) is for ad-hoc invocation outside this skill — when dispatched from here, it must review the pinned range, not whatever happens to be sitting in the working tree.
+4. Wait for all dispatched agents to return. Capture per-agent findings with file:line references. **An agent that returns nothing, errors, or times out is not a clean pass** — record it in `dispatch_failures` for Phase 5 step 4; never let a missing report silently read as zero findings.
 
 ---
 
@@ -107,7 +107,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **Critical** — must fix before merge (security, data integrity, broken functionality)
    - **Important** — should fix before merge (real issues that don't block but shouldn't ship)
    - **Minor** — nice to have (style, optional refinements)
-4. **Blanket approval rejection — clean exits must be auditable.** A bare "LGTM" with no file:line findings is treated as "no findings returned", not a clean bill of health — you can't distinguish "checked and clean" from "didn't check". A clean exit only counts as a green light when the agent names what it verified (e.g. "traced the DB+API path — no transaction gap; auth predicate unchanged"). Surface to the user which agents returned auditable-clean, which returned findings, and which returned only a bare LGTM.
+4. **Zero findings is a valid clean pass — a missing report is not.** `agents/code-reviewer.md` explicitly sanctions a bare zero-findings APPROVE ("do not withhold approval to appear rigorous") — don't demand narration a clean pass doesn't need. What actually distinguishes "checked and clean" from "didn't check" is that Phase 4 now hands every agent the exact pinned range (`$BASE_SHA..$HEAD_SHA`): a zero-findings return against a known, scoped diff *is* the clean signal. The failure mode this guards against is an agent that never returns at all — that's `dispatch_failures` from Phase 4 step 4, not a clean tier. Surface to the user which agents returned clean, which returned findings, and (if any) which are in `dispatch_failures` — the latter blocks a clean overall verdict regardless of what the other agents found.
 5. **Apply ledger-driven tightening (if eligible).** Read `policy.md` § Threshold and the rolling 10-session aggregation. If any Q is eligible (≥50% rejection rate, ≥5 sessions), apply the *tightened* check from the policy table for that Q *this session only*. Surface a note: `Q3 tightened for this session (67% rejection over 10 sessions — was 45%)`. The user can override by saying "skip the policy" — the default SCRUTINIZE-4 check is then used and the ledger records `policy_skipped: true`.
 6. **Write the ledger entry.** Sibling of `rejected.md`, in the same `.scratch/review-pr-<UTC-timestamp>/` dir. See `ledger.md` for the schema. Per-Q counters (Rejected / Survived / %), agents dispatched, scope identifier, and `policy_skipped: true` if applicable. **Prune first** — count existing `ledger.md` files, FIFO-remove oldest until count ≤ 199, then write the new entry. This keeps the rolling window bounded per `ledger.md` § Retention.
 7. Surface a tier-grouped finding table to the orchestrator (you), not yet to user — Phase 6 handles user presentation.
@@ -136,7 +136,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - [agent-name]: Suggestion [file:line]
    ```
 
-   For tiers with zero findings, list as `Critical: 0 ✅` (explicit green light — agents are issues-only by frontmatter, so empty tier = clean signal, not "we forgot to check").
+   For tiers with zero findings, list as `Critical: 0 ✅` (explicit green light — agents are issues-only by frontmatter, so empty tier = clean signal, not "we forgot to check"). **If Phase 4 recorded any `dispatch_failures`, list them first and do not print an all-clean verdict** — `Dispatch: security-reviewer did not return — verdict incomplete, do not treat as clean` — a non-returning agent blocks the green light regardless of what the other agents found.
 
    After the tier table, surface a **1-line ledger trend** (read `ledger.md` § Aggregation — rolling 10 sessions, computed by the awk helper in `policy.md`):
    ```markdown
@@ -144,7 +144,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```
    A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see Phase 5 step 5). The user already saw the tightening note in Phase 5; the trend line here is the *delta* since the last session. If fewer than 5 sessions of history exist, surface `insufficient data` instead of percentages.
 
-   **Proof-verification check** (Rule 4 — define done, loop until verified): look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
+   **Proof-verification check** (own-branch flow only — Rule 4, define done, loop until verified): a PR-by-number review runs in a throwaway worktree with no `.scratch/` of its own, so this check does not apply there. On your own branch, look for `.scratch/<slug>/proofs/`. If absent and the task is non-trivial (≥2 files changed or ≥1 test file touched), flag as **[verification-gap] must-fix** — independent proof is required before merge. If present, verify at least one artifact is non-empty (test output, type-check output, or adversarial review). Surface: `Proof: 2 artifacts (test + typecheck) ✅` or `Proof: missing — must-fix`.
 
 2. **Branch on review target (from Phase 1):**
 
@@ -251,6 +251,6 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
 - **GH CLI**: Use `gh pr view` to check PR state; `gh pr checks` to see CI status before launching review. Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
 - **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer. Tests, comments, types → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design lens. Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
-- **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr` — normalized in commit `9e89bf2`.
+- **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.
