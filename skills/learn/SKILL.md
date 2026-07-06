@@ -20,7 +20,11 @@ notices what belongs in it.
 - **Operator-invoked only.** This skill runs when the operator asks to capture learnings — there
   is no passive SessionEnd capture hook wired (a prior `learn-capture` SessionEnd design was retired
   alongside ADR 0006 and is not re-armed; its backing `scripts/read-candidates.sh` is absent). The
-  skill is the **only** path that WRITES memory here, and only after the `AskUserQuestion` gate.
+  skill is the **only** path that WRITES memory here, and only after the `AskUserQuestion` gate. A
+  separate `hooks/advisory/learn-nudge.sh` (SessionEnd, added 2026-07-06) only *reminds* the operator
+  this skill exists when the session had enough activity to plausibly be worth a look — it reads
+  nothing about content, extracts no candidates, and writes nothing. It's a nudge toward invoking
+  this skill, not a second entry point into it.
 - **Writes are gated.** Candidates are NEVER written silently. Every save passes an
   `AskUserQuestion` gate; the operator approves each one. Reject = nothing written.
 - **No flag, by design.** The skill is `disable-model-invocation`-free so the model can reach it

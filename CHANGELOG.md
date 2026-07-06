@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.34.0] — 2026-07-06
+
+Added `hooks/advisory/learn-nudge.sh` (`SessionEnd`) — reminds the operator that `kbg:learn` exists when a session had enough activity to plausibly contain a durable learning. Prompted by "can `learn` auto-learn like ECC's now" — answer was no (by deliberate doctrine, not a gap), and this is the advisory-only piece of that gap that's actually safe to close: a nudge toward the existing gated skill, not a new write path.
+
+- **Design constraint verified before writing any code, then re-verified against the primary source**: a `claude-code-guide` agent first reported `SessionEnd` stdout is discarded but stderr is shown — worded ambiguously enough to warrant a direct check. Fetched the hooks reference directly and confirmed: the exit-code-2 table lists `SessionEnd` → "Shows stderr to user only," and the decision-control table lists `SessionEnd` under "None." So the design holds on primary-source evidence, not just a paraphrase. The retired `learn-drain-nudge.sh` (removed v0.6.0) worked around the presumed absence of a user-facing channel by nudging at the *next* `SessionStart` instead; this hook doesn't need that workaround since stderr reaches the user directly at session end.
+- **`reason` gate**: the docs list six `reason` values (`clear`, `resume`, `logout`, `prompt_input_exit`, `bypass_permissions_disabled`, `other`). Skips `resume` — the docs define it as the session suspending for later resumption, not closing out, so "before you close out" would be false there — and `clear`, since `/clear` is frequent mid-work housekeeping and the turn-count threshold barely filters it (tool-result turns inflate the count), so nudging on every `/clear` would be nag-fatigue noise rather than signal.
+- **Heuristic**: counts `"type":"user"` entries in the transcript JSONL (includes tool-result turns, not just literal prompts) — a coarse volume proxy, not a content judgment. Deliberately not keyword-matching for "corrections": real learnings often arrive as stated conventions or decisions with no correction phrasing, so a broad activity threshold (default ≥3, `KBG_LEARN_NUDGE_MIN_TURNS` override) is more reliable than a fragile phrase match.
+- **Explicitly not a re-arm of the retired passive-capture design** (`learn-capture.sh` + `learn-drain-nudge.sh`, removed v0.6.0): no queue, no state file, no confidence scoring, no python. It never writes memory, never extracts candidates, never judges *what* the learnings are — `kbg:learn` still owns all of that, gated by its own `AskUserQuestion`.
+- Added `hooks/tests/test-learn-nudge.sh` (11 cases) to `scripts/run-gauntlet.sh`'s hook-test suite.
+- Corrected a stale hook count while touching `docs/reference/hook-lifecycle-contracts.md`: the doc claimed "6 hook events / 12 hooks" before this change, but the actual pre-existing count (verified via a `python3` JSON-load count of `hooks.json`) was 6 events / 11 hooks — the "12" was already stale. Now accurately 7 events / 12 hooks with this addition.
+- Updated `skills/learn/SKILL.md`'s Autonomy posture section to distinguish this new nudge from the retired capture hook it is not.
+
 ## [0.33.0] — 2026-07-06
 
 Two capability additions to `kbg:review-pr`, deliberately built and shipped separately from the v0.32.11 verified-bug-fix batch above (new capability vs. bug fixes are different reversibility, different review needs). Both came from comparing against ECC's freshly-pulled `orch-review` Workflow-tool port, with an explicit go-ahead before building either.

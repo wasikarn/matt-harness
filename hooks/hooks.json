@@ -115,6 +115,19 @@
         ]
       }
     ],
+    "SessionEnd": [
+      {
+        "id": "advisory:learn-nudge",
+        "description": "Advisory: remind the operator that kbg:learn exists when the session had enough activity (transcript user-turn count) to plausibly contain a durable learning. Never blocks — SessionEnd has no decision control. Emits to stderr (SessionEnd stdout is discarded; stderr is shown to the user).",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/learn-nudge.sh"]
+          }
+        ]
+      }
+    ],
     "WorktreeCreate": [
       {
         "id": "gate:worktree:develop-only",
