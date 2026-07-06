@@ -23,7 +23,7 @@ The route most work travels. You have an idea and want it built.
    - **`kbg:handoff`** back what you learned, and reference it from the original idea thread.
 3. **Branch — is this a multi-session build?**
    - **Yes** → **`kbg:to-prd`** (turn the thread into a PRD) → **`kbg:to-issues`** (split the PRD into independently-grabbable issues). Because the issues are independent, **clear context between each one**: start a fresh session per issue and kick off **`/ship`** by passing it the PRD and the single issue to work on.
-   - **No** → **`/ship`** right here, in the same context window.
+   - **No** → **`/ship`** right here, in the same context window. It reviews the diff via **`kbg:review-pr`** before merge. Reach for **`kbg:tdd`** on its own when you just want to build one behaviour test-first without the whole `/ship` machine.
 
 ### Context hygiene
 
@@ -39,11 +39,20 @@ A starting situation that generates work, then merges onto the main flow.
 
   Triage is only for issues **you didn't create** — bug reports, incoming feature requests, anything that arrives raw. Issues that `kbg:to-issues` produced are already agent-ready, so **don't triage them**.
 
+- **Something's broken** → **`kbg:diagnosing-bugs`**. For the hard ones: the bug that resists a first glance, the intermittent flake, the regression that crept in between two known-good states. It refuses to theorise until it has a **tight feedback loop** — one command that already goes red on *this* bug — then fixes with a regression test. Its post-mortem hands off to **`kbg:improve-codebase-architecture`** when the real finding is that there's no good seam to lock the bug down.
+
 ## Codebase health
 
 Not feature work — upkeep.
 
 - **`kbg:improve-codebase-architecture`** — run whenever you have a spare moment to keep the codebase good for agents to operate in. It surfaces deepening opportunities; picking one _generates an idea_ you can take into the main flow at `kbg:grilling`.
+
+## Vocabulary underneath
+
+Two model-invoked references that run *beneath* the other skills — each the single source of truth for its vocabulary. Reach for them directly when the **words**, not the process, are the problem; or let the skills above pull them in.
+
+- **`kbg:domain-modeling`** — sharpen the project's *domain* language: challenge a fuzzy term, resolve an overloaded word, record a hard-to-reverse decision as an ADR. It's the active discipline `kbg:grilling --with-docs` drives to keep `CONTEXT.md` a clean glossary.
+- **`kbg:codebase-design`** — the deep-module vocabulary (module, interface, depth, seam, adapter, leverage, locality) for designing a module's *shape*. `kbg:tdd` and `kbg:improve-codebase-architecture` both speak it.
 
 ## Crossing sessions
 
@@ -55,6 +64,8 @@ Not feature work — upkeep.
 Off the main flow entirely.
 
 - **`kbg:grilling`** (default mode) — the same relentless interview as `--with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
+- **`kbg:prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
+- **`/deep-dive`** — delegate reading legwork to a background agent: it investigates a question against primary sources, then leaves a cited Markdown file in the repo. Keep working while it reads. The file it produces is something to take *into* the main flow at `kbg:grilling` — research feeds the thinking, it doesn't replace it.
 - **`kbg:teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
 - **`kbg:writing-great-skills`** — reference for writing and editing skills well.
 

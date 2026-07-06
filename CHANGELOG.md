@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.5] — 2026-07-06
+
+Mined 3 cherry-picks from an upstream matt-pocock/skills sync (43ea088..66f92b6), per the composer-not-creator doctrine — surveyed and selected, not bulk-imported.
+
+- `skills/ask-matt/SKILL.md` — router was missing routes upstream had added: a "Something's broken" on-ramp to `kbg:diagnosing-bugs`, a "Vocabulary underneath" section for `kbg:domain-modeling`/`kbg:codebase-design`, `/ship`'s Phase 6 `kbg:review-pr` call-out, and `kbg:prototype`/`/deep-dive` under Standalone.
+- `skills/review-pr/reference.md` — added a Fowler smell-baseline table (Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest) as always-on background for the `code` aspect's general-quality lens — repo standards still override it, every smell stays a judgement call.
+- `skills/tdd/SKILL.md` + `skills/tdd/tests.md` — added **tautological tests** as a distinct bad-test anti-pattern (assertion recomputes the expected value the same way the code does, passing by construction) alongside the existing implementation-coupled category.
+
+Not ported: upstream's `wayfinder` skill (still `in-progress`, 7 changesets of active churn this pull alone — revisit once it promotes like `code-review` did) and its leaner `tdd` rewrite (dropped the refactor stage entirely; kbg's fuller version with the `kbg:codebase-design` tie-in is a deliberate keep, not staleness).
+
 ## [0.32.4] — 2026-07-04
 
 Closed the maker≠checker loop opened by v0.32.2/v0.32.3: re-verified all 22 corrected texts from both releases with a fresh adversarial pass (22 verifiers, web-checked framework specifics). 21/22 confirmed clean. 1 fix-introduced error found and corrected.

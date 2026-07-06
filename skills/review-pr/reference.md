@@ -18,6 +18,27 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 | `simplify` | NOT a reviewer | run native `/simplify` (clarity-only) separately after review decisions land (Phase 7 next-step) |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
 
+## Fowler Smell Baseline
+
+Always-on background for the `code` aspect's general-quality lens — alongside whatever CLAUDE.md or repo docs already specify, not a new axis. Two binding rules: a documented repo standard always overrides the baseline; every smell below is a judgement call ("possible Feature Envy"), never a hard violation. Skip anything tooling already enforces.
+
+| Smell | What it is | Fix |
+|---|---|---|
+| Mysterious Name | Name doesn't reveal what it does or holds | Rename; if no honest name comes, the design's murky |
+| Duplicated Code | Same logic shape in more than one hunk/file | Extract the shared shape, call it from both |
+| Feature Envy | A method reaches into another object's data more than its own | Move the method onto the data it envies |
+| Data Clumps | Same fields/params keep travelling together | Bundle into one type, pass that |
+| Primitive Obsession | A primitive/string standing in for a domain concept | Give the concept its own small type |
+| Repeated Switches | Same switch/if-cascade on the same type recurs | Replace with polymorphism, or one shared map |
+| Shotgun Surgery | One logical change forces scattered edits across many files | Gather what changes together into one module |
+| Divergent Change | One file/module edited for several unrelated reasons | Split so each module changes for one reason |
+| Speculative Generality | Abstraction/params/hooks added for needs the spec doesn't have | Delete it; inline back until a real need shows |
+| Message Chains | Long `a.b().c().d()` navigation the caller shouldn't depend on | Hide the walk behind one method on the first object |
+| Middle Man | A class/function that mostly just delegates onward | Cut it, call the real target direct |
+| Refused Bequest | A subclass/implementer that ignores or overrides most of what it inherits | Drop the inheritance, use composition |
+
+Source: Fowler, *Refactoring* ch.3.
+
 ## Agent Descriptions
 
 One-line orientation; **see kbg:inventory for current frontmatter descriptions and the agent file (plugin-delivered or project-local) for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).

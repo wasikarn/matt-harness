@@ -59,3 +59,17 @@ test("createUser makes user retrievable", async () => {
   expect(retrieved.name).toBe("Alice");
 });
 ```
+
+**Tautological tests**: the assertion recomputes the expected value the same way the code does, so it passes by construction and can never disagree with the code. Expected values must come from an independent source of truth — a known-good literal, a worked example, the spec.
+
+```typescript
+// BAD: Recomputes the same formula the code uses — can't catch a wrong formula
+test("add sums two numbers", () => {
+  expect(add(a, b)).toBe(a + b);
+});
+
+// GOOD: Expected value is an independent literal
+test("add sums two numbers", () => {
+  expect(add(2, 3)).toBe(5);
+});
+```
