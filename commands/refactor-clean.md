@@ -23,6 +23,7 @@ The agent returns:
 2. Items skipped, with the reason (test failed, dynamic import, public API, uncertain).
 3. Test status before and after (all green required to keep a deletion).
 4. Lines saved.
+5. Suggested next step: deletions landed, tests green → kbg:review-pr before shipping the removal; nothing safe to remove → done.
 
 ## Arguments
 

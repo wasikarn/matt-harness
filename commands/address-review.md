@@ -160,7 +160,11 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
    - Threads handled — breakdown by category (fixed / wontfix / clarify / out-of-scope)
    - Commits added with sha → thread mapping
    - CI state from Phase 6
-   - Suggested next step: await re-review, ping reviewer if urgent, merge if reviewer auto-approves, or close PR if wontfix-heavy and abandoned.
+   - **Suggested next step:**
+     - Fixes pushed, awaiting re-review → await reviewer; ping if urgent
+     - Reviewer approves on push        → /ship-merge
+     - Another pass wanted before merge → kbg:review-pr
+     - wontfix-heavy and abandoned      → close the PR
 
 ---
 

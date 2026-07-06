@@ -75,6 +75,11 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. If failures appear post-merge, be ready to revert or invoke `kbg:incident` (hotfix path).
 3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. Keep a user-facing merge/release note factual and free of AI-flavor tells (no self-congratulation, no hedging filler).
+4. **Suggested next step:**
+   - Fix worth recording        → /post-mortem while context is warm
+   - Last change before release → /ship-release
+   - Base-branch CI red         → kbg:incident (per step 2)
+   - Otherwise                  → done; pick up the next task
 
 **Done.**
 

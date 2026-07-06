@@ -60,6 +60,8 @@ The `docs/skill-template/SKILL.md` template carries this checklist as a `## Desi
 
 **Named Model footers:** a skill/command/agent that makes load-bearing reasoning/judgment choices may end with a `## Named Model` footer citing cc-thinking-skills lenses. Apply the 3-condition rubric from `memory/mental-models-sweep-v0302-2026-07-03.md`: (1) load-bearing reasoning gap, (2) name-a-lens benefit for the operator, (3) honesty posture preserved (footer is a scaffold + catalog pointer, never "this lens proves correctness"). The curated catalog is `docs/reference/reasoning-models.md`; the 39 raw models live under `docs/reference/thinking-skills/skills/`.
 
+**Suggested next step footers:** a workflow surface (command or workflow skill run as a discrete step) may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched (`situation → action`), citing skills as `kbg:<name>` and commands as `/<name>`. Skills are ALWAYS cited `kbg:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 40 only catches rename/deletion drift on refs already in `kbg:` form, it does **not** scan for a skill mis-cited in slash form (confirmed: this exact bug shipped twice — `commands/pr.md` and `diagnosing-bugs/SKILL.md` both cited a skill as `/name` undetected until a manual survey caught it, v0.35.0). Passive suggestion only — never "invoke X now" / auto-chain (that collides with the no-model-self-start doctrine). Skip self-contained reference/pattern/catalog surfaces (a forced footer there is the retired canonical-sections ceremony, 2026-06-16) and terminal workflows (post-mortem, ship-release terminus).
+
 ## Branching model
 
 Single branch: `develop` only. No feature branches. Commit and push direct.
@@ -90,6 +92,7 @@ Single branch: `develop` only. No feature branches. Commit and push direct.
 
 Quick orientation for the last few releases. For full notes see `CHANGELOG.md`.
 
+- **v0.35.0** — `Suggested next step:` convention: outcome-branched (`situation → action`), passive-only (never auto-chained). Fixed 2 live dangling next-step pointers (`/code-review`, `/improve-codebase-architecture` mis-cited in slash form); normalized 2 divergent surfaces; backfilled 4 workflow-terminal dead-ends. No new audit check — rewriting the 2 pointers to `kbg:` form put them under check 40's existing coverage.
 - **v0.34.5** — Second-pass superpowers survey (adversarial re-check) added `diagnosing-bugs/scripts/find-polluter.sh` — test-file pollution bisection, a different axis from the existing commit/version bisection harness. Genericized runner detection (npm/cargo/go/flutter/pytest); no doctrine conflict.
 - **v0.34.4** — Dropped dead `tools:` frontmatter key from 4 ECC-imported skills (cargo-culted subagent field, silently ignored by Claude Code; not renamed to `allowed-tools` since that auto-approves tools — a permission-loosening nobody asked for).
 - **v0.34.0–v0.34.3** — Advisory learn-nudge on `SessionEnd`; `review-pr`/`ship-merge` real-world fixes (per-PR review-state keying, verified-N/A disposition for CI/approval gates on solo/no-CI repos); `to-prd` hands off Jira publishing to `jira-acli`'s canonical template.

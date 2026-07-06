@@ -173,10 +173,11 @@ CI Checks: <status summary or "pending" or "none configured">
 Artifacts referenced:
   - <any PRDs/plans linked in PR body>
 
-Next steps:
-  - gh pr view <number> --web   → open in browser
-  - /code-review <number>       → review the PR
-  - gh pr merge <number>        → merge when ready
+Suggested next step:
+  - Needs review           → kbg:review-pr <number>
+  - Reviewed + approved    → /ship-merge <number>
+  - Reviewer left comments → /address-review <number>
+  - Open in browser        → gh pr view <number> --web
 ```
 
 ---

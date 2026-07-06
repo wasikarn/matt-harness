@@ -188,7 +188,7 @@ Does the test fixture reproduce the exact input chain that triggered the bug?
 └── NO correct seam at any layer (after the tree above)
     → This is the finding. Don't paper over with a unit test.
     → Note in the PR: "regression test for this bug is impossible at current seams"
-    → Hand off to /improve-codebase-architecture (Phase 6 last action).
+    → Hand off to kbg:improve-codebase-architecture (Phase 6 last action).
 ```
 
 **The "would have caught this bug" check is the load-bearing one.** Replay the original symptom through the test in your head: does the assertion fire *for the same reason* the user saw the bug? If it fires for a different reason (a downstream error, a different code path), the test will pass when the bug returns, and you'll be debugging this again in three months.

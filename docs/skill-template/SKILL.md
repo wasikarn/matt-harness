@@ -25,6 +25,7 @@ Run before publishing. Each item must be checkable. See CLAUDE.md § "Skill auth
 - [ ] **Failure mode** named at the drift step inline, not only in a header.
 - [ ] **Provenance** — if imported from matt-pocock, ECC, or another upstream, add `metadata.origin: <upstream>` to frontmatter.
 - [ ] **Named Model footer** — if the skill makes load-bearing reasoning/judgment choices, add a `## Named Model` footer citing cc-thinking-skills lenses from `docs/reference/reasoning-models.md`, framed as a scaffold (not proof of correctness). Skip for purely mechanical/catalog surfaces.
+- [ ] **Suggested next step** — if this is a workflow skill a user runs as a discrete step, end with a `Suggested next step:` marker (outcome-branched; skills `kbg:<name>`, commands `/<name>`). Skip for reference/pattern/catalog surfaces and terminal workflows.
 
 # Your Skill Title
 

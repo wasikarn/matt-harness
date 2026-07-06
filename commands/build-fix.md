@@ -22,7 +22,8 @@ The agent returns:
 1. Errors fixed, with file paths.
 2. Errors remaining, if any.
 3. New errors introduced (should be zero).
-4. Suggested next steps for unresolved issues.
+4. Unresolved issues, if any — with a suggested next step per issue.
+5. Suggested next step (build green): a compiling build is not a passing one — run the test suite / /test-coverage before continuing.
 
 ## Arguments
 
