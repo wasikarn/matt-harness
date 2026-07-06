@@ -9,8 +9,6 @@ The Claude Code vendor schema offers two patterns for restricting an agent's too
 
 The kbg-harness convention is to prefer **`tools:` (allowlist)** for new agents. This document explains why, when to consider the denylist alternative, and what each pattern looks like in practice.
 
----
-
 ## 1. `tools:` (allowlist) — the kbg-harness default
 
 **What it is:** an explicit list in the agent's YAML frontmatter.
@@ -43,8 +41,6 @@ tools: Read, Grep, Glob, Bash
 - The agent inherits a large default toolset and only needs to block 1-2 specific tools. In that case, the denylist is shorter to write.
 - The agent's toolset is expected to grow as the vendor adds new tools, and the team is OK with implicit expansion. (We do not recommend this — the loss of explicit-over-implicit usually costs more than the line saved.)
 
----
-
 ## 2. `disallowedTools:` (denylist) — the vendor alternative
 
 **What it is:** an explicit list of tools the agent may **not** use.
@@ -70,8 +66,6 @@ disallowedTools: Write, Edit, NotebookEdit
 - Our agents are specialists, not generalists. The allowlist is shorter to write, not longer.
 - The "implicit inheritance" property is an antipattern for us: when the vendor adds a new tool (e.g. a new MCP bridge), we want a human to decide whether each existing agent should pick it up. Allowlist makes that decision visible in the PR; denylist hides it.
 
----
-
 ## 3. Our convention
 
 **Default for new agents:** use `tools:` (allowlist). Pick the smallest set of tools the agent needs to do its job. If the agent needs Bash, list it; if the agent is read-only, omit it.
@@ -92,8 +86,6 @@ disallowedTools: Write, Edit, NotebookEdit
 - The reviewer should sanity-check: "is this tool consistent with the agent's domain?" A `Write` tool on a `*-reviewer` agent is a red flag.
 - Cross-reference [the F1 Bash-gate pattern](./harness-decay-cadence.md#permission-re-audit) — adding `Bash` to a non-validator agent is a load-bearing decision.
 
----
-
 ## 4. Examples from this harness
 
 | Agent | `tools:` | Why this set |
@@ -101,8 +93,6 @@ disallowedTools: Write, Edit, NotebookEdit
 | `code-reviewer` | `Read, Grep, Glob, Bash` | Read-only inspection + Bash for `git diff` / `git log`. No `Write`/`Edit` — review is observational, not mutational. |
 | `build-error-resolver` | `Read, Write, Edit, Bash, Grep, Glob` | Implementation role — reads existing code + writes minimal fixes + runs the build. |
 | `security-reviewer` | `Read, Bash, Grep, Glob` | Read-only audit + Bash for `git log`/manifest probes. No `Write` — review is observational. |
-
----
 
 ## 5. Cross-references
 

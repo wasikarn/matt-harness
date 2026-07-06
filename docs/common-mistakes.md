@@ -5,8 +5,6 @@
 
 The claudefa.st corpus documents four mistakes that crop up when teams build custom agents. This document adds a fifth (plan-without-validation) that the harness's orchestrate workflow specifically guards against. Each section maps the vendor mistake to a harness-native fix, with a one-line self-check you can run to verify the guard is in place.
 
----
-
 ## Mistake 1 — Scope too broad
 
 **Symptom:** The agent produces surface-level observations across every dimension. A "review this codebase for all issues" agent returns a shallow checklist that misses real problems because it spent its context window on breadth, not depth.
@@ -41,8 +39,6 @@ grep -L "## Cross-role boundaries" "${KBG_PLUGIN_ROOT}/agents"/*.md
 
 Any file that appears in the output is missing the boundary guard.
 
----
-
 ## Mistake 2 — Duplicating baseline capabilities
 
 **Symptom:** You create a `/search` slash command or a `file-finder` agent, then discover that Claude Code's built-in `Explore` subagent already does the same thing faster and with better integration. The duplicate command sits unused in `.claude/commands/`, wasting frontmatter parsing time and confusing new team members.
@@ -60,8 +56,6 @@ grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "
 ```
 
 If the grep finds a command or agent whose description overlaps with an existing specialist, it is a candidate for consolidation.
-
----
 
 ## Mistake 3 — Giving write access to read-only agents
 
@@ -85,8 +79,6 @@ grep -l "tools:.*Edit\|tools:.*Write" \
 ```
 
 The grep should return no files — if it does, a validator-class agent picked up a mutation tool and the frontmatter needs fixing.
-
----
 
 ## Mistake 4 — No done-when criterion
 
@@ -113,8 +105,6 @@ grep -c "Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
 
 The count should be > 0 — orchestrate's F9 template embeds the Done-when contract.
 
----
-
 ## Mistake 5 — Plan without validation
 
 **Symptom:** The dispatch flow executes a plan, waves finish, and the user asks "does it work?" No one knows. Tests were mentioned in the plan but never run. A schema change went in without a migration. The integration validator (INT-*) was skipped because "everyone's code looked fine." The build ships with latent defects that a 5-minute validation command would have caught.
@@ -132,8 +122,6 @@ grep -c "validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
 ```
 
 Should be non-zero. If it's zero, the one real gate this section describes is gone from the documented surface.
-
----
 
 ## Cross-references
 

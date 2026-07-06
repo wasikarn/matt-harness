@@ -5,8 +5,6 @@
 
 The question this doc answers: **when a user types `/<personality>`, what should happen, and what shouldn't we build?**
 
----
-
 ## 1. The default: don't build a personality command
 
 **The kbg-harness default is: do not add a slash command just to invoke an agent's personality.** The agent's `## Voice` block (shipped in F5) is already the personality. Adding a command on top creates three problems:
@@ -16,8 +14,6 @@ The question this doc answers: **when a user types `/<personality>`, what should
 3. **ROUTER bypass** — the orchestrator (`skills/orchestrate/SKILL.md`) routes by domain (`code-architect` for "design this", `security-reviewer` for "audit this for vulns"). A personality command skips the router, which means the user's `/architect` request might land on a domain that doesn't match (e.g. user types `/architect` for a backend scaling question, gets a system-design personality, but the right agent is `platform-engineer`).
 
 **Rule of thumb:** if the personality command would just be `<verb> → invoke <agent> with no transformation`, don't ship it. The agent already exists.
-
----
 
 ## 2. When a personality command IS worth shipping
 
@@ -56,8 +52,6 @@ The command's value is a **deliverable contract** — a specific output format t
 
 **This is the weakest of the three cases** — it overlaps with the existing 22 commands (`ship-merge`, `pr`, etc.) which already encode output shape. If you find yourself wanting a `/perspectives` command, the right move is usually to extend `critical-eval`'s output-format guidance or write a new command that **isn't** personality-flavored.
 
----
-
 ## 3. Recipe: how to build a personality command the right way
 
 If you've decided a personality command is justified (you've ruled out "the agent already does this"), here's the pattern:
@@ -89,8 +83,6 @@ allowed-tools: <smallest set the command needs; usually Read-only>
 - **Do not restate the F5 voice block in the command body.** The voice is in the agent; repeating it in the command is drift bait.
 - **Do not add a new `## Voice` block to the command.** Commands don't have personalities; agents do. The personality comes from `agent:` routing.
 - **Do not skip the orchestrator.** If the command could route through `orchestrate` (which picks the right agent by domain), let it. The personality command is a shortcut, not a parallel router.
-
----
 
 ## 4. Worked examples (per the D6 spec, mapped to kbg-harness)
 
@@ -133,8 +125,6 @@ allowed-tools: Read, Grep, Glob
 ```
 
 The command's value is the **output shape** (ADR-shaped critique), not a new capability — `kbg:decide`'s critique mode already stress-tests reasoning (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent — it's a `decide` mode). The risk: this overlaps with the existing `kbg:domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually to extend `kbg:decide`'s critique mode or invoke `kbg:domain-modeling` instead.
-
----
 
 ## 5. Cross-references
 

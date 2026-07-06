@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.9] — 2026-07-06
+
+Applied the `/markdown-token-optimizer` findings from the `docs/` audit — removed decorative `---` dividers that sat immediately before a `##` heading already separating the section (headers alone already do that job).
+
+- `docs/METHODOLOGY.md` — 6 dividers removed. Highest-value fix in the batch: this is the one file in `docs/` injected into every session, so the saving compounds instead of being one-time.
+- `docs/common-mistakes.md` — 6 dividers removed (2 more inside a worked-example code block were left untouched — those are literal YAML frontmatter delimiters, not decoration).
+- `docs/agent-tool-patterns.md` — 5 dividers removed.
+- `docs/agent-voice-extension.md` — 5 dividers removed (8 more inside YAML code examples left untouched, same reasoning).
+
+No content changed beyond the dividers — verified no accidental double-blank-lines and no code-fenced `---` touched.
+
+## [0.32.8] — 2026-07-06
+
+Readability pass on `docs/METHODOLOGY.md` — rule content unchanged, doctrine untouched.
+
+- Added a one-line note explaining the Rule numbering (1, 2, 4, 13, 14 — gaps at 3, 5–12 are deliberate: this file carries only the subset proven load-bearing from the source thinking-loop doctrine), with a pointer to `docs/reference/decision-doctrine-map.md` for the full map. Previously this file gave no explanation for the gaps, which reads as missing content on first read.
+- Rule 1's "load-bearing" evidence sentence spelled out as call counts (`kbg:decide` invoked 0 times vs. `advisor()` 55 times) instead of `X=0, Y=55` shorthand.
+- Rule 14's closing sentence untangled ("generalizes the score-not-feel loop stop-condition... from loop exits to every decision" → states the CLAUDE.md cross-reference and the extension plainly, in that order).
+
 ## [0.32.7] — 2026-07-06
 
 Readability pass on `commands/kbg-help.md` — content unchanged, jargon tightened for a first-time reader (human or a fresh Claude session using it to orient).
