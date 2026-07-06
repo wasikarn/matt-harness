@@ -7,9 +7,11 @@ description: "kbg-harness quick reference: skills, commands, agents, validation,
 
 Display this reference card. One-shot, read-only. Do not change mode, write files, or persist anything.
 
+Skim the stage table first — it's the fastest way to find the right surface for what you're doing right now.
+
 ## Where do I start? (by stage)
 
-You don't memorize surfaces — describe what you're doing and the harness auto-routes via each surface's `description:`. The table below is the **stable entry point** per stage; the full, always-current inventory of every surface is generated in `BOUNDARY.md`, and `kbg:inventory` lists every loadable surface when nothing here fits.
+You don't need to memorize every surface — describe what you're doing, and the harness routes you via each surface's `description:`. This table is the **stable entry point** per stage. For the full, always-current list, see `BOUNDARY.md`, or run `kbg:inventory` when nothing here fits.
 
 | Stage | Entry points |
 |-------|--------------|
@@ -24,7 +26,7 @@ Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks
 
 ### ...and which specialist (agent) per stage
 
-The 12-agent fleet is grouped by **discipline/ownership** (each agent owns one concern and defers cross-concern work) — *not* by lifecycle phase, which is what lets disciplines run in parallel. Viewed through the same stages, here is the role-per-phase lens for reaching for a specialist deliberately:
+The 12-agent fleet is grouped by what each one **owns** — not by project phase — so they can run in parallel without stepping on each other's concerns. Viewed through the same stages anyway, here's the lens for reaching for a specialist on purpose:
 
 | Stage | Agent specialists |
 |-------|-------------------|
@@ -51,9 +53,9 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 
 | Tier | What's resident | How to reach |
 |------|-----------------|--------------|
-| **L1** | METHODOLOGY + CLAUDE.md + MEMORY.md + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
-| **L2** | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship`) or skill-nudge keyword |
-| **L3** | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:inventory` lists every loadable surface when you don't know the right one |
+| **L1** — always loaded | METHODOLOGY + CLAUDE.md + MEMORY.md + pointer to `"${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` | Injected every session automatically |
+| **L2** — load by name | Individual skills, commands, agent specs | Invoke by name (`kbg:review-pr`, `/ship`) or skill-nudge keyword |
+| **L3** — full inventory, on demand | BOUNDARY.md + raw source (`skills/`, `agents/`, `commands/`, `hooks/`) + `docs/reference/reasoning-models.md` (incl. workflow-pattern mapping) | `kbg:inventory` lists every loadable surface when you don't know the right one |
 
 ## Validation shortcuts
 
@@ -82,9 +84,9 @@ Skipping step 1 or 2 causes stale cache loads and `harness-audit` will CRIT-flag
 
 ## Load-bearing invariants
 
-- **Autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture):** no unattended self-repair loops. `kbg:recursive-improve` stops at a user `AskUserQuestion` gate before any mutation.
-- **Inferential feedback is advisory:** sensors like `verification-gate.sh` journal only — they never emit a `permissionDecision`.
-- **Cache-invalidation is manual:** version bump in both manifests + `claude plugin update kbg@kobig` + restart.
+- **No unattended self-repair.** `kbg:recursive-improve` stops at a user `AskUserQuestion` gate before any mutation — the model never self-starts a repair loop. *(CLAUDE.md §Architecture calls this the no-model-self-start rule.)*
+- **Advisory sensors never gate.** Sensors like `verification-gate.sh` journal only — they inform, they never emit a `permissionDecision` that blocks anything.
+- **Cache invalidation is manual.** Editing a file changes nothing until you bump both manifests, run `claude plugin update kbg@kobig`, and restart.
 
 ## Full inventory
 

@@ -5,6 +5,15 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.7] — 2026-07-06
+
+Readability pass on `commands/kbg-help.md` — content unchanged, jargon tightened for a first-time reader (human or a fresh Claude session using it to orient).
+
+- Added a one-line framing pointer at the top ("skim the stage table first").
+- Replaced "discipline/ownership... lifecycle phase" with plain "grouped by what each one owns — not by project phase."
+- Context-tiers table: added a plain-language gloss to each tier (`L1 — always loaded`, `L2 — load by name`, `L3 — full inventory, on demand`) so the table is scannable without reading into the rows.
+- "Load-bearing invariants": each bullet now leads with the plain rule, cross-reference demoted to a parenthetical aside instead of being interleaved into the bolded term.
+
 ## [0.32.6] — 2026-07-06
 
 Surveyed ECC's `tdd-workflow` skill + `tdd-guide` agent against kbg's `skills/tdd/`; one genuine gap survived, everything else was redundant or doctrine-conflicting.
