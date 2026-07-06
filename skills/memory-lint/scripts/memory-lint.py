@@ -33,7 +33,6 @@ import os
 import re
 import shutil
 import sys
-import subprocess
 import tempfile
 import time
 
@@ -56,11 +55,11 @@ STUB_TEMPLATE = "- [{}](_archive/{}/{}) — archived on-demand"
 def memory_dir(positional):
     if positional:
         return positional
-    root = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                          capture_output=True, text=True).stdout.strip()
-    if not root:
-        sys.exit("FATAL: not in a git repo and no MEMORY_DIR given")
-    enc = root.replace("/", "-")
+    # Match CC's own project-directory keying (launch CWD, not git toplevel) —
+    # see skills/learn/scripts/find-transcript.sh, the sibling script this must
+    # agree with. Using git toplevel here diverged from that convention and
+    # pointed at the wrong memory dir whenever CC launched from a subdirectory.
+    enc = os.getcwd().replace("/", "-")
     return os.path.join(os.path.expanduser("~/.claude/projects"), enc, "memory")
 
 

@@ -31,8 +31,8 @@ notices what belongs in it.
 ## Procedure
 
 1. **Locate the transcript.** Run `bash "${CLAUDE_SKILL_DIR}/scripts/find-transcript.sh"` for the
-   current project's latest `.jsonl`. If it fails, fall back to the transcript path the SessionStart
-   hook injected (the `**Transcript:**` line in the session summary).
+   current project's latest `.jsonl`. If it fails, ask the operator for the transcript path directly
+   — no hook injects one into session context (a prior design assumed one would; none is wired).
 
 2. **Mine candidates.** Read the transcript and extract things that are **durable + non-obvious +
    reusable next session**. Good sources:
@@ -46,7 +46,9 @@ notices what belongs in it.
    - it's already in `MEMORY.md` or an existing `memory/` file (dedupe — read the index first);
    - the repo already records it (code structure, git history, CLAUDE.md, an ADR) — per the memory
      rules, save what was *non-obvious*, not what a file already states;
-   - it only mattered to this conversation (ephemeral), or it's a secret/credential.
+   - it only mattered to this conversation (ephemeral), or it's a secret/credential;
+   - it was a trivial one-off (a typo, a simple syntax slip) with no generalizable rule behind it —
+     a "no, do X instead" correction is only high-signal when X *generalizes* past this one spot.
 
 4. **Gate.** Present the surviving candidates with `AskUserQuestion` (multiSelect) — each option a
    one-line summary + proposed `type` (user / feedback / project / reference). The operator picks
@@ -68,7 +70,7 @@ notices what belongs in it.
 
 ## See also
 
-- `kbg:recursive-improve` — the `kbg:harness-audit --health` sibling (mutation loop, flagged, human-gated).
+- `kbg:recursive-improve` — the `kbg:harness-audit` sibling for harness health (mutation loop, flagged, human-gated), vs. this skill's operator-taught learnings.
 - `kbg:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
 - The memory rules in the session system prompt — the authoritative format + what-to-save contract.
 

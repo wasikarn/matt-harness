@@ -5,6 +5,15 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.32.10] — 2026-07-06
+
+Adversarial re-check of the `kbg:learn` / `kbg:memory-lint` surfaces against ECC's `continuous-learning-v2`/`learn`/`learn-eval`, prompted after an initial "nothing to mine" pass — per [[verify-adversarially-before-nothing]], a first "nothing" verdict got a fresh-context adversarial pass instead of a re-assertion. Found and fixed 3 real, narrow defects; the architecture-level verdict (reject ECC's automated/confidence-gated capture) still stands, untouched.
+
+- `skills/memory-lint/scripts/memory-lint.py` — `memory_dir()` derived the store path from `git rev-parse --show-toplevel`; `skills/learn/scripts/find-transcript.sh` derives it from raw launch CWD. These diverge whenever Claude Code launches from a subdirectory of a repo — `memory-lint` would silently lint the wrong (or a nonexistent) memory directory. Unified on the CWD convention (the one that actually matches how Claude Code keys `~/.claude/projects/<slug>/`); dropped the now-unused `subprocess` import.
+- `skills/learn/SKILL.md` Step 1 — the documented fallback ("the transcript path the SessionStart hook injected... the `**Transcript:**` line") doesn't exist; grepped the whole repo, no hook emits that line. Leftover from the retired passive-capture design. Replaced with an honest fallback: ask the operator for the path directly.
+- `skills/learn/SKILL.md` Step 3 — added a filter bullet for trivial one-off corrections (a typo, a syntax slip) with no generalizable rule behind them; ECC's `/learn` names this explicitly ("don't extract trivial fixes"), kbg's filter list didn't.
+- `skills/learn/SKILL.md` "See also" — fixed a wrong cross-reference: called `recursive-improve` "the `kbg:harness-audit --health` sibling", but `--health` is session token-cost telemetry, a different mode entirely from the fleet CRIT/WARN/INFO audit `recursive-improve` actually consumes.
+
 ## [0.32.9] — 2026-07-06
 
 Applied the `/markdown-token-optimizer` findings from the `docs/` audit — removed decorative `---` dividers that sat immediately before a `##` heading already separating the section (headers alone already do that job).
