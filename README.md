@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.41.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.42.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 47 workflow skills, and 17 slash commands — plus an output-style register and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 47 workflow skills, and 18 slash commands — plus an output-style register and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -56,9 +56,9 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 46 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
-| **Agents** | 12 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 17 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
+| **Skills** | 47 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Agents** | 13 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Commands** | 18 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -137,7 +137,7 @@ kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 13 specialist subagents (.md each)
 ├── skills/               # 47 workflow skills (SKILL.md per directory)
-├── commands/             # 17 slash commands
+├── commands/             # 18 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
@@ -210,14 +210,14 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-07), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table — it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 47 skills · 13 agents · 17 commands).
+> `ls commands/` (real current fleet: 47 skills · 13 agents · 18 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 47 skills · 13 agents · 17 commands |
+| kbg-native | MIT | 47 skills · 13 agents · 18 commands |
 
 ---
 

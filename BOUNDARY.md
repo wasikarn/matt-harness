@@ -56,7 +56,7 @@ _Personals/kbg-harness_
   ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
   ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
-### Commands (17)
+### Commands (18)
   ◇ address-review                 Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
@@ -64,6 +64,7 @@ _Personals/kbg-harness_
   ◇ fix-bug                        Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (kbg:tdd), or refactors (/refactor-clean).
   ◇ frame                          Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style.
   ◇ ideate-search                  Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (/deep-dive).
+  ◇ implementation-compliance-audit Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (production-audit).
   ◇ kbg-help                       kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'.
   ◇ post-mortem                    Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents.
   ◇ pr                             Create a GitHub PR from current branch — validates, discovers templates, links PRDs/plans, analyzes changes, pushes.
@@ -206,7 +207,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-07T06:01:11Z_
+_Generated: 2026-07-07T06:59:35Z_
 
 ---
 

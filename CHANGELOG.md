@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.42.0] — 2026-07-07
+
+New command: `commands/implementation-compliance-audit.md`. Owner asked for a
+reusable version of the ad hoc audit process this session's compliance-audit
+plan (`cached-crafting-curry.md`) already used successfully — checked first
+for an existing duplicate (composer-not-creator + the review-prompt-
+duplication-pattern memory): no existing surface checks a diff against a
+*specific prior plan document* (`review-pr` reviews an unplanned diff,
+`production-audit` checks prod-readiness, `post-mortem` narrates a fixed bug)
+— genuinely new, not a restatement.
+
+- 5-phase command: locate plan + scope in Plan Mode → pre-declare known
+  deviations → dispatch fresh-context verifiers (maker≠checker, 5-agent fan-out
+  cap, adversarial-completeness mandate for gate/verifier-touching slices) →
+  reconcile pre-declared vs. independently-found deviations → report a
+  per-requirement CONFORMS/DEVIATED/MISSING table (deliberately not a blended
+  score — Rule 14 applies to graded quality judgments, not a checklist of
+  booleans).
+- `disable-model-invocation: true` — costly multi-agent fan-out gating a done
+  declaration; user decides when it runs.
+- Incidental fix: README's summary table had stale counts (`46 skills` /
+  `12 agents`, both predating this change) caught while updating the same
+  table for the new command — corrected to the actual `47`/`13` alongside the
+  `17→18` commands bump.
+- Manifests + README counts bumped for the new command (47 skills · 13 agents
+  · **18 commands**).
+
 ## [0.41.0] — 2026-07-07
 
 Owner-approved scope expansion of `hooks/gates/db-write-gate.sh`, decided via
