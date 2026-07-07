@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.41.0] — 2026-07-07
+
+Owner-approved scope expansion of `hooks/gates/db-write-gate.sh`, decided via
+`AskUserQuestion` after the compliance audit's adversarial pass flagged it as
+a gate-mission question rather than a bug (see the audit report for the
+framing). Confirmed both idioms are real on MySQL/MariaDB, tathep's actual
+target engine (`DO $$...$$`, also flagged by the audit, is Postgres-only
+syntax and was correctly left out — doesn't apply to this stack).
+
+- **`CALL proc()`** — added to `WRITE_VERBS`; a stored procedure invocation
+  can write internally and was previously unclassified (ALLOW).
+- **`EXPLAIN ANALYZE <stmt>`** — unlike plain `EXPLAIN`, MySQL/MariaDB actually
+  executes the analyzed statement. Strips the `EXPLAIN ANALYZE` prefix per
+  `;`-segment and classifies what remains, so `EXPLAIN ANALYZE SELECT ...`
+  stays allowed (analyzing a read is harmless) while `EXPLAIN ANALYZE DELETE
+  ...` now asks.
+- **Tests:** `test-gates.sh` +3 cases (CALL ask, EXPLAIN ANALYZE-of-write ask,
+  EXPLAIN ANALYZE-of-read control) — 125/125. Confirmed non-tautological
+  against the pre-fix committed file.
+
 ## [0.40.0] — 2026-07-07
 
 Compliance-audit follow-up: 5 fresh-context verifiers checked v0.36.1–v0.39.0's

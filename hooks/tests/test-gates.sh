@@ -400,6 +400,15 @@ test_ask   "$DB_WRITE_GATE" "leading block comment before a write verb" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ DELETE FROM users')"
 test_allow "$DB_WRITE_GATE" "leading block comment before a read stays allowed" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ SELECT * FROM users')"
+# scope expansion (user-approved): CALL invokes a stored procedure that can
+# write internally; EXPLAIN ANALYZE (unlike plain EXPLAIN) actually executes
+# the analyzed statement on MySQL/MariaDB.
+test_ask   "$DB_WRITE_GATE" "CALL a stored procedure" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'CALL delete_all_users()')"
+test_ask   "$DB_WRITE_GATE" "EXPLAIN ANALYZE of a write executes it" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'EXPLAIN ANALYZE DELETE FROM users')"
+test_allow "$DB_WRITE_GATE" "EXPLAIN ANALYZE of a read stays allowed" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'EXPLAIN ANALYZE SELECT * FROM users')"
 test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
   "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
 test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \

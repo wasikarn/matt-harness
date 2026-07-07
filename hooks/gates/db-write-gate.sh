@@ -28,7 +28,7 @@ set -uo pipefail
 python3 -c '
 import sys, json, re
 
-WRITE_VERBS = r"INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE|MERGE|REPLACE|GRANT|REVOKE|RENAME|COMMENT"
+WRITE_VERBS = r"INSERT|UPDATE|DELETE|TRUNCATE|DROP|ALTER|CREATE|MERGE|REPLACE|GRANT|REVOKE|RENAME|COMMENT|CALL"
 
 def emit_ask(target, preview):
     print(json.dumps({
@@ -80,6 +80,11 @@ try:
     for seg in (s.strip() for s in normalized.split(";")):
         if not seg:
             continue
+        # EXPLAIN ANALYZE (unlike plain EXPLAIN) actually executes the
+        # statement on MySQL/MariaDB -- strip the prefix and classify what it
+        # analyzes, not the EXPLAIN wrapper itself (added: CALL, a stored-
+        # procedure invocation that can write internally, in the same pass).
+        seg = re.sub(r"^EXPLAIN\s+ANALYZE\s+", "", seg, flags=re.IGNORECASE)
         if re.match(r"^(" + WRITE_VERBS + r")\b", seg, re.IGNORECASE):
             is_write = True
             break
