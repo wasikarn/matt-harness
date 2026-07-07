@@ -22,7 +22,7 @@ set -uo pipefail
 # value with a bash regex if the over-nudge proves annoying. Saves the
 # python3 cold-start (~21ms) on every user prompt.
 # Whole-word boundaries; case-insensitive; extended regex (BSD grep -E).
-if ! /usr/bin/grep -qiE '\b(implement|build a feature|refactor|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship)\b'; then
+if ! /usr/bin/grep -qiE '\b(implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship)\b'; then
   exit 0
 fi
 

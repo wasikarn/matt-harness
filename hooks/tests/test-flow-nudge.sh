@@ -77,8 +77,20 @@ test_nudge  "new endpoint verb" \
   "design a new endpoint to expose the audit results over HTTP with proper auth and rate limiting"
 test_nudge  "implicit flow verbs (grill, to-prd)" \
   "let's grill this design and turn it into a PRD then split into issues for the team to pick up"
-test_silent "long doc reorg w/ no flow verb (must stay silent — essay style)" \
-  "rewrite the README to introduce the plugin, then add a quickstart section covering install + first surface + first hook. Then a troubleshooting section. Then a deep-dive on the composer-not-creator doctrine and how matt-pocock's flow integrates with our native doctrine. After that, expand the existing examples. After that, add a migration guide. After that, link out to the relevant skills and commands. After that, add a CHANGELOG entry."
+# Natural implementation phrasings on a real project (not kbg meta-work) — these
+# were all silent before v0.35.8 (verb set was tuned to harness self-work), which
+# defeated the plan-first nudge on exactly the work the owner reported. Guard the
+# widened verb set so a future narrowing re-introduces the miss loudly.
+test_nudge  "add verb (feature on a real project)" \
+  "add a rate limiter to the public API"
+test_nudge  "create verb (new endpoint, natural phrasing)" \
+  "create an endpoint for user search with pagination"
+test_nudge  "set up verb (auth wiring)" \
+  "set up auth with JWT and refresh tokens"
+test_nudge  "optimize verb (perf work)" \
+  "optimize the slow dashboard queries"
+test_silent "long doc reorg w/ no flow verb (must stay silent — length alone must not fire)" \
+  "document the README to introduce the plugin, then cover a quickstart for install plus first surface plus first hook. Then a troubleshooting section. Then a deep-dive on the composer-not-creator doctrine and how matt-pocock's flow fits our native doctrine. After that, expand the existing examples. After that, a migration guide. After that, link out to the relevant skills and commands. After that, a CHANGELOG entry."
 
 echo ""
 echo "--- nudge content contract (must name plan mode) ---"

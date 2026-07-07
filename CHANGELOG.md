@@ -5,6 +5,15 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.35.8] — 2026-07-07
+
+Fixed the v0.35.7 plan-first nudge's biggest blind spot, caught by an adversarial `advisor()` pass at the done-checkpoint (not the green suite — the suite was the trap). Layer 2's trigger regex was tuned to **kbg-harness meta-work** (`implement`, `build a feature`, `new {endpoint|skill|hook}`), so it stayed **silent on natural implementation phrasing used on real projects** — the exact work the owner's complaint was about. Confirmed empirically: 8/8 phrasings (`add a rate limiter`, `create an endpoint`, `set up auth`, `wire up payments`, `optimize the queries`, `build a caching layer`, `integrate stripe`, `rewrite the auth module`) were all silent.
+
+- **Widened `hooks/advisory/flow-nudge.sh`** verb set: `+build` (generalized from `build a feature`), `+create`, `+add`, `+set ?up`, `+wire`, `+integrate`, `+optimize`, `+rewrite`. Dropped the noisiest bare words (`make`, `write`) to keep signal high — they collide with trivial "make it green" / "write a test" phrasings. Advisory-only + the nudge text's "skip if trivial" clause + the model's judgment absorb the residual over-fire; the bias was corrected from under-fire (wrong direction for this complaint) toward catch-and-let-the-model-filter.
+- **`hooks/tests/test-flow-nudge.sh`:** +4 fire-tests on real-project phrasing (`add`/`create`/`set up`/`optimize`) — the coverage the green v0.35.7 suite lacked (every case used an in-set verb). Repointed the doc-reorg silent test to pure-doc verbs (`document`/`cover`/`expand`) so it still guards its real property (length alone must not fire) rather than accidentally asserting impl verbs stay silent. 18/18 pass.
+
+**Lesson (recorded):** a hook's own test suite validating only in-set triggers is a maker-grading-its-own-work loop — the discriminating test is "does it fire on the inputs the user actually types," not "does it fire on the inputs I wrote tests for." The fresh-context `advisor()` pass is what broke the loop.
+
 ## [0.35.7] — 2026-07-07
 
 Added a **plan-first reflex** so sessions get pulled toward planning before implementation on the tasks that warrant it — a behavioral gap the owner reported from real use (work starting without a plan → re-fixing the same problems). Two layers, both reusing existing surfaces; no new hook, skill, or gate.
