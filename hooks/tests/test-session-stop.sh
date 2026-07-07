@@ -30,8 +30,13 @@ echo "=== doctrine-bootstrap hook (SessionStart) ==="
 
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
+# Markers AND a real content token: asserting only the open/close markers would
+# pass on an empty/rotted injection (silent doctrine-content rot). "Decision-sizing
+# triad" is Rule 1's heading in docs/METHODOLOGY.md — its presence proves the
+# body was injected, not just the wrapper.
 [[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:doctrine-bootstrap -->' \
-  && echo "$out" | /usr/bin/grep -q '<!-- /kbg:doctrine-bootstrap -->' && ok=1 || ok=0
+  && echo "$out" | /usr/bin/grep -q '<!-- /kbg:doctrine-bootstrap -->' \
+  && echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' && ok=1 || ok=0
 assert "injects METHODOLOGY.md wrapped in markers when plugin root is valid" "$ok"
 
 out=$(env -u CLAUDE_PLUGIN_ROOT bash "$DOCTRINE" 2>/dev/null)
@@ -100,6 +105,63 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, echoes payload, no metrics row) for a missing transcript" "$ok"
 rm -rf "$fake_home"
+
+# Adversarial: malformed (non-JSON) transcript content. The jq `try fromjson`
+# filter skips unparseable lines → usage is null → no row. Must fail safe.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+printf 'this is not json\n{ broken\nalso not json\n' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-session"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, no metrics row) for a malformed-JSON transcript" "$ok"
+rm -rf "$fake_home" "$transcript"
+
+# Adversarial: assistant line carries usage: null. The jq
+# `select((.message // {}).usage != null)` filter drops it → usage is null → no row.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+python3 -c '
+import json
+line = {"type": "assistant", "message": {"model": "claude-sonnet-5", "usage": None}}
+print(json.dumps(line))
+' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-session"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, no metrics row) when usage is null" "$ok"
+rm -rf "$fake_home" "$transcript"
+
+# Adversarial: multi-line transcript (two assistant lines) must aggregate into ONE
+# compact JSONL row with summed tokens, not one row per line.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+python3 -c '
+import json
+for tok_in, tok_out in [(100, 50), (200, 80)]:
+    line = {"type": "assistant", "message": {"model": "claude-sonnet-5",
+      "usage": {"input_tokens": tok_in, "output_tokens": tok_out,
+                "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
+    print(json.dumps(line))
+' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "multi"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+# Exactly one row, input_tokens summed to 300 (100+200), output_tokens summed to 130.
+[[ "$rc" == "0" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
+  && printf '%s' "$row" | /usr/bin/grep -q '"session_id":"multi"' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"input_tokens":300' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"output_tokens":130' \
+  && printf '%s' "$row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "aggregates a multi-line transcript into one summed JSONL cost row" "$ok"
+rm -rf "$fake_home" "$transcript"
 
 echo ""
 total=$((pass + fail))

@@ -169,7 +169,7 @@ Any "no" → that field should have been filled in Step 6; surface it now rather
 - **Re-asking filled fields.** If the user pasted a full template, respect it — add only derivations and explicitly-asked gaps.
 - **Treating the verifier as an editor.** The checker returns gaps; it never edits, never invents. If it returns `ready`, emit unchanged — do not "improve" a clean prompt.
 - **Infinite prep.** One re-verify max. A prompt can always be tightened further; ship it with remaining gaps flagged rather than loop forever.
-- **Auto-chaining downstream.** This skill emits a prompt; it does not invoke `kbg:fix-bug` / `kbg:tdd` / etc. with it. The user pastes it; the footer suggests next steps passively.
+- **Auto-chaining downstream.** This skill emits a prompt; it does not invoke `/fix-bug` / `kbg:tdd` / etc. with it. The user pastes it; the footer suggests next steps passively.
 
 ---
 

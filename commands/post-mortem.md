@@ -140,7 +140,7 @@ Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream con
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phase 1 verifies inputs before drafting. Tests verify intent → Section 8 requires regression test proof. Fail loud → Phase 1 aborts if 4 inputs missing.
+- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 8 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
 - **Post-/fix-bug workflow**: `/fix-bug` Phase 7 produces a summary (what broke, root cause, fix shape, regression test, files touched). That summary IS the input to `/post-mortem` Phase 1. Run `/post-mortem` immediately after `/fix-bug` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity. Otherwise it's a standard engineering post-mortem.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces; it does not cover CLAUDE.md/METHODOLOGY.md directly.

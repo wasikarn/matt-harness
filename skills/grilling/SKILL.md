@@ -38,3 +38,8 @@ This skill is a convergence surface, not a correctness oracle. The lenses it dra
 - *steel-manning* — state the strongest version of the user's position before probing it.
 
 Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+
+## Suggested next step
+
+- Idea sharpened → `kbg:to-prd` to turn it into a PRD.
+- Single-session task instead (no spec needed) → `/ship`.

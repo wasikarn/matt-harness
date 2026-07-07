@@ -174,9 +174,9 @@ Phase 6: <post-mortem scheduled Y/N | due date>
 
 ## METHODOLOGY Alignment
 
-- **Rule 1 (Think before coding):** Phase 0 forces a rollback check before any code is written.
-- **Rule 2 (Simplicity first):** "One file, one line if possible" — smallest change wins.
+- **Rule 1 (Decision-sizing triad):** Phase 0 forces a rollback check before any code is written.
+- **Rule 2 (Match surface area to proven need):** "One file, one line if possible" — smallest change wins.
 - **Surgical:** Hotfix is isolated; no adjacent code touched.
-- **Rule 4 (Goal-driven):** MTTM target is the success criterion, not the fix itself.
+- **Rule 4 (Define done. Loop until verified):** MTTM target is the success criterion, not the fix itself.
 - **Surface conflicts, don't average:** Severity tiers prevent averaging — P0 means skip, P2 means wait for CI.
 - **Fail loud:** Phase 5 revert gate is explicit; CI failure → revert, not patch forward.

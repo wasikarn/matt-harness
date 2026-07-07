@@ -94,3 +94,8 @@ Or "None - can start immediately" if no blockers.
 </issue-template>
 
 Do NOT close or modify any parent issue.
+
+## Suggested next step
+
+- Issues split → `/ship` per issue, each in a fresh session.
+- Publish to Jira instead → `jira-acli:jira-content` (reshape each issue to the canonical Task/Sub-task template; don't hand-build ADF).

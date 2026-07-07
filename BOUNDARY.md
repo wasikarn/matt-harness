@@ -91,7 +91,7 @@ _Personals/kbg-harness_
   ◇ typescript-reviewer            Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes.
 
 ### Hooks (15)
-  ◇ flow-nudge.sh                  Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
+  ◇ flow-nudge.sh                  Advisory: when the user's prompt looks like non-trivial engineering work,
   ◇ learn-nudge.sh                 Advisory: remind the operator that kbg:learn exists when a session had
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ task-complete-separation.sh    Gate: a subagent may not mark its own task completed (maker≠checker).
@@ -165,7 +165,7 @@ _Personals/kbg-harness_
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
-| task-prep | Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners. | inline | manual |
+| task-prep | Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners. | inline | auto |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
 | tdd | Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
 | teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
@@ -178,7 +178,7 @@ _Personals/kbg-harness_
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| flow-nudge.sh | Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the |
+| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). |
@@ -200,7 +200,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-06T17:43:35Z_
+_Generated: 2026-07-07T03:37:53Z_
 
 ---
 
@@ -244,18 +244,18 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
-| `code-architect` | `architecture/`, `*.md` (design docs) | no | Blueprints, not implementation (Read/Grep/Glob/Bash) |
-| `code-reviewer` | any file | no | Read-only review (comment-accuracy / type-design / test-coverage lenses) |
-| `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | no | Read-only TS/JS review — type safety, async correctness |
-| `python-reviewer` | `*.py`, `pyproject.toml` | no | Read-only Python review — PEP 8, idioms, type hints |
-| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | no | Read-only Dart/Flutter review — widgets, state mgmt, Dart idioms |
-| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection (holds Edit/Write/Bash) |
-| `silent-failure-hunter` | any file | no | Read-only error-handling audit |
-| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write) |
-| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope |
-| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes |
-| `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes |
-| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 |
+| `code-architect` | `architecture/`, `*.md` (design docs) | yes | Blueprints, not implementation — but `tools:` grants Bash (Bash can mutate) |
+| `code-reviewer` | any file | yes | Read-only review *by intent* (comment-accuracy / type-design / test-coverage lenses) — `tools:` grants Bash (Bash can mutate) |
+| `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | yes | Read-only TS/JS review *by intent* — type safety, async correctness — `tools:` grants Bash (Bash can mutate) |
+| `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
+| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | yes | Read-only Dart/Flutter review *by intent* — widgets, state mgmt, Dart idioms — `tools:` grants Bash (Bash can mutate) |
+| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
+| `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
+| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write + Bash) |
+| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
+| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
+| `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
+| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
 
 
 ---

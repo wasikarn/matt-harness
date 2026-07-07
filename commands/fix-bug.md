@@ -179,7 +179,7 @@ Update todos as you progress.
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3. Surgical changes → Phase 4 default. Model only for judgment → Phase 1 repro must be deterministic, not Claude-asserted. Tests verify intent → Phase 6 distinguishes-or-it-doesn't check. Fail loud → Phase 1 abort if no repro.
+- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phases 1-3. Surgical changes → Phase 4 default. Model only for judgment → Phase 1 repro must be deterministic, not Claude-asserted. Rule 4 (verify-intent loop) → Phase 6 distinguishes-or-it-doesn't check. Abort loud → Phase 1 abort if no repro.
 - **code-review-graph MCP**: Phase 2 for structural lookup; the orchestrating session (not the reviewer agents, which have no MCP grant) runs impact-radius queries in Phase 7 before spawning review — `code-reviewer` itself escalates blast-radius depth via grep.
 - **`kbg:diagnosing-bugs` and `kbg:tdd` are built in as DEFAULTS, not alternatives**:
   - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `kbg:diagnosing-bugs`'s core loop so the full workflow lives in one document. Don't separately invoke `kbg:diagnosing-bugs` from within `/fix-bug` — it's already running.

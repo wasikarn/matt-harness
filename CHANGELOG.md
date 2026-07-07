@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.36.1] — 2026-07-07
+
+Second half of the fresh-context integration audit's CRIT+HIGH+MED batch: docs/doctrine drift, the audit's own maker-grades-own-work guard, and adversarial test coverage. No gate code touched — all green layers from v0.36.0 carry.
+
+**Docs/doctrine drift:**
+
+- **H1 — `skills/orchestrate/SKILL.md` self-contradiction:** lines 24-25 claimed `code-reviewer`/`code-architect` have "no Bash" — both grant `tools: [..., "Bash"]`. Rewrote the Gated/Ungated rule by `tools:` grant (not a stale name list): Ungated = read-only-only agents (`ideate-critic`, `task-prep-checker`); Gated = any agent whose `tools:` includes Edit/Write/Bash (all review agents hold Bash). Strengthened the "gate on the actual `tools:` grant, not this name list" pointer.
+- **H2 — `BOUNDARY.md` Table-1-vs-Table-2 contradiction:** the computed Table 1 (`can_mutate` greps `Edit|Write|Bash`) said code-architect/code-reviewer Mutates=yes; the static Table 2 heredoc in `inventory-boundary.sh` said no — the dangerous direction (implies safe dispatch when these agents CAN mutate via Bash). Aligned Table 2's Mutates column to by-grant reality (Bash=yes) for all Bash-holding review agents, kept the "read-only by intent" Notes, fixed the security-reviewer note (`Read/Bash/Grep/Glob`, not "holds Edit/Write/Bash"). Regen via `inventory-boundary.sh --repo-only > BOUNDARY.md`. Both tables now agree by-grant; intent preserved in Notes.
+- **H3 — idea→ship chain had no in-surface citations:** `grilling`/`to-prd`/`to-issues` carried no `Suggested next step:` footer (the chain lived only in `flow-nudge.sh` + `ask-matt/SKILL.md`). Added passive, outcome-branched footers to each (anticipatory/conditional — doctrinally allowed; never auto-chain).
+
+**Citations:**
+
+- **C1 — `skills/task-prep/SKILL.md`:** `kbg:fix-bug` → `/fix-bug` (it's a command, not a skill); `kbg:tdd` stays (it is a skill).
+- **M1 — `agents/task-prep-checker.md`:** four `kbg:`-prefixed agent citations (`code-reviewer`/`typescript-reviewer`/`python-reviewer`/`flutter-reviewer`) → bare agent names anchored via `kbg:review-pr` (the `kbg:` prefix is skill-only).
+- **`commands/security-scan.md`:** dropped the `agent: security-reviewer` frontmatter line — hosting the OWASP code-vuln scan (a harness/MCP scan via `npx ecc-agentshield`) in `security-reviewer` was a lens/host mismatch; the command runs in main context, `kbg:security-auditor` keeps the code-vuln routing branch.
+- **Doctrine rule-name drift (11 citations across 5 files):** stale pre-v0.6.0 rule titles refreshed to current ones — "Rule 1 (Think before coding)" → "Rule 1 (Decision-sizing triad)"; "Rule 2 (Simplicity first)" → "Rule 2 (Match surface area to proven need)"; "Rule 4 (Goal-driven)" → "Rule 4 (Define done. Loop until verified)"; "Rule 13 (Orchestrate, don't solo)" → "Rule 13 (Orchestration shape)". The four `METHODOLOGY alignment:` lines that misframed "Tests verify intent"/"Fail loud" as rule labels were rewritten as action verbs / a verify-intent-loop ref, not rule citations. Standalone descriptive `Fail loud:` bullets left as principle labels (not rule citations). Touched: `commands/post-mortem.md`, `commands/address-review.md`, `commands/fix-bug.md`, `skills/incident/references/hotfix-reference.md`, `skills/orchestrate/SKILL.md`, `skills/ideate-critic/SKILL.md`.
+
+**Audit self-test (the maker-grades-own-work guard on the audit itself):**
+
+- `audit.sh`'s 40-fragment integrity guard (`seq 1 40`) catches LOST checks, not SILENT checks. The audit shipped real silent gaps before (v0.35.5). Wired `--only <id>` dispatch (source exactly one check fragment against a resolved scope, skip the full loop + integrity guard; `err_die` on no/ambiguous match) so a test can prove a known-bad fixture makes the matching check fire. Added `skills/harness-audit/tests/known-bad/` with one crafted bad + one clean fixture per the two CRIT-class checks most likely to silently break: check 39 (recursive-improve `disable-model-invocation: true` flag — CRIT) and check 40 (dead `kbg:` doc-rot — WARN; asserted via the Warnings line, not exit, since WARN keeps exit 0). `test-harness-audit.sh` runner: bad fires, good silent (4/4). Wired into `scripts/run-gauntlet.sh`'s hook-suite parallel group. No 40-fixture suite (Rule 2 — speculative; two cover the highest-silence-risk checks and prove the mechanism). Fixtures nest under `skills/harness-audit/tests/known-bad/` so top-level `skills/[!_]*/SKILL.md` globs don't match them — fleet count stays 47.
+
+**Test coverage:**
+
+- `hooks/tests/test-session-stop.sh`: added a doctrine-content token assertion (`Decision-sizing triad` — Rule 1's heading in METHODOLOGY.md) so silent doctrine-content rot fails the suite, not just the open/close markers. Added three adversarial cost-tracker cases — malformed-JSON transcript, `usage: null`, multi-line transcript aggregation (two assistant lines → one summed JSONL row, input_tokens 300 / output_tokens 130) — alongside the existing valid + missing-transcript cases. The cost-tracker CODE already guards these; the gap was test coverage, not a bug. 11/11 pass.
+
 ## [0.36.0] — 2026-07-07
 
 Gate/hook hardening from a fresh-context integration audit (agents/commands/hooks/skills as a whole system, not just security). Six gate bypasses + one advisory recall regression closed; all load-bearing, all with regression tests. First half of the audit's CRIT+HIGH+MED batch (docs/audit self-test land in v0.36.1).

@@ -170,7 +170,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Think before coding) → Phases 1-3 (understand all threads + classify + plan before editing). Surface conflicts, don't average → Phase 2 forces explicit per-thread classification, never "kind of fix". Tests verify intent → Phase 4 cluster tests + Phase 6 CI check. Fail loud → Phase 5 verify-count gate aborts if any thread is missed.
+- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phases 1-3 (understand all threads + classify + plan before editing). Surface conflicts, don't average → Phase 2 forces explicit per-thread classification, never "kind of fix". Rule 4 (verify-intent loop) → Phase 4 cluster tests + Phase 6 CI check. Abort loud → Phase 5 verify-count gate aborts if any thread is missed.
 - **Memory dependencies**:
   - `feedback_reply_after_pr_fix.md` — Phase 5 is the codified version of "per-thread reply + cite sha = part of done"
   - `feedback_prefer_gh_cli_for_github.md` — all GitHub ops via gh, not curl

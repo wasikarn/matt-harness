@@ -90,7 +90,7 @@ gaps:
 notes: <optional, one line — e.g. "shape mismatch: behavior task lacks distinguishes-or-it-doesn't check"; omit if none>
 ```
 
-If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufacture gaps to seem rigorous** — a clean prompt returns `ready` with empty gaps. Over-reporting erodes trust faster than a missed optional field (same guardrail as `kbg:code-reviewer` / `kbg:typescript-reviewer` / `kbg:python-reviewer` / `kbg:flutter-reviewer`).
+If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufacture gaps to seem rigorous** — a clean prompt returns `ready` with empty gaps. Over-reporting erodes trust faster than a missed optional field (same guardrail as the `kbg:review-pr` reviewers — code-reviewer / typescript-reviewer / python-reviewer / flutter-reviewer).
 
 ## Guardrails
 

@@ -41,22 +41,13 @@ SETTINGS="$CLAUDE_DIR/settings.json"
 # shellcheck disable=SC2034
 MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|/|_|g')/memory"
 
-# AUDIT-2: --only <id> — run exactly ONE check by id (design §5 R3). The per-check
-# runner the retired loop-guard's --assert-cage-intact once shelled each cycle to
-# re-assert cage completeness cheaply. The sole supported id (43 →
-# scripts/l4/cage-intact.sh) was removed when ADR 0006 retired the L2–L5 ratchet
-# (2026-06-26): scripts/l4/ and scripts/loop-guard.py were deleted, so --only has
-# no live consumer and no supported id. The arg + dispatch stay as extensible
-# infrastructure (add a case per id); until one is wired, every id exits 2.
-# Unsupported id → exit 2 (honest about what's supported, not a silent fallthrough).
-if [ -n "$ONLY_ID" ]; then
-  case "$ONLY_ID" in
-    *)
-      echo "audit --only: unsupported id '$ONLY_ID' (no supported ids — 43 retired with the L4 machinery)" >&2
-      exit 2
-      ;;
-  esac
-fi
+# AUDIT-2: --only <id> — run exactly ONE check by id against the resolved scope
+# (so tests/harness-audit/tests/test-harness-audit.sh can prove a known-bad
+# fixture makes the matching check fire — the maker-grades-own-work guard on
+# the audit itself). Dispatch happens AFTER the check-fragment glob is built
+# (below), where CLAUDE_DIR / fm_get / crit / warn are all in scope. Supported
+# ids: 39 (recursive-improve disable-model-invocation flag — CRIT), 40 (dead
+# kbg: doc-rot — WARN). Any other id → err_die (unsupported, not silent).
 
 # Source the shared libraries.
 # shellcheck source=../../_lib/frontmatter-helpers.sh
@@ -197,6 +188,34 @@ shopt -s nullglob
 _checks=("$_AUDIT_DIR"/checks/[0-9][0-9]-*.sh)
 shopt -u nullglob
 [ "${#_checks[@]}" -gt 0 ] || err_die "audit: no check fragments in $_AUDIT_DIR/checks/ — split is broken (fail-closed, not fail-open)"
+
+# --only <id>: source exactly ONE check fragment against the resolved scope
+# and exit (skipping the full loop + the 40-fragment integrity guard, which
+# only applies to a full run). err_die on no/ambiguous match.
+if [ -n "$ONLY_ID" ]; then
+  _padded=$(printf '%02d' "$ONLY_ID" 2>/dev/null || printf '%s' "$ONLY_ID")
+  _only=()
+  for _cf in "${_checks[@]}"; do
+    _bn=$(basename "$_cf")
+    case "$_bn" in
+      "${ONLY_ID}"-*.sh|"${_padded}"-*.sh) _only+=("$_cf") ;;
+    esac
+  done
+  case "${#_only[@]}" in
+    0) err_die "audit --only: id '$ONLY_ID' matched no check fragment" ;;
+    1) ;;
+    *) err_die "audit --only: id '$ONLY_ID' matched ${#_only[@]} fragments (need exactly 1)" ;;
+  esac
+  # shellcheck source=/dev/null
+  . "${_only[0]}"
+  echo ""
+  echo "=== Summary (--only $ONLY_ID) ==="
+  echo "Critical: $CRIT_COUNT"
+  echo "Warnings: $WARN_COUNT"
+  echo "Info:     $INFO_COUNT"
+  if [ "$CRIT_COUNT" -gt 0 ]; then exit "$CRIT_COUNT"; fi
+  exit 0
+fi
 
 # ── frontmatter cache build (perf, 2026-07-03) ────────────────────────
 # Pre-compute the common keys (name/description/tools, --block) for every fleet

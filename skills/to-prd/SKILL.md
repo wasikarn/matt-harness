@@ -77,3 +77,8 @@ A description of the things that are out of scope for this PRD.
 Any further notes about the feature.
 
 </prd-template>
+
+## Suggested next step
+
+- PRD ready → `kbg:to-issues` to split it into grabbable issues.
+- Publish to the tracker instead → `jira-acli:jira-content` (reshape to the canonical Story/Task template; don't hand-build ADF).

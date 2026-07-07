@@ -207,18 +207,18 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
-| `code-architect` | `architecture/`, `*.md` (design docs) | no | Blueprints, not implementation (Read/Grep/Glob/Bash) |
-| `code-reviewer` | any file | no | Read-only review (comment-accuracy / type-design / test-coverage lenses) |
-| `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | no | Read-only TS/JS review — type safety, async correctness |
-| `python-reviewer` | `*.py`, `pyproject.toml` | no | Read-only Python review — PEP 8, idioms, type hints |
-| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | no | Read-only Dart/Flutter review — widgets, state mgmt, Dart idioms |
-| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection (holds Edit/Write/Bash) |
-| `silent-failure-hunter` | any file | no | Read-only error-handling audit |
-| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write) |
-| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope |
-| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes |
-| `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes |
-| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 |
+| `code-architect` | `architecture/`, `*.md` (design docs) | yes | Blueprints, not implementation — but `tools:` grants Bash (Bash can mutate) |
+| `code-reviewer` | any file | yes | Read-only review *by intent* (comment-accuracy / type-design / test-coverage lenses) — `tools:` grants Bash (Bash can mutate) |
+| `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | yes | Read-only TS/JS review *by intent* — type safety, async correctness — `tools:` grants Bash (Bash can mutate) |
+| `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
+| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | yes | Read-only Dart/Flutter review *by intent* — widgets, state mgmt, Dart idioms — `tools:` grants Bash (Bash can mutate) |
+| `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
+| `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
+| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write + Bash) |
+| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
+| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
+| `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
+| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
 
 XREF3
 fi
