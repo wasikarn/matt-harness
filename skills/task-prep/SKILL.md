@@ -2,8 +2,6 @@
 name: task-prep
 description: "Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners."
 argument-hint: "[draft prompt or 'interview me']"
-disable-model-invocation: true
-disable-model-invocation-reason: emits a prompt the user will hand to a downstream Claude Code turn — the model must not decide to prep on its own
 allowed-tools: AskUserQuestion Agent Read Glob Grep
 metadata:
   origin: kbg-native
