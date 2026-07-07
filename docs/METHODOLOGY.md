@@ -13,6 +13,18 @@ Before any non-trivial act, run:
 2. **Blast radius?** Scope the damage if this goes wrong. If it's wide, narrow the change or checkpoint first.
 3. **Riskiest assumption?** Name the thing most likely to invalidate the plan. Probe it before committing.
 
+### Plan mode is the implementation checkpoint
+
+When the triad flags a **one-way door** or **wide blast radius** on a task that
+will *edit code* — multi-file, an unfamiliar subsystem, ≥2 viable approaches, or
+architectural — the "stop and get approval" step IS plan mode: enter it (Shift+Tab,
+or the `EnterPlanMode` tool) and present a plan before editing. **Default to
+suggesting it strongly** — the user keeps control (they Shift+Tab or approve the
+plan); enter it yourself only when the door is clearly one-way or the user signals
+they're unsure of the approach. Skip entirely for trivial / known-small-fix /
+mechanical changes (rename, typo, doc tweak). Matching effort to stakes cuts both
+ways — under-planning a one-way door and over-planning a typo are the same error.
+
 ### Pressure-test before committing
 
 Run the triad inline, then call `advisor()` before substantive work and before declaring done — `advisor()` is the check that's actually load-bearing in practice (measured 2026-07-02: `kbg:decide` invoked 0 times vs. `advisor()` 55 times, across 182 sessions). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.

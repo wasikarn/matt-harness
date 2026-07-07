@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.35.7] — 2026-07-07
+
+Added a **plan-first reflex** so sessions get pulled toward planning before implementation on the tasks that warrant it — a behavioral gap the owner reported from real use (work starting without a plan → re-fixing the same problems). Two layers, both reusing existing surfaces; no new hook, skill, or gate.
+
+- **Layer 1 — doctrine (`docs/METHODOLOGY.md`, Rule 1):** new "Plan mode is the implementation checkpoint" subsection. A one-line *application* of the decision-sizing triad (not a parallel rule): when the triad flags a one-way door / wide blast radius on a task that will edit code (multi-file / unfamiliar subsystem / ≥2 approaches / architectural), the "stop and get approval" step IS plan mode — enter it (Shift+Tab / `EnterPlanMode`) before editing. Weighted toward **suggest-strongly** (user keeps control); model auto-entry reserved for clearly one-way doors or when the user signals they're unsure. Explicit skip for trivial / known-small-fix / mechanical changes — honors "not everything needs plan mode."
+- **Layer 2 — repointed `hooks/advisory/flow-nudge.sh`:** output text only, trigger regex unchanged (its verb set was already the right "non-trivial" set). The nudge now leads with plan-first + names the mechanism (Shift+Tab / EnterPlanMode / `kbg:task-prep`), keeping the PRD pipeline (`grilling → to-prd → to-issues → /ship`) as the branch for a feature to spec out. Editing `advisory/` doesn't trip `verifier-protect` (guards `gates/**` + `hooks.json`); `hooks.json` untouched.
+- **Test contract (`hooks/tests/test-flow-nudge.sh`):** added a content assertion — a non-trivial prompt's nudge must name `plan mode`, so a future edit that silently drops the plan-first line fails the suite. 14/14 pass.
+
+**Verified mechanical ceiling** (claude-code-guide + this session's tool list): no hook output can set `permissionMode` → a hook can only *suggest*; the *model* can enter plan mode via the live `EnterPlanMode` tool; `defaultMode: plan` is all-or-nothing per session (rules out selective config-auto). So "auto" only ever means model-initiated `EnterPlanMode`. **Honesty:** this raises the probability of plan-first behavior, it does not guarantee it — the machinery it joins was already under-firing. **Revisit trigger:** if the implement-without-plan pattern persists after ~5–10 non-trivial sessions, escalate to the deferred stateful checkpoint (UserPromptSubmit flag + `PreToolUse:Edit|Write` `permissionDecision: ask` on the first edit without a preceding `EnterPlanMode`) — not built now per Rule 2 (intrusive, same imperfect heuristic → false-positive asks the user would disable). Decision score 91.25/100.
+
 ## [0.35.6] — 2026-07-07
 
 Flipped `skills/task-prep/SKILL.md`'s `disable-model-invocation: true` → removed (default `false`). Dropped the now-vestigial `disable-model-invocation-reason` field. No other surface change.

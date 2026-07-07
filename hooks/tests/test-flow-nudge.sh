@@ -81,6 +81,20 @@ test_silent "long doc reorg w/ no flow verb (must stay silent — essay style)" 
   "rewrite the README to introduce the plugin, then add a quickstart section covering install + first surface + first hook. Then a troubleshooting section. Then a deep-dive on the composer-not-creator doctrine and how matt-pocock's flow integrates with our native doctrine. After that, expand the existing examples. After that, add a migration guide. After that, link out to the relevant skills and commands. After that, add a CHANGELOG entry."
 
 echo ""
+echo "--- nudge content contract (must name plan mode) ---"
+# Lock the plan-first framing: a future edit that drops the plan-mode line from
+# the nudge output must fail here (the fire/silent tests only check the trigger,
+# which is unchanged, so they wouldn't catch a content regression).
+content_out=$(echo "$(user_prompt_payload "refactor the whole audit pipeline across many files")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$content_out" | /usr/bin/grep -qi "plan mode"; then
+  echo "  ✅ CONTENT: nudge names 'plan mode'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'plan mode' in nudge: <$(printf '%s' "$content_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"
 # Empty stdin (no JSON) → silent. Test by piping empty input directly.
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Advisory: nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship when the
-# user's prompt looks like non-trivial engineering work. UserPromptSubmit
+# Advisory: when the user's prompt looks like non-trivial engineering work,
+# nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep
+# before editing, with the heavyweight PRD flow (kbg:grilling → kbg:to-prd →
+# kbg:to-issues → /ship) as the branch for a feature to spec out. UserPromptSubmit
 # hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
 # always exits 0. Errors are silently swallowed.
 #
@@ -26,10 +28,12 @@ fi
 
 cat <<'EOF'
 
-[kbg:flow-nudge] Non-trivial work detected — consider matt's flow:
-  kbg:grilling → kbg:to-prd → kbg:to-issues → /ship
-Skip the nudge if the work shape is already known (typo-fix / doc-tweak /
-direct skill invocation). The nudge is advisory; the model judges.
+[kbg:flow-nudge] Non-trivial work detected — plan before you edit.
+  Multi-file / unfamiliar / architectural / hard-to-reverse?
+    → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first.
+  A new feature to spec out? → kbg:grilling → kbg:to-prd → kbg:to-issues → /ship
+Skip if the work shape is already known (typo / doc-tweak / known small fix).
+The nudge is advisory; the model judges.
 EOF
 
 exit 0
