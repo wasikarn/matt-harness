@@ -5,6 +5,40 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.43.0] — 2026-07-07
+
+PR creation converted from a legacy command to a natural-language-invocable
+skill, with a **preview→confirm→create** gate as the actual consistency fix.
+Owner reported PR bodies + comments vary run-to-run and that they drive PR
+creation in natural language, not `/pr`. Deep-research + plan-mode design,
+`advisor()`-pressure-tested — the finding that reshaped the plan: the file move
+alone fixes nothing (`kbg:pr` was already model-invocable and still bypassed by
+free-hand `gh pr create --body`), so the gate — not the move — is the spine.
+
+- **`commands/pr.md` → `skills/pr/SKILL.md`** (command deleted). The move buys
+  `allowed-tools` (pre-approve gh/git — smoother NL flow), skills-first alignment
+  (`commands/` is legacy), and description-as-auto-match. It does **not** buy
+  NL-invocability (pr.md was already unflagged/model-invocable) — stated honestly.
+- **Preview → confirm → create (the spine).** Phase 4 renders the full templated
+  body, confirms via a single AskUserQuestion (`review-pr`'s "never asked twice"
+  gate shape), then `gh pr create`. Enforces format at creation and closes a real
+  doctrine gap: `pr.md` was the *only* model-invocable external-write surface with
+  no in-flow gate. Repo `.github` templates are now **merged** with the kbg body,
+  not silently deferred to (an explicit `--body` overrides them).
+- **flow-nudge PR-intent branch.** `hooks/advisory/flow-nudge.sh` routes
+  create/open/raise-a-PR prompts to `kbg:pr` instead of the generic plan-first
+  nudge — placed before the IMPL gate (open/raise aren't IMPL verbs) and gated to
+  a PURE PR ask (`IMPL_NO_PR_CREATE` carve-out) so "build X then open a PR" still
+  gets plan-first. `\bPRs?\b` boundary excludes `PRD`. English-only (raw-JSON
+  grep; Thai routes via the skill description). +7 tests (`test-flow-nudge.sh` 42/42).
+- **Template dedup.** `address-review.md` reply-body strings + author anti-patterns
+  (were duplicated) now point to `review-pr/reference.md`, the single source. PR
+  body template lives inline in `skills/pr/SKILL.md`.
+- Scope: `pr` only. `address-review` / `ship-merge` / `ship-release` / `ship`
+  stay user-only (ratified 2026-07-01 — NL-triggering a GitHub-posting/merging
+  surface reopens prompt-injection risk). README + manifest counts 47→48 skills /
+  18→17 commands.
+
 ## [0.42.1] — 2026-07-07
 
 Drill-down verification of v0.42.0's new command, per owner request. Plan-mode

@@ -32,6 +32,11 @@ IMPL='implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrit
 # IMPL without `build` — used by the carve-out to tell a build-failure report
 # (only `build` matched) from a real impl prompt (another verb matched too).
 IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+# IMPL without `create` — used by the PR-intent carve-out below to tell a pure
+# "create a PR" ask (route to kbg:pr) from an impl-heavy prompt that also happens
+# to mention a PR ("build X then open a PR" → still wants the plan-first nudge).
+# `create` is dropped because it's the one IMPL verb that overlaps PR_INTENT.
+IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
 
 # Read stdin ONCE into a variable. The greps below all read stdin; if they
 # shared the live pipe, the first grep would consume it and the rest would
@@ -40,6 +45,29 @@ IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rew
 # Still raw-grep (no python3 cold-start); here-strings feed each grep from
 # the captured text without re-spawning a pipe.
 INPUT=$(cat)
+
+# PR-creation intent → route to kbg:pr and skip the generic plan-first nudge
+# (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
+# the IMPL gate because the PR verbs open/raise/make aren't in IMPL — the gate
+# would otherwise silence "open a PR". Fires only on a PURE PR ask: if another
+# impl verb is present (IMPL_NO_PR_CREATE — "build X then open a PR"), fall
+# through so impl-heavy work still gets the plan-first nudge. `\bPRs?\b` needs a
+# word boundary, so "PRD" (create a PRD) never matches — it's not a pull request.
+# English/romanized verbs only: this greps the raw JSON stdin, and non-ASCII may
+# arrive \u-escaped, so Thai ("เปิด PR") routes via kbg:pr's description match
+# (semantic, not byte-grep), not this nudge.
+PR_INTENT='(creat|open|rais|mak|submit|put up|cut).{0,12}(pull request|\bPRs?\b)'
+if /usr/bin/grep -qiE "$PR_INTENT" <<< "$INPUT" \
+   && ! /usr/bin/grep -qiE "\b($IMPL_NO_PR_CREATE)\b" <<< "$INPUT"; then
+  cat <<'EOF'
+
+[kbg:flow-nudge] PR creation → use kbg:pr
+  It builds a consistent, templated body and previews it for your confirmation
+  before creating the PR — instead of a free-hand `gh pr create` with an ad-hoc body.
+The nudge is advisory; the model judges.
+EOF
+  exit 0
+fi
 
 if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT"; then
   exit 0

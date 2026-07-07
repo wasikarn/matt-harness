@@ -115,20 +115,17 @@ Initial input: $ARGUMENTS
 This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha + summary are part of "done"; pushing fixes silently is incomplete work.
 
 **Actions**:
-1. For EVERY thread classified in Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<thread-root-id>`:
-   - **actionable + fixed** → body: `Fixed in <sha>: <one-line change summary>`. After posting, **prompt the user to resolve** the thread in the GitHub web UI (gh CLI doesn't reliably support thread resolution as of writing — Claude can't do it directly).
-   - **wontfix** → body: `<rationale, 1-3 sentences>`. Leave thread open.
-   - **clarify** → body: `<specific question to the reviewer>`. Leave thread open.
-   - **out-of-scope** → body: `Tracked as #<issue-number> — out of scope for this PR.` Leave open or resolve at user's discretion.
+1. For EVERY thread classified in Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<thread-root-id>`. Use the reply body shapes in `review-pr/reference.md` §"Reply Comment Templates" (Fixed / Wontfix / Clarify / Out-of-scope) — the single source. Per-category thread action:
+   - **actionable + fixed** → post the `Fixed in <sha>: …` reply, then **prompt the user to resolve** the thread in the GitHub web UI (gh CLI doesn't reliably support thread resolution as of writing — Claude can't do it directly).
+   - **wontfix** → post the rationale reply. Leave thread open.
+   - **clarify** → post the question reply. Leave thread open.
+   - **out-of-scope** → post the `Tracked as #<issue-number>` reply. Leave open or resolve at user's discretion.
 2. **Verify gate**: count threads from Phase 1 == count of replies posted in this phase. If any miss, STOP and reply to the missed ones before continuing.
 3. Surface a summary to the user: `N threads addressed (X fixed / Y wontfix / Z clarify / W out-of-scope)`.
 
-**Anti-patterns**:
-- **Silent push** — pushing the fix commits and stopping. Without per-thread replies, the reviewer has to re-read the diff to figure out what was addressed. That's the failure mode this command exists to prevent.
-- **Performative agreement** — replies like "Great catch!" / "You're absolutely right!" / "Good point, thanks!" violate technical rigor (per obra/superpowers `receiving-code-review` discipline). The sha citation + one-line change summary IS the acknowledgment. Skip the social ceremony — actions demonstrate you heard the feedback.
-- **Defensive tone** — "Actually..." / "But the spec says..." triggers adversarial loops. State the rationale plainly, cite evidence, move on.
+**Anti-patterns**: see `review-pr/reference.md` §"Anti-patterns (author)" — silent push, performative agreement, defensive tone. The sha citation + one-line summary IS the acknowledgment; skip the social ceremony. Silent push (fixing without per-thread replies) is the failure mode this command exists to prevent.
 
-> **Templates**: See `review-pr/reference.md` §"Review Comment Templates" and §"Reply Comment Templates" for concrete starting points.
+> **Templates**: `review-pr/reference.md` is the single source for §"Review Comment Templates" and §"Reply Comment Templates".
 
 ---
 

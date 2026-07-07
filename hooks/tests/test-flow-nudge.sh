@@ -131,6 +131,46 @@ test_silent "long doc reorg w/ no flow verb (must stay silent — length alone m
   "document the README to introduce the plugin, then cover a quickstart for install plus first surface plus first hook. Then a troubleshooting section. Then a deep-dive on the composer-not-creator doctrine and how matt-pocock's flow fits our native doctrine. After that, expand the existing examples. After that, a migration guide. After that, link out to the relevant skills and commands. After that, a CHANGELOG entry."
 
 echo ""
+echo "--- PR-creation intent (routes to kbg:pr, not plan-first) ---"
+# open/raise aren't in IMPL, so these would be silenced by the generic gate
+# without the PR branch that runs before it.
+test_nudge  "create a PR (pure ask)"        "create a PR for these changes"
+test_nudge  "open a pull request"           "open a pull request"
+test_nudge  "raise a PR against a base"     "raise a PR against develop"
+test_nudge  "make me a PR"                   "make me a PR from these commits"
+test_silent "review a PR is not creation"   "review this PR"
+# Thai ("เปิด PR") intentionally routes via kbg:pr's description, not this
+# byte-grep nudge (non-ASCII may arrive \u-escaped) — so no Thai NUDGE case here.
+# 'PRD' must never read as 'PR' (word boundary) — to-prd fires the generic nudge,
+# never the PR nudge.
+prd_out=$(echo "$(user_prompt_payload "to-prd this idea about usage metering")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$prd_out" | /usr/bin/grep -qi "kbg:pr\b"; then
+  echo "  ❌ CONTENT: 'PRD' wrongly routed to kbg:pr nudge: <$(printf '%s' "$prd_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+else
+  echo "  ✅ CONTENT: 'PRD' does not route to the PR nudge"
+  pass=$((pass + 1))
+fi
+# Pure PR ask names kbg:pr.
+pr_out=$(echo "$(user_prompt_payload "open a PR for the current branch")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$pr_out" | /usr/bin/grep -qi "kbg:pr"; then
+  echo "  ✅ CONTENT: pure PR ask names 'kbg:pr'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'kbg:pr': <$(printf '%s' "$pr_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+# Impl-heavy prompt that also mentions a PR still gets the plan-first nudge.
+impl_pr_out=$(echo "$(user_prompt_payload "implement the auth flow then open a PR")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$impl_pr_out" | /usr/bin/grep -qi "plan mode"; then
+  echo "  ✅ CONTENT: impl-heavy PR ask falls through to plan-first"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'plan mode' (impl-heavy): <$(printf '%s' "$impl_pr_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- nudge content contract (must name plan mode) ---"
 # Lock the plan-first framing: a future edit that drops the plan-mode line from
 # the nudge output must fail here (the fire/silent tests only check the trigger,

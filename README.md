@@ -56,9 +56,9 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 47 | `kbg:<skill>` — e.g. `kbg:decide`, `kbg:grilling`, `kbg:orchestrate` |
+| **Skills** | 48 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:grilling`, `kbg:orchestrate` |
 | **Agents** | 13 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 18 | `/<command>` — e.g. `/deep-dive`, `/pr`, `/fix-bug` |
+| **Commands** | 17 | `/<command>` — e.g. `/deep-dive`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -75,7 +75,6 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 |---|---|
 | `/deep-dive` | Research across codebase, docs, and web → cited actionable brief |
 | `/fix-bug` | Guided 7-phase bug-fix with diagnostic + test-first patterns |
-| `/pr` | GitHub PR with auto-generated title and body |
 | `/security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
 | `/ship-merge` · `/ship-release` | Pre-merge gate · end-to-end release ceremony |
 
@@ -83,6 +82,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Skill | When to reach for it |
 |---|---|
+| `kbg:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
 | `kbg:decide` | Judgment Ladder: `clarify` / `probe` / `decide` / `strategize` / `critique` modes |
 | `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
 | `kbg:grilling` | Relentless interview to stress-test a plan before building |
