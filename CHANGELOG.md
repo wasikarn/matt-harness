@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.43.1] — 2026-07-07
+
+Follow-up to v0.43.0 after surveying Anthropic's official plugins
+(`anthropics/claude-plugins-official`: `code-review` + `pr-review-toolkit`) to
+check whether v0.43.0 used standard/popular conventions. One concrete adoption,
+one on-the-record correction. No revert.
+
+- **review-pr code-citation standard** (`skills/review-pr/reference.md` §Code
+  citation). Adopts the official `code-review` plugin's convention: reference
+  *other* code (cross-references, summary-only comments — anything not the
+  diff-anchored line) with a **full-SHA permalink**
+  `…/blob/<full-sha>/<path>#L<start>-L<end>` + ≥1 line context, because a bare
+  `file:line` doesn't hyperlink in posted markdown and `blob/$(git rev-parse HEAD)/…`
+  doesn't render (the shell isn't evaluated in a posted comment). Scoped
+  deliberately: line-level `gh api …/reviews` comments are already `path`+`line`
+  anchored, so a permalink there is redundant — not blanket-applied.
+- **Correction to the v0.43.0 entry (below).** That entry claims the
+  `commands/pr.md → skills/pr/` move "buys `allowed-tools` … skills-first alignment
+  (`commands/` is legacy)." Verified false against the official plugins +
+  claude-code-guide: **commands support `allowed-tools` and model-invocation
+  identically to skills**, and commands are *not* legacy (docs: "custom commands
+  have been merged into skills … both create `/deploy` and work the same way").
+  For a flat single-file workflow the move bought **nothing functional** — the
+  value was the preview→confirm→create gate, which a command supports equally.
+  Skills only pull ahead with bundled scripts/reference files or `paths:` scoping,
+  none of which `pr` uses. **Kept `pr` as a skill anyway** — it ships, it's green,
+  and reverting is churn for zero functional gain; Anthropic's own PR/review
+  surfaces being commands is noted, not chased. Captured in memory
+  (`command-vs-skill-equivalence-2026-07-07`) so a future session doesn't repeat
+  the convert-for-NL/allowed-tools reasoning.
+
 ## [0.43.0] — 2026-07-07
 
 PR creation converted from a legacy command to a natural-language-invocable

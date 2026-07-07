@@ -94,6 +94,16 @@ Every review comment should contain:
 2. **Impact** — why it matters (bug? security? maintainability?)
 3. **Recommendation** — concrete fix or alternatives
 
+### Code citation
+- **Terminal/local review output, and line-level GitHub comments** — the `gh api …/pulls/<n>/reviews`
+  path anchors each comment at `path`+`line` already, so a bare `file:line` is enough; a permalink there is redundant.
+- **Summary-only comments and any cross-reference to *other* code** (a line the comment is not anchored
+  to — e.g. "similar handling exists at …") — cite a **full-SHA permalink** so it renders and links:
+  `https://github.com/<owner>/<repo>/blob/<full-sha>/<path>#L<start>-L<end>`, centered with ≥1 line of context.
+  Two gotchas (both silently break the link): a bare `file:line` does **not** hyperlink in posted markdown,
+  and `blob/$(git rev-parse HEAD)/…` does **not** render — the shell isn't evaluated in a posted comment, so
+  resolve `git rev-parse HEAD` first and paste the literal SHA. (Convention: Anthropic's official `code-review` plugin.)
+
 ### Templates by category
 
 **Bug / Correctness**
