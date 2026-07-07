@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.39.0] — 2026-07-07
+
+Residual-gap remediation found while designing the compliance audit for the
+2026-07-07 whole-system audit (v0.36.1–v0.38.0): pressure-testing the audit's
+own verifier design (`advisor()`) surfaced that the per-phase verifier prompts
+would prove tests non-tautological but never check whether the bypass *class*
+was actually closed. Applying that lens by hand — before any sub-agent ran —
+found 2 confirmed residual bypasses, both pre-existing ceiling permutations in
+gates fixed earlier in this same audit, not regressions. User decision: fix
+both, then proceed with the compliance audit.
+
+- **`hooks/gates/verifier-protect.sh`** — `cp -rt DIR src` (bundled short flags
+  ending in `-t`, target space-separated in the next token) still fell through
+  to `nonflag[-1]` and silently allowed a write into `hooks/gates/` or the
+  audit-checks dir. v0.36.0's fix closed `-tDIR` and `-rtDIR` (joined) but not
+  `-rt DIR` (bundled + space-separated) — same idiom family, one more
+  permutation. Same fix pattern applies to `mv`/`install`.
+- **`hooks/gates/db-write-gate.sh`** — `SELECT 1; DELETE FROM users` classified
+  as read-only because the gate only checked the leading verb of the whole
+  statement. Now splits on `;` and checks each segment for a write verb before
+  allowing — a naive split (a `;` inside a string literal over-triggers an ASK)
+  is the safe-direction failure mode, never a silent ALLOW.
+- **Tests:** `test-gates.sh` +6 cases (4 cp/mv/install bundled-space variants +
+  controls, 2 stacked-statement cases) — 120/120. Both new tests confirmed
+  non-tautological by re-running the exact payload against the pre-fix
+  committed file version and observing an allow.
+
 ## [0.38.0] — 2026-07-07
 
 Third release from the 2026-07-07 whole-system audit: the two integration-safety

@@ -255,6 +255,18 @@ test_ask   "$VP_BASH" "cp -t bundled with -r (-rthooks/gates/)" \
   "$(bash_payload 'cp -rthooks/gates/ evil.sh')"
 test_allow "$VP_BASH" "cp -t joined to a normal dir" \
   "$(bash_payload 'cp -t/tmp/ x')"
+
+# compliance-audit adversarial pass: -tDIR and -rtDIR (joined) were closed
+# above, but -rt DIR (bundled, value in the NEXT token) still fell through to
+# nonflag[-1] and was silently allowed.
+test_ask   "$VP_BASH" "cp -rt into hooks/gates/ (bundled, space-separated target)" \
+  "$(bash_payload 'cp -rt hooks/gates/ evil.sh')"
+test_ask   "$VP_BASH" "mv -vt into hooks/gates/ (bundled, space-separated target)" \
+  "$(bash_payload 'mv -vt hooks/gates/ evil.sh')"
+test_ask   "$VP_BASH" "install -vt into hooks/gates/ (bundled, space-separated target)" \
+  "$(bash_payload 'install -vt hooks/gates/ evil.sh')"
+test_allow "$VP_BASH" "cp -rt into a normal source dir (bundled, space-separated)" \
+  "$(bash_payload 'cp -rt /tmp/safe/ myfile.txt')"
 test_ask   "$VP_BASH" "rsync into hooks/gates/" \
   "$(bash_payload 'rsync evil.sh hooks/gates/x.sh')"
 test_allow "$VP_BASH" "rsync into a normal dir" \
@@ -378,6 +390,12 @@ test_allow "$DB_WRITE_GATE" "EXPLAIN is read-only" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'EXPLAIN SELECT * FROM users')"
 test_allow "$DB_WRITE_GATE" "comment-only statement is a no-op" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '-- just a comment')"
+# compliance-audit adversarial pass: a write stacked after a lead SELECT
+# classified by leading-verb-only as a read and slipped through.
+test_ask   "$DB_WRITE_GATE" "write stacked after a lead SELECT" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1; DELETE FROM users')"
+test_allow "$DB_WRITE_GATE" "two stacked SELECTs stay read-only" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1; SELECT 2')"
 test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
   "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
 test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \

@@ -66,12 +66,22 @@ try:
     if not normalized:
         sys.exit(0)  # comment-only statement is a no-op, not a write
 
+    # Check each ;-delimited segment, not just the leading verb of the whole
+    # string -- a write stacked after a lead SELECT (SELECT 1; DELETE ...)
+    # would otherwise read as a SELECT and slip through (found in the
+    # compliance-audit adversarial pass). Naive ;-split: a ; inside a string
+    # literal yields a false ASK, never a false ALLOW -- safe direction.
     is_write = False
-    if re.match(r"^(" + WRITE_VERBS + r")\b", normalized, re.IGNORECASE):
-        is_write = True
-    elif re.match(r"^WITH\b", normalized, re.IGNORECASE) and \
-         re.search(r"\b(" + WRITE_VERBS + r")\b", normalized, re.IGNORECASE):
-        is_write = True  # WITH-CTE whose outer statement writes
+    for seg in (s.strip() for s in normalized.split(";")):
+        if not seg:
+            continue
+        if re.match(r"^(" + WRITE_VERBS + r")\b", seg, re.IGNORECASE):
+            is_write = True
+            break
+        if re.match(r"^WITH\b", seg, re.IGNORECASE) and \
+           re.search(r"\b(" + WRITE_VERBS + r")\b", seg, re.IGNORECASE):
+            is_write = True  # WITH-CTE whose outer statement writes
+            break
 
     if not is_write:
         sys.exit(0)  # read-only (SELECT / EXPLAIN / pure-SELECT CTE) → allow

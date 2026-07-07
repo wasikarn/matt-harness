@@ -180,6 +180,15 @@ def bash_write_targets(cmd):
                     if m:
                         tgt = m.group(1)
                         break
+                if t.startswith("-") and not t.startswith("--") and \
+                   re.match(r"^-[a-zA-Z]*t$", t) and j + 1 < len(rest):
+                    # bundle ending in t with no joined value (-rt DIR): the
+                    # next token is the target dir, same idiom as -t DIR above,
+                    # just bundled with other short flags first (found in the
+                    # compliance-audit adversarial pass: -tDIR and -rtDIR were
+                    # closed but -rt DIR space-separated was not)
+                    tgt = rest[j + 1]
+                    break
             if tgt is not None:
                 yield tgt
             elif nonflag:
