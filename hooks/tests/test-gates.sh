@@ -10,6 +10,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
 VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
+DB_WRITE_GATE="$ROOT/hooks/gates/db-write-gate.sh"
 
 pass=0
 fail=0
@@ -47,6 +48,12 @@ if agent:
     d["agent_type"] = agent
 print(json.dumps(d))
 ' "$1" "$2"
+}
+
+# Build an MCP tool-call payload with a SQL statement in .query (the
+# tathep-db MCP convention; db-write-gate.sh also checks .sql/.statement/.text).
+mcp_sql_payload() {
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {"query": sys.argv[2]}}))' "$1" "$2"
 }
 
 # Expect the gate to BLOCK (exit 2).
@@ -352,6 +359,29 @@ test_allow "$TASK_COMPLETE" "malformed stdin (fail-safe allow)" \
   '{not valid json'
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"kbg:build-error-resolver"}))')"
+
+echo ""
+echo "=== db-write-gate (ask on non-SELECT tathep-db MCP calls) ==="
+test_ask   "$DB_WRITE_GATE" "DELETE on production" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'DELETE FROM users WHERE id=1')"
+test_ask   "$DB_WRITE_GATE" "DROP TABLE on staging" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_staging' 'DROP TABLE sessions')"
+test_ask   "$DB_WRITE_GATE" "comment-then-DELETE (comment-strip order)" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' $'-- note\nDELETE FROM users')"
+test_ask   "$DB_WRITE_GATE" "WITH-CTE whose outer statement writes" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'WITH t AS (SELECT 1) DELETE FROM users')"
+test_allow "$DB_WRITE_GATE" "SELECT is read-only" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT * FROM users')"
+test_allow "$DB_WRITE_GATE" "WITH-CTE that only reads" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'WITH t AS (SELECT 1) SELECT * FROM t')"
+test_allow "$DB_WRITE_GATE" "EXPLAIN is read-only" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'EXPLAIN SELECT * FROM users')"
+test_allow "$DB_WRITE_GATE" "comment-only statement is a no-op" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '-- just a comment')"
+test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
+  "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
+test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \
+  '{not valid json'
 
 echo ""
 total=$((pass + fail))

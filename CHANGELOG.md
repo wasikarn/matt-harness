@@ -5,6 +5,43 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.38.0] — 2026-07-07
+
+Third release from the 2026-07-07 whole-system audit: the two integration-safety
+gaps that needed new surfaces rather than fixes to existing ones (user-scoped:
+Jira as a nudge, tathep-db as a gate — GitHub-account routing deferred, no
+incident to justify it per Rule 2).
+
+- **`hooks/advisory/jira-route-nudge.sh` (new, `UserPromptSubmit`)** — non-blocking
+  reminder to route Jira/Confluence work through jira-acli's skills
+  (`jira-acli:acli`/`jira-acli:jira-content`/`jira-acli:confluence-content`)
+  instead of a raw `acli` command or a direct Atlassian MCP tool call. Answers a
+  confirmed incident (TP-809/TP-806, 2026-07-06) with zero gate coverage since —
+  the routing rule in `~/.claude/CLAUDE.md` was prose-only. Deliberately a nudge,
+  not a gate: gating every `mcp__*Atlassian*`/`mcp__*Rovo*` call would also fire
+  on jira-acli's own correct use of those same tools underneath its skills,
+  converting a reminder into friction on the happy path. Fires on a bare
+  `jira`/`confluence`/`TP-\d+` mention — proper nouns, no write-verb conjunction
+  needed. 10/10 tests (`test-jira-route-nudge.sh`).
+- **`hooks/gates/db-write-gate.sh` (restored, `PreToolUse` on
+  `mcp__tathep-db__execute_sql.*`)** — ask on any non-SELECT statement; a prior
+  implementation (`hooks/db-write-gate.sh`) was deleted in the v0.6.0 blanket
+  reset, a scope cut rather than a decision that prod-SQL access needed no gate.
+  Adapted (not restored verbatim) to the current gate convention — pure
+  `python3 -c`, JSON stdin, `permissionDecision: ask`, no env-var bypass — since
+  the original depended on a since-deleted `_lib.sh` and a
+  `CLAUDE_DISABLED_HOOKS` bypass this architecture no longer uses. The SQL
+  read/write classification logic is reused as-is (comment-stripping order is
+  load-bearing: strip `--` per LINE before collapsing to one line, or a leading
+  comment eats the real verb on the next line; a `WITH`-CTE whose outer
+  statement writes is still a write). No-op in every repo where `tathep-db`
+  isn't configured. 10/10 tests added to `test-gates.sh` (114/114 total).
+- **`decision-doctrine-map.md`** — the db-write and Atlassian rows pointed at
+  "no dedicated gate exists" / "no dedicated kbg contract doc exists"; both now
+  point at the surfaces above.
+- **`scripts/run-gauntlet.sh`** — wired `test-jira-route-nudge.sh` into the
+  hook-suite parallel group.
+
 ## [0.37.0] — 2026-07-07
 
 Second focused audit (2026-07-07, same day as v0.36.0/.1): scanned the plugin as a

@@ -37,6 +37,18 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/flow-nudge.sh"]
           }
         ]
+      },
+      {
+        "id": "advisory:jira-route-nudge",
+        "matcher": "*",
+        "description": "Advisory: when user prompt mentions Jira/Confluence/TP-* work, nudge routing through jira-acli's skills before any raw acli command or direct Atlassian MCP tool call. Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/jira-route-nudge.sh"]
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -73,6 +85,18 @@
             "type": "command",
             "command": "bash",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/verifier-protect.sh"]
+          }
+        ]
+      },
+      {
+        "id": "gate:db:tathep-write",
+        "matcher": "mcp__tathep-db__execute_sql.*",
+        "description": "Gate: ask on non-SELECT tathep-db MCP calls (execute_sql_production/_staging/_anpr_staging). Restores coverage lost when hooks/db-write-gate.sh was deleted in the v0.6.0 reset. No-op when tathep-db isn't configured (matcher never fires).",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/db-write-gate.sh"]
           }
         ]
       },
