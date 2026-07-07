@@ -396,6 +396,10 @@ test_ask   "$DB_WRITE_GATE" "write stacked after a lead SELECT" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1; DELETE FROM users')"
 test_allow "$DB_WRITE_GATE" "two stacked SELECTs stay read-only" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1; SELECT 2')"
+test_ask   "$DB_WRITE_GATE" "leading block comment before a write verb" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ DELETE FROM users')"
+test_allow "$DB_WRITE_GATE" "leading block comment before a read stays allowed" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ SELECT * FROM users')"
 test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
   "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
 test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \

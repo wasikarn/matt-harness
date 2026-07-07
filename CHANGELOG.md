@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.40.0] — 2026-07-07
+
+Compliance-audit follow-up: 5 fresh-context verifiers checked v0.36.1–v0.39.0's
+work independently, PASSED all 12 findings + 2 user items (no MISSING, no
+unjustified deviation, gauntlet green). Their adversarial passes also surfaced
+a few small drift items outside the audit's own scope, worth closing now since
+they're cheap and match an already-established convention. Two larger items —
+a structural bypass in `verifier-protect.sh`'s command-windowing and 3 SQL
+write-idioms that would expand `db-write-gate.sh`'s intended scope — were
+deliberately NOT auto-fixed here; see the audit report for why.
+
+- **`hooks/gates/db-write-gate.sh`** — a leading `/* block comment */` before a
+  write verb was not stripped (only `--` line comments were), so
+  `/* x */ DELETE FROM users` read as a no-op and was silently allowed. Strips
+  `/* */` blocks (DOTALL, can span lines) before the existing `--` strip.
+  (A comment split mid-keyword, e.g. `DE/*x*/LETE`, was also flagged by the
+  audit but confirmed NOT a real bypass — verified via a live SQL engine that
+  this is a syntax error, not a disguised DELETE — so left as-is.)
+- **`BOUNDARY.md`** — regenerated; was stale on hook count (15→18) since
+  v0.38.0 added 3 hooks without a regen. Same defect class v0.37.0 fixed for
+  the agent table, recurred for hooks — no enforcement stops it drifting
+  again; logged as a known process gap, not fixed here (new surface).
+- **`README.md`** — version badge was 2 releases stale (v0.37.0); bumped.
+- **Tests:** `test-gates.sh` +2 cases (leading block-comment ask + control) — 122/122.
+
 ## [0.39.0] — 2026-07-07
 
 Residual-gap remediation found while designing the compliance audit for the

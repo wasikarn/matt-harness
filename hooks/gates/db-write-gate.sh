@@ -56,6 +56,11 @@ try:
     if not statement.strip():
         sys.exit(0)
 
+    # Strip /* */ block comments first (can span lines, found in the
+    # compliance-audit adversarial pass: a leading block comment before the
+    # verb was not stripped at all, unlike -- line comments below).
+    statement = re.sub(r"/\*.*?\*/", " ", statement, flags=re.DOTALL)
+
     # Strip -- line comments PER LINE first, then collapse to one line. Doing
     # this in the reverse order (collapse first) lets a leading "-- comment"
     # line greedily eat the real SQL verb on the next line — a documented
