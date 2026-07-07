@@ -152,6 +152,52 @@ test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still saf
 test_allow "$IRRECOVERABLE" "git push normal (no force)" \
   "$(bash_payload 'git push origin develop')"
 
+# v0.36.0 audit: a leading git GLOBAL flag (-C/-c/--git-dir/--work-tree/
+# --config-env, bare or combined -Cpath/--git-dir=path) set sub to the flag
+# itself, so the push/worktree/--no-verify gates were bypassable by prefixing
+# it. Also --no-verify was checked outside the per-window loop against the
+# loop-leak `tokens` (last line only), so a multi-line --no-verify on an
+# earlier line slipped past. And git restore (.) / checkout <tree> <file>
+# had no destructive-form coverage.
+test_deny "$IRRECOVERABLE" "git -C /repo push --force (global-flag bypass)" \
+  "$(bash_payload 'git -C /repo push --force origin develop')"
+test_deny "$IRRECOVERABLE" "git -Cpath push --force (combined -C)" \
+  "$(bash_payload 'git -C/repo push --force origin develop')"
+test_deny "$IRRECOVERABLE" "git --no-pager push --force (non-value global)" \
+  "$(bash_payload 'git --no-pager push --force origin develop')"
+test_deny "$IRRECOVERABLE" "git -C . worktree add -b feature (global-flag bypass)" \
+  "$(bash_payload 'git -C . worktree add -b feature /tmp/wt-feature')"
+test_deny "$IRRECOVERABLE" "git -c key=val push --force (value global -c)" \
+  "$(bash_payload 'git -c core.foo=bar push --force origin develop')"
+test_allow "$IRRECOVERABLE" "git -C /repo status (global flag, safe sub)" \
+  "$(bash_payload 'git -C /repo status')"
+test_allow "$IRRECOVERABLE" "git -C /repo log (no sub after globals→no-op safe)" \
+  "$(bash_payload 'git -C /repo')"
+test_deny "$IRRECOVERABLE" "--no-verify on earlier line (multiline bypass)" \
+  "$(bash_payload $'echo staging\ngit commit --no-verify -m msg')"
+test_allow "$IRRECOVERABLE" "echo --no-verify (git-specific, no false positive)" \
+  "$(bash_payload 'echo --no-verify is a git flag')"
+test_deny "$IRRECOVERABLE" "git restore . (discards worktree)" \
+  "$(bash_payload 'git restore .')"
+test_deny "$IRRECOVERABLE" "git restore -- file (discards worktree)" \
+  "$(bash_payload 'git restore -- file.txt')"
+test_deny "$IRRECOVERABLE" "git restore file (pathspec, no branch ambiguity)" \
+  "$(bash_payload 'git restore src/index.ts')"
+test_deny "$IRRECOVERABLE" "git restore --worktree file (explicit worktree mode)" \
+  "$(bash_payload 'git restore --worktree file.txt')"
+test_deny "$IRRECOVERABLE" "git restore --staged --worktree file (worktree touched)" \
+  "$(bash_payload 'git restore --staged --worktree file.txt')"
+test_allow "$IRRECOVERABLE" "git restore --staged file (index-only, recoverable)" \
+  "$(bash_payload 'git restore --staged file.txt')"
+test_allow "$IRRECOVERABLE" "git restore --staged . (un-stage all, recoverable)" \
+  "$(bash_payload 'git restore --staged .')"
+test_allow "$IRRECOVERABLE" "git restore --staged (no pathspec, no-op)" \
+  "$(bash_payload 'git restore --staged')"
+test_deny "$IRRECOVERABLE" "git checkout HEAD~1 file (tree-ish + path)" \
+  "$(bash_payload 'git checkout HEAD~1 src/index.ts')"
+test_allow "$IRRECOVERABLE" "git checkout main (1 nonflag = branch switch)" \
+  "$(bash_payload 'git checkout main')"
+
 echo ""
 echo "=== verifier-protect Bash gate (redirect/tee/sed-i writes to verifier surfaces) ==="
 VP_BASH="$ROOT/hooks/gates/verifier-protect.sh"
@@ -167,6 +213,21 @@ test_ask   "$VP_BASH" "cp over an audit check (dest is verifier path)" \
   "$(bash_payload 'cp foo skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
 test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
   "$(bash_payload "mv x $ROOT/hooks/gates/irrecoverable.sh")"
+# v0.36.0 audit: cp/mv/install -t <dir> made nonflag[-1] a SOURCE, so the real
+# destination was lost and a verifier-surface write went unasked. dd of= had no
+# verifier-protect coverage at all.
+test_ask   "$VP_BASH" "cp -t into hooks/gates/ (dest via -t, not source)" \
+  "$(bash_payload 'cp -t hooks/gates/ evil.sh')"
+test_ask   "$VP_BASH" "mv -t into audit checks/ (--target-directory=)" \
+  "$(bash_payload 'mv --target-directory=skills/harness-audit/scripts/checks/ evil.sh')"
+test_ask   "$VP_BASH" "install -t into hooks/gates/" \
+  "$(bash_payload 'install -t hooks/gates/ evil.sh')"
+test_ask   "$VP_BASH" "dd of= a gate file (was no coverage)" \
+  "$(bash_payload 'dd if=/dev/zero of=hooks/gates/irrecoverable.sh bs=1 count=1')"
+test_allow "$VP_BASH" "dd of= a normal project file" \
+  "$(bash_payload 'dd if=/dev/zero of=src/index.ts bs=1 count=1')"
+test_allow "$VP_BASH" "cp -t into a normal source dir" \
+  "$(bash_payload 'cp -t src/ foo.sh')"
 test_allow "$VP_BASH" "redirect into a normal source file" \
   "$(bash_payload 'echo x > skills/foo/SKILL.md')"
 test_allow "$VP_BASH" "cat a gate file (read, not write)" \

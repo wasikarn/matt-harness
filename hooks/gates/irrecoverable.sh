@@ -95,7 +95,37 @@ for w in windows:
         deny("find -delete detected — destructive delete, use trash or confirm with user")
 
     if argv0 == "git" and rest:
-        sub, args = rest[0], rest[1:]
+        # --no-verify skips pre-commit/pre-push hooks — block it on any git
+        # command, multi-line safe (checked per window, not against the
+        # loop-leak `tokens` which only held the last line — found v0.36.0
+        # audit: a --no-verify on an earlier line bypassed the old global
+        # check). Git-specific so `echo "--no-verify"` does not false-positive.
+        if "--no-verify" in w:
+            deny("--no-verify bypasses safety hooks")
+        # Walk past leading global flags before the subcommand so a prefix
+        # like `git -C /repo push --force` (or `git -Cpath push --force`,
+        # `git --no-pager push --force`) does not set sub="-C"/"--no-pager"
+        # and silently bypass the push/worktree gates (found v0.36.0 audit).
+        # The WorktreeCreate event does NOT fire for Bash-invoked worktree
+        # creation, so this Bash-side guard is the only thing blocking
+        # `git -C . worktree add -b newbranch`.
+        GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--config-env"}
+        i = 0
+        while i < len(rest) and rest[i].startswith("-"):
+            t = rest[i]
+            if t in GIT_VALUE_GLOBALS:
+                i += 2  # bare value-taking global → skip flag + its value
+                continue
+            # combined form carrying the value in the same token
+            # (-Cpath, --git-dir=path, --config-env=name=val) → skip 1
+            if (t.startswith("-C") and t != "-C") or \
+               t.startswith(("--git-dir=", "--work-tree=", "--config-env=")):
+                i += 1
+                continue
+            i += 1  # any other leading flag (non-value global: --no-pager, -p, …)
+        if i >= len(rest):
+            continue  # only global flags, no subcommand — safe no-op
+        sub, args = rest[i], rest[i + 1:]
         # drop the value token after a free-text flag so message
         # content (e.g. "commit -m ...rm -rf...") is never pattern-
         # matched.
@@ -119,8 +149,25 @@ for w in windows:
             deny("git reset --hard discards uncommitted work — confirm with user first")
         if sub == "clean" and any(t.startswith("-") and "f" in t for t in scan):
             deny("git clean -f deletes untracked files — confirm with user first")
-        if sub == "checkout" and ("--" in scan or "." in scan):
-            deny("git checkout -- / git checkout . discards working-tree changes — confirm with user first")
+        # git restore is the modern checkout -- replacement. The default mode
+        # (and --worktree) targets the WORKTREE → discards changes, unrecoverable.
+        # --staged (without --worktree) targets the INDEX → recoverable (re-stage
+        # with git add), so it is allowed. Unlike checkout, `git restore <path>`
+        # is NEVER a branch switch (no ambiguity), so a worktree-targeting
+        # pathspec is always destructive.
+        if sub == "restore":
+            has_pathspec = ("." in scan or "--" in scan or
+                            any(not t.startswith("-") for t in scan))
+            targets_worktree = "--worktree" in scan or "--staged" not in scan
+            if has_pathspec and targets_worktree:
+                deny("git restore discards working-tree changes — confirm with user first")
+        # checkout: "--"/"." = discard (existing); 2+ nonflag = tree-ish +
+        # path (e.g. `git checkout HEAD~1 file`, overwrites worktree from an
+        # old commit — unrecoverable). 1 nonflag stays allowed: it may be a
+        # legit branch switch (found v0.36.0 audit: HEAD~1+file was missed).
+        if sub == "checkout" and ("--" in scan or "." in scan or
+                                    len([t for t in scan if not t.startswith("-")]) >= 2):
+            deny("git checkout -- / git checkout . / git checkout <tree> <file> discards working-tree changes — confirm with user first")
         if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") for t in scan):
             deny("git switch --force discards working-tree changes — confirm with user first")
         if sub == "commit" and "--amend" in scan:
@@ -195,9 +242,6 @@ for w in windows:
         # is restricted to known-dangerous statements.
         if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+TABLE", " ".join(rest), re.IGNORECASE):
             deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE TABLE) detected — confirm with user first")
-
-if "--no-verify" in tokens:
-    deny("--no-verify bypasses safety hooks")
 
 sys.exit(0)
 '

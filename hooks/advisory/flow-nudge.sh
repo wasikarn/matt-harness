@@ -21,8 +21,38 @@ set -uo pipefail
 # over-triggers a spurious nudge line — low stakes. Restrict to the prompt
 # value with a bash regex if the over-nudge proves annoying. Saves the
 # python3 cold-start (~21ms) on every user prompt.
-# Whole-word boundaries; case-insensitive; extended regex (BSD grep -E).
-if ! /usr/bin/grep -qiE '\b(implement|build (a|an|the|out)|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship)\b'; then
+# Whole-word boundaries; case-insensitive; extended regex (BSD grep -E, no
+# -P lookahead — BSD grep). IMPL includes bare `build` (the v0.35.9 narrowing
+# to `build (a|an|the|out)` cost recall: 8/8 natural phrasings — build this /
+# build our billing service / build new features / build it / build more —
+# were silent, defeating the plan-first nudge on exactly the work the owner
+# reported). Precision is reclaimed by the CI-failure carve-out below instead
+# of a determiner-restricted alternation.
+IMPL='implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+# IMPL without `build` — used by the carve-out to tell a build-failure report
+# (only `build` matched) from a real impl prompt (another verb matched too).
+IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+
+# Read stdin ONCE into a variable. The greps below all read stdin; if they
+# shared the live pipe, the first grep would consume it and the rest would
+# see EOF and never match — silently defeating the carve-out (found v0.36.0
+# when adding the 2nd/3rd grep: the build-failure check ran on empty stdin).
+# Still raw-grep (no python3 cold-start); here-strings feed each grep from
+# the captured text without re-spawning a pipe.
+INPUT=$(cat)
+
+if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT"; then
+  exit 0
+fi
+# CI-failure carve-out: "build failed, help me debug the CI" is a DEBUG task,
+# not implementation. If the ONLY impl verb that matched is a build-failure
+# phrase (no other IMPL verb present), stay silent. Two-pass keeps both
+# recall (bare `build` fires on real impl) and precision (CI reports silent):
+#   build failed, help me debug the CI  → build-failure phrase + no other verb → silent
+#   build new features                 → no build-failure phrase → fire
+#   build failed, but also add a limiter → `add` matches IMPL_NO_BUILD → fire
+if /usr/bin/grep -qiE '\bbuild (failed|broken|error|fails|failing|crashes?|errors|is broken)\b' <<< "$INPUT" \
+   && ! /usr/bin/grep -qiE "\b($IMPL_NO_BUILD)\b" <<< "$INPUT"; then
   exit 0
 fi
 

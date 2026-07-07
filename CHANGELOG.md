@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.36.0] — 2026-07-07
+
+Gate/hook hardening from a fresh-context integration audit (agents/commands/hooks/skills as a whole system, not just security). Six gate bypasses + one advisory recall regression closed; all load-bearing, all with regression tests. First half of the audit's CRIT+HIGH+MED batch (docs/audit self-test land in v0.36.1).
+
+**Gates — `hooks/gates/irrecoverable.sh`:**
+
+- **CRIT-1 — `git` global-flag bypass:** `git -C /repo push --force` set `sub="-C"` and no denial branch fired — the push, single-branch, and `--no-verify` gates were bypassable by prefixing any git global flag (`-C`, `-c`, `--git-dir`, `--work-tree`, `--config-env`, bare or combined `-Cpath`/`--git-dir=`, plus non-value globals like `--no-pager`/`-p`). Also the Bash-side single-branch guard (the `WorktreeCreate` event does NOT fire for `git worktree add` via Bash), so `git -C . worktree add -b x` slipped through. Fixed by walking past leading global flags (value-takers skip flag+value; combined forms skip one token; non-value globals skip one token) before assigning `sub`, with an overflow guard for a value-taking global at end-of-args → safe no-op.
+- **F-2 — `--no-verify` multiline:** the check sat outside the per-window loop and referenced the loop-leak `tokens` (last line only), so a multi-line command with `--no-verify` on an earlier line bypassed the gate. Moved the check inside the per-window git block (git-specific, so `echo "--no-verify"` no longer false-positives).
+- **F-4 — `git restore`:** had no denial at all. `git restore <path>` (the modern `git checkout --` replacement, never a branch switch) and `git restore .` discard worktree changes. Added: deny when a pathspec is present AND the operation targets the worktree (default or `--worktree`); `--staged` alone targets the index (recoverable — re-stage with `git add`) → allowed. `git restore --source=HEAD~1 file` (worktree from old commit) still denies (default worktree mode).
+- **F-5 — `git checkout <tree> <file>`:** the existing checkout denial only fired on `--`/`.`; `git checkout HEAD~1 file` (overwrites worktree from an old commit, unrecoverable) had neither → missed. Extended to deny on 2+ nonflag args (tree-ish + path); 1 nonflag stays allowed (legit branch switch).
+
+**Gate — `hooks/gates/verifier-protect.sh`:**
+
+- **F-3 — `cp`/`mv`/`install -t`:** `nonflag[-1]` was yielded as destination, but with `-t <dir>` the destination is the `-t` value and `nonflag[-1]` is a source → `cp -t hooks/gates/ evil.sh` silently allowed writing into the verifier dir. Fixed: detect `-t <dir>` / `--target-directory=<dir>` and yield that as the destination; without `-t` keep `nonflag[-1]`.
+- **F-6 — `dd of=`:** had no `verifier-protect` coverage at all (`dd of=/dev/` was denied by `irrecoverable`, but `dd of=hooks/gates/x` went unasked). Added a `dd` branch yielding the `of=` target so writing a gate/audit file triggers the recoverable ASK (`/dev/` stays a deny in `irrecoverable`).
+
+**Advisory — `hooks/advisory/flow-nudge.sh` (CRIT-2):** the v0.35.9 `build (a|an|the|out)` narrowing cost recall — 8/8 natural impl phrasings (`build this` / `build our billing service` / `build new features` / `build it` / `build out`) were silent, defeating the plan-first nudge on exactly the work the owner reported. Reverted to bare `build` and reclaimed precision with a BSD-grep-portable 2-pass CI-failure carve-out (no `-P` lookahead): if the ONLY impl match is a build-failure phrase (`build failed|broken|error|fails|failing|crashes|errors|is broken`) and no other impl verb is present → silent (debug, not impl). Reads stdin once into a variable (the three greps would otherwise share one stdin pipe — the first consumes it, the rest see EOF — found when the carve-out silently failed its own test).
+
+**Tests:** +31 regression cases across `test-gates.sh` (93/93) and `test-flow-nudge.sh` (34/34). Each gate bypass gets a deny test + an allow test guarding the safe form (branch switch, index-only restore, normal-file cp/dd). The flow-nudge fire-tests guard the previously-silent bare-`build` phrasings; the carve-out silent tests guard CI-failure precision.
+
 ## [0.35.9] — 2026-07-07
 
 Precision fix on the v0.35.8 verb widening, exposed by an over-fire honesty check at re-score time: bare `build` matched CI-failure reports (`build failed`, `the build is broken`, `build error on line 40`) — debug tasks, not implementation — firing a plan-mode nudge where it's noise. Tightened `build` → `build (a|an|the|out)` in `hooks/advisory/flow-nudge.sh`: impl phrasings (`build a caching layer` / `build the pipeline` / `build out the dashboard`) still fire; CI-failure reports go silent. Zero recall cost (verified). +1 regression test locking the exclusion (19/19).

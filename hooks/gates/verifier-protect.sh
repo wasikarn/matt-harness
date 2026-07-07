@@ -153,12 +153,33 @@ def bash_write_targets(cmd):
                         continue
                     if not t.startswith("-") and t not in ("-", ""):
                         yield t
-        elif argv0 in ("cp", "mv"):
-            if nonflag:
-                yield nonflag[-1]  # destination
-        elif argv0 == "install":
-            if len(nonflag) >= 1:
-                yield nonflag[-1]
+        elif argv0 in ("cp", "mv", "install"):
+            # -t / --target-directory= sets the destination explicitly and the
+            # remaining nonflag args become SOURCES, so nonflag[-1] would yield
+            # a source and the real destination is lost (found v0.36.0 audit:
+            # `cp -t hooks/gates/ evil.sh` silently allowed evil.sh into the
+            # verifier dir). When -t is present, yield its value instead.
+            tgt = None
+            for j, t in enumerate(rest):
+                if t in ("-t", "--target-directory") and j + 1 < len(rest):
+                    tgt = rest[j + 1]
+                    break
+                if t.startswith("--target-directory="):
+                    tgt = t[len("--target-directory="):]
+                    break
+            if tgt is not None:
+                yield tgt
+            elif nonflag:
+                yield nonflag[-1]  # no -t → last nonflag is the destination
+        elif argv0 == "dd":
+            # dd of=<path> writes to <path>. /dev/ raw-device writes are
+            # denied by irrecoverable.sh; here we surface non-/dev of= targets
+            # so writing a verifier-surface file (a gate, hooks.json, an audit
+            # check) triggers the recoverable ASK (found v0.36.0 audit: dd had
+            # no verifier-protect coverage at all).
+            for t in rest:
+                if t.startswith("of=") and not t.startswith("of=/dev/"):
+                    yield t[len("of="):]
 
 try:
     d = json.load(sys.stdin)
