@@ -5,6 +5,12 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.35.9] — 2026-07-07
+
+Precision fix on the v0.35.8 verb widening, exposed by an over-fire honesty check at re-score time: bare `build` matched CI-failure reports (`build failed`, `the build is broken`, `build error on line 40`) — debug tasks, not implementation — firing a plan-mode nudge where it's noise. Tightened `build` → `build (a|an|the|out)` in `hooks/advisory/flow-nudge.sh`: impl phrasings (`build a caching layer` / `build the pipeline` / `build out the dashboard`) still fire; CI-failure reports go silent. Zero recall cost (verified). +1 regression test locking the exclusion (19/19).
+
+Honest note on the score: v0.35.8's widening traded selectivity for recall (recall was the right call — the complaint was under-fire — but not free). This fix recovers part of the selectivity without losing recall. The residual over-fire on bare `add`/`create` (`add a comment`, `create a new file`) is left deliberately: the distinguishing signal (rate-limiter vs comment) isn't keyword-separable cheaply, and the nudge's "skip if trivial" clause + model judgment absorb it. The design plateaus around a decision score of ~92 — the honest ceiling of a suggest-only/advise-don't-gate mechanism; pushing "solves the pain" higher requires a hard edit-time gate, which the rubric scores *lower* (breaks the operating model + adds intrusiveness). A materially higher score is a *different* decision (an opt-in sentinel-gated checkpoint), deferred until the nudge is measured insufficient (Rule 2).
+
 ## [0.35.8] — 2026-07-07
 
 Fixed the v0.35.7 plan-first nudge's biggest blind spot, caught by an adversarial `advisor()` pass at the done-checkpoint (not the green suite — the suite was the trap). Layer 2's trigger regex was tuned to **kbg-harness meta-work** (`implement`, `build a feature`, `new {endpoint|skill|hook}`), so it stayed **silent on natural implementation phrasing used on real projects** — the exact work the owner's complaint was about. Confirmed empirically: 8/8 phrasings (`add a rate limiter`, `create an endpoint`, `set up auth`, `wire up payments`, `optimize the queries`, `build a caching layer`, `integrate stripe`, `rewrite the auth module`) were all silent.

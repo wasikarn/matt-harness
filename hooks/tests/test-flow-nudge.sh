@@ -62,6 +62,10 @@ test_silent "short typo-fix prompt"       "fix typo in CLAUDE.md line 5"
 test_silent "short doc tweak"             "update README header"
 test_silent "single-line question"        "what does this skill do?"
 test_silent "empty prompt"                ""
+# 'build' requires a determiner (build a/an/the/out) so impl phrasings fire but
+# CI-failure reports don't — v0.35.9 precision fix (bare 'build' over-fired on
+# 'build failed', a debug task, not implementation).
+test_silent "build-failure is debug, not impl" "build failed, help me debug the CI"
 
 echo ""
 echo "--- non-trivial prompts (must fire nudge) ---"
