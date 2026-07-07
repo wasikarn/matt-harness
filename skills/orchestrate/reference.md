@@ -52,6 +52,8 @@ These agents are invoked directly by a skill body, not by the user via `kbg:orch
 
 For urgent, not-important, bounded compound work — decompose then execute via bash scripts rather than interactive conversation. Same trust boundary. Same tools. Different orchestration style.
 
+**Not the host Workflow tool.** "Batch" and "Pipeline" below are a manual bash-scripted loop over the `Agent` tool (see the pseudocode) — a dispatch *style*, not the CC `Workflow` tool's JS `parallel()`/`pipeline()` runtime described later in this doc ("Dynamic-workflow pattern vocabulary"). The L-number is a dispatch tier, unrelated to the retired L2–L5 autonomy-flag ladder (ADR 0006) — every tier here stays human-gated.
+
 The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md § Validation chain (TaskCreate + addBlockedBy)`. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
 
 ### Decompose

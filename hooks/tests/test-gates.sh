@@ -239,6 +239,50 @@ test_allow "$VP_BASH" "sed -i on a normal project file" \
 test_allow "$VP_BASH" "ls a gate file (no write)" \
   "$(bash_payload 'ls hooks/gates/irrecoverable.sh')"
 
+# v0.36.0-fix follow-up audit: -t joined to its value (-tDIR) or bundled with
+# other short flags (-rtDIR) still bypassed the just-shipped -t fix. rsync,
+# tar -x -C, patch, and git apply/am had zero verifier-protect coverage at all.
+test_ask   "$VP_BASH" "cp -t joined to its value (-thooks/gates/)" \
+  "$(bash_payload 'cp -thooks/gates/ evil.sh')"
+test_ask   "$VP_BASH" "cp -t bundled with -r (-rthooks/gates/)" \
+  "$(bash_payload 'cp -rthooks/gates/ evil.sh')"
+test_allow "$VP_BASH" "cp -t joined to a normal dir" \
+  "$(bash_payload 'cp -t/tmp/ x')"
+test_ask   "$VP_BASH" "rsync into hooks/gates/" \
+  "$(bash_payload 'rsync evil.sh hooks/gates/x.sh')"
+test_allow "$VP_BASH" "rsync into a normal dir" \
+  "$(bash_payload 'rsync a.sh b.sh')"
+test_ask   "$VP_BASH" "tar -x -C into hooks/gates/" \
+  "$(bash_payload 'tar -xf evil.tar -C hooks/gates/')"
+test_allow "$VP_BASH" "tar -x -C into a normal dir" \
+  "$(bash_payload 'tar -xf evil.tar -C /tmp')"
+test_ask   "$VP_BASH" "patch a gate file via stdin redirect" \
+  "$(bash_payload 'patch hooks/gates/irrecoverable.sh < evil.patch')"
+test_allow "$VP_BASH" "patch a normal project file" \
+  "$(bash_payload 'patch README.md < ok.patch')"
+
+VP_DIFF_BAD="$(mktemp -t kbg-vp-test-bad.XXXXXX)"
+VP_DIFF_OK="$(mktemp -t kbg-vp-test-ok.XXXXXX)"
+cat > "$VP_DIFF_BAD" <<'EOF'
+--- a/hooks/gates/irrecoverable.sh
++++ b/hooks/gates/irrecoverable.sh
+@@ -1,1 +1,1 @@
+-old
++new
+EOF
+cat > "$VP_DIFF_OK" <<'EOF'
+--- a/README.md
++++ b/README.md
+@@ -1,1 +1,1 @@
+-old
++new
+EOF
+test_ask   "$VP_BASH" "git apply a diff whose +++ b/ target is a gate file" \
+  "$(bash_payload "git apply $VP_DIFF_BAD")"
+test_allow "$VP_BASH" "git apply a diff targeting a normal file" \
+  "$(bash_payload "git apply $VP_DIFF_OK")"
+rm -f "$VP_DIFF_BAD" "$VP_DIFF_OK"
+
 echo ""
 echo "=== path-hardcode deny (folded into verifier-protect Write branch) ==="
 # ponytail: split to avoid triggering the pre-commit /Users/<name>/ grep on test source

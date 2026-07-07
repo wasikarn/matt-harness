@@ -47,7 +47,7 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 2. Rebase onto base branch: `git rebase origin/<base-branch>`
    - Gate: rebase produces conflicts → STOP. Tell user to resolve manually and retry.
 3. Force-push rebased branch: `git push --force-with-lease`
-4. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red], approvals [N], conflicts [none / yes]. Target: [base-branch]. Merge will squash + delete branch. Proceed?"
+4. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / N/A — no CI configured], approvals [N], conflicts [none / yes]. Target: [base-branch]. Merge will squash + delete branch. Proceed?"
    - `Merge now (Recommended when all gates pass and the user is ready to land)` — execute server-side merge
    - `Abort (Recommended when something changed since validation or the user wants to re-check)` — stop; user can re-run later
 5. Execute **server-side** merge via GitHub CLI:
@@ -72,9 +72,9 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 ## Phase 4: Monitor
 
 
-1. Check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
+1. If CI was verified-N/A in Phase 1 (step 3), skip to step 3 — there's nothing to monitor. Otherwise check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. If failures appear post-merge, be ready to revert or invoke `kbg:incident` (hotfix path).
-3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status. Keep a user-facing merge/release note factual and free of AI-flavor tells (no self-congratulation, no hedging filler).
+3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status (or "N/A — no CI configured"). Keep a user-facing merge/release note factual and free of AI-flavor tells (no self-congratulation, no hedging filler).
 4. **Suggested next step:**
    - Fix worth recording        → /post-mortem while context is warm
    - Last change before release → /ship-release

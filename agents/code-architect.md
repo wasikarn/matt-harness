@@ -78,4 +78,17 @@ Order the implementation by dependency:
 ### Build Sequence
 1. Step 1
 2. Step 2
+
+### Testing Strategy
+- Unit: [what to cover, which existing test file/pattern to extend]
+- Integration: [cross-component flow to verify]
+- Manual/E2E: [only if the feature has no automated path]
+
+### Risks & Mitigations
+- Risk: [what could break, and how likely] — Mitigation: [concrete guard]
+- (distinct from Trade-offs above: trade-offs are alternatives not taken; risks are ways *this* design can still fail)
+
+### Success Criteria
+- [ ] [Testable, observable condition — not "it works"]
+- [ ] [Second criterion]
 ```

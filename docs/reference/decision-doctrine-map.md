@@ -44,6 +44,7 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 | editing the code that judges the model (a gate, `hooks.json`, or the audit verifier) | `hooks/gates/verifier-protect.sh` — `permissionDecision: ask`, no env-var bypass | `CLAUDE.md`'s "Why — the unifying crux" (verifier-separation) |
 | a db write | no dedicated gate exists today — candidate for a future `hooks/gates/` addition | `docs/harness-decay-cadence.md` §"Irreversible-action class" |
 | an Atlassian (Jira/Confluence) operation | the Atlassian MCP tool schemas (`mcp__*atlassian*`) — no dedicated kbg contract doc exists today | n/a |
+| approve / reject / rank / score a consequential decision | `kbg:score-decision` — stated criteria + weights, pass threshold + fatal-weakness floor | `skills/score-decision/SKILL.md` | METHODOLOGY Rule 14 |
 
 ## Who owns which doctrine surface
 

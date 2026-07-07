@@ -5,6 +5,66 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.37.0] — 2026-07-07
+
+Second focused audit (2026-07-07, same day as v0.36.0/.1): scanned the plugin as a
+whole system across the dimensions the last audit left thin — workflows, context
+propagation, architecture-as-a-system, plus a re-verification of v0.36's shipped
+gate fixes. This release ships the gate-hardening + doc-coherence half; the
+integration-safety gates (Jira nudge, tathep-db ask-gate) ship separately in v0.38.0.
+
+**Gate — `hooks/gates/verifier-protect.sh` (re-verification found 1 incomplete fix + 3 new gaps):**
+
+- **F-3 completion:** the v0.36.0 fix for `cp -t`/`install -t` only matched `-t` as an
+  exact token or `--target-directory=` — GNU coreutils also accepts the value joined
+  (`-tDIR`) or bundled with other short flags (`-rtDIR`), both confirmed still bypassing
+  it. Extended the flag scan to catch both forms.
+- **`git apply`/`git am`:** zero coverage — the real write target lives inside the
+  diff's `+++ b/<path>` lines, not argv, making it the most natural single-command way
+  to silently rewrite a gate file. Now yields the diff-file arg and scans it for
+  verifier-surface targets when readable (stdin-piped diffs and obfuscated targets
+  stay outside this bounded idiom set, per the file's own non-adversarial-sandbox scope).
+- **`rsync`/`tar -x -C`:** zero coverage — both added to the write-target scan.
+- **Tests:** +11 in `test-gates.sh` (104/104), one deny+allow pair per idiom, each
+  confirmed against the live gate before landing.
+
+**Doc coherence:**
+
+- **`BOUNDARY.md`** — the file-ownership table (a static heredoc in
+  `inventory-boundary.sh`, not generated) said "12-agent fleet" and omitted
+  `task-prep-checker` while the fleet table above it correctly said 13. Fixed the
+  heredoc source and regenerated; both tables now agree.
+- **`skills/orchestrate/SKILL.md`** — the fan-out-cap section cited `resolve_waves`/
+  `f8_5_overflow_warnings`, symbols from `scripts/orchestrate/planner.py` which was
+  deleted as dead code; the claim of code-enforced DAG-wave clamping no longer held.
+  Rewritten: no automatic enforcement exists anywhere in this repo, the lead is the
+  clamp regardless of dispatch shape (rule 2 in the same section already said this
+  correctly). Added an explicit "Agent tool vs Workflow tool" section — orchestrate
+  routes via `Agent`; `Workflow` is a separate, opt-in, host-level primitive no kbg
+  agent is ever granted. `reference.md`'s "Scripted Execution Modes (L4)" gained a
+  one-line note disambiguating its manual bash-`Agent`-loop "Batch"/"Pipeline" naming
+  from the real Workflow-tool runtime described later in the same doc, plus a note
+  that its L-labels are dispatch tiers unrelated to the retired autonomy ladder (ADR 0006).
+- **`decision-doctrine-map.md`** — owned Rule 14 but its routing table had no row
+  pointing to it; added one.
+- **`README.md`** — fleet counts stale at the top of the file and in the Attribution
+  snapshot (12 agents/46 skills vs actual 13/47); commands count (17) was already
+  correct. Synced both, plus the snapshot date and the version badge.
+
+**`agents/code-architect.md`** — enriched with 3 sections cherry-picked from ECC's
+`planner.md` after user request: Testing Strategy, Risks & Mitigations, Success
+Criteria. Did not add a competing `planner` agent — code-architect already covers
+the pattern-analysis/blueprint/build-sequence ground planner.md covers, so a second
+surface would be the redundancy this project has rejected twice before. Skipped
+planner.md's Red-Flags checklist (code-reviewer's job), auto-activation (collides
+with no-model-self-start), and Prompt-Defense block (code-architect already carries one).
+
+**`commands/ship-merge.md`** — v0.34.2 made Phase 1's CI criterion N/A-aware for
+repos with no CI configured, but Phase 2's merge-confirmation prompt and Phase 4's
+monitor step still assumed CI always exists. Same "CI status" mention duplicated
+across 3 phases, only 1 got the treatment. Phase 2 now offers "N/A — no CI
+configured"; Phase 4 skips monitoring when CI was verified-N/A in Phase 1.
+
 ## [0.36.1] — 2026-07-07
 
 Second half of the fresh-context integration audit's CRIT+HIGH+MED batch: docs/doctrine drift, the audit's own maker-grades-own-work guard, and adversarial test coverage. No gate code touched — all green layers from v0.36.0 carry.

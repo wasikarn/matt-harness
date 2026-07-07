@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.34.4-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.37.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 12 specialist agents, 46 workflow skills, and 17 slash commands — plus an output-style register and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 47 workflow skills, and 17 slash commands — plus an output-style register and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -135,8 +135,8 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 12 specialist subagents (.md each)
-├── skills/               # 46 workflow skills (SKILL.md per directory)
+├── agents/               # 13 specialist subagents (.md each)
+├── skills/               # 47 workflow skills (SKILL.md per directory)
 ├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
@@ -207,17 +207,17 @@ git config core.hooksPath git-hooks
 
 kbg-harness aggregates components from these upstream projects under their respective licenses.
 
-> **Point-in-time snapshot (counts as of 2026-07-02), not live-derived.** There is no
+> **Point-in-time snapshot (counts as of 2026-07-07), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table — it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 46 skills · 12 agents · 17 commands).
+> `ls commands/` (real current fleet: 47 skills · 13 agents · 17 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 46 skills · 12 agents · 17 commands |
+| kbg-native | MIT | 47 skills · 13 agents · 17 commands |
 
 ---
 

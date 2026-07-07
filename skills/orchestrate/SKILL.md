@@ -204,7 +204,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 ## Bounded fan-out — hard cap (F8.5)
 
-**The fan-out cap is code-enforced for DAG-resolved waves, and flagged (advisory) for explicit `parallel`/`loop` stages and for total-spawn — the lead is the clamp for the latter** (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture: the dispatcher does not silently mutate the spec; `resolve_waves` splits an auto-resolved over-cap wave, but an explicit `parallel` of 8 is surfaced via `f8_5_overflow_warnings`, not split). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
+**The fan-out cap has no automatic enforcement anywhere in this repo — the lead is the clamp, every time, regardless of dispatch shape** (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture: the dispatcher does not silently mutate the spec). A prior auto-split mechanism (`resolve_waves`/`f8_5_overflow_warnings` in `scripts/orchestrate/planner.py`) was removed as dead code — DAG-resolved waves, explicit `parallel`/`loop` stages, and total-spawn count all rely on the same manual clamp described in rule 2 below. A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Article `sub-agents-parallel-vs-sequential` and the [[bounded-agent-spawning]] memory converge: clamp the work-list in code BEFORE fan-out, not in the prompt.
 
 **Hard rules:**
 
@@ -214,6 +214,10 @@ Without these injections, each agent re-derives or assumes, which produces laten
 4. **Clamp at the dispatch boundary, not the prompt.** Telling the LLM "produce 16 items" is not enforcement — it's a request. Your dispatch code (clamping the work-list to the cap before spawning) is the enforcement point — doctrine, not preference, because the next agent author will write the same soft cap again unless the hard cap is a number in code.
 
 **Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time.
+
+## Agent tool vs Workflow tool
+
+This skill routes dispatch through the **`Agent` tool** — every pattern above (spawn-prompt template, validation chain, fan-out cap) assumes that primitive. The **`Workflow` tool** (scripted `pipeline()`/`parallel()`/`agent()` orchestration) is a separate, host-level primitive that requires explicit user opt-in (the "ultracode" keyword, standing ultracode-session mode, or the user's own words asking for a workflow/multi-agent run) — it is not something this skill decides to invoke on its own, and no agent in this fleet is granted it. If the user has opted in, treat `Workflow` as parallel infrastructure available to the session, not a routing target this skill assigns.
 
 ## Fast Path Gate
 

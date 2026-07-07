@@ -97,7 +97,8 @@ def is_verifier_path(fp):
 
 def bash_write_targets(cmd):
     """Yield candidate file paths the Bash command writes to. Bounded idiom
-    set: redirects, tee, sed -i, perl -i, cp, mv. Not an adversarial sandbox."""
+    set: redirects, tee, sed -i, perl -i, cp/mv/install, dd, rsync, tar -x,
+    patch, git apply/am. Not an adversarial sandbox."""
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
         tokens = list(lex)
@@ -159,6 +160,13 @@ def bash_write_targets(cmd):
             # a source and the real destination is lost (found v0.36.0 audit:
             # `cp -t hooks/gates/ evil.sh` silently allowed evil.sh into the
             # verifier dir). When -t is present, yield its value instead.
+            # GNU coreutils also accepts -t joined to its value (-thooks/gates/)
+            # and bundled with other short flags (-rthooks/gates/) -- the exact
+            # form matched above misses both (found in the v0.36.0-fix follow-up
+            # audit, still lands as a source via nonflag[-1]). A short-flag token
+            # containing a literal t with trailing chars covers both joined and
+            # bundled forms; this is a habit-guard heuristic (widens the match,
+            # never narrows it), not full getopt parsing.
             tgt = None
             for j, t in enumerate(rest):
                 if t in ("-t", "--target-directory") and j + 1 < len(rest):
@@ -167,10 +175,67 @@ def bash_write_targets(cmd):
                 if t.startswith("--target-directory="):
                     tgt = t[len("--target-directory="):]
                     break
+                if t.startswith("-") and not t.startswith("--") and len(t) > 2:
+                    m = re.match(r"^-[a-zA-Z]*t(.+)$", t)
+                    if m:
+                        tgt = m.group(1)
+                        break
             if tgt is not None:
                 yield tgt
             elif nonflag:
                 yield nonflag[-1]  # no -t → last nonflag is the destination
+        elif argv0 == "rsync":
+            # No -t/--target-directory idiom to worry about; the destination is
+            # always the last nonflag arg.
+            if nonflag:
+                yield nonflag[-1]
+        elif argv0 == "tar":
+            # Extract mode writes files into -C/--directory (or CWD, already
+            # covered by the is_verifier_path relative-path handling). Old-style
+            # bare mode clusters (tar xf a.tar) and dash-prefixed ones (-xf)
+            # both put the mode letters in the first arg after argv0.
+            mode_str = rest[0] if rest and not rest[0].startswith("--") else ""
+            has_extract = ("x" in mode_str.lstrip("-")) or ("--extract" in rest)
+            if has_extract:
+                for j, t in enumerate(rest):
+                    if t in ("-C", "--directory") and j + 1 < len(rest):
+                        yield rest[j + 1]
+                        break
+                    if t.startswith("--directory="):
+                        yield t[len("--directory="):]
+                        break
+        elif argv0 == "patch":
+            # patch <file> < diff rewrites <file> in place; -o/--output
+            # redirects elsewhere. Target is a plain nonflag arg either way.
+            for j, t in enumerate(rest):
+                if t in ("-o", "--output") and j + 1 < len(rest):
+                    yield rest[j + 1]
+            for t in nonflag:
+                yield t
+        elif argv0 == "git" and rest and rest[0] in ("apply", "am"):
+            # The real target of git apply or git am lives inside the diff
+            # +++ b/path lines, not argv -- the natural way to silently rewrite
+            # a gate file in one command (found in the v0.36.0-fix follow-up
+            # audit: zero coverage). Habit-guard: yield the diff-file arg
+            # itself (harmless if it does not match a verifier path) and, when
+            # readable, scan it for the paths it actually touches. A diff piped
+            # via stdin (git apply < x.diff) or an obfuscated target inside the
+            # diff is outside this bounded idiom set -- not an adversarial
+            # sandbox.
+            diff_args = [t for t in rest[1:] if not t.startswith("-")]
+            for t in diff_args:
+                yield t
+                try:
+                    with open(t, "r", errors="ignore") as f:
+                        for line in f:
+                            if line.startswith("+++ "):
+                                p = line[4:].strip()
+                                if p.startswith("b/"):
+                                    p = p[2:]
+                                if p != "/dev/null":
+                                    yield p
+                except OSError:
+                    pass
         elif argv0 == "dd":
             # dd of=<path> writes to <path>. /dev/ raw-device writes are
             # denied by irrecoverable.sh; here we surface non-/dev of= targets
