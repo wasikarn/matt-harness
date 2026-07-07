@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.42.1] — 2026-07-07
+
+Drill-down verification of v0.42.0's new command, per owner request. Plan-mode
+audit (`advisor()`-pressure-tested before dispatch — it caught a real defect
+the original lens list missed and flagged one lens as under-verified before
+any agent ran). 2 facts settled directly, 3 fresh-context judgment lenses
+dispatched in parallel, no access to each other's or my own reasoning:
+
+- **Citation-form bug (confirmed, fixed):** `production-audit` cited without
+  its `kbg:` prefix in 2 places (frontmatter `description` + intro paragraph)
+  while `kbg:review-pr`/`kbg:security-auditor` in the same sentences carried
+  it correctly — the exact recurring class CLAUDE.md already flags (harness-
+  audit check 40 can't catch a skill mis-cited in bare form; this shipped
+  twice before in `commands/pr.md` and `diagnosing-bugs/SKILL.md`).
+- **`KBG_PLUGIN_ROOT` env var (checked, clean):** confirmed real and resolving
+  (not a typo of `CLAUDE_PLUGIN_ROOT`) — a deliberately-exported SessionStart
+  alias (`hooks/session/command-root-anchor.sh`) bridging the vendor
+  hook-shell-only var into command/skill prose, documented at
+  `docs/reference/env-vars.md`. Used by 15 other Named-Model-footer surfaces;
+  not an outlier.
+- **Lens: composer-not-creator/duplication (independent re-derivation) —
+  GENUINELY-NEW-CAPABILITY.** No fix. The distinguishing capability: plan-as-
+  ground-truth (vs. diff-as-ground-truth in `review-pr`), MISSING as a
+  first-class detectable verdict, and pre-declared-vs-independently-found
+  deviation reconciliation — none of which `review-pr`/`production-audit`/
+  `post-mortem`/`orchestrate` provide.
+- **Lens: Rule 14 scoring-deviation, adversarially checked — JUSTIFIED-
+  DEVIATION.** No fix. Compliance auditing is an AND over N independently-
+  verifiable, equally-mandatory facts (an approved plan requirement isn't
+  "8% of the decision") — structurally different from `ship-merge`'s scored
+  merge-readiness decision, which blends signals of genuinely different
+  reliability. Forcing a weighted score in would recreate the exact failure
+  Rule 14 exists to prevent (hiding a MISSING requirement behind an
+  aggregate).
+- **Lens: functional dogfood walkthrough — 3 confirmed friction points,
+  fixed:**
+  - Phase 1's plan-resolution mtime fallback was unreliable: plan mode reuses
+    one file path per session, so a later unrelated plan-mode entry silently
+    overwrites the one meant to be audited (demonstrated live in this exact
+    session). Rewritten to prefer conversation context + `$ARGUMENTS`, and to
+    ask rather than guess from a file timestamp when ambiguous.
+  - Phase 3 didn't explicitly hand the Phase-1-resolved commit range/SHA
+    forward to each dispatched verifier, leaving diff-target resolution
+    ambiguous for a fresh sub-agent. Now explicit.
+  - Phase 2 didn't state its implementer-is-auditor assumption. Added one
+    line: an empty pre-declared list is fine for a third-party audit; Phase 4
+    still catches everything real via independent findings.
+  - Not fixed (logged, out of scope): a personal `ls`→`eza` alias gotcha hit
+    once during the dogfood test (environment-specific, not a defect in the
+    command's prose) — analogous to the existing documented `grep`→`rtk grep`
+    alias gotcha, worth a CLAUDE.md aside if it recurs, not folded in here on
+    a single hit.
+
+Report: 5/5 rows CONFIRMED-FIXED or CLEAN, 0 open. Gauntlet re-run fresh
+post-fix.
+
 ## [0.42.0] — 2026-07-07
 
 New command: `commands/implementation-compliance-audit.md`. Owner asked for a

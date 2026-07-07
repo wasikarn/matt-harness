@@ -1,6 +1,6 @@
 ---
 name: implementation-compliance-audit
-description: "Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (production-audit)."
+description: "Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit)."
 argument-hint: Optional path to the plan file, PR number, or commit range
 disable-model-invocation: true
 disable-model-invocation-reason: costly multi-agent fan-out that gates a done-declaration — user decides when the audit runs, not the model
@@ -12,7 +12,7 @@ Prove a finished implementation matches the plan that was approved for it —
 every planned requirement landed, no unexplained deviation, no regression.
 This is a conformance check against a specific prior plan, not a general code
 review: quality/security/style lenses belong to `kbg:review-pr` /
-`kbg:security-auditor`; production readiness belongs to `production-audit`.
+`kbg:security-auditor`; production readiness belongs to `kbg:production-audit`.
 
 ## Core Principles
 
@@ -39,9 +39,9 @@ review: quality/security/style lenses belong to `kbg:review-pr` /
 **Goal**: Identify what was actually approved, and get sign-off on the audit's scope before spending fan-out budget.
 
 **Actions**:
-1. Resolve the source plan: `$ARGUMENTS` if given, else the most recent plan file used this session (`~/.claude/plans/*.md` by mtime) or the plan artifact already in conversation context.
+1. Resolve the source plan: this command runs in the same session that did the implementing — prefer the plan already in this conversation's context, and use `$ARGUMENTS` only to override or disambiguate. **Don't trust the plan file's mtime as a fallback**: plan mode reuses the same file path per session, so a later unrelated plan-mode entry silently overwrites the one you meant to audit — the most-recent file on disk may belong to a different task entirely. If neither conversation context nor `$ARGUMENTS` gives a clear source, stop and ask the user which plan to audit rather than guessing from a file timestamp.
 2. Extract every discrete requirement from the plan — numbered findings, phases, explicit "must" statements — into a flat checklist. This list is the audit's ground truth.
-3. Identify the diff to audit: commit range, PR, or `git log` since the plan was approved, across **every** repo the plan touched (multi-repo plans list each repo separately — don't audit only the one you remember editing).
+3. Identify the diff to audit: commit range, PR, or `git log` since the plan was approved, across **every** repo the plan touched (multi-repo plans list each repo separately — don't audit only the one you remember editing). Pin the exact commit range/SHA here — Phase 3 hands it forward to each verifier so they don't have to re-derive it.
 4. Enter Plan Mode (Shift+Tab / `EnterPlanMode`) and present: the requirement checklist, how it partitions into fresh-context verifiers (mirror the plan's own phase/repo boundaries; cap at 5 concurrent per the fan-out cap), and any deviation you're already aware of.
 5. **Gate**: user approves scope → Phase 2. User flags a missing requirement or wrong diff range → revise and re-present.
 
@@ -54,6 +54,7 @@ review: quality/security/style lenses belong to `kbg:review-pr` /
 **Actions**:
 1. List every point where the implementation diverged from the plan as written — scope narrowed, scope widened, an approach substituted, an extra file touched — with the reason for each.
 2. Carry this list forward unopened; Phase 4 is where it gets checked, not asserted.
+3. This phase assumes you're the implementer declaring your own known deviations. Auditing someone else's already-completed work with no first-hand deviation knowledge is fine too — this list just starts empty; Phase 4 still catches anything real through the verifiers' independent findings.
 
 ---
 
@@ -63,7 +64,7 @@ review: quality/security/style lenses belong to `kbg:review-pr` /
 
 **Actions**:
 1. Partition the checklist along the plan's own natural boundaries (per phase, per repo, per finding cluster). Cap at 5 concurrent agents.
-2. Each verifier receives **only** its slice of the plan's requirements plus the actual diff (`git show` / `git diff`) — **not** your Phase 2 deviation list, **not** your narrative of what you did.
+2. Each verifier receives **only** its slice of the plan's requirements, plus the exact commit range/SHA pinned in Phase 1 step 3 so it can run `git show` / `git diff` against the right target without re-deriving it — **not** your Phase 2 deviation list, **not** your narrative of what you did.
 3. **Adversarial-completeness mandate** for any verifier touching a security/gate/verifier-perimeter surface: not "confirm my new tests are honest" but "enumerate bypass permutations in this family and try to find one still open." An in-family bypass found → flag for remediation in this same audit. An out-of-family gap (new attack class entirely) → log as a known-gap for the user's decision; do not silently widen scope (Rule 2).
 4. Each verifier returns one verdict per requirement in its slice: **CONFORMS** / **DEVIATED** (state what changed) / **MISSING**.
 5. **Independent deterministic backstop**: re-run the project's actual validation/test suite fresh — don't trust an in-session "green" claim carried over from the implementation phase.
