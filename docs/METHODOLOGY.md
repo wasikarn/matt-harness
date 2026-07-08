@@ -40,6 +40,8 @@ Don't build it until there's a real failure that demands it. Three similar lines
 Before starting: write down what "done" looks like in testable terms.
 After acting: check against those terms. If not met, loop — don't declare done and move on.
 
+When Acceptance Criteria already exist for the task, they ARE the testable terms — verify the change against each one individually, not just against the overall goal.
+
 ## Rule 13 — Orchestration shape
 
 Decompose → route → verify → combine.

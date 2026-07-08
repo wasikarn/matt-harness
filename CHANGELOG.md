@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.43.2] — 2026-07-08
+
+Reconciled an externally-sourced "Core Principles" block (mandatory plan mode,
+correctness-over-speed always, unlimited analysis time, AC-as-executable-spec,
+verify-every-claim) against `METHODOLOGY.md`. 7 of 8 principles were already
+absorbed by existing doctrine (verify-every-claim/nothing-complete-until-verified
+→ Rule 4/14; challenge-assumptions → `advisor()`; mandatory-plan-mode →
+Rule 1's stakes-gated "Plan mode is the implementation checkpoint") or rejected
+outright as absolutist (correctness-over-speed and unlimited-analysis-time both
+collide with the Governing constraint — matching effort to stakes, not spending
+maximally on every act — and with Ponytail's ship-the-lazy-version-first mode,
+active in the same session). One real gap: Rule 4 named "testable terms" but
+never called out Acceptance Criteria as their concrete form when ACs exist.
+
+- **Rule 4** (`docs/METHODOLOGY.md`) — added: "When Acceptance Criteria already
+  exist for the task, they ARE the testable terms — verify the change against
+  each one individually, not just against the overall goal." Deliberately
+  scoped to *verification*, not a testing mandate (verify-against, not
+  write-a-test-per-AC — the latter would smuggle in a coverage requirement
+  Rule 2 / Ponytail would reject for tasks that don't need it).
+- No change to `decision-doctrine-map.md` — Rule 4 isn't a row in its
+  situation → scaffold table.
+- No change to root `CLAUDE.md` — the reconciliation target was the
+  thinking-loop doctrine (`METHODOLOGY.md`), not the architecture doc.
+
 ## [0.43.1] — 2026-07-07
 
 Follow-up to v0.43.0 after surveying Anthropic's official plugins
