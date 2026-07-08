@@ -1,6 +1,6 @@
 ---
 name: codebase-design
-description: Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, or placing seams. Don't use for framework patterns (see kbg:<framework>-patterns).
+description: Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, or placing seams — e.g. 'design the module', 'where should this code live', 'ออกแบบ interface', 'วาง seam'. Don't use for framework patterns (see kbg:<framework>-patterns).
 metadata.origin: matt-pocock
 ---
 

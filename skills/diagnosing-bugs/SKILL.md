@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug' or reports something not behaving. Don't use for trivial typos.
+description: Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug', 'this is broken', 'not working', 'why is this happening', 'regression', 'crash', 'failing', or Thai 'เจอบั๊ก'/'ไม่ทำงาน'/'แก้บั๊กให้ที'/'ทำไมผิด'. Don't use for trivial typos.
 metadata.origin: matt-pocock
 ---
 
