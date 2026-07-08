@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.43.3] — 2026-07-08
+
+`kbg:deep-dive` audit of `goal-craft` (user-requested "focus and go deep").
+The skill itself checked out clean — every claim it makes about native `/goal`
+(evaluator model, 4,000-char limit, v2.1.139+ gate, headless-only dispatch,
+free-text turn-bound clause) verified against official docs with no drift.
+The audit surfaced a real, unrelated finding instead: `CLAUDE.md`'s claim that
+`recursive-improve` is "the one safety-load-bearing instance" of
+`disable-model-invocation: true` was false — 13 skills carried the flag, and
+`docs/research/matt-pocock-alignment-2026-06-30.md` had already logged "9 of
+15" a month earlier without `CLAUDE.md` ever being corrected.
+
+- **Doc/memory accuracy fixes** — `CLAUDE.md`, `docs/agent-tool-patterns.md`,
+  and `docs/research/kbg-vs-adhd.md` (dangling `§"disable-model-invocation —
+  per-surface"` citation, a heading that no longer exists) now state the real
+  count and that only `recursive-improve` is CRIT-guarded (check 39) against
+  the flag being silently dropped; the other 11 rely on check 30's WARN-only
+  reason-presence check, which doesn't catch the flag disappearing outright.
+  Memory `disable-model-invocation-criterion.md` corrected the same way.
+- **`goal-craft`'s `disable-model-invocation` flag removed** (user call, made
+  mid-audit) — `skills/goal-craft/SKILL.md` is now model-invocable. This does
+  not change what `/goal` itself requires: `goal-craft` only ever prints a
+  paste-ready condition string, it has never invoked `/goal` or shelled out,
+  so the user still has to type `/goal` themselves for anything to run. The
+  practical effect is narrower than the flag's original name suggests: I may
+  now draft a `/goal` condition unprompted when a task looks loop-shaped, but
+  the string stays inert until pasted. Flag count: 13 → 12.
+  `BOUNDARY.md` regenerated (`goal-craft`'s invocation column: `manual` →
+  `auto`) — never hand-edited, per this repo's own convention.
+
 ## [0.43.2] — 2026-07-08
 
 Reconciled an externally-sourced "Core Principles" block (mandatory plan mode,

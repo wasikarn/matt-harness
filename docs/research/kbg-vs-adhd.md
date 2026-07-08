@@ -86,7 +86,7 @@ rejected.
   failures rather than swallow them — kbg's "fail loud" posture.
 - **`disable-model-invocation: true`.** Upstream ADHD is user-only
   (the user types `/adhd` explicitly). kbg doctrine
-  (`CLAUDE.md` §"`disable-model-invocation` — per-surface") reserves
+  (`CLAUDE.md`'s "Non-obvious gotchas" bullet on this flag) reserves
   the flag for surfaces where autonomous invocation would cross an
   *irreversible / external / destructive / governance* boundary. The
   ideate skill is none of those — it is local, reversible, and the

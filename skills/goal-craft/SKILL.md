@@ -4,8 +4,6 @@ description: "Compact a /goal completion condition: done-when check, one-way-doo
 metadata:
   origin: kbg-native
   adapted-from: "goal-spec (retired a518ad1, orphaned from c35afcc)"
-disable-model-invocation: true
-disable-model-invocation-reason: composes a paste-ready /goal string the user must review before pasting — the model must not draft loop conditions unprompted
 argument-hint: "The freeform task description to turn into a /goal condition"
 ---
 
