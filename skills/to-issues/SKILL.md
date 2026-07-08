@@ -40,6 +40,8 @@ Break the plan into **tracer bullet** issues. Each issue is a thin vertical slic
 
 </vertical-slice-rules>
 
+A **wide refactor** (one mechanical change whose blast radius fans across the codebase — rename a column, retype a shared symbol) is the exception: no vertical slice can land green, so sequence it by **expand–contract** instead. See **Wide refactors** in the Reference section below.
+
 **done when:** every slice is a vertical path (schema → API → UI → tests), not a horizontal layer (all schemas, then all APIs, then all UI). Failure mode to avoid: producing a layer-by-layer split that delivers no end-to-end behaviour — AFK agents cannot start a slice that doesn't compile or render. Premature completion here = "they can be re-ordered later"; honour the slice today.
 
 ### 4. Quiz the user
@@ -66,6 +68,8 @@ For each approved slice, publish a new issue to the issue tracker. Use the issue
 
 Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
 
+Where the tracker supports it, link each slice to its parent as a native **sub-issue** and wire each blocker as a native **blocking edge**; the `## Parent` and `## Blocked by` body sections are the fallback otherwise.
+
 **done when:** every approved slice has a real issue id on the tracker; the dependency graph matches what the user approved; the parent issue is untouched. Failure mode to avoid: re-opening scope mid-publish (adding a slice the user did not approve) — that's premature completion on the gathering path: the user trusted the approved set, and silent expansion corrodes that trust.
 
 <issue-template>
@@ -77,7 +81,7 @@ A reference to the parent issue on the issue tracker (if the source was an exist
 
 A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation.
 
-Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it here and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
+Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced code that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), add a context pointer to where that prototype code lives rather than inlining it.
 
 ## Acceptance criteria
 
@@ -92,6 +96,12 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 Or "None - can start immediately" if no blockers.
 
 </issue-template>
+
+## Reference
+
+### Wide refactors
+
+A **wide refactor** is one mechanical change — rename a column, retype a shared symbol — whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own issue blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in an issue blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify issue — green is promised only there.
 
 Do NOT close or modify any parent issue.
 

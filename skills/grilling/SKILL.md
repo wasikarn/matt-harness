@@ -12,7 +12,7 @@ Ask the questions one at a time, waiting for feedback before continuing. Asking 
 
 Failure mode to avoid: firing a batch of questions in one turn — the user picks the easiest to answer, not the most important. One question, one answer, then proceed.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+If a *fact* can be found by exploring the codebase, look it up rather than asking me. The *decisions*, though, are mine — put each one to me and wait for my answer.
 
 Failure mode to avoid: asking the user what the codebase already answers — that wastes the user's time AND signals you didn't look. Read first, ask second.
 
