@@ -13,10 +13,12 @@ pass=0
 fail=0
 
 user_prompt_payload() {
+  # ensure_ascii=False mirrors CC's real payload: Node JSON.stringify writes
+  # UTF-8 directly (not \uXXXX escapes), so the hook sees real Thai bytes.
   python3 -c '
 import sys, json
 prompt = sys.argv[1]
-print(json.dumps({"tool_name": "UserPromptSubmit", "prompt": prompt}))
+print(json.dumps({"tool_name": "UserPromptSubmit", "prompt": prompt}, ensure_ascii=False))
 ' "$1"
 }
 
@@ -56,6 +58,12 @@ test_nudge "confluence page mention"       "write a Confluence page for the spec
 test_nudge "TP- ticket key"                "update TP-809 with the fix"
 test_nudge "case-insensitive JIRA"         "check JIRA for related issues"
 test_nudge "acli mention with jira"        "run acli to post this to jira"
+test_nudge "file a Jira bug (EN verb)"     "file a Jira bug for the login regression"
+test_nudge "search Jira (read verb)"       "search Jira for related tickets"
+test_nudge "export JQL from jira"          "export JQL from jira"
+test_nudge "Thai create jira story"        "สร้าง jira story ใหม่สำหรับ login"
+test_nudge "Thai edit confluence"          "แก้ confluence page ส่วน scope"
+test_nudge "Thai move ticket status"       "ย้ายสถานะ TP-809 เป็น Done"
 
 echo ""
 echo "--- unrelated work (must stay silent) ---"
@@ -63,6 +71,11 @@ test_silent "unrelated feature request"    "add a logout button"
 test_silent "generic ticket word alone"    "create a ticket for the printer"
 test_silent "empty prompt"                 ""
 test_silent "short typo fix"               "fix typo in README"
+test_silent "bare jira no verb"            "what does jira look like"
+test_silent "meta: know the plugin (FP1)"  "บอกให้ claude รู้จัก plugins jira-acli เหมือน @RTK ดีมั้ย"
+test_silent "meta: use plugin power (FP2)" "ทำอย่างไรให้ CC ใช้ plugin jira-acli ให้เต็มประสิทธิภาพ"
+test_silent "meta: jira-acli plugin skill" "the jira-acli plugin skill hook config"
+test_silent "meta: kbg-harness + jira"     "kbg-harness and jira-acli are both plugins"
 
 echo ""
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)

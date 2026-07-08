@@ -14,14 +14,36 @@
 # (2026-07-06) -- raw `acli ... --description-file` on a PRD/finding text file
 # bypassed jira-acli's canonical template, flattening ADF into one paragraph.
 #
-# Heuristic: a bare mention of jira/confluence/a TP-* ticket key is narrow
-# enough on its own (proper nouns, not generic English) -- no write-verb
-# conjunction needed, unlike flow-nudge's broader IMPL verb set.
+# Heuristic (revised 2026-07-08 after false positives): a bare mention of
+# jira/confluence is NOT enough -- in harness/dotfiles sessions "jira" is a
+# plugin name, not work intent (e.g. "ทำให้ CC รู้จัก plugin jira-acli" fired
+# the nudge on pure meta-discussion). Gate:
+#   - TP-* ticket key => fire (unambiguous work intent).
+#   - jira/confluence token => fire only with a work verb (create/file/write/
+#     edit/update/comment/transition/publish/search/view/find/list/query/
+#     export/check/post + Thai สร้าง/แก้/อัปเดต/ย้าย/เขียน/ค้น/หา/ดู/เช็ค/โพสต์)
+#     AND no harness-meta signal (plugin|jira-acli|kbg-harness|hook|skill|
+#     doctrine) -- the meta signal means the prompt is ABOUT the plugin system,
+#     not a Jira/Confluence task. "acli" alone is NOT meta (raw acli is the
+#     bypass this nudge catches).
 set -uo pipefail
 
 INPUT=$(cat)
 
-if ! /usr/bin/grep -qiE '\b(jira|confluence|tp-[0-9]+)\b' <<< "$INPUT"; then
+# TP-* ticket key = unambiguous work intent.
+if /usr/bin/grep -qiE '\btp-[0-9]+\b' <<< "$INPUT"; then
+  : # fall through to emit
+elif /usr/bin/grep -qiE '\b(jira|confluence)\b' <<< "$INPUT"; then
+  # harness-meta signal = discussion about the plugin/harness, not jira work.
+  if /usr/bin/grep -qiE '\b(plugin|jira-acli|kbg-harness|hooks?|skills?|doctrine)\b' <<< "$INPUT"; then
+    exit 0
+  fi
+  # require a work verb (EN + TH); bare mention without one is not work intent.
+  if ! /usr/bin/grep -qiE '\b(create|file|open|log|report|raise|write|edit|update|comment|transition|publish|search|view|find|list|query|export|check|post|move|bulk)\b' <<< "$INPUT" \
+     && ! /usr/bin/grep -qE 'สร้าง|แก้|อัปเดต|ย้าย|คอมเมนต์|เปิด|เขียน|ค้น|หา|ดู|เช็ค|โพสต์|เพิ่ม' <<< "$INPUT"; then
+    exit 0
+  fi
+else
   exit 0
 fi
 
