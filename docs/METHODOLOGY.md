@@ -25,6 +25,12 @@ they're unsure of the approach. Skip entirely for trivial / known-small-fix /
 mechanical changes (rename, typo, doc tweak). Matching effort to stakes cuts both
 ways — under-planning a one-way door and over-planning a typo are the same error.
 
+Once inside plan mode, the analysis is the deliverable, not a formality before the
+real work starts. Read the files the task touches and trace the actual flow before
+drafting — a plan built from the request text alone, without opening the code, is a
+guess wearing a plan's shape. Call `advisor()` before presenting the plan, not only
+before implementing it — the plan is what the user spends their review cycle on.
+
 ### Pressure-test before committing
 
 Run the triad inline, then call `advisor()` before substantive work and before declaring done — `advisor()` is the check that's actually load-bearing in practice (measured 2026-07-02: `kbg:decide` invoked 0 times vs. `advisor()` 55 times, across 182 sessions). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.
