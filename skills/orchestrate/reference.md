@@ -9,7 +9,7 @@
 | Urgent + important, tightly coupled / needs back-and-forth | — | L2 | **inline** (do now, with user) |
 | Urgent + important, specialized + time-critical | — | L3 | **dispatch immediately**, tight done-when |
 | Specialized work (matches an agent's domain) | — | L3 | **dispatch** to that agent ↓ |
-| Important, not urgent | — | L3 | **schedule** — or dispatch `code-architect` (or run `kbg:research`) for deep prep |
+| Important, not urgent | — | L3 | **schedule** — or dispatch `code-architect` (or run `research`) for deep prep |
 | Urgent, not important, bounded + verifiable | — | **L4** | **scripted execution** — pipeline/batch via bash runner |
 | Urgent, not important, trivial | — | L2 | **inline** — orchestrating costs more (guardrail) |
 | Neither | — | — | **drop** — mark `wontfix` |
@@ -19,7 +19,7 @@
 | Item shape | Security? | Level | Path |
 |---|---|---|---|
 | High impact + low effort | — | L2 | **inline** — quick wins, do now |
-| High impact + high effort | — | L3 | **schedule** — dispatch `code-architect` (or run `kbg:research`) for deep prep before build |
+| High impact + high effort | — | L3 | **schedule** — dispatch `code-architect` (or run `research`) for deep prep before build |
 | Low impact + low effort | — | L3 | **delegate** to the right agent, or **inline** if trivial — batch similar items |
 | Low impact + high effort | — | — | **drop** — thankless task / money pit; mark `wontfix` unless user insists |
 
@@ -28,7 +28,7 @@
 | Item shape | Security? | Level | Path |
 |---|---|---|---|
 | High value + low risk | — | L3 | **do first** — dispatch `code-architect` for design, then build |
-| High value + high risk | — | L3 | **mitigate then do** — run `kbg:research` to de-risk, prototype, or ADR before committing |
+| High value + high risk | — | L3 | **mitigate then do** — run `research` to de-risk, prototype, or ADR before committing |
 | Low value + low risk | — | L3 | **do last** — batch with similar items; delegate if bounded |
 | Low value + high risk | — | — | **avoid** — mark `wontfix` unless forced by external constraint |
 
@@ -109,7 +109,7 @@ The guardrail bounds **cost**; the Step 4 confirm gate bounds **authorization**.
 
 **Action class (authorization axis)** — mutation-capable dispatch (any agent holding `Edit`, `Write`, or `Bash`) is privileged: it needs the Step 4 go-ahead, a higher bar than the no-tool read-only agents.
 
-Default: inline unless an item clears a delegate criterion. If it clears one but no agent matches its domain, run `kbg:research` for context-heavy research, else inline.
+Default: inline unless an item clears a delegate criterion. If it clears one but no agent matches its domain, run `research` for context-heavy research, else inline.
 
 ## Parallel fan-out — validity test + anti-patterns
 

@@ -45,7 +45,7 @@ Any file that appears in the output is missing the boundary guard.
 
 **Root cause:** The builder did not read the vendor's baseline capability list or the harness's existing agent fleet before adding a new surface. Custom agents should encode *team-specific* expertise, not reimplement vendor primitives.
 
-**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `kbg:research`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 11 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
+**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `research`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's 11 agents cover the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
 
 The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to the built-in `Explore` subagent inline, not to a new agent.
 

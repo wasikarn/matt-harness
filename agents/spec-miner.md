@@ -198,7 +198,7 @@ Write the `description` in the frontmatter to include a summary of the module's 
 
 - **This agent is fully self-sufficient.** It does not require `codebase-onboarding` or any other agent to run first.
 - **After you run**: `Explore` will use your specs as the primary information source — checking `Last verified` freshness before trusting
-- **Future changes**: `code-architect` will add `## ADDED Requirements` blocks; the `kbg:tdd` skill will read `#### Scenario:` blocks to generate test skeletons; `code-reviewer` will grep `<!-- enforced: -->` to verify implementation still matches spec; MODIFIED Requirements will match by `<!-- id: -->`, not by name
+- **Future changes**: `code-architect` will add `## ADDED Requirements` blocks; the `tdd` skill will read `#### Scenario:` blocks to generate test skeletons; `code-reviewer` will grep `<!-- enforced: -->` to verify implementation still matches spec; MODIFIED Requirements will match by `<!-- id: -->`, not by name
 
 ## Anti-Patterns
 

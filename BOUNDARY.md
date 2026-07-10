@@ -7,31 +7,23 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (50)
+### Skills (33)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
-  ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
   ◇ backend-patterns               Backend architecture, API design, and DB optimization for Node.js/Express/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends.
-  ◇ code-review                    Standards+Spec two-axis diff review against a fixed point. Use when the user asks to 'review since X' or review a branch/WIP against an arbitrary ref. Don't use for a PR-submission gate (kbg:review-pr owns that).
-  ◇ codebase-design                Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, or placing seams — e.g. 'design the module', 'where should this code live', 'ออกแบบ interface', 'วาง seam'. Don't use for framework patterns (see kbg:<framework>-patterns).
   ◇ codebase-onboarding            Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups.
   ◇ context-budget                 Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
   ◇ cost-aware-llm-pipeline        Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips.
   ◇ dart-flutter-patterns          Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend.
   ◇ decide                         Doctrine-backed decision support for genuinely hard, contested-diagnosis choices — when advisor()-level pressure-testing isn't enough. Use when the user says 'stuck between', 'torn between', 'hard call', 'high-stakes decision', or Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'/'ชั่งใจไม่ได้'. Don't use for routine decisions — default is triad + advisor().
-  ◇ diagnosing-bugs                Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug', 'this is broken', 'not working', 'why is this happening', 'regression', 'crash', 'failing', or Thai 'เจอบั๊ก'/'ไม่ทำงาน'/'แก้บั๊กให้ที'/'ทำไมผิด'. Don't use for trivial typos.
-  ◇ domain-modeling                Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups.
   ◇ drizzle-patterns               Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM.
   ◇ effect-ts-patterns             Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases.
   ◇ eval-harness                   Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work.
   ◇ fastapi-patterns               FastAPI patterns: structure, Pydantic v2, dependency injection, async handlers, auth, service layers. Use when building FastAPI apps. Don't use for non-FastAPI backends (Flask/Django).
   ◇ goal-craft                     Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly).
-  ◇ grilling                       Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation.
   ◇ grpc-node-patterns             gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC.
-  ◇ handoff                        Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates.
   ◇ harness-audit                  Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor).
   ◇ hono-patterns                  Hono patterns: typed routing, Zod validation, middleware, RPC client, context vars. Use when building Hono services on Bun/Node. Don't use for Express, Fastify, or NestJS.
-  ◇ improve-codebase-architecture  Scan a codebase for deepening opportunities and grill through one. Use when the user wants to prioritise architecture deepening. Don't use for routine features.
   ◇ incident                       Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem.
   ◇ inventory                      Catalogue loadable skills/agents/commands/hooks + the escape hatch. Use when stuck on routing. Thai: 'หา skill ไหนเหมาะ'. Don't use for single-layer lists or governance health.
   ◇ langchain-langgraph-patterns   LangChain + LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, RAG, tracing. Use when building LangChain/LangGraph agents. Don't use for non-LangChain LLM frameworks.
@@ -43,29 +35,20 @@ _Personals/kbg-harness_
   ◇ pr                             Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies.
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
-  ◇ research                       Background-agent research: primary sources → one cited Markdown file. Use when the user wants a topic researched or reading legwork delegated. Don't use for single-file lookups or security audits (kbg:security-auditor).
   ◇ review-pr                      Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
-  ◇ setup-matt-pocock-skills       Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo.
   ◇ task-prep                      Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners.
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
-  ◇ tdd                            Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change.
-  ◇ teach                          Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions.
   ◇ tech-humanize                  Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation.
-  ◇ to-spec                        Synthesise-seam: turn a prior discussion into a published spec (you may know this as a PRD) without re-interviewing. Use when the user asks for a spec/PRD. Don't use for undecided scope.
-  ◇ to-tickets                     Break a plan, spec, or conversation into tracer-bullet tickets, each declaring its blocking edges. Use when work is ready to publish as ticket-size tasks. Don't use for status updates.
-  ◇ triage                         Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments.
-  ◇ wayfinder                      Chart a shared map of investigation tickets for work too big for one session. Use when the user has a greenfield project or a huge feature build. Don't use for work that fits one session (kbg:grilling).
-  ◇ writing-great-skills           Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code.
 
 ### Commands (16)
   ◇ address-review                 Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
-  ◇ fix-bug                        Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (kbg:tdd), or refactors (/refactor-clean).
+  ◇ fix-bug                        Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean).
   ◇ frame                          Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style.
-  ◇ ideate-search                  Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (kbg:research).
+  ◇ ideate-search                  Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research).
   ◇ implementation-compliance-audit Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit).
   ◇ kbg-help                       kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'.
   ◇ post-mortem                    Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents.
@@ -134,28 +117,20 @@ _Personals/kbg-harness_
 |---|---|---|---|
 | adonisjs-patterns | AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks. | inline | auto |
 | agent-architecture-audit | Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review. | inline | auto |
-| ask-matt | Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows. | inline | manual |
 | backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Express/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends. | inline | auto |
-| code-review | Standards+Spec two-axis diff review against a fixed point. Use when the user asks to 'review since X' or review a branch/WIP against an arbitrary ref. Don't use for a PR-submission gate (kbg:review-pr owns that). | inline | auto |
-| codebase-design | Deep-module design vocabulary. Use when designing interfaces, finding deepening opportunities, or placing seams — e.g. 'design the module', 'where should this code live', 'ออกแบบ interface', 'วาง seam'. Don't use for framework patterns (see kbg:<framework>-patterns). | inline | auto |
 | codebase-onboarding | Catalogue unfamiliar codebases into an onboarding guide — architecture, entry points, conventions. Use when joining or taking over a project. Don't use for single-file lookups. | inline | auto |
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | dart-flutter-patterns | Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend. | inline | auto |
 | decide | Doctrine-backed decision support for genuinely hard, contested-diagnosis choices — when advisor()-level pressure-testing isn't enough. Use when the user says 'stuck between', 'torn between', 'hard call', 'high-stakes decision', or Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'/'ชั่งใจไม่ได้'. Don't use for routine decisions — default is triad + advisor(). | inline | auto |
-| diagnosing-bugs | Diagnosis loop for hard bugs and perf regressions. Use when the user says 'debug', 'this is broken', 'not working', 'why is this happening', 'regression', 'crash', 'failing', or Thai 'เจอบั๊ก'/'ไม่ทำงาน'/'แก้บั๊กให้ที'/'ทำไมผิด'. Don't use for trivial typos. | inline | auto |
-| domain-modeling | Build and sharpen a project's domain model and ubiquitous language. Use when pinning down domain concepts. Don't use for one-off vocabulary lookups. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
 | effect-ts-patterns | Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
 | fastapi-patterns | FastAPI patterns: structure, Pydantic v2, dependency injection, async handlers, auth, service layers. Use when building FastAPI apps. Don't use for non-FastAPI backends (Flask/Django). | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
-| grilling | Grill-me: walk the design tree one question at a time, each with a recommended answer. Use when stress-testing a plan. Don't use for implementation. | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
-| handoff | Compact the current conversation into a handoff document for the next agent. Use when ending a session. Don't use for end-user updates. | inline | manual |
 | harness-audit | Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor). | inline | auto |
 | hono-patterns | Hono patterns: typed routing, Zod validation, middleware, RPC client, context vars. Use when building Hono services on Bun/Node. Don't use for Express, Fastify, or NestJS. | inline | auto |
-| improve-codebase-architecture | Scan a codebase for deepening opportunities and grill through one. Use when the user wants to prioritise architecture deepening. Don't use for routine features. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | inventory | Catalogue loadable skills/agents/commands/hooks + the escape hatch. Use when stuck on routing. Thai: 'หา skill ไหนเหมาะ'. Don't use for single-layer lists or governance health. | inline | auto |
 | langchain-langgraph-patterns | LangChain + LangGraph patterns: StateGraph agents, checkpointing, human-in-the-loop, tool calling, streaming, RAG, tracing. Use when building LangChain/LangGraph agents. Don't use for non-LangChain LLM frameworks. | inline | auto |
@@ -167,21 +142,12 @@ _Personals/kbg-harness_
 | pr | Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies. | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
-| research | Background-agent research: primary sources → one cited Markdown file. Use when the user wants a topic researched or reading legwork delegated. Don't use for single-file lookups or security audits (kbg:security-auditor). | inline | auto |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
-| setup-matt-pocock-skills | Build the matt-pocock skill setup once: map to your project. Use when onboarding. Don't use for re-running on an already-configured repo. | inline | manual |
 | task-prep | Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners. | inline | auto |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
-| tdd | Test-driven development. Use when the user mentions red-green-refactor or wants integration tests. Don't use for refactors without behaviour change. | inline | auto |
-| teach | Teach the user a new skill over multiple sessions. Use when the user asks to learn a topic. Don't use for one-shot factual questions. | inline | manual |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
-| to-spec | Synthesise-seam: turn a prior discussion into a published spec (you may know this as a PRD) without re-interviewing. Use when the user asks for a spec/PRD. Don't use for undecided scope. | inline | manual |
-| to-tickets | Break a plan, spec, or conversation into tracer-bullet tickets, each declaring its blocking edges. Use when work is ready to publish as ticket-size tasks. Don't use for status updates. | inline | manual |
-| triage | Triage state machine: categorise, verify, grill if needed, write agent briefs. Use when new issues/PRs arrive. Don't use for implementation or non-triage comments. | inline | manual |
-| wayfinder | Chart a shared map of investigation tickets for work too big for one session. Use when the user has a greenfield project or a huge feature build. Don't use for work that fits one session (kbg:grilling). | inline | manual |
-| writing-great-skills | Doctrine for writing skills — leading words, no-op test, completion criteria, two cuts. Use when authoring skill files. Don't use for writing application code. | inline | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -211,7 +177,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-10T06:36:24Z_
+_Generated: 2026-07-10T07:47:29Z_
 
 ---
 

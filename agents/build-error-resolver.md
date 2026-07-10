@@ -172,7 +172,7 @@ Prefer null-safe patterns (`??`, guard-then-unwrap) over bang operators (`!`); n
 - Code needs refactoring → use `refactor-cleaner`
 - Architecture changes needed → use `code-architect`
 - New features required → use `code-architect`
-- Tests failing → use the `kbg:tdd` skill
+- Tests failing → use the `tdd` skill
 - Security issues → use `security-reviewer`
 
 ---

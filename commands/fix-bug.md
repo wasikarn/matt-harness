@@ -1,6 +1,6 @@
 ---
 name: fix-bug
-description: "Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (kbg:tdd), or refactors (/refactor-clean)."
+description: "Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean)."
 argument-hint: Optional bug description or repro steps
 disable-model-invocation: true
 disable-model-invocation-reason: spawns agents and mutates — a fix the user commits to
@@ -72,7 +72,7 @@ Initial report: $ARGUMENTS
 
 ## Phase 3: Hypothesize + Instrument
 
-**Goal**: ONE *confirmed* hypothesis — not just a ranked list. Mirrors `kbg:diagnosing-bugs`'s hypothesise → instrument loop inline.
+**Goal**: ONE *confirmed* hypothesis — not just a ranked list. Mirrors `diagnosing-bugs`'s hypothesise → instrument loop inline.
 
 **Actions**:
 1. List 2-3 candidate hypotheses based on Phase 2 findings.
@@ -112,13 +112,13 @@ Initial report: $ARGUMENTS
 
 ---
 
-## Phase 5: Implement (TDD by default — `kbg:tdd` pattern)
+## Phase 5: Implement (TDD by default — `tdd` pattern)
 
 **Goal**: Make the minimised repro stop failing — with a regression test that fails on the pre-fix code.
 
 **DO NOT START WITHOUT USER APPROVAL FROM PHASE 4.**
 
-**Default: TDD red → green → refactor** (the `kbg:tdd` skill's pattern, inlined here):
+**Default: TDD red → green → refactor** (the `tdd` skill's pattern, inlined here):
 
 1. **RED** — Write the regression test first. Assert the now-correct behavior. Run it → confirm it FAILS on the buggy code. If it doesn't fail, the test isn't catching the bug; rewrite the test before continuing.
 2. **GREEN** — Write the minimal fix per Phase 4 strategy. Run the test → confirm it PASSES. Re-run the minimised repro from Phase 1 → confirm the original failure signal is gone.
@@ -181,11 +181,11 @@ Update todos as you progress.
 
 - **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phases 1-3. Surgical changes → Phase 4 default. Model only for judgment → Phase 1 repro must be deterministic, not Claude-asserted. Rule 4 (verify-intent loop) → Phase 6 distinguishes-or-it-doesn't check. Abort loud → Phase 1 abort if no repro.
 - **code-review-graph MCP**: Phase 2 for structural lookup; the orchestrating session (not the reviewer agents, which have no MCP grant) runs impact-radius queries in Phase 7 before spawning review — `code-reviewer` itself escalates blast-radius depth via grep.
-- **`kbg:diagnosing-bugs` and `kbg:tdd` are built in as DEFAULTS, not alternatives**:
-  - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `kbg:diagnosing-bugs`'s core loop so the full workflow lives in one document. Don't separately invoke `kbg:diagnosing-bugs` from within `/fix-bug` — it's already running.
-  - Phase 5 defaults to `kbg:tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
-  - Use standalone `kbg:diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
-  - Use standalone `kbg:tdd` for greenfield TDD on new features, not bug fixes.
+- **`diagnosing-bugs` and `tdd` are built in as DEFAULTS, not alternatives**:
+  - Phase 1 (Reproduce + Minimise) and Phase 3 (Hypothesize + Instrument) inline `diagnosing-bugs`'s core loop so the full workflow lives in one document. Don't separately invoke `diagnosing-bugs` from within `/fix-bug` — it's already running.
+  - Phase 5 defaults to `tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
+  - Use standalone `diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
+  - Use standalone `tdd` for greenfield TDD on new features, not bug fixes.
 - **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/path-hardcode.sh` (hardcoded `/Users/` paths) run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
 

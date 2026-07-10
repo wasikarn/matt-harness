@@ -249,7 +249,7 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 | prod 500s | Q1 urgent + important, specialized | a write-capable agent (write — confirm first) — done-when: errors gone + root cause in commit |
 | auth refactor | Q2 + touches auth | **security precedence**: `security-reviewer` reviews first → then a write-capable agent (clarity-only scope) applies (both gated — confirm before each) |
 | signups CSV | Q3 urgent, not important | **inline** — trivial query; orchestrating costs more (guardrail) |
-| pnpm move | Q2 important, not urgent | `kbg:research` — compare + report, don't migrate (staged: once the trade-off data exists, the actual reversible-choice reasoning is `kbg:decide`'s job, not orchestrate's — see below) |
+| pnpm move | Q2 important, not urgent | `research` — compare + report, don't migrate (staged: once the trade-off data exists, the actual reversible-choice reasoning is `kbg:decide`'s job, not orchestrate's — see below) |
 | dark-mode toggle | Q4 neither | **drop** — mark `wontfix`; outside current roadmap |
 
 Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`, none needed here). CSV inline. Dark-mode dropped.

@@ -103,7 +103,7 @@ Categorize changed files: source, tests, docs, config, migrations.
 
 ### Planning Artifacts
 
-Check for related artifacts produced by `kbg:to-spec`, `kbg:to-tickets`, or the legacy PRP flow:
+Check for related artifacts produced by `to-spec`, `to-tickets`, or the legacy PRP flow:
 - `.claude/prds/` — PRDs this PR implements a milestone of
 - `.claude/plans/` — plans this PR executes
 - `.claude/PRPs/prds/`, `.claude/PRPs/plans/`, `.claude/PRPs/reports/` — legacy PRP artifacts
