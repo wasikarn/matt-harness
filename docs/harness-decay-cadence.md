@@ -294,6 +294,40 @@ honest (no duplicate `tools:` tokens — check #10; every agent has explicit
 re-audit's role is to keep the *contents* honest on the human cadence
 above. They are complements, not substitutes.
 
+## Trigger-health re-audit (suppressed-demand lens)
+
+Same quarterly cadence as the sections above. Two tiers, deliberately unequal
+cost — do not conflate them.
+
+- **Tier A — trigger health (cheap, tool-run; the default action).**
+  Re-run `python3 scripts/measure-autotrigger.py`. Look for the
+  *suppressed-demand* pattern on `decide`, `grilling`, `orchestrate`:
+  **0-or-low `auto_fire` + nonzero `manual`/`slash_exec`** — the fingerprint
+  of a skill the model wants but whose description no longer matches (the
+  exact v0.43.5 failure: commit `fdee904` silently stripped `decide`'s
+  quoted trigger phrases during a de-scope edit). If the pattern appears,
+  read the skill's `description` for lost trigger phrases and restore them
+  (fix pattern: commits `9058eec`, `639dd0a`). The tool has no false-positive
+  detection, no semantic near-miss detection, no before/after delta, and no
+  persisted history across runs — treat its output as a single-run pattern
+  check, not a threshold to automate against.
+- **Tier B — routing quality (expensive, manual; conditional, not
+  scheduled).** The tool counts *how often* a skill fires; it cannot judge
+  whether `decide` picked the *right mode*. Only pursue this if Tier A looks
+  healthy and misrouting is still suspected: hand-sample real `decide`
+  transcripts from `~/.claude/projects/*.jsonl` and re-score via
+  `kbg:score-decision`. No tool automates this step. Per the 2026-07-10
+  Decision Score (19/100, FAIL), a mode-routing logic change is premature
+  until several more real `decide` transcripts accumulate (n=1 at that
+  writing) — don't reopen that question on a hunch; reopen it on volume.
+
+**Current status (2026-07-10):**
+
+- `decide` — trigger phrases restored in v0.43.5; watch next quarterly pass.
+- `grilling`, `orchestrate`, `score-decision` — measured healthy or
+  intentionally silent at last check; no edit made, by design. This
+  Tier-A check is *when* to re-examine them, not a signal to touch them now.
+
 ## Harness-coverage quarterly review (retired)
 
 *Retired 2026-07-01.* This section originally described a

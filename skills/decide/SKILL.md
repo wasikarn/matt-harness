@@ -31,6 +31,18 @@ Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session):
 | Disprove a confident output before committing to it | Stop — spawn an external fresh-context skeptic that has not seen the work (`doubt-driven` pattern; canonical instance is the adversarial pass in `kbg:review-pr`) — not a mode here, because the skeptic must not share this context |
 | A pile of competing tasks/asks, not yet one bounded question | Stop — use `kbg:orchestrate` first to triage effort and execution shape; come back here once triage lands on a single reversible-choice question |
 
+## Announce the active mode
+
+Before the analysis runs, the first line of the response states the active mode and its named principle(s) — one clause, no preamble:
+
+| Mode | Banner |
+|---|---|
+| clarify | `**Mode: clarify** — socratic questioning (framing-bias guard)` |
+| probe | `**Mode: probe** — systems-thinking + leverage-points` |
+| decide | `**Mode: decide** — Judgment Ladder (5 rungs)` |
+| critique | `**Mode: critique** — red-team + steel-manning` |
+| strategize | `**Mode: strategize** — Rumelt kernel + Lafley-Martin` |
+
 ---
 
 ## Mode: clarify
