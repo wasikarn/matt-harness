@@ -40,7 +40,7 @@ These are non-negotiable ordering constraints derived from the debug-mantra disc
 
 ## Phase 1: Reproduce + Minimise
 
-**Goal**: Deterministic repro on the smallest failing case before any hypothesis. Mirrors `kbg:diagnosing-bugs`'s first two steps inline.
+**Goal**: Deterministic repro on the smallest failing case before any hypothesis. Mirrors `diagnosing-bugs`'s first two steps inline.
 
 Initial report: $ARGUMENTS
 

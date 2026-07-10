@@ -177,7 +177,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-10T07:47:29Z_
+_Generated: 2026-07-10T08:18:19Z_
 
 ---
 
@@ -295,7 +295,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Research & analysis
 | User says | Dispatch | Why |
 |---|---|---|
-| "research this", "deep dive on X", "how does Y work" | `kbg:research` | Brain dump + Q&A + plan |
+| "research this", "deep dive on X", "how does Y work" | `research` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
 | "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
 
@@ -304,7 +304,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
-| "save my session", "hand off" | `kbg:handoff` | Session state capture |
+| "save my session", "hand off" | `handoff` | Session state capture |
 
 
 ---
