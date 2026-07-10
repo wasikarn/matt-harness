@@ -7,7 +7,7 @@ _Legend: ◇ plugin-delivered / project-local_
 ## Source: Personals/kbg-harness
 _Personals/kbg-harness_
 
-### Skills (52)
+### Skills (50)
   ◇ adonisjs-patterns              AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks.
   ◇ agent-architecture-audit       Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review.
   ◇ ask-matt                       Router over the matt-pocock flow: ask, grill, plan, slice, ship. Use when starting non-trivial work, unsure which skill fits. Don't use for known flows.
@@ -42,10 +42,8 @@ _Personals/kbg-harness_
   ◇ orchestrate                    Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review.
   ◇ pr                             Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies.
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
-  ◇ prototype                      Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like. Don't use for production code.
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
   ◇ research                       Background-agent research: primary sources → one cited Markdown file. Use when the user wants a topic researched or reading legwork delegated. Don't use for single-file lookups or security audits (kbg:security-auditor).
-  ◇ resolving-merge-conflicts      Resolve an in-progress git merge/rebase conflict. Use when the user hits one mid-merge/rebase. Don't use for avoiding conflicts up front (kbg:orchestrate owns file-ownership planning).
   ◇ review-pr                      Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
   ◇ score-decision                 Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices.
   ◇ security-auditor               Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review.
@@ -168,10 +166,8 @@ _Personals/kbg-harness_
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | pr | Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies. | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
-| prototype | Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like. Don't use for production code. | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
 | research | Background-agent research: primary sources → one cited Markdown file. Use when the user wants a topic researched or reading legwork delegated. Don't use for single-file lookups or security audits (kbg:security-auditor). | inline | auto |
-| resolving-merge-conflicts | Resolve an in-progress git merge/rebase conflict. Use when the user hits one mid-merge/rebase. Don't use for avoiding conflicts up front (kbg:orchestrate owns file-ownership planning). | inline | auto |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
@@ -215,7 +211,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-10T04:46:19Z_
+_Generated: 2026-07-10T06:36:24Z_
 
 ---
 

@@ -19,7 +19,7 @@ The route most work travels. You have an idea and want it built.
 1. **`kbg:grilling`** — sharpen the idea by interview. Start here when you **have a codebase**: pass `--with-docs` to make it stateful, retaining what it learns in `CONTEXT.md` and ADRs. (No codebase, stateless interview only? Default mode is fine.)
 2. **Branch — can you settle every question in conversation?** If a question needs a runnable answer (state, business logic, a UI you have to see), detour through a prototype, bridged by **`kbg:handoff`** in both directions (see Crossing sessions):
    - **`kbg:handoff`** out, then open a fresh session against that file,
-   - **`kbg:prototype`** to answer the question with throwaway code,
+   - **`prototype`** to answer the question with throwaway code,
    - **`kbg:handoff`** back what you learned, and reference it from the original idea thread.
 3. **Branch — is this a multi-session build?**
    - **Yes** → **`kbg:to-spec`** (turn the thread into a spec) → **`kbg:to-tickets`** (split the spec into independently-grabbable tickets). Because the tickets are independent, **clear context between each one**: start a fresh session per ticket and kick off **`/ship`** by passing it the spec and the single ticket to work on.
@@ -58,7 +58,7 @@ Two model-invoked references that run *beneath* the other skills — each the si
 
 ## Crossing sessions
 
-- **`kbg:handoff`** — when a thread is full or you need to branch off (e.g. into a `kbg:prototype` session), this compacts the conversation into a markdown file. You don't continue in place — you **open a new session and reference that file** to carry the context across. It's the bridge between context windows, in either direction. Use it when you want a **fresh session** but need the **current conversation preserved**.
+- **`kbg:handoff`** — when a thread is full or you need to branch off (e.g. into a `prototype` session), this compacts the conversation into a markdown file. You don't continue in place — you **open a new session and reference that file** to carry the context across. It's the bridge between context windows, in either direction. Use it when you want a **fresh session** but need the **current conversation preserved**.
 - **`/compact`** (built-in) — stay in the **same conversation**, letting the earlier turns be summarized. Use it at **intentional breaks between phases**, when you don't mind losing the verbatim history. Don't compact mid-phase — the agent can lose its way. `kbg:handoff` forks; `/compact` continues.
 
 ## Standalone
@@ -66,7 +66,7 @@ Two model-invoked references that run *beneath* the other skills — each the si
 Off the main flow entirely.
 
 - **`kbg:grilling`** (default mode) — the same relentless interview as `--with-docs`, but for when you have **no codebase**. Stateless: it saves nothing locally, builds no `CONTEXT.md`. Reach for it to sharpen any plan or design that doesn't live in a repo.
-- **`kbg:prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
+- **`prototype`** — a small, throwaway program that answers one design question: does this state model feel right, or what should this UI look like. Throwaway from day one — keep the answer, delete the code. It's the detour in step 2 of the main flow, but reach for it any time a design question is hard to settle on paper.
 - **`kbg:research`** — delegate reading legwork to a background agent: it investigates a question against primary sources, then leaves a cited Markdown file in the repo. Keep working while it reads. The file it produces is something to take *into* the main flow at `kbg:grilling` — research feeds the thinking, it doesn't replace it.
 - **`kbg:teach`** — learn a concept over multiple sessions, using the current directory as a stateful workspace.
 - **`kbg:writing-great-skills`** — reference for writing and editing skills well.
