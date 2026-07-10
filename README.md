@@ -243,7 +243,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 
 | Source | License | Adopted |
 |---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 17 skills |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 20 skills, installed verbatim via `gh skill` (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
 | kbg-native | MIT | 47 skills · 13 agents · 18 commands |

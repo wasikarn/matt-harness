@@ -43,7 +43,7 @@ When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), sto
 
 ## Skill authoring doctrine (matt-pocock)
 
-When creating or editing a skill under `skills/`, follow matt-pocock's `writing-great-skills` doctrine — canonical: `skills/writing-great-skills/SKILL.md` (leading word, ≤25-word description, completion criterion, no-op test, two-cuts, failure-mode guard).
+When creating or editing a skill under `skills/`, follow matt-pocock's `writing-great-skills` doctrine — canonical: the `writing-great-skills` skill (installed via `gh skill`, not vendored in this repo since v0.46.0 — see README.md Quick Start; leading word, ≤25-word description, completion criterion, no-op test, two-cuts, failure-mode guard).
 
 The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks` section. New skills that don't carry it are audit-flagged by `skills/harness-audit` on next pass.
 
