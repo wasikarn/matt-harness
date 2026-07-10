@@ -25,7 +25,7 @@ injection.
 | `kbg:review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
 | `/ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
 
-Other useful ones: `/fix-bug`, `/deep-dive`, `/frame`,
+Other useful ones: `/fix-bug`, `kbg:research`, `/frame`,
 `/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
 
 ## The 1 thing to never do

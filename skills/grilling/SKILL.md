@@ -6,6 +6,8 @@ metadata.origin: matt-pocock
 
 Interview the user relentlessly about every aspect of the plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
+**Do not enact the plan until the user confirms we have reached a shared understanding.** The interview reaching a natural stopping point isn't the confirmation — the user's explicit "yes, that's it" is.
+
 **done when:** you can state the agreed decision in one sentence, name the seams that decision touches, and the user confirms there is nothing left to resolve. Premature completion here = declaring the tree walked when one branch is still open — the next implementer will re-open it.
 
 Ask the questions one at a time, waiting for feedback before continuing. Asking multiple questions at once is bewildering.
@@ -41,5 +43,5 @@ Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/refer
 
 ## Suggested next step
 
-- Idea sharpened → `kbg:to-prd` to turn it into a PRD.
+- Idea sharpened → `kbg:to-spec` to turn it into a spec.
 - Single-session task instead (no spec needed) → `/ship`.

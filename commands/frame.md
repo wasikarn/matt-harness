@@ -21,7 +21,7 @@ Read-only posture-setter — it loads a frame, it does not run a workflow or edi
 
 ## Relation to other surfaces
 
-- **Skills** are the heavier mode entry-points that *do the work* (`/deep-dive`, `kbg:review-pr`, `kbg:backend-patterns`); `/frame` just sets the frame.
+- **Skills** are the heavier mode entry-points that *do the work* (`kbg:research`, `kbg:review-pr`, `kbg:backend-patterns`); `/frame` just sets the frame.
 - **output-styles** (`staff-eng`) set the *voice register*; `/frame` sets the *task posture*. Orthogonal — combine them freely.
 
 > Renamed from `/context` (v0.4.6) — it shadowed Claude Code's built-in `/context`

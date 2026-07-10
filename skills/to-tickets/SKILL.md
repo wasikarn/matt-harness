@@ -1,14 +1,14 @@
 ---
-name: to-issues
-description: Slice a plan into vertical slices through every layer. Use when a plan is ready to publish as ticket-size tasks. Don't use for status updates.
+name: to-tickets
+description: Break a plan, spec, or conversation into tracer-bullet tickets, each declaring its blocking edges. Use when work is ready to publish as ticket-size tasks. Don't use for status updates.
 metadata.origin: matt-pocock
 disable-model-invocation: true
 disable-model-invocation-reason: publishes new issues to the project tracker — user-driven decomposition, not model-self-issued
 ---
 
-# To Issues
+# To Tickets
 
-Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
+Break a plan into independently-grabbable tickets using vertical slices (tracer bullets).
 
 The issue tracker and triage label vocabulary should have been provided to you — run `kbg:setup-matt-pocock-skills` if not.
 
@@ -36,6 +36,7 @@ Break the plan into **tracer bullet** issues. Each issue is a thin vertical slic
 
 - Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
 - A completed slice is demoable or verifiable on its own
+- Each slice is sized to fit in a single fresh context window
 - Any prefactoring should be done first
 
 </vertical-slice-rules>
@@ -62,15 +63,39 @@ Iterate until the user approves the breakdown.
 
 **done when:** the user signs off on the slice list and dependencies; if a user story is uncovered, it is named and absorbed into a slice before you proceed. Failure mode to avoid: presenting one slice and racing into publish — premature completion = publishing with uncovered stories or wrong dependencies.
 
-### 5. Publish the issues to the issue tracker
+### 5. Publish the tickets to the configured tracker
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
+Publish the approved tickets. **How** depends on the tracker `kbg:setup-matt-pocock-skills` configured — the tickets are the same either way, only the shape of the blocking edges changes:
 
-Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
+- **Local files** → write one `tickets.md` in the repo root, all tickets in dependency order (blockers first), each with its "Blocked by" listing the titles it depends on. Use the file template below.
+- **A real issue tracker** → publish one issue per ticket in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
 
 Where the tracker supports it, link each slice to its parent as a native **sub-issue** and wire each blocker as a native **blocking edge**; the `## Parent` and `## Blocked by` body sections are the fallback otherwise.
 
-**done when:** every approved slice has a real issue id on the tracker; the dependency graph matches what the user approved; the parent issue is untouched. Failure mode to avoid: re-opening scope mid-publish (adding a slice the user did not approve) — that's premature completion on the gathering path: the user trusted the approved set, and silent expansion corrodes that trust.
+**done when:** every approved slice has a real issue id (or a `tickets.md` entry) on the tracker; the dependency graph matches what the user approved; the parent issue is untouched. Failure mode to avoid: re-opening scope mid-publish (adding a slice the user did not approve) — that's premature completion on the gathering path: the user trusted the approved set, and silent expansion corrodes that trust.
+
+<tickets-file-template>
+
+# Tickets: <short name of the work>
+
+A one-line summary of what these tickets build. Reference the source spec if there is one.
+
+Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
+
+## <Ticket title>
+
+**What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective — not a layer-by-layer implementation list.
+
+**Blocked by:** the titles of the tickets that gate this one, or "None — can start immediately".
+
+- [ ] Acceptance criterion 1
+- [ ] Acceptance criterion 2
+
+## <Ticket title>
+
+...
+
+</tickets-file-template>
 
 <issue-template>
 ## Parent
@@ -107,5 +132,5 @@ Do NOT close or modify any parent issue.
 
 ## Suggested next step
 
-- Issues split → `/ship` per issue, each in a fresh session.
-- Publish to Jira instead → `jira-acli:jira-content` (reshape each issue to the canonical Task/Sub-task template; don't hand-build ADF).
+- Tickets split → `/ship` per ticket, each in a fresh session.
+- Publish to Jira instead → `jira-acli:jira-content` (reshape each ticket to the canonical Task/Sub-task template; don't hand-build ADF).

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Advisory: when the user's prompt looks like non-trivial engineering work,
 # nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep
-# before editing, with the heavyweight PRD flow (kbg:grilling → kbg:to-prd →
-# kbg:to-issues → /ship) as the branch for a feature to spec out. UserPromptSubmit
+# before editing, with the heavyweight spec flow (kbg:grilling → kbg:to-spec →
+# kbg:to-tickets → /ship) as the branch for a feature to spec out. UserPromptSubmit
 # hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
 # always exits 0. Errors are silently swallowed.
 #
@@ -28,15 +28,15 @@ set -uo pipefail
 # were silent, defeating the plan-first nudge on exactly the work the owner
 # reported). Precision is reclaimed by the CI-failure carve-out below instead
 # of a determiner-restricted alternation.
-IMPL='implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+IMPL='implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
 # IMPL without `build` — used by the carve-out to tell a build-failure report
 # (only `build` matched) from a real impl prompt (another verb matched too).
-IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
 # IMPL without `create` — used by the PR-intent carve-out below to tell a pure
 # "create a PR" ask (route to kbg:pr) from an impl-heavy prompt that also happens
 # to mention a PR ("build X then open a PR" → still wants the plan-first nudge).
 # `create` is dropped because it's the one IMPL verb that overlaps PR_INTENT.
-IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|ship'
+IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
 
 # Read stdin ONCE into a variable. The greps below all read stdin; if they
 # shared the live pipe, the first grep would consume it and the rest would
@@ -89,7 +89,7 @@ cat <<'EOF'
 [kbg:flow-nudge] Non-trivial work detected — plan before you edit.
   Multi-file / unfamiliar / architectural / hard-to-reverse?
     → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first.
-  A new feature to spec out? → kbg:grilling → kbg:to-prd → kbg:to-issues → /ship
+  A new feature to spec out? → kbg:grilling → kbg:to-spec → kbg:to-tickets → /ship
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.
 EOF

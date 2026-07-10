@@ -15,14 +15,14 @@ You don't need to memorize every surface — describe what you're doing, and the
 
 | Stage | Entry points |
 |-------|--------------|
-| **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `/deep-dive` |
+| **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `kbg:research` |
 | **PLAN** — spec, prioritize | `kbg:orchestrate` · `kbg:triage` · `kbg:decide` |
 | **BUILD** — implement | `/ship` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
 | **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (already-approved PR) · `/ship-release` (version/tag cut) |
 
-Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship`, `/deep-dive`, `kbg:decide` probe mode).
+Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`kbg:triage`** (one issue → `/fix-bug`, `/ship`, `kbg:research`, `kbg:decide` probe mode).
 
 ### ...and which specialist (agent) per stage
 

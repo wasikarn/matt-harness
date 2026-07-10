@@ -29,7 +29,7 @@
       {
         "id": "advisory:flow-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge kbg:grilling → kbg:to-prd → kbg:to-issues → /ship",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge kbg:grilling → kbg:to-spec → kbg:to-tickets → /ship",
         "hooks": [
           {
             "type": "command",

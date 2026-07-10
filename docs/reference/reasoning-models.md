@@ -166,7 +166,7 @@ They are read-only framing labels, not dispatch instructions.
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
 | **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `kbg:triage`, `kbg:decide` clarify mode |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `/deep-dive` |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `kbg:research` |
 | **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:decide` critique mode, `kbg:review-pr` |
 | **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `kbg:domain-modeling`, `/ship` scoping |
 | **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `kbg:domain-modeling` (Pugh Matrix), `kbg:decide` critique mode |

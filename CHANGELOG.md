@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.44.0] — 2026-07-10
+
+Matt-first alignment against upstream `mattpocock-skills` v1.1.0. Audited all 15
+kbg skills carrying `metadata.origin: matt-pocock`; found kbg a superset of
+upstream on 9 of them (untouched — touching them would delete kbg-specific
+value: Named Model footers, extra diagnostic phases, done-when gates, jira-acli
+handoffs). Where matt genuinely added or deliberately removed something, matt
+wins; where kbg had already evolved past what matt ever had, kbg stays.
+
+**New skills (+4, fleet 48→52):** `resolving-merge-conflicts` (git conflict
+resolver, near-verbatim port); `research` (background-agent primary-source
+research, folded in kbg's QMD/context7 tool refs — replaces `/deep-dive`,
+commands 15→14); `code-review` (two-axis Standards+Spec diff review against an
+arbitrary fixed point + the Fowler-12 smell baseline — a distinct concern kbg
+never had; also grafted the Fowler-12 into `agents/code-reviewer.md`'s Code
+Quality section); `wayfinder` (multi-session investigation-map skill — fog of
+war, frontier, native blocking, HITL/AFK ticket types; needs the tracker
+plumbing below to function).
+
+**Renames:** `to-prd`→`to-spec`, `to-issues`→`to-tickets` (matt's PRD→spec /
+to-issues+to-plan→to-tickets unification). Grafted only matt's genuinely new
+steps onto each (to-spec: explore-first + seams-confirmation checkpoint;
+to-tickets: fresh-context-window slice rule + local-file `tickets.md` publish
+mode) — preserved kbg's jira-acli handoffs, done-when gates, and the
+Process/Reference split matt's own to-tickets still lacks. `ask-matt` rewired:
+main-flow chain, new wayfinder On-ramps bullet, `/deep-dive`→`kbg:research`.
+Swept all cross-refs across skills/agents/commands/hooks/docs.
+
+**Invasive reshape:** `tdd` rebuilt to matt's reference-only structure (Seams /
+Anti-patterns / Rules-of-the-loop) — dropped the Refactor phase and Workflow
+checklist (refactoring is now a `kbg:code-review` concern, not part of the
+red→green loop); folded kbg's two unique bits forward (the RED-verification
+rule, the `kbg:codebase-design` seam cross-ref) so nothing was lost. Trashed
+the now-orphaned `refactoring.md`.
+
+**Small grafts:** `grilling` gained the explicit enactment stop-gate ("do not
+enact until the user confirms shared understanding") — the one real gap;
+facts/decisions split and the `## Modes` fold were already present. `handoff`'s
+"PRDs"→"specs" wording. 3 issue-tracker seed docs
+(`setup-matt-pocock-skills/issue-tracker-{github,gitlab,local}.md`) gained a
+`## Wayfinding operations` section porting matt's per-tracker recipes.
+
+**Doctrine call:** `prototype` dropped `disable-model-invocation: true` (now
+model-invocable, matching upstream) — user-approved narrowing of no-model-self-
+start for a throwaway-artifact skill. Net effect on the flag count is zero:
+`wayfinder` newly carries it for the same "writes a persistent artifact" reason
+prototype no longer needs.
+
+**Bookkeeping:** manifests bumped, `BOUNDARY.md` regenerated. Also corrected a
+pre-existing (unrelated) manifest drift: the description string claimed 17
+commands when the real count was already 15 before this session touched
+anything — now accurate at 14.
+
 ## [0.43.3] — 2026-07-08
 
 `kbg:deep-dive` audit of `goal-craft` (user-requested "focus and go deep").

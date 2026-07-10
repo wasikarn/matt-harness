@@ -1,9 +1,7 @@
 ---
 name: prototype
-description: Build throwaway terminal or UI prototypes to answer a question. Use when the user wants a quick prototype. Don't use for production code.
+description: Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like. Don't use for production code.
 metadata.origin: matt-pocock
-disable-model-invocation: true
-disable-model-invocation-reason: builds throwaway prototype artifacts in the repo — user opts in to that temporary work
 ---
 
 # Prototype
