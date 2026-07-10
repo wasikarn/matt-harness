@@ -64,7 +64,7 @@ print_section() {
     marker=$(item_marker "$item")
     case "$mode" in
       skill-dir)  name=$(basename "$item");      desc=$(fm_get "$item/SKILL.md" description) ;;
-      md-file)    name=$(basename "$item" .md);  desc=$(fm_get "$item" description) ;;
+      md-file)    name=$(basename "$item" .md); [ "$name" = "COMMAND" ] && name=$(basename "$(dirname "$item")"); desc=$(fm_get "$item" description) ;;
       hook-file)  name=$(basename "$item");      desc=$(fm_hook_desc "$item") ;;
     esac
     printf "  %s %-30s %s\n" "$marker" "$name" "${desc:-(no description)}"
