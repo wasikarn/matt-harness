@@ -400,6 +400,65 @@ test_ask   "$DB_WRITE_GATE" "leading block comment before a write verb" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ DELETE FROM users')"
 test_allow "$DB_WRITE_GATE" "leading block comment before a read stays allowed" \
   "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/* comment */ SELECT * FROM users')"
+# v0.49.0: quote-aware comment stripping — two silent-allow bypasses that shipped
+# in v0.40.0's regex stripper, caught exercising kbg:review-pr. String-literal
+# blindness: a /* (or --) inside one string literal paired with a */ in a later
+# literal erased a stacked write. MySQL /*! ... */ executable comments: the body
+# runs on the server but was deleted as if inert. (SQL uses "..." literals so the
+# single-quote-heavy cases stay expressible inside the test file's '...' args.)
+test_ask   "$DB_WRITE_GATE" "block-comment lookalike across two string literals hides a stacked write" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT "/*", 1; DELETE FROM users WHERE x = "*/"')"
+test_allow "$DB_WRITE_GATE" "a /* inside a string literal is not a comment (no over-ask)" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT "/*" AS a')"
+test_ask   "$DB_WRITE_GATE" "-- lookalike inside string literals hides a stacked write" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT "--", 1; DELETE FROM x')"
+test_ask   "$DB_WRITE_GATE" "MySQL /*! executable-comment body is a real write" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*!50000 DELETE */ FROM t')"
+# Under the ask-by-default inversion (v0.49.0) a /*! ... */ hint that prepends a
+# non-read token (SQL_NO_CACHE) to the statement no longer leads with a read verb,
+# so it asks. Over-ask on an exotic read hint is the intended safe direction.
+test_ask   "$DB_WRITE_GATE" "MySQL /*! read hint prepends a non-read token -> safe over-ask" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*!40101 SQL_NO_CACHE */ SELECT 1')"
+# The /*! body is real SQL to MariaDB: its closing */ is found respecting inner
+# strings and nested /* */ comments. The first cut of this fix sliced the body
+# with a raw find("*/"), which closed early on an inner */ and left the write verb
+# non-leading -> silent allow. Caught against a live MariaDB while exercising
+# kbg:review-pr on the fix itself; these lock the second-order fix in.
+test_ask   "$DB_WRITE_GATE" "/*! body with a nested block comment before the write verb" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*!50000 /* x */ DELETE FROM t2 */')"
+test_ask   "$DB_WRITE_GATE" "/*! body with a */ hidden inside a string literal" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*!00000 SELECT "*/-- x" */ ; DELETE FROM t')"
+test_allow "$DB_WRITE_GATE" "/*! body that is read-only stays allowed (no over-ask)" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*!50000 /* x */ SELECT 1 */')"
+test_ask   "$DB_WRITE_GATE" "unterminated block comment keeps the trailing write for classification" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1; /* trap; DELETE FROM t')"
+# v0.49.0 ask-by-default inversion: the gate now ALLOWs only proven simple reads
+# and ASKs on everything else, so verb-list gaps and lexer desyncs fall to a safe
+# false-ask instead of a false-allow. All four caught against a live MariaDB in
+# round 3 of the review exercise; the last is the -- needs-whitespace lexer rule.
+test_ask   "$DB_WRITE_GATE" "LOAD DATA is a write not on any leading-verb list" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'LOAD DATA LOCAL INFILE "/x" INTO TABLE t')"
+test_ask   "$DB_WRITE_GATE" "PREPARE/EXECUTE hides the write verb in a string literal" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'PREPARE s FROM "DELETE FROM t"; EXECUTE s')"
+test_ask   "$DB_WRITE_GATE" "SELECT ... INTO OUTFILE writes to disk despite the SELECT lead" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT * FROM t INTO OUTFILE "/tmp/x"')"
+test_ask   "$DB_WRITE_GATE" "-- without trailing whitespace is arithmetic, not a comment (1--1)" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SELECT 1--1;DELETE FROM t')"
+test_ask   "$DB_WRITE_GATE" "SET GLOBAL is a server-config write" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SET GLOBAL x = 1')"
+test_allow "$DB_WRITE_GATE" "SHOW is a proven read" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'SHOW TABLES')"
+test_allow "$DB_WRITE_GATE" "plain EXPLAIN never executes what it analyzes (read)" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' 'EXPLAIN SELECT 1')"
+# MariaDB honors a SECOND executable-comment form, /*M! ... */, alongside /*! ... */
+# (the M form is designed to read as inert to non-MariaDB parsers). Missing it was
+# a live silent-allow bypass found in the final round of the review exercise.
+test_ask   "$DB_WRITE_GATE" "MariaDB /*M! executable comment runs a write" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*M!100000 DELETE FROM t */')"
+test_ask   "$DB_WRITE_GATE" "MariaDB /*M! with no version digits still runs" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*M!DELETE FROM t */')"
+test_allow "$DB_WRITE_GATE" "MariaDB /*M! body that is a read stays allowed" \
+  "$(mcp_sql_payload 'mcp__tathep-db__execute_sql_production' '/*M!100000 SELECT 1 */')"
 # scope expansion (user-approved): CALL invokes a stored procedure that can
 # write internally; EXPLAIN ANALYZE (unlike plain EXPLAIN) actually executes
 # the analyzed statement on MySQL/MariaDB.

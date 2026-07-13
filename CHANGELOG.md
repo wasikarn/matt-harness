@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.49.0] — 2026-07-13
+
+Hardened `db-write-gate` (the tathep-db MCP SQL read/write classifier) after
+exercising `kbg:review-pr` on its own code turned up a chain of silent-allow
+write bypasses — each fix passing its unit tests, each next round caught only by
+fresh adversarial review against a **live MariaDB**:
+
+- **Round 1** (shipped in v0.40.0): the regex comment-stripper was
+  string-literal blind (`SELECT '/*'; DELETE; SELECT '*/'`) and deleted MySQL
+  `/*! */` executable comments whose body runs on the server.
+- **Round 2**: the `/*!` body was sliced with a raw `find("*/")`, closing early
+  on a `*/` inside a nested comment or string literal and leaving the write verb
+  non-leading → silent allow.
+- **Round 3**: the `--` line-comment rule ignored MySQL's needs-whitespace
+  requirement (`SELECT 1--1;DELETE`), and writes reachable off the blocklist
+  (`LOAD DATA`, `PREPARE`/`EXECUTE`, `SELECT ... INTO OUTFILE`) classified as
+  reads.
+- **Round 4**: MariaDB's second executable-comment form `/*M! */` (missed by the
+  `/*!`-only check) ran writes the gate dropped as inert comments.
+
+The structural lesson: a write-**blocklist** over a hand-rolled SQL lexer fails
+in the wrong direction — miss a verb or a lexer quirk and a write is *silently
+allowed*. So the gate is **inverted to a read-allowlist**: it ALLOWs (silent)
+only statements it can positively prove are simple reads (every `;`-segment leads
+with `SELECT`/`SHOW`/`DESCRIBE`/`DESC`/`TABLE`/`VALUES`, plain `EXPLAIN`, or a
+non-writing `WITH`-CTE; no `INTO OUTFILE`/`DUMPFILE`) and ASKs on everything else.
+Verb-list gaps and unknown future verbs now fail to a safe false-ASK, never a
+false-ALLOW. The `--`/`/*!`/`/*M!` lexer rules are fixed, the quote-aware scanner
+handles string literals, and a final live-MariaDB sweep found no residual bypass.
++11 regression tests (`test-gates.sh` 133→144).
+
+**The gate is now honestly scoped as a best-effort nudge, not the security
+boundary.** A statement that leads with a read verb but has a write side-effect
+(`SELECT writing_function()`, `SELECT NEXTVAL(seq)`) cannot be caught by any
+string classifier without executing it. The real, deterministic write-protection
+for tathep-db must be a **read-only DB grant / connection for `staging` +
+`anpr-staging`** (production is already `readonly` via dbhub) — the database
+refusing a write is a real gate; a regex guessing at SQL is not.
+
 ## [0.48.0] — 2026-07-13
 
 Reversed v0.47.0's deferral of the own-branch + sensitive-path merge-gate
