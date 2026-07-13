@@ -79,7 +79,7 @@ _Personals/kbg-harness_
   ◇ flow-nudge.sh                  Advisory: when the user's prompt looks like non-trivial engineering work,
   ◇ jira-route-nudge.sh            Advisory: when the user's prompt mentions Jira/Confluence work, nudge
   ◇ learn-nudge.sh                 Advisory: remind the operator that kbg:learn exists when a session had
-  ◇ db-write-gate.sh               Gate: ask on non-SELECT tathep-db MCP calls (mcp__tathep-db__execute_sql_*).
+  ◇ db-write-gate.sh               Gate: ask on tathep-db MCP calls (mcp__tathep-db__execute_sql_*) unless the
   ◇ irrecoverable.sh               Gate: block irrecoverable Bash patterns before they execute.
   ◇ task-complete-separation.sh    Gate: a subagent may not mark its own task completed (maker≠checker).
   ◇ verifier-protect.sh            Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
@@ -155,7 +155,7 @@ _Personals/kbg-harness_
 | flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had |
-| db-write-gate.sh | Gate: ask on non-SELECT tathep-db MCP calls (mcp__tathep-db__execute_sql_*). |
+| db-write-gate.sh | Gate: ask on tathep-db MCP calls (mcp__tathep-db__execute_sql_*) unless the |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated |
@@ -177,7 +177,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-10T08:29:38Z_
+_Generated: 2026-07-13T15:08:23Z_
 
 ---
 
