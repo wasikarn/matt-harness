@@ -5,6 +5,83 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.47.0] — 2026-07-13
+
+Closed a false-negative gap in `review-pr` surfaced by a verifier-separation
+audit (prompted by somnus0x/kanly's `review` skill).
+
+**New — `review-pr` step 3.6 (zero-findings adversarial re-hunt):** Phase 5 step
+3.5's adversarial verifier only refutes findings that *exist* (false-positive
+defense) and skips when reviewers returned zero — but zero findings is exactly
+the shared-blind-spot case the verifier-separation principle warns about (a
+false *negative* no refutation can catch). New step 3.6: when zero
+Critical/Important findings *survive* step 3.5 and the diff is non-trivial (≥2
+files or ≥1 test file), dispatch one fresh `general-purpose` agent framed as an
+adversarial *hunt* ("assume a bug exists, find it") — not a re-review, since the
+same lens just reproduces the zero. Hunter findings route back through 3.5's
+fail-closed refutation (an adversarial hunter is primed to manufacture weak ones).
+
+**Machine-boundary honesty:** the Phase 7 state write now carries a `rehunt`
+field and forces `clean:false` when the re-hunt was required but the hunter
+errored/timed out (or any `dispatch_failures`); `/ship-merge` Phase 1 step 6
+gained an incomplete-review guard that scores the Critical-findings criterion 0
+(trips the fatal-weakness floor → STOP) on such a state, so `critical_count:0`
+from an *unfinished* review can't read as a clean pass at the gate the human
+never re-checks.
+
+**Deliberately not done:** flooring `ship-merge`'s overall score on
+own-branch + sensitive-path — hard-denying a revertable code-quality concern
+contradicts the deny-only-the-irrecoverable operating model; the fix is at the
+human-attention + data-honesty layer, not the gate threshold.
+
+## [0.46.1] — 2026-07-10
+
+Full matt-doctrine audit (2 parallel agents) found 3 regressions the earlier
+sweep missed: `inventory-boundary.sh` hardcoded `kbg:research`/`kbg:handoff`
+into its own BOUNDARY.md-generation table, and `fix-bug.md` still cited
+`kbg:diagnosing-bugs` — all three had shipped in v0.46.0 (commit `926d0b6`).
+
+Same commit corrected a CLAUDE.md overclaim about `harness-audit` check 36: it
+never checks for a `## Design checks` heading; only 5 of 6 matt-doctrine
+elements have shell logic (two-cuts has none); every finding is INFO-only; and
+only 2/33 native skills (`pr`, `task-prep`) actually carry the section.
+
+Also fixed an unrelated pre-existing manifest drift: the real fleet is 16
+commands, not 14 — `ideate`/`ship` are subdirectory-style commands (`COMMAND.md`)
+that `inventory.sh`'s name-extraction mis-rendered as the literal string
+`COMMAND`; fixed the extraction and corrected the count in both manifests +
+README (commit `ab1dab4`).
+
+## [0.46.0] — 2026-07-10
+
+Migrated all 17 remaining matt-origin skills (fleet 50→33) out of kbg's vendored
+tree to `gh skill install`, on explicit user directive to remove all
+matt-duplicate skills regardless of kbg's local value-adds: `ask-matt`,
+`code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`,
+`grilling`, `handoff`, `improve-codebase-architecture`, `research`,
+`setup-matt-pocock-skills`, `tdd`, `teach`, `to-spec`, `to-tickets`, `triage`,
+`wayfinder`, `writing-great-skills`.
+
+**Also installed** `grill-with-docs` (matt splits `grilling`'s stateful mode
+into a separate skill; kbg's old single-skill `--with-docs` flag had no matt
+equivalent). **Skipped** `grill-me` (thin alias).
+
+Rewired ~30 live cross-references across hooks, README, `docs/reference/*`,
+commands, and agents; historical files left untouched. A follow-up correctness
+pass (commit `37ad188`) fixed 2 dead file-path references the deletion left
+behind plus 1 stale attribution count in README. Jira-acli routing for
+`to-spec`/`to-tickets` now relies solely on the always-loaded global CLAUDE.md
+rule — a known risk accepted on user directive.
+
+## [0.45.0] — 2026-07-10
+
+Migrated `prototype` + `resolving-merge-conflicts` to `gh skill install` (fleet
+52→50) — both were self-contained, zero-kbg-value-add forks of matt-pocock
+upstream, and per-skill install gives native drift detection (`gh skill update`)
+the plugin system and a vendored copy can't. `research`, `code-review`, and
+`wayfinder` stay vendored — each carries real kbg-specific cross-references a
+bare install would lose.
+
 ## [0.44.0] — 2026-07-10
 
 Matt-first alignment against upstream `mattpocock-skills` v1.1.0. Audited all 15
