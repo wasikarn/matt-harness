@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.48.0] — 2026-07-13
+
+Reversed v0.47.0's deferral of the own-branch + sensitive-path merge-gate
+weakness — the verifier-separation audit's sharpest finding: on a solo/no-CI
+repo a self-tiered sensitive diff landed at *exactly* 70 and passed, because the
+automation-bias cap-at-40 still contributed enough weight once CI and approval
+went N/A.
+
+v0.47.0 declined it as hard-denying a revertable concern. The clean formulation
+isn't a deny — it's the audit's own principle applied: on `own-branch` +
+sensitive-path the self-tiered Critical-findings criterion is untrustworthy, so
+`ship-merge` Phase 1 now **scores it 0 but keeps its 30 weight in the
+denominator** (floor-exempt only) instead of the old cap-at-40, forcing the
+merge to clear on the *deterministic* criteria alone. This is deliberately not
+the verified-N/A mechanic: N/A *renormalizes* a criterion away (divide by the
+remaining weights) because the dimension doesn't apply; distrust keeps the
+weight in the denominator as dead weight the deterministic signals must
+overcome, because the dimension *does* apply — you just refuse to trust the
+self-report. (Getting that backwards renormalizes the solo repo to 100 and
+passes — the inversion advisor caught before this shipped.) A solo/no-CI repo
+has CI + approval verified-N/A'd away, leaving Critical (30, scored 0) +
+freshness (20) + coverage (10) → `3000 ÷ 60 = 50`, below the 70 threshold →
+STOP; a repo with real CI + required review keeps every criterion →
+`7000 ÷ 100 = 70` → passes on deterministic signal alone when those are green.
+The escape hatch is unchanged — re-review by PR number (isolated worktree)
+restores the criterion.
+
+Not a new computational deny: a workflow score-gate refusing to let an untrusted
+LLM verdict be load-bearing, with deterministic signals as the fallback.
+
 ## [0.47.0] — 2026-07-13
 
 Closed a false-negative gap in `review-pr` surfaced by a verifier-separation
