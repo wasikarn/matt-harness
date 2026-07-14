@@ -42,8 +42,9 @@ _Personals/kbg-harness_
   ◇ tauri-v2-patterns              Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1.
   ◇ tech-humanize                  Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing standups, PRs, commits, ADRs, UI copy, or say แก้ให้เป็นธรรมชาติ. Don't use for translation.
 
-### Commands (16)
+### Commands (17)
   ◇ address-review                 Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge).
+  ◇ ask-kbg                        Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (/ask-matt).
   ◇ build-fix                      Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
   ◇ cost-report                    Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
   ◇ fix-bug                        Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean).
@@ -177,7 +178,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-13T15:08:23Z_
+_Generated: 2026-07-14T07:45:51Z_
 
 ---
 

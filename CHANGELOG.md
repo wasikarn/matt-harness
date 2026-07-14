@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.50.0] — 2026-07-14
+
+Added `/ask-kbg` (16→17 commands): a narrative flow map for kbg's own
+fleet, mirroring `/ask-matt`'s router shape but scoped to kbg-native
+surfaces. Where `kbg:inventory` gives a mechanical listing and `/kbg-help`
+gives a flat stage table, neither carries the connective "what feeds what,
+and why you'd branch" narrative — the on-ramps into `/ship` (`/ideate`,
+`kbg:orchestrate`, `kbg:decide`, `kbg:incident`, `kbg:task-prep`), what
+happens after it (`kbg:review-pr`, `/address-review`, `/ship-merge`,
+`/ship-release`), and where the three discovery surfaces stop overlapping.
+Defers to `/ask-matt` for the matt-origin fleet rather than re-describing
+it — kbg-native and matt-origin skills are separate installs since the
+v0.46.0 migration, so duplicating matt's map here would drift the moment
+either fleet changes. Set `disable-model-invocation: true`, matching
+`/ask-matt`'s own explicit-only posture, so it doesn't compete with
+`kbg:inventory` / `/kbg-help` for auto-trigger language on routing
+questions.
+
 ## [0.49.0] — 2026-07-13
 
 Hardened `db-write-gate` (the tathep-db MCP SQL read/write classifier) after

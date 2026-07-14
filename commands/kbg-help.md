@@ -44,6 +44,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 | Need | Reach for |
 |------|-----------|
 | Don't know which skill/command covers a task | `kbg:inventory` |
+| Don't know how surfaces chain together, or which on-ramp fits | `/ask-kbg` |
 | Full current inventory of every surface | `"${KBG_PLUGIN_ROOT}/BOUNDARY.md"` (auto-generated) — or the recipes under "Full inventory" below |
 | Per-session token cost (live cost ledger) | `kbg:harness-audit --health` |
 | Fleet audit (manifests, schema, staleness) | `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" .` |
