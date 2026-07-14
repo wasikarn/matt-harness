@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.50.1] — 2026-07-14
+
+Cleared the matt-doctrine-conformance findings (`harness-audit` check 36)
+surfaced by the v0.50.0 full-audit pass: `task-prep`'s leading word
+`"prep-map"` was a deliberate coined lead (its own Design-checks section
+already confirmed this) that the check's vocabulary list hadn't caught up
+to — added it, no content change needed. `pr` and `decide` genuinely
+needed trimming (28 and 41 words against the 25-word cap) and a
+non-generic-verb lead; `pr` recast to lead with its own name (matching
+`teach`/`score`/`incident`/`triage`/`humanize`), `decide` consolidated
+near-synonym English/Thai triggers. First pass swapped "Use when" for
+"Say" (the commands-only convention) and broke a separate, skill-only
+check requiring a literal trigger clause — reverted to "Trigger on" once
+caught. Fleet audit: 0 critical · 0 warning · 0 info.
+
 ## [0.50.0] — 2026-07-14
 
 Added `/ask-kbg` (16→17 commands): a narrative flow map for kbg's own

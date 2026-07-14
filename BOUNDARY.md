@@ -15,7 +15,7 @@ _Personals/kbg-harness_
   ◇ context-budget                 Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming.
   ◇ cost-aware-llm-pipeline        Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips.
   ◇ dart-flutter-patterns          Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend.
-  ◇ decide                         Doctrine-backed decision support for genuinely hard, contested-diagnosis choices — when advisor()-level pressure-testing isn't enough. Use when the user says 'stuck between', 'torn between', 'hard call', 'high-stakes decision', or Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'/'ชั่งใจไม่ได้'. Don't use for routine decisions — default is triad + advisor().
+  ◇ decide                         Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor().
   ◇ drizzle-patterns               Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM.
   ◇ effect-ts-patterns             Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases.
   ◇ eval-harness                   Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work.
@@ -32,7 +32,7 @@ _Personals/kbg-harness_
   ◇ memory-lint                    Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health.
   ◇ mysql-patterns                 MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases.
   ◇ orchestrate                    Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review.
-  ◇ pr                             Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies.
+  ◇ pr                             PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`).
   ◇ production-audit               Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
   ◇ recursive-improve              Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces.
   ◇ review-pr                      Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'.
@@ -123,7 +123,7 @@ _Personals/kbg-harness_
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | dart-flutter-patterns | Dart/Flutter production patterns: null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture. Use when building or reviewing Dart/Flutter apps. Don't use for web-only frontend. | inline | auto |
-| decide | Doctrine-backed decision support for genuinely hard, contested-diagnosis choices — when advisor()-level pressure-testing isn't enough. Use when the user says 'stuck between', 'torn between', 'hard call', 'high-stakes decision', or Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'/'ชั่งใจไม่ได้'. Don't use for routine decisions — default is triad + advisor(). | inline | auto |
+| decide | Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor(). | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
 | effect-ts-patterns | Effect-ts patterns: Effect<A,E,R>, Effect.gen, Layer DI, Schema validation, fiber concurrency, @effect/platform HTTP. Use when building/maintaining Effect-ts apps in TypeScript. Don't use for vanilla Promise/async codebases. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
@@ -140,7 +140,7 @@ _Personals/kbg-harness_
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
-| pr | Create a GitHub PR from the current branch — templated body, previewed for confirmation. Use when asked to create/open/raise a PR. Don't use for merging or review replies. | inline | auto |
+| pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
@@ -178,7 +178,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-14T07:45:51Z_
+_Generated: 2026-07-14T08:18:30Z_
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: decide
-description: "Doctrine-backed decision support for genuinely hard, contested-diagnosis choices — when advisor()-level pressure-testing isn't enough. Use when the user says 'stuck between', 'torn between', 'hard call', 'high-stakes decision', or Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'/'ชั่งใจไม่ได้'. Don't use for routine decisions — default is triad + advisor()."
+description: "Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor()."
 metadata:
   origin: kbg
   references:
