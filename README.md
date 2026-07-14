@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.42.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.50.1-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 33 bundled workflow skills, and 18 slash commands — plus a set of matt-pocock skills installed separately via `gh skill` (see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring; components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus a set of matt-pocock skills installed separately via `gh skill` (see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -69,7 +69,7 @@ kbg:kbg-help
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
 >
-> **Note:** Step 4 is required, not optional — 17 of kbg's own skills and several
+> **Note:** Step 4 is required, not optional. 17 of kbg's own skills and several
 > hooks/commands were migrated off vendored forks onto these `gh skill`-installed,
 > unnamespaced skills (v0.46.0). A fresh clone/install is not self-contained
 > without them. Re-sync later with `gh skill update <name>`.
@@ -87,7 +87,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 |---|---|---|
 | **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (some matt-origin skills now install via `gh skill`, unnamespaced — e.g. `grilling`) |
 | **Agents** | 13 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 17 | `/<command>` — e.g. `/deep-dive`, `/address-review`, `/fix-bug` |
+| **Commands** | 17 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -102,7 +102,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Command | What it does |
 |---|---|
-| `/deep-dive` | Research across codebase, docs, and web → cited actionable brief |
+| `/ship` | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge |
 | `/fix-bug` | Guided 7-phase bug-fix with diagnostic + test-first patterns |
 | `/security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
 | `/ship-merge` · `/ship-release` | Pre-merge gate · end-to-end release ceremony |
@@ -124,7 +124,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 ### Agents
 
-Agents run in a delegated sub-task context — Claude spawns them automatically or you can request one explicitly via the `Task` tool.
+Agents run in a delegated sub-task context. Claude spawns them automatically, or you can request one explicitly via the `Task` tool.
 
 | Agent | Role |
 |---|---|
@@ -141,7 +141,7 @@ Agents run in a delegated sub-task context — Claude spawns them automatically 
 
 ### Tathep Platform
 
-Tathep-scoped stack-pattern skills — kbg-native where no upstream fit existed,
+Tathep-scoped stack-pattern skills: kbg-native where no upstream fit existed,
 restored unmodified from ECC where it did (`dart-flutter-patterns`).
 
 | Skill | When to reach for it |
@@ -165,8 +165,8 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 13 specialist subagents (.md each)
-├── skills/               # 47 workflow skills (SKILL.md per directory)
-├── commands/             # 18 slash commands
+├── skills/               # 33 workflow skills (SKILL.md per directory)
+├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
@@ -237,7 +237,7 @@ git config core.hooksPath git-hooks
 kbg-harness aggregates components from these upstream projects under their respective licenses.
 
 > **Point-in-time snapshot (counts as of 2026-07-14), not live-derived.** There is no
-> `origin:` frontmatter field on surface files to auto-regenerate this table — it's a
+> `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
 > `ls commands/` (real current fleet: 33 skills · 13 agents · 17 commands).
 
@@ -252,4 +252,4 @@ kbg-harness aggregates components from these upstream projects under their respe
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE).
