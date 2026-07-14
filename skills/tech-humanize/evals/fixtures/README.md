@@ -13,6 +13,7 @@ The 3 input drafts that `evals.json` evaluates the model against. Each fixture m
 | `0-internal-standup.txt` | 0 | `internal-standup-report` |
 | `1-ui-error.txt` | 1 | `user-facing-error-message` |
 | `2-strategy-blog.txt` | 2 | `strategy-blog-prose` |
+| `3-terminology-drift.txt` | 3 | `terminology-drift-calque-detection` |
 
 ## When to update
 

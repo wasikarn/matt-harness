@@ -14,6 +14,8 @@
 (b) **Calque (แปลตรงตัว)**: ใช้กริยาไทยที่แปลตามตัวอังกฤษ แต่ไม่ตรงกับ action จริง
 (c) **Non-standard transliteration**: ทับศัพท์มั่ว ไม่ตรง RTGS
 
+**Meaning-overlap test (run BEFORE the decision flow below, on every candidate term — not just terms already in the glossary table):** for any Thai noun/verb standing in for an English technical term, ask *does this word's actual, common meaning overlap with the technical meaning, or does it just sound like a plausible translation?* A grammatically-fine sentence is not evidence the term is correct — `ตั๋ว` (travel/event ticket) reads as a fine translation of "ticket" and is still (a) drift-in-meaning, because its real meaning has nothing to do with an issue-tracker record. Fail this test on any term, glossary or not → treat as (a). This is the check that catches new drift the glossary table hasn't enumerated yet; the table only covers terms already caught once.
+
 **3 วิธีตัดสิน terminology:**
 
 | วิธี | ตัวอย่าง | ใช้เมื่อ |
@@ -65,7 +67,7 @@
 **After (เก็บอังกฤษ):**
 > แผนผังความสัมพันธ์ Ticket (Dependency Map)
 
-`ตั๋ว` reads as a plausible translation (it's a real Thai word, grammatically fine in the sentence) but its actual meaning — a physical travel/event ticket — doesn't overlap with a Jira/GitHub issue-tracker record at all. This is the same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in a different vocabulary domain (issue tracking, not deploy). Missed in a live scan 2026-07-14 despite this section already existing — the scan never reached §31 (see `SKILL.md` §"The loop" step 3). The lesson isn't "also check for ตั๋ว" — it's that ANY Thai noun standing in for an English technical term needs this same question asked, not just the ones already in the glossary table: does the Thai word's common meaning actually overlap with the technical one, or does it just sound like a reasonable translation?
+Same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in the issue-tracking vocabulary domain instead of deploy. Missed in a live scan 2026-07-14 despite this section already existing — the scan never reached §31 at all (see `SKILL.md` §"The loop" step 3), so the meaning-overlap test above was never run against it. The glossary row exists now; the meaning-overlap test above is what catches the next term that isn't in it yet.
 
 
 ### 32. Anti-Fabrication Discipline (TBD > invented specifics)

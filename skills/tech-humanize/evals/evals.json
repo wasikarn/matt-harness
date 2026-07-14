@@ -1,6 +1,6 @@
 {
   "skill_name": "tech-humanize",
-  "last_reviewed_reason": "not reviewed in 2026-06-11 epic; deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
+  "last_reviewed_reason": "eval 3 (terminology-drift-calque-detection) added 2026-07-14 out-of-cycle after a live §31 miss; evals 0-2 not reviewed since 2026-06-11 epic, deferred to quarterly cadence in docs/harness-decay-cadence.md (first sweep 2026-09)",
   "evals": [
     {
       "id": 0,
@@ -66,6 +66,25 @@
         "Output varies sentence length: at least one short sentence (< 10 words) and at least one longer sentence (> 25 words) \u2014 not uniform mid-length cadence.",
         "Output has opinions, not just facts: at least one evaluative statement ('\u0e1c\u0e21\u0e44\u0e21\u0e48\u0e41\u0e19\u0e48\u0e43\u0e08', '\u0e1c\u0e21\u0e04\u0e34\u0e14\u0e27\u0e48\u0e32', 'X \u0e01\u0e47\u0e08\u0e23\u0e34\u0e07 \u0e41\u0e15\u0e48...', '\u0e1c\u0e21\u0e40\u0e2b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22/\u0e44\u0e21\u0e48\u0e40\u0e2b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22').",
         "Output does NOT name-drop publication credibility ('featured in The New York Times, Wired, and The Verge') as proof of mainstream relevance. Either drop the name-drop, or treat it as one data point among many \u2014 not as the argument's foundation."
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "terminology-drift-calque-detection",
+      "prompt": "Humanize this Thai standup/PR draft into dev-register Thai. This eval targets \u00a7 31 (patterns-thai.md) specifically \u2014 fix terminology drift and calques against the \u00a731 glossary and meaning-overlap test, not just tone/register. Output the humanized version only.\n\n---\n\nDRAFT:\n\u0e15\u0e31\u0e4b\u0e27 TP-812 (dependency map) \u0e16\u0e37\u0e2d\u0e44\u0e27\u0e49\u0e01\u0e48\u0e2d\u0e19 \u0e23\u0e2d QA \u0e23\u0e31\u0e19 regression \u0e1a\u0e19 staging \u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e48\u0e19\u0e17\u0e14\u0e2a\u0e2d\u0e1a\u0e25\u0e48\u0e32\u0e2a\u0e38\u0e14\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19 \u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07\u0e2b\u0e31\u0e19\u0e2b\u0e19\u0e49\u0e32\u0e22\u0e31\u0e07\u0e21\u0e35\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e01\u0e31\u0e1a\u0e21\u0e2d\u0e44\u0e0b\u0e04\u0e4c\u0e2d\u0e22\u0e39\u0e48 \u0e1e\u0e23\u0e38\u0e48\u0e07\u0e19\u0e35\u0e49\u0e08\u0e30\u0e14\u0e31\u0e19\u0e41\u0e01\u0e49\u0e40\u0e02\u0e49\u0e32 develop \u0e16\u0e49\u0e32\u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e49\u0e21\u0e23\u0e30\u0e2b\u0e27\u0e48\u0e32\u0e07 deploy \u0e08\u0e30\u0e41\u0e08\u0e49\u0e07\u0e43\u0e19\u0e01\u0e25\u0e38\u0e48\u0e21\u0e17\u0e31\u0e19\u0e17\u0e35",
+      "expected_output": "Dev-register Thai with every \u00a731 calque/drift term corrected: ticket kept in English (not \u0e15\u0e31\u0e4b\u0e27), held/on-hold not calqued as \u0e16\u0e37\u0e2d\u0e44\u0e27\u0e49, RTGS \u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e19 not \u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e48\u0e19, merge not \u0e14\u0e31\u0e19, \u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e48\u0e21 not \u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e49\u0e21, front-facing filter kept in English. This eval was added 2026-07-14 after a live scan missed the \u0e15\u0e31\u0e4b\u0e27/ticket drift despite \u00a731 already documenting the pattern class \u2014 it documents expected \u00a731 behavior for manual/periodic review; no automated runner executes evals.json in this repo today (harness-audit only checks the freshness annotation).",
+      "files": [
+        "fixtures/3-terminology-drift.txt"
+      ],
+      "expectations": [
+        "Output does NOT contain '\u0e15\u0e31\u0e4b\u0e27' (\u0e15\u0e31\u0e4b\u0e27) \u2014 TP-812 is a ticket, kept in English ('ticket'/'Ticket') per \u00a731 default glossary, not translated as a travel/event ticket. This is the exact miss from the 2026-07-14 incident.",
+        "Output does NOT contain '\u0e16\u0e37\u0e2d\u0e44\u0e27\u0e49' (\u0e16\u0e37\u0e2d\u0e44\u0e27\u0e49) as a calque for HELD/on-hold \u2014 use '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1b\u0e25\u0e48\u0e2d\u0e22' or equivalent.",
+        "Output does NOT contain '\u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e48\u0e19' (non-RTGS \u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e48\u0e19) \u2014 if the word appears, it must be RTGS '\u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e19' (\u0e40\u0e0b\u0e2a\u0e0a\u0e31\u0e19).",
+        "Output does NOT contain '\u0e14\u0e31\u0e19' (\u0e14\u0e31\u0e19) as a verb for merging/pushing code \u2014 use 'merge' or '\u0e19\u0e33\u0e02\u0e36\u0e49\u0e19'.",
+        "Output does NOT contain '\u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e49\u0e21' (\u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e49\u0e21) \u2014 use '\u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e48\u0e21' (\u0e23\u0e30\u0e1a\u0e1a\u0e25\u0e48\u0e21) for downtime.",
+        "Output keeps 'front-facing filter' in English (\u0e40\u0e01\u0e47\u0e1a\u0e2d\u0e31\u0e07\u0e01\u0e24\u0e29) rather than translating it as '\u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07\u0e2b\u0e31\u0e19\u0e2b\u0e19\u0e49\u0e32' \u2014 matches the existing \u00a731 worked example.",
+        "Output preserves the ticket ID verbatim (TP-812) \u2014 no fabricated or dropped ticket references.",
+        "Output contains 0 em dashes (\u2014)."
       ]
     }
   ]

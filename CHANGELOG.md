@@ -5,6 +5,43 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.3] — 2026-07-14
+
+A follow-up, deeper audit of `tech-humanize` after v0.51.2 shipped a single
+glossary row for the `ตั๋ว`/ticket miss. The user pushed back that a one-row
+fix was too narrow given the skill already carried §31's full pattern-class
+catalog before the miss happened — the real question was why the catalog
+didn't stop it, not just whether the one word was now covered. Re-read all
+five files (`SKILL.md`, `patterns-universal.md`, `patterns-thai.md`,
+`examples.md`, `references.md`) plus `evals/`, and found two structural gaps
+the first pass missed:
+
+1. §31's actual decision procedure (the 3-way table + decision flow) branched
+   only on who reads the text — it never asked whether a candidate Thai word's
+   real meaning overlaps with the technical term it's standing in for. That
+   question existed only as trailing prose inside the third worked example,
+   after the table, where a scan reading top-to-bottom would never reach it.
+   Promoted it into the procedure itself, ahead of the table, as a check that
+   runs on every candidate term, not just the ones already in the glossary —
+   the generalization the one-row fix didn't provide.
+2. `evals/evals.json` carried zero coverage for §31 terminology-drift/calque
+   detection — all three existing evals test em-dash, sycophancy, AI-vocab,
+   fabrication, and register, none test the pattern class that actually failed
+   in production. Added eval 3 (`terminology-drift-calque-detection`) plus its
+   fixture, covering the `ตั๋ว`/ticket case and four more calques from the
+   existing cheat sheet (`ถือไว้`, non-RTGS `เซสชั่น`, `ดัน`, `ระบบล้ม`). Framed
+   honestly in `expected_output`: `harness-audit` only checks that
+   `evals.json` carries a freshness annotation, there's no runner that
+   auto-executes it against a live model, so this documents expected §31
+   behavior for the next manual sweep rather than blocking a regression
+   automatically.
+
+Also verified (not fixed) the two remaining academic citations in
+`references.md` (WangchanBERTa `arXiv:2101.09635`, PyThaiNLP
+`DOI 10.18653/v1/2023.nlposs-1.4`) plus two Thai code-switching studies cited
+for §38 — all resolve to real, matching sources. No new fabrication found
+beyond the one already caught and corrected 2026-07-02.
+
 ## [0.51.2] — 2026-07-14
 
 `tech-humanize` was run on a live Thai spec page (TP-807, in a downstream project) to
