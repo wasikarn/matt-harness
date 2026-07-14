@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.4] — 2026-07-14
+
+Tuned `tech-humanize`'s model-invocation description after cross-checking it
+against both the official [Skill authoring best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices)
+and kbg's own `harness-audit` check 36 heuristics. Two real gaps: the trigger
+list never mentioned "ticket"/"spec" — despite this exact session's whole
+task being a Jira ticket + Confluence spec page — and never mentioned "chat"
+even though `SKILL.md` §0's own Register A (LINE/chat) already covers it.
+Rewrote the trigger list around the skill's own §0 register taxonomy
+(A/B/C/D) instead of an ad-hoc document list, which fit the new terms in
+without growing past the 25-word cap (24 words, 237 chars — both checked
+against `check 36`'s live heuristics, not just eyeballed). Also swapped
+`Don't use for translation` → `Not for translation` for closer alignment
+with the official third-person rule.
+
+Separately confirmed (not fixed, out of scope for this pass): the official
+third-person rule for descriptions isn't encoded anywhere in kbg's own
+doctrine (`CLAUDE.md`, `docs/skill-template/SKILL.md`, `harness-audit` check
+36) — a repo-wide gap between what Anthropic's docs recommend and what kbg
+checks for, worth a dedicated pass if it turns out to matter beyond this one
+skill.
+
 ## [0.51.3] — 2026-07-14
 
 A follow-up, deeper audit of `tech-humanize` after v0.51.2 shipped a single
