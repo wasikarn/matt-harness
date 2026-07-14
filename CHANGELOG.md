@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.2] — 2026-07-14
+
+`tech-humanize` was run on a live Thai spec page (TP-807, in a downstream project) to
+clean up word choice. The scan reported the draft clean on terminology — no calques
+found — but the user then spotted one directly: `ตั๋ว` used for a Jira/GitHub
+"ticket," a drift-in-meaning calque exactly matching §31's own worked-example class
+(the Thai word is grammatical and plausible-sounding, but its real meaning — a
+physical travel/event ticket — doesn't overlap with an issue-tracker record at all).
+
+Root cause, confirmed by re-reading the transcript: the scan reasoned about em-dash
+density and jumped to a conclusion before loading `patterns-thai.md` (§31–§42) —
+the file that owns the terminology-drift/calque detection this exact case needed.
+`SKILL.md`'s loop already said to load it for Thai drafts, but the instruction sat as
+a soft addendum ("also load"), not a blocking precondition, so it was easy to skip
+under time pressure. Fixed two things: (1) `SKILL.md` step 3 now states plainly that
+skipping the load structurally cannot catch calques — the universal 30-tell
+cue-sheet has no terminology-drift category, that class only exists in
+`patterns-thai.md` — and cites this incident as the concrete cost of skipping it; (2)
+`patterns-thai.md`'s §31 default glossary gained a `ticket`/`issue` row (dev-universal
+term, same tier as `staging`/`merge`/`session`, not product-specific — belongs in the
+shared glossary, not a project-local one) plus a second worked Before/After example
+in a different vocabulary domain (issue-tracking, not deploy) so the fix generalizes
+past this one word.
+
 ## [0.51.1] — 2026-07-14
 
 User asked for a new agent wrapping the 39 vendored `docs/reference/thinking-skills/`

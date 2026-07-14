@@ -16,7 +16,7 @@ Run these gates in order. Each links to its detail.
 
 1. **Register gate** — pick genre + language before scanning (see [§0](#0-register-and-language-gate)). Skipping this is the #1 cause of AI-sounding output.
 2. **Grit gate** — deletion alone still reads AI. Plan what concrete specifics and point of view the rewrite will carry (see [Grit Gate](#the-grit-gate)).
-3. **Scan** — run the draft against the [pattern cue-sheet](#pattern-cue-sheet) (30 universal tells). For Thai drafts, also load `patterns-thai.md` (§31–§42).
+3. **Scan** — run the draft against the [pattern cue-sheet](#pattern-cue-sheet) (30 universal tells). **For Thai drafts, load `patterns-thai.md` (§31–§42) before drawing any conclusion, not after.** Scanning only the 30 universal tells on a Thai draft reads as thorough but structurally cannot catch terminology drift/calque (§31) — that class only exists in the Thai-specific catalog. Confirmed 2026-07-14: a scan that deferred loading `patterns-thai.md` reported the draft's word choice clean, missing a live calque (`ตั๋ว` for "ticket" — §31's own worked example class) that a human reviewer caught immediately after. Load it first; it's cheap, the miss isn't.
 4. **Rewrite, don't delete** — replace AI-isms with natural alternatives; keep paragraph count and core meaning. Match the user's voice if they gave a sample (see [Voice](#voice)).
 5. **Final pass** — re-read aloud; vary sentence length; **no em dashes** (cue #14); confirm the grit gate actually landed.
 

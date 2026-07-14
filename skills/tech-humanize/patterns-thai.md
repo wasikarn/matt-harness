@@ -43,6 +43,7 @@
 | session | session (เก็บอังกฤษ) | เซสชัน (RTGS, ไม่มีไม้หันอากาศ) |
 | error code | error code | ข้อความแจ้งข้อผิดพลาด |
 | declined (bank/payment) | declined (เก็บไว้ใน log เท่านั้น) | ถูกปฏิเสธ |
+| ticket / issue (Jira, GitHub) | ticket (เก็บอังกฤษ) | "รายการแจ้งงาน" หรือคง ticket — ห้ามใช้ "ตั๋ว" (แปลว่าตั๋วเดินทาง/ตั๋วหนัง คนละความหมายกับ issue-tracker record เลย — drift-in-meaning (a), ไม่ใช่แค่ทับศัพท์ผิด) |
 
 > Product-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) → เก็บใน project glossary แยก ไม่ใส่ใน global skill นี้.
 
@@ -57,6 +58,14 @@
 
 **After (RTGS):**
 > เซสชันหมดอายุ
+
+**Before (drift-in-meaning — dev-tracker noun, not the deploy-vocab example above):**
+> แผนผังความสัมพันธ์ตั๋ว (Dependency Map)
+
+**After (เก็บอังกฤษ):**
+> แผนผังความสัมพันธ์ Ticket (Dependency Map)
+
+`ตั๋ว` reads as a plausible translation (it's a real Thai word, grammatically fine in the sentence) but its actual meaning — a physical travel/event ticket — doesn't overlap with a Jira/GitHub issue-tracker record at all. This is the same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in a different vocabulary domain (issue tracking, not deploy). Missed in a live scan 2026-07-14 despite this section already existing — the scan never reached §31 (see `SKILL.md` §"The loop" step 3). The lesson isn't "also check for ตั๋ว" — it's that ANY Thai noun standing in for an English technical term needs this same question asked, not just the ones already in the glossary table: does the Thai word's common meaning actually overlap with the technical one, or does it just sound like a reasonable translation?
 
 
 ### 32. Anti-Fabrication Discipline (TBD > invented specifics)
