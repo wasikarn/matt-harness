@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.5] — 2026-07-14
+
+Fleet-wide follow-up after the user asked to check the other 32 skills for
+the same invocation-accuracy gap found in `tech-humanize`. Two outcomes:
+
+1. Caught v0.51.4's own regression first. Its `Don't use for translation` →
+   `Not for translation` tweak (a third-person nicety) broke `harness-audit`
+   check 05's negation-clause detector, which requires the literal phrase
+   `Don't use for|Do NOT use for|Do NOT trigger` — confirmed by re-running
+   the audit, which flagged `tech-humanize` with a WARN it never carried
+   before. Reverted the clause. The third-person "fix" was never a confirmed
+   violation of the official rule in the first place — that rule targets
+   "I"/"you" self-reference, not imperative "Don't" — so nothing of real
+   value was lost, and the actual regex-driven convention still stands.
+2. Swept all 33 descriptions for first/second-person pronouns (0 hits) and
+   re-ran `harness-audit` fleet-wide: 0 critical, 1 warning (`BOUNDARY.md`
+   staleness — unrelated, a routine post-version-bump regen job that targets
+   a different repo, not touched here), 0 info. The gap that hit
+   `tech-humanize` — a real branch the skill already covers but its own
+   description never named — had concrete evidence behind it: this session's
+   whole task was exactly that missing branch (Jira ticket + Confluence
+   spec). No comparable concrete evidence turned up for any of the other 32
+   skills. Manufacturing hypothetical gaps without that evidence would be
+   the same "polished but hollow" failure `tech-humanize`'s own Grit Gate
+   warns against. Conclusion: the fleet is clean on this front — no further
+   description changes made.
+
 ## [0.51.4] — 2026-07-14
 
 Tuned `tech-humanize`'s model-invocation description after cross-checking it

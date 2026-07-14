@@ -1,6 +1,6 @@
 ---
 name: tech-humanize
-description: "Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Not for translation."
+description: "Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation."
 metadata:
   origin: kbg-native
   restored-from: "c452102 reset (last shipped v0.2.109, df012d8, 2026-06-20)"
