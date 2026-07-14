@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.6] — 2026-07-15
+
+Closed a real incident: in a tathep session (not this repo), the model proposed
+"route through `kbg:ship-merge`" as a to-do item, got a chat "go", then called
+the Skill tool and hit `disable-model-invocation` — `ship-merge` is a *command*
+correctly flagged irreversible-external (merges a PR server-side), so the block
+was right; the gap was that no loaded doctrine told the model chat confirmation
+isn't user-invocation for these surfaces, or that it should hand the user the
+literal string to type instead of attempting the call itself. Neither the global
+`~/.claude/CLAUDE.md` nor the injected `METHODOLOGY.md` carried the rule.
+User picked "fix both" over the placement trade-off (immediate/dotfiles vs.
+canonical/versioned-but-delayed): added a matching short rule to both —
+`docs/METHODOLOGY.md` (new subsection under Rule 1) and dotfiles'
+`claude/CLAUDE.md` (new top-level section), cross-referenced so they don't
+silently drift apart. `advisor()` caught the fix's own citation string was
+wrong pre-commit: draft said "`/name` for a command, `kbg:name` for a skill,"
+but a live fetch of code.claude.com/docs/en/skills (line 112: "Plugin skills
+use a `plugin-name:skill-name` namespace") shows plugin commands and skills
+are now namespaced identically — `/kbg:<name>` for both, no bare form.
+Corrected to that single unified string.
+Known, deliberately deferred (both surfaced this pass, neither touched):
+(1) CLAUDE.md:76 and `agent-tool-patterns.md:100`'s "12 skills" claim is
+scoped to skills only and never mentions the 8 commands that also carry the
+flag; (2) this repo's own existing "Suggested next step footers" convention
+(CLAUDE.md, commands as `/<name>` bare) and the `plugin-commands-shadow-builtins`
+memory it's built on look stale against the same doc evidence above — likely
+predates a CC namespacing fix shipped after that incident (2026-06-23). Real
+drift, bigger blast radius (many footers + the collision-audit method), out
+of scope for this pass.
+
 ## [0.51.5] — 2026-07-14
 
 Fleet-wide follow-up after the user asked to check the other 32 skills for

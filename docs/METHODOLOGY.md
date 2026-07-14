@@ -37,6 +37,10 @@ Run the triad inline, then call `advisor()` before substantive work and before d
 
 For a genuinely hard, contested-diagnosis choice where the reasoning itself needs building from scratch (not just pressure-testing an existing call), `kbg:decide` is available on-demand — 5 modes (clarify/probe/decide/critique/strategize); load it by name (it resolves from any CWD — don't rely on a repo-relative path, which misses when the session runs in a foreign project). Reach for it when `advisor()`-level pressure-testing isn't enough, not as a routine step.
 
+### disable-model-invocation surfaces are user-only
+
+A command or skill carrying `disable-model-invocation: true` (irreversible-external actions — merging a PR, transitioning a ticket) cannot be invoked by the model, period. A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/kbg:<name>` (plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-07-15) — never imply you'll do it once they confirm.
+
 ## Rule 2 — Match surface area to proven need
 
 Don't build it until there's a real failure that demands it. Three similar lines beat a premature abstraction. Speculative need = skip it. Proven gap = build it.
