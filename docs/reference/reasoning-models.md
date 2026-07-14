@@ -47,6 +47,41 @@ thinking; never cite "I applied model X" as evidence the work is right.**
 > lens; otherwise keep the catalog closed and rely on the existing kbg skills that already
 > embed the relevant frames.
 
+### External verification (2026-07-14)
+
+A user request to wrap the 39 files as a dispatchable agent triggered a deep-research pass
+against Anthropic's official docs and independent sources
+(github.com/tjboudreaux/cc-thinking-skills, code.claude.com/docs/en/skills,
+anthropic.com/engineering). Verdict: **the no-wrapper conclusion holds, on different grounds
+than "auto-triggering a skill without a human naming it first is itself a flagged
+anti-pattern"** — that specific framing is **not** supported; official docs describe
+description-matched auto-invocation as Skills' designed default, not a risk to guard
+against. Drop that framing if it resurfaces. What **is** well-evidenced:
+
+- **Evaluation-first gate, unmet.** Anthropic's own skill-authoring guidance: build evals
+  against demonstrated task failures *before* writing skill content, not "documented
+  imagined problems." cc-thinking-skills' own scorecard shows **zero of 39 models hold a
+  replicated ELEVATE verdict** and `margin-of-safety` measured a −10pp regression — there is
+  no demonstrated capability gap to justify the build right now.
+- **Tool/skill-surface proliferation is a named Anthropic anti-pattern.** "Too many tools or
+  overlapping tools... distract agents from pursuing efficient strategies" and create
+  "ambiguous decision points about which tool to use" — a near-exact description of 39
+  near-synonymous named frameworks each promoted to its own skill.
+- **Token cost is concrete, not hypothetical, at kbg's actual scale.** Skill metadata loads
+  into every session regardless of use (~100 tokens/skill); kbg runs 33 live skills today —
+  wrapping all 39 thinking models would roughly **double** that count and add ~3,900
+  always-on tokens against Claude Code's skill-listing eviction budget (~1,536 + 1% of
+  context — see `skill-listing-budget-mechanics` memory), for zero proven behavior change.
+- **The specific risk this doctrine names is real, not hypothetical.** Upstream ships its
+  own `thinking-model-router` skill that free-text-selects among the 39 with **no**
+  `disable-model-invocation` gate — confirmed present in kbg's own vendored copy too. What
+  actually keeps kbg's install unexposed is the **directory placement** — `docs/reference/`,
+  outside the auto-discovered `skills/` tree Claude Code scans at startup — not a
+  content-level safeguard. That placement is load-bearing; don't let a future sync (e.g. a
+  `gh skill install` pass, or copying a file "for convenience") promote any of these 39
+  files, or a new skill built on top of one, into `skills/` without deliberately clearing
+  the evaluation-first bar above first.
+
 ## How to use
 
 Short-circuit rule (from their `thinking-model-router`): **if you already know the model,
@@ -97,17 +132,17 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | feedback-loops | `thinking-feedback-loops` | applied | skills/decide (probe mode) | named step: mark loop as reinforcing or balancing |
 | first-principles | `thinking-first-principles` | applied | skills/decide (probe mode) (Root Why) | probe one level deeper than the user's stated reason |
 | second-order | `thinking-second-order` | applied | skills/decide (probe mode) (What-if) | 10x / fail / nothing consequence branches |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode) | catastrophic-failure branch: what breaks first + detection + rollback |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode), skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback |
 | five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
 | thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
 | reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" |
-| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
-| socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
-| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs | repro → hypothesize → instrument → falsify |
-| theory-of-constraints | `thinking-theory-of-constraints` | considered | — | profile-first bottleneck-finding is thematic; skills/perf (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
-| red-team | `thinking-red-team` | applied | skills/decide (critique mode) | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
+| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode), skills/task-prep (fresh-context checker) | Check yourself — anti-self-deception step |
+| socratic | `thinking-socratic` | applied | skills/decide (clarify mode), skills/task-prep (gap questions) | named method + "Socratic Trap" failure mode |
+| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation), commands/implementation-compliance-audit (falsify-don't-rubber-stamp) | repro → hypothesize → instrument → falsify |
+| theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
+| red-team | `thinking-red-team` | applied | skills/decide (critique mode), skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
+| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode), skills/review-pr, skills/score-decision, skills/task-prep | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -131,7 +166,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | dual-process | `thinking-dual-process` | considered | — | (1) verification trigger: easy answer + high stakes → deliberate pass; (2) AI agent path design: fast-path (Haiku, no gate) vs slow-path (Sonnet + interrupt); its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | fermi-estimation | `thinking-fermi-estimation` | considered | — | capacity planning, Redis/TimescaleDB sizing, ANPR throughput estimates before instrumentation exists; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
-| leverage-points | `thinking-leverage-points` | considered | — | Meadows' 12-level hierarchy; when parameter tuning keeps not sticking, move up the hierarchy; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
+| leverage-points | `thinking-leverage-points` | applied | agents/performance-optimizer.md, skills/score-decision (single-criterion-that-flips trace) | a small number of places have outsized effect — find them before tuning the rest (added v0.30.2, superseding its deleted former home from the v0.6.3 Wave-B cut); Meadows' 12-level hierarchy applies when parameter tuning keeps not sticking |
 
 ## kbg-native reasoning scaffolds
 

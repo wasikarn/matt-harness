@@ -5,6 +5,60 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.1] — 2026-07-14
+
+User asked for a new agent wrapping the 39 vendored `docs/reference/thinking-skills/`
+mental models. Checked `docs/reference/reasoning-models.md` first: it explicitly
+rejects that shape (Rule 2/YAGNI + no-model-self-start + the honesty caveat that no
+model is proven to improve accuracy), and a standalone wrapper skill for the same
+purpose already shipped in v0.2.x and was deliberately removed. Surfaced the conflict
+via `AskUserQuestion` instead of silently building or refusing; user chose a full
+re-analysis over either.
+
+The analysis found no proven gap for a new agent, but did find a real, verified
+defect: the catalog's unified index table had drifted stale for 11 days.
+`theory-of-constraints` and `leverage-points` were still marked "considered — no live
+anchor" after `agents/performance-optimizer.md` applied both live in the v0.30.2
+footer sweep; six more rows (`pre-mortem`, `red-team`, `steel-manning`,
+`scientific-method`, `socratic`, `debiasing`) under-listed their `kbg home`. Verified
+every claim by direct grep against the live footer text before editing, not trusted
+from a research subagent's report alone. Fixed all 8 rows in `reasoning-models.md`,
+and added a recurrence guard to `docs/skill-template/SKILL.md`'s Named Model footer
+checklist: adding a footer must sync the catalog row in the same edit.
+
+User then asked to verify the doctrine itself against the internet and official docs
+(`/deep-research`, 100 agents, 5 angles, 18 sources, 25 claims 3-vote adversarially
+verified). Verdict: the no-wrapper conclusion holds, but one candidate justification
+does not — "auto-triggering a skill without a human naming the model first is itself
+a recognized Anthropic anti-pattern" is refuted (official docs treat description-
+matched auto-invocation as Skills' designed default, not a risk). What does hold,
+grounded in primary Anthropic sources: the evaluation-first skill-authoring gate
+(no demonstrated capability gap — cc-thinking-skills' own scorecard shows 0/39 models
+hold a replicated ELEVATE verdict, one measured a −10pp regression); Anthropic's
+named tool/skill-surface-proliferation anti-pattern (ambiguous decision points from
+39 near-synonymous frameworks); a concrete token-cost argument (kbg runs 33 live
+skills today — wrapping all 39 would roughly double that against the skill-listing
+eviction budget, for zero proven benefit); and confirmation that the specific
+"unattended model-router" risk is real, not hypothetical — upstream's own
+`thinking-model-router` skill auto-selects among all 39 with no
+`disable-model-invocation` gate. kbg's actual protection is the directory placement
+(`docs/reference/`, outside the auto-discovered `skills/` tree), not a content-level
+safeguard. Added an "External verification" section to `reasoning-models.md`
+documenting all four points with citations and flagging the refuted framing so it
+doesn't resurface.
+
+Computationally enforced the placement invariant the whole doctrine now depends on:
+new `harness-audit` check 41 (`thinking-skills-promotion-guard`) WARNs if any
+`skills/thinking-*` directory ever appears — the exact shape a careless copy or sync
+would produce. Matches check 32's WARN severity (same doctrine file's drift class),
+not check 39's CRIT (irrecoverable-loop class) — a promoted directory is trivially
+reversible. Verified both directions: clean on the current tree, fires on a
+dummy `skills/thinking-test-dummy/` directory (removed after confirming).
+
+Separately caught a pre-existing, unrelated manifest drift while bumping this version:
+both `plugin.json` and `marketplace.json` descriptions still said "13 agents" — stale
+since v0.51.0 added `requirement-analyst` as the 14th. Fixed alongside.
+
 ## [0.51.0] — 2026-07-14
 
 Added `requirement-analyst` (new agent, fleet +1): senior-level, systematic
