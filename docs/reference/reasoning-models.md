@@ -101,10 +101,10 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
 | thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | skills/domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" |
+| reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception step |
 | socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
-| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, skills/diagnosing-bugs | repro → hypothesize → instrument → falsify |
+| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | considered | — | profile-first bottleneck-finding is thematic; skills/perf (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
 | red-team | `thinking-red-team` | applied | skills/decide (critique mode) | Skeptic role: argue AGAINST and find risks |
 | steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode) | Synthesizer: evaluate both sides; unconsidered alternatives |
@@ -192,12 +192,12 @@ Cross-analysis of thinking models against the tathep project stack (10 repos: an
 | Tathep scenario | Model | kbg surface |
 |----------------|-------|-------------|
 | Change PASS_GAP_SECONDS in production | pre-mortem + reversibility | `skills/decide` probe mode |
-| Drop a TimescaleDB continuous_aggregate | reversibility | `skills/adr` |
+| Drop a TimescaleDB continuous_aggregate | reversibility | `domain-modeling` (ADR) |
 | Leaderboard over-count root cause | scientific-method + five-whys | `commands/fix-bug` |
 | ANPR throughput bottleneck (BullMQ / plate-read rate) | theory-of-constraints | `skills/latency-critical-systems` |
-| Plate hashing algorithm change (SHA-256 → HMAC) | pre-mortem + reversibility | `skills/decide` + `skills/domain-modeling` (ADR) |
+| Plate hashing algorithm change (SHA-256 → HMAC) | pre-mortem + reversibility | `skills/decide` + `domain-modeling` (ADR) |
 | LangGraph retry scope (which errors are retryable?) | second-order | `skills/cost-aware-llm-pipeline` |
-| LangGraph agent loop diverges (debugging) | scientific-method | `skills/diagnosing-bugs` |
+| LangGraph agent loop diverges (debugging) | scientific-method | `diagnosing-bugs` |
 | LLM model routing (Haiku vs Sonnet) | opportunity-cost | `skills/cost-aware-llm-pipeline` |
 | LangGraph tool result contains untrusted content | red-team | `skills/decide` |
 | Effect-TS TryCatch consistency across 21 modules | systems-thinking | `skills/decide` |
@@ -206,26 +206,29 @@ Cross-analysis of thinking models against the tathep project stack (10 repos: an
 | Before every Cloudflare Pages deploy | pre-mortem | `skills/decide` |
 | Dio interceptor error propagation (Flutter) | second-order | `skills/decide` |
 | Firebase push notification routing (Flutter) | ooda | `skills/incident` |
-| New campaign creation flow (advertiser JTBD) | jobs-to-be-done | `agents/product-analyst` |
 | New module boundary in platform-api | circle-of-competence | `skills/decide` |
-| Pages → App Router migration scope | reversibility | `skills/adr` |
+| Pages → App Router migration scope | reversibility | `domain-modeling` (ADR) |
 
-### Previously-gap models (now applied via dedicated skills)
+### No live kbg surface — reason from the reference directly
 
-These four patterns recur in tathep and now have dedicated kbg surfaces. Use the skill directly.
+`jobs-to-be-done` has no live anchor (its former home, `agents/product-analyst`, was deleted in the v0.6.0 reset — see the index above). A scenario like "new campaign creation flow (advertiser JTBD)" has no kbg surface to route to; read `docs/reference/thinking-skills/skills/thinking-jobs-to-be-done/SKILL.md` and reason from it directly, or fall back to `skills/decide` probe mode for the surrounding decision.
 
-**`fermi-estimation`** → `skills/fermi-estimation`. Three direct uses in anpr-service:
+### Previously-gap models (no dedicated skill — read the vendored reference directly)
+
+These four patterns recur in tathep. Standalone skills existed briefly (v0.2.x) but were removed — the vendored reference under `docs/reference/thinking-skills/skills/thinking-<name>/SKILL.md` (282–414 lines) already covered the same ground as the shallow 75–88-line skill wrapper, and keeping both created dual routing. There is no skill to invoke; read the reference file when the situation below recurs.
+
+**`fermi-estimation`** (`docs/reference/thinking-skills/skills/thinking-fermi-estimation/`). Three direct uses in anpr-service:
 - plate-read rate per camera at peak → calibrate PASS_GAP_SECONDS without instrumentation
 - Redis sorted-set memory growth per day (`50 cameras × 100k entries × ~50 bytes ≈ 250 MB/day`)
 - TimescaleDB chunk compression trigger point
 
 Quick order-of-magnitude check unlocks the engineering decision in 30 seconds. Currently deferred to instrumentation.
 
-**`dual-process`** → `skills/dual-process`. Every `interrupt()` placement decision is a System 1 / System 2 question: fast-path (Haiku + no interrupt) vs slow-path (Sonnet + interrupt + human confirmation).
+**`dual-process`** (`docs/reference/thinking-skills/skills/thinking-dual-process/`). Every `interrupt()` placement decision is a System 1 / System 2 question: fast-path (Haiku + no interrupt) vs slow-path (Sonnet + interrupt + human confirmation).
 
-**`regret-minimization`** → `skills/regret-minimization`. For product and data-model decisions where both paths seem viable: whether to expose plate-level analytics (adds PDPA surface area, but opportunity closes), new module boundary commitments. Applies the asymmetry: recoverable downside vs permanently foregone upside.
+**`regret-minimization`** (`docs/reference/thinking-skills/skills/thinking-regret-minimization/`). For product and data-model decisions where both paths seem viable: whether to expose plate-level analytics (adds PDPA surface area, but opportunity closes), new module boundary commitments. Applies the asymmetry: recoverable downside vs permanently foregone upside.
 
-**`leverage-points`** → `skills/leverage-points`. anpr-service has exactly one high-leverage point: plate-read rate. Improving it moves every downstream metric simultaneously. Use when parameter tuning keeps not sticking — move up Meadows' hierarchy instead of tuning the same parameter again.
+**`leverage-points`** (`docs/reference/thinking-skills/skills/thinking-leverage-points/`). anpr-service has exactly one high-leverage point: plate-read rate. Improving it moves every downstream metric simultaneously. Use when parameter tuning keeps not sticking — move up Meadows' hierarchy instead of tuning the same parameter again.
 
 ### What thinking models cannot fill for tathep
 

@@ -17,10 +17,20 @@ kbg's shape differs from matt's: matt's flow is many small skills you chain your
 
 - **Fuzzy idea, not yet a task** → `/ideate` — 5 parallel agents, rotating frames, novelty/viability/fit scoring. Take the winning idea into `/ship` as a blank-slate run.
 - **A pile of competing tasks/asks** → `kbg:orchestrate` — triages the pile, routes each item inline/parallel/sequential/drop. One item lands on `/ship`; the rest go wherever they route.
-- **One hard, contested-diagnosis decision, before any task exists yet** → `kbg:decide` — 5 modes (clarify/probe/decide/critique/strategize). `/ship` Phase 2 already calls this internally for blank-slate ambiguity; reach for it standalone when the decision is upstream of a task, or isn't code at all.
+- **One hard, contested-diagnosis decision, before any task exists yet** → `kbg:decide` (full breakdown below, under "Thinking & deciding"). `/ship` Phase 2 already calls this internally for blank-slate ambiguity; reach for it standalone when the decision is upstream of a task, or isn't code at all.
 - **A production fire** → `kbg:incident` — mitigate first (rollback/kill-switch/circuit-breaker/scale before hotfix), hands off to `/fix-bug` (S3) or its own hotfix path (S1/S2), closes to `/post-mortem`.
 - **A known bug, not urgent** → `/fix-bug` directly, or let `/ship` Phase 4 route to it once scope is known.
 - **A non-trivial task you're about to hand off (fresh session or sub-agent) and don't want three "wait, I forgot to mention" rounds** → `kbg:task-prep` — maps the draft against the 9-field handoff template, fills gaps, verifies fresh-context.
+
+## Thinking & deciding — the layer under every on-ramp, not one itself
+
+Every on-ramp above assumes you already know which one to pick. This is what runs underneath that choice, on every non-trivial act, not just the ones with a named skill:
+
+- **Default, every time** → the decision-sizing triad inline (one-way door? blast radius? riskiest assumption?), then `advisor()` before committing. No skill to invoke — the doctrine-bootstrap hook injects this baseline every session.
+- **One hard, contested-diagnosis decision past advisor()-level pressure-testing** → `kbg:decide` — 5 modes (clarify/probe/decide/critique/strategize), picked by reversibility and whether the reasoning already exists or still needs building.
+- **That decision needs a formal, traceable numeric verdict** (approve/reject/rank/recommend/optimize/validate) → `kbg:score-decision` — weighted criteria, pass threshold + fatal-weakness floor, confidence, trace. `kbg:decide`'s own closing step hands off here when the record needs a number, not just a verdict.
+- **Drafting a `/goal` stop condition** → `kbg:goal-craft` — one-way-door screen + turn bound, paste-ready for Claude Code's native `/goal` loop. kbg never invokes `/goal` itself; the string sits inert until you paste it.
+- **Naming the lens behind why a surface reasons the way it does** → `docs/reference/reasoning-models.md` — 39 vendored mental models (cc-thinking-skills), mapped to which kbg surface already applies each one. Reference only, not a menu to open before every task — and it carries its own honesty caveat: none of the 39 are proven to improve accuracy, they're framing scaffolds, not a correctness mechanism.
 
 ## After `/ship` — or standalone
 
@@ -42,7 +52,7 @@ Upkeep, not feature work — reach for these on a spare moment, or when the harn
 - `kbg:production-audit` — pre-launch readiness scan (not in-flight feature work — that's `/ship`).
 - `kbg:security-auditor` — deep threat-model (auth/secrets/injection/XSS) on PRs touching auth/APIs/payments.
 - `kbg:security-scan` — AgentShield sweep of agent/hook/MCP/permission/secret surfaces (not code vulnerabilities — that's `security-auditor`).
-- `kbg:cost-report` / `kbg:eval-harness` / `kbg:goal-craft` / `kbg:score-decision` — narrower single-purpose tools (cost ledger, EDD setup, `/goal` condition drafting, formal decision scoring).
+- `kbg:cost-report` / `kbg:eval-harness` — narrower single-purpose tools (cost ledger, EDD setup). Decision tools (`kbg:decide`, `kbg:score-decision`, `kbg:goal-craft`) are under "Thinking & deciding" above.
 - `kbg:codebase-onboarding` — catalogue an unfamiliar codebase into an onboarding guide.
 - `kbg:build-fix` / `kbg:refactor-clean` / `kbg:test-coverage` — single-purpose engineering utilities; `/ship` also reaches for these internally at the right phase.
 
