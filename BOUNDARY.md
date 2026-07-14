@@ -61,15 +61,16 @@ _Personals/kbg-harness_
   ◇ ideate                         Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks.
   ◇ ship                           Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge).
 
-### Agents (13)
+### Agents (14)
   ◇ build-error-resolver           Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes.
   ◇ code-architect                 Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
-  ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code.
+  ◇ code-reviewer                  Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, and requirement-coverage lenses. Use after writing or modifying code.
   ◇ flutter-reviewer               Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic.
   ◇ ideate-critic                  Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer).
   ◇ performance-optimizer          Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
   ◇ python-reviewer                Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes.
   ◇ refactor-cleaner               Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates.
+  ◇ requirement-analyst            Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts.
   ◇ security-reviewer              Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
   ◇ silent-failure-hunter          Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation.
   ◇ spec-miner                     Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
@@ -101,12 +102,13 @@ _Personals/kbg-harness_
 |---|---|---|---|
 | build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
-| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, and DB/SQL query-safety lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, and requirement-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | flutter-reviewer | Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| requirement-analyst | Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts. | ["Read", "Grep", "Glob"] | no |
 | security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
 | silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. | [Read, Grep, Glob, Bash] | yes |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
@@ -178,7 +180,7 @@ _Personals/kbg-harness_
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-14T08:18:30Z_
+_Generated: 2026-07-14T10:13:15Z_
 
 ---
 

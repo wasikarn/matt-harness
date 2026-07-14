@@ -17,6 +17,7 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 | `db` | `code-reviewer` (DB/SQL query-safety lens) | only if migrations/schema/query files changed (`.sql`, Drizzle schema, or query-builder calls) |
 | `simplify` | NOT a reviewer | run native `/simplify` (clarity-only) separately after review decisions land (Phase 7 next-step) |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
+| *(not an aspect arg — detected from a Jira ticket reference)* | `requirement-analyst` (Phase 1.5) + `code-reviewer` (requirement-coverage lens) | fires on `jira` keyword + a ticket-key-shaped token anywhere in the prompt (e.g. "review #2606 with jira TP-871"), regardless of aspect narrowing |
 
 ## Fowler Smell Baseline
 
@@ -47,7 +48,8 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 |---|---|
 | `silent-failure-hunter` | Silent failures + broad catches + unjustified fallbacks |
 | `security-reviewer` | OWASP + auth + secrets + supply chain — flags with severity, doesn't fix |
-| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80. Also carries the **comment-accuracy lens** (comment accuracy + rot + doc completeness), the **type-design lens** (type/DTO/schema encapsulation + invariants + illegal-states-unrepresentable), the **behavioral test-coverage lens** (test gaps by criticality, not line %), and the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety) |
+| `code-reviewer` | General quality + CLAUDE.md compliance — issues-only at confidence ≥80. Also carries the **comment-accuracy lens** (comment accuracy + rot + doc completeness), the **type-design lens** (type/DTO/schema encapsulation + invariants + illegal-states-unrepresentable), the **behavioral test-coverage lens** (test gaps by criticality, not line %), the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety), and the **requirement-coverage lens** (does the diff satisfy the requirements a referenced Jira ticket asked for — opt-in, Phase 1.5) |
+| `requirement-analyst` | Senior-level requirement analysis of a Jira ticket's own body — ambiguities, missing ACs, edge cases, readiness verdict. Dispatched by Phase 1.5 when a ticket is referenced; never fetches, never touches the diff (that's the coverage lens above) |
 | `typescript-reviewer` | TS/JS type safety, async correctness, security, idiomatic patterns — routed alongside `code-reviewer` when `.ts`/`.tsx`/`.js`/`.jsx` is the dominant changed-file language |
 | `python-reviewer` | PEP 8, Pythonic idioms, type hints, security, performance — routed alongside `code-reviewer` when `.py` is the dominant changed-file language |
 | `flutter-reviewer` | Dart/Flutter widget best practices, state management, performance, accessibility, architecture — routed alongside `code-reviewer` when `.dart` is the dominant changed-file language |

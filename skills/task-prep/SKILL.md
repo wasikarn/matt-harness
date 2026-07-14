@@ -64,6 +64,17 @@ Read the nearest manifest present (`package.json` / `go.mod` / `pyproject.toml` 
 
 **Success criterion:** you can name the stack in one phrase, or "generic / no manifest."
 
+### Step 3.5 — Requirement cross-check (opt-in — only if the draft references a Jira ticket)
+
+**Detect**: the draft contains the case-insensitive substring `jira` **and** a ticket-key-shaped token (`[A-Z][A-Z0-9]*-\d+`, e.g. `TP-871`) — requiring both avoids false-triggering on unrelated tokens shaped like `UTF-8`/`ISO-8601`. If either is missing, skip this entire step — Step 4 proceeds exactly as before.
+
+If detected:
+1. Fetch the ticket via the **`jira-acli:acli` skill** — never a raw `acli` command or a direct `mcp__*atlassian*`/`mcp__*Rovo*` call (CLAUDE.md's global routing rule). `jira-acli` is a separate plugin; if it isn't installed, treat that the same as a fetch failure below — note it, don't fall back to a raw call. Fetch failure (bad key, no access, plugin missing) → note it inline and skip to Step 4 unaffected; an unresolved ticket reference never blocks task prep.
+2. Dispatch `requirement-analyst` (Agent tool) with the fetched body as its prompt. Capture: `business_trace`, `functional_requirements`, `non_functional_requirements`, `acceptance_criteria`, `edge_cases_missing`, `open_questions`.
+3. Hold this report for Step 4/5/6 below — it supplies **candidate** values, it does not fill anything by itself (Step 7's "never overwrite a filled field" still applies).
+
+**Success criterion:** either skipped (no ticket reference), or you're holding a requirement-analyst report to draw on below.
+
 ### Step 4 — Map to the 9 fields
 
 The 9 fields and their intent (canonical source: `docs/reference/task-handoff-template.md` § "The template" in the plugin cache — read it only if you need the worked example; the one-liners below are enough to map):
@@ -87,6 +98,7 @@ For each field, mark: **present** (in the draft) / **derivable** (from code or C
 - `<reference>`: `Glob` for an existing pattern (a sibling migration, an existing middleware, a parallel route) and **propose it** rather than asking. If Glob finds a strong candidate, mark `<reference>` derivable and cite the path.
 - `<scope>`: pull in/out from `@`-refs already in the draft.
 - `<context>` / `<constraints>`: if obvious from CLAUDE.md or the draft, mark derivable; do not ask.
+- **If Step 3.5 ran**: `<context>` derives from `business_trace`; `<edge-cases>` derives from `edge_cases_missing`; `<done-when>` candidates derive from `acceptance_criteria` entries marked `testable`/`testable_with_assumption` (state the assumption inline if present) — check these before falling through to Step 6's ask.
 
 **Failure mode at this step:** asking the user what the codebase already answers — wastes their time and signals you didn't look. Read first, ask second (same rule as `grilling`).
 
@@ -115,6 +127,8 @@ Ask only for **absent** fields that actually cost the user. Priority order — `
 **Skip** `<context>`/`<constraints>`/`<output>`/`<edge-cases>` if obvious from input or CLAUDE.md — don't pad. Listing rules Claude already follows makes them noise it learns to ignore (failure mode: over-specified constraints).
 
 **`<edge-cases>`:** if the user can't name any, offer "interview me for edge cases first" as an `AskUserQuestion` option — surfacing them before coding is cheaper than discovering them after a wrong implementation.
+
+**If Step 3.5 ran**, fold its `open_questions` into this batch as load-bearing gap candidates too — a ticket ambiguity a downstream implementer would hit is exactly the class of gap this step exists to surface before send, not after.
 
 **Failure mode at this step:** padding obvious fields to seem thorough — the template's §"don't pad" rule. Empty fields are fine; a missing `<done-when>` is the one that costs.
 

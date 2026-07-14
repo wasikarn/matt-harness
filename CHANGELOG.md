@@ -5,6 +5,103 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.51.0] — 2026-07-14
+
+Added `requirement-analyst` (new agent, fleet +1): senior-level, systematic
+requirement analysis from a Jira ticket, Confluence spec, PRD, or pasted
+text. Checked ECC and superpowers first per the composer-not-creator
+doctrine — closest fits were ECC's `jira-integration` skill (mechanical
+fetch, no analysis) and `product-capability` skill (PRD-to-capability-plan,
+different shape, framed as a skill not an agent); neither covers ambiguity/
+edge-case/testability analysis on a single requirement source, so this is
+kbg-native. Modeled on `task-prep-checker`'s read-only-verifier shape: `tools:
+["Read", "Grep", "Glob"]`, no `Bash`. Initial draft gave it `Bash` to
+self-fetch tickets via `acli` directly — advisor() caught that a subagent
+has no `Skill` tool, so it structurally cannot route through
+`jira-acli:acli` the way the global routing rule requires, making
+self-fetch a permanent, un-auditable bypass of that rule (the same shape
+as the TP-809/806 incident). Fixed: the agent takes the ticket/spec body
+as text handed to it by the caller (who fetches via `jira-acli:acli` or
+the Atlassian MCP first) or a local file; it never reaches Jira/Confluence
+itself, and never writes findings back — filing stays
+`jira-acli:jira-content`'s job. Output is a
+structured report (extracted requirements, flagged ambiguities, missing
+edge cases, dependencies/risk, per-requirement testability + candidate GWT
+phrasing, readiness verdict), not a decision score — matches the fleet's
+existing reviewer/checker output shape rather than inventing a new
+ceremony.
+
+Follow-up same session: user asked whether the "senior-level" process
+had actually been checked against real requirements-engineering practice
+or just synthesized from training knowledge — it was the latter. Verified
+via WebSearch against BABOK, ISO/IEC/IEEE 29148, INVEST, and Definition of
+Ready. The core mechanics held up (functional/non-functional split,
+ambiguity-as-untestable, GWT testability pass, readiness verdict all map
+cleanly to named standards) but surfaced two real gaps: Phase 2 only
+extracted BABOK's *solution*-tier requirements (functional/non-functional),
+missing the business-trace check (is this solving a stated problem, IEEE
+29148's "necessary") and transition requirements (migration/rollback/
+feature-flag, only when the change size warrants it); and Phase 3 had no
+check for IEEE 29148's "singular" violation (one sentence bundling ≥2
+independent behaviors, which hides per-clause testability). Added both,
+plus a `business_trace`/`transition_requirements`/`bundled_requirements`
+output section and an inline citation of which phase maps to which
+standard, so the checklist is traceable to a source instead of an LLM's
+unverified synthesis.
+
+Follow-up same session: user asked where else `requirement-analyst` should
+be wired in beyond the initial fetch-and-analyze design. Surveyed the fleet
+and wired it into three places, all opt-in and gated behind a Jira-reference
+detection (`jira` keyword + a ticket-key-shaped token, both required, so
+`UTF-8`/`ISO-8601`-shaped tokens don't false-trigger):
+
+- **`code-reviewer`**: new requirement-coverage lens (fleet lens count
+  4→5) — checks the pinned diff against `requirement-analyst`'s extracted
+  `functional_requirements`/`acceptance_criteria`. Only active when
+  `kbg:review-pr` dispatches it with those requirements in the prompt,
+  never self-invoked. Guards against a false-positive failure mode: "not in
+  the diff" isn't "not implemented" — the lens must `Grep`/`Read` beyond
+  the diff before flagging a requirement unaddressed, since it could
+  already be satisfied by pre-existing code or a sibling PR.
+- **`kbg:review-pr`**: new opt-in Phase 1.5 fetches the ticket (via
+  `jira-acli:acli` — never a raw `acli`/MCP call, since a dispatched
+  subagent has no `Skill` tool and can't route through the global rule
+  itself) and dispatches `requirement-analyst`, feeding its requirements
+  into Phase 3/4's new requirement-coverage routing. Phase 6 presents the
+  ticket-quality report (ambiguities, open questions, bundled
+  requirements) as its own section, kept separate from the code-finding
+  tiers per the "don't blend across agents" principle. Used `.5`-numbered
+  insertion (Phase 1.5, not renumbering 2–7) since later phases are
+  cross-referenced by number elsewhere.
+- **`kbg:task-prep`**: new opt-in Step 3.5, same detection + fetch
+  pattern, feeding `business_trace`/`edge_cases_missing`/
+  `acceptance_criteria` into Step 5's auto-fill and folding
+  `open_questions` into Step 6's gap-asking. `.5`-numbered for the same
+  cross-reference-safety reason (`orchestrate/reference.md` cites task-prep
+  Step 9 by number).
+- **`orchestrate/reference.md`**: one paragraph noting that a
+  `code-architect` dispatch citing a Jira ticket should route through
+  `requirement-analyst` first — a dispatch-order convention, not a
+  structural step (orchestrate has no phase body to hook a `.5` step into).
+
+Scoped out: direct `/ship` wiring (already reachable transitively via
+`task-prep`; `/ship`'s Path B is deliberately lightweight) and
+`jira-acli:jira-content` wiring (sibling plugin, out of repo scope).
+
+`advisor()` caught a real bug before this shipped: as first written,
+`review-pr` Phase 6's "review body = the Phase 6 summary" folded the
+ticket-quality section (a critique of the *ticket*) into the payload
+posted to GitHub in Phase 6 branch B / Phase 7 — auto-posting an analysis
+of someone else's ticket's gaps onto their public PR (this repo went
+public 2026-07-14; ticket content would land in a public comment).
+Fixed: the Requirement Analysis section is now explicitly terminal-only in
+both Phase 6 step 1 and Phase 7's build-payload procedure — the posted
+review body is built from the tier table/trend/proof-check only, on both
+review targets. Also added a graceful-degradation clause to both Phase 1.5
+and task-prep Step 3.5: `jira-acli` is a separate plugin, so "not
+installed" is treated the same as a fetch failure (note + skip), never a
+fallback to a raw `acli`/MCP call.
+
 ## [0.50.1] — 2026-07-14
 
 Cleared the matt-doctrine-conformance findings (`harness-audit` check 36)

@@ -35,6 +35,21 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      - `Parallel (Recommended when diff is medium and no auth changes; fastest wall-clock time)` — agents are independent
      - `Sequential (Recommended when diff is auth-heavy or the user wants lower cognitive load)` — one complete report at a time
 4. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
+5. **Detect a Jira ticket reference (opt-in requirement cross-check).** Only when the prompt contains the case-insensitive substring `jira` **and** a ticket-key-shaped token (`[A-Z][A-Z0-9]*-\d+`, e.g. `TP-871`) — requiring both avoids false-triggering on unrelated tokens shaped like `UTF-8`/`COVID-19`/`ISO-8601` with no Jira context. If both are present, record `JIRA_KEY` = the matched token and continue to Phase 1.5. **If either is missing, `JIRA_KEY` stays unset and every step below tagged "opt-in" or "if `JIRA_KEY` set" is skipped** — this feature is additive; the default no-ticket flow is unchanged.
+
+---
+
+## Phase 1.5: Requirement Cross-Check (opt-in — only if Phase 1 detected `JIRA_KEY`)
+
+**Goal**: Ground the review in the ticket's actual requirements, not just code quality — fetch it, analyze it for gaps, and hand grounded requirements to Phase 3's requirement-coverage lens.
+
+**Skip this entire phase if `JIRA_KEY` is unset.**
+
+**Actions**:
+1. **Fetch the ticket via the `jira-acli:acli` skill** — never a raw `acli` command or a direct `mcp__*atlassian*`/`mcp__*Rovo*` tool call (CLAUDE.md's global Jira/Confluence routing rule covers read-only search/view too). This fetch happens here, in the main loop, precisely because a dispatched subagent has no `Skill` tool and cannot do this itself. **`jira-acli` is a separate plugin** — if it isn't installed, that's the same as a fetch failure (next step): note it and move on, don't fall back to a raw `acli`/MCP call.
+2. **Fetch fails** (bad key, no access, empty body, or `jira-acli` not installed) → record `JIRA_FETCH_FAILED=true`, surface a one-line note in Phase 6, and skip the rest of this phase. An unresolved ticket reference never blocks the code review.
+3. **Dispatch `requirement-analyst`** (Agent tool) with the fetched ticket body as its prompt — it never fetches anything itself. Capture the structured report: `verdict`, `business_trace`, `functional_requirements`, `non_functional_requirements`, `transition_requirements`, `ambiguities`, `bundled_requirements`, `acceptance_criteria`, `open_questions`.
+4. Record `JIRA_REQS` = `functional_requirements` + `acceptance_criteria` + `transition_requirements` (Phase 3's requirement-coverage lens checks the diff against these). Keep this separate from the ticket-quality findings (`ambiguities` / `bundled_requirements` / `open_questions` / `verdict`) — those aren't code findings; Phase 6 presents them as their own section, never blended into the Critical/Important/Minor tiers.
 
 ---
 
@@ -67,6 +82,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - `security` aspect (or `all`) AND changes touch auth/secrets/external input → `security-reviewer`
    - `types` aspect (or `all`) AND types/interfaces/DTOs/schemas/models changed → `code-reviewer` with the **type-design lens** (encapsulation, invariants, illegal-states-unrepresentable)
    - `db` aspect (or `all`) AND migrations/schema/query files changed (`.sql` files, Drizzle schema, or query-builder calls touched) → `code-reviewer` with the **DB/SQL query-safety lens** (MySQL/MariaDB + Drizzle query and migration safety)
+   - `JIRA_KEY` set (Phase 1.5 ran and didn't hit `JIRA_FETCH_FAILED`) → **always** dispatch `code-reviewer` with the **requirement-coverage lens** (checks the diff against `JIRA_REQS`), **regardless of aspect narrowing** — an explicit ticket reference is a stronger signal than an aspect filter, same as the harness-diff default in the `tests` rule above.
 2. **Aspect arg overrides Phase 3's defaults.** `kbg:review-pr tests` runs ONLY code-reviewer's behavioral test-coverage lens (not the general-quality lens). `kbg:review-pr code tests` runs code-reviewer with both the general-quality and test-coverage lenses.
 3. Present the routed agent list to the user. Confirm if user wants to add/remove any before Phase 4 dispatch.
 
@@ -82,6 +98,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 1. **Parallel mode** (default — fastest wall-clock time; launch all routed agents simultaneously, results come back together).
 2. **Sequential mode** (when `sequential` keyword in args — one agent at a time, each report complete before next; lower cognitive load for interactive sessions).
 3. **Pass the pinned window into every dispatch prompt**: state the exact range, `git diff $BASE_SHA..$HEAD_SHA` (Phase 2's pinned SHAs). An agent's own default context-gathering step (uncommitted `git diff --staged`/`git diff`) is for ad-hoc invocation outside this skill — when dispatched from here, it must review the pinned range, not whatever happens to be sitting in the working tree.
+3.5. **Requirement-coverage lens dispatch** (only when Phase 3 routed it): include `JIRA_REQS` (Phase 1.5's extracted requirements) verbatim in `code-reviewer`'s dispatch prompt, plus the instruction to apply the requirement-coverage lens per `agents/code-reviewer.md`'s dedicated checklist section — including its "grep beyond the diff before flagging unaddressed" rule. This can be the same `code-reviewer` dispatch as the general-quality lens (one dispatch, multiple active lenses) — no separate agent call needed.
 4. Wait for all dispatched agents to return. Capture per-agent findings with file:line references. **An agent that returns nothing, errors, or times out is not a clean pass** — record it in `dispatch_failures` for Phase 5 step 4; never let a missing report silently read as zero findings.
 
 ---
@@ -109,6 +126,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **Critical** — must fix before merge (security, data integrity, broken functionality)
    - **Important** — should fix before merge (real issues that don't block but shouldn't ship)
    - **Minor** — nice to have (style, optional refinements)
+
+   **Requirement-coverage findings tier the same way, no special-casing** — they arrive as ordinary `code-reviewer` findings (Phase 4 step 3.5's lens dispatch), so they flow through SCRUTINIZE-4 and step 3.5's adversarial verifier below exactly like any other finding. This is load-bearing, not incidental: a coverage finding claims "not in the diff," and the "already implemented elsewhere" false-positive that risk is exactly what the fresh-agent refutation below exists to catch — don't route these around it.
 3.5. **Independent adversarial verification — Critical/Important findings only.** SCRUTINIZE-4 (step 2) is self-graded: the same orchestrator context that ran the checklist decides whether its own checklist passed. That's the maker grading its own work — the exact pattern CLAUDE.md's verifier-separation principle rejects everywhere else in this harness. This step is the actual independent check: for every unique Critical/Important finding, dispatch a **fresh** agent (the general-purpose type, not the specialist that raised the finding — a fresh generalist lens is what makes it independent, not a repeat of the same specialist's framing) with the finding's description + file:line + evidence, instructed to *try to refute it* by reading the real code at that location. The verifier returns a structured verdict: `isReal` (bool), `confidence` (0.0–1.0), `reasoning` (one paragraph).
 
    **Fail-closed disposition** (mirrors ECC's `orch-review` Workflow verify stage):
@@ -137,7 +156,21 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Goal**: Show tier-grouped findings, then branch on the review target (set in Phase 1): **own current branch** → fix decision (fixes land in the working tree); **PR by number** → the submit decision. For a reviewer, choosing how to submit the review *is* acting on the findings — there is no "fix later", and in-place fixes in the throwaway worktree are discarded at Phase 7 cleanup unless pushed. This is the **single submit gate**; Phase 7 executes the choice, it does not re-ask.
 
 **Actions**:
-1. Present findings in this format:
+1. **If `JIRA_KEY` was set (Phase 1.5 ran), present the ticket-quality report first, as its own section before the code findings — never blended into the Critical/Important/Minor tiers below** (same "don't blend across agents" principle as Phase 5 step 1; this is a report on the *ticket*, the tiers below are about the *code*):
+
+   ```markdown
+   ## Requirement Analysis — TP-871 (verdict: <verdict>)
+   - Business trace: <business_trace, or "not stated — flagged as gap">
+   - Ambiguities: <count> — <one line each, or "none">
+   - Bundled requirements: <count> — <one line each, or "none">
+   - Open questions: <count> — <one line each, or "none">
+   ```
+
+   If `JIRA_FETCH_FAILED`, show `## Requirement Analysis — <key> — fetch failed, cross-check skipped` instead and continue with the ordinary code review. **Skip this sub-step entirely when `JIRA_KEY` is unset** — go straight to presenting findings below.
+
+   **Terminal-only — never part of the posted review body.** This section critiques the *ticket* (ambiguities, open questions, bundling); posting a critique of someone else's ticket onto their PR is out of scope for a code review, and this repo is public, so ticket content (names, internal detail) landing in a public GitHub comment is a real consequence, not a hypothetical. Phase 7's review-body construction starts from the code findings below only — this section never feeds it, on either review target.
+
+   Then present code findings in this format:
 
    ```markdown
    # PR Review Summary
@@ -178,7 +211,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      - Event type — `REQUEST_CHANGES` if any Critical, `COMMENT` if only Important/Minor, `APPROVE` if zero findings
      - Number of line-level comments to be posted
      - 2–3 sample comments (what the author will see)
-     - Review body (the review summary from step 1)
+     - Review body (the tier table + trend + proof-check from step 1 — **not** the Requirement Analysis section, which is terminal-only per step 1's note and never posted)
    - **Prior-review check**: `gh pr view <#> --json reviews -q ".reviews[].author.login"` vs `gh api user -q .login`. If you already reviewed this PR, warn that GitHub stacks new reviews (no update-in-place) before asking.
    - **AskUserQuestion** single-select: "Phase 6: reviewing PR #N — [N] line-level comments + [event type], previewed above. My recommendation: [option]. How do you want to act on these findings?"
      - `Post line-level review now (Recommended — findings are concrete; the author sees each issue in context)` — batch via `gh api` (Phase 7)
@@ -237,6 +270,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 2. Summarize:
    - PR # and URL (if applicable)
    - Review window: `BASE_SHA..HEAD_SHA`
+   - Jira ticket + verdict, if `JIRA_KEY` was set (e.g. "TP-871: ready-with-assumptions" or "TP-871: fetch failed, cross-check skipped")
    - Agents dispatched + their tier counts (e.g. "code-reviewer: 2 Critical / 3 Important / 0 Minor")
    - User decision (author flow: fixed-now / deferred / proceeded-as-is; reviewer flow: posted line-level / posted summary / fixed+pushed / skipped)
    - **Suggested next steps** (pick what applies):
@@ -249,7 +283,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
    **Build the review payload** (canonical procedure — Phase 6 branch B builds its preview from this):
    - **Event**: `REQUEST_CHANGES` if any Critical findings, `COMMENT` if only Important/Minor, `APPROVE` if zero findings.
-   - **Review body**: The Phase 6 summary (top-level overview).
+   - **Review body**: The Phase 6 summary's tier table + trend + proof-check (top-level overview) — **excludes** the Requirement Analysis section (ticket ambiguities/open questions). That section critiques the ticket, not the diff, and is terminal-only (Phase 6 step 1) — it never goes into a posted GitHub body on either review target.
    - **Comments array**: For every finding that has `file` + `line`, create:
      ```json
      {"path": "<file-path>", "line": <line-number>, "side": "RIGHT", "body": "[<severity>] <message>"}
@@ -285,11 +319,11 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 ## Integration Notes (Project-Specific)
 
-- **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session. Phase 5 step 3.6 fires only on the zero-surviving-findings path with a non-trivial diff — one hunter dispatch, plus one 3.5-style refuter for each Critical/Important finding the hunter raises (usually zero). So the zero-findings path costs 1 + N dispatches where N is small; the several-findings path costs 3.5's ~one-per-finding. They're near-exclusive by trigger (3.6 only when nothing survived 3.5), so a single review never pays both at full volume.
+- **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session. Phase 5 step 3.6 fires only on the zero-surviving-findings path with a non-trivial diff — one hunter dispatch, plus one 3.5-style refuter for each Critical/Important finding the hunter raises (usually zero). So the zero-findings path costs 1 + N dispatches where N is small; the several-findings path costs 3.5's ~one-per-finding. They're near-exclusive by trigger (3.6 only when nothing survived 3.5), so a single review never pays both at full volume. Phase 1.5 (opt-in, only when `JIRA_KEY` is detected) adds one `jira-acli:acli` fetch + one `requirement-analyst` dispatch, flat cost regardless of diff size — negligible next to the per-finding verifier cost above.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
 - **GH CLI**: Use `gh pr view` to check PR state before launching review. `review-pr` reviews code, not CI status — plenty of repos have no CI wired up at all, so this skill never checks or gates on `gh pr checks` (that belongs to `/ship-merge`'s own required-checks gate, which only runs against repos that actually have branch protection configured). Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
-- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` / `flutter-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
+- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` / `flutter-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. A detected Jira ticket → `requirement-analyst` (Phase 1.5, ticket-quality report) + code-reviewer's requirement-coverage lens (Phase 3/4, diff-vs-requirements). Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr`.
 - **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.
