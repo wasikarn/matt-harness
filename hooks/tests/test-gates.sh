@@ -98,6 +98,21 @@ test_ask() {
   fi
 }
 
+# Expect the gate to ALLOW with an extra env var set for the gate subprocess
+# (e.g. an escape-hatch override).
+test_allow_env() {
+  local gate="$1" desc="$2" payload="$3" envvar="$4"
+  local rc
+  rc=$(echo "$payload" | env "$envvar" bash "$gate" 2>/dev/null; echo $?)
+  if [[ "$rc" == "0" ]]; then
+    echo "  ✅ ALLOW (env): $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ ALLOW EXPECTED but got exit $rc: $desc" >&2
+    fail=$((fail + 1))
+  fi
+}
+
 echo "=== irrecoverable gate ==="
 test_deny  "$IRRECOVERABLE" "rm -rf"                    "$(bash_payload 'rm -rf /tmp/test')"
 test_deny  "$IRRECOVERABLE" "rm -fr variant"            "$(bash_payload 'rm -fr /tmp/test')"
@@ -472,6 +487,58 @@ test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
   "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
 test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \
   '{not valid json'
+
+echo ""
+echo "=== atlassian-mcp-gate (cold-start guard: Skill(jira-acli:*) must load before Atlassian MCP) ==="
+ATLASSIAN_GATE="$ROOT/hooks/gates/atlassian-mcp-gate.sh"
+
+# Build a Skill tool payload.
+skill_payload() {
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": "Skill", "tool_input": {"skill": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"
+}
+
+# Build an MCP tool-call payload keyed to a session_id.
+mcp_session_payload() {
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {}, "session_id": sys.argv[2]}))' "$1" "$2"
+}
+
+AG_COLD="test-atlassian-gate-cold-$$"
+AG_ENGAGED="test-atlassian-gate-engaged-$$"
+AG_WRONGSKILL="test-atlassian-gate-wrongskill-$$"
+AG_OTHER="test-atlassian-gate-other-$$"
+AG_ESCAPE="test-atlassian-gate-escape-$$"
+
+test_deny  "$ATLASSIAN_GATE" "cold connector-family MCP call (mcp__claude_ai_Atlassian_Rovo__*), no skill loaded" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_COLD")"
+test_deny  "$ATLASSIAN_GATE" "cold plugin-family MCP call (mcp__plugin_atlassian_atlassian__*), no skill loaded" \
+  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__editJiraIssue' "$AG_COLD")"
+test_allow "$ATLASSIAN_GATE" "Skill(jira-acli:acli) load is never itself blocked" \
+  "$(skill_payload 'jira-acli:acli' "$AG_ENGAGED")"
+test_allow "$ATLASSIAN_GATE" "same-session MCP call allowed once jira-acli:acli loaded" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ENGAGED")"
+test_allow "$ATLASSIAN_GATE" "same-session confluence-content fallback (page create) also allowed once engaged" \
+  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__createConfluencePage' "$AG_ENGAGED")"
+test_allow "$ATLASSIAN_GATE" "Skill(other:x) load is never itself blocked" \
+  "$(skill_payload 'kbg:decide' "$AG_WRONGSKILL")"
+test_deny  "$ATLASSIAN_GATE" "a non-jira-acli skill does not engage the session" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__getJiraIssue' "$AG_WRONGSKILL")"
+test_deny  "$ATLASSIAN_GATE" "a different, still-cold session stays blocked (marker is per-session)" \
+  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__editJiraIssue' "$AG_OTHER")"
+test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (mongodb) out of scope" \
+  "$(mcp_session_payload 'mcp__mongodb__find' "$AG_COLD")"
+test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (code-review-graph) out of scope" \
+  "$(mcp_session_payload 'mcp__code-review-graph__query_graph_tool' "$AG_COLD")"
+test_allow "$ATLASSIAN_GATE" "malformed stdin (fail-safe allow)" \
+  '{not valid json'
+test_allow_env "$ATLASSIAN_GATE" "escape hatch KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ESCAPE")" \
+  "KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1"
+
+rm -f "$HOME/.local/share/kbg/jira-acli-sessions/$AG_COLD" \
+      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_ENGAGED" \
+      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_WRONGSKILL" \
+      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_OTHER" \
+      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_ESCAPE" 2>/dev/null
 
 echo ""
 total=$((pass + fail))

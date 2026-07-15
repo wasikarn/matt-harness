@@ -113,6 +113,30 @@
         ]
       },
       {
+        "id": "gate:skill:jira-acli-engage",
+        "matcher": "Skill",
+        "description": "Marks the session jira-acli-engaged when a jira-acli:* skill loads (writes ~/.local/share/kbg/jira-acli-sessions/<session_id>), so the companion gate:mcp:atlassian-cold-start gate can allow-list it. Never blocks Skill itself.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/atlassian-mcp-gate.sh"]
+          }
+        ]
+      },
+      {
+        "id": "gate:mcp:atlassian-cold-start",
+        "matcher": "mcp__.*",
+        "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call (mcp__*atlassian*/mcp__*rovo*, both a local/plugin MCP server and a claude.ai connector) before a jira-acli:* skill loaded this session -- forces routing through jira-acli's templates instead of a cold MCP call. Cold-start guard, not a per-call router: allows every later call once the session is marked engaged (confluence-content's page create/update and acli's own 'When acli can't' fallback list legitimately use this same MCP). Escape: KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/atlassian-mcp-gate.sh"]
+          }
+        ]
+      },
+      {
         "id": "gate:write:worktree-guard",
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when CLAUDE_PROJECT_DIR is known and outside the tathep workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the tathep path spawns python.",

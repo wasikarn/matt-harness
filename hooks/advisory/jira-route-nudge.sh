@@ -6,13 +6,21 @@
 # hook. Output -> stdout (CC surfaces as a system-reminder); never blocks,
 # always exits 0. Errors are silently swallowed.
 #
-# Why non-blocking, not a gate: user-chosen scope (2026-07-07 audit) is nudge
-# for Jira, ask-gate for tathep-db -- gating every mcp__*Rovo*/mcp__*Atlassian*
-# call would also fire on jira-acli's OWN correct usage of those same MCP
-# tools underneath its skills, converting the intended reminder into friction
-# on the happy path. Confirmed incident this answers: TP-809/TP-806
-# (2026-07-06) -- raw `acli ... --description-file` on a PRD/finding text file
-# bypassed jira-acli's canonical template, flattening ADF into one paragraph.
+# Why still non-blocking here (the actual block lives elsewhere now): this
+# fires on the PROMPT, before any tool call exists yet, so there is nothing
+# to block -- it is the earliest-possible reminder, not the enforcement
+# boundary. The enforcement boundary is gates/atlassian-mcp-gate.sh
+# (gate:mcp:atlassian-cold-start in hooks.json), added 2026-07-15 after this
+# nudge alone proved insufficient in practice -- it hard-blocks (exit 2) any
+# direct mcp__*atlassian*/mcp__*rovo* call until a jira-acli:* skill has
+# loaded that session, and specifically does NOT fire on jira-acli's own
+# in-skill MCP fallback (a session-scoped "engaged" marker set when the skill
+# loads), so it doesn't create the happy-path friction this file used to cite
+# as the reason to stay advisory-only. The two layers are complementary: this
+# one nudges before the first tool call; that one blocks the call itself.
+# Confirmed incident this answers: TP-809/TP-806 (2026-07-06) -- raw
+# `acli ... --description-file` on a PRD/finding text file bypassed
+# jira-acli's canonical template, flattening ADF into one paragraph.
 #
 # Heuristic (revised 2026-07-08 after false positives): a bare mention of
 # jira/confluence is NOT enough -- in harness/dotfiles sessions "jira" is a
