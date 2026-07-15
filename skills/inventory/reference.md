@@ -6,7 +6,7 @@
 |---|---|
 | Skills | YAML frontmatter `description:` in `SKILL.md` |
 | Commands / Agents | YAML frontmatter `description:` in the `.md` file |
-| Hooks | First `# ` comment line, skipping shebang and `Author/Copyright/License/SPDX` lines |
+| Hooks | First comment paragraph (`.sh`/`.py`), skipping shebang and `Author/Copyright/License/SPDX`/pragma-directive lines — concatenated to one line, capped at 12 accumulated lines |
 
 Items without a description show `(no description)` — flag for the user to add one.
 
@@ -23,8 +23,12 @@ This produces a markdown table with:
 | Section | Columns |
 |---|---|
 | **Agents** | name, domain summary, `tools:` grant, mutates (yes/no) |
+| **Commands** | name, description |
 | **Skills** | name, description, dispatched agent (if any), invoke mode (auto/manual) |
 | **Hooks** | name, purpose summary |
+| **Output styles** | name, description |
+
+`--repo-only` mode prints these tables only — no separate bulleted-list dump (removed 2026-07-15; it duplicated the tables 1:1 for the same entities). Use `inventory.sh` directly for a plain listing.
 
 Use this to verify `orchestrate` routing table accuracy, detect tool-grant drift, or onboard a new agent to the fleet.
 

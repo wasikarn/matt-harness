@@ -149,14 +149,30 @@ fm_in_fm_section() {
   ' "$file"
 }
 
-# fm_hook_desc — extract the first descriptive `# ...` comment from a hook
-# file. NOT a frontmatter parser: hook files are .sh/.py with a shebang
-# line and a series of `#` comments, not a YAML block. Original semantics
-# preserved verbatim from inventory.sh:29-35.
+# fm_hook_desc — extract the first descriptive comment PARAGRAPH from a hook
+# file (concatenated to one line). NOT a frontmatter parser: hook files are
+# .sh/.py with a shebang line and a series of `#` comments, not a YAML block.
+#
+# Revised 2026-07-15: the original single-line version (`print; exit` on the
+# first `# ` match) truncated any hook whose lead comment spans multiple
+# lines -- e.g. flow-nudge.sh's description cut off mid-sentence at a
+# trailing comma -- and had no guard against a `disable=...` pragma comment,
+# which got printed as if it were the description (see test-flow-nudge.sh).
+# Fix: skip shebang/Author/Copyright/License/SPDX/pragma-directive lines,
+# then accumulate consecutive `# ` lines into one space-joined paragraph,
+# stopping at the first blank comment line (`#`
+# alone), the first non-comment line, or a 12-line cap (worktree-guard.py has
+# no blank-comment break and runs 16 lines straight into `import` -- the cap
+# keeps that one outlier from ballooning a table cell; every other current
+# hook file's lead paragraph is <=9 lines and finishes naturally well under
+# the cap, so it never fires a spurious truncation marker on them).
 fm_hook_desc() {
   awk '
-    /^#!/                                    { next }
-    /^# *(Author|Copyright|License|SPDX)/    { next }
-    /^# /                                    { sub(/^# */, ""); print; exit }
+    /^#!/                                          { next }
+    /^# *(Author|Copyright|License|SPDX|shellcheck)/ { next }
+    /^# *$/                                        { if (buf != "") exit; next }
+    /^# /                                           { sub(/^# */, ""); buf = (buf == "" ? $0 : buf " " $0); n++; if (n >= 12) { print buf " […]"; exit } next }
+    { if (buf != "") exit }
+    END { if (buf != "") print buf }
   ' "$1"
 }

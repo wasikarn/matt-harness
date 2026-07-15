@@ -59,6 +59,22 @@ print_boundary() {
     done
   fi
 
+  # Commands
+  if [ -d "$base/commands" ] && [ -n "$(ls -A "$base/commands" 2>/dev/null)" ]; then
+    echo ""
+    echo "## Commands — $label"
+    echo "| Command | Description |"
+    echo "|---|---|"
+    for f in "$base/commands"/*.md "$base/commands"/*/COMMAND.md; do  # top-level *.md + one-level-nested */COMMAND.md, mirrors inventory.sh md-file mode
+      [ -f "$f" ] || continue
+      local name desc
+      name=$(basename "$f" .md)
+      [ "$name" = "COMMAND" ] && name=$(basename "$(dirname "$f")")
+      desc=$(fm_get "$f" description --block)
+      printf "| %s | %s |\n" "$name" "${desc:-—}"
+    done
+  fi
+
   # Skills
   if [ -d "$base/skills" ] && [ -n "$(ls -A "$base/skills" 2>/dev/null)" ]; then
     echo ""
@@ -78,9 +94,10 @@ print_boundary() {
     done
   fi
 
-  # Hooks (lightweight — just name + first comment). Recursive: real hooks
-  # live under gates/advisory/session/stop/tests, not flat in hooks/ — a
+  # Hooks (lightweight — just name + first comment paragraph). Recursive: real
+  # hooks live under gates/advisory/session/stop/tests, not flat in hooks/ — a
   # shallow glob only ever matched hooks.json (see inventory.sh hook-file mode).
+  # .py included (worktree-guard.py) — hooks aren't all bash.
   if [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; then
     echo ""
     echo "## Hooks — $label"
@@ -90,9 +107,9 @@ print_boundary() {
       [ -f "$f" ] || continue
       local name purpose
       name=$(basename "$f")
-      purpose=$(awk '/^# /&&!/^# !/{sub(/^# /,"");print;exit}' "$f")
+      purpose=$(fm_hook_desc "$f")
       printf "| %s | %s |\n" "$name" "${purpose:-—}"
-    done < <(find "$base/hooks" -type f -name '*.sh' | sort)
+    done < <(find "$base/hooks" -type f \( -name '*.sh' -o -name '*.py' \) | sort)
   fi
 
   # Output styles — registered via /output-style <name>; same frontmatter
@@ -121,7 +138,7 @@ echo "# Boundary Map"
 # Cache path stays literal because it IS host-relative (under $HOME) — that's
 # the only stable form across machines for that one command.
 echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<kbg-harness>\` is the kbg-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
-echo "_Schema version: v3 (adds Output styles table; Mutates column reflects Edit/Write/Bash grant)._"
+echo "_Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented \"Boundary map\" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._"
 
 # Resolve repo root via git (works regardless of where the script is invoked from).
 # `git rev-parse --show-toplevel` is path-safe for any working tree layout.
@@ -135,7 +152,11 @@ if [ "${1:-}" = "--repo-only" ]; then
   # Repo-scoped: only THIS repo's claude/ artifacts. Excludes plugins and
   # other globally-installed skills/agents under ~/.claude — this is the
   # committed canonical map the audit (#16) diffs the live source against.
-  bash "$SCRIPT_DIR/inventory.sh" "$REPO_CLAUDE"
+  # No inventory.sh call here (2026-07-15): its bulleted list duplicated
+  # print_boundary's tables 1:1 (same entities, same descriptions) — ~2,900+
+  # tokens of dead weight in the committed BOUNDARY.md. Tables are a strict
+  # superset (extra columns) now that Commands has one too, so the list added
+  # nothing print_boundary doesn't already cover.
   print_boundary "Repo" "$REPO_CLAUDE"
 elif [ -n "${1:-}" ]; then
   # Host-portable label: use repo-relative tail so the artifact doesn't leak

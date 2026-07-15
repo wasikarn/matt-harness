@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.52.1] — 2026-07-15
+
+Fix pass on `inventory-boundary.sh` (the `BOUNDARY.md` generator), triggered
+by a token-optimizer audit of the dotfiles repo's routing docs. Three bugs,
+one shared root cause (the boundary map and the plain-list dump had drifted
+into duplicating each other):
+
+- **Dropped the redundant list dump in `--repo-only` mode.** The generator
+  called `inventory.sh`'s bulleted list AND `print_boundary`'s markdown
+  tables for the same Skills/Agents/Hooks entities — near-total duplication,
+  ~2,900+ tokens of dead weight in the committed `BOUNDARY.md`.
+  `skills/inventory/reference.md` already documented the boundary output as
+  tables-only; the code just never matched. Added a `Commands` table to
+  `print_boundary` (the one section the list covered that the tables
+  didn't) so nothing was lost, then removed the list call.
+- **Fixed `fm_hook_desc` truncation.** It grabbed only the first `# ` comment
+  line then exited, cutting descriptions off mid-sentence for any hook whose
+  header spans multiple lines (e.g. `flow-nudge.sh` ended on a trailing
+  comma), and had no guard against a `# shellcheck disable=...` pragma line
+  showing up as if it were the description (`test-flow-nudge.sh`). Now
+  concatenates the full first comment paragraph, skipping pragma/
+  Author/Copyright/License/SPDX lines, capped at 12 accumulated lines so the
+  one hook with no natural paragraph break (`worktree-guard.py`, 16 lines
+  straight into `import`) doesn't balloon a table cell.
+- **Widened the hook glob to include `.py`.** Both `inventory.sh` and
+  `inventory-boundary.sh` globbed hooks as `-name '*.sh'` only, silently
+  missing `hooks/gates/worktree-guard.py` — a live, `hooks.json`-wired gate.
+  Fleet count was undercounting hooks by one everywhere this glob was used.
+
+Schema bumped to v4 (Commands table, no list dump, full-paragraph Hooks
+purpose). `docs/hooks.md` and `HARNESS.md` in the dotfiles repo separately
+drifted into describing a pre-2026-06-10-cutover hook/skill fleet that no
+longer exists (zero overlap with the current 20 hooks) — out of scope for
+this repo, tracked as a dotfiles-side rewrite.
+
+## [0.52.0] — 2026-07-15
+
+Retroactive entry — shipped (`4cf5b33`, `1a8be74`) without a CHANGELOG note;
+backfilled during the `0.52.1` pass above.
+
+Added `hooks/gates/atlassian-mcp-gate.sh`: a PreToolUse cold-start guard that
+hard-blocks (exit 2) any direct `mcp__*atlassian*`/`mcp__*rovo*` call before
+a `jira-acli:*` skill has loaded that session. Escalates the existing
+"route through jira-acli first" doctrine (`CLAUDE.md` prose +
+`advisory/jira-route-nudge.sh`'s UserPromptSubmit reminder) from advisory to
+computational — both proved insufficient in practice (still routing straight
+to the Atlassian MCP). Session-scoped marker at
+`~/.local/share/kbg/jira-acli-sessions/<session_id>`; once `jira-acli:acli` /
+`jira-acli:jira-content` / `jira-acli:confluence-content` loads once, later
+Atlassian MCP calls that session are allowed (intentional — those skills'
+own documented fallback list legitimately calls the same MCP). Escape hatch:
+`KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1`.
+
 ## [0.51.6] — 2026-07-15
 
 Closed a real incident: in a tathep session (not this repo), the model proposed

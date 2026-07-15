@@ -51,7 +51,7 @@ print_section() {
   case "$mode" in
     skill-dir)  for d in "$path"/[!_]*/; do items+=("${d%/}"); done ;;  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit
     md-file)    for f in "$path"/*.md "$path"/*/COMMAND.md; do [ -f "$f" ] && items+=("$f"); done ;;  # top-level *.md + one-level-nested */COMMAND.md (mirrors audit check 37's command glob; excludes nested references/*.md)
-    hook-file)  while IFS= read -r f; do items+=("$f"); done < <(find "$path" -type f -name '*.sh' | sort) ;;  # recursive: real hooks live under gates/advisory/session/stop/tests, not flat in hooks/
+    hook-file)  while IFS= read -r f; do items+=("$f"); done < <(find "$path" -type f \( -name '*.sh' -o -name '*.py' \) | sort) ;;  # recursive: real hooks live under gates/advisory/session/stop/tests, not flat in hooks/; .py included (worktree-guard.py)
   esac
   shopt -u nullglob
 
