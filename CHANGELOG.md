@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.52.2] — 2026-07-15
+
+Follow-up fix to `0.52.1`'s `fm_hook_desc`, caught by re-diffing the
+regenerated `BOUNDARY.md` before committing it downstream. The capped-length
+branch did `print buf " […]"; exit` — but awk's `exit` inside a pattern rule
+still runs `END`, and `END` unconditionally did `if (buf != "") print buf`,
+so the one hook that hits the 12-line cap (`worktree-guard.py`) printed its
+paragraph twice: once correctly truncated, once again raw with no marker.
+Fixed with a `printed` guard flag so `END` only prints when the main body
+didn't already. Every other hook was unaffected (they exit via the
+blank-comment-line or code-line branches, which never print before exiting).
+
 ## [0.52.1] — 2026-07-15
 
 Fix pass on `inventory-boundary.sh` (the `BOUNDARY.md` generator), triggered

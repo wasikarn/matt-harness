@@ -171,8 +171,8 @@ fm_hook_desc() {
     /^#!/                                          { next }
     /^# *(Author|Copyright|License|SPDX|shellcheck)/ { next }
     /^# *$/                                        { if (buf != "") exit; next }
-    /^# /                                           { sub(/^# */, ""); buf = (buf == "" ? $0 : buf " " $0); n++; if (n >= 12) { print buf " […]"; exit } next }
+    /^# /                                           { sub(/^# */, ""); buf = (buf == "" ? $0 : buf " " $0); n++; if (n >= 12) { print buf " […]"; printed=1; exit } next }
     { if (buf != "") exit }
-    END { if (buf != "") print buf }
+    END { if (!printed && buf != "") print buf }
   ' "$1"
 }
