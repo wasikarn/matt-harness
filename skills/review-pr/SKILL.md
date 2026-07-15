@@ -237,6 +237,15 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```bash
    STATE_DIR="${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
    mkdir -p "$STATE_DIR"
+   # DESTINATION — $STATE_DIR is OUTSIDE the throwaway worktree ($WT from Phase 2).
+   # Write the state file HERE, not to .scratch/ — .scratch/ is a relative path that
+   # resolves INSIDE $WT (rejected.md/ledger.md live there and are intentionally
+   # ephemeral), so anything written to .scratch/ is deleted in step 4's worktree
+   # cleanup. The state file is different: /ship-merge reads it AFTER the worktree
+   # is gone, so it MUST survive cleanup. (Reported in production: PR #2619's
+   # review-pr-2619.json was written to $WT/.scratch/ and lost with the worktree,
+   # so the merge gate read "no review ran." The assertion after the write below
+   # exists to make that failure loud instead of silent.)
    # REHUNT_STATUS (Phase 5 step 3.6): "clean" (ran, nothing) | "skipped-trivial" | "incomplete"
    # (required but hunter errored/timed out) | "n/a" (findings existed → 3.5 path, no re-hunt).
    # An incomplete re-hunt or ANY dispatch failure means the review never certified zero criticals.
@@ -265,6 +274,18 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      "$REVIEW_MODE" \
      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
      > "$STATE_FILE"
+   # Post-write assertion — the state file MUST land OUTSIDE $WT so step 4's
+   # `git worktree remove "$WT" --force` can't delete it. If this exits non-zero,
+   # the write went to the wrong place (a prior run wrote to $WT/.scratch/ and
+   # lost the file to cleanup) — fix the path and re-run the block BEFORE step 4.
+   if [ -n "${WT:-}" ]; then
+     STATE_FILE_DIR=$(cd -- "$(dirname -- "$STATE_FILE")" && pwd -P)
+     WT_REAL=$(cd -- "$WT" && pwd -P)
+     case "$STATE_FILE_DIR" in
+       "$WT_REAL"|"$WT_REAL"/*) echo "ERROR: state file $STATE_FILE resolves INSIDE $WT — it will be deleted by step 4's cleanup. Rewrite it to \$STATE_DIR (outside the worktree) and re-run this block before proceeding." >&2; exit 1 ;;
+     esac
+   fi
+   test -s "$STATE_FILE" || { echo "ERROR: state file $STATE_FILE is missing/empty after write" >&2; exit 1; }
    ```
    `CRITICAL_COUNT` = number of Critical findings from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
 2. Summarize:
