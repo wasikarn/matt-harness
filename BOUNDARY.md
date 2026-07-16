@@ -111,7 +111,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-16T08:40:48Z_
+_Generated: 2026-07-16T08:56:15Z_
 
 ---
 
