@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.50.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.58.7-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 13 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus a set of matt-pocock skills installed separately via `gh skill` (see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 17 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus a set of matt-pocock skills installed separately via `gh skill` (see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -86,7 +86,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | Component | Count | How to invoke |
 |---|---|---|
 | **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (some matt-origin skills now install via `gh skill`, unnamespaced — e.g. `grilling`) |
-| **Agents** | 13 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Agents** | 17 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 17 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
@@ -129,15 +129,19 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | Agent | Role |
 |---|---|
 | `code-architect` | System design, module boundaries, and dependency decisions |
+| `backend-architect` | API contracts, service boundaries, data ownership, caching, reliability — the systems-design layer above framework-narrow `*-patterns` skills |
 | `security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks |
 | `code-reviewer` | Quality, correctness, patterns, and missing edge cases |
 | `performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs |
 | `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
 | `silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns |
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
-| `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` | Language-specific review — type safety, idioms, async correctness, Dart/Flutter widgets and state management |
+| `requirement-analyst` | Senior-level requirement analysis of a ticket/spec/PRD — ambiguities, missing ACs, edge cases, readiness verdict |
+| `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Dart/Flutter widgets, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
+| `summarizer` | Clarity/compression specialist — condenses long content into filler-free prose for any audience |
 | `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
+| `task-prep-checker` | Fresh-context verifier for a `task-prep` handoff prompt — runs the golden-rule colleague test |
 
 ### Tathep Platform
 
@@ -164,7 +168,7 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 13 specialist subagents (.md each)
+├── agents/               # 17 specialist subagents (.md each)
 ├── skills/               # 33 workflow skills (SKILL.md per directory)
 ├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
@@ -236,17 +240,17 @@ git config core.hooksPath git-hooks
 
 kbg-harness aggregates components from these upstream projects under their respective licenses.
 
-> **Point-in-time snapshot (counts as of 2026-07-14), not live-derived.** There is no
+> **Point-in-time snapshot (counts as of 2026-07-17), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 33 skills · 13 agents · 17 commands).
+> `ls commands/` (real current fleet: 33 skills · 17 agents · 17 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 20 skills, installed verbatim via `gh skill` (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 33 skills · 13 agents · 17 commands |
+| kbg-native | MIT | 33 skills · 17 agents · 17 commands |
 
 ---
 

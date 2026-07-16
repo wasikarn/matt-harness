@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.7] — 2026-07-17
+
+Closed a gap found while field-testing the `requirement-analyst` → `code-architect` → Plan-Mode
+chain against the v0.58.5 token-optimizer pass on `orchestrate/SKILL.md` (a "should we build a
+Planner Subagent" investigation that concluded no — the existing chain already covers it; see
+memory `planner-subagent-descoped-2026-07-17.md`). `requirement-analyst` flagged cross-reference
+integrity as an unstated risk of "apply all 4"; verifying it by hand found the risk hadn't
+materialized, but surfaced a real, separate gap: `docs/common-mistakes.md` embeds two
+`grep -c "<pattern>" orchestrate/SKILL.md` self-check snippets (Mistake 4, Mistake 5) asserting a
+non-zero count, and nothing re-runs them when `orchestrate/SKILL.md` changes — this was the first
+time either had actually been re-checked since being written.
+
+Added **check 43** (`43-orchestrate-doc-self-check-drift.sh`): extracts the `grep -c "<pattern>"`
+assertions directly from `docs/common-mistakes.md` (rather than hardcoding "Done-when"/"validation
+chain" a second time — a future self-check added to the doc is covered with no check edit needed)
+and WARNs if either now returns 0 against the live `orchestrate/SKILL.md`. Same defect class as
+checks 37-40 (doc-embedded claim vs. live surface can silently drift apart) — see
+[[sync-seam-defect-class]]. WARN, not CRIT: doc-rot, not a build break. Currently clean (both
+counts non-zero) — this run was the first actual verification, not evidence it was already
+covered. Fragment-integrity guard bumped 42 → 43 in `audit.sh`.
+
 ## [0.58.6] — 2026-07-17
 
 Closed a gap surfaced while checking `/kbg-help`'s routing table: nothing in the fleet reported
