@@ -117,6 +117,57 @@ Common fixes:
 
 Prefer null-safe patterns (`??`, guard-then-unwrap) over bang operators (`!`); never add `// ignore:` suppressions without approval.
 
+## Rust Diagnostics
+
+```bash
+cargo build 2>&1
+cargo check 2>&1        # faster — type/borrow check without codegen
+```
+
+Common fixes:
+
+| Error | Fix |
+|-------|-----|
+| `cannot borrow \`x\` as mutable because it is also borrowed as immutable` | Shrink the immutable borrow's scope (end it before the mutable one starts), or clone if the value is cheap |
+| `\`x\` does not live long enough` | Extend the value's lifetime (bind it to an outer `let`) or restructure so the borrow doesn't outlive its owner — don't reach for `'static` as a first fix |
+| `cannot move out of \`x\` because it is borrowed` | Clone, or restructure to move after the borrow ends |
+| `the trait bound \`X: Y\` is not satisfied` | Implement the trait for `X`, or add the bound to the generic signature |
+| `mismatched types: expected \`&str\`, found \`String\`` | Add `&` or `.as_str()` at the call site — read which direction the mismatch goes before guessing |
+
+## Go Diagnostics
+
+```bash
+go build ./... 2>&1
+go vet ./...
+go mod tidy 2>&1         # reconciles go.mod with actual imports
+```
+
+Common fixes:
+
+| Error | Fix |
+|-------|-----|
+| `ambiguous import: found package X in multiple modules` | Run `go mod tidy`; check for a stale `replace` directive in `go.mod` |
+| `missing go.sum entry` | `go mod download` then `go mod tidy` — never hand-edit `go.sum` |
+| `imported and not used` | Remove the import, or prefix with `_` only if the side-effect (init) is intentional |
+| version-resolution conflict (`requires X@v1, but Y requires X@v2`) | Check `go mod graph` for the conflicting requirer; bump the older one or add an explicit `require` pin in `go.mod` |
+| `declared and not used` | Remove the variable, or `_ = x` only if intentionally discarding (rare — usually a real bug) |
+
+## Gradle Diagnostics
+
+```bash
+./gradlew build 2>&1
+./gradlew dependencies 2>&1   # print the resolved dependency tree
+```
+
+Common fixes:
+
+| Error | Fix |
+|-------|-----|
+| `Could not resolve X: Conflict(s) found for the following module(s)` | Run `./gradlew dependencies --configuration compileClasspath` to find the conflicting versions, then force a resolution strategy or align via a BOM |
+| `Duplicate class found in modules X and Y` | Two dependencies bundle the same class (often a transitive shading conflict) — exclude the transitive dep from one of them |
+| `Execution failed for task ':app:compileDebugJavaWithJavac'` | Read the underlying javac error above this line — this is a wrapper failure, the real error is further up the log |
+| Version catalog / `libs.versions.toml` mismatch | Confirm the alias used in `build.gradle.kts` matches the catalog key exactly (typos here fail silently as "not found") |
+
 ## Recovery Strategies (Cross-Ecosystem)
 
 | Situation | Action |

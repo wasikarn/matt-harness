@@ -48,6 +48,34 @@ For each item to remove:
 - Check if part of public API
 - Review git history for context
 
+**False-negative traps — where "zero static references" still means "in use":**
+static detection tools (`knip`, `ts-prune`, `vulture`, `deadcode`) find *lexical* references;
+they miss usage that happens through indirection. Check each of these before trusting a
+zero-reference result:
+
+- **Barrel/re-export chains** — `export * from './foo'` in an `index.ts` can make a tool see
+  the re-export as "unused" while the original module is genuinely consumed through the
+  barrel. Trace re-exports to their actual consumers before removing either end.
+- **DI-decorator "magic" registration** — `@Injectable()` (NestJS), `@Component` (Spring),
+  `@app.route` (Flask), or any decorator-based registration means the class/function is
+  "used" by the framework's runtime scanner, not by a lexical import anywhere in the code.
+  Grep for the decorator/registration string, not just import statements.
+- **Dynamic dispatch / reflection** — `getattr(obj, method_name)`, `Class.forName()`,
+  `require(pathVariable)`, a route/command registry keyed by string name. Grep for the string
+  literal (the method/class/route name as text) across the repo, not just for import sites.
+- **Framework-registered entry points never explicitly imported** — a Next.js file-route
+  (`pages/api/foo.ts`), a cron job registered by filename convention, a migration file run by
+  a runner that globs the directory, a test file discovered by a test runner's glob pattern.
+  These are "used" by directory convention; a tool that only understands import graphs will
+  flag every one of them as dead.
+- **String-based DI tokens / GraphQL resolver maps / CLI command registries** — anywhere a
+  string key maps to a handler at runtime instead of a static import. Grep the key string.
+
+If a detection tool's "unused" verdict can't be confirmed by at least one of: a grep for the
+string-form reference, a check of the framework's registration convention, or git blame
+showing it was added and used recently — downgrade from SAFE to CAREFUL and verify manually
+before removing.
+
 ### 3. Remove Safely
 - Start with SAFE items only
 - Remove one category at a time: deps -> exports -> files -> duplicates

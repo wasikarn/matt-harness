@@ -37,33 +37,115 @@ npx eslint . --plugin security
 - Run `npm audit`, `eslint-plugin-security`, search for hardcoded secrets
 - Review high-risk areas: auth, API endpoints, DB queries, file uploads, payments, webhooks
 
-### 2. OWASP Top 10 Check
-1. **Injection** — Queries parameterized? User input sanitized? ORMs used safely?
-2. **Broken Auth** — Passwords hashed (bcrypt/argon2)? JWT validated? Sessions secure?
-3. **Sensitive Data** — HTTPS enforced? Secrets in env vars? PII encrypted? Logs sanitized?
-4. **XXE** — XML parsers configured securely? External entities disabled?
-5. **Broken Access** — Auth checked on every route? CORS properly configured?
-6. **Misconfiguration** — Default creds changed? Debug mode off in prod? Security headers set?
-7. **XSS** — Output escaped? CSP set? Framework auto-escaping?
-8. **Insecure Deserialization** — User input deserialized safely?
-9. **Known Vulnerabilities** — Dependencies up to date? npm audit clean?
-10. **Insufficient Logging** — Security events logged? Alerts configured?
+### 2. OWASP Top 10 Check (with CWE references)
+1. **Injection** (CWE-89 SQL, CWE-78 OS command, CWE-943 NoSQL) — Queries parameterized? User input sanitized? ORMs used safely?
+2. **Broken Auth** (CWE-287, CWE-347 JWT signature) — Passwords hashed (bcrypt/argon2)? JWT validated? Sessions secure?
+3. **Sensitive Data** (CWE-311, CWE-312) — HTTPS enforced? Secrets in env vars? PII encrypted? Logs sanitized?
+4. **XXE** (CWE-611) — XML parsers configured securely? External entities disabled?
+5. **Broken Access** (CWE-862 missing auth, CWE-639 IDOR) — Auth checked on every route? Object ownership checked, not just authentication? CORS properly configured?
+6. **Misconfiguration** (CWE-16) — Default creds changed? Debug mode off in prod? Security headers set?
+7. **XSS** (CWE-79) — Output escaped? CSP set? Framework auto-escaping?
+8. **Insecure Deserialization** (CWE-502) — User input deserialized safely?
+9. **Known Vulnerabilities** (CWE-1104) — Dependencies up to date? npm audit clean?
+10. **Insufficient Logging** (CWE-778) — Security events logged? Alerts configured?
+11. **SSRF** (CWE-918) — Server-side requests to a user-supplied or user-influenced URL? See dedicated section below.
 
 ### 3. Code Pattern Review
 Flag these patterns immediately:
 
-| Pattern | Severity | Fix |
-|---------|----------|-----|
-| Hardcoded secrets | CRITICAL | Use `process.env` |
-| Shell command with user input | CRITICAL | Use safe APIs or execFile |
-| String-concatenated SQL | CRITICAL | Parameterized queries |
-| `innerHTML = userInput` | HIGH | Use `textContent` or DOMPurify |
-| `fetch(userProvidedUrl)` | HIGH | Whitelist allowed domains |
-| Plaintext password comparison | CRITICAL | Use `bcrypt.compare()` |
-| No auth check on route | CRITICAL | Add authentication middleware |
-| Balance check without lock | CRITICAL | Use `FOR UPDATE` in transaction |
-| No rate limiting | HIGH | Add `express-rate-limit` |
-| Logging passwords/secrets | MEDIUM | Sanitize log output |
+| Pattern | CWE | Severity | Fix |
+|---------|-----|----------|-----|
+| Hardcoded secrets | CWE-798 | CRITICAL | Use `process.env` |
+| Shell command with user input | CWE-78 | CRITICAL | Use safe APIs or execFile |
+| String-concatenated SQL | CWE-89 | CRITICAL | Parameterized queries |
+| `innerHTML = userInput` | CWE-79 | HIGH | Use `textContent` or DOMPurify |
+| `fetch(userProvidedUrl)` | CWE-918 | HIGH | Whitelist allowed domains + block private IP ranges |
+| Plaintext password comparison | CWE-256 | CRITICAL | Use `bcrypt.compare()` |
+| No auth check on route | CWE-862 | CRITICAL | Add authentication middleware |
+| Auth OK but no ownership check | CWE-639 | CRITICAL | Compare resource owner to authenticated user, not just "is logged in" |
+| Balance check without lock | CWE-362 | CRITICAL | Use `FOR UPDATE` in transaction |
+| No rate limiting | CWE-307 | HIGH | Add `express-rate-limit` |
+| Logging passwords/secrets | CWE-532 | MEDIUM | Sanitize log output |
+
+### 3b. Concrete Patterns (BAD → GOOD)
+
+**SQL injection (CWE-89):**
+```javascript
+// BAD: user input concatenated into the query
+const rows = await db.query(`SELECT * FROM users WHERE email = '${email}'`);
+
+// GOOD: parameterized (MySQL/MariaDB ? — Postgres $1)
+const rows = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+```
+
+**IDOR — auth present, ownership missing (CWE-639):** the single most common gap between
+"looks secure" and "is secure" — auth middleware passing does not mean access control passed.
+```javascript
+// BAD: any authenticated user can read any invoice by guessing the ID
+app.get('/invoices/:id', requireAuth, async (req, res) => {
+  const invoice = await db.getInvoice(req.params.id);
+  res.json(invoice);
+});
+
+// GOOD: ownership checked against the authenticated principal
+app.get('/invoices/:id', requireAuth, async (req, res) => {
+  const invoice = await db.getInvoice(req.params.id);
+  if (!invoice || invoice.userId !== req.user.id) return res.sendStatus(404);
+  res.json(invoice);
+});
+```
+
+**JWT `alg: none` / algorithm confusion (CWE-347):** if the verifier accepts whatever `alg`
+the token header claims, an attacker crafts an unsigned or HS256-signed-with-the-public-key
+token and the app trusts it.
+```javascript
+// BAD: algorithm taken from the attacker-controlled token header
+jwt.verify(token, secretOrPublicKey);
+
+// GOOD: pin the expected algorithm explicitly
+jwt.verify(token, secretOrPublicKey, { algorithms: ['RS256'] });
+```
+
+**Mass assignment (CWE-915):** spreading a request body straight into a DB write lets the
+client set fields it was never meant to control.
+```javascript
+// BAD: client can pass { "role": "admin" } in the body and it sticks
+await db.users.update(req.user.id, { ...req.body });
+
+// GOOD: allowlist the fields the client is permitted to set
+const { name, email } = req.body;
+await db.users.update(req.user.id, { name, email });
+```
+
+**SSRF (CWE-918):** a server-side fetch of a user-supplied URL (webhooks, image proxies,
+URL-preview features) can reach internal services (`169.254.169.254` cloud metadata, internal
+admin panels on `10.x`/`192.168.x`, `localhost`) that are unreachable from outside.
+```javascript
+// BAD: fetches whatever URL the client passed
+const res = await fetch(req.body.webhookUrl);
+
+// GOOD: resolve, then reject private/link-local/loopback ranges before fetching
+const url = new URL(req.body.webhookUrl);
+if (['localhost', '127.0.0.1', '169.254.169.254'].includes(url.hostname) || isPrivateIp(url.hostname)) {
+  return res.status(400).send('Blocked target');
+}
+const result = await fetch(url, { redirect: 'error' }); // also block redirect-based bypass
+```
+
+### 3c. Attack Chains — Vulnerabilities Rarely Live Alone
+
+A single MEDIUM finding can be the missing link in a CRITICAL chain. Check whether findings
+compose before scoring them independently:
+
+- **IDOR (CWE-639) + no rate limiting (CWE-307)** → an attacker enumerates sequential/guessable
+  IDs at scale and scrapes every user's data, not just one. Score the *combination* CRITICAL
+  even if each piece alone is HIGH/MEDIUM.
+- **XSS (CWE-79) + missing `httpOnly` on session cookie** → a reflected/stored XSS becomes full
+  session takeover, not just a defaced page. Always check cookie flags when XSS is present.
+- **Mass assignment (CWE-915) + no role-check on write** → privilege escalation to admin in one
+  request, not just an unexpected field write.
+- **SSRF (CWE-918) + cloud deployment** → often escalates straight to instance-metadata
+  credential theft (CWE-918 → CWE-522), not "just" an internal port scan.
 
 ## Key Principles
 
