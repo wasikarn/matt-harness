@@ -56,7 +56,7 @@ For urgent, not-important, bounded compound work — decompose then execute via 
 
 **Not the host Workflow tool.** "Batch" and "Pipeline" below are a manual bash-scripted loop over the `Agent` tool (see the pseudocode) — a dispatch *style*, not the CC `Workflow` tool's JS `parallel()`/`pipeline()` runtime described later in this doc ("Dynamic-workflow pattern vocabulary"). The L-number is a dispatch tier, unrelated to the retired L2–L5 autonomy-flag ladder (ADR 0006) — every tier here stays human-gated.
 
-The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md § Validation chain (TaskCreate + addBlockedBy)`. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
+The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md § Validation chain (TaskCreate + addBlockedBy)`; the worked example is below. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
 
 ### Decompose
 
@@ -80,6 +80,69 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 # Run stage by stage, injecting previous stage outputs into next stage prompts
 # Validate end-to-end with py_compile / tsc / bash -n before integration
 ```
+
+## Validation chain — worked example
+
+Concrete 4-task chain for implementing `GET /health` (the compressed version lives in SKILL.md §
+Validation chain, "Worked example"; full spawn prompts below).
+
+**Task 1 — Builder: implement endpoint**
+
+```
+# Task: Implement GET /health
+
+## What
+Add a health check endpoint that returns 200 with JSON body.
+
+## Where
+`src/api/routes/health.py`
+
+## Focus
+Minimal blast radius — no new dependencies.
+
+## Deliverable
+`src/api/routes/health.py` exists and `GET /health` returns `{"status":"ok"}`.
+
+## FILES YOU OWN
+- src/api/routes/health.py
+
+## UPSTREAM CONTRACTS
+(Empty list — first task in chain.)
+
+## Files + Criteria + Constraints
+| File | Criterion | Constraint |
+|------|-----------|------------|
+| src/api/routes/health.py | exports `GET /health` handler | no new deps |
+
+## Done-when
+- [ ] `GET /health` returns HTTP 200 + `{"status":"ok"}`
+- [ ] `bash -n src/api/routes/health.py` exits 0
+- [ ] No edit to files outside FILES YOU OWN
+```
+
+Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
+
+**Task 2 — Validator: review PR** (same template shape as Task 1, abbreviated here)
+
+What: review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md` with pass/fail + file:line citations. Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, every finding cites file:line, no file was edited.
+
+Spawn **ungated** — validators are read-only by allowlist (see SKILL.md's "Validator safety" note, under Gating rules, for why there's no runtime backstop beyond the allowlist).
+
+**Task 3 — Fixer: address review findings** (conditional — only spawned if Task 2's verdict is `fail`)
+
+What: address every T2 finding verbatim. Upstream contract: the verbatim findings from `.scratch/health-review/verdict.md`, reproduced in the fix commit message. Done-when: every T2 finding is fixed or explicitly rejected with reason, no new files outside FILES YOU OWN.
+
+Spawn with `AskUserQuestion` (gated — fixer holds Edit/Write/Bash).
+
+**Task 4 — Re-validator: OWASP scan**
+
+What: security scan on the final `src/api/routes/health.py`. Upstream contracts: the final diff from Task 3 (lead runs `git diff` after Task 3 and pastes it in) plus Task 1's file (verify the final code doesn't re-introduce old patterns). Done-when: security verdict exists and is `pass`, no file was edited.
+
+Spawn **ungated** — re-validators are read-only.
+
+**Lead check between waves**
+
+After spawning Task 1, the lead verifies its done-when (`GET /health` returns 200) before proceeding to Task 2. After Task 2 completes, the lead reads `.scratch/health-review/verdict.md`: if it says `fail`, spawn Task 3 (Fixer); otherwise skip straight to Task 4.
 
 ## Autonomous / Recurring Execution (L5)
 
@@ -169,3 +232,35 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 - **Overlapping-roles** — two agents with overlapping domain (e.g. `security-reviewer` and `silent-failure-hunter` both auditing error handling). Symptom: redundant findings, double-counted P0s. Fix: assign by primary lens, not by file ownership.
 - **F2 chain without the merge** — using `addBlockedBy` for ordering but skipping the 4-step merge after parallel fan-in. The chain is enforced; the reconciliation isn't.
 - **Anti-pattern in this anti-pattern list:** the 4-mistake taxonomy is a *checkable* list, not a *checklist*. Don't run all 4 against every dispatch — the value is naming, not scoring. Cite the mistake that fits the observed symptom, fix that one, move on.
+
+## External-model delegation — verification detail
+
+Supplementary evidence for `SKILL.md § External-model delegation`. The compressed pointers there
+link here; this is the full trail, not a routine read.
+
+**Backend identity check (`minimax-m3:cloud` trial, 2026-07-16).** The launch printed `claude.ai
+connectors are disabled because ANTHROPIC_API_KEY or another auth source is set and takes
+precedence over your claude.ai login` — worth ruling out before trusting the result, since a
+stray Anthropic auth source could in principle route the request to a real Claude model instead
+of Ollama's backend, making the "verified minimax-m3" claim false. Checked: no `ANTHROPIC_API_KEY`
+was set in the invoking shell; `docs.ollama.com/integrations/claude-code`'s manual-setup section
+confirms `ollama launch claude` routes via `ANTHROPIC_BASE_URL=http://localhost:11434`, not via
+API key, so the warning is about claude.ai's OAuth-gated connectors specifically, unrelated to
+which backend serves the coding request; and the model responded coherently to `--model
+minimax-m3:cloud`, a model ID Anthropic's own API would reject outright. Not an exhaustive proof,
+but three independent signals agree the request reached minimax-m3.
+
+**Direct write access for allowlisted models — full evidence trail (evaluated 2026-07-17).** No
+concrete task has hit propose-only's ceiling yet, and of the 3 allowlisted models only
+`kimi-k2.7-code:cloud` has any write-mode data at all — a measured failure, not an untested corner
+(it wrote a file despite `--allowedTools "Read" "Grep" "Glob"`); `minimax-m3:cloud`/
+`glm-5.2:cloud` have zero write-mode trials, only read-only-under-plan-mode verification.
+Cross-checked against a sibling harness (`oh-my-claudecode`): its trust-tiered-permission story is
+a single global on/off switch, not a graduated model — confirms this is genuinely unsolved
+territory, not a gap unique to this repo. If it reopens, build on `git worktree`-per-dispatch
+isolation (contains in-tree writes; does not by itself make the model trustworthy — it doesn't
+stop an out-of-tree write, a network call, or a subprocess) plus kbg's own scoring gate before
+merge — not an unconditional auto-merge gated only on absence of git conflicts (OMC's own
+auto-merge does exactly that, and it should not be copied). Decision record with full narrative:
+`CHANGELOG.md` v0.58.4; standing project memory:
+`external-model-write-access-deferred-2026-07-17.md`.

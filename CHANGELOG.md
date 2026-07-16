@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.5] — 2026-07-17
+
+Ran `/markdown-token-optimizer` against `skills/orchestrate/SKILL.md` (grown heavily this session
+— External-model delegation alone had reached ~2,600 tokens of the file's ~8,800). Applied all 4
+findings: trimmed a near-verbatim duplicate (the `validator-bash-guard.sh`-deleted-in-v0.6.0-reset
+note, stated in full twice 27 lines apart); moved the minimax-m3:cloud backend-identity
+verification note to `reference.md` behind a 1-line pointer; compressed the "Considered and
+deferred — direct write access" paragraph to its operational core (decision + the 2 re-open
+conditions), since the full evidence trail now also lives in `CHANGELOG.md` v0.58.4 and a
+dedicated memory file — it was duplicated 3 ways; and moved the 4-task worked example
+(`GET /health`) to `reference.md`, leaving a compressed inline summary. Net: SKILL.md
+35,284 → 31,570 chars (~928 tokens saved, ~11%); the moved content isn't lost, it's in
+`reference.md` (loaded on demand, not on every skill invocation) or already-existing decision
+records. Verified with the full gauntlet, not just plugin-validate.
+
 ## [0.58.4] — 2026-07-17
 
 Fixed a portability bug in v0.58.3's dispatch line: `skills/orchestrate/SKILL.md`

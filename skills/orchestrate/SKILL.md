@@ -119,67 +119,14 @@ The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the nat
 
 **Completion is owned by the main session, not the maker.** `addBlockedBy` gates *ordering*, but ordering alone does not stop a maker from marking its own task `completed` without B's pass — the maker-grading-its-own-work circularity. `gate:task:complete-separation` (`hooks/gates/task-complete-separation.sh`, wired on `PreToolUse:TaskUpdate`) closes that gap computationally: any subagent (`agent_type` present) that calls `TaskUpdate(status="completed")` is blocked at exit 2. So the maker (A) sets `in_progress` and **returns**; the validator (B) reviews and **returns its verdict to the main session**; the **main session** marks `completed` on B's pass. A subagent's `agent_type` is fixed at spawn and cannot be mutated, so a maker cannot forge completion — the only path is the main session (the operator proxy / trusted verifier of last resort). This is enforced at the hook, not by doctrine.
 
-### Worked example: health check endpoint
+### Worked example (compressed)
 
-Concrete 4-task chain for implementing `GET /health`.
-
-**Task 1 — Builder: implement endpoint**
-
-```
-# Task: Implement GET /health
-
-## What
-Add a health check endpoint that returns 200 with JSON body.
-
-## Where
-`src/api/routes/health.py`
-
-## Focus
-Minimal blast radius — no new dependencies.
-
-## Deliverable
-`src/api/routes/health.py` exists and `GET /health` returns `{"status":"ok"}`.
-
-## FILES YOU OWN
-- src/api/routes/health.py
-
-## UPSTREAM CONTRACTS
-(Empty list — first task in chain.)
-
-## Files + Criteria + Constraints
-| File | Criterion | Constraint |
-|------|-----------|------------|
-| src/api/routes/health.py | exports `GET /health` handler | no new deps |
-
-## Done-when
-- [ ] `GET /health` returns HTTP 200 + `{"status":"ok"}`
-- [ ] `bash -n src/api/routes/health.py` exits 0
-- [ ] No edit to files outside FILES YOU OWN
-```
-
-Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
-
-**Task 2 — Validator: review PR** (same template shape as Task 1, abbreviated here)
-
-What: review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md` with pass/fail + file:line citations. Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, every finding cites file:line, no file was edited.
-
-Spawn **ungated** — validators are read-only by allowlist: they do not hold Edit/Write. They do hold `Bash` for read-only inspection (git diff/log, tests), but there is no runtime backstop if the prompt drifts toward a mutating command — the read-only-by-behavior guard (`hooks/gates/validator-bash-guard.sh`) was deleted in the v0.6.0 reset and not rebuilt. Read-only is enforced by the allowlist plus prompt doctrine only.
-
-**Task 3 — Fixer: address review findings** (conditional — only spawned if Task 2's verdict is `fail`)
-
-What: address every T2 finding verbatim. Upstream contract: the verbatim findings from `.scratch/health-review/verdict.md`, reproduced in the fix commit message. Done-when: every T2 finding is fixed or explicitly rejected with reason, no new files outside FILES YOU OWN.
-
-Spawn with `AskUserQuestion` (gated — fixer holds Edit/Write/Bash).
-
-**Task 4 — Re-validator: OWASP scan**
-
-What: security scan on the final `src/api/routes/health.py`. Upstream contracts: the final diff from Task 3 (lead runs `git diff` after Task 3 and pastes it in) plus Task 1's file (verify the final code doesn't re-introduce old patterns). Done-when: security verdict exists and is `pass`, no file was edited.
-
-Spawn **ungated** — re-validators are read-only.
-
-**Lead check between waves**
-
-After spawning Task 1, the lead verifies its done-when (`GET /health` returns 200) before proceeding to Task 2. After Task 2 completes, the lead reads `.scratch/health-review/verdict.md`: if it says `fail`, spawn Task 3 (Fixer); otherwise skip straight to Task 4.
+`GET /health` as a 4-task chain: **T1 Builder** implements the endpoint, spawned gated
+(`AskUserQuestion` — holds Edit/Write/Bash) → **T2 Validator** reviews, writes a verdict to
+`.scratch/health-review/verdict.md`, spawned ungated (read-only by allowlist — see "Validator
+safety" below) → **T3 Fixer** addresses T2's findings, only spawned if T2 says `fail`, gated →
+**T4 Re-validator** runs a security scan on the final diff, ungated. Lead checks each task's
+done-when before advancing to the next. Full spawn prompts for all 4 tasks: `reference.md`.
 
 ### Gating rules
 
@@ -255,17 +202,10 @@ or Ollama changes the launcher. Drop or typo this flag and you have handed an ex
 unrestricted write access to whatever directory it runs in, with no other layer catching it. Never
 dispatch without it.
 
-**Note on the `minimax-m3:cloud` trial's backend identity:** the launch printed `claude.ai
-connectors are disabled because ANTHROPIC_API_KEY or another auth source is set and takes
-precedence over your claude.ai login` — worth ruling out before trusting the result, since a
-stray Anthropic auth source could in principle route the request to a real Claude model instead
-of Ollama's backend, making the "verified minimax-m3" claim false. Checked: no `ANTHROPIC_API_KEY`
-was set in the invoking shell; `docs.ollama.com/integrations/claude-code`'s manual-setup section
-confirms `ollama launch claude` routes via `ANTHROPIC_BASE_URL=http://localhost:11434`, not via
-API key, so the warning is about claude.ai's OAuth-gated connectors specifically, unrelated to
-which backend serves the coding request; and the model responded coherently to `--model
-minimax-m3:cloud`, a model ID Anthropic's own API would reject outright. Not an exhaustive proof,
-but three independent signals agree the request reached minimax-m3.
+**Backend identity for the `minimax-m3:cloud` trial was independently verified, not assumed** —
+the launch printed an `ANTHROPIC_API_KEY`-related warning that was worth ruling out before
+trusting the result. 3 corroborating signals confirmed the request actually reached Ollama's
+backend, not a stray Anthropic auth path. Full check: `reference.md`.
 
 **Picking a model** (heuristic, not enforced — verified specs, 2026-07-16):
 
@@ -312,21 +252,14 @@ way it would from a trusted one. `--permission-mode plan` is still the control a
 work — all mutation happens here, under the normal gate stack, because the external process is
 kept from taking any action at all, not because no gate would see it.
 
-**Considered and deferred — direct write access for allowlisted models.** Evaluated in depth
-2026-07-17 after the user asked for it directly: no concrete task has hit propose-only's ceiling
-yet, and of the 3 allowlisted models only `kimi-k2.7-code:cloud` has any write-mode data at all —
-a measured failure, not an untested corner (it wrote a file despite `--allowedTools "Read" "Grep"
-"Glob"`); `minimax-m3:cloud`/`glm-5.2:cloud` have zero write-mode trials, only
-read-only-under-plan-mode verification. Cross-checked against a sibling harness
-(`oh-my-claudecode`): its trust-tiered-permission story is a single global on/off switch, not a
-graduated model — confirms this is genuinely unsolved territory, not a gap unique to this repo.
-Re-open only when both hold: (a) a concrete task propose-only can't serve, and (b) a fresh
-write-mode trial on the specific model that would get access, run somewhere throwaway — the trial
-itself is the risky action (running without `--permission-mode plan`), not a safe precursor to
-run ahead of need. If it reopens, build on `git worktree`-per-dispatch isolation (contains
-in-tree writes; does not by itself make the model trustworthy — it doesn't stop an out-of-tree
-write, a network call, or a subprocess) plus kbg's own scoring gate before merge — not an
-unconditional auto-merge gated only on absence of git conflicts.
+**Considered and deferred — direct write access for allowlisted models.** Evaluated 2026-07-17
+after the user asked for it directly; deferred, not refused — no concrete task has hit
+propose-only's ceiling yet, and the one live write-mode data point that exists is a measured
+failure, not an untested corner. Re-open only when both hold: (a) a concrete task propose-only
+can't serve, and (b) a fresh write-mode trial on the specific model that would get access, run
+somewhere throwaway — the trial itself is the risky action, not a safe precursor to run ahead of
+need. Full evidence trail + the reopen build sketch: `reference.md`; decision record:
+`CHANGELOG.md` v0.58.4.
 
 **Why this, not just the Agent tool:** an Agent-tool subagent runs on this session's model and
 quota. This path runs on a separate budget (the user's own Ollama account, so heavy drafting
