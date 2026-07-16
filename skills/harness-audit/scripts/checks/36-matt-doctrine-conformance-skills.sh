@@ -128,6 +128,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   # Inverted for set -e safety (see check 4 comment).
   if printf '%s' "$body" | awk '
     BEGIN { in_step = 0 }
+    /^##[[:space:]]+[^0-9]/                     { in_step = 0; next }
     /^[[:space:]]*[0-9]+[.)][[:space:]]/        { in_step = 1; next }
     /^[[:space:]]*#{2,6}[[:space:]]+[0-9]+\.[[:space:]]/ { in_step = 1; next }
     in_step && /fail|drift|never|do NOT|avoid|risk:/ { found = 1; exit }

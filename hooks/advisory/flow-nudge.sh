@@ -45,30 +45,19 @@ IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|
 # is deliberately excluded — it's a bare substring of extremely common words
 # (ทำไม=why, ทำงาน=work, ทำอะไร=do what) and would false-positive on ordinary
 # Thai questions. `พัฒนา` (develop) has no English IMPL peer — included as the
-# single most natural Thai verb for "build/develop a system".
-THAI_IMPL='สร้าง|พัฒนา|เพิ่ม|แก้ไข|ปรับปรุง|เขียน|ติดตั้ง|ผสาน|ออกแบบ|ย้าย'
+# single most natural Thai verb for "build/develop a system". `เขียน` (write)
+# is deliberately excluded too, mirroring English `write`'s deliberate absence
+# from IMPL — prose-vs-code ambiguous (e.g. "ช่วยเขียนอีเมลให้หน่อย" = "help me
+# write an email", not implementation work); found false-firing 2026-07-16.
+THAI_IMPL='สร้าง|พัฒนา|เพิ่ม|แก้ไข|ปรับปรุง|ติดตั้ง|ผสาน|ออกแบบ|ย้าย'
+# THAI_IMPL without สร้าง — the Thai PR-intent carve-out's peer of
+# IMPL_NO_PR_CREATE above: สร้าง overlaps the Thai PR-creation verb, so a pure
+# "สร้าง PR ให้หน่อย" ask must not also count as an impl verb blocking the
+# carve-out (same reasoning as `create` being dropped from IMPL_NO_PR_CREATE).
+THAI_IMPL_NO_PR_CREATE='พัฒนา|เพิ่ม|แก้ไข|ปรับปรุง|ติดตั้ง|ผสาน|ออกแบบ|ย้าย'
+THAI_PR_VERB='สร้าง|เปิด'
 
-# Read stdin ONCE into a variable. The greps below all read stdin; if they
-# shared the live pipe, the first grep would consume it and the rest would
-# see EOF and never match — silently defeating the carve-out (found v0.36.0
-# when adding the 2nd/3rd grep: the build-failure check ran on empty stdin).
-# Still raw-grep (no python3 cold-start); here-strings feed each grep from
-# the captured text without re-spawning a pipe.
-INPUT=$(cat)
-
-# PR-creation intent → route to kbg:pr and skip the generic plan-first nudge
-# (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
-# the IMPL gate because the PR verbs open/raise/make aren't in IMPL — the gate
-# would otherwise silence "open a PR". Fires only on a PURE PR ask: if another
-# impl verb is present (IMPL_NO_PR_CREATE — "build X then open a PR"), fall
-# through so impl-heavy work still gets the plan-first nudge. `\bPRs?\b` needs a
-# word boundary, so "PRD" (create a PRD) never matches — it's not a pull request.
-# English/romanized verbs only: this greps the raw JSON stdin, and non-ASCII may
-# arrive \u-escaped, so Thai ("เปิด PR") routes via kbg:pr's description match
-# (semantic, not byte-grep), not this nudge.
-PR_INTENT='(creat|open|rais|mak|submit|put up|cut).{0,12}(pull request|\bPRs?\b)'
-if /usr/bin/grep -qiE "$PR_INTENT" <<< "$INPUT" \
-   && ! /usr/bin/grep -qiE "\b($IMPL_NO_PR_CREATE)\b" <<< "$INPUT"; then
+emit_pr_nudge() {
   cat <<'EOF'
 
 [kbg:flow-nudge] PR creation → use kbg:pr
@@ -77,9 +66,50 @@ if /usr/bin/grep -qiE "$PR_INTENT" <<< "$INPUT" \
 The nudge is advisory; the model judges.
 EOF
   exit 0
+}
+
+# Read stdin ONCE into a variable. The greps below all read stdin; if they
+# shared the live pipe, the first grep would consume it and the rest would
+# see EOF and never match — silently defeating the carve-out (found v0.36.0
+# when adding the 2nd/3rd grep: the build-failure check ran on empty stdin).
+# Still raw-grep (no python3 cold-start); here-strings feed each grep from
+# the captured text without re-spawning a pipe.
+INPUT=$(cat)
+# เพิ่มเติม ("additionally" / "more") is a bare superstring of the THAI_IMPL
+# verb เพิ่ม ("add") — POSIX ERE has no lookahead to exclude it inline, so it
+# is stripped from a separate copy of the input before any THAI_IMPL match.
+# "อธิบายเพิ่มเติมได้ไหม" (explain more?) has no impl intent at all; stripping
+# the superstring first is a correct exclusion, not a substring pattern that
+# would also miss a real "เพิ่ม X" co-occurring with "เพิ่มเติม" in the same
+# prompt. Only used for Thai matching — English checks stay on raw $INPUT.
+INPUT_TH="${INPUT//เพิ่มเติม/}"
+
+# PR-creation intent → route to kbg:pr and skip the generic plan-first nudge
+# (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
+# the IMPL gate because the PR verbs open/raise/make aren't in IMPL — the gate
+# would otherwise silence "open a PR". Fires only on a PURE PR ask: if another
+# impl verb is present (IMPL_NO_PR_CREATE — "build X then open a PR"), fall
+# through so impl-heavy work still gets the plan-first nudge. `\bPRs?\b` needs a
+# word boundary, so "PRD" (create a PRD) never matches — it's not a pull request.
+# English/romanized verbs. CC emits `prompt` as real UTF-8 (not \u-escaped —
+# see the THAI_IMPL comment above), so a Thai PR ask is handled by the
+# parallel THAI_PR_VERB check right below, not left to kbg:pr's own
+# description-match fallback.
+PR_INTENT='(creat|open|rais|mak|submit|put up|cut).{0,12}(pull request|\bPRs?\b)'
+if /usr/bin/grep -qiE "$PR_INTENT" <<< "$INPUT" \
+   && ! /usr/bin/grep -qiE "\b($IMPL_NO_PR_CREATE)\b" <<< "$INPUT"; then
+  emit_pr_nudge
 fi
 
-if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT"; then
+# Thai PR-creation intent — same carve-out as PR_INTENT above, mirrored for
+# สร้าง/เปิด PR. Uses INPUT_TH (เพิ่มเติม-stripped) for consistency with the
+# main Thai gate below, though สร้าง/เปิด PR never collides with เพิ่มเติม.
+if /usr/bin/grep -qE "($THAI_PR_VERB).{0,12}(pull request|\bPRs?\b)" <<< "$INPUT_TH" \
+   && ! /usr/bin/grep -qE "$THAI_IMPL_NO_PR_CREATE" <<< "$INPUT_TH"; then
+  emit_pr_nudge
+fi
+
+if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH"; then
   exit 0
 fi
 # CI-failure carve-out: "build failed, help me debug the CI" is a DEBUG task,

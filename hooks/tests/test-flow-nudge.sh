@@ -137,9 +137,19 @@ test_nudge  "Thai: develop auth system (พัฒนา)"           "พัฒ�
 test_nudge  "Thai: add a rate limiter (เพิ่ม)"             "เพิ่มตัวจำกัดอัตราให้กับบริการสาธารณะ"
 test_nudge  "Thai: refactor the audit script (ปรับปรุง)"  "ปรับปรุงโครงสร้างของสคริปต์ตรวจสอบ"
 test_nudge  "Thai: design a new endpoint (ออกแบบ)"        "ออกแบบปลายทางใหม่สำหรับแดชบอร์ด"
+test_nudge  "Thai: fix the login bug (แก้ไข)"              "แก้ไขข้อผิดพลาดในระบบล็อกอิน"
+test_nudge  "Thai: install a new dependency (ติดตั้ง)"     "ติดตั้งไลบรารีใหม่สำหรับการเชื่อมต่อฐานข้อมูล"
+test_nudge  "Thai: merge the branches (ผสาน)"              "ผสานโค้ดจากสองบรานช์เข้าด้วยกัน"
+test_nudge  "Thai: move the service (ย้าย)"                "ย้ายบริการไปยังโครงสร้างพื้นฐานใหม่"
 # Guards the ทำ exclusion: silent on current hook, must stay silent post-fix too
 # (ทำ is a substring of ทำอะไร — if ทำ were in THAI_IMPL this would wrongly fire).
 test_silent "Thai: 'what does this file do' (guards ทำ exclusion)" "ไฟล์นี้ทำอะไร"
+# Guards the เพิ่มเติม/เพิ่ม collision (found 2026-07-16): เพิ่มเติม is a bare
+# superstring of the THAI_IMPL verb เพิ่ม and must not fire on its own.
+test_silent "Thai: 'explain more?' (guards เพิ่มเติม/เพิ่ม collision)" "อธิบายเพิ่มเติมได้ไหม"
+# Guards the เขียน exclusion (found 2026-07-16, mirrors English `write`'s
+# deliberate absence from IMPL — prose-vs-code ambiguous).
+test_silent "Thai: 'help me write an email' (guards เขียน exclusion)" "ช่วยเขียนอีเมลให้หน่อย"
 
 echo ""
 echo "--- PR-creation intent (routes to kbg:pr, not plan-first) ---"
@@ -150,8 +160,10 @@ test_nudge  "open a pull request"           "open a pull request"
 test_nudge  "raise a PR against a base"     "raise a PR against develop"
 test_nudge  "make me a PR"                   "make me a PR from these commits"
 test_silent "review a PR is not creation"   "review this PR"
-# Thai ("เปิด PR") intentionally routes via kbg:pr's description, not this
-# byte-grep nudge (non-ASCII may arrive \u-escaped) — so no Thai NUDGE case here.
+# Thai PR-creation intent (found false-firing to the generic nudge 2026-07-16,
+# fixed via THAI_PR_VERB — see flow-nudge.sh). Mirrors the English PR_INTENT
+# carve-out above: a pure "สร้าง PR" ask routes to kbg:pr, not plan-first.
+test_nudge  "Thai: create a PR (สร้าง PR)" "สร้าง PR ให้หน่อย"
 # 'PRD' must never read as 'PR' (word boundary) — to-prd fires the generic nudge,
 # never the PR nudge.
 prd_out=$(echo "$(user_prompt_payload "to-prd this idea about usage metering")" | bash "$HOOK" 2>/dev/null)
@@ -169,6 +181,15 @@ if printf '%s' "$pr_out" | /usr/bin/grep -qi "kbg:pr"; then
   pass=$((pass + 1))
 else
   echo "  ❌ CONTENT EXPECTED 'kbg:pr': <$(printf '%s' "$pr_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+# Thai pure PR ask also names kbg:pr (content, not just fire/silent).
+thai_pr_out=$(echo "$(user_prompt_payload "สร้าง PR ให้หน่อย")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$thai_pr_out" | /usr/bin/grep -qi "kbg:pr"; then
+  echo "  ✅ CONTENT: Thai PR ask names 'kbg:pr'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'kbg:pr' (Thai): <$(printf '%s' "$thai_pr_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 fi
 # Impl-heavy prompt that also mentions a PR still gets the plan-first nudge.

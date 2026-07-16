@@ -92,7 +92,7 @@ review: quality/security/style lenses belong to `kbg:review-pr` /
 3. No blended percentage for the whole audit — state the actual open-item count (must be 0 before declaring done).
 4. **Suggested next step:**
    - All conform, nothing open → done; ship/merge if not already.
-   - A residual gap was found and fixed → note it; consider `kbg:post-mortem` if it reveals a systemic pattern rather than a one-off miss.
+   - A residual gap was found and fixed → note it; consider `/post-mortem` if it reveals a systemic pattern rather than a one-off miss.
 
 **Done.**
 

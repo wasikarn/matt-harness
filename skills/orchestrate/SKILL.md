@@ -219,7 +219,7 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 This skill routes dispatch through the **`Agent` tool** — every pattern above (spawn-prompt template, validation chain, fan-out cap) assumes that primitive. The **`Workflow` tool** (scripted `pipeline()`/`parallel()`/`agent()` orchestration) is a separate, host-level primitive that requires explicit user opt-in (the "ultracode" keyword, standing ultracode-session mode, or the user's own words asking for a workflow/multi-agent run) — it is not something this skill decides to invoke on its own, and no agent in this fleet is granted it. If the user has opted in, treat `Workflow` as parallel infrastructure available to the session, not a routing target this skill assigns.
 
-## External-model delegation — propose-only (Method B)
+## External-model delegation — propose-only
 
 A third dispatch primitive below the Agent tool: hand a drafting/analysis task to an
 Ollama-hosted external model, get a **text proposal only**, review and apply it yourself in this
@@ -236,12 +236,19 @@ ollama launch claude --model glm-5.2:cloud --yes \
   --permission-mode plan
 ```
 
-**⚠️ `--permission-mode plan` is the *sole* guardrail, not a nice-to-have.** The same command
-with zero extra flags silently edited a real file in testing, and an explicit `--allowedTools
-"Read" "Grep" "Glob"` restriction *also failed to hold*. Only `--permission-mode plan` (placed
-after `--`) actually keeps the inner process read-only. Drop or typo this flag and you have
-handed an external cloud model unrestricted write access to whatever directory it runs in, with
-no other layer catching it. Never dispatch without it.
+`--yes` is Ollama's own launcher flag (skips its interactive setup selectors, auto-pulls the
+model) — orthogonal to Claude Code's permission system. It has no bearing on read-only-ness; only
+`--permission-mode plan` controls that.
+
+**⚠️ `--permission-mode plan` is necessary and verified — not proven sole.** Across 4 live trials
+on 2 models (3 on `kimi-k2.7-code:cloud` — no flags, `--allowedTools "Read" "Grep" "Glob"`, and
+`--permission-mode plan`; 1 on `glm-5.2:cloud` — `--permission-mode plan`), the no-flags run and
+the `--allowedTools` restriction both silently edited a real file, while `--permission-mode plan`
+(placed after `--`) held read-only in both trials that used it. That's a small trial count, not an
+exhaustive proof of "only this flag can ever work" — treat it as necessary, and re-verify
+read-only behavior if you switch models or Ollama changes the launcher. Drop or typo this flag and
+you have handed an external cloud model unrestricted write access to whatever directory it runs
+in, with no other layer catching it. Never dispatch without it.
 
 **Flow:** build the `-p` prompt with the same F9 handoff discipline (a concrete diff or described
 change, not a narrative) → dispatch via Bash → capture stdout → treat as **Verify-tier producer

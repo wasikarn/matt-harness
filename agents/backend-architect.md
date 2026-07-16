@@ -1,6 +1,6 @@
 ---
 name: backend-architect
-description: Backend systems architect — API contract design, service boundaries, data ownership, consistency model, caching/queueing, reliability (retries, idempotency, timeouts, backpressure), and scalability. Design-first and cross-language — defers framework/DB specifics to the *-patterns skills.
+description: Backend systems architect — API contracts, service boundaries, data ownership, consistency, caching, reliability, scalability. Design-first, cross-language — defers framework/DB specifics to *-patterns skills.
 model: opus
 tools: [Read, Grep, Glob, Bash]
 ---

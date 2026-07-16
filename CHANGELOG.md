@@ -5,6 +5,108 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.0] — 2026-07-16
+
+Added a third dispatch primitive to `orchestrate` — external-model delegation
+via Ollama (`ollama launch claude --model glm-5.2:cloud ... --permission-mode
+plan`), propose-only: the external process drafts, the main session applies
+under kbg's normal gates. `--permission-mode plan` is the only guardrail
+verified to hold in live testing — both a no-flags run and an explicit
+`--allowedTools` restriction failed to prevent file edits. Hard default: no
+delegation in private/client repos without explicit contract confirmation,
+since the prompt is processed on a third-party cloud running a non-Anthropic
+model.
+
+## [0.57.2] — 2026-07-16
+
+Fixed `flow-nudge.sh`: the English-only `\b`-wrapped IMPL regex never fires
+on Thai prompts (Thai script has no ASCII word boundaries) — confirmed silent
+on every non-trivial Thai ask this session. Added a bare-alternation Thai
+verb list (mirroring the proven `jira-route-nudge.sh` pattern) and a line
+suggesting Agent-tool delegation, which the nudge never mentioned even when
+it did fire.
+
+## [0.57.1] — 2026-07-16
+
+Fixed a self-contradiction in `backend-architect.md`: the Scope section
+grouped `latency-critical-systems` inside the `*-patterns` skills list, while
+the Reference section correctly called it out as a separate latency-sensitive
+design vertical. Moved it out of the `*-patterns` group to match.
+
+## [0.57.0] — 2026-07-16
+
+Added `backend-architect`, a read-only, cross-language/cross-framework agent
+for API contracts, service boundaries, data ownership, consistency,
+caching/queueing, reliability, and scalability — the systems-design layer
+above the framework-narrow `*-patterns` skills and `code-architect`'s generic
+feature blueprinting. Wired into `orchestrate`'s gated-agent list.
+
+## [0.56.0] — 2026-07-16
+
+Added a before/after example to `staff-eng.md`'s "Calibrate to stakes"
+section, guarding against decision-framing vocabulary (one-way door, blast
+radius) leaking into replies with no decision in them. Caught a real
+self-demonstrating instance in-session (an ack reply used that exact
+vocabulary to describe itself). Backed by a 110-agent deep-research pass
+(`docs/research/response-conciseness-verbosity-2026-07-16.md`): plain-language
+quality is mostly structural, not vocabulary (ISO 24495-1 weights word choice
+at ~7%); a rigid length cap is the wrong fix (Anthropic tried one on Claude
+Code and reverted it after a measured 3% quality drop); concrete before/after
+examples reliably beat an abstract directive. Mirrored in dotfiles' global
+CLAUDE.md.
+
+## [0.55.1] — 2026-07-16
+
+Fresh-context adversarial verification against primary sources found 3 of 5
+named-principle citations in `summarizer.md` imprecise: BLUF and inverted
+pyramid were collapsed into one claim (they order by different criteria —
+decision vs. fact-priority) and split back apart; the Minto Pyramid
+Principle's defining MECE-grouping mechanic was restored after being
+dropped; and "omit needless words" was corrected from a joint Zinsser/Strunk
+& White attribution to Strunk & White specifically (Zinsser's parallel term
+is "clutter").
+
+## [0.55.0] — 2026-07-16
+
+Added `summarizer`, a read-only clarity/compression specialist agent — no
+existing agent covered general-purpose summarization for human readability.
+Grounded in named principles (BLUF/inverted-pyramid, Minto pyramid grouping,
+abstractive-over-extractive synthesis, Zinsser/Strunk & White economy,
+progressive disclosure) with a keep-vs-cut test per clause that explicitly
+protects substantive hedges from being cut as stylistic padding. Registered
+in `orchestrate`'s ungated dispatch list.
+
+## [0.54.1] — 2026-07-16
+
+Dispatched 5 fresh-context verifier agents against every technically dense
+claim added across v0.53.0/v0.54.0. `nextjs-reviewer.md` had the most
+findings, including a flagship claim stated backwards for Next.js 15+
+(`fetch()` default flipped to uncached) and a stale Edge-runtime default for
+middleware. `security-reviewer.md` had 3 wrong CWE mappings. Smaller fixes to
+`build-error-resolver.md`, `refactor-cleaner.md`, and
+`silent-failure-hunter.md`. `python-reviewer.md` and `code-architect.md` came
+back clean.
+
+## [0.54.0] — 2026-07-16
+
+Added `nextjs-reviewer`, a Next.js App Router framework specialist —
+rendering/caching model, Server Actions, middleware Edge-runtime
+constraints, App Router file conventions, and image/font/metadata
+optimization. No agent previously owned this Next.js-specific review
+surface; generic React concerns stayed with `typescript-reviewer` and
+`code-reviewer`.
+
+## [0.53.0] — 2026-07-16
+
+Deepened domain expertise on 6 sub-bar agents: `security-reviewer` (CWE
+references, exploit snippets, attack-chain composition), `python-reviewer`
+(GIL/async pitfalls, a dataclass-vs-NamedTuple-vs-TypedDict-vs-Pydantic
+table), `silent-failure-hunter` (per-language suppression idioms, an
+evidence gate it was missing), `code-architect` (rule-of-three judgment),
+`refactor-cleaner` (DI/reflection/barrel-export false-negative traps), and
+`build-error-resolver` (Rust/Go/Gradle diagnostics). The other 8 agents were
+already at the expert bar and left untouched.
+
 ## [0.52.2] — 2026-07-15
 
 Follow-up fix to `0.52.1`'s `fm_hook_desc`, caught by re-diffing the
