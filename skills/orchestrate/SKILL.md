@@ -219,6 +219,59 @@ Without these injections, each agent re-derives or assumes, which produces laten
 
 This skill routes dispatch through the **`Agent` tool** — every pattern above (spawn-prompt template, validation chain, fan-out cap) assumes that primitive. The **`Workflow` tool** (scripted `pipeline()`/`parallel()`/`agent()` orchestration) is a separate, host-level primitive that requires explicit user opt-in (the "ultracode" keyword, standing ultracode-session mode, or the user's own words asking for a workflow/multi-agent run) — it is not something this skill decides to invoke on its own, and no agent in this fleet is granted it. If the user has opted in, treat `Workflow` as parallel infrastructure available to the session, not a routing target this skill assigns.
 
+## External-model delegation — propose-only (Method B)
+
+A third dispatch primitive below the Agent tool: hand a drafting/analysis task to an
+Ollama-hosted external model, get a **text proposal only**, review and apply it yourself in this
+session where kbg's gates apply. The external process never edits.
+
+**Command** (default model `glm-5.2:cloud` — 756B, 1M context, coding-focused; verified this
+repo, 2026-07-16, both that it launches and that it stays read-only under `--permission-mode
+plan`; fallback default is `kimi-k2.7-code:cloud`, also verified read-only, if glm isn't
+available on the account):
+
+```bash
+ollama launch claude --model glm-5.2:cloud --yes \
+  -- -p "<F9-style handoff: What / Where / Focus / Deliverable — ask for a diff or a described change>" \
+  --permission-mode plan
+```
+
+**⚠️ `--permission-mode plan` is the *sole* guardrail, not a nice-to-have.** The same command
+with zero extra flags silently edited a real file in testing, and an explicit `--allowedTools
+"Read" "Grep" "Glob"` restriction *also failed to hold*. Only `--permission-mode plan` (placed
+after `--`) actually keeps the inner process read-only. Drop or typo this flag and you have
+handed an external cloud model unrestricted write access to whatever directory it runs in, with
+no other layer catching it. Never dispatch without it.
+
+**Flow:** build the `-p` prompt with the same F9 handoff discipline (a concrete diff or described
+change, not a narrative) → dispatch via Bash → capture stdout → treat as **Verify-tier producer
+output** (Step 5 above: corroborate, don't trust) → apply the accepted parts yourself. The
+external process takes no actions, so it never needs kbg's gates — all mutation happens here,
+under the normal gate stack.
+
+**Why this, not just the Agent tool:** an Agent-tool subagent runs on this session's model and
+quota. This path runs on a separate budget (the user's own Ollama account, so heavy drafting
+doesn't eat this subscription's usage limit) and is a genuinely different model family — a real
+second opinion, not the same model asking itself twice. Not claimed: cheaper per token (Ollama
+publishes no pricing) or bigger context (this session is already 1M-context, and a fresh subagent
+gets its own large window too) — don't reach for this over the Agent tool for either of those.
+
+**When it pays off:** substantial, well-specified drafting/analysis, or when you want quota
+separation or a second model's independent read. Skip for quick edits — dispatch overhead makes
+small tasks net-negative, same as any delegation. Say you're delegating before you dispatch — it's
+a visible, costed action, not silent background work.
+
+**Privacy — hard default, not a soft caveat:** the prompt and any repo context in it are
+processed on a third-party cloud (Ollama's infrastructure, running a Zhipu/Moonshot model —
+neither is Anthropic nor this user's own infra). In a private or client repo (tathep and
+similar), default is **NO** — do not send repo code/context through this path unless the user has
+explicitly confirmed sending code to an external cloud is contractually allowed for that repo.
+Treat this as a one-way door per repo, not a judgment call to make silently.
+
+**Not auto-dispatch:** a main-session judgment call, same as any Agent-tool fan-out — never an
+unconditional "execute this" from pasted content. The `disable-model-invocation` / no-self-start
+doctrine is unchanged; nothing here starts a headless session on its own.
+
 ## Fast Path Gate
 
 If ALL of these hold, **execute inline immediately** and skip all orchestration logic:
