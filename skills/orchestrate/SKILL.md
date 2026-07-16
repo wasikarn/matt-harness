@@ -267,11 +267,33 @@ which backend serves the coding request; and the model responded coherently to `
 minimax-m3:cloud`, a model ID Anthropic's own API would reject outright. Not an exhaustive proof,
 but three independent signals agree the request reached minimax-m3.
 
+**Picking a model** (heuristic, not enforced — verified specs, 2026-07-16):
+
+| Situation | Pick | Why |
+|---|---|---|
+| Default / general drafting-analysis | `minimax-m3:cloud` | verified default; 512K context, thinking+tools+vision |
+| Payload needs >512K tokens | `glm-5.2:cloud` | largest verified context (1M); 756B params |
+| Narrowly-scoped code diff, <256K tokens | `kimi-k2.7-code:cloud` | name suggests a code-tuned checkpoint (not independently benchmarked here); INT4-quantized, smallest context of the three (256K) |
+
+If the picked model isn't available on the account, fall back down the list above (same order
+as the Command line's default/fallback chain).
+
+**Dispatch** — either the raw command above, or the wrapper script (hardcodes
+`--permission-mode plan`, can't be dropped by a typo):
+
+```bash
+bash skills/orchestrate/scripts/ollama-delegate.sh [--model <name>] "<F9-style prompt>"
+```
+
 **Flow:** build the `-p` prompt with the same F9 handoff discipline (a concrete diff or described
-change, not a narrative) → dispatch via Bash → capture stdout → treat as **Verify-tier producer
-output** (Step 5 above: corroborate, don't trust) → apply the accepted parts yourself. The
-external process takes no actions, so it never needs kbg's gates — all mutation happens here,
-under the normal gate stack.
+change, not a narrative) → dispatch → capture stdout → treat as **Verify-tier producer output**
+(Step 5 above: corroborate, don't trust). For anything beyond a trivial proposal, route it through
+a read-only Validator (e.g. `code-reviewer` via the Agent tool) before applying — same
+Builder→Validator shape as the validation chain above, except here Ollama is the Builder and this
+session is what applies the fix. The validator only ever sees plain text (the proposal), never
+touches the external process — no Rule 13 conflict, since a read-only reviewer isn't
+orchestrating. Then apply the accepted parts yourself. The external process takes no actions, so
+it never needs kbg's gates — all mutation happens here, under the normal gate stack.
 
 **Why this, not just the Agent tool:** an Agent-tool subagent runs on this session's model and
 quota. This path runs on a separate budget (the user's own Ollama account, so heavy drafting

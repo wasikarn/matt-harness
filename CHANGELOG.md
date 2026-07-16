@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.3] — 2026-07-16
+
+Closed a doctrine collision the user's next ask surfaced: "give me a subagent
+with maximum authority to command and control external-model delegation."
+That shape is a direct Rule 13 violation (a sub-agent must not re-orchestrate)
+and the same pattern already rejected once before
+(`delegation-validation-is-orchestrator-role-2026-07-16` memory) — surfaced
+the conflict instead of building or refusing silently, then asked what
+concrete gap was driving the ask. Answer: model selection, output
+verification, dispatch friction — none of which need an orchestrating agent.
+Shipped all three the Rule-13-compliant way, in
+`skills/orchestrate/SKILL.md` § "External-model delegation":
+
+- **Model-selection heuristic** — a 3-row table (default/large-context/code)
+  grounded in `ollama show` specs pulled live for all three models, not
+  assumed (minimax-m3:cloud 512K context undisclosed params; glm-5.2:cloud 1M
+  context / 756B params; kimi-k2.7-code:cloud 256K context / ~1.04T params,
+  INT4-quantized). The kimi row's "code-tuned" framing is hedged as
+  name-only, not benchmarked — advisor flagged it as the one row
+  recommending the weakest-specced option on no real evidence; kept as a
+  hedged heuristic since it's disclosed, not asserted as fact.
+- **Output verification** — documented, not automated: route Ollama's
+  proposal through a read-only Validator (e.g. `code-reviewer` via the Agent
+  tool) before applying, mirroring the existing Builder→Validator chain.
+  Explicitly not auto-verify — a model auto-grading its own delegated output
+  would be the same maker-grades-itself loop the no-model-self-start
+  doctrine exists to prevent. The user asked for automatic; what shipped is
+  a documented manual step, on purpose.
+- **Dispatch friction** — `skills/orchestrate/scripts/ollama-delegate.sh`, a
+  thin wrapper hardcoding `--permission-mode plan` (non-overridable by a
+  caller flag) so the one flag that makes this whole path safe can't be
+  dropped by a typo. Shellcheck-clean; parsing verified with a stubbed
+  `ollama` function.
+
+`advisor()` caught the same-version-edit trap before commit: this batch is
+more shipped `skills/` content on top of the already-pushed v0.58.2 — bumped
+here rather than silently no-op'ing against the plugin cache.
+
 ## [0.58.2] — 2026-07-16
 
 Live-verified `minimax-m3:cloud` as a third read-only-safe model for
