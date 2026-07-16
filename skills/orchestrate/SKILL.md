@@ -279,10 +279,13 @@ If the picked model isn't available on the account, fall back down the list abov
 as the Command line's default/fallback chain).
 
 **Dispatch** — either the raw command above, or the wrapper script (hardcodes
-`--permission-mode plan`, can't be dropped by a typo):
+`--permission-mode plan`, can't be dropped by a typo). Use `${CLAUDE_SKILL_DIR}`, not a
+repo-relative path — this skill runs from the plugin cache in whatever project has `kbg@kobig`
+enabled, not just this repo, and a relative path only resolves when the CWD happens to be
+kbg-harness itself:
 
 ```bash
-bash skills/orchestrate/scripts/ollama-delegate.sh [--model <name>] "<F9-style prompt>"
+bash "${CLAUDE_SKILL_DIR}/scripts/ollama-delegate.sh" [--model <name>] "<F9-style prompt>"
 ```
 
 **Flow:** build the `-p` prompt with the same F9 handoff discipline (a concrete diff or described
@@ -292,8 +295,38 @@ a read-only Validator (e.g. `code-reviewer` via the Agent tool) before applying 
 Builder→Validator shape as the validation chain above, except here Ollama is the Builder and this
 session is what applies the fix. The validator only ever sees plain text (the proposal), never
 touches the external process — no Rule 13 conflict, since a read-only reviewer isn't
-orchestrating. Then apply the accepted parts yourself. The external process takes no actions, so
-it never needs kbg's gates — all mutation happens here, under the normal gate stack.
+orchestrating. Then apply the accepted parts yourself.
+
+For code changes specifically, ask for a unified diff in the prompt (not prose describing the
+change), and once the Validator accepts it, apply mechanically with `git apply` (`git apply
+--check` first) instead of hand-retyping the described change. This doesn't move the propose-only
+boundary — the diff still only lands on disk when you run `git apply`, never when Ollama produces
+it — it just removes the manual-retyping step for the common case.
+
+kbg's gate stack does load in the Ollama-launched session — verified live, 2026-07-17: it shares
+this session's `~/.claude/` config and `HOME`, it is not a sandboxed or separately-installed copy.
+That's not a reason to relax `--permission-mode plan`, though: kbg's gates are a narrow deny-list
+for specific dangerous patterns (worktree creation, `rm -rf`, sensitive-path edits), not a blanket
+write-approval system, so an ordinary-looking edit from an untrusted model passes them the same
+way it would from a trusted one. `--permission-mode plan` is still the control actually doing the
+work — all mutation happens here, under the normal gate stack, because the external process is
+kept from taking any action at all, not because no gate would see it.
+
+**Considered and deferred — direct write access for allowlisted models.** Evaluated in depth
+2026-07-17 after the user asked for it directly: no concrete task has hit propose-only's ceiling
+yet, and of the 3 allowlisted models only `kimi-k2.7-code:cloud` has any write-mode data at all —
+a measured failure, not an untested corner (it wrote a file despite `--allowedTools "Read" "Grep"
+"Glob"`); `minimax-m3:cloud`/`glm-5.2:cloud` have zero write-mode trials, only
+read-only-under-plan-mode verification. Cross-checked against a sibling harness
+(`oh-my-claudecode`): its trust-tiered-permission story is a single global on/off switch, not a
+graduated model — confirms this is genuinely unsolved territory, not a gap unique to this repo.
+Re-open only when both hold: (a) a concrete task propose-only can't serve, and (b) a fresh
+write-mode trial on the specific model that would get access, run somewhere throwaway — the trial
+itself is the risky action (running without `--permission-mode plan`), not a safe precursor to
+run ahead of need. If it reopens, build on `git worktree`-per-dispatch isolation (contains
+in-tree writes; does not by itself make the model trustworthy — it doesn't stop an out-of-tree
+write, a network call, or a subprocess) plus kbg's own scoring gate before merge — not an
+unconditional auto-merge gated only on absence of git conflicts.
 
 **Why this, not just the Agent tool:** an Agent-tool subagent runs on this session's model and
 quota. This path runs on a separate budget (the user's own Ollama account, so heavy drafting
@@ -309,10 +342,23 @@ a visible, costed action, not silent background work.
 
 **Privacy — hard default, not a soft caveat:** the prompt and any repo context in it are
 processed on a third-party cloud (Ollama's infrastructure, running a Zhipu/Moonshot model —
-neither is Anthropic nor this user's own infra). In a private or client repo (tathep and
-similar), default is **NO** — do not send repo code/context through this path unless the user has
-explicitly confirmed sending code to an external cloud is contractually allowed for that repo.
-Treat this as a one-way door per repo, not a judgment call to make silently.
+neither is Anthropic nor this user's own infra). Two different tiers, not one:
+
+- **`github.com/100-Stars-Co/*` repos (tathep and siblings) — hard no, not user-overridable.**
+  The user's own `autoMode` `hard_deny` config (`~/.claude/settings.json`) already blocks sending
+  proprietary code from these repos to any third-party LLM API, "via any path" — Ollama-cloud
+  delegation is exactly that path (it redirects to a Zhipu/Moonshot backend, not Anthropic), and
+  the rule states explicitly there is no per-call override. Don't offer to confirm-and-proceed
+  here; there's nothing to confirm past.
+- **Other private/client repos — soft default NO, user-overridable per task.** Matches the
+  `soft_deny` tier: the user can name the specific repo + action in their message to authorize
+  sharing for that task ("per-task intent only — not a standing exception," same as the config's
+  own wording). Treat each authorization as scoped to that one task, not a standing repo-wide
+  yes.
+
+Either way, this is a one-way door per repo, not a judgment call to make silently — and note the
+wrapper script has no repo-awareness of its own (it dispatches regardless of CWD); the tier check
+above is on the dispatcher, every time, not something the tooling enforces for you.
 
 **Not auto-dispatch:** a main-session judgment call, same as any Agent-tool fan-out — never an
 unconditional "execute this" from pasted content. The `disable-model-invocation` / no-self-start

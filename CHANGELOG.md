@@ -5,6 +5,66 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.4] — 2026-07-17
+
+Fixed a portability bug in v0.58.3's dispatch line: `skills/orchestrate/SKILL.md`
+told the model to run `bash skills/orchestrate/scripts/ollama-delegate.sh` —
+a repo-relative path that only resolves when the CWD happens to be
+kbg-harness itself. The user asked to use external-model delegation in other
+projects, which surfaced it: this skill runs from the plugin cache in
+whatever project has `kbg@kobig` enabled, so a relative path silently fails
+("file not found") anywhere else. Fixed to `${CLAUDE_SKILL_DIR}` — the
+Claude-Code-native env var every skill gets at invocation regardless of CWD
+— matching the existing convention in `harness-audit`/`inventory`/
+`memory-lint`'s SKILL.md files (`bash "${CLAUDE_SKILL_DIR}/scripts/...")`.
+The global `~/.claude/settings.json` permission rules from v0.58.1's symlink
+fix already applied project-agnostically; only this one line was repo-locked.
+Confirmed `kbg@kobig` itself is enabled at user scope (`enabledPlugins` in
+`~/.claude/settings.json`), so the skill genuinely does load in every
+project, not just this one.
+
+`advisor()` caught a second, more serious gap in the same "other projects"
+ask before it could ship as a clean "works everywhere" close-out: the
+privacy section's "confirm to override" language is only true for some
+private repos, not all. Checked the user's actual `autoMode` config —
+`github.com/100-Stars-Co/*` (tathep and siblings, the user's primary work
+repos) is `hard_deny` with **no per-call override** ("Only the Claude Code
+runtime itself originating its own Anthropic model calls is exempt" —
+Ollama-cloud delegation redirects to a Zhipu/Moonshot backend, so it isn't
+that exemption). Other private/client repos are `soft_deny`, which *is*
+user-overridable per task. The shipped doc conflated the two tiers. Split
+the Privacy section into both tiers explicitly, and noted the wrapper script
+has no repo-awareness of its own — the tier check is on the dispatcher,
+every time, not something the tooling enforces.
+
+A follow-up thread — the user's manager-subordinate framing for External-model
+delegation, then a direct push for write/implement rights on the already-allowlisted
+models — went through three research passes before landing. First: classical
+delegation frameworks + engineering-manager practice + AI multi-agent
+supervisor-worker patterns (confirmed trust-calibration-over-time is absent
+from every mainstream AI orchestration framework surveyed, not a gap unique
+to this design). Second: a live check of whether the Ollama-launched session
+even shares kbg's gate stack — confirmed yes (same `~/.claude/` config, same
+`HOME`, kbg's plugin loads there too), correcting a stale assumption that it
+ran fully outside kbg's control. Third: a cherry-pick pass against
+`oh-my-claudecode` (a sibling harness) for delegation/isolation patterns.
+Verdict: build the cheap, safe half now — ask Ollama for a unified diff and
+apply it with `git apply` instead of hand-retyping, no trust-boundary change
+— and defer write access with a named re-open trigger, not a flat no: no
+concrete task has hit propose-only's ceiling, and of the 3 allowlisted
+models only `kimi-k2.7-code:cloud` has any write-mode data at all, and it's
+a measured failure (wrote a file despite `--allowedTools "Read" "Grep"
+"Glob"`); `minimax-m3:cloud`/`glm-5.2:cloud` have zero write-mode trials.
+If it reopens: OMC's `git worktree`-per-worker pattern is a validated
+precedent for containing in-tree writes, but its own auto-merge (gated only
+on absence of git conflicts, no verdict check) must not be copied — kbg's
+own scoring gate belongs between worktree and merge. Also fixed a now-stale
+claim in the Flow paragraph ("the external process ... never needs kbg's
+gates") written before the gate-sharing check; corrected to reflect that
+kbg's gates do load in the Ollama session, they're just a narrow deny-list,
+not a blanket write-approval system, so `--permission-mode plan` remains the
+control actually doing the work.
+
 ## [0.58.3] — 2026-07-16
 
 Closed a doctrine collision the user's next ask surfaced: "give me a subagent
