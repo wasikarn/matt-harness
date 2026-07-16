@@ -38,9 +38,10 @@ For a PR touching App Router internals (caching, Server Actions, middleware, rou
    - Local review: prefer `git diff --staged` then `git diff`, scoped to files under `app/`, `middleware.ts`, `next.config.*`.
    - If history is shallow or single-commit, fall back to `git show --patch HEAD`.
 2. Confirm this is an App Router project (`app/` directory present) vs legacy Pages Router (`pages/` directory). Pages Router has a different caching model (`getStaticProps`/`getServerSideProps`/ISR via `revalidate` return value) — do not apply App Router caching rules to Pages Router code, and say so explicitly if the project is on Pages Router.
-3. Check `next.config.*` for relevant flags that change default behavior (`experimental.ppr`, `experimental.dynamicIO`, `cacheHandler`) before flagging caching issues — a project on `dynamicIO` has different defaults than stable.
-4. Focus on the changed files; read the full route segment (co-located `layout.tsx`/`loading.tsx`/`error.tsx`/`page.tsx`) since App Router behavior is defined by the segment as a whole, not a single file in isolation.
-5. Begin review.
+3. **Pin the exact Next.js major version** — `grep '"next"' package.json` (or check the lockfile for the resolved version). This is not optional context; it's a precondition for every caching/runtime claim below. Next.js has changed the caching and middleware-runtime *defaults* across major versions more than once — the same code can be correct on one version and a silent bug on another. Apply the version-anchored guidance in the sections below according to the actual pinned version, not the newest or the most familiar one. If the version can't be determined, say so explicitly and qualify every caching finding as version-conditional rather than asserting a single default.
+4. Check `next.config.*` for relevant flags that change default behavior beyond the major-version baseline (`experimental.dynamicIO`, `cacheHandler`, and — on 16.x — `cacheComponents`, which replaced the earlier `experimental.ppr` flag once Partial Prerendering shipped stable) before flagging caching issues.
+5. Focus on the changed files; read the full route segment (co-located `layout.tsx`/`loading.tsx`/`error.tsx`/`page.tsx`) since App Router behavior is defined by the segment as a whole, not a single file in isolation.
+6. Begin review.
 
 You DO NOT refactor or rewrite code — you report findings only.
 
@@ -48,15 +49,19 @@ You DO NOT refactor or rewrite code — you report findings only.
 
 ### CRITICAL — Rendering & Caching Correctness
 
-Next.js has **three distinct caches** that are frequently conflated — misdiagnosing which one is stale is the single most common Next.js review mistake:
+Next.js has **three distinct caches** that are frequently conflated — misdiagnosing which one is stale is the single most common Next.js review mistake. This model describes the default (pre-Cache-Components) behavior; Next.js 16 introduced an opt-in `cacheComponents` mode that restructures parts of it — confirm the project hasn't enabled that flag (step 4 above) before applying this table as-is:
 
 | Cache | What it stores | Invalidated by |
 |---|---|---|
-| **Data Cache** | `fetch()` responses (persistent, survives deploys unless `cache: 'no-store'`) | `revalidate` option, `revalidatePath`, `revalidateTag` |
+| **Data Cache** | `fetch()` responses (persistent, survives deploys unless opted out) | `revalidate` option, `revalidatePath`, `revalidateTag` |
 | **Full Route Cache** | The rendered HTML/RSC payload for statically-rendered routes | Redeploy, or the route becoming dynamic |
-| **Client Router Cache** | In-browser cache of visited RSC payloads for back/forward nav | Time-based (30s dynamic / 5min static, pre-15) or `router.refresh()` |
+| **Client Router Cache** | In-browser cache of visited RSC payloads for back/forward nav | Time-based (30s dynamic / 5min static — the dynamic figure dropped from 30s to 0s in v15) or `router.refresh()` |
 
-- **`fetch()` with no cache option in a Route Handler defaults to `force-cache`** (cached indefinitely on the Data Cache) — a classic silent-staleness bug. If the handler is meant to reflect live data, it needs `{ cache: 'no-store' }` or `{ next: { revalidate: N } }` explicitly. Flag any `fetch()` inside `app/api/**/route.ts` with no cache directive and no comment explaining the intent.
+**The `fetch()`/Route Handler caching default flipped in Next.js 15 — this is the single highest-value thing to get right, and it depends on the pinned version from step 3 above:**
+
+- **Next.js ≤14.x**: `fetch()` with no cache option, and a `GET` Route Handler with no explicit config, both default to **cached** (`force-cache` behavior) — cached indefinitely on the Data Cache. This is the classic v14 silent-staleness bug: live data goes stale after the first request unless the call explicitly sets `{ cache: 'no-store' }` or `{ next: { revalidate: N } }`.
+- **Next.js 15.x and later**: the default flipped — `fetch()` and `GET` Route Handlers are **uncached by default**. The v14 footgun above no longer applies; the *new* footgun is the opposite — code carrying v14 muscle memory (an explicit `{ cache: 'force-cache' }` added "just in case," or an assumption that omitting the option is safe/cached) can under-cache and hit the origin on every request where the team expected ISR-like reuse.
+- Flag any `fetch()` inside `app/api/**/route.ts` with no cache directive and no comment explaining the intent either way — but state the *actual* risk (stale-forever vs. uncached-thrash) according to the version you confirmed, not a single unconditional direction.
 - **A page uses `cookies()`/`headers()`/`searchParams` and is still expected to be statically rendered** — any of these opt the route into dynamic rendering; if the ticket/PR assumes static generation for SEO/performance, this is a correctness gap, not just a perf note.
 - **`revalidatePath`/`revalidateTag` called from a Client Component or a plain function, not a Server Action or Route Handler** — these are server-only APIs; calling them from client code is a type error at best, a silent no-op at worst depending on the call site.
 - **Over-broad `revalidateTag`/`revalidatePath`** — tagging every fetch with the same tag and revalidating that tag on every mutation causes a cache stampede (every cached entry re-fetches at once). Tag scoped to the actual entity that changed.
@@ -108,7 +113,10 @@ export async function updateProfile(formData: FormData) {
 
 ### HIGH — Middleware
 
-- **Node.js-only API used in `middleware.ts`** — middleware runs on the **Edge runtime** by default; `fs`, most native Node modules, and many DB client libraries (Prisma's default engine, raw `mysql2`) are unavailable or silently behave differently. Check for imports that assume a Node runtime.
+- **Node.js-only API used in `middleware.ts` — but check the pinned version's default runtime first (step 3 above), it has moved twice:**
+  - **Through Next.js 15.1**: middleware runs on the **Edge runtime** by default. `fs`, most native Node modules, and many DB client libraries (Prisma's default engine, raw `mysql2`) are unavailable or silently behave differently. Check for imports that assume a Node runtime.
+  - **15.2+**: an opt-in Node.js runtime became available (`experimental.nodeMiddleware` / `export const runtime = 'nodejs'`); **15.5+** it's stable.
+  - **16.x**: the primitive itself was renamed — `middleware.ts` is deprecated in favor of `proxy.ts`, and **Proxy defaults to the Node.js runtime**, the opposite of the pre-15.2 default. On a v16 project, don't assume Edge-runtime constraints apply without checking which convention and runtime the file actually declares.
 - **Overly broad `matcher` config** — a matcher of `'/:path*'` with no exclusions runs middleware on every static asset request (`/_next/static/*`, `/favicon.ico`), adding latency to requests that never needed it. Scope the matcher to the actual routes needing the check.
 - **Heavy computation or a synchronous external call in middleware** — Edge middleware has tight execution-time limits; a slow auth check here adds latency to *every* matched request, not just the ones that need it. Prefer a lightweight cookie/JWT check in middleware and defer the expensive verification to the route/action itself.
 - **Middleware setting cookies then redirecting** — must construct the response first (`NextResponse.redirect` / `.next()`), set cookies on that response object, then return it; setting cookies on a discarded intermediate response is a silent no-op.
@@ -165,10 +173,12 @@ build-time classification as a finding.
 Report findings grouped by severity. For each issue:
 
 ```
-[CRITICAL] fetch() in Route Handler defaults to indefinite caching
+[CRITICAL] fetch() in Route Handler has no explicit cache directive (project pinned to Next.js 14.2)
 File: app/api/prices/route.ts:12
-Issue: `fetch(upstreamUrl)` has no cache option — defaults to `force-cache`, so live price
-  data is cached indefinitely on the Data Cache after the first request.
+Issue: `fetch(upstreamUrl)` has no cache option. On this project's pinned Next.js 14.x, that
+  defaults to `force-cache` — live price data is cached indefinitely on the Data Cache after
+  the first request. (On Next.js 15+ the default is the opposite — uncached — so re-verify this
+  finding's direction if the project upgrades.)
 Fix: Add `{ cache: 'no-store' }` if this must always be live, or `{ next: { revalidate: 60 } }`
   if a 60s staleness window is acceptable.
 ```

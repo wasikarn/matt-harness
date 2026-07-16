@@ -166,7 +166,7 @@ Common fixes:
 | `Could not resolve X: Conflict(s) found for the following module(s)` | Run `./gradlew dependencies --configuration compileClasspath` to find the conflicting versions, then force a resolution strategy or align via a BOM |
 | `Duplicate class found in modules X and Y` | Two dependencies bundle the same class (often a transitive shading conflict) — exclude the transitive dep from one of them |
 | `Execution failed for task ':app:compileDebugJavaWithJavac'` | Read the underlying javac error above this line — this is a wrapper failure, the real error is further up the log |
-| Version catalog / `libs.versions.toml` mismatch | Confirm the alias used in `build.gradle.kts` matches the catalog key exactly (typos here fail silently as "not found") |
+| Version catalog / `libs.versions.toml` mismatch | A typo in the type-safe accessor (`libs.someAlias`) fails **loudly** — as an unresolved-reference compile error in the build script itself, not silently. Confirm the alias matches the catalog key exactly; check the exact error text for which script line references the bad alias. |
 
 ## Recovery Strategies (Cross-Ecosystem)
 

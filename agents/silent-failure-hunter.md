@@ -100,8 +100,10 @@ a documented one is a design choice you can note but shouldn't block on.
 - generic rethrows — `throw new Error("something went wrong")` loses the specific error type/
   code a caller might need to branch on (is this retryable? is this a 4xx or 5xx?)
 - missing async handling — an `async` function's rejection with no `.catch`/`try` anywhere in
-  its call chain becomes an unhandled rejection (crashes the process in strict Node, or a
-  silently swallowed warning depending on runtime config)
+  its call chain becomes an unhandled rejection. Node's default since v15 (`--unhandled-rejections=throw`)
+  crashes the process; a `--unhandled-rejections=warn`/`none` flag or a pre-v15 runtime instead
+  logs a warning and swallows it silently — check the runtime's actual flag/version before
+  assuming which behavior applies.
 
 ### 5. Missing Error Handling
 

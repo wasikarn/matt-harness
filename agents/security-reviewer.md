@@ -42,8 +42,8 @@ npx eslint . --plugin security
 2. **Broken Auth** (CWE-287, CWE-347 JWT signature) — Passwords hashed (bcrypt/argon2)? JWT validated? Sessions secure?
 3. **Sensitive Data** (CWE-311, CWE-312) — HTTPS enforced? Secrets in env vars? PII encrypted? Logs sanitized?
 4. **XXE** (CWE-611) — XML parsers configured securely? External entities disabled?
-5. **Broken Access** (CWE-862 missing auth, CWE-639 IDOR) — Auth checked on every route? Object ownership checked, not just authentication? CORS properly configured?
-6. **Misconfiguration** (CWE-16) — Default creds changed? Debug mode off in prod? Security headers set?
+5. **Broken Access** (CWE-306 missing authentication, CWE-862 missing authorization, CWE-639 IDOR) — Auth checked on every route? Object ownership checked, not just authentication? CORS properly configured?
+6. **Misconfiguration** (e.g. CWE-1188 insecure defaults) — Default creds changed? Debug mode off in prod? Security headers set? (No single CWE covers this OWASP category — CWE-16 is a deprecated MITRE category node prohibited for vulnerability mapping; cite the specific weakness that applies, not CWE-16 itself.)
 7. **XSS** (CWE-79) — Output escaped? CSP set? Framework auto-escaping?
 8. **Insecure Deserialization** (CWE-502) — User input deserialized safely?
 9. **Known Vulnerabilities** (CWE-1104) — Dependencies up to date? npm audit clean?
@@ -61,10 +61,10 @@ Flag these patterns immediately:
 | `innerHTML = userInput` | CWE-79 | HIGH | Use `textContent` or DOMPurify |
 | `fetch(userProvidedUrl)` | CWE-918 | HIGH | Whitelist allowed domains + block private IP ranges |
 | Plaintext password comparison | CWE-256 | CRITICAL | Use `bcrypt.compare()` |
-| No auth check on route | CWE-862 | CRITICAL | Add authentication middleware |
+| No auth check on route | CWE-306 | CRITICAL | Add authentication middleware |
 | Auth OK but no ownership check | CWE-639 | CRITICAL | Compare resource owner to authenticated user, not just "is logged in" |
 | Balance check without lock | CWE-362 | CRITICAL | Use `FOR UPDATE` in transaction |
-| No rate limiting | CWE-307 | HIGH | Add `express-rate-limit` |
+| No rate limiting | CWE-799 | HIGH | Add `express-rate-limit` |
 | Logging passwords/secrets | CWE-532 | MEDIUM | Sanitize log output |
 
 ### 3b. Concrete Patterns (BAD → GOOD)
@@ -137,9 +137,11 @@ const result = await fetch(url, { redirect: 'error' }); // also block redirect-b
 A single MEDIUM finding can be the missing link in a CRITICAL chain. Check whether findings
 compose before scoring them independently:
 
-- **IDOR (CWE-639) + no rate limiting (CWE-307)** → an attacker enumerates sequential/guessable
+- **IDOR (CWE-639) + no rate limiting (CWE-799)** → an attacker enumerates sequential/guessable
   IDs at scale and scrapes every user's data, not just one. Score the *combination* CRITICAL
-  even if each piece alone is HIGH/MEDIUM.
+  even if each piece alone is HIGH/MEDIUM. (CWE-799 "Improper Control of Interaction
+  Frequency" is the general rate-limiting weakness; CWE-307 is scoped narrowly to
+  authentication-attempt throttling, not general API abuse.)
 - **XSS (CWE-79) + missing `httpOnly` on session cookie** → a reflected/stored XSS becomes full
   session takeover, not just a defaced page. Always check cookie flags when XSS is present.
 - **Mass assignment (CWE-915) + no role-check on write** → privilege escalation to admin in one

@@ -59,10 +59,21 @@ zero-reference result:
 - **DI-decorator "magic" registration** — `@Injectable()` (NestJS), `@Component` (Spring),
   `@app.route` (Flask), or any decorator-based registration means the class/function is
   "used" by the framework's runtime scanner, not by a lexical import anywhere in the code.
-  Grep for the decorator/registration string, not just import statements.
+  This is **tool-dependent, not universal**: `knip` ships framework-specific plugins (including
+  one for NestJS) that already understand common decorator patterns when configured — check
+  whether the project's `knip.json`/config has the relevant plugin enabled before assuming a
+  blind spot. `vulture` (Python) has no such awareness and needs `--ignore-decorators
+  "@app.route"` or an explicit whitelist for Flask/Django-style routes — it's the tool most
+  likely to false-positive here. When in doubt, grep for the decorator/registration string
+  directly rather than trusting either tool's default config.
 - **Dynamic dispatch / reflection** — `getattr(obj, method_name)`, `Class.forName()`,
   `require(pathVariable)`, a route/command registry keyed by string name. Grep for the string
   literal (the method/class/route name as text) across the repo, not just for import sites.
+  Note Go's `deadcode` is a partial exception — its own docs state it can soundly analyze
+  dynamic calls through func values, interface methods, and reflection, so a "SAFE" verdict
+  from `deadcode` on Go dynamic-dispatch code is more trustworthy than the equivalent verdict
+  from a JS/TS or Python tool on the same pattern; don't downgrade it to CAREFUL on reflection
+  grounds alone.
 - **Framework-registered entry points never explicitly imported** — a Next.js file-route
   (`pages/api/foo.ts`), a cron job registered by filename convention, a migration file run by
   a runner that globs the directory, a test file discovered by a test runner's glob pattern.
