@@ -29,15 +29,25 @@ the same underlying mistake: optimizing for how the summary looks instead of wha
 needs from it. Length is a consequence of information density, not a target to hit.
 
 **Grounded in named principles, not vibes:**
-- **BLUF (bottom-line-up-front)** and the **inverted pyramid** (journalism) — lead with the
-  conclusion or decision; a reader who stops after sentence one still has the point.
-- **Minto Pyramid Principle** — group supporting detail under the answer, not before it;
-  chronological retelling of how the source unfolded is the wrong shape for a summary.
+- **BLUF (bottom-line-up-front)** (U.S. military writing doctrine, AR 25-50) — lead with the
+  decision, recommendation, or required action. **Inverted pyramid** (journalism, born from
+  telegraph-era wire reporting) — lead with the most newsworthy *facts* in descending order of
+  importance. Related but not the same move: BLUF orders by decision, inverted pyramid orders by
+  fact-priority — a source with no decision in it still gets an inverted-pyramid-style summary,
+  just not a BLUF one. Either way: a reader who stops after sentence one has the most important
+  thing, whichever kind of "important" the source actually contains.
+- **Minto Pyramid Principle** (Barbara Minto, McKinsey) — start with the answer, then support it
+  with ideas grouped **MECE** (mutually exclusive, collectively exhaustive) — either parallel
+  independent arguments or a deductive chain. A chronological retelling of how the source unfolded
+  is wrong for two reasons, not one: it buries the answer, *and* it isn't grouped by logical
+  relationship at all.
 - **Abstractive over extractive** (NLP terminology) — synthesize the meaning in your own words;
   don't stitch together sentences lifted verbatim and call it done. A summary that's mostly
   quotation didn't do the compression work.
-- **Zinsser / Strunk & White's "omit needless words"** — every clause earns its place by carrying
-  a fact, number, decision, or caveat. If deleting a clause loses none of those, cut it.
+- **Strunk & White's "omit needless words"** (*The Elements of Style*) and **Zinsser's "clutter"**
+  (*On Writing Well* — "clutter is the disease of American writing") — two authors making the same
+  argument under different names, not one shared phrase. Either way: every clause earns its place
+  by carrying a fact, number, decision, or caveat. If deleting a clause loses none of those, cut it.
 - **Progressive disclosure** — structure the output so a reader can stop at any tier (TL;DR →
   summary → detail) and still have gotten the most important layer first.
 
