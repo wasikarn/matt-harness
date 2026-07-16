@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # 36. matt-pocock doctrine conformance — emit INFO findings when a skill's
-# description + body fails one or more of the 6 doctrine checks from
-# CLAUDE.md § "Skill authoring doctrine (matt-pocock)" and the
-# docs/skill-template/SKILL.md "## Design checks" block:
+# description + body fails one or more of the checks below. Checks 1, 2, 4,
+# 5 map to 4 of matt's 6 doctrine elements from CLAUDE.md § "Skill authoring
+# doctrine (matt-pocock)" and the docs/skill-template/SKILL.md "## Design
+# checks" block; check 3 (trigger-per-branch) is a script-only addition, not
+# one of matt's 6:
 #
 #   1. Leading word — coined term in the first 10 words of description.
 #      Matt vocabulary: grill, seam, vertical slice, premature completion,
@@ -16,9 +18,14 @@
 #   5. No-op test — body has a substantive procedure step (≥ 3 lines under
 #      "## " headings); a skill that is all-intro and no procedure is
 #      candidate for the no-op test rewrite.
-#   6. Failure-mode guard — body carries a "fail / drift / never / do NOT /
-#      avoid / risk:" token near a step boundary (within 10 lines of a
-#      numbered list marker).
+#
+# Matt's remaining 2 elements — "failure-mode guard" and "two-cuts" — have no
+# shell check. A numbered-window regex proxy for failure-mode guard was tried
+# and retired (2026-07-16): it was vacuous before the reset-bug fix (any
+# trigger word anywhere later in the file passed) and 5/5 false-positive
+# after (every flagged skill already named its failure mode in a prose
+# section or bullet list outside any numbered-step window — see CLAUDE.md's
+# matt-doctrine-conformance history).
 #
 # Per memory `harness-audit-gauntlet-policy`, this is INFO-only. The check is
 # the visibility layer for the doctrine rule in CLAUDE.md; tightening to
@@ -116,26 +123,5 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   ')
   if [ "$body_lines" -lt 5 ]; then
     info "$name: body has only $body_lines substantive lines — matt's no-op test says every sentence must change behaviour; very-thin skills often have stale scaffolding"
-  fi
-
-  # Failure-mode guard (check 6). Look for "fail / drift / never / do NOT /
-  # avoid / risk:" tokens within the body of a step. A step is bounded by
-  # numbered-list markers (`1. foo`, `2) bar`) or markdown headings with
-  # step numbers (`### N. foo`, `#### N. foo`). Idiomatic kbg structure
-  # uses `### N. Step title` followed by a blank line, then the step body
-  # — so the step window extends to the NEXT step boundary (a blank line
-  # is allowed and does not chop the window).
-  # Inverted for set -e safety (see check 4 comment).
-  if printf '%s' "$body" | awk '
-    BEGIN { in_step = 0 }
-    /^##[[:space:]]+[^0-9]/                     { in_step = 0; next }
-    /^[[:space:]]*[0-9]+[.)][[:space:]]/        { in_step = 1; next }
-    /^[[:space:]]*#{2,6}[[:space:]]+[0-9]+\.[[:space:]]/ { in_step = 1; next }
-    in_step && /fail|drift|never|do NOT|avoid|risk:/ { found = 1; exit }
-    END { exit (found ? 0 : 1) }
-  '; then
-    :
-  else
-    info "$name: no failure-mode guard inline at a numbered procedure step — matt's failure-mode rule requires the drift mode named next to the action, not only in a header"
   fi
 done

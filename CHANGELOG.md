@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.1] — 2026-07-16
+
+Retired `harness-audit` check 36's failure-mode-guard sub-check — supersedes
+the reset-regex fix from `b8653e7` earlier the same day; the sub-check it
+fixed never earned its keep. Before the fix, `in_step` was never reset, so
+any trigger word anywhere later in a skill's body passed — near-vacuous.
+After the fix, it was strict-but-wrong: live audit re-run flagged 5 skills
+(`agent-architecture-audit`, `eval-harness`, `memory-lint`, `pr`,
+`production-audit`), and direct re-read confirmed all 5 already name their
+failure mode — in a `## Guardrail` section, a `## Design checks` bullet, or a
+capitalized "Never"/"Do not" the check's case-sensitive, numbered-window-only
+regex couldn't see. Simulated a widen (2-hash-only → 2-to-6-hash reset) and a
+whole-body case-insensitive relax before deciding: the widen changed zero
+outputs, and the relax hit 32/32 pass (i.e. would never flag anything).
+Adding content to the 5 flagged skills to satisfy the check would have been
+the presence-only-checks-manufacture-boilerplate pattern this repo already
+retired a check over once; retiring the sub-check instead avoids repeating
+that mistake. CLAUDE.md's doctrine-conformance count updated 5-of-6 → 4-of-6.
+No `SKILL.md` file was edited — all 5 were already compliant. Also
+regenerated the in-repo `BOUNDARY.md` (stale since `b8653e7`'s
+`backend-architect` description trim — check #16 had been silently flagging
+it since then) and the dotfiles-repo copy.
+
 ## [0.58.0] — 2026-07-16
 
 Added a third dispatch primitive to `orchestrate` — external-model delegation
