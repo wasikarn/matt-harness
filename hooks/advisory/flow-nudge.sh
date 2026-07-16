@@ -14,8 +14,10 @@
 set -uo pipefail
 
 # ponytail: grep the raw JSON stdin directly instead of spawning python3 to
-# extract .prompt first. The flow verbs are alphabetic, so JSON escaping never
-# mangles them, and this hook is advisory-only (never blocks, always exit 0).
+# extract .prompt first. English flow verbs are alphabetic, and Thai verbs
+# match via bare alternation on raw UTF-8 bytes (CC emits `prompt` as real
+# UTF-8, not \u-escaped) — so JSON escaping never mangles either, and this
+# hook is advisory-only (never blocks, always exit 0).
 # Tradeoff (accepted): raw grep scans every JSON field, so a cwd or
 # transcript_path containing a verb (e.g. a clone named refactor-cleaner)
 # over-triggers a spurious nudge line — low stakes. Restrict to the prompt
@@ -37,6 +39,14 @@ IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rew
 # to mention a PR ("build X then open a PR" → still wants the plan-first nudge).
 # `create` is dropped because it's the one IMPL verb that overlaps PR_INTENT.
 IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
+# Thai impl-verb detection. Bare substring alternation, NO \b and NO -i: Thai
+# has no ASCII word-boundary characters (\b never matches Thai script) and is
+# caseless. Proven pattern copied from jira-route-nudge.sh:51. `ทำ` (do/make)
+# is deliberately excluded — it's a bare substring of extremely common words
+# (ทำไม=why, ทำงาน=work, ทำอะไร=do what) and would false-positive on ordinary
+# Thai questions. `พัฒนา` (develop) has no English IMPL peer — included as the
+# single most natural Thai verb for "build/develop a system".
+THAI_IMPL='สร้าง|พัฒนา|เพิ่ม|แก้ไข|ปรับปรุง|เขียน|ติดตั้ง|ผสาน|ออกแบบ|ย้าย'
 
 # Read stdin ONCE into a variable. The greps below all read stdin; if they
 # shared the live pipe, the first grep would consume it and the rest would
@@ -69,7 +79,7 @@ EOF
   exit 0
 fi
 
-if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT"; then
+if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT"; then
   exit 0
 fi
 # CI-failure carve-out: "build failed, help me debug the CI" is a DEBUG task,
@@ -90,6 +100,7 @@ cat <<'EOF'
   Multi-file / unfamiliar / architectural / hard-to-reverse?
     → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first.
   A new feature to spec out? → grilling → to-spec → to-tickets → /ship
+  Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see kbg:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.
 EOF

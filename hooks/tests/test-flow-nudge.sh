@@ -20,7 +20,7 @@ user_prompt_payload() {
   python3 -c '
 import sys, json
 prompt = sys.argv[1]
-print(json.dumps({"tool_name": "UserPromptSubmit", "prompt": prompt}))
+print(json.dumps({"tool_name": "UserPromptSubmit", "prompt": prompt}, ensure_ascii=False))
 ' "$1"
 }
 
@@ -131,6 +131,17 @@ test_silent "long doc reorg w/ no flow verb (must stay silent — length alone m
   "document the README to introduce the plugin, then cover a quickstart for install plus first surface plus first hook. Then a troubleshooting section. Then a deep-dive on the composer-not-creator doctrine and how matt-pocock's flow fits our native doctrine. After that, expand the existing examples. After that, a migration guide. After that, link out to the relevant skills and commands. After that, a CHANGELOG entry."
 
 echo ""
+echo "--- Thai prompts (must fire nudge) ---"
+test_nudge  "Thai: create a function (สร้าง)"             "ช่วยสร้างฟังก์ชันสำหรับค้นหาผู้ใช้"
+test_nudge  "Thai: develop auth system (พัฒนา)"           "พัฒนาระบบยืนยันตัวตนด้วยโทเคน"
+test_nudge  "Thai: add a rate limiter (เพิ่ม)"             "เพิ่มตัวจำกัดอัตราให้กับบริการสาธารณะ"
+test_nudge  "Thai: refactor the audit script (ปรับปรุง)"  "ปรับปรุงโครงสร้างของสคริปต์ตรวจสอบ"
+test_nudge  "Thai: design a new endpoint (ออกแบบ)"        "ออกแบบปลายทางใหม่สำหรับแดชบอร์ด"
+# Guards the ทำ exclusion: silent on current hook, must stay silent post-fix too
+# (ทำ is a substring of ทำอะไร — if ทำ were in THAI_IMPL this would wrongly fire).
+test_silent "Thai: 'what does this file do' (guards ทำ exclusion)" "ไฟล์นี้ทำอะไร"
+
+echo ""
 echo "--- PR-creation intent (routes to kbg:pr, not plan-first) ---"
 # open/raise aren't in IMPL, so these would be silenced by the generic gate
 # without the PR branch that runs before it.
@@ -181,6 +192,17 @@ if printf '%s' "$content_out" | /usr/bin/grep -qi "plan mode"; then
   pass=$((pass + 1))
 else
   echo "  ❌ CONTENT EXPECTED 'plan mode' in nudge: <$(printf '%s' "$content_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
+echo "--- delegation content contract (must name delegation) ---"
+delegation_out=$(echo "$(user_prompt_payload "refactor the whole audit pipeline across many files")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$delegation_out" | /usr/bin/grep -qi "delegat"; then
+  echo "  ✅ CONTENT: nudge suggests delegation"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED delegation line: <$(printf '%s' "$delegation_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 fi
 
