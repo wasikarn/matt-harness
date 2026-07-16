@@ -227,14 +227,14 @@ fi
 # 3-5ms a cold python3 is), so this cuts ~0.4s off the audit, not the 1.5-2.5s
 # earlier estimated (corrected 2026-07-03 after profiling). Gauntlet long-pole
 # is THIS audit (~8.4s, pre-commit AND pre-push), NOT shellcheck (~0.9s) —
-# measured 2026-07-03 after v0.31.0. The 8.4s is distributed across the 40
-# sourced checks (heaviest ~1s each: doc-rot, boundary-drift, description-
-# length, doctrine-conformance, refs-resolve); no single runaway to cut
-# surgically. The only further lever is a structural shared-fleet-manifest
-# refactor touching the 40-fragment integrity guard — declined at current
-# stakes (low commit-frequency repo; risk to a safety-closed guard > seconds
-# saved). >/dev/null suppresses stdout; the write to _FM_CACHE persists because
-# this runs in the main shell, not a $(...) subshell.
+# measured 2026-07-03 after v0.31.0. The 8.4s is distributed across the sourced
+# checks (heaviest ~1s each: doc-rot, boundary-drift, description-length,
+# doctrine-conformance, refs-resolve); no single runaway to cut surgically.
+# The only further lever is a structural shared-fleet-manifest refactor
+# touching the fragment integrity guard — declined at current stakes (low
+# commit-frequency repo; risk to a safety-closed guard > seconds saved).
+# >/dev/null suppresses stdout; the write to _FM_CACHE persists because this
+# runs in the main shell, not a $(...) subshell.
 for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md \
             "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!]*/COMMAND.md; do
   [ -f "$_fmf" ] || continue
@@ -250,18 +250,18 @@ for _cf in "${_checks[@]}"; do
 done
 unset _cf
 
-# Split-integrity guard: exactly 41 fragments, each carrying one '# N.' header,
-# numbers 1..41 each exactly once. Source scope == count scope == the SAME glob
+# Split-integrity guard: exactly 42 fragments, each carrying one '# N.' header,
+# numbers 1..42 each exactly once. Source scope == count scope == the SAME glob
 # (checks/[0-9][0-9]-*.sh), so an unnumbered extra is neither sourced nor
 # counted. Three assertions close the fail-OPEN holes a single equality check
 # misses: a fragment with no header (files != headers), a duplicate number
-# (total != unique), and a gap/loss (unique set != 1..41). Any = err_die.
+# (total != unique), and a gap/loss (unique set != 1..42). Any = err_die.
 _all_ids=$(grep -hoE '^# [0-9]+\. ' "${_checks[@]}" 2>/dev/null | grep -oE '[0-9]+' | sort -n)
 _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids=$(seq 1 41 | tr '\n' ' ')
+_exp_ids=$(seq 1 42 | tr '\n' ' ')
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch — $_n_files files sourced but $_n_total '# N.' headers (a fragment lacks a header or carries >1) — fail-closed"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) — a number is duplicated, not exactly-once — fail-closed"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment integrity broken — set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared — fail-closed"

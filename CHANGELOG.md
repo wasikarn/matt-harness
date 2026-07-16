@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.6] — 2026-07-17
+
+Closed a gap surfaced while checking `/kbg-help`'s routing table: nothing in the fleet reported
+SKILL.md body size/token count fresh. `kbg:harness-audit --health` measures per-session token
+*cost* (usage), and `kbg:inventory`/`BOUNDARY.md` list surfaces with no size field at all —
+neither answers "is this specific skill's body getting large." The prior manual
+`/markdown-token-optimizer` pass on `orchestrate/SKILL.md` had to compute this by hand (`wc -c`).
+
+Added `harness-audit` check 42 (INFO-only, never fails the gate): flags any SKILL.md body above
+20,000 chars, a threshold picked from the fleet's own distribution (n=33, 2026-07-17: p90 ~15K
+chars) rather than an imported generic target. Currently fires on exactly the 2 skills that
+already needed manual attention — `orchestrate` (31,570 chars) and `review-pr` (45,524 chars, not
+yet optimized). Bumped the audit's fragment-integrity guard 41 → 42 and fixed 2 stale "40/41
+fragment" comments it would otherwise have drifted from. Added a `kbg-help.md` row so this surface
+is actually discoverable next time the question comes up.
+
 ## [0.58.5] — 2026-07-17
 
 Ran `/markdown-token-optimizer` against `skills/orchestrate/SKILL.md` (grown heavily this session

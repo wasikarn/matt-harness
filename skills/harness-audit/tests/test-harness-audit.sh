@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # test-harness-audit.sh — self-test for harness-audit (maker-grades-own-work guard).
 #
-# The audit's own 40-fragment integrity guard catches LOST checks, not SILENT
+# The audit's own fragment integrity guard catches LOST checks, not SILENT
 # checks. The audit has shipped silent gaps before (v0.35.5 found real ones), so
 # this pairs each known-bad fixture with a clean one and asserts the matching
 # check FIRES on bad and is SILENT on good. Two checks only (Rule 2 — two
 # fixtures cover the highest-silence-risk checks and prove the self-test
-# mechanism; a full 40-fixture suite is speculative):
+# mechanism; a full fleet-wide fixture suite is speculative):
 #   39 — recursive-improve disable-model-invocation flag (CRIT)
 #   40 — dead `kbg:` reference doc-rot (WARN; exit stays 0 — asserted via the
 #        Warnings line, not the exit code)
