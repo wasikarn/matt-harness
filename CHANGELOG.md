@@ -26,7 +26,18 @@ that mistake. CLAUDE.md's doctrine-conformance count updated 5-of-6 → 4-of-6.
 No `SKILL.md` file was edited — all 5 were already compliant. Also
 regenerated the in-repo `BOUNDARY.md` (stale since `b8653e7`'s
 `backend-architect` description trim — check #16 had been silently flagging
-it since then) and the dotfiles-repo copy.
+it since then).
+
+**Correction (same day, post-push):** this entry originally also claimed the
+dotfiles-repo `BOUNDARY.md` copy was regenerated — wrong. That file is
+deliberately hand-maintained (commit `90730fc` in the dotfiles repo, one day
+prior): the repo has no local fleet, so `inventory-boundary.sh --repo-only`
+cannot regenerate it even in principle (its repo-root resolution is pinned to
+the script's own physical location, not the caller's cwd — it always reports
+kbg-harness's fleet). Running it against that file overwrote correct
+"see kbg-harness's own BOUNDARY.md" content with a wrong copy of this repo's
+fleet tables — reverted before commit, dotfiles repo stayed clean. No dotfiles
+change ever shipped.
 
 ## [0.58.0] — 2026-07-16
 
