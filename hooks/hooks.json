@@ -146,6 +146,17 @@
             "command": "bash -c 'w=\"${TATHEP_WORKSPACE:-$HOME/Codes/Works/tathep}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
           }
         ]
+      },
+      {
+        "id": "gate:bash:worktree-guard",
+        "matcher": "Bash",
+        "description": "Gate: tathep-scoped — deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a tathep sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. No-op outside the tathep workspace.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'w=\"${TATHEP_WORKSPACE:-$HOME/Codes/Works/tathep}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
+          }
+        ]
       }
     ],
     "Stop": [

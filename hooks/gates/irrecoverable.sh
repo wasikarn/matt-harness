@@ -57,19 +57,49 @@ for w in windows:
         continue
     argv0, rest = basename(w[0]), w[1:]
 
-    # sudo/xargs wrap another command — unwrap one level so the checks
-    # below still fire. Found 2026-07-01: "sudo rm -rf x" and
-    # "find | xargs rm -rf" bypassed every check because argv0 was the
-    # wrapper, not the wrapped command — and these are everyday shell
-    # idioms, not adversarial obfuscation, so they are in scope for a
-    # habit-guard.
-    if argv0 == "sudo":
-        i = 0
-        while i < len(rest) and rest[i].startswith("-"):
-            i += 1
-        if i < len(rest):
+    # Prefix wrappers unwrap one level per iteration so stacked forms like
+    # "env nice rm -rf x" resolve to the real command. Found 2026-07-01:
+    # "sudo rm -rf x" and "find | xargs rm -rf" bypassed every check because
+    # argv0 was the wrapper, not the wrapped command — and these are
+    # everyday shell idioms, not adversarial obfuscation, so they are in
+    # scope for a habit-guard. env/nice take their own flags+values before
+    # the wrapped command; command/nohup/time/sudo only take bare flags.
+    PREFIX_WRAPPERS = {"env", "command", "nohup", "nice", "time", "sudo"}
+    while rest and argv0 in PREFIX_WRAPPERS:
+        if argv0 == "env":
+            i = 0
+            while i < len(rest):
+                t = rest[i]
+                if t == "-u" and i + 1 < len(rest):
+                    i += 2
+                elif t.startswith("-"):
+                    i += 1
+                elif "=" in t and t.split("=", 1)[0].isidentifier():
+                    i += 1
+                else:
+                    break
+            if i >= len(rest):
+                break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-    elif argv0 == "xargs":
+        elif argv0 == "nice":
+            i = 0
+            while i < len(rest) and rest[i].startswith("-"):
+                t = rest[i]
+                i += 1
+                if t == "-n" and i < len(rest):
+                    i += 1
+            if i >= len(rest):
+                break
+            argv0, rest = basename(rest[i]), rest[i + 1:]
+        else:  # command, nohup, time, sudo — bare flags then the wrapped command
+            i = 0
+            while i < len(rest) and rest[i].startswith("-"):
+                i += 1
+            if i >= len(rest):
+                break
+            argv0, rest = basename(rest[i]), rest[i + 1:]
+
+    if argv0 == "xargs":
         # Unlike git, xargs args are never a free-text commit message, so
         # scanning for a known-dangerous basename anywhere in its args is
         # safe (no quoted-prose false-positive risk). "git" is included so
@@ -81,6 +111,18 @@ for w in windows:
             if basename(t) in ("rm", "find", "dd", "git"):
                 argv0, rest = basename(t), rest[j + 1:]
                 break
+    elif argv0 == "docker" and rest and rest[0] == "exec":
+        # "docker exec <flags> <container> <cmd...>" re-points argv0 to the
+        # inner command so the SQL check below can fire on the wrapped
+        # client (feeds A6 — mysql/psql/sqlite3/mariadb run inside a
+        # container is otherwise invisible to this gate).
+        j = 1
+        while j < len(rest) and rest[j].startswith("-"):
+            j += 1
+        if j < len(rest):
+            j += 1  # skip the container name/id
+        if j < len(rest):
+            argv0, rest = basename(rest[j]), rest[j + 1:]
 
     if argv0 == "rm":
         # Lowercase before matching. "rm -Rf" and "rm -R -f" bypassed
@@ -102,6 +144,19 @@ for w in windows:
         # check). Git-specific so `echo "--no-verify"` does not false-positive.
         if "--no-verify" in w:
             deny("--no-verify bypasses safety hooks")
+        # -c core.hooksPath=<path> (split "-c core.hooksPath=X" or joined
+        # "-ccore.hooksPath=X") re-points git at a different hooks dir —
+        # the same bypass as --no-verify, just spelled as a config
+        # override. Only a non-empty value trips it: "=" with nothing after
+        # is not a meaningful re-point.
+        hooks_path_val = None
+        for idx, t in enumerate(w):
+            if t == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
+                hooks_path_val = w[idx + 1].split("=", 1)[1]
+            elif t.startswith("-c") and t[2:].startswith("core.hooksPath="):
+                hooks_path_val = t[2:].split("=", 1)[1]
+        if hooks_path_val:
+            deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
         # Walk past leading global flags before the subcommand so a prefix
         # like `git -C /repo push --force` (or `git -Cpath push --force`,
         # `git --no-pager push --force`) does not set sub="-C"/"--no-pager"
@@ -142,6 +197,7 @@ for w in windows:
         if sub == "push" and any(
             t in ("-f", "--force") or (t.startswith("--force") and not t.startswith("--force-with-lease"))
             or (t.startswith("-") and not t.startswith("--") and "f" in t)
+            or t.startswith("+")  # "+refspec" force-pushes without a -f/--force flag
             for t in scan
         ):
             deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)")
@@ -166,10 +222,18 @@ for w in windows:
         # old commit — unrecoverable). 1 nonflag stays allowed: it may be a
         # legit branch switch (found v0.36.0 audit: HEAD~1+file was missed).
         if sub == "checkout" and ("--" in scan or "." in scan or
-                                    len([t for t in scan if not t.startswith("-")]) >= 2):
-            deny("git checkout -- / git checkout . / git checkout <tree> <file> discards working-tree changes — confirm with user first")
+                                    len([t for t in scan if not t.startswith("-")]) >= 2 or
+                                    any(t in ("-f", "--force") for t in scan)):
+            deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
         if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") for t in scan):
             deny("git switch --force discards working-tree changes — confirm with user first")
+        if sub == "branch" and (
+            any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
+            or ("--delete" in scan and "--force" in scan)
+        ):
+            deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
+        if sub == "stash" and args and args[0] in ("drop", "clear"):
+            deny("git stash drop/clear discards stashed changes — confirm with user first")
         if sub == "commit" and "--amend" in scan:
             deny("git commit --amend rewrites history — confirm with user first")
         if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
@@ -194,6 +258,13 @@ for w in windows:
             for i, t in enumerate(args):
                 if t in ("-b", "-B", "--branch") and i + 1 < len(args):
                     branch_name = args[i + 1]
+                    break
+                # joined forms: -bBRANCH, -BBRANCH, --branch=BRANCH
+                if (t.startswith("-b") and t != "-b") or (t.startswith("-B") and t != "-B"):
+                    branch_name = t[2:]
+                    break
+                if t.startswith("--branch="):
+                    branch_name = t.split("=", 1)[1]
                     break
             if branch_name is not None and branch_name != "develop":
                 # Resolve project root: CLAUDE_PROJECT_DIR env first,
@@ -236,7 +307,7 @@ for w in windows:
     if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
         deny("dd writing to a raw device — irrecoverable disk-level destruction")
 
-    if argv0 in ("mysql", "psql", "sqlite3"):
+    if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):
         # SQL genuinely lives inside -e/-c values, unlike git free-text
         # messages — deliberately DO scan inside those here. The check
         # is restricted to known-dangerous statements.
@@ -245,4 +316,9 @@ for w in windows:
 
 sys.exit(0)
 '
-exit $?
+rc=$?
+if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
+  echo "[kbg:gate] internal error (rc=$rc) — failing closed" >&2
+  exit 2
+fi
+exit "$rc"
