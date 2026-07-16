@@ -225,13 +225,15 @@ A third dispatch primitive below the Agent tool: hand a drafting/analysis task t
 Ollama-hosted external model, get a **text proposal only**, review and apply it yourself in this
 session where kbg's gates apply. The external process never edits.
 
-**Command** (default model `glm-5.2:cloud` — 756B, 1M context, coding-focused; verified this
-repo, 2026-07-16, both that it launches and that it stays read-only under `--permission-mode
-plan`; fallback default is `kimi-k2.7-code:cloud`, also verified read-only, if glm isn't
-available on the account):
+**Command** (default model `minimax-m3:cloud` — 512K context (Ollama's cloud listing labels it
+"1M"), thinking + tool-use capable, parameter count undisclosed for this cloud-hosted model;
+verified this repo, 2026-07-16, both that it launches and that it stays read-only under
+`--permission-mode plan`; first fallback is `glm-5.2:cloud` — 756B, 1M context, coding-focused,
+also verified read-only, if minimax isn't available on the account; second fallback is
+`kimi-k2.7-code:cloud`, also verified read-only):
 
 ```bash
-ollama launch claude --model glm-5.2:cloud --yes \
+ollama launch claude --model minimax-m3:cloud --yes \
   -- -p "<F9-style handoff: What / Where / Focus / Deliverable — ask for a diff or a described change>" \
   --permission-mode plan
 ```
@@ -240,15 +242,30 @@ ollama launch claude --model glm-5.2:cloud --yes \
 model) — orthogonal to Claude Code's permission system. It has no bearing on read-only-ness; only
 `--permission-mode plan` controls that.
 
-**⚠️ `--permission-mode plan` is necessary and verified — not proven sole.** Across 4 live trials
-on 2 models (3 on `kimi-k2.7-code:cloud` — no flags, `--allowedTools "Read" "Grep" "Glob"`, and
-`--permission-mode plan`; 1 on `glm-5.2:cloud` — `--permission-mode plan`), the no-flags run and
-the `--allowedTools` restriction both silently edited a real file, while `--permission-mode plan`
-(placed after `--`) held read-only in both trials that used it. That's a small trial count, not an
-exhaustive proof of "only this flag can ever work" — treat it as necessary, and re-verify
-read-only behavior if you switch models or Ollama changes the launcher. Drop or typo this flag and
-you have handed an external cloud model unrestricted write access to whatever directory it runs
-in, with no other layer catching it. Never dispatch without it.
+**⚠️ `--permission-mode plan` is necessary and verified — not proven sole.** Across 5 live trials
+on 3 models (3 on `kimi-k2.7-code:cloud` — no flags, `--allowedTools "Read" "Grep" "Glob"`, and
+`--permission-mode plan`; 1 on `glm-5.2:cloud` — `--permission-mode plan`; 1 on `minimax-m3:cloud`
+— `--permission-mode plan`), the no-flags run and the `--allowedTools` restriction both silently
+edited a real file, while `--permission-mode plan` (placed after `--`) held read-only in all three
+trials that used it — including a trial that explicitly instructed the model to write the file
+"now, do not just describe it"; the model refused, named that it was in plan mode, and flagged the
+prompt as looking like a test. That's a small trial count, not an exhaustive proof of "only this
+flag can ever work" — treat it as necessary, and re-verify read-only behavior if you switch models
+or Ollama changes the launcher. Drop or typo this flag and you have handed an external cloud model
+unrestricted write access to whatever directory it runs in, with no other layer catching it. Never
+dispatch without it.
+
+**Note on the `minimax-m3:cloud` trial's backend identity:** the launch printed `claude.ai
+connectors are disabled because ANTHROPIC_API_KEY or another auth source is set and takes
+precedence over your claude.ai login` — worth ruling out before trusting the result, since a
+stray Anthropic auth source could in principle route the request to a real Claude model instead
+of Ollama's backend, making the "verified minimax-m3" claim false. Checked: no `ANTHROPIC_API_KEY`
+was set in the invoking shell; `docs.ollama.com/integrations/claude-code`'s manual-setup section
+confirms `ollama launch claude` routes via `ANTHROPIC_BASE_URL=http://localhost:11434`, not via
+API key, so the warning is about claude.ai's OAuth-gated connectors specifically, unrelated to
+which backend serves the coding request; and the model responded coherently to `--model
+minimax-m3:cloud`, a model ID Anthropic's own API would reject outright. Not an exhaustive proof,
+but three independent signals agree the request reached minimax-m3.
 
 **Flow:** build the `-p` prompt with the same F9 handoff discipline (a concrete diff or described
 change, not a narrative) → dispatch via Bash → capture stdout → treat as **Verify-tier producer

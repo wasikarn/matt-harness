@@ -5,6 +5,51 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.2] — 2026-07-16
+
+Live-verified `minimax-m3:cloud` as a third read-only-safe model for
+`orchestrate`'s external-model delegation path (`skills/orchestrate/SKILL.md`
+§ "External-model delegation — propose-only", v0.58.0), and promoted it to
+the section's **default** model (glm-5.2:cloud → first fallback,
+kimi-k2.7-code:cloud → second fallback), on explicit user request. Same
+methodology as the original 4 trials: dispatched `ollama launch claude
+--model minimax-m3:cloud --yes -- -p "..." --permission-mode plan` with a
+prompt explicitly instructing an immediate file write ("do this now, do not
+just describe it") — the model refused, named that it was in plan mode, and
+flagged the prompt as looking like a test. No file was created. Trial count
+in the doc updated from 4-on-2-models to 5-on-3-models.
+
+`advisor()` caught a real gap before this shipped: the trial's stdout opened
+with `claude.ai connectors are disabled because ANTHROPIC_API_KEY or another
+auth source is set...` — a fork between "benign, Ollama's routing tripped a
+standard notice" and "contaminated, a real Claude model answered instead of
+minimax-m3, and the whole verification proves nothing." Resolved via 3
+signals, documented inline in SKILL.md: no `ANTHROPIC_API_KEY` set in the
+invoking shell; `docs.ollama.com/integrations/claude-code` confirms
+`ollama launch claude` routes via `ANTHROPIC_BASE_URL`, not API key, so the
+warning is about claude.ai's OAuth-gated connectors, unrelated to backend
+model routing; and the model answered coherently to a model ID Anthropic's
+own API would reject outright.
+
+Side quest that blew up into the real fix: unblocking the live test required
+an `ollama launch claude --model minimax-m3:cloud *` Bash permission-allow
+rule, which surfaced that `~/.claude/settings.json` had silently drifted into
+a plain file — the symlink to `dotfiles/claude/settings.json` (the intended
+single source per `install.sh`'s `ensure_symlink`) was broken, likely by an
+atomic-write-replaces-symlink editor save. The two copies had diverged in
+both directions: dotfiles carried already-committed state (`"model":
+"opusplan"`, 3 plugins enabled) that live never received, while live carried
+one addition (`"language": "Thai, English"`) dotfiles never got. Fixed by
+porting the live-only `language` key into dotfiles, then restoring the
+symlink (backing up the stale live file to a timestamped `.bak`, matching
+`ensure_symlink`'s own safe-replace behavior) — `dotfiles@a65eb72`, pushed.
+The dotfiles-repo commit also carries the user-authored ollama allow-rules
+for all 3 models on the account (minimax-m3, glm-5.2, kimi-k2.7-code, each
+with and without the `[1m]` context-size suffix Ollama reports), not just the
+one needed for this trial — confirmed intentional scope before committing,
+after an auto-mode classifier flagged the wider rule set as exceeding what
+had been explicitly consented to.
+
 ## [0.58.1] — 2026-07-16
 
 Retired `harness-audit` check 36's failure-mode-guard sub-check — supersedes
