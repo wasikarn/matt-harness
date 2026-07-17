@@ -345,11 +345,12 @@ goes straight to `kbg:decide`.
 task list in one pass — every item routed (and optionally dispatched) before the session
 ends. It has no persistence: nothing here tracks a decision across sessions. If a triaged
 item turns out to need multi-session tracking (can't close today — needs more research,
-a stakeholder answer, or a follow-up session), that's `wayfinder`'s job: it charts one
-persistent cross-session decision-ticket on an external tracker and resolves exactly one
-per invocation. Name it as the next step and stop there — `wayfinder` carries
-`disable-model-invocation: true`, so only the user can start it (type
-`/mattpocock-skills:wayfinder`).
+a stakeholder answer, or a follow-up session), that's `wayfinder`'s job: it charts a
+persistent **map** of decision tickets on an external tracker, then works through them
+one ticket per invocation (an exception exists for research tickets, which can resolve
+in parallel via background subagents). Name it as the next step and stop there —
+`wayfinder` carries `disable-model-invocation: true`, so only the user can start it
+(type `/mattpocock-skills:wayfinder`).
 
 ## Output Format
 
