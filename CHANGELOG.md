@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.8] — 2026-07-17
+
+Added `agents/code-implementer.md` — the fleet had 7 reviewer agents and several design/analysis
+agents but no general implementer that writes feature code end-to-end. Framework expertise already
+lived in 12 `kbg:*-patterns` skills, but nothing dispatchable composed with them. Surveyed ECC
+(reviewers + build-resolvers only), superpowers (`implementer-prompt.md` — a generic discipline
+template, not a persistent agent), and `oh-my-claudecode` (`agents/executor.md` — a real generic
+stack-agnostic implementer; adapted as the structural model, minus its omc-specific tooling).
+`code-implementer` detects the stack, loads the matching `*-patterns` skill via the `Skill` tool
+(verified `general-purpose` can call `Skill`; verifying the restricted-tools case needs a session
+restart, pending), writes the smallest-scope highest-rigor diff, and adversarially self-reviews
+before handoff — explicitly as a maker-side quality pass, not the DONE gate, per this repo's
+verifier-separation crux (a maker can't grade its own work; the authoritative verdict stays with
+`code-reviewer` + the gauntlet, run by the dispatcher). Completes the `code-architect` (design) →
+`code-implementer` (build) → `code-reviewer` (review) triad. Wired into `orchestrate`'s agent-fleet
+table and gated-agent list (holds `Edit`/`Write`/`Bash`), and `code-architect`'s output gained a
+one-line handoff note. No per-framework specialist agents — that would duplicate the pattern-skills
+(speculative-surface trap); one generic implementer composes with all 12 and scales as skills are added.
+
 ## [0.58.7] — 2026-07-17
 
 Closed a gap found while field-testing the `requirement-analyst` → `code-architect` → Plan-Mode

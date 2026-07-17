@@ -8,6 +8,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | backend-architect | Backend systems architect — API contracts, service boundaries, data ownership, consistency, caching, reliability, scalability. Design-first, cross-language — defers framework/DB specifics to *-patterns skills. | [Read, Grep, Glob, Bash] | yes |
 | build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
+| code-implementer | Feature implementer — detects the stack, loads the matching kbg:*-patterns skill, writes the smallest-scope highest-rigor diff, verifies. Not for design or review. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"] | yes |
 | code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, and requirement-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | flutter-reviewer | Flutter/Dart code reviewer covering widget best practices, state management, Dart idioms, performance, accessibility, and architecture. Library-agnostic. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
@@ -111,7 +112,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-16T15:18:20Z_
+_Generated: 2026-07-17T03:14:38Z_
 
 ---
 

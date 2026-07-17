@@ -121,3 +121,8 @@ Order the implementation by dependency:
 - [ ] [Testable, observable condition — not "it works"]
 - [ ] [Second criterion]
 ```
+
+## Handoff
+
+Once the blueprint is approved, dispatch `code-implementer` to build it — it detects the stack,
+loads the matching `*-patterns` skill, and implements against this blueprint's build sequence.
