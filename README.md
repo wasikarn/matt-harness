@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.58.7-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.58.11-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 17 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus a set of matt-pocock skills installed separately via `gh skill` (see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 17 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -37,42 +37,29 @@ Run these commands inside Claude Code:
 # 3. Enable — add to your Claude Code settings.json:
 #    "kbg@kobig": true
 
-# 4. Required — install matt-pocock's skills via GitHub CLI (kbg's hooks,
-#    commands, and remaining skills route to these by bare name; they are
-#    not bundled in the plugin). Requires `gh` v2.95+.
-gh skill install mattpocock/skills engineering/prototype --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/resolving-merge-conflicts --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/ask-matt --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/code-review --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/codebase-design --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/diagnosing-bugs --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/domain-modeling --agent claude-code --scope user
-gh skill install mattpocock/skills productivity/grilling --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/grill-with-docs --agent claude-code --scope user
-gh skill install mattpocock/skills productivity/handoff --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/improve-codebase-architecture --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/research --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/setup-matt-pocock-skills --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/tdd --agent claude-code --scope user
-gh skill install mattpocock/skills productivity/teach --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/to-spec --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/to-tickets --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/triage --agent claude-code --scope user
-gh skill install mattpocock/skills engineering/wayfinder --agent claude-code --scope user
-gh skill install mattpocock/skills productivity/writing-great-skills --agent claude-code --scope user
+# 4. Required — install matt-pocock's skills as their own plugin (kbg's hooks,
+#    commands, and remaining skills route to these by namespaced name; they
+#    are not bundled in the kbg plugin).
+/plugin marketplace add mattpocock/skills
+/plugin install mattpocock-skills@mattpocock
 
-# 5. Restart Claude Code (plugin cache + global skills load on startup)
+# 5. Run once per repo (issue tracker, triage labels, doc layout):
+mattpocock-skills:setup-matt-pocock-skills
 
-# 6. Smoke-test
+# 6. Restart Claude Code (plugin cache loads on startup)
+
+# 7. Smoke-test
 kbg:kbg-help
 ```
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
 >
 > **Note:** Step 4 is required, not optional. 17 of kbg's own skills and several
-> hooks/commands were migrated off vendored forks onto these `gh skill`-installed,
-> unnamespaced skills (v0.46.0). A fresh clone/install is not self-contained
-> without them. Re-sync later with `gh skill update <name>`.
+> hooks/commands route to matt-pocock's skills by namespaced name
+> (`mattpocock-skills:<name>`). A fresh clone/install is not self-contained
+> without them. Installed as a plugin — not vendored, not `gh skill`-installed
+> (migrated off `gh skill` 2026-07-17). Re-sync with
+> `claude plugin update mattpocock-skills@mattpocock`.
 
 **Uninstall:** `/plugin uninstall kbg`  
 **Disable (keep installed):** set `"kbg@kobig": false` in `settings.json`
@@ -85,7 +72,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (some matt-origin skills now install via `gh skill`, unnamespaced — e.g. `grilling`) |
+| **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 17 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 17 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
@@ -114,7 +101,7 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 | `kbg:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
 | `kbg:decide` | Judgment Ladder: `clarify` / `probe` / `decide` / `strategize` / `critique` modes |
 | `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
-| `grilling` | Relentless interview to stress-test a plan before building |
+| `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building |
 | `kbg:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
 | `kbg:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops |
 | `kbg:context-budget` | Token usage audit — finds bloat and produces prioritized savings |
@@ -247,7 +234,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 
 | Source | License | Adopted |
 |---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 20 skills, installed verbatim via `gh skill` (not vendored — see Quick Start), 0 kbg-modified |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 21 skills, installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
 | kbg-native | MIT | 33 skills · 18 agents · 17 commands |

@@ -1,8 +1,8 @@
 ---
 name: ask-kbg
-description: "Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (/ask-matt)."
+description: "Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt)."
 disable-model-invocation: true
-disable-model-invocation-reason: explicit discovery aid mirroring /ask-matt's posture — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want the narrative map
+disable-model-invocation-reason: explicit discovery aid mirroring mattpocock-skills:ask-matt's posture — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want the narrative map
 ---
 
 # Ask KBG
@@ -11,7 +11,7 @@ Display this map. One-shot, read-only. Do not change mode, write files, or persi
 
 You don't remember every surface, so ask.
 
-kbg's shape differs from matt's: matt's flow is many small skills you chain yourself (grill → spec → tickets → implement). kbg's is a trunk command — `/ship` runs Explore → Clarify → Define-done → Implement → Test → Review → Fix-loop → Merge as one gated pipeline (full phase table: `/ship`). Most of what you'd chain by hand in matt's world, `/ship` already chains internally. What's left to narrate is what feeds *into* it and what happens *after* it.
+kbg's shape differs from matt's: matt's flow is many small skills you chain yourself (`mattpocock-skills:grilling` → `mattpocock-skills:to-spec` → `mattpocock-skills:to-tickets` → `mattpocock-skills:implement`). kbg's is a trunk command — `/ship` runs Explore → Clarify → Define-done → Implement → Test → Review → Fix-loop → Merge as one gated pipeline (full phase table: `/ship`). Most of what you'd chain by hand in matt's world, `/ship` already chains internally. What's left to narrate is what feeds *into* it and what happens *after* it.
 
 ## On-ramps: what feeds `/ship`
 
@@ -69,8 +69,8 @@ Framework/language pattern skills, invoked when you're working in that stack, se
 ## Crossing sessions
 
 - **`/frame`** — load a working posture (dev/review/research). A posture-setter, not a workflow switch.
-- **matt's `/handoff`** (globally available, not kbg-native) — kbg has no equivalent for compacting a full conversation into a resumable file. Use it the same way matt's flow does.
+- **matt's `mattpocock-skills:handoff`** (a separate plugin, not kbg-native) — kbg has no equivalent for compacting a full conversation into a resumable file. Use it the same way matt's flow does.
 
 ## The other fleet
 
-kbg-native and matt-origin skills are separate installs (matt's migrated out of this repo in v0.46.0 — `gh skill install`, not vendored). For grill/prototype/spec/tickets/tdd/code-review/wayfinder/domain-modeling/codebase-design/diagnosing-bugs and the rest of that flow, ask `/ask-matt` — it owns that map, this file doesn't duplicate it.
+kbg-native and matt-origin skills are separate installs (matt's migrated out of this repo in v0.46.0, and off unnamespaced `gh skill` installs onto the `mattpocock-skills` plugin 2026-07-17 — not vendored either way). For grill/prototype/spec/tickets/tdd/code-review/wayfinder/domain-modeling/codebase-design/diagnosing-bugs and the rest of that flow, ask `mattpocock-skills:ask-matt` — it owns that map, this file doesn't duplicate it.

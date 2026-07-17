@@ -15,14 +15,14 @@ You don't need to memorize every surface — describe what you're doing, and the
 
 | Stage | Entry points |
 |-------|--------------|
-| **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `research` |
-| **PLAN** — spec, prioritize | `kbg:orchestrate` · `triage` · `kbg:decide` |
+| **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `mattpocock-skills:research` |
+| **PLAN** — spec, prioritize | `kbg:orchestrate` · `mattpocock-skills:triage` · `kbg:decide` |
 | **BUILD** — implement | `/ship` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
 | **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (already-approved PR) · `/ship-release` (version/tag cut) |
 
-Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`triage`** (one issue → `/fix-bug`, `/ship`, `research`, `kbg:decide` probe mode).
+Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`mattpocock-skills:triage`** (one issue → `/fix-bug`, `/ship`, `mattpocock-skills:research`, `kbg:decide` probe mode).
 
 ### ...and which specialist (agent) per stage
 

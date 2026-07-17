@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Advisory: when the user's prompt looks like non-trivial engineering work,
 # nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep
-# before editing, with the heavyweight spec flow (grilling → to-spec →
-# to-tickets → /ship) as the branch for a feature to spec out. UserPromptSubmit
+# before editing, with the heavyweight spec flow (mattpocock-skills:grilling →
+# mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship) as the
+# branch for a feature to spec out. UserPromptSubmit
 # hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
 # always exits 0. Errors are silently swallowed.
 #
@@ -129,7 +130,7 @@ cat <<'EOF'
 [kbg:flow-nudge] Non-trivial work detected — plan before you edit.
   Multi-file / unfamiliar / architectural / hard-to-reverse?
     → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first.
-  A new feature to spec out? → grilling → to-spec → to-tickets → /ship
+  A new feature to spec out? → mattpocock-skills:grilling → mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship
   Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see kbg:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.

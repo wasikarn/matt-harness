@@ -99,7 +99,7 @@ allowed-tools: Read, Grep, Glob, Bash
 ---
 ```
 
-The command's body invokes the `diagnosing-bugs` skill (installed via `gh skill`, not vendored since v0.46.0) as the procedure; the `agent:` field carries the domain-specific voice. The command is justified because the 6-step procedure is a ritual the agent doesn't carry inline.
+The command's body invokes the `mattpocock-skills:diagnosing-bugs` skill (installed as the `mattpocock-skills` plugin, not vendored since v0.46.0) as the procedure; the `agent:` field carries the domain-specific voice. The command is justified because the 6-step procedure is a ritual the agent doesn't carry inline.
 
 ### `/architect` — case 2.2 (context pre-load)
 

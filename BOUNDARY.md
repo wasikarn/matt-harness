@@ -28,13 +28,12 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | Command | Description |
 |---|---|
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge). |
-| ask-kbg | Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (/ask-matt). |
+| ask-kbg | Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
 | cost-report | Generate a local Claude Code cost report from the ECC cost-tracker metrics log. |
 | fix-bug | Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean). |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style. |
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
-| implement | Implement a scoped feature or change — detects the stack, loads the matching kbg:*-patterns skill, writes the smallest-scope highest-rigor diff, adversarially self-reviews. Delegates to the code-implementer agent. |
 | implementation-compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | kbg-help | kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'. |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
@@ -86,7 +85,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep before editing, with the heavyweight spec flow (grilling → to-spec → to-tickets → /ship) as the branch for a feature to spec out. UserPromptSubmit hook. Output → stdout (CC surfaces as a system-reminder); never blocks, always exits 0. Errors are silently swallowed. |
+| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep before editing, with the heavyweight spec flow (mattpocock-skills:grilling → mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship) as the branch for a feature to spec out. UserPromptSubmit hook. Output → stdout (CC surfaces as a system-reminder); never blocks, always exits 0. Errors are silently swallowed. |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge routing through the jira-acli plugin's skills (jira-acli:acli, jira-acli:jira-content, jira-acli:confluence-content) before any direct mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit hook. Output -> stdout (CC surfaces as a system-reminder); never blocks, always exits 0. Errors are silently swallowed. |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
 | atlassian-mcp-gate.sh | Gate: block a direct Atlassian/Jira/Confluence MCP call (any mcp__*atlassian*/ mcp__*rovo* tool -- both a locally-configured/plugin MCP server, e.g. mcp__plugin_atlassian_atlassian__*, and a claude.ai-hosted connector, e.g. mcp__claude_ai_Atlassian_Rovo__*) before a jira-acli:* skill has loaded this session. Escalates ~/.claude/CLAUDE.md's "route through jira-acli first" doctrine + the advisory/jira-route-nudge.sh UserPromptSubmit reminder from prose to a computational PreToolUse gate -- both proved insufficient in practice (2026-07-15: still routing straight to the Atlassian MCP). |
@@ -113,7 +112,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-17T03:24:35Z_
+_Generated: 2026-07-17T04:22:46Z_
 
 ---
 

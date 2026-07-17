@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.11] — 2026-07-17
+
+Phase A of migrating matt-pocock's skills from unnamespaced `gh skill` installs to the official
+`mattpocock-skills@mattpocock` Claude Code plugin. The user installed the plugin separately;
+confirmed against code.claude.com/docs/en/plugins.md that plugin-delivered skills are always
+namespaced (`mattpocock-skills:<name>`), no opt-out — a structurally different name from the old
+bare `tdd`/`research`/etc., not a duplicate. A 2-agent survey found 80+ genuine bare-name
+reference sites across ~20 files; scoped to Tier 0 (doctrine now factually false — README.md Quick
+Start + Attribution table, CLAUDE.md's composer-not-creator + skill-authoring sections,
+`docs/agent-voice-extension.md`) and Tier 1 (cosmetic, user-visible — the flow-nudge/hooks.json/
+hook-lifecycle-contracts nudge-text sync-seam, `commands/ask-kbg.md`, `commands/kbg-help.md`) this
+pass; ~15 files of internal model-guidance prose deferred (Rule 2 — a reasoning model resolves
+`tdd` against its own skill list by intent, not exact string, so nothing there is currently
+broken). Per `advisor()` pressure-testing, removal of the 21 old `gh skill` copies is deliberately
+deferred to a later, restart-gated turn: doc correctness doesn't depend on the plugin being live
+this session, but destructive removal does, so it's sequenced after a post-restart resolution
+check to keep rollback free.
+
+## [0.58.10] — 2026-07-17
+
+Same-day follow-up to v0.58.8/v0.58.9: the user caught that `commands/implement.md` (added in
+v0.58.9) collided with matt-pocock's own pre-existing `engineering/implement` skill — a
+composer-not-creator doctrine gap (only ECC/superpowers were checked before building, not matt's
+repo, which owns first-check priority as a Matt-Pocock-first harness). Fix: deleted the colliding
+command, installed matt's real `implement` skill, and rewrote CLAUDE.md's composer-not-creator
+section to put `mattpocock/skills` first in the check order, citing this incident so it doesn't
+recur. `agents/code-implementer.md` (the dispatchable worker, a different level from an inline
+spec→commit pipeline step) stays — it was not the collision.
+
 ## [0.58.9] — 2026-07-17
 
 Two follow-ups to `code-implementer` (v0.58.8), both requested same-session:
