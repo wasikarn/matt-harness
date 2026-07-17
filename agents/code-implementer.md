@@ -155,6 +155,9 @@ DONE (provisional — pending code-reviewer + gauntlet) | DONE_WITH_CONCERNS | B
 - Need the independent verdict on this agent's own output → `code-reviewer` (or the matching
   language reviewer)
 - Want tests written first, feature after → the `tdd` skill
+- Want to drive implementation yourself, interactively, in one chat turn — not dispatched
+  autonomously → `mattpocock-skills:implement` (user-invoked only, `disable-model-invocation: true`;
+  type `/mattpocock-skills:implement` yourself)
 
 ---
 
