@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.58.9] — 2026-07-17
+
+Two follow-ups to `code-implementer` (v0.58.8), both requested same-session:
+
+- Added `commands/implement.md` — a thin `/implement <task>` wrapper delegating to
+  `code-implementer`, mirroring `build-fix.md`/`refactor-clean.md`'s exact shape (Usage,
+  Output Contract, Arguments). Its "suggested next step" points to `kbg:review-pr` (or direct
+  `code-reviewer`/language-reviewer dispatch) — reinforcing that the agent's own DONE is
+  provisional, never the final verdict.
+- Added a "Type-safety first" rule to `code-implementer`'s Step 3 (Implement) and a matching
+  Failure-Modes entry: no `any`/unsafe `as` casts/`@ts-ignore`/bare `except:`, model invariants
+  as types before reaching for a runtime check, generalized across every stack with a type
+  system (TS/Dart/Rust/Go compiler-enforced, Python via type hints + mypy/pyright). Reuses
+  CLAUDE.md's existing Tathep-scoped type-safety wording, extended here to a cross-project
+  agent rather than tathep-only.
+
 ## [0.58.8] — 2026-07-17
 
 Added `agents/code-implementer.md` — the fleet had 7 reviewer agents and several design/analysis

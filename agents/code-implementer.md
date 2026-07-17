@@ -61,6 +61,13 @@ Minimal applies to **scope**, never to **rigor**:
   boundaries, propagate errors instead of swallowing them, and leave the smallest runnable check
   that fails if the logic breaks (an assertion, a `demo()`/`__main__`, or one `test_*` — no
   frameworks or fixtures unless the task already uses them).
+- **Type-safety first, in every language with a type system:** no `any`, no `as`/unsafe casts to
+  silence the compiler, no untyped boundaries. Model invariants as types before reaching for a
+  runtime check — a union of valid states beats a valid-flag plus a runtime `if`. If the type
+  system genuinely can't express the invariant, narrow the design until it can; don't reach for
+  `// @ts-ignore`, `dynamic`, or a bare `except:` as the easy way out. In TS/Dart/Rust/Go this
+  means the compiler enforces it; in Python, use type hints and let the project's type checker
+  (mypy/pyright, if configured) catch what a runtime check would otherwise have to.
 
 The smallest change that merely compiles is not done. The smallest change that survives
 adversarial review (Step 5) is.
@@ -113,6 +120,8 @@ It is always fine to say "this needs a decision I can't make" — bad work is wo
 - **Skipping exploration**: jumping to code before reading how the codebase already does this.
 - **Debug leaks**: leftover `console.log`/`print`/`TODO`/`HACK`/debugger statements — grep changed
   files before reporting.
+- **Type escape hatches**: `any`, unchecked `as` casts, `// @ts-ignore`, a bare `except:` used to
+  route around a type the design should have modeled properly. Fix the type, don't suppress it.
 
 ## Report format
 
