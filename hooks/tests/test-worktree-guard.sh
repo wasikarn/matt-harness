@@ -33,7 +33,10 @@ d.update({"session_id":sys.argv[2]} if len(sys.argv)>2 else {}); print(json.dump
 
 run_guard() { # run_guard <payload> [extra env as K=V ...]
   local p="$1"; shift
-  echo "$p" | env TATHEP_WORKSPACE="$WS" TATHEP_WT_ROOT="$WT" "$@" python3 "$GUARD"
+  # TATHEP_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
+  # dev's own shell profile) can't silently no-op every deny/redirect assertion
+  # below; env's last-wins semantics let "$@" still opt back in when a test wants it.
+  echo "$p" | env TATHEP_WORKSPACE="$WS" TATHEP_WT_ROOT="$WT" TATHEP_ALLOW_MAIN_EDIT= "$@" python3 "$GUARD"
 }
 
 check() { # check <desc> <ok:0|1>
