@@ -136,4 +136,24 @@ Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.
 EOF
 
+# Ticket + implementation-intent combo -> requirement-grounding reminder.
+# TICKET_KEY is a deliberate, labeled duplicate of jira-route-nudge.sh's TP-*
+# detection (kept in sync by hand -- see that file if this needs updating).
+# The pattern is frozen (TP-* is a fixed, tathep-only convention per
+# CLAUDE.md), so duplicating THIS is lower-risk than duplicating this file's
+# own IMPL/THAI_IMPL verb regexes into jira-route-nudge.sh instead, which
+# have churned constantly (v0.35.7 through v0.36.0, several false-positive
+# fixes on record). jira-route-nudge.sh already fires independently on the
+# same prompt (verified live, 2026-07-18) -- that nudge covers Jira tool-call
+# routing, this one covers requirement grounding before implementation:
+# distinct concerns, not the same advice twice.
+TICKET_KEY='\btp-[0-9]+\b'
+if /usr/bin/grep -qiE "$TICKET_KEY" <<< "$INPUT"; then
+  cat <<'EOF'
+  Ticket reference detected — before implementing, dispatch kbg:requirement-analyst
+  on the ticket text first (functional_requirements / business_trace / open_questions),
+  then fold its output into the implementer's spawn prompt.
+EOF
+fi
+
 exit 0

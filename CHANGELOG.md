@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.59.1] — 2026-07-18
+
+Closed a real, user-reported gap: dispatching a ticket-based implementation task straight to
+`code-implementer` (skipping `code-architect`) never triggered a `requirement-analyst` pass —
+`skills/orchestrate/reference.md`'s dispatch-order convention only fired on the `code-architect`
+route, and `task-prep` Step 3.5 (the other hook point) is opt-in. User's framing: "why do I have to
+tell you every time — shouldn't you just do it yourself?"
+
+Root-caused to two separate gaps, fixed together: (1) **routing** — generalized
+`reference.md` line 41 to cover the direct-to-`code-implementer` path, not just `code-architect`;
+(2) **compliance** — a documented convention alone is prose I re-read fresh each session, not a
+deterministic check, and this session's own `deep-research` (haiku) corroborated that this is a
+real weakness (instruction/persona drift measured within ~8 conversational rounds, arxiv
+2402.10962; compliance degrades with instruction length, arxiv 2505.16944). Added a conditional
+block to `hooks/advisory/flow-nudge.sh`: a `TP-*` ticket key plus implementation intent in the same
+prompt now fires a deterministic reminder to dispatch `kbg:requirement-analyst` first. Stays
+advisory, not a hard gate — Claude Code's own hooks are documented best-effort/fail-open
+(code.claude.com/docs/en/hooks, confirmed 3-0), so a blocking gate here would be the wrong shape,
+and AWS's Kiro ships the same pattern as an optional/soft step (confirmed 3-0), not a block.
+
+`jira-route-nudge.sh` already fires independently on the same `TP-*` prompt (verified live before
+building) — not redundant, it covers Jira tool-call routing, this covers requirement grounding;
+distinct concerns. The ticket-key regex is deliberately duplicated (not shared) into flow-nudge.sh,
+labeled with a sync-seam comment pointing at `jira-route-nudge.sh` — the pattern itself is frozen
+(`TP-*` is a fixed, documented convention), so duplicating it is lower-risk than duplicating
+flow-nudge's actively-churning IMPL/THAI_IMPL verb regexes into `jira-route-nudge.sh` instead.
+
+**Honest scope:** this makes the *reminder* deterministic, not the *behavior* — a model can still
+choose to ignore it. That's a real improvement (per the drift evidence above), not full compliance
+enforcement; no hard-gate alternative exists here by design (hooks fail open).
+
 ## [0.59.0] — 2026-07-18
 
 Added `agents/blind-spot-hunter.md` — a post-review adversarial agent that hunts the

@@ -228,6 +228,42 @@ else
 fi
 
 echo ""
+echo "--- ticket + impl-intent → requirement-analyst reminder (content contract) ---"
+ticket_impl_out=$(echo "$(user_prompt_payload "implement TP-919")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ✅ CONTENT: ticket + impl verb names 'requirement-analyst'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'requirement-analyst': <$(printf '%s' "$ticket_impl_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
+fi
+# Impl verb with no ticket key must NOT get the requirement-analyst line —
+# the generic plan-first nudge still fires (existing behavior), just without
+# the ticket-specific addendum.
+impl_no_ticket_out=$(echo "$(user_prompt_payload "implement the auth flow")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ❌ CONTENT: impl verb with no ticket wrongly names 'requirement-analyst': <$(printf '%s' "$impl_no_ticket_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
+else
+  echo "  ✅ CONTENT: impl verb with no ticket does not name 'requirement-analyst'"
+  pass=$((pass + 1))
+fi
+# Thai ticket + impl verb — verifies TICKET_KEY matches against mixed
+# Thai/ASCII input, same as jira-route-nudge.sh's proven pattern.
+thai_ticket_impl_out=$(echo "$(user_prompt_payload "พัฒนา TP-919 ให้หน่อย")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ✅ CONTENT: Thai ticket + impl verb names 'requirement-analyst'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'requirement-analyst' (Thai): <$(printf '%s' "$thai_ticket_impl_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
+fi
+# Ticket key with no impl verb at all — the whole hook must stay silent
+# (existing IMPL gate already covers this; guards the addendum from firing
+# on a purely informational ticket mention).
+test_silent "ticket key, no impl verb (status question)" "what's the status of TP-919?"
+
+echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"
 # Empty stdin (no JSON) → silent. Test by piping empty input directly.
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)
