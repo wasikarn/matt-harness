@@ -5,6 +5,34 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.59.0] — 2026-07-18
+
+Added `agents/blind-spot-hunter.md` — a post-review adversarial agent that hunts the
+emergent/interaction defects a per-file review structurally cannot see (cross-file composition,
+framework auto-behavior, data-flow asymmetry, identity assumptions, scope-breadth, emitted-string
+contradictions, vacuous tests), then traces each candidate to an *earned* severity and clears
+decoys. It is the standalone, dispatchable form of `review-pr` Phase 5 step 3.6 (the zero-findings
+adversarial re-hunt) — usable outside a full review-pr run, e.g. on a self-authored delta
+mid-session, which is exactly where its proven catch happened.
+
+**Proven need (Rule 2), not a taxonomy gap.** A one-off blind-spot hunt recently caught a defect
+three reviewer agents plus the author all missed — a Next.js redirect whose `prepareDestination`
+leaked captured route params into the query string — and correctly traced it to *cosmetic* rather
+than stopping at "found a leak." Design was grounded in ~18 real cases mined from the user's own
+sessions plus two deep-research passes (academic taxonomy + concrete real-world incidents): the
+"Context Gap" is the #1 documented AI-reviewer limitation, semantic/interaction bugs are 51%+ of
+escaped defects, and review coverage does not equal safety.
+
+**Scope:** the code/delta lens only — the one with a proven miss. Plan/spec/harness lenses wait
+for their own named miss; the plural "hunters" is served by spawning N instances with different
+shape assignments (perspective-diverse verify), not separate files. `model: opus` (the fleet's
+deepest multi-hop tracing task), read-only tools, advisory-never-a-gate posture (same model class
+as the reviewers it checks — consensus is not correctness; an empirical check is authoritative).
+
+**Deferred follow-up:** rewiring step 3.6 to dispatch this named agent instead of its inline
+`general-purpose` framing (single-sourcing the discipline) is a separate, sensitive-path change; a
+cross-ref comment at step 3.6 keeps the two from drifting until then.
+
 ## [0.58.11] — 2026-07-17
 
 Phase A of migrating matt-pocock's skills from unnamespaced `gh skill` installs to the official
