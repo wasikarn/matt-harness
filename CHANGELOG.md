@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.60.1] — 2026-07-19
+
+Fixed a false-positive in `hooks/gates/worktree-guard.py`'s `bash_write_targets()`: any command
+ending in the standard `2>&1` idiom (or `>&2`, `>&-`) was misread as a file-write redirect, with
+the fd number after `>&` taken as a target filename (`shlex` tokenizes `2>&1` as `['2', '>&',
+'1']`). A relative "1" resolved under the current repo's cwd, so `classify()` flagged it as an
+in-repo write and denied the whole command — blocking, e.g., `acli ... 2>&1` for reasons unrelated
+to acli itself. Root cause confirmed by tracing the actual `shlex` tokens; only bare `>&word` (word
+not a digit or `-`) is a real "redirect both streams to file" target — `N>&M` and `>&-` are fd
+duplication, never a file. Added the digit/`-` guard plus 4 `_selftest()` assertions (regression:
+`2>&1`, `>&2`, `>&-` all now yield no write targets; `>&outfile` still yields `outfile`). The 5
+pre-existing `test-worktree-guard.sh` failures (git-worktree scaffolding, unrelated to this path)
+are unchanged before/after — confirmed via `git stash`.
+
 ## [0.59.1] — 2026-07-18
 
 Closed a real, user-reported gap: dispatching a ticket-based implementation task straight to

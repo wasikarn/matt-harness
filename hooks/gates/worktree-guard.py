@@ -91,7 +91,11 @@ def bash_write_targets(cmd):
             t = rest[i]
             if t in (">", ">>", "&>", ">&"):
                 if i + 1 < len(rest):
-                    yield rest[i + 1]
+                    nxt = rest[i + 1]
+                    # `N>&M` / `>&-` duplicate a file descriptor (e.g. `2>&1`),
+                    # they don't name a file — only bare `>&word` does.
+                    if not (t == ">&" and (nxt == "-" or nxt.isdigit())):
+                        yield nxt
                 i += 2
                 continue
             if t.startswith(">"):
@@ -299,6 +303,12 @@ def _selftest():
     assert ("file_path" if "file_path" in ti else "notebook_path") == "file_path"
     ti2 = {"notebook_path": "/x.ipynb"}
     assert ("file_path" if "file_path" in ti2 else "notebook_path") == "notebook_path"
+    # 2>&1 duplicates fd 1 into fd 2 — not a write to a file named "1".
+    assert list(bash_write_targets("acli jira workitem view TP-1 2>&1")) == []
+    assert list(bash_write_targets("cmd >&2")) == []
+    assert list(bash_write_targets("cmd >&-")) == []
+    # `>&word` (non-digit) IS bash's real "redirect both streams to file" form.
+    assert list(bash_write_targets("cmd >&outfile")) == ["outfile"]
     print("selftest ok")
 
 
