@@ -41,6 +41,8 @@ For a genuinely hard, contested-diagnosis choice where the reasoning itself need
 
 A command or skill carrying `disable-model-invocation: true` (irreversible-external actions — merging a PR, transitioning a ticket) cannot be invoked by the model, period. A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/kbg:<name>` (plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-07-15) — never imply you'll do it once they confirm.
 
+This section is mirrored in the operator's global `~/.claude/CLAUDE.md` (kept self-contained here on purpose — this file ships inside the plugin and must read standalone for anyone who installs it, not just this operator). If you edit the rule here, the global copy needs the matching edit too.
+
 ## Rule 2 — Match surface area to proven need
 
 Don't build it until there's a real failure that demands it. Three similar lines beat a premature abstraction. Speculative need = skip it. Proven gap = build it.
