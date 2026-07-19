@@ -5,6 +5,56 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.0] — 2026-07-19
+
+`/kbg:address-review` Phase 1 fetched review threads via REST `pulls/<n>/comments`, then Phase 1
+step 5 decided a thread was "open" by checking "the GitHub-resolved flag" — a field that endpoint
+does not return at all, confirmed by inspecting real response keys from a live public PR. The
+executor could not run its own open/closed logic as written, undermining the command's "don't lose
+any / zero open threads on exit" invariant. Phase 5 separately told the user "gh CLI doesn't
+reliably support thread resolution... resolve in the web UI" — also stale, verified this session:
+`resolveReviewThread`/`unresolveReviewThread` GraphQL mutations work today, and a PR author's PAT
+(write access) can resolve any reviewer's thread regardless of who opened it.
+
+### Changed
+
+- **Phase 1 fetch moved from REST to GraphQL `reviewThreads`.** Returns pre-grouped threads with
+  real `isResolved`/`isOutdated` fields instead of manually reconstructing threads from
+  `in_reply_to_id` and guessing at resolution state. Nested `comments.databaseId` equals the REST
+  comment `id`, so Phase 5's existing reply POST path (`in_reply_to=<id>`) is unchanged. Query is
+  embedded verbatim in the command (not paraphrased) and was byte-verified live against a public PR
+  post-edit — command prose has no test harness, so the literal string is the correctness
+  guarantee. Added explicit `pageInfo.hasNextPage`/`endCursor` pagination — GraphQL has no
+  `--paginate` equivalent, and an unpaged `first:100` would silently drop threads past page one on
+  any PR with a long review history.
+- **Phase 1 now also captures non-empty review `body` text** (`gh pr view --json reviews`) as a
+  first-class triage item — verified live that reviewers routinely put the substantive ask in the
+  overall review summary, not just line comments, and the command previously fetched only the
+  review *state*, silently dropping the body. No thread to reply into or resolve; addressed in code
+  and acknowledged via one `gh pr comment`. Phase 5's verify-count gate now tracks threads and
+  review-body items as two separate tallies so a body item neither false-alarms as a missed
+  thread-reply nor masks one.
+- **Phase 5 gained opt-in thread resolution, default off.** A single `AskUserQuestion` at the start
+  of Phase 5 asks once per run whether to auto-resolve `actionable + fixed` threads after replying
+  (`wontfix`/`clarify`/`out-of-scope` are never auto-resolved either way). Default is "leave open" —
+  per `advisor()` pressure-testing, closing a reviewer's thread on their behalf is the maker
+  asserting the verifier's job, the same circularity the harness's verifier-separation crux exists
+  to prevent everywhere else; the sha-cited reply is correct maker output, resolution is the
+  reviewer's call.
+- Phase 4's author-aware dedup now compares GraphQL `originalCommit.oid` (same semantics as the old
+  REST `original_commit_id`, one field-name swap following the Phase 1 fetch change).
+
+Researched via one Haiku-model agent (permission model, suggestion-block API existence, prior-art
+`gh` extensions, known pitfalls) plus direct live introspection against GitHub's GraphQL schema and
+a real public PR (`cli/cli#13780`) — chosen over trusting either party's training data, per the same
+verify-before-recommending discipline this memory system already enforces on stale local claims.
+Confirmed no API exists for applying reviewer ``` ```suggestion``` ``` blocks (web-UI only) — not
+pursued. Considered and rejected `agynio/gh-pr-review` (an existing `gh` extension doing similar
+resolve/reply work) as a dependency: replicates none of `/address-review`'s triage-gate/dedup/
+per-cluster-test discipline, and the GraphQL calls it would replace are a few lines. General PR
+issue-comments (`issues/<n>/comments`) deliberately left unfetched — user chose threads + review
+bodies as this pass's scope; a second non-thread reply path was judged more surface for little gain.
+
 ## [0.60.1] — 2026-07-19
 
 Fixed a false-positive in `hooks/gates/worktree-guard.py`'s `bash_write_targets()`: any command
