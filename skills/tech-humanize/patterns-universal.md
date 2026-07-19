@@ -201,7 +201,7 @@ code-switching, AI-leaked closers) live in `patterns-thai.md`.
 
 ### 14. Em Dashes (and En Dashes): Cut Them
 
-**Rule:** The em dash is one of the most reliable AI tells, so treat this as a hard constraint, not a "use sparingly" preference. Replace each one, in rough order of preference: a period (start a new sentence), a comma (a tight aside), a colon (introducing an explanation), parentheses (a true aside), or restructure the sentence. Also catch spaced em dashes (` — `) and double hyphens (` -- `) used the same way.
+**Rule:** In Thai prose, em dash has no native typography convention — strip unconditionally, no exceptions (see `references.md` typography rules). In English/mixed text the em dash is a commonly-cited but contested AI tell (see "Don't over-edit" below — many human editors and journalists use it deliberately): check first whether the user gave a writing sample that uses em dashes on purpose, and if so keep them there per the Voice section — a real author's habit outranks this rule. Otherwise, treat it as a hard constraint on the final rewrite, not a "use sparingly" preference. Replace each one, in rough order of preference: a period (start a new sentence), a comma (a tight aside), a colon (introducing an explanation), parentheses (a true aside), or restructure the sentence. Also catch spaced em dashes (` — `) and double hyphens (` -- `) used the same way.
 
 **En-dash exemption:** number ranges (`40–60%`, `§31–32`, `2–5 minutes`) are fine. That's an en dash (`–`) doing its actual job, not an AI tell. The rule is about *em dashes used for asides* and *en dashes used as em dashes*. The em dash (`—`) is what AI overuses.
 

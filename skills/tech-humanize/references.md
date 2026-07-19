@@ -42,17 +42,14 @@ This skill extends [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki
 
 ---
 
-## Default Thai+Tech Glossary (from §31)
+## Default Thai+Tech Glossary
 
-ใช้เป็น baseline เมื่อตัดสินใจ terminology. Project-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) เก็บใน project glossary แยก ไม่ใส่ที่นี่.
+Canonical table lives in `patterns-thai.md` §31 — load it for the current, complete glossary (includes the `ticket`/`issue` row added 2026-07-14 after a live `ตั๋ว` miss). Sample rows only below, to show the shape; do not treat this file as authoritative for glossary lookups. Project-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) go in a project glossary, not here.
 
 | คำ | Internal | User-facing |
 |----|----------|-------------|
 | staging / develop / production | คงอังกฤษ | "ระบบทดสอบ" / (none) / "ระบบจริง" + อธิบาย |
 | merge | merge | รวมโค้ด |
-| deploy | deploy | นำขึ้นใช้งาน |
-| session | session (เก็บอังกฤษ) | เซสชัน (RTGS, ไม่มีไม้หันอากาศ) |
-| error code | error code | ข้อความแจ้งข้อผิดพลาด |
 | declined (bank/payment) | declined (เก็บไว้ใน log เท่านั้น) | ถูกปฏิเสธ |
 
 ### Calques to avoid (selected; full list in §0 + §31)
