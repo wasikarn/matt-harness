@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.10] — 2026-07-20
+
+Version-bookkeeping repair, triggered by a user-requested audit of every v0.61.x entry
+(2026-07-20). Two problems, both from concurrent same-day sessions each computing "next version"
+from their own stale snapshot of `plugin.json` without coordinating:
+
+1. **`v0.61.5` was independently claimed by two unrelated critique passes.** The real, git-verified
+   `v0.61.5` (commit `bbf4f83`, matching this file's own `## [0.61.5]` entry below) is the
+   `kbg:decide` critique. A separate concurrent session's `/kbg:pr` critique also labeled itself
+   "v0.61.5" in `CLAUDE.md`'s Recent-versions summary — but never got a real version-bump commit of
+   its own. `CLAUDE.md` is now corrected to describe the real `v0.61.5` (`kbg:decide`); this entry
+   is the backfilled record for `/kbg:pr`'s critique.
+2. **`/kbg:pr`'s actual code changes already shipped**, silently, inside a later bundle commit
+   (`71229be`, titled only "3 deep-research critique passes — goal-craft, review-pr, task-prep" —
+   the commit message never mentioned `pr` at all, an oversight from that commit's own author not
+   cross-checking the diff against `CLAUDE.md`'s already-existing claims about it). This entry
+   documents what actually shipped, after the fact.
+
+**The `/kbg:pr` critique itself** (codebase research plus one Haiku external agent on
+`anthropics/claude-plugins-official`, `gh pr create` semantics, and how Copilot/Devin/Sweep/Cursor/
+Aider gate PR creation): hypothesis "the design may already be right" — mostly confirmed. The
+Phase 4 preview→confirm→create gate is stricter than Anthropic's own PR-creating plugin
+(`commit-commands`, which ships no gate at all) and matches LangChain's human-in-the-loop shape, so
+it (plus template-merge, hotfix guard, force-push handling, conventional-commit titles) stayed
+as-is. Two small fixes, both live in `skills/pr/SKILL.md` today: (1) Phase 2's "Planning Artifacts"
+check pointed at `.claude/prds/`/`.claude/plans/`/`.claude/PRPs/...` — repo-wide grep confirmed
+`skills/pr/SKILL.md` was the only file still referencing those dead paths (legacy PRP flow,
+retired at the Matt-Pocock-first simplification); now points at the current `docs/plans/`
+convention. (2) The PR body's `## Files Changed` section asked for a per-file table duplicating
+GitHub's own "Files changed" tab — GitHub's engineering blog names verbosity as agent-PR failure
+mode #1 — changed to a categorized one-liner ("3 migrations, 2 config files, 1 test file") per the
+user's pick at plan-approval. Logged, not acted on: `/ship`'s 8-phase pipeline never calls `kbg:pr`
+before handing off to `/ship-merge`, which does a bare `gh pr view` with no "no PR yet" fallback
+(`kbg:review-pr` has three) — flagged for a future `/ship`-focused look.
+
+**Not re-opened as content:** no new claims verified or reversed here — this entry only repairs the
+paper trail for work that already shipped. `v0.61.2` is a silently skipped number from the same
+concurrent-numbering collisions; no content was ever associated with it, so nothing to backfill.
+
 ## [0.61.9] — 2026-07-20
 
 Fixed a wrong empirical claim in `skills/learn/SKILL.md`, caught on user-requested verification
@@ -85,7 +124,9 @@ adversarial refutation with fail-closed disposition is a documented pattern ("Re
 style write-ups, treated as indicative/unverified since some sources post-date the Jan-2026
 cutoff); the mandatory preview→confirm→post gate before touching GitHub is stricter than shipped
 commercial UX (Copilot/CodeRabbit/Qodo auto-post once triggered), consistent with the same
-stricter-than-market posture found in v0.61.5's `/kbg:pr` critique. The rejection-rate ledger/
+stricter-than-market posture found in the `/kbg:pr` critique (v0.61.10 — v0.61.5 was already
+claimed by `kbg:decide` when this entry was first written; see that entry's own note). The
+rejection-rate ledger/
 tightening policy (`policy.md`) reads as a genuine extension with no named external precedent —
 and only 2 real ledger sessions exist to date, both 0% rejection, nowhere near the ≥5-session
 eligibility gate — flagged as unproven-but-cheap, left as-is per the user's explicit call (Rule 2:
@@ -219,6 +260,36 @@ rather than protected by a platform limit). `reference.md`'s flat-dispatch prefe
 ("one level deep... adds latency and context drift for no decision value") was left
 unchanged — a design preference, not a claim the platform enforces, and it survives
 independently of the correction.
+
+## [0.61.3] — 2026-07-20
+
+*(Entry backfilled 2026-07-20 during a version-bookkeeping audit — see `v0.61.10`. The underlying
+commit, `15268e3`, shipped this content the same day but explicitly deferred its own CHANGELOG
+entry and version bump: "CHANGELOG/version-bump left uncommitted alongside other concurrent
+sessions' shared-file changes." `plugin.json` never actually passed through `v0.61.3` — it's
+recorded here purely to keep the numeric sequence readable; no manifest history is being rewritten.)*
+
+Deep-research + plan-mode critique of `/kbg:tech-humanize` (full internal read plus one
+Haiku-backed external agent on AI-writing-detection research). Hypothesis "the design may already
+be right" mostly confirmed: progressive disclosure, the Grit Gate, anti-fabrication tiers, the
+register gate, and the false-positive guards all held up (the last independently corroborated —
+Stanford/Liang et al. 2023 found AI detectors carry a 61.3% false-positive rate against
+non-native-English writing, the exact bias the skill's Thai code-switching guards protect against).
+The non-automated `evals.json` was reframed from apparent gap to correct-as-is: an auto-runner
+would collide with the harness's own LLM-judge-circularity doctrine, and `kbg:eval-harness` turned
+out to have no runner script to wire into anyway. Three small fixes: (1) added a
+`model_limitation:` frontmatter field to `SKILL.md` — the skill enumerates a moving target
+(current-gen LLM tells) but had zero hook into the fleet's quarterly decay-sweep despite being
+arguably the highest decay-risk skill in the fleet, now the field's first real adopter; (2) fixed a
+live glossary drift — `references.md`'s glossary table was missing the `ticket`/`issue` row
+`patterns-thai.md` §31 gained fixing the `ตั๋ว` production incident, both files presenting
+themselves as *the* default glossary and disagreeing — fixed at the root by trimming
+`references.md` to sample rows plus a pointer at `patterns-thai.md` §31 as canonical, not by
+patching the missing row; (3) split §14's em-dash rule, which bundled an uncontested
+Thai-typography rationale with a contested English "AI tell" rationale (conceded elsewhere in the
+same file's own false-positive list), so English/mixed text now checks the user's voice sample
+first. Declined to build an eval runner or propose a redesign — no finding touched core
+architecture.
 
 ## [0.61.1] — 2026-07-19
 
