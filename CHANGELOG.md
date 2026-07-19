@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.4] — 2026-07-20
+
+Deep-research + plan-mode critique of `/kbg:orchestrate` (full internal read of `SKILL.md`
++ `reference.md`, the 61-commit file history, the two audit checks guarding it, the one
+deterministic gate it relies on, and 8 related memory files, plus one Haiku-backed external
+agent on multi-agent orchestration best practices — fan-out limits, structured spawn
+prompts, self-grading circularity, PM-matrix routing prior art, dispatch-depth limits).
+Hypothesis was "the design may already be right"; evidence confirmed it strongly — the F9
+spawn-prompt template, the Builder→Validator self-grading separation (backed by a real
+`PreToolUse` hook, `task-complete-separation.sh`, not just doctrine), and the
+tools-grant-keyed AskUserQuestion gate all held up against external corroboration (Anthropic's
+own multi-agent research post independently documents the same underspecified-prompt and
+self-assessment failures). No redesign warranted. Two doc-honesty/staleness fixes shipped:
+(1) `SKILL.md`'s fan-out-cap rule 2 claimed "the cap is a number in code, not prose" without
+qualification — true for the Workflow tool's scripted work-list, but the skill's primary
+dispatch primitive (the Agent tool) has no work-list to slice, so the claim over-generalized;
+scoped it to the path it actually applies to, and named why the Agent-tool path doesn't need
+the same guarantee (every dispatch is a sequential, human-visible call — the runaway-overshoot
+failure mode structurally can't occur there). (2) A memory file
+(`delegation-validation-is-orchestrator-role-2026-07-16`) asserted "the Agent tool doesn't
+grant subagents the ability to spawn further subagents anyway" as a supporting fact for
+rejecting a delegate-and-validate subagent shape — independently verified against the real
+`anthropics/claude-code` CHANGELOG.md that this became false as of v2.1.172 (2026-06-09,
+subagents can now nest up to 5 levels deep, server-enforced). Added a dated correction rather
+than rewriting history; the Rule 13 policy verdict itself is unaffected (it never depended on
+the mechanical limit — it's a governance call, now being tested by new platform capability
+rather than protected by a platform limit). `reference.md`'s flat-dispatch preference
+("one level deep... adds latency and context drift for no decision value") was left
+unchanged — a design preference, not a claim the platform enforces, and it survives
+independently of the correction.
+
 ## [0.61.1] — 2026-07-19
 
 Deep-research + plan-mode redesign of `/kbg:post-mortem` (internal codebase research plus one
