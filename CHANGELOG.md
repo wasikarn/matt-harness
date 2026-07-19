@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.1] — 2026-07-19
+
+Deep-research + plan-mode redesign of `/kbg:post-mortem` (internal codebase research plus one
+Haiku-backed external agent on 2025-2026 AI-postmortem prior art and postmortem-adoption failure
+modes). Framing check first: no `docs/post-mortems/` artifact exists and the command has never
+run — but that's inherent to a `disable-model-invocation` command where 3 of 4 destinations (Jira,
+Wiki, print) leave no repo trace, so usage is unproven, not disproven. Posture: fix concrete seams,
+trim bulk, add no speculative capability (Rule 2, ponytail).
+
+Real defect found and fixed: every Jira **write** path (Phase 2's duplicate-search, Phase 5's
+comment-post, Phase 5's follow-up-ticket-creation) was unrouted — no citation of the mandatory
+`jira-acli` plugin, the same incident class as the confirmed 2026-07-06 TP-809/TP-806 (raw `acli
+--description-file` garbling a ticket). First-drafted fix wrongly named `jira-acli:jira-content` as
+the target for posting the post-mortem itself — caught by `advisor()` before shipping: a 9-section
+post-mortem is a bespoke document, not one of `jira-content`'s 4 templated-comment shapes
+(status/QA/blocker/decision), so routing there would hit the exact same improvise-at-implement-time
+trap the citation was meant to prevent. Corrected to `jira-acli:acli`'s own ADF plumbing
+(`md2adf.py` → `comment create --body-file`) for the post itself, while follow-up *ticket creation*
+(Task/Bug) correctly does fit `jira-content`'s templates and routes there. Phase 2's duplicate
+search (read-only) routes through `jira-acli:acli`, matching the existing `review-pr`/`task-prep`
+pattern.
+
+Also: Phase 1 + Phase 2 now harvest the 4 gate inputs and evidence from warm conversation context
+first (an immediately-prior `/fix-bug` run usually already has them) — ask/fetch only what's
+missing, closing a real friction seam in the documented `/fix-bug` → `/post-mortem` handoff. Section
+9 (Follow-Ups) now requires an individual owner + verifiable completion criterion per external
+research on why action items rot (team-owned + vague = the #1 cited failure mode). Core Principles
+bullet 1 de-duplicated against Phase 1's own mechanics. Template worked examples trimmed to one line
+each. Added a written Rule-1 revisit trigger for the 4-input refusal gate. Net line count grew
+slightly (153→156) rather than dropping as planned — the correctness fix needed explicit routing
+prose to avoid vagueness (per `advisor()`), which outweighed the trim savings; flagged plainly
+rather than claimed as a win. Kept unchanged: the 4-input gate itself (external research shows it's
+the structural defense against AI-drafted false confidence, and commercial AI-postmortem tools
+automate data-aggregation, not judgment — no incident-tooling integration exists here to replicate
+that), the nested Phase 5 commit-confirmation (a deliberate pause before a git write), and Section 4
+Symptom Linkage (Allspaw's "root cause is a chosen pointer" is a contested minority view, not
+fleet-inconsistency-worth-breaking).
+
 ## [0.61.0] — 2026-07-19
 
 `/kbg:address-review` Phase 1 fetched review threads via REST `pulls/<n>/comments`, then Phase 1

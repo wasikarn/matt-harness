@@ -12,7 +12,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 ## Core Principles
 
-- **Refuse to draft without 4 inputs.** **Analyze**: which of the 4 inputs are present in the conversation context vs. which are missing. **Recommend** STOP and ask only for the missing pieces; if 3/4 are present, ask for the remaining 1 rather than demanding all 4. Don't speculate — surface missing inputs rather than guessing.
+- **Refuse to draft without 4 inputs.** Don't speculate — surface missing inputs rather than guessing. Mechanics (context-scan, partial-gap handling) live in Phase 1.
 - **Blameless tone.** The goal is understanding, not blame. "The code assumed X" not "Alice forgot Y."
 - **Code identifiers welcome.** Function names, file paths, commit SHAs — future readers need to grep for these.
 - **No uncertain language.** "Appears to," "may have," "we believe" are banned. State what is known or explicitly mark what is still unknown.
@@ -26,13 +26,14 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 **Actions**:
 1. Check `$ARGUMENTS` for a bug identifier (JIRA key, GitHub issue, PR number, or short summary).
-2. Verify the 4 inputs with the user. Ask explicitly if any are unclear:
+2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `/fix-bug` or `/incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
+3. For whatever remains missing or unclear, ask the user explicitly:
    - **Reproducible trigger**: exact steps, environment, inputs that cause the failure. Can someone else make it happen?
    - **Known mechanism**: what code path, what invariant, what race, what assumption broke? One-paragraph explanation.
    - **Identified patch**: which commit(s) fix it? Commit SHA(s) + branch.
    - **Passing validation**: regression test name + status (passing CI, passing locally, both?). If no regression test exists, note that explicitly — it's a gap, not a blocker for drafting, but must be flagged.
-3. If any input is missing or unclear → STOP. Ask the user to provide it. Do not proceed with gaps.
-4. Capture the bug identifier as the post-mortem slug (e.g., `JIRA-12345`, `gh-456`).
+4. If any input is still missing or unclear after the context scan → STOP. Ask the user to provide it. Do not proceed with gaps.
+5. Capture the bug identifier as the post-mortem slug (e.g., `JIRA-12345`, `gh-456`).
 
 **Anti-pattern**: drafting with "we think the cause is..." — that's an investigation, not a post-mortem.
 
@@ -42,12 +43,12 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 **Goal**: Collect artifacts that support each section of the template.
 
-**Actions**:
+**Actions**: Harvest from context first — if this run follows `/fix-bug` in the same session, commit SHA, test name, and CI status are usually already known; fetch only what's still missing.
 1. Fetch the fixing commit(s): `git show <sha>` — capture diff summary, author, date.
 2. Fetch the regression test (if any): test file path, test name, assertion that would fail pre-fix.
 3. Check CI status on the fix commit: `gh run list --commit <sha>` or `gh pr checks <pr>`.
 4. If a previous fix attempt existed (common for regressions), note the SHA of the previous fix + why it was incomplete.
-5. Check for related issues: `gh issue list --search <keyword>` or JIRA search for duplicates / similar bugs.
+5. Check for related issues: `gh issue list --search <keyword>` (GitHub) or, for Jira, search via the **`jira-acli:acli`** skill — never a raw `acli`/MCP call. If `jira-acli` isn't installed, note it and skip (same fallback `review-pr`/`task-prep` use — an unresolved search never blocks the post-mortem).
 6. Check for customer / workload impact: any support tickets, SLO breaches, or error-rate spikes tied to this bug?
 
 ---
@@ -65,39 +66,39 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 ## 1. Summary
 One paragraph. What broke, who was affected, and the final outcome.
-Example: "GPU communication library Tada skipped a cross-stream sync under a single-stream fast-path gate that dumbModel triggered. All Llama-2-70B fine-tuning runs on 8+ GPUs hung at eval steps. Fixed by removing the unsafe shortcut and tightening the device-side safety check (PR #5751)."
+Example: "Tada skipped a cross-stream sync on its single-stream fast-path; all 8+ GPU dumbModel fine-tuning runs hung at eval steps. Fixed by removing the shortcut (PR #5751)."
 
 ## 2. Symptom
 What users / operators / tests saw. Observable failure mode only — no mechanism yet.
-Example: "LLM-7B fine-tuning on 8 GPUs hung every eval step. CPU utilization dropped to zero; GPU kernels showed 100% wait. No error message. Manual kill required."
+Example: "Fine-tuning on 8 GPUs hung every eval step — CPU idle, GPU 100% wait, no error, manual kill required."
 
 ## 3. Root Cause (Mechanism)
 Why it happened. Code path, invariant, race, assumption — the actual technical cause.
-Example: "In `tadaLaunchPrepare`, the fast-path for `numStreams == 1 && !persistent` skipped the `launchStream → deviceStream` cross-event. dumbModel hit this gate. Kernel launched before `scratchBuf` writes were visible → `scratchBuf == NULL` in kernel → ring ready-flag read from garbage → infinite spin."
+Example: "`tadaLaunchPrepare`'s `numStreams == 1` fast-path skipped the `launchStream → deviceStream` sync; the kernel launched before `scratchBuf` writes were visible."
 
 ## 4. Symptom Linkage
 How the mechanism produced the symptom. Connect cause → effect explicitly.
-Example: "Skipped sync → `scratchBuf` uninitialized at kernel launch → kernel dereferences null pointer → ring-flag read from garbage → spin-forever. The hang had no error message because the GPU kernel was user-space; the host saw idle CPUs and busy GPUs."
+Example: "`scratchBuf` uninitialized at launch → kernel reads garbage → ring-flag spins forever — silent because the kernel is user-space, so the host just saw idle CPU / busy GPU."
 
 ## 5. Fix
 What changed, at what commit(s). Link the patch.
-Example: "Removed the `numStreams == 1` fast-path entirely. Added `deviceStreamSync()` before kernel launch. Commit `a1b2c3d` on `fix/tada-sync`."
+Example: "Removed the fast-path, added `deviceStreamSync()` before launch. Commit `a1b2c3d` on `fix/tada-sync`."
 
 ## 6. Discovery Method
 How the bug was found. Not the fix — the discovery.
-Example: "Customer reported hangs during dumbModel training. Reproduced locally with their config. Bisected to commit `e5f6a7b` (added fast-path 3 months ago). Instrumentation confirmed `scratchBuf == NULL` at kernel entry."
+Example: "Customer-reported hang, reproduced locally, bisected to `e5f6a7b`; instrumentation confirmed `scratchBuf == NULL` at kernel entry."
 
 ## 7. Escape Reason
 How did this reach production? What check missed it?
-Example: "Fast-path was added during a perf sprint. Unit tests covered multi-stream paths but not the single-stream gate. dumbModel was not in CI workload matrix at the time."
+Example: "Fast-path shipped in a perf sprint; unit tests covered multi-stream only, dumbModel wasn't in the CI workload matrix."
 
 ## 8. Validation Proof
 How we know the fix works and won't regress.
-Example: "Regression test `test_tada_single_stream_sync` reproduces the hang on pre-fix code and passes on fix. CI green on `a1b2c3d`. dumbModel 7B eval-step benchmark runs to completion (was hanging 100% of the time)."
+Example: "`test_tada_single_stream_sync` fails pre-fix, passes post-fix; CI green; dumbModel eval-step benchmark now completes."
 
 ## 9. Follow-Ups
-Tracked items to prevent recurrence. Explicit owners and deadlines if known.
-Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream config (owner: CI team, target: next sprint). - [ ] Audit all `numStreams` branches for similar assumptions (owner: Tada team). - [ ] Document fast-path policy: no sync skip without explicit safety proof."
+Tracked items to prevent recurrence. Each item needs an **individual owner** (not a team) and a **verifiable completion criterion** — vague ownership is the most-cited reason follow-ups rot. If genuinely unassigned, write "Unowned — needs assignment" rather than skip the field.
+Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (owner: @priya, done when: it runs in CI nightly). - [ ] Audit all `numStreams` branches for the same assumption (owner: @jordan, done when: audit doc lists every branch + verdict). - [ ] Document fast-path policy: no sync skip without explicit safety proof (owner: Unowned — needs assignment)."
 ```
 
 **Actions**:
@@ -130,17 +131,19 @@ Example: "- [ ] Expand CI workload matrix to include dumbModel single-stream con
 2. **Analyze**: organization practice (repo-based vs issue-tracker based), whether the bug is public (open-source) or internal, whether runbooks/ADRs need updating from findings. **Recommend** the destination that maximizes discoverability for future engineers.
 3. **AskUserQuestion** single-select: "Phase 5: the post-mortem is complete. Where should it live so future engineers can find it?"
    - `Repo markdown (Recommended for team-accessible, long-lived records; best when the bug is public or the fix affects core architecture)` — write to `docs/post-mortems/<slug>.md`, then **AskUserQuestion** yes/no: "Commit this post-mortem to the repo?"
-   - `JIRA / GitHub issue comment (Recommended when tied to a specific ticket; best for sprint or incident-ticket context)` — post as comment after user confirms "post it"
+   - `GitHub issue comment (Recommended when tied to a specific GitHub issue/PR)` — post via `gh issue comment` / `gh pr comment` after user confirms "post it"
+   - `JIRA comment (Recommended when tied to a specific Jira ticket)` — a post-mortem is a bespoke document, not one of `jira-acli:jira-content`'s 4 templated-comment shapes (status/QA/blocker/decision), so that skill is the wrong target. Convert it via `jira-acli:acli`'s own ADF plumbing instead: `md2adf.py <file>.md > note.json` then `acli jira workitem comment create --key <KEY> --body-file note.json`, after user confirms "post it". Never a raw `acli --body`/MCP call — that's the exact class of mistake that garbled a prior ticket (CLAUDE.md's Jira/Confluence routing rule). If `jira-acli` isn't installed, note it and hand the text to the user instead.
    - `Wiki / Confluence (Recommended for cross-team or non-technical audiences; best when the escape reason is process or policy)` — hand to user for manual posting
    - `Print-only (Recommended for sensitive or internal-only incidents)` — user copies it
 4. Update any relevant runbooks, playbooks, or ADRs if the escape reason reveals a systemic gap.
-5. If follow-ups were listed in Section 9, create tickets for them now (or flag to the user that they need creation).
+5. If follow-ups were listed in Section 9, create tickets for them now — Jira tickets go through **`jira-acli:jira-content`** (Task/Bug creation is exactly its template fit, unlike the bespoke document above), GitHub via `gh issue create` — or flag to the user that they need creation.
 
 ---
 
 ## Integration Notes (Project-Specific)
 
 - **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 8 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
+- **Gate revisit trigger (Rule 1)**: the Phase 1 four-input refusal gate is unvalidated against any real run — no repo-committed post-mortem exists yet, and it's the most plausible reason a user would abandon the draft. If real usage shows people bouncing off the gate, loosen it first before adding more structure elsewhere.
 - **Post-/fix-bug workflow**: `/fix-bug` Phase 7 produces a summary (what broke, root cause, fix shape, regression test, files touched). That summary IS the input to `/post-mortem` Phase 1. Run `/post-mortem` immediately after `/fix-bug` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity. Otherwise it's a standard engineering post-mortem.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces; it does not cover CLAUDE.md/METHODOLOGY.md directly.
