@@ -23,9 +23,10 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
   saves memory files directly, no per-write confirmation, whenever an in-the-moment trigger fires
   (a correction just happened, a preference was stated). That's the same store, same format, same
   `MEMORY.md` index this skill writes to — verified against `code.claude.com/docs/en/memory` and,
-  empirically, this project's own transcripts (99 memory writes across 36 sessions vs. this skill
-  invoked exactly once — the native path accounts for nearly all of it, and a quality spot-check of
-  several ambiently-written files found them well-structured, non-duplicative, correctly filtered).
+  empirically, this project's own transcripts (132 memory files across 53 sessions in this repo's
+  own store vs. `/kbg:learn` itself invoked in 3 sessions here, as of 2026-07-20 — the native path
+  still accounts for the large majority of writes, and a quality spot-check of several
+  ambiently-written files found them well-structured, non-duplicative, correctly filtered).
   Native ambient capture is real, it works, and kbg cannot gate, disable-per-write, or reroute it —
   it's a Claude Code platform feature, not a kbg surface.
 - **What this skill actually adds: the retrospective, whole-transcript sweep.** Native ambient

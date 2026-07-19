@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.9] — 2026-07-20
+
+Fixed a wrong empirical claim in `skills/learn/SKILL.md`, caught on user-requested verification
+of v0.61.8's bundled commit (the file had no CHANGELOG entry of its own, flagged at commit time —
+this is that follow-up). The line justifying "native auto-memory is now the primary writer"
+claimed "99 memory writes across 36 sessions vs. this skill invoked exactly once." A transcript
+search for the real `<command-name>/kbg:learn</command-name>` invocation tag (same method used to
+verify `kbg:task-prep`'s adoption in v0.61.8) found `/kbg:learn` invoked in **3 sessions** within
+this repo's own memory-store scope, not 1 — and 14 times across 13 sessions when counting every
+local repo, since the claim's own "this project's own transcripts" framing wasn't actually
+project-scoped when it was written. Corrected to the verified, dated count: 132 memory files
+across 53 sessions in this repo's store vs. 3 `/kbg:learn` invocations, as of 2026-07-20. The
+qualitative conclusion (native memory accounts for the large majority of writes) still holds —
+only the specific numbers backing it were wrong. Did not re-verify the "~CLI v2.1.59" version
+claim in the same paragraph (out of scope for this pass — the fetched `code.claude.com/docs/en/memory`
+page confirms the `autoMemoryEnabled` feature and its behavior but names no introduction version).
+
 ## [0.61.8] — 2026-07-20
 
 Deep-research + plan-mode critique of `kbg:task-prep` (full internal read of `SKILL.md`,
