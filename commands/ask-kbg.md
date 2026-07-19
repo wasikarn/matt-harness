@@ -48,7 +48,7 @@ Upkeep, not feature work — reach for these on a spare moment, or when the harn
 - `kbg:context-budget` — scan context-window consumption, flag bloat.
 - `kbg:agent-architecture-audit` — diagnose a misbehaving 12-layer agent stack (stuck loops, memory pollution).
 - `kbg:recursive-improve` — self-repair loop; gated at an `AskUserQuestion` before any mutation.
-- `kbg:learn` — capture a durable session learning as memory (also gated).
+- `kbg:learn` — end-of-session sweep for cross-turn patterns native ambient auto-memory can't catch (also gated).
 - `kbg:production-audit` — pre-launch readiness scan (not in-flight feature work — that's `/ship`).
 - `kbg:security-auditor` — deep threat-model (auth/secrets/injection/XSS) on PRs touching auth/APIs/payments.
 - `kbg:security-scan` — AgentShield sweep of agent/hook/MCP/permission/secret surfaces (not code vulnerabilities — that's `security-auditor`).

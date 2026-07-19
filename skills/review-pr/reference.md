@@ -40,6 +40,8 @@ Always-on background for the `code` aspect's general-quality lens — alongside 
 
 Source: Fowler, *Refactoring* ch.3.
 
+**Sync seam:** `agents/code-reviewer.md`'s own Fowler section carries 11 of these 12 — it deliberately omits Duplicated Code (and Long Method) because its checklist already covers them elsewhere under different names ("Duplicated helper/util", "Large functions"). That's a legitimate per-file difference, not drift — if you edit one table, check whether the other needs the matching edit or is correctly diverging on purpose.
+
 ## Agent Descriptions
 
 One-line orientation; **see kbg:inventory for current frontmatter descriptions and the agent file (plugin-delivered or project-local) for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).

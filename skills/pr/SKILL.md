@@ -103,12 +103,8 @@ Categorize changed files: source, tests, docs, config, migrations.
 
 ### Planning Artifacts
 
-Check for related artifacts produced by `to-spec`, `to-tickets`, or the legacy PRP flow:
-- `.claude/prds/` — PRDs this PR implements a milestone of
-- `.claude/plans/` — plans this PR executes
-- `.claude/PRPs/prds/`, `.claude/PRPs/plans/`, `.claude/PRPs/reports/` — legacy PRP artifacts
-
-Reference these in the PR body if they exist.
+Check `docs/plans/` (single-repo plan-file convention) for a plan this PR executes.
+Reference it in the PR body if one exists.
 
 ---
 
@@ -150,7 +146,8 @@ Preserve every section — leave a section as `N/A` rather than deleting it.
 
 ## Files Changed
 
-<table or list of changed files with change type: Added/Modified/Deleted>
+<one-line summary categorized by area, e.g. "3 migrations, 2 config files, 1 test file" —
+not a per-file list; GitHub's own "Files changed" tab already shows that>
 
 ## Testing
 

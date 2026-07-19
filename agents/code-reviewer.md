@@ -176,6 +176,11 @@ anything tooling already enforces.
 (Duplicated Code and Long Method are already covered above as Duplicated
 helper/util and Large functions — not repeated here.)
 
+**Sync seam:** `skills/review-pr/reference.md` §Fowler Smell Baseline carries the
+full 12-smell table (including Duplicated Code) as background for the `code`
+aspect's general-quality lens. The 11-vs-12 gap here is deliberate, not drift —
+if you edit this list, check whether that table needs the matching edit.
+
 ```typescript
 // BAD: Deep nesting + mutation
 function processUsers(users) {

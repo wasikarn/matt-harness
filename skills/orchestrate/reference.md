@@ -34,7 +34,7 @@
 
 **Security override — all three matrices above:** any item touching auth, secrets, credentials, crypto, input validation, or dependencies routes to `security-reviewer first` (L3) regardless of quadrant — the write agent takes it only after security findings land.
 
-**No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk here. If N≥3 alternatives need ranking, hand off to `kbg:score-decision`'s Ranking mode (weighted-sum + per-option fatal-weakness floor) rather than scoring this binary matrix numerically.
+**No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk here. If N≥3 alternatives need ranking, apply `kbg:score-decision`'s Ranking mode (weighted-sum + per-option fatal-weakness floor, METHODOLOGY Rule 14) inline rather than scoring this binary matrix numerically — the skill itself is `disable-model-invocation: true`, so a formal artifact needs the operator to run `/kbg:score-decision` directly.
 
 **"Schedule" in the matrices above = temporal deferral** (do later, human-led) — *not* autonomous execution. Recurrence is an orthogonal axis: if an item is **recurring + unattended-safe** (any quadrant), route it to **L5 (Autonomous / Recurring Execution)** below instead of redoing it by hand each cycle.
 

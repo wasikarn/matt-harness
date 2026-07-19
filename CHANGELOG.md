@@ -5,6 +5,132 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.8] — 2026-07-20
+
+Deep-research + plan-mode critique of `kbg:task-prep` (full internal read of `SKILL.md`,
+`agents/task-prep-checker.md`, `docs/reference/task-handoff-template.md`, its CHANGELOG history
+(v0.35.2→present), the 3 prior adversarial audit passes (memory `task-prep-audit-v0355-2026-07-07`),
+every cross-reference (`orchestrate`, `flow-nudge.sh`, README, `ask-kbg.md`,
+`reasoning-models.md`), plus one Haiku-backed external agent verifying the template's Anthropic-doc
+citations live and surveying industry practice on pre-flight task specification and
+self-grading-bias literature). This is the 4th adversarial pass on this surface; none of the prior
+pass's explicit re-open triggers (new Anthropic doc, a real misverdict in the wild, a checker
+model swap, a schema change) had fired — the session was a pattern-match to the recent
+orchestrate/pr/goal-craft/review-pr sweeps, not evidence-driven, and is named as such rather than
+implied otherwise.
+
+Hypothesis "the design may already be right" confirmed: router-first/fill-second gate, the
+read-only Opus `task-prep-checker` verifier-separation, and the 9-field template's Anthropic
+grounding all held up. External verification found **zero misattribution** — every claimed
+citation (best-practices.md 7/7, prompt-library.md 6/6, the prompting-best-practices "golden rule"
+colleague test) checks out live against the source docs, and Anthropic's own best-practices doc
+independently documents the fresh-context-grader pattern this skill's checker implements ("a fresh
+model tries to refute the result, so the agent doing the work isn't the one grading it") — this is
+a recognized pattern, not a kbg invention. A previously undocumented strength: the checker is
+pinned `model: opus` while the main session commonly runs a different model (Sonnet 5), so the
+verifier-separation is genuine model-diversity in the common case, not just context-diversity —
+stronger than the skill's own doc claims (degrades to context-only under `/fast`, which is fine).
+
+One real fix, hygiene-severity: `skills/task-prep/SKILL.md` cited three `mattpocock-skills`
+plugin skills (`grilling`, `diagnosing-bugs`, `tdd` — none has a kbg-native home, confirmed) bare,
+in 12 places (5/3/4 respectively — corrected from an initial 11-place count that missed a
+double-occurrence on one line), while every other active surface (`flow-nudge.sh`, README,
+`ask-kbg.md`, `hook-lifecycle-contracts.md`) already cites them fully namespaced
+(`mattpocock-skills:grilling`). Repointed all 12. Not a live misroute — the model resolves the
+bare form fine because it always has the full skill list in context — but it was invisible to
+`harness-audit` check 40, which only catches rename/deletion drift on refs already in `kbg:` form;
+a bare or wrong-namespace reference is a blind spot for that check. Considered and deliberately
+left unchanged (Rule 2): dispatching the Opus verifier unconditionally, including on the minimal
+2-field `<task>`+`<done-when>` path — making it conditional on "prompt looks small" would
+reintroduce the self-judgment call the verifier-separation crux exists to remove, and no evidence
+across 3 prior smoke tests shows the checker over-flagging a deliberately minimal prompt. No
+redesign warranted. The prior pass's "don't re-audit without new evidence" verdict is re-recorded,
+unchanged.
+
+## [0.61.7] — 2026-07-20
+
+Deep-research + plan-mode critique of `kbg:review-pr` (full internal read of `SKILL.md`/
+`reference.md`/`policy.md`/`ledger.md`, its 49-commit history, the 8 agents it routes to, the
+`/ship-merge` state-file handoff, `/ship` Phase 6 wiring, `/address-review`'s boundary note,
+`harness-audit` check 42, the `kbg-fleet-vs-mattpocock-overlap-audit` memory, live `.scratch/`
+ledger instances, plus one Haiku-backed external agent on multi-agent AI-PR-review practice).
+Hypothesis "the design may already be right" confirmed strongly — unusually, almost every phase
+traces to a real incident rather than speculation: the pinned `BASE_SHA..HEAD_SHA` window exists
+because "current diff" drifts as commits land mid-review; the per-PR-keyed state file exists
+because PR #357's review state was clobbered by #358 sharing one file (v0.34.2); the
+state-outside-worktree assertion exists because PR #2619's state was written inside the worktree
+and lost to cleanup; step 3.5's independent adversarial verifier and step 3.6's zero-findings
+re-hunt exist because SCRUTINIZE-4 is self-graded (the maker=checker gap) and because a real
+Next.js redirect param-leak survived 3 reviewers + the author until `blind-spot-hunter` caught it.
+External research corroborated the core shape: conditional routing by change-type (not fan-out-all)
+is *ahead* of most commercial tools, which route everything and de-noise downstream; fresh-instance
+adversarial refutation with fail-closed disposition is a documented pattern ("Refute-or-Promote"-
+style write-ups, treated as indicative/unverified since some sources post-date the Jan-2026
+cutoff); the mandatory preview→confirm→post gate before touching GitHub is stricter than shipped
+commercial UX (Copilot/CodeRabbit/Qodo auto-post once triggered), consistent with the same
+stricter-than-market posture found in v0.61.5's `/kbg:pr` critique. The rejection-rate ledger/
+tightening policy (`policy.md`) reads as a genuine extension with no named external precedent —
+and only 2 real ledger sessions exist to date, both 0% rejection, nowhere near the ≥5-session
+eligibility gate — flagged as unproven-but-cheap, left as-is per the user's explicit call (Rule 2:
+removing it is itself a risk on a mechanism that hasn't had its window to prove out). Two
+doc-honesty fixes shipped: (1) `agents/code-reviewer.md`'s Fowler-smell checklist (11 smells) and
+`skills/review-pr/reference.md`'s Fowler table (12 smells, includes Duplicated Code) independently
+list the same *Refactoring* ch.3 material and had already diverged by design, not by error — added
+a labeled sync-seam comment to both explaining the legitimate 11-vs-12 gap, so a future edit to one
+prompts a check of the other instead of either reading as a bug. Distinct from the mattpocock
+overlap audit's earlier *rejected* Fowler dedup — that was cross-plugin (no `Skill` tool at runtime
+to fetch matt's copy, so a pointer would be net-negative); this is intra-repo, where a sync comment
+costs nothing. (2) Phase 5's adversarial-verifier rationale claimed it "buys the one thing
+SCRUTINIZE-4 structurally cannot: a verdict from someone other than the finder" — true but
+incomplete: the refuter is still an LLM reading code, not a deterministic check, so it closes the
+*independence* gap, not the *empirical-grounding* gap (external research: same-distribution LLM
+reviewers can share a correlated hallucination that surviving more LLM opinion won't catch). Added
+one sentence naming that ceiling and pointing at where the empirical half already lives — Phase 6's
+proof-verification check (test/typecheck artifacts) and `/ship-merge`'s sensitive-path self-tier
+gate. Explicitly declined, per the user's own pick at plan-approval: a token-optimizer pass on
+SKILL.md (45.9K chars, 2.3× `harness-audit` check 42's own INFO threshold) — check 42's own comment
+already treats review-pr as legitimately dense, and unlike `orchestrate`'s v0.58.5 trim this is
+incident-hardened procedure where aggressive trimming risks dropping a hard-won guard; and
+single-sourcing step 3.6 to dispatch the named `blind-spot-hunter` agent instead of its current
+inline `general-purpose` framing — a real behavioral change to a load-bearing path, deferred again
+(first flagged in v0.59.0).
+
+## [0.61.6] — 2026-07-20
+
+Deep-research + plan-mode critique of `kbg:goal-craft` (full internal read of `SKILL.md`, the
+retired `goal-spec` predecessor at both its origin `c35afcc` and removal `a518ad1`, METHODOLOGY
+Rule 14, `harness-audit` check 34, and the trigger-audit adoption data, plus one Haiku-backed
+external agent on native `/goal` semantics, prior art for stop-conditions/definition-of-done in
+Devin/SWE-agent/AutoGPT/LangGraph/Aider/Cursor/Codex, and LLM-as-judge reliability research).
+Hypothesis was "the design may already be right" — mostly confirmed, with two real defects found
+and fixed. Three load-bearing facts were verified first-hand via direct `WebFetch` rather than
+trusted from the subagent's report (arXiv abstracts + `code.claude.com/docs/en/goal.md`), which
+caught the subagent overstating one point: its flagged "headless-only dispatch" discrepancy didn't
+hold up — that phrase describes kbg's own `claude -p` dispatch decision in `CLAUDE.md`, never a
+claim `SKILL.md` makes about `/goal` itself (grep-clean). What held up: `/goal` has no native
+turn cap (confirmed via the docs' own "you must add `or stop after N turns`" wording), so the
+skill's mandatory turn-bound clause isn't redundant; the done-when-must-be-a-mechanical-check
+discipline is directly validated by transcript-only LLM judges failing at AUROC ≤0.65 in the
+literature; and the compose-only/no-file split from `goal-spec` is correctly scoped to `/goal`'s
+single-session, no-persistent-file shape. Two fixes shipped: (1) the skill cited arXiv `2606.10209`
+for its "confident garbage" fake-done claim — verified via direct fetch that this is the wrong
+paper (a context-engineering paper with no relation to false-success), corrected to `2606.09863`
+("From Confident Closing to Silent Failure," the actual false-success/confident-closing-language
+source) in both `skills/goal-craft/SKILL.md` (×2) and `harness-audit` check 34's header/WARN
+string, which carried the identical wrong citation independently of goal-craft's own usage. (2) The
+one-way-door screen's framing overstated its coverage — it parses the declared *condition text*,
+so it stops the loop from *declaring* an irreversible goal but is blind to an irreversible action
+Claude reaches *instrumentally* en route to a benign one (e.g. a stray `git reset --hard` while
+chasing "make CI green"); Claude Code's own per-tool-call permission prompt covers that gap in
+default mode, confirmed verbatim from the docs ("A goal doesn't change permissions... To let goal
+turns run unattended, pair `/goal` with auto mode") — but auto mode turns that prompt off, which is
+exactly the pairing `/goal` is meant for. Added an explicit scope-limit caveat to Step 4 rather than
+redesigning the screen — the mechanism is correctly scoped, only the framing hid the auto-mode gap.
+Not changed: no new discovery/auto-trigger surface — `goal-craft` has **zero** recorded invocations
+(auto or manual) in the 2026-06-12→07-08 trigger audit and in every session transcript checked
+since, the same "no proven need" signal (Rule 2) that shaped `kbg:decide`'s de-scoping; building a
+trigger to manufacture adoption of an unproven surface would invert that precedent, not follow it.
+
 ## [0.61.5] — 2026-07-20
 
 Deep-research + plan-mode critique of `kbg:decide` (full internal read of `SKILL.md` and

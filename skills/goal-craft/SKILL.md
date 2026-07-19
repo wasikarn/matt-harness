@@ -34,6 +34,7 @@ Compact a freeform task description into a single, paste-ready completion-condit
 4. **One-way-door screen**
    - Scan the compacted condition for irreversible-action language. This is a semantic screen, not literal string matching. Watch for: push, deploy, release, merge, delete/rm/drop/truncate/cancel, force-push/overwrite, send/email/notify/publish/post, pay/charge/refund/transfer, rollback/migrate (any schema or data migration, not just ones naming "prod" — a migration against a real database is a one-way door regardless of environment name), close/tag/revoke/rotate credentials — and semantic equivalents in any language, including Thai (ปล่อย/deploy, ส่ง/send, ลบ/delete).
    - Strip and flag by default — every one-way-door fragment gets its own excluded note; never bake it into the loop, never silently drop it either.
+   - Scope limit, state it plainly: this screen only sees verbs named in the condition text — it stops the loop from *declaring* an irreversible goal, not from *reaching* one instrumentally (e.g. a `git reset --hard` on the way to "make CI green," verb never in the condition). Claude Code's own per-tool-call permission prompt covers that case in the default permission mode; auto mode turns that prompt off, and auto mode is exactly what `/goal` is meant to be paired with for unattended runs. Don't pair a goal whose instrumental path could plausibly reach a destructive action with auto mode.
    - Failure mode to avoid: stripping a verb that's the task's own subject matter, not an action the loop would take — "fix the delete-account bug" names a bug, it does not ask the loop to delete anything. Only strip when the sentence's grammatical action is the irreversible verb.
    - Edge case: if stripping would empty the condition (the whole task was the one-way-door action, e.g. "deploy to prod"), do not print a bare `/goal` — tell the user this task is entirely a manual action and there is nothing left to loop on.
    - Done when: every stripped fragment has a matching excluded note, and the remaining condition still has a real loop to run — or you've told the user there isn't one.
@@ -47,7 +48,7 @@ Compact a freeform task description into a single, paste-ready completion-condit
 6. **Assemble and gate the output**
    - Concatenate done-when clauses + never-touch constraints + bound clause into one compacted `/goal <condition>` string, ≤4000 chars (`/goal`'s own limit) — trim prose before trimming the check or the bound.
    - Gate: if step 3 could not produce even one clause with a real, nameable check, do not emit a rubber-stampable condition — stop, and either ask the step-2 clarifying question or hand back a short rework note naming what's missing.
-   - Failure mode to avoid: passing a vague condition through anyway — that's the fake-done shortcut the evaluator will rubber-stamp (arXiv 2606.10209 §3 "confident garbage").
+   - Failure mode to avoid: passing a vague condition through anyway — that's the fake-done shortcut the evaluator will rubber-stamp (arXiv 2606.09863, "confident closing language" as a false proxy for verified completion).
    - Render the Output Format below.
    - Done when: the printed `/goal` line is self-contained — pasteable with no more context — and every excluded fragment has its own flagged note.
 
@@ -93,5 +94,5 @@ Output:
 
 ## Don't duplicate canon
 
-- METHODOLOGY Rule 14 ("score, not feel") and the fake-done-guard doctrine (harness-audit check 34, arXiv 2606.10209 §3) own the falsifiability principle; this skill is the `/goal`-shaped composition tool for it.
-- `goal-spec` (retired `a518ad1`, orphaned from `c35afcc`) owned the same Goal/Done-when/Never-touch discipline for a persistent, multi-session `PROMPT.md` read by a human before a loop starts. This skill covers the narrower case `/goal` needs: a single inline string, no file, no built-in human review gate on the target command — which is exactly why the one-way-door screen exists here and never existed in `goal-spec`. The persistent-file, multi-session case stays covered by `ship`/`recursive-improve`/`eval-harness`, not re-created here.
+- METHODOLOGY Rule 14 ("score, not feel") and the fake-done-guard doctrine (harness-audit check 34, arXiv 2606.09863) own the falsifiability principle; this skill is the `/goal`-shaped composition tool for it.
+- `goal-spec` (retired `a518ad1`, orphaned from `c35afcc`) owned the same Goal/Done-when/Never-touch discipline for a persistent, multi-session `PROMPT.md` read by a human before a loop starts. This skill covers the narrower case `/goal` needs: a single inline string, no file, no pre-loop human review of the condition itself (goal-spec's PROMPT.md was read by a human before the loop started; `/goal` isn't) — which is exactly why the one-way-door screen exists here and never existed in `goal-spec`. The persistent-file, multi-session case stays covered by `ship`/`recursive-improve`/`eval-harness`, not re-created here.

@@ -28,7 +28,7 @@ Map a draft task prompt against the 9-field handoff template (`docs/reference/ta
 
 **When to use:** before sending a non-trivial task (multi-file, unfamiliar code, uncertain approach, feature spec) to a Claude Code turn. User invokes `/kbg:task-prep <draft>` or `/kbg:task-prep` then pastes.
 
-**When NOT to use:** ideas / tech-choices without a task ("we should add X", "I want to use Effect-TS for…") → `grilling`. ≥2 unrelated tasks in one prompt → `kbg:orchestrate`. A review request → `kbg:review-pr`. A ship request → `/ship`. A one-line fix you could describe the diff of in one sentence → skip the scaffold entirely (a precise sentence beats a filled scaffold). A hypothesis-as-task with no repro ("I think there's a race, fix it") → `diagnosing-bugs`.
+**When NOT to use:** ideas / tech-choices without a task ("we should add X", "I want to use Effect-TS for…") → `mattpocock-skills:grilling`. ≥2 unrelated tasks in one prompt → `kbg:orchestrate`. A review request → `kbg:review-pr`. A ship request → `/ship`. A one-line fix you could describe the diff of in one sentence → skip the scaffold entirely (a precise sentence beats a filled scaffold). A hypothesis-as-task with no repro ("I think there's a race, fix it") → `mattpocock-skills:diagnosing-bugs`.
 
 This skill **routes first, fills second.** ~7 of 30 real-world cases never enter the 9-field flow — they want a different surface. Detect them at the gate and redirect; don't cram an idea through the template.
 
@@ -46,13 +46,13 @@ Read `$ARGUMENTS`. If empty, `AskUserQuestion`: "Paste your draft task prompt, o
 
 Evaluate the draft's shape. If any of these match, **stop and redirect** via the Suggested next step footer — do not proceed to Step 3:
 
-- **Idea-shape** — no outcome, "we should…", a tech-choice with no task → `grilling`.
+- **Idea-shape** — no outcome, "we should…", a tech-choice with no task → `mattpocock-skills:grilling`.
 - **≥2 unrelated tasks** — "add X + fix Y + update Z" → `kbg:orchestrate`.
 - **Review-shape** — "review the PR…", "look at the diff for…" → `kbg:review-pr`.
 - **Ship-shape** — "ship the…", "merge the…" → `/ship`.
-- **Hypothesis-as-task, no repro** — "I think there's a race/bug, fix it" with no repro or artifact → surface the no-repro-no-fix gate; suggest `diagnosing-bugs`.
+- **Hypothesis-as-task, no repro** — "I think there's a race/bug, fix it" with no repro or artifact → surface the no-repro-no-fix gate; suggest `mattpocock-skills:diagnosing-bugs`.
 - **Trivial / describable diff in one sentence** — "rename FooBar to FooBaz in src/types.ts" → tell the user a one-line precise sentence beats the scaffold; stop.
-- **TDD-shape** — "write a failing test that reproduces X, then fix it" → note `tdd` owns the `<done-when>` shape; continue prep but shape done-when as red→green→regression, and suggest `tdd` for the implementation turn.
+- **TDD-shape** — "write a failing test that reproduces X, then fix it" → note `mattpocock-skills:tdd` owns the `<done-when>` shape; continue prep but shape done-when as red→green→regression, and suggest `mattpocock-skills:tdd` for the implementation turn.
 
 **Failure mode at this step:** forcing an idea or a trivial fix through the 9-field scaffold — that's the "kitchen-sink session" / over-processing the template exists to prevent. Route, don't fill.
 
@@ -100,7 +100,7 @@ For each field, mark: **present** (in the draft) / **derivable** (from code or C
 - `<context>` / `<constraints>`: if obvious from CLAUDE.md or the draft, mark derivable; do not ask.
 - **If Step 3.5 ran**: `<context>` derives from `business_trace`; `<edge-cases>` derives from `edge_cases_missing`; `<done-when>` candidates derive from `acceptance_criteria` entries marked `testable`/`testable_with_assumption` (state the assumption inline if present) — check these before falling through to Step 6's ask.
 
-**Failure mode at this step:** asking the user what the codebase already answers — wastes their time and signals you didn't look. Read first, ask second (same rule as `grilling`).
+**Failure mode at this step:** asking the user what the codebase already answers — wastes their time and signals you didn't look. Read first, ask second (same rule as `mattpocock-skills:grilling`).
 
 **Success criterion:** every field that can be derived without the user is derived; only true gaps remain.
 
@@ -178,12 +178,12 @@ Any "no" → that field should have been filled in Step 6; surface it now rather
 
 ## Failure Modes to Avoid
 
-- **Forcing an idea through the template.** "We should add notifications" is an idea, not a task. Route to `grilling`; don't fill 9 fields of a thing that hasn't been decided yet.
+- **Forcing an idea through the template.** "We should add notifications" is an idea, not a task. Route to `mattpocock-skills:grilling`; don't fill 9 fields of a thing that hasn't been decided yet.
 - **Padding obvious fields.** Empty fields are fine. A `<constraints>` that restates rules Claude already follows is noise it learns to ignore.
 - **Re-asking filled fields.** If the user pasted a full template, respect it — add only derivations and explicitly-asked gaps.
 - **Treating the verifier as an editor.** The checker returns gaps; it never edits, never invents. If it returns `ready`, emit unchanged — do not "improve" a clean prompt.
 - **Infinite prep.** One re-verify max. A prompt can always be tightened further; ship it with remaining gaps flagged rather than loop forever.
-- **Auto-chaining downstream.** This skill emits a prompt; it does not invoke `/fix-bug` / `tdd` / etc. with it. The user pastes it; the footer suggests next steps passively.
+- **Auto-chaining downstream.** This skill emits a prompt; it does not invoke `/fix-bug` / `mattpocock-skills:tdd` / etc. with it. The user pastes it; the footer suggests next steps passively.
 
 ---
 
@@ -201,8 +201,8 @@ Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/refer
 
 ## Suggested next step:
 
-- Idea-shape detected at the gate → `grilling` (stress-test the idea before it becomes a task).
+- Idea-shape detected at the gate → `mattpocock-skills:grilling` (stress-test the idea before it becomes a task).
 - ≥2 unrelated tasks detected → `kbg:orchestrate` (route the request stack).
-- Review-shape / Ship-shape / no-repro detected → `kbg:review-pr` / `/ship` / `diagnosing-bugs` respectively.
+- Review-shape / Ship-shape / no-repro detected → `kbg:review-pr` / `/ship` / `mattpocock-skills:diagnosing-bugs` respectively.
 - Prompt emitted and `verdict: ready` → paste it into a fresh Claude Code turn (this skill does not auto-invoke the downstream task).
-- Task is TDD-shaped → `tdd` for the implementation turn (the emitted `<done-when>` already carries the red→green shape).
+- Task is TDD-shaped → `mattpocock-skills:tdd` for the implementation turn (the emitted `<done-when>` already carries the red→green shape).

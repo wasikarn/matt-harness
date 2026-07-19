@@ -68,8 +68,10 @@ proceed plan-only into execution.
   which agent), blast radius (low / medium / high), dependencies (none / chain).
 - **Named bias guard — anchoring.** The first finding scanned is not necessarily the highest-impact
   one; rank the full candidate set before committing to an order, don't just work top-to-bottom
-  through the scan. For a numeric, traceable verdict instead of an ordinal rank, hand off to
-  `kbg:score-decision`. For a candidate set >3, this ranking is still a same-context, same-pass
+  through the scan. For a numeric, traceable verdict instead of an ordinal rank, apply the
+  `kbg:score-decision` rubric (METHODOLOGY Rule 14) inline — the skill is `disable-model-invocation:
+  true`, so it can't be invoked mid-loop; tell the operator to run `/kbg:score-decision` directly if
+  a formal artifact is what's needed. For a candidate set >3, this ranking is still a same-context, same-pass
   judgment (the anchoring risk isn't fully closed by a prose reminder) — optionally dispatch a
   fresh-context agent with only the candidate list (no Observe-phase narrative) to independently
   re-rank before presenting at Step 3, mirroring `agents/ideate-critic.md`'s pattern.

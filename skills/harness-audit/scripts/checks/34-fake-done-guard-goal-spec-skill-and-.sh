@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 34. fake-done guard — ship verifier (arXiv 2606.10209 §3 'confident
-# garbage' = a task-completion command with no verification step). A task-
+# 34. fake-done guard — ship verifier (arXiv 2606.09863, 'confident closing
+# language' as a false proxy for verified completion = a task-completion
+# command with no verification step). A task-
 # execution command that exits without verifying output is the platform entry-
 # point for fake-done shortcuts (relaxed tests, swallowed errors, stub returns,
 # comment-deletion-as-fix per moonrunnerkc/swarm-orchestrator taxonomy). WARN on
@@ -11,5 +12,5 @@
 _ST=$(find "$CLAUDE_DIR/commands/ship" -name "COMMAND.md" 2>/dev/null | head -1 || true)
 if [ -f "$_ST" ]; then
   /usr/bin/grep -qi 'verif' "$_ST" 2>/dev/null \
-    || warn "commands/ship/COMMAND.md: no verify step found — task-completion command without a verification phase is the primary fake-done entry point (arXiv 2606.10209 §3 'confident garbage')"
+    || warn "commands/ship/COMMAND.md: no verify step found — task-completion command without a verification phase is the primary fake-done entry point (arXiv 2606.09863, 'confident closing language')"
 fi
