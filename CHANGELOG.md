@@ -5,6 +5,53 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.11] — 2026-07-20
+
+Claim-level fact-check of every `v0.61.0`–`v0.61.10` entry (user-requested, following the
+`v0.61.10` bookkeeping repair), using the same external-verification discipline the critique passes
+themselves used — 3 parallel Haiku agents on citation/API claims, plus direct `git log` checks on
+this repo's own incident claims. Result: **every substantive claim across all 9 passes held up** —
+no fabrication found anywhere. Three small inaccuracies, all now fixed:
+
+1. **`v0.61.3` (tech-humanize):** "Stanford/Liang et al. 2023... 61.3% false-positive rate" —
+   the paper is real and correctly attributed (Liang et al., *Patterns*, 2023, DOI
+   10.1016/j.patter.2023.100779), but the actual figure, extracted directly from the paper's text,
+   is **61.22%** (the 7-detector average false-positive rate on TOEFL essays). "61.3%" appears to be
+   rounding drift propagated from third-party sources repeating the number, not something invented
+   here. Corrected in `CLAUDE.md` and this file's `v0.61.3` entry.
+2. **`v0.61.4` (orchestrate):** the corrected date for `anthropics/claude-code` v2.1.172 (the
+   subagent-nesting-depth-5 fix) was given as `2026-06-09` — the real publish date, confirmed
+   independently via both the GitHub Releases API and the npm registry (which agree), is
+   `2026-06-10`. Off by one day. Fixed in `CLAUDE.md`, this file's `v0.61.4` entry, an older
+   unrelated `CHANGELOG.md` entry (line ~5385, a pre-existing nest-down-pattern note that cited the
+   same v2.1.172 fact independently) that carried the identical error, and the memory file
+   `delegation-validation-is-orchestrator-role-2026-07-16.md` that originated the claim.
+3. **`v0.61.6` (goal-craft):** the entry cited two things as independent literature support — the
+   `arXiv 2606.09863` finding and a separate "AUROC ≤0.65" statistic — but they're **the same
+   paper, same finding** (the AUROC number is that paper's own tau2-bench result), not two
+   corroborating sources. The underlying number is correct; only the "independent literature"
+   framing was misleading. Clarified in `CLAUDE.md` and this file's `v0.61.6` entry.
+
+Also independently re-confirmed (no fix needed): `v0.61.6`'s corrected citation claim — that the
+*previously*-cited `arXiv 2606.10209` was the wrong, unrelated paper — checked out exactly (it's a
+context-engineering paper about tool-call-history pruning, confirmed via direct fetch); `v0.61.7`'s
+two named incidents (PR #357/#358 state-clobber, PR #2619 lost-file-to-worktree-cleanup) both
+matched real commits in this repo's own history (`622a64d`, `ff5238b`) exactly as described;
+`v0.61.6`'s quotes from `code.claude.com/docs/en/goal.md` (no native turn cap, permission-prompt
+behavior under auto mode) matched the live page verbatim.
+
+**Not independently reproducible with proportionate effort:** `v0.61.5`'s (`kbg:decide`) specific
+transcript-count statistics (1407 transcripts, `/ship-merge`×103, `kbg:review-pr`×124, `/ship`
+Phase 2×2, `kbg:decide` autonomous×0) — the original measurement used a specific
+Tathep/superset-only, post-`/ship`-unification date scope this pass didn't have on hand to
+reconstruct exactly. A broad, unscoped, all-time count run this pass (`/kbg:ship-merge`×2526,
+`/kbg:review-pr`×3267) sits in a roughly similar ratio to the original claim, a weak plausibility
+signal, not a confirmation. Separately, "0 autonomous invocations" specifically requires
+distinguishing model-initiated dispatches from user-typed slash commands — this pass's transcript
+search technique can only detect the latter (it found 38 real user-typed `/kbg:decide`
+invocations, which does not contradict the autonomous-specific claim, since that's a different,
+uncounted category). Flagged as unverified, not confirmed or refuted.
+
 ## [0.61.10] — 2026-07-20
 
 Version-bookkeeping repair, triggered by a user-requested audit of every v0.61.x entry
@@ -168,8 +215,11 @@ hold up — that phrase describes kbg's own `claude -p` dispatch decision in `CL
 claim `SKILL.md` makes about `/goal` itself (grep-clean). What held up: `/goal` has no native
 turn cap (confirmed via the docs' own "you must add `or stop after N turns`" wording), so the
 skill's mandatory turn-bound clause isn't redundant; the done-when-must-be-a-mechanical-check
-discipline is directly validated by transcript-only LLM judges failing at AUROC ≤0.65 in the
-literature; and the compose-only/no-file split from `goal-spec` is correctly scoped to `/goal`'s
+discipline is directly validated by transcript-only LLM judges failing at AUROC ≤0.65 on the
+tau2-bench benchmark — **the same arXiv 2606.09863 paper cited two sentences below, not a second
+independent source**, corrected on a 2026-07-20 re-verification that found this entry implied two
+separate citations; and the compose-only/no-file split from `goal-spec` is correctly scoped to
+`/goal`'s
 single-session, no-persistent-file shape. Two fixes shipped: (1) the skill cited arXiv `2606.10209`
 for its "confident garbage" fake-done claim — verified via direct fetch that this is the wrong
 paper (a context-engineering paper with no relation to false-success), corrected to `2606.09863`
@@ -252,8 +302,11 @@ failure mode structurally can't occur there). (2) A memory file
 (`delegation-validation-is-orchestrator-role-2026-07-16`) asserted "the Agent tool doesn't
 grant subagents the ability to spawn further subagents anyway" as a supporting fact for
 rejecting a delegate-and-validate subagent shape — independently verified against the real
-`anthropics/claude-code` CHANGELOG.md that this became false as of v2.1.172 (2026-06-09,
-subagents can now nest up to 5 levels deep, server-enforced). Added a dated correction rather
+`anthropics/claude-code` CHANGELOG.md that this became false as of v2.1.172 (2026-06-10 — verified
+against both the GitHub Releases API and the npm registry publish time, which agree; the
+CHANGELOG.md entry itself carries no date, so an earlier pass's "2026-06-09" was one day off,
+caught on a 2026-07-20 re-verification, subagents can now nest up to 5 levels deep,
+server-enforced). Added a dated correction rather
 than rewriting history; the Rule 13 policy verdict itself is unaffected (it never depended on
 the mechanical limit — it's a governance call, now being tested by new platform capability
 rather than protected by a platform limit). `reference.md`'s flat-dispatch preference
@@ -273,8 +326,10 @@ Deep-research + plan-mode critique of `/kbg:tech-humanize` (full internal read p
 Haiku-backed external agent on AI-writing-detection research). Hypothesis "the design may already
 be right" mostly confirmed: progressive disclosure, the Grit Gate, anti-fabrication tiers, the
 register gate, and the false-positive guards all held up (the last independently corroborated —
-Stanford/Liang et al. 2023 found AI detectors carry a 61.3% false-positive rate against
-non-native-English writing, the exact bias the skill's Thai code-switching guards protect against).
+Stanford/Liang et al. 2023 found AI detectors carry a 61.22% average false-positive rate against
+non-native-English writing (7-detector average on TOEFL essays; corrected from "61.3%" on a
+2026-07-20 re-verification against the paper's own extracted text — small rounding drift, not a
+fabrication), the exact bias the skill's Thai code-switching guards protect against).
 The non-automated `evals.json` was reframed from apparent gap to correct-as-is: an auto-runner
 would collide with the harness's own LLM-judge-circularity doctrine, and `kbg:eval-harness` turned
 out to have no runner script to wire into anyway. Three small fixes: (1) added a
@@ -5382,7 +5437,8 @@ insertions, 7 files.
   roles, F2-chain-without-merge, anti-pattern-in-this-list).
 - **`## Nest-down pattern` in `agents/code-explorer.md` (F4)** — push noisy tool
   calls down to layer-2/3 agents, return only verdicts. Per nested-subagents
-  article (vendor v2.1.172, 2026-06-09). Hard cap depth=5; build in 1 layer of
+  article (vendor v2.1.172, 2026-06-10 — date corrected 2026-07-20, was off by one day).
+  Hard cap depth=5; build in 1 layer of
   margin.
 - **`## Nest-down pattern` in `agents/researcher.md` (D5)** — same pattern with
   research-specific guidance (claim verification, WebSearch-cluster delegation,
