@@ -5,6 +5,47 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.61.5] — 2026-07-20
+
+Deep-research + plan-mode critique of `kbg:decide` (full internal read of `SKILL.md` and
+its 3 reference docs, `METHODOLOGY.md` Rule 1, `score-decision`'s sibling design, the
+`orchestrate` boundary section, `harness-audit` check 38, every citing file, and the full
+CHANGELOG history from origin through the 2026-07-02 de-scope, plus one Haiku-backed
+external agent on decision-support-tool adoption research — CDSS/DSS voluntary-uptake
+literature, LLM tool-overlap/selection-accuracy research, and whether named-framework
+structuring beats default reasoning). Hypothesis was "the design may already be right";
+evidence mostly confirmed it — the on-demand narrowing (v0.21.4), the five-mode taxonomy's
+grounding in real frameworks (Decision Quality, Rumelt, Lafley-Martin, Tetlock), the
+`score-decision` separation, and the `orchestrate` boundary all held up. One genuinely new
+finding, from a fresh empirical re-check (not a re-read of the 2026-07-02 corpus): grepped
+1407 real Tathep/superset session transcripts dated after the `/ship` unification, using
+the precise `Skill` tool_use JSON shape, validated against a known-nonzero baseline to rule
+out the `xargs -a` silent-failure trap the original measurement hit. `kbg:decide` still
+fired autonomously **0** times post-narrowing — but `/kbg:ship:COMMAND` (`decide`'s one
+*guaranteed* call site, at Phase 2) itself fired only **2** times in the same window,
+versus `/kbg:ship-merge` **103** times and `/kbg:review-pr` **124** times. This reframes
+the finding: `decide`'s low usage is substantially explained by `/ship`'s structured front
+half being rarely the entry point real work takes, not by `decide` failing to fire when
+reached — independently corroborating a `/ship`-focused gap flagged the same day by a
+sibling `/kbg:pr` critique session ("`/ship`'s 8-phase pipeline never calls `kbg:pr`...
+flagged for a future `/ship`-focused look" — see that session's own CHANGELOG entry for
+its exact version number, since same-day concurrent numbering isn't stable to cite here).
+No forced nudge/hook was built for `decide` (would repeat the exact default-embedding
+mistake already tried and reversed at v0.21.4, and per the fresh data wouldn't even
+address the real bottleneck). One doc-honesty fix shipped: `reasoning-models.md` mapped 9
+named thinking models to `skills/decide`'s probe mode with step-level granularity ("mark
+loop as reinforcing/balancing," "probe one level deeper," "10x/fail/nothing branches")
+that doesn't appear anywhere in probe mode's actual 4-bullet text — exactly the doc-rot
+class `harness-audit` check 38 exists for, one level deeper than check 38 currently
+verifies (it confirms a mode name resolves, not that the mapped content matches the
+claimed granularity). Thinned 4 of the 9 rows from `applied` to `considered` and added a
+granularity caveat above the table, rather than expanding probe mode's content to match
+the claims — no demonstrated need justifies growing probe mode, and doing so would re-add
+the tool-overlap risk the external research flags. The 2026-07-02 de-scoping memory also
+gained the scheduled revisit trigger it was missing (reopen only if a future `/ship`-
+focused audit changes Path-A uptake, or if a materially larger re-measurement shows 0
+fires *despite* Phase 2 being reached).
+
 ## [0.61.4] — 2026-07-20
 
 Deep-research + plan-mode critique of `/kbg:orchestrate` (full internal read of `SKILL.md`

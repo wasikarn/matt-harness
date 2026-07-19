@@ -126,18 +126,27 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 
 ## Unified 39-model index
 
+> **Granularity note (probe mode rows).** `skills/decide`'s probe mode is a generic
+> 4-step scaffold (map the system → name leverage points → stress-test the diagnosis
+> → output a memo) — it does not walk through model-specific sub-steps for every
+> model mapped to it below. Several rows below are marked `considered` rather than
+> `applied` for this reason: the model fits one of probe mode's 4 generic steps if
+> pulled in manually, but isn't a distinct operationalized step in probe mode's own
+> text. Found and corrected 2026-07-20 during a `kbg:decide` design audit — see
+> `kbg-decide-zero-real-world-invocations-2026-07-02.md` for the full finding.
+
 | Model | Upstream dir | kbg status | kbg home | How it shows up |
 | --- | --- | --- | --- | --- |
-| systems-thinking | `thinking-systems` | applied | skills/decide (probe mode) | named lens: systems-thinking + feedback loops (reinforcing/balancing) |
-| feedback-loops | `thinking-feedback-loops` | applied | skills/decide (probe mode) | named step: mark loop as reinforcing or balancing |
-| first-principles | `thinking-first-principles` | applied | skills/decide (probe mode) (Root Why) | probe one level deeper than the user's stated reason |
-| second-order | `thinking-second-order` | applied | skills/decide (probe mode) (What-if) | 10x / fail / nothing consequence branches |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode), skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback |
-| five-whys-plus | `thinking-five-whys-plus` | applied | skills/decide (probe mode) | Root Why probing; upstream name is five-whys-plus |
-| thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames |
+| systems-thinking | `thinking-systems` | applied | skills/decide (probe mode) | probe mode step 1 ("map the system: actors, flows, feedback loops, delays") is this lens applied generically — no distinct sub-steps for reinforcing/balancing loops in probe mode's own text |
+| feedback-loops | `thinking-feedback-loops` | considered | skills/decide (probe mode) | covered by probe mode's generic step 1 (map flows/feedback loops); the reinforcing-vs-balancing distinction is a reference frame to pull in manually, not a step probe mode's own text spells out |
+| first-principles | `thinking-first-principles` | considered | skills/decide (probe mode) (Root Why) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; "probe one level deeper" isn't a step in probe mode's own 4-bullet text |
+| second-order | `thinking-second-order` | considered | skills/decide (probe mode) (What-if) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; the 10x/fail/nothing branches aren't in probe mode's own text |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode), skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in review-pr/post-mortem; in probe mode it's a reference frame for step 3, not a distinct step |
+| five-whys-plus | `thinking-five-whys-plus` | considered | skills/decide (probe mode) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; Root Why probing isn't a step in probe mode's own text |
+| thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame; in probe mode it's a reference frame, not a distinct step |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" |
-| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode), skills/task-prep (fresh-context checker) | Check yourself — anti-self-deception step |
+| reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule; in probe mode it's a reference frame, not a distinct step |
+| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode), skills/task-prep (fresh-context checker) | Check yourself — anti-self-deception step, genuinely operationalized in task-prep's fresh-context checker; in probe mode it's a reference frame, not a distinct step |
 | socratic | `thinking-socratic` | applied | skills/decide (clarify mode), skills/task-prep (gap questions) | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation), commands/implementation-compliance-audit (falsify-don't-rubber-stamp) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
