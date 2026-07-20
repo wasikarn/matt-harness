@@ -1,8 +1,6 @@
 ---
 description: Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent.
 name: refactor-clean
-agent: refactor-cleaner
-subtask: true
 ---
 
 # Refactor Clean

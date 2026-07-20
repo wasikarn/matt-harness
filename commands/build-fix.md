@@ -1,8 +1,6 @@
 ---
 description: Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
 name: build-fix
-agent: build-error-resolver
-subtask: true
 ---
 
 # Build and Fix

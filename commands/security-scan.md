@@ -1,7 +1,6 @@
 ---
 description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor.
 name: security-scan
-subtask: true
 metadata:
   origin: ECC
 ---

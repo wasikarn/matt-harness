@@ -5,6 +5,56 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.64.0] — 2026-07-20
+
+Deep-research + plan-mode critique of `commands/` (full internal read of all 17 command
+surfaces — 15 flat files + 2 directory-form commands (`ship`, `ideate`) with their
+`references/` subfolders — cross-checked against `skills/` for name overlap, the
+`command-vs-skill-equivalence-2026-07-07` memory, and 5 relevant `harness-audit` checks,
+plus one Haiku-backed external agent verifying the official slash-command frontmatter
+schema, cross-tool convergence on gated/confirm-before-destructive design, and the
+self-review-bias literature behind this repo's fresh-context verifier pattern).
+Hypothesis "the design may already be right" **mostly confirmed** for content and
+workflow design — flat-file-by-default, `disable-model-invocation` for irreversible
+actions, multi-phase `AskUserQuestion`-gated workflows, and the maker≠checker
+fresh-context-verifier pattern all held up against external sources (Panickssery et al.
+NeurIPS 2024 on LLM self-preference bias; Cursor/Windsurf's own confirm-before-destructive
+conventions).
+
+One real finding, resolved rather than left open: the initial read of Claude Code's
+documented command schema ("commands are simple markdown files," no directory+entrypoint
+special-casing) raised real doubt that `/ship`/`/ideate` — both directory-form commands
+using an undocumented `COMMAND.md` convention — resolve at all as typed slash commands.
+`advisor()` caught that this was conflating a directly-observed fact (reference files
+leaking into the model's skill catalog under mangled names) with an unverified, much more
+severe extrapolation, and flagged it as the one thing to verify before deciding severity.
+Resolved empirically via a safe, read-only `claude -p "..." --debug-file <path>` capture
+(no skill/command was actually invoked): Claude Code's loader reports a distinct
+`N skill dir commands` bucket (`ship`/`ideate` = 2) and separately tracks a
+`userFacingName` per entry — `ideate/COMMAND.md` resolves to the clean `userFacingName:
+"ideate"` from its own `name:` frontmatter, despite an ugly internal catalog key
+(`kbg:ideate:COMMAND`). `/ship`/`/ideate` reachability was never actually broken.
+
+What the same capture did confirm as real: `commands/ship/references/classify.md` and
+`pre-ship-verify.md` — meant to be inert supporting files, read only by explicit path
+from `ship/COMMAND.md`'s prose — carry their own `name:`/`description:` frontmatter and
+were loading as fully independent commands (`ship-classify`, `pre-ship-verify`),
+regardless of the author's intent. `commands/ideate/references/frames.md` has no
+frontmatter and correctly did not leak — the rule is precise, not a directory-form
+accident. Fixed: (1) stripped the frontmatter from both `ship/references/` files,
+matching `frames.md`'s already-safe shape; (2) added
+`docs/command-authoring-conventions.md` (prose guidance, sibling of
+`agent-authoring-conventions.md` — the fleet had one for `agents/` but none for
+`commands/`, which is exactly how the untested `COMMAND.md` convention spread from
+`ship` to `ideate` nine days later unchecked); (3) added `harness-audit` check 46 (WARN)
+to catch any future `.md` under `commands/` (below the top level) that carries a
+frontmatter `description:` — closing the recurrence risk mechanically; (4) dropped
+`subtask: true` (undocumented, likely inert ECC-port cruft) from `build-fix`,
+`refactor-clean`, `security-scan`, and `agent: <name>` (documented, but only functional
+paired with `context: fork`, which neither file set) from `build-fix`/`refactor-clean` —
+both commands already delegate correctly via their prose body regardless of the
+frontmatter's effect.
+
 ## [0.63.0] — 2026-07-20
 
 Deep-research + plan-mode critique of `agents/` (full internal read of all 19 agent
