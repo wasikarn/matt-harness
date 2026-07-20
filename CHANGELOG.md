@@ -5,6 +5,53 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.62.0] — 2026-07-20
+
+Deep-research + plan-mode critique of `/kbg:ship-merge` (full internal read of
+`commands/ship-merge.md`, `/ship`'s Phase 8 handoff, `review-pr`'s Phase 7 state-file
+contract, the score-decision/Rule-14 mechanics, `hooks/gates/verifier-protect.sh`'s
+sensitive-path list, harness-audit checks 30/39/40/42, `hotfix-reference.md`'s P0–P2
+tiers, the file's full commit history since `v0.1.0`, plus one Haiku-backed external
+agent on merge-gate/self-review-bias/branch-protection literature). Hypothesis "the
+design may already be right" confirmed for the architecture: the 4-phase pipeline, the
+weighted-score-plus-fatal-floor gate, the `own-branch`+sensitive-path automation-bias
+guard (verified matching `verifier-protect.sh`'s path list exactly), the
+`disable-model-invocation` structural gate, and the single-confirmation-at-Phase-2 UX
+all held up against both this repo's own incident history (PR #357/#358 clobber →
+per-PR-keyed state; PR #2619 → state-outside-worktree assertion; a real inversion bug
+`advisor()` caught before `v0.48.0` shipped) and external corroboration (MCDA veto
+thresholds and SonarQube's blocker-issue rule for the floor mechanic; Anthropic's own
+auto-mode default-blocking self-merge/force-push for the invocation gate).
+
+One real finding, scoped narrowly after `advisor()` caught an overclaim in the first
+draft (a naive "re-check `last_sha` freshness after rebase" fix would have been wrong —
+a clean rebase replays the reviewed diff unchanged, so re-checking the SHA there
+produces false positives): Phase 2 used `gh pr merge --admin --squash --delete-branch`
+unconditionally, bypassing whatever branch protection Phase 1 had just verified,
+regardless of whether the bypass was actually needed. GitHub's own docs frame
+admin-bypass-left-on as a "false sense of security," and a live check confirmed this
+repo's own `develop` branch carries no protection at all (`--admin` a no-op here, but a
+real bypass on any repo that does protect its branch). Fixed: Phase 2 step 4 now reads
+Phase 1 step 2's already-fetched protection response and only reaches for `--admin`
+when protection is actually active (no new API call) — surfaced explicitly in the
+step-5 confirmation prompt rather than folded silently into a generic line. Bundled in
+the same touch: Phase 1 step 2 was asking "is squash required?" (not a real
+branch-protection field) and never using the answer; replaced with a real check
+(`allow_squash_merge` at the repo level) that Phase 2 now actually reads and stops on
+before attempting a merge that would otherwise fail outright.
+
+Two low-cost hardening items, both user-selected as in-scope: (1) new harness-audit
+check 44 CRIT-guards `commands/ship-merge.md`'s own `disable-model-invocation` flag —
+check 39 only ever covered `recursive-improve`, leaving ship-merge's flag (the *only*
+mechanism blocking self-invoked PR merges, since no hook matches `gh pr merge`)
+WARN-only under check 30's generic reason-presence sweep. (2) paired sync-seam comments
+between `commands/ship-merge.md` Phase 2 and `skills/incident/references/hotfix-reference.md`
+Phase 4 — confirmed the two duplicate the same `gh pr merge` command byte-for-byte at
+the P0/P1 hotfix tier with no shared subroutine and no prior guard; precedent is
+`v0.61.7`'s Fowler-table seam comment. Noted but declined as out of scope: hotfix's own
+unconditional `--admin` is a deliberate difference (an emergency merge always needs the
+bypass), not drift to fix.
+
 ## [0.61.11] — 2026-07-20
 
 Claim-level fact-check of every `v0.61.0`–`v0.61.10` entry (user-requested, following the

@@ -14,7 +14,7 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 
 1. Resolve PR: `gh pr view` (current branch) or `gh pr view <n>`.
-2. Check branch protection rules once, upfront — this drives steps 3–4 and the scored table below: `gh api repos/{owner}/{repo}/branches/<base>/protection 2>/dev/null` (404/error → no protection configured at all, treat both `required_status_checks` and `required_pull_request_reviews` as absent). Is squash required? Is linear history required?
+2. Check branch protection rules once, upfront — this drives steps 3–4, the scored table below, and Phase 2's merge flags: `gh api repos/{owner}/{repo}/branches/<base>/protection 2>/dev/null` (404/error → no protection configured at all, treat `required_status_checks` and `required_pull_request_reviews` as absent; record this as "no protection" for Phase 2 step 4). Also check `gh api repos/{owner}/{repo} --jq .allow_squash_merge` once — if `false`, Phase 2's `--squash` merge will fail; Phase 2 step 4 stops on this before attempting it rather than discovering it mid-merge.
 3. Check CI: `gh pr checks <n>`. If branch protection has no `required_status_checks` **and** `gh pr checks` reports zero registered checks (not pending, not red — genuinely none), the repo has no CI wired up at all — record **N/A**, not a failure; there is nothing to gate on. Otherwise, all required checks must pass.
 4. Check approvals: `gh pr view <n> --json reviews`. If branch protection has no `required_pull_request_reviews` (or `required_approving_review_count` is 0) — routine for solo-maintainer repos — record **N/A**, not a failure; the repo has no review policy to check against. Otherwise, at least one approval is required, no CHANGES_REQUESTED from a required reviewer.
 5. Check mergeable state: no conflicts, no "merge requirements not met" flags.
@@ -49,18 +49,33 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 2. Rebase onto base branch: `git rebase origin/<base-branch>`
    - Gate: rebase produces conflicts → STOP. Tell user to resolve manually and retry.
 3. Force-push rebased branch: `git push --force-with-lease`
-4. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / N/A — no CI configured], approvals [N], conflicts [none / yes]. Target: [base-branch]. Merge will squash + delete branch. Proceed?"
+4. Decide the merge flags from Phase 1 step 2's protection read — no new API call:
+   - **No protection at all** (step 2 read a 404) → plain merge, no `--admin` — there's nothing to bypass.
+   - **Protection exists** → step 3's force-push just produced a fresh SHA with no completed status checks yet (and possibly dismissed reviews, if the repo dismisses stale reviews on push) → `--admin` is needed to land now instead of waiting for CI to re-run on the new SHA. This is a real bypass of a real policy — say so plainly in step 5, don't fold it silently into a generic confirmation line.
+   - If step 2 found `allow_squash_merge: false` → STOP now. `--squash` will fail outright; resolve the strategy mismatch before retrying.
+5. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / N/A — no CI configured], approvals [N], conflicts [none / yes]. Target: [base-branch]. [No branch protection to bypass / Branch protection active — this merge uses --admin to bypass it]. Merge will squash + delete branch. Proceed?"
    - `Merge now (Recommended when all gates pass and the user is ready to land)` — execute server-side merge
    - `Abort (Recommended when something changed since validation or the user wants to re-check)` — stop; user can re-run later
-5. Execute **server-side** merge via GitHub CLI:
+6. Execute **server-side** merge via GitHub CLI, using step 4's flag decision:
    ```bash
-   gh pr merge <n> --admin --squash --delete-branch
+   gh pr merge <n> --squash --delete-branch              # no protection (step 4: 404)
+   gh pr merge <n> --admin --squash --delete-branch       # protection active — bypass confirmed in step 5
    ```
-   - `--admin` bypasses branch protection (use only when you are authorized to force merge).
+   - `--admin` bypasses branch protection — include it only when step 4 found protection active and step 5 confirmed the bypass, never as an unconditional default.
    - `--squash` collapses the PR into a single commit **on GitHub**.
    - `--delete-branch` removes the remote branch **on GitHub**.
-6. Pull the result locally: `git checkout <base-branch> && git pull`
-7. Verify merge landed: `git log --oneline -3` on target branch.
+   - Gate: merge attempted without `--admin` and GitHub refuses because a required check is still pending on the post-rebase SHA → STOP, tell the user CI needs to finish on the new SHA or the merge needs the bypass. Don't silently retry with `--admin` unprompted.
+
+**Sync seam:** `skills/incident/references/hotfix-reference.md` Phase 4 duplicates
+this exact merge command for the P0/P1 emergency path — the two are intentionally
+separate calls, not a shared subroutine, since hotfix strips this phase's scored
+gate for speed. Hotfix's unconditional `--admin` is a deliberate difference (an
+emergency merge always needs the bypass), not drift from step 4 above. If you
+change the merge flags or the confirm-prompt shape here, check whether hotfix's
+Phase 4 needs the matching edit.
+
+7. Pull the result locally: `git checkout <base-branch> && git pull`
+8. Verify merge landed: `git log --oneline -3` on target branch.
 
 ---
 
@@ -90,3 +105,4 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 - **Merge on red CI** — "It'll probably be fine" is how outages start.
 - **Rebasing without checking** — rebase rewrites history; ensure the branch is safe to force-push.
 - **No post-merge monitoring** — CI on `main` can fail even when the PR branch passed.
+- **Unconditional `--admin`** — bypassing branch protection by default defeats the checks Phase 1 just validated; use it only when Phase 2 step 4 found protection actually active, and say so in the confirmation prompt.

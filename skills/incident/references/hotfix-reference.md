@@ -102,6 +102,15 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - `--squash` collapses to one commit.
    - `--delete-branch` cleans up.
    - **Caveat:** If repo has merge queues with "Do not allow bypassing" enabled, `--admin` may be blocked. Escalate to repo admin or use a GitHub App token.
+
+**Sync seam:** `commands/ship-merge.md` Phase 2 duplicates this exact merge command
+(same `gh pr merge`/`AskUserQuestion` shape) — the two are intentionally not the
+same call, since hotfix strips the scored gate for speed. Unconditional `--admin`
+here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,
+unlike ship-merge's normal path (which now conditions `--admin` on branch
+protection actually being active). If you edit the merge flags or the confirm
+prompt here, check whether ship-merge's Phase 2 needs the matching edit too.
+
 6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from)
 7. Verify merge landed: `git log --oneline -3`
 8. If the repo has an integration branch (`develop`): backmerge `<prod-branch>` → `develop` immediately (merge commit, not rebase) — or open the backmerge PR now and record it in Phase 6 notes.
