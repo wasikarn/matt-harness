@@ -21,7 +21,7 @@ Infer from user input or ask explicitly.
 |------|-----------|-------------|------------|
 | **P0** | "down", "outage", "exploit", "data loss", "P0" | <15 min | Zero Block items. Skip non-Critical review. `--admin` merge immediately after fix + 1 reviewer. |
 | **P1** | "critical", "security patch", "broken", "P1" | <1 hr | Fast review (code-reviewer + conditional security-reviewer). Minimal regression test. `--admin` merge. |
-| **P2** | "degraded", "slow", "SLO breach", "P2" | <4 hr | Standard fast review. Full regression test. Use `/ship-merge` (it already admin-merges via `--admin`); only hold for full CI when CI is green and the change is large enough to warrant the wait. |
+| **P2** | "degraded", "slow", "SLO breach", "P2" | <4 hr | Standard fast review. Full regression test. Use `/ship-merge` (admin-merges when branch protection is active); only hold for full CI when CI is green and the change is large enough to warrant the wait. |
 
 **Default if unclear:** Assume P1. Do not waste time debating — pick one and move.
 
