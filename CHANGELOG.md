@@ -5,6 +5,53 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.63.0] — 2026-07-20
+
+Deep-research + plan-mode critique of `agents/` (full internal read of all 19 agent
+files, `docs/agent-tool-patterns.md`, `docs/agent-voice-extension.md`, the external
+(dotfiles) `agent-anatomy.md`/`agents.md`/`separation-of-concerns.md` doctrine,
+`skills/orchestrate/SKILL.md`+`reference.md`, the 4 harness-audit checks scoped to
+agents, `BOUNDARY.md`, 91 commits of `agents/` history, and 9 related memory files,
+plus one Haiku-backed external agent on Anthropic's own agent-building guidance,
+OWASP LLM06/LLM01, LLM-judge self-grading-bias literature, and the
+Cognition-vs-Anthropic multi-agent design debate). Hypothesis "the design may
+already be right" **largely confirmed**: verifier/maker separation, allowlist tool
+scoping, the read-only-reviewer/mutating-implementer partition, the Prompt Defense
+Baseline, model-by-cognitive-load, and central one-level-deep routing all held up
+against both this repo's own incident history and named external sources (Panickssery
+et al. NeurIPS 2024; Advani arXiv 2606.09863; OWASP LLM06/LLM01). No redesign.
+
+Found and fixed: (1) `~/.claude/docs/agent-anatomy.md` (dotfiles, external repo) is
+orphaned doctrine — zero internal references, and neither of its own two named
+exemplars (`code-reviewer.md`, `security-reviewer.md`) follows the structure it
+prescribes; scoped as a dotfiles decision, not a kbg-harness edit, and deliberately
+not bundled into this release. (2) No internal agent-authoring doctrine existed —
+added `docs/agent-authoring-conventions.md`, capturing the fleet's real, organically-
+converged conventions (not a structural body-regex check — that class was tried for
+skills and retired at a 5/5 false-positive rate, so this is prose guidance a new
+agent author can pattern-match against, not a gate). (3) Rule 13's one-level-deep
+dispatch invariant (no agent spawns further agents) had a preventive gap: check 09
+already CRITs a `tools:` line missing outright (door 1, silent full-tool
+inheritance), but check 24's `VALID_TOOLS` list includes `Agent`, so an explicit
+`tools: [..., "Agent"]` grant would pass both existing checks silently (door 2).
+Added check 45 — WARN, not CRIT, since an authored/reviewed grant is recoverable by
+construction unlike door 1's silent inheritance. Verified with a throwaway fixture
+agent (`tools: ["Read","Agent"]`) that the new check fires, then confirmed the real
+fleet stays clean (0/19 grant `Agent`, matching Rule 13 as currently followed by
+convention). (4) Two stale fleet-count references found and fixed in the course of
+this pass: `agent-voice-extension.md` ("11-agent fleet" → 19) and
+`agent-tool-patterns.md` ("11/11 agents... use it" → 19/19) — both predate the
+14→19 growth and were never updated.
+
+Explicitly deferred, not treated as findings: per-agent self-disambiguation
+inconsistency (11/19 carry "when NOT to use me" language; all 19 are covered by
+`orchestrate`'s central routing table regardless, so this is defense-in-depth, not a
+coverage gap — verified directly) — accepted as-is per Rule 2. Whether
+confidence-gating review agents should adopt `blind-spot-hunter`'s adversarial
+self-refutation pass more broadly — left as an open question, not scored as a
+finding, since the external evidence cuts both ways and proposing it would have
+drifted into new architecture, which this pass was explicitly scoped not to do.
+
 ## [0.62.1] — 2026-07-20
 
 Independent `kbg:code-reviewer` pass on `v0.62.0`'s commit (fresh-context, not
