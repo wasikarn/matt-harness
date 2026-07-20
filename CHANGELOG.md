@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.62.1] — 2026-07-20
+
+Independent `kbg:code-reviewer` pass on `v0.62.0`'s commit (fresh-context, not
+self-review — deliberately, since the commit touched `harness-audit`'s own
+verifier scripts, one of `ship-merge`'s own sensitive-path categories) live-verified
+both the `allow_squash_merge` API field and `develop`'s no-protection status via
+real `gh api` calls, and found the fix logically sound with 0 CRITICAL/HIGH
+findings. One real MEDIUM finding, fixed here: `skills/incident/references/hotfix.md`'s
+P2 row still described `/ship-merge` as unconditionally admin-merging — stale
+the moment `v0.62.0` made `--admin` conditional on branch protection actually
+being active. Two LOW findings (a coarser-than-available protection signal in
+Phase 2 step 4; the squash-allowed check landing after Phase 2's rebase instead
+of before it) were left as-is per the reviewer's own read — safe-direction and
+non-blocking, not worth the added branching for the case they'd cover.
+
+This entry itself exists because the *first* attempt to ship the `hotfix.md`
+fix (commit `6655908`) shipped without a version bump — a live re-check after a
+`claude code` restart found the plugin cache still serving the pre-fix text,
+reproducing this repo's own documented `plugin-cache-same-version-stale-trap`
+memory. No code content changed here beyond the version/CHANGELOG bookkeeping
+needed to actually ship what `6655908` already committed.
+
 ## [0.62.0] — 2026-07-20
 
 Deep-research + plan-mode critique of `/kbg:ship-merge` (full internal read of
