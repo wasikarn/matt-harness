@@ -5,6 +5,51 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.65.0] — 2026-07-20
+
+Deep-research + plan-mode critique of `skills/` (full internal read of all 34 skill
+directories — frontmatter of every `SKILL.md`, full-body reads of `orchestrate`,
+`review-pr`, `recursive-improve`, `inventory`, `context-budget`; the 7 skill-scoped
+`harness-audit` checks 01/05/08/20/29/36/42 in full; CLAUDE.md's skill-authoring doctrine
+section; `docs/skill-template/SKILL.md`; the sibling `docs/agent-authoring-conventions.md`;
+matt-pocock's canonical `writing-great-skills`; Anthropic's official `skill-creator`
+validator; 6 memory files; plus one Haiku-backed external agent on Anthropic skill
+architecture, matt-pocock doctrine, tool-count/selection-accuracy literature, and the
+MCP/Custom-GPTs adjacent-ecosystem primitive splits). Third and final pass in the
+`agents/`→`commands/`→`skills/` critique series (v0.63.0, v0.64.0). Hypothesis "the design
+may already be right" **largely confirmed** — the three-type taxonomy, progressive
+disclosure, `allowed-tools`-vs-`tools:` semantics, `disable-model-invocation` criterion,
+doctrine-as-prose-not-gate stance (the failure-mode-guard regex proxy that check 36 already
+retired at a 5/5 false-positive rate), and grow-on-proven-need posture (46→34 via the
+v0.46.0 matt-origin migration) all held against external evidence and the repo's own
+incident history. `advisor()` sharpened two draft findings before they shipped: the
+description-budget comparison had to measure skills **and** commands together (they share
+one runtime listing-budget pool) and present against both cited ceilings rather than
+silently picking the favorable one; a suspected contradiction between check 29's
+imperative-intensity guard and Anthropic's `skill-creator` "be pushy" advice dissolved on a
+live grep — check 29's own header already documents "Opus 4.8+ over-triggers on
+older-model intensity," so kbg tracks a newer model generation than that guidance was
+written for, not a live disagreement. One real, actionable finding: nothing summed the
+fleet's cumulative description load — check 20 caps each description individually at 1536
+chars, but the shared skill+command listing budget (docs: "~1% of the model's context
+window") had no running total, so a silent, unwarned description-drop (confirmed via
+multiple real GitHub issues) was invisible until it happened. Measured live: 34 skills
+(6,280 chars) + 17 commands (2,916 chars) = 9,196 chars (~2,299 tokens) — **115% of the
+conservative ~1%-of-200K ceiling** (~8,000 chars), though only 57–61% of the higher
+community-measured empirical ceiling (~15–16K chars, unreconciled against the official
+figure). Fixed: added `harness-audit` check 47 (WARN, not CRIT — a full description pool
+degrades gracefully via silent truncation, it's not irrecoverable) that sums skill+command
+descriptions and prints the running total on every run regardless of whether it trips,
+so the trend stays visible even though the exact ceiling is unverified; it fired for real
+against the live 9,196-char total on first run, no synthetic fixture needed to prove it has
+teeth. Deferred, not shipped: consolidating the split CLAUDE.md/`skill-template.md` skill
+doctrine into a dedicated `docs/skill-authoring-conventions.md` to mirror the agents/commands
+sibling docs — unlike agents (whose conventions were previously *undocumented*), skills'
+doctrine already exists in writing across two places; this buys symmetry and discoverability,
+not a closed capability gap, and no mis-authored-skill incident is on record to force it.
+No redesign proposed — the narrow yield (one shippable finding out of a full-fleet pass) is
+itself the finding, matching the outcome of both prior passes in this series.
+
 ## [0.64.0] — 2026-07-20
 
 Deep-research + plan-mode critique of `commands/` (full internal read of all 17 command
