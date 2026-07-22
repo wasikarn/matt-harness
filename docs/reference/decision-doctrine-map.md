@@ -60,6 +60,7 @@ kbg-native (this plugin's own fleet) unless noted.
 | Diff → merge | `kbg:review-pr` (adversarial Phase 3.5/3.6), `kbg:blind-spot-hunter`, `kbg:ship-merge`'s score gate |
 | Idea → spec | `kbg:ideate-critic` (`/ideate` Phase 2 fresh-context critic) |
 | Task prompt → dispatch | `kbg:task-prep` + `kbg:task-prep-checker` (Opus fresh-context verifier) |
+| Plan → implement | `kbg:plan-reviewer` — adversarial pre-code plan review across 8 lenses (requirement coverage, assumptions/missing work, architecture fit, risk/failure modes, edge cases, execution order/dependencies, testing/verification, operability/reversibility); severity-earned findings + fatal-weakness-floor verdict. Heavier and on-demand than `advisor()` — for a consequential plan (multi-file, one-way door, unfamiliar subsystem), not routine |
 | Bug report → fix | `kbg:silent-failure-hunter` + the root-cause-not-symptom reflex (`ponytail@ponytail`, a separate installed plugin, not kbg-native) — covered by Rule 3's general reflex; no bug-report-*specific* rung or nudge yet, deliberately deferred (METHODOLOGY Rule 2), revisit if a symptom-patch incident surfaces |
 
 ## Who owns which doctrine surface

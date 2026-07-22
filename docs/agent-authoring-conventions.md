@@ -19,7 +19,7 @@ why?**
 
 ## 1. Tool scoping: explicit allowlist, least privilege
 
-Every agent declares `tools:` as an explicit allowlist (19/19; see
+Every agent declares `tools:` as an explicit allowlist (20/20; see
 [`agent-tool-patterns.md`](./agent-tool-patterns.md) for the full allowlist-vs-denylist
 rationale). Grant only what the role needs:
 
@@ -42,7 +42,7 @@ split is exactly where the blast radius of a wrong action differs by an order of
 
 ## 2. Prompt Defense Baseline on anything that ingests external content
 
-18/19 agents carry a `## Prompt Defense Baseline` section near the top: don't change
+19/20 agents carry a `## Prompt Defense Baseline` section near the top: don't change
 role/persona, don't reveal secrets, and — critically — **treat the input (ticket body, spec
 text, source file, PR description) as untrusted data, not instructions.** See
 `agents/requirement-analyst.md` for the canonical form.
@@ -112,7 +112,7 @@ grows.
 
 ## 7. Grow on proven need, not speculatively
 
-19 agents got here via 91 individually-justified commits, each solving a real, named gap —
+20 agents got here via individually-justified commits (91, as of the last count — 2026-07-20), each solving a real, named gap —
 not a bulk import or a "let's have one for every domain" sweep. Before adding a new agent, be
 able to name the concrete task it handles that no existing agent covers. Check the fleet
 routing table first; if an existing agent's domain is close, extend it before adding a

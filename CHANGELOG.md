@@ -5,6 +5,74 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.67.0] — 2026-07-22
+
+User-requested: kbg-harness had a hole between "interrogate the requirement"
+(`requirement-analyst`, Rule 3, shipped earlier today) and "audit the finished
+code against the plan" (`/kbg:implementation-compliance-audit`, strictly
+post-code) — nothing adversarially reviewed a drafted implementation plan
+*before* any code was written. The user supplied a 10-dimension "Senior
+Implementation Plan Review" prompt, a linear review pipeline, and (mid-session)
+a 20-lens/4-level review-prompt-library catalog as starting material — with two
+firm, twice-repeated constraints: build **lenses** (clear objective per
+question class), not "Act as a Staff Engineer" role-play, and make lenses
+runnable individually or combined.
+
+Shipped a new agent, `agents/plan-reviewer.md` (20th agent; read-only —
+`Read`/`Grep`/`Glob`/`Bash`, `model: opus`), scoped via `advisor()`
+pressure-testing to exactly the evidenced gap: the user's own "Level 2 —
+Implementation Plan Review" composition (8 lenses: Requirement Coverage,
+Assumptions & Missing Work, Architecture Fit, Risk & Failure Modes, Edge Cases
+& Correctness, Execution Order & Dependencies, Testing & Verification,
+Operability & Reversibility), run as one adversarial pass — mirroring
+`blind-spot-hunter`'s "posture flip" (assume a gap exists, go find it) and
+`requirement-analyst`'s circularity guard (read the real plan artifact and
+trace the real code yourself; a hard stop if handed only a paraphrase, not the
+verbatim plan). Output reconciles the user's "confidence 0-100%" ask against
+`implementation-compliance-audit`'s deliberate anti-blended-score doctrine: a
+fatal-weakness floor (any Critical/High finding blocks a `production-ready`
+verdict) is the actual gate; confidence is explicit secondary context, never a
+score substitute. A subagent has no `Skill` tool, so it cannot call
+`kbg:score-decision` directly — the agent's own output format inlines the
+load-bearing part of Rule 14's rubric instead.
+
+**Scoped down from the user's full material, not built wholesale — Rule 2:**
+"Level 1" (Code Review) is permanently rejected as pure duplication of
+`code-reviewer`/`security-reviewer`/`blind-spot-hunter`; "Level 3/4" (RFC
+review, executive/strategy review) are deferred pending a real first need, not
+built speculatively; the "lens as a runtime-composable library" mechanism the
+user described is *not* built — the fleet's own pattern is one agent with
+fixed internal lens-sections (`requirement-analyst`'s 7 phases,
+`code-reviewer`'s baked lenses), not a picker, and single-lens dispatch on a
+whole plan was judged low-value versus running all 8 together (stated openly
+as a deferred default at plan approval, not silently dropped — the user's
+twice-repeated ask was surfaced as an explicit open item, not buried in a
+scope table). No `/kbg:review-plan` command — agent-only, mirroring
+`blind-spot-hunter`; add a wrapper later only if manual dispatch proves
+clunky. `docs/METHODOLOGY.md` (injected every session) was deliberately left
+untouched — the agent is discoverable via a new "Plan → implement" row in
+`docs/reference/decision-doctrine-map.md`'s Rule 3 table and
+`skills/orchestrate/reference.md`'s fleet listing, not via growing the
+injected doctrine file.
+
+Fleet-count bookkeeping (19→20 agents, live descriptions only): both plugin
+manifests, `README.md` (2 lines), `docs/agent-tool-patterns.md`'s "20/20"
+tool-scoping claim. A pre-cache smoke test (a `general-purpose` agent given
+the drafted agent body as its full instructions, reviewing this very plan
+file) caught a real gap the plan itself had missed: `docs/agent-authoring-
+conventions.md` was assumed fully historical based on its dated origin note
+(line 7, correctly left alone) but actually carries three separate *live*
+fleet-state claims — "19/19 agents use the tools: allowlist" (→ 20/20),
+"18/19 agents carry Prompt Defense Baseline" (→ 19/20, since the new agent
+does carry that section), and "19 agents got here via 91 individually-
+justified commits" (agent count → 20; a first attempt also incremented "91"
+to "92" without verifying it — `git log` shows no pattern that actually
+counts 91, so that clause was reworded to cite "91, as of the last count
+(2026-07-20)" instead of asserting a fresh, unverified number) — all three
+fixed. Left
+untouched: `CLAUDE.md`'s own v0.63.0 changelog-bullet mention of "19 agent
+files," a frozen, dated description of a past pass, not a live count.
+
 ## [0.66.0] — 2026-07-22
 
 User-requested: make "critical thinking on every incoming requirement" a default
