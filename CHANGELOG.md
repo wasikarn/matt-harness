@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.8] — 2026-07-22
+
+User asked how the v0.68.6/.7 marker rule applies to a `multiSelect` (checkbox) menu, naming
+`kbg:learn` as the example, then asked for the answer written into doctrine. A live check of the
+installed v0.68.7 cache first established there is no shipped defect: `skills/learn/SKILL.md:83`
+is the fleet's **only** `multiSelect` site (grepped for `multiSelect` / `multi-select` /
+`select all that apply` across every shipped `.md`), and its options carry no recommendation
+marker at all — each is a candidate summary plus a proposed memory `type`. So this is a
+prospective criterion, not a repair.
+
+The substance: label-placement is about *visibility*, so it holds regardless of select mode — but
+the word "Recommended" itself stops working when the recommended set is most of the list. Marking
+4 of 5 options reproduces the original complaint one level up: the reader still has to scan every
+row to find the signal, exactly the failure v0.68.6 fixed by moving the marker out of the
+`description`. Added one sentence to `output-styles/staff-eng.md`'s decision-question bullet with
+the three-way criterion: mark only when the recommended set is a **minority**; if most options
+should be picked, invert and mark the ones to skip (`(Skip — ephemeral)`); if they're all
+comparable, mark none and order strongest-first — plus the "a marker on 4 of 5 is noise" reason so
+the rule carries its own justification.
+
+Doctrine-only, one file. No template sweep was needed (nothing to convert), and `learn`'s own
+`SKILL.md` was deliberately left untouched — its step 4 describes what each option *contains*, not
+how to mark a recommendation, and adding the criterion there too would duplicate doctrine into a
+surface that doesn't currently need it (the sync-seam defect class this repo already tracks). Same
+ceiling as the two prior releases: model adherence, no deterministic gate possible.
+
 ## [0.68.7] — 2026-07-22
 
 User called in the notation sweep v0.68.6 had deferred: rename the template option annotation
