@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.3] — 2026-07-22
+
+User-requested: a deterministic trigger for dispatching `kbg:plan-reviewer` after a plan is
+approved, for consequential plans. First proposal was "the model will remember to suggest
+it" — user explicitly rejected relying on memory ("ถ้าเป็น memory ผมไม่ไว้ใจเลย"), then asked
+whether a hook/condition could do it instead, and separately floated adding it to
+`METHODOLOGY.md` as a lighter fix. Verified via `claude-code-guide` against the official
+docs (`hooks.md`, `tools-reference.md`): `PostToolUse` with `"matcher": "ExitPlanMode"` is
+valid, fires only on plan approval (a manual reject/cancel never reaches `PostToolUse` — the
+tool never "completes successfully" on a deny), and the payload hands over
+`tool_response.plan` directly, so the hook never needs to re-read the plan file (which gets
+overwritten on the next plan-mode cycle in the same session anyway). `METHODOLOGY.md` alone
+was rejected as the fix: it's genuinely not the soft "memory" the user distrusted (it's
+unconditionally injected every SessionStart/compact, not judgment-filtered like `MEMORY.md`'s
+index), but this repo already has direct precedent that doctrine injected once per session
+isn't reliable enough at the exact moment of a specific event — `hooks/advisory/flow-nudge.sh`
+exists on top of Rule 1's own "plan-first" doctrine for exactly this reason. Shipped
+`hooks/advisory/plan-review-nudge.sh` (the repo's first `PostToolUse` hook; prior events used
+were `SessionStart`/`UserPromptSubmit`/`PreToolUse`/`Stop`/`SessionEnd`/`WorktreeCreate`/
+`WorktreeRemove`) mirroring `flow-nudge.sh`'s advisory-only, fire-unconditionally,
+model-judges posture — no plan-complexity classifier, the nudge text itself says to skip for
+routine/small plans. Output uses `hookSpecificOutput.additionalContext` (PostToolUse's
+structured field) rather than plain stdout, since the hook emits JSON via `python3 -c`.
+Wired into `hooks/hooks.json`, `scripts/run-gauntlet.sh`'s hook-test invocation, and a new
+`hooks/tests/test-plan-review-nudge.sh` (6/6 green) mirroring `test-flow-nudge.sh`'s
+structure. Added one short parenthetical to `docs/reference/decision-doctrine-map.md`'s
+existing "Plan → implement" row rather than duplicating doctrine text elsewhere — the row
+already carried the full 8-lens description. `harness-audit` check 11 (orphaned-hooks)
+already covers the "forgot to wire it into `hooks.json`" failure mode for free — no new
+check needed.
+
 ## [0.68.2] — 2026-07-22
 
 `/kbg:claude-md-health` run against this repo's own `CLAUDE.md`. Tests 1/2 (readable,

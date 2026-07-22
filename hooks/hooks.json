@@ -159,6 +159,20 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "id": "advisory:plan-review-nudge",
+        "matcher": "ExitPlanMode",
+        "description": "Advisory: after a plan is approved, nudge dispatching kbg:plan-reviewer for consequential plans before implementing. Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/plan-review-nudge.sh"]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "id": "stop:cost-tracker",
