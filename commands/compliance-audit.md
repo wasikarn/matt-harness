@@ -1,5 +1,5 @@
 ---
-name: implementation-compliance-audit
+name: compliance-audit
 description: "Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit)."
 argument-hint: Optional path to the plan file, PR number, or commit range
 disable-model-invocation: true

@@ -32,11 +32,11 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge). |
 | ask-kbg | Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
+| compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | cost-report | Generate a local Claude Code cost report from the ECC cost-tracker metrics log. |
 | fix-bug | Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean). |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style. |
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
-| implementation-compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan, before declaring it done. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | kbg-help | kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'. |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
@@ -118,7 +118,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-22T07:16:26Z_
+_Generated: 2026-07-22T08:12:07Z_
 
 ---
 

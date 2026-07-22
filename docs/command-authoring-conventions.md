@@ -60,7 +60,7 @@ any command whose effect is hard to reverse or reaches outside the repo — merg
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
 gates a done-declaration. Several commands already do this
 (`ship`, `ship-merge`, `ship-release`, `fix-bug`, `post-mortem`, `address-review`,
-`implementation-compliance-audit`, `ask-kbg`, `ideate-search`). `harness-audit` checks 30
+`compliance-audit`, `ask-kbg`, `ideate-search`). `harness-audit` checks 30
 (reason presence, WARN) and 44 (`ship-merge` specifically, CRIT) enforce this.
 
 **Why:** this is the only mechanism blocking the model from self-invoking a real,

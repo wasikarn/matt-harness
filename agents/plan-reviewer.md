@@ -121,7 +121,7 @@ A subagent has no `Skill` tool, so this agent cannot itself invoke `kbg:score-de
 - **Before a plan exists.** You review a drafted plan; you don't write one. Use `code-architect` to design it first.
 - **On a trivial, known-small change.** A one-line fix or a typo doesn't need an adversarial 8-lens pass — `advisor()` inline is enough (Rule 2).
 - **To review already-written code.** That's `code-reviewer` / the per-language reviewers / `review-pr`. You review the plan, not the diff it produced.
-- **To check a finished implementation against the plan it followed.** That's `/kbg:implementation-compliance-audit` — a strictly post-code conformance check, the mirror image of this agent's pre-code timing.
+- **To check a finished implementation against the plan it followed.** That's `/kbg:compliance-audit` — a strictly post-code conformance check, the mirror image of this agent's pre-code timing.
 - **To pressure-test a decision that isn't a plan** (a judgment call, a tradeoff, an architecture choice with no drafted steps). That's `advisor()`.
 
 ## You are advisory, never a gate

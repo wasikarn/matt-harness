@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.5] — 2026-07-22
+
+User asked whether `/kbg:implementation-compliance-audit` (31 chars, the longest command name in
+the fleet by 2x) was too long. Since the command carries `disable-model-invocation: true`, the
+user types the full name by hand every time — length matters more here than for a model-matched
+skill. Renamed to `compliance-audit` (16 chars): matches the fleet's existing noun-noun naming
+convention (`security-scan`, `test-coverage`, `cost-report`) over a rejected verb-noun
+alternative (`implement-audit`), and avoids blurring the pre-code/post-code distinction against
+`kbg:plan-reviewer` this exact session already confused once. `git mv`'d the command file, updated
+its frontmatter `name:` field, and fixed 4 live cross-references (`agents/plan-reviewer.md`,
+`docs/command-authoring-conventions.md`, `docs/reference/reasoning-models.md`,
+`skills/orchestrate/reference.md`); regenerated `BOUNDARY.md`. Deliberately did NOT rewrite the 6
+historical references to the old name in `CHANGELOG.md` and `CLAUDE.md`'s dated "Recent versions"
+bullets — those describe past events using the name that was accurate at the time, and rewriting
+them would misrepresent history, the same reasoning already applied to every other dated snapshot
+in this repo. Noted one pre-existing, unrelated ambiguity found while grepping for name collisions:
+`skills/production-audit/SKILL.md` already uses "a formal compliance audit" to mean
+regulatory/legal compliance — a different sense of the word, not a real collision (the new
+command's own description disambiguates immediately, and it's user-typed only, never a model
+auto-routing risk) — left as an accepted minor risk, not fixed.
+
 ## [0.68.4] — 2026-07-22
 
 Retroactive `kbg:plan-reviewer` dispatch against v0.68.3's own build plan — the plan predated
