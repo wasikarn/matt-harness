@@ -3,7 +3,7 @@
 Compact rule set injected at session start. Rules sourced from the staff-engineer thinking loop doctrine.
 Match rigor to stakes — minimal rules for low-stakes acts, full triad for one-way doors.
 
-The numbers below (1, 2, 4, 13, 14) match the source doctrine's numbering — this file carries only the subset that's proven load-bearing in practice, so the gaps (3, 5–12) are deliberate, not missing content. For the full situation → scaffold → owning-rule map, see `docs/reference/decision-doctrine-map.md`.
+The numbers below mostly match the source doctrine's numbering — this file carries only the subset that's proven load-bearing in practice, so the gaps (5–12) are deliberate, not missing content. **Rule 3 is the one exception**: a kbg-native promotion added on a proven user need (2026-07-22), not a claim about the source doctrine's own Rule 3 — if the source doctrine ever syncs a real Rule 3, reconcile by hand rather than assuming a match. For the full situation → scaffold → owning-rule map, see `docs/reference/decision-doctrine-map.md`.
 
 ## Rule 1 — Decision-sizing triad
 
@@ -46,6 +46,16 @@ This section is mirrored in the operator's global `~/.claude/CLAUDE.md` (kept se
 ## Rule 2 — Match surface area to proven need
 
 Don't build it until there's a real failure that demands it. Three similar lines beat a premature abstraction. Speculative need = skip it. Proven gap = build it.
+
+## Rule 3 — Interrogate the incoming claim before acting on it
+
+A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. It's optimized to sound right on the surface, not to survive an edge case.
+
+**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `kbg:requirement-analyst`.
+
+The same discipline applies to any incoming claim — a bug report before you fix it, an idea before you spec it, a diff before you merge it. See `docs/reference/decision-doctrine-map.md` for which surface owns each.
+
+**Reflex, not gate** — match rigor to stakes: a one-line fix needs none; a multi-file feature or unfamiliar subsystem needs all of the above. Feeds Rule 4 — you can't write a testable "done" for a claim you haven't interrogated.
 
 ## Rule 4 — Define done. Loop until verified.
 

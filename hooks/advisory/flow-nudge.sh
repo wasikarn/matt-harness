@@ -127,9 +127,9 @@ fi
 
 cat <<'EOF'
 
-[kbg:flow-nudge] Non-trivial work detected — plan before you edit.
+[kbg:flow-nudge] Non-trivial work detected — interrogate the requirement, then plan before you edit.
   Multi-file / unfamiliar / architectural / hard-to-reverse?
-    → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first.
+    → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first (now also surfaces requirement gaps — Rule 3).
   A new feature to spec out? → mattpocock-skills:grilling → mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship
   Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see kbg:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).

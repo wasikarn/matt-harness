@@ -228,34 +228,50 @@ else
 fi
 
 echo ""
-echo "--- ticket + impl-intent → requirement-analyst reminder (content contract) ---"
+echo "--- requirement-interrogation reminder (content contract, v0.66.0 widened scope) ---"
+# v0.66.0 (METHODOLOGY Rule 3): the base nudge's OPENING LINE now says
+# "interrogate the requirement" on ANY impl-verb prompt, ticket or not — that's
+# the widened signal. The base nudge deliberately does NOT name
+# 'requirement-analyst' directly (the plan explicitly rejected a standalone
+# 5th route naming it — that would just stack a 4th/5th route onto an already
+# crowded nudge; the deep pass is carried by the existing kbg:task-prep route,
+# which now dispatches requirement-analyst itself). The ticket-SPECIFIC
+# addendum ("Ticket reference detected", naming requirement-analyst directly)
+# stays gated on TICKET_KEY — unchanged, pre-existing behavior.
 ticket_impl_out=$(echo "$(user_prompt_payload "implement TP-919")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
-  echo "  ✅ CONTENT: ticket + impl verb names 'requirement-analyst'"
+if printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "interrogate the requirement" \
+   && printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "Ticket reference detected" \
+   && printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ✅ CONTENT: ticket + impl verb gets widened opening line AND the ticket-specific addendum"
   pass=$((pass + 1))
 else
-  echo "  ❌ CONTENT EXPECTED 'requirement-analyst': <$(printf '%s' "$ticket_impl_out" | head -c 160)>" >&2
+  echo "  ❌ CONTENT EXPECTED all 3 markers: <$(printf '%s' "$ticket_impl_out" | head -c 160)>" >&2
   fail=$((fail + 1))
 fi
-# Impl verb with no ticket key must NOT get the requirement-analyst line —
-# the generic plan-first nudge still fires (existing behavior), just without
-# the ticket-specific addendum.
+# Impl verb with NO ticket key: gets the widened opening line, but must NOT
+# surface the ticket-specific addendum OR name 'requirement-analyst' directly
+# — regression guard against re-adding a standalone 5th route (the exact
+# over-implementation an audit caught and reverted here).
 impl_no_ticket_out=$(echo "$(user_prompt_payload "implement the auth flow")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "requirement-analyst"; then
-  echo "  ❌ CONTENT: impl verb with no ticket wrongly names 'requirement-analyst': <$(printf '%s' "$impl_no_ticket_out" | head -c 160)>" >&2
-  fail=$((fail + 1))
-else
-  echo "  ✅ CONTENT: impl verb with no ticket does not name 'requirement-analyst'"
+if printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "interrogate the requirement" \
+   && ! printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "Ticket reference detected" \
+   && ! printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ✅ CONTENT: impl verb with no ticket gets widened opening line only (no standalone route, no ticket addendum)"
   pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT MISMATCH: <$(printf '%s' "$impl_no_ticket_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
 fi
 # Thai ticket + impl verb — verifies TICKET_KEY matches against mixed
 # Thai/ASCII input, same as jira-route-nudge.sh's proven pattern.
 thai_ticket_impl_out=$(echo "$(user_prompt_payload "พัฒนา TP-919 ให้หน่อย")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
-  echo "  ✅ CONTENT: Thai ticket + impl verb names 'requirement-analyst'"
+if printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "interrogate the requirement" \
+   && printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "Ticket reference detected" \
+   && printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
+  echo "  ✅ CONTENT: Thai ticket + impl verb gets widened opening line AND the ticket-specific addendum"
   pass=$((pass + 1))
 else
-  echo "  ❌ CONTENT EXPECTED 'requirement-analyst' (Thai): <$(printf '%s' "$thai_ticket_impl_out" | head -c 160)>" >&2
+  echo "  ❌ CONTENT EXPECTED all 3 markers (Thai): <$(printf '%s' "$thai_ticket_impl_out" | head -c 160)>" >&2
   fail=$((fail + 1))
 fi
 # Ticket key with no impl verb at all — the whole hook must stay silent

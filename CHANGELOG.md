@@ -5,6 +5,56 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.66.0] — 2026-07-22
+
+User-requested: make "critical thinking on every incoming requirement" a default
+reflex for anyone who installs the plugin, not just tathep/Jira users. Plan-mode
+design (approved via `AskUserQuestion` on which layer should carry it — user picked
+both doctrine + nudge). The capability already existed (`agents/requirement-analyst.md`
+— ambiguity/gap/edge-case/testability sweep, source-agnostic) but was routed almost
+entirely behind a `TP-[0-9]+` Jira ticket-key gate in both `hooks/advisory/flow-nudge.sh`
+and `skills/task-prep/SKILL.md` Step 3.5 — a plain "build X" ask never reached it. Shipped:
+(1) new `METHODOLOGY.md` Rule 3 ("interrogate the incoming claim before acting on it"),
+injected every SessionStart, generalized past requirements to name the same reflex already
+covering bug reports/ideas/diffs elsewhere in the fleet — kept tight since the file is
+injected every turn, with the per-claim routing table moved to the on-demand
+`docs/reference/decision-doctrine-map.md` instead; (2) `flow-nudge.sh`'s base nudge opening
+line now says "interrogate the requirement, then plan before you edit" on any
+implementation-shaped prompt, not just ticket-shaped ones — the deep pass is carried by the
+existing `kbg:task-prep` route (which now dispatches `requirement-analyst` itself per (3)),
+so the base nudge doesn't name the agent directly; the ticket-specific jira-fetch addendum
+(which does name `requirement-analyst`) stays gated on the ticket key, since that's a real
+extra step only a ticket needs; (3) `task-prep` Step 3.5 widened from "Jira ticket only" to
+also dispatch `requirement-analyst` directly on the draft text for a real non-Jira feature
+requirement — deliberately biased toward skip on any doubt (it's a second Opus agent
+alongside Step 6's verifier, so it only earns its cost on an actual requirement to
+interrogate, not every task). `advisor()` caught two things before this shipped: a
+sync-seam this repo names as a recurring defect class — `decision-doctrine-map.md:51`
+enumerates `METHODOLOGY.md`'s rule set verbatim and would have gone stale the moment Rule 3
+landed (fixed, both the enumeration and a new per-claim mapping section added there); and
+that the sibling-claims list belonged in the on-demand map file, not repeated in the
+always-injected doctrine (moved). A follow-up `/kbg:implementation-compliance-audit`
+(4 fresh-context verifiers, one per file cluster, plus an independently re-run gauntlet)
+then checked the diff against the approved plan line by line: 9/10 requirements conformed
+on first pass; one real, independently-found deviation — the first implementation had grown
+the nudge's opening-line edit into an actual new bullet naming `requirement-analyst`
+directly, structurally a 5th route, exactly the fatigue risk the plan and `advisor()` had
+explicitly flagged against. Fixed by reverting to the single-line edit the plan specified;
+`hooks/tests/test-flow-nudge.sh`'s content-contract tests were corrected to match, including
+a new negative assertion so the base nudge naming `requirement-analyst` directly again would
+fail the suite — re-verified 61/61 green, gauntlet green. Two smaller items closed the same
+pass: `CLAUDE.md`'s own "Recent versions" bullet-cap bookkeeping (not in the plan's file
+list, but a pre-existing unconditional repo rule) confirmed correct at exactly 10 bullets;
+and a wording nit an audit verifier caught in passing — the doctrine map's bug-report row
+mislabeled the `ponytail` plugin as this repo's own "output style" — fixed to name it as the
+separate installed plugin it actually is. Explicitly honest about the ceiling: this cannot
+be a hard gate (a model can't grade its own work — the harness's own model-as-verifier
+circularity bar) — it's the strongest available always-present reflex, not enforcement.
+Explicitly deferred (Rule 2, no proven gap yet): a bug-report-specific "diagnose before you
+fix" doctrine rung or nudge branch — `kbg:silent-failure-hunter` already exists and no
+incident demands it; named in the new map section with a stated revisit trigger instead of
+built speculatively.
+
 ## [0.65.0] — 2026-07-20
 
 Deep-research + plan-mode critique of `skills/` (full internal read of all 34 skill

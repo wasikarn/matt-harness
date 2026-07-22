@@ -46,9 +46,25 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 | an Atlassian (Jira/Confluence) operation | route through `jira-acli`'s skills (`jira-acli:acli`, `jira-acli:jira-content`, `jira-acli:confluence-content`) per `~/.claude/CLAUDE.md`; `hooks/advisory/jira-route-nudge.sh` reminds on a Jira/Confluence-shaped prompt (non-blocking — the Atlassian MCP tool schemas are the documented fallback for jira-acli's own closed-gap list) | n/a |
 | approve / reject / rank / score a consequential decision | `kbg:score-decision` — stated criteria + weights, pass threshold + fatal-weakness floor | `skills/score-decision/SKILL.md` | METHODOLOGY Rule 14 |
 
+## Interrogate the incoming claim (Rule 3)
+
+Owned by **METHODOLOGY.md Rule 3**. A requirement, bug report, idea, diff, or task
+prompt is a claim to test before you act on it — the general principle stays in
+Rule 3 (kept tight, it's injected every session); this table is the per-claim
+routing, kept here to avoid bloating the injected copy. All surfaces are
+kbg-native (this plugin's own fleet) unless noted.
+
+| Incoming claim → action | kbg-native critical-thinking surface |
+|---|---|
+| Requirement → build | `kbg:requirement-analyst` — ambiguity/gap/edge-case/testability sweep, readiness verdict |
+| Diff → merge | `kbg:review-pr` (adversarial Phase 3.5/3.6), `kbg:blind-spot-hunter`, `kbg:ship-merge`'s score gate |
+| Idea → spec | `kbg:ideate-critic` (`/ideate` Phase 2 fresh-context critic) |
+| Task prompt → dispatch | `kbg:task-prep` + `kbg:task-prep-checker` (Opus fresh-context verifier) |
+| Bug report → fix | `kbg:silent-failure-hunter` + the root-cause-not-symptom reflex (`ponytail@ponytail`, a separate installed plugin, not kbg-native) — covered by Rule 3's general reflex; no bug-report-*specific* rung or nudge yet, deliberately deferred (METHODOLOGY Rule 2), revisit if a symptom-patch incident surfaces |
+
 ## Who owns which doctrine surface
 
-Per-file split: `METHODOLOGY.md` = process + thinking-loop (Rules 1, 2, 4, 13, 14);
+Per-file split: `METHODOLOGY.md` = process + thinking-loop (Rules 1, 2, 3, 4, 13, 14);
 `CLAUDE.md` (doctrine home) = architecture + operating model + autonomy invariant,
 guarded by `hooks/gates/verifier-protect.sh`, not a file-based cage (the L3–L5
 bounded-autonomy cage was retired in the v0.6.0 reset). The prior RTK/ACLI/DBGATE
