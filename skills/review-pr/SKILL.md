@@ -32,8 +32,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - If **neither** keyword passed → **Analyze**: count routed agents (Phase 3), diff size (`git diff --stat`), file types touched.
    - **Default to parallel.** Only recommend sequential when the diff is auth-heavy (security depth benefits from serialized attention) or docs-only (trivial, not worth the overhead).
    - **AskUserQuestion** single-select: "Phase 1: [N] agents routed, diff = [files changed / lines changed], auth-heavy = [yes/no]. My recommendation: [Parallel / Sequential]. Confirm dispatch mode?"
-     - `Parallel (Recommended when diff is medium and no auth changes; fastest wall-clock time)` — agents are independent
-     - `Sequential (Recommended when diff is auth-heavy or the user wants lower cognitive load)` — one complete report at a time
+     - `Parallel (best when diff is medium and no auth changes; fastest wall-clock time)` — agents are independent
+     - `Sequential (best when diff is auth-heavy or the user wants lower cognitive load)` — one complete report at a time
 4. Output: scope summary (target: current branch **or** PR #N, which aspects in scope, dispatch mode).
 5. **Detect a Jira ticket reference (opt-in requirement cross-check).** Only when the prompt contains the case-insensitive substring `jira` **and** a ticket-key-shaped token (`[A-Z][A-Z0-9]*-\d+`, e.g. `TP-871`) — requiring both avoids false-triggering on unrelated tokens shaped like `UTF-8`/`COVID-19`/`ISO-8601` with no Jira context. If both are present, record `JIRA_KEY` = the matched token and continue to Phase 1.5. **If either is missing, `JIRA_KEY` stays unset and every step below tagged "opt-in" or "if `JIRA_KEY` set" is skipped** — this feature is additive; the default no-ticket flow is unchanged.
 
@@ -201,10 +201,10 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
    **A. Reviewing the current branch (your own working tree)** — fixes land directly, so go straight to the fix decision:
    - **AskUserQuestion** single-select: "Phase 6: [N] Critical (must fix before merge), [N] Important (should fix before merge), [N] Minor (nice to have). My recommendation: [option]. How do you want to proceed?"
-     - `Fix Critical issues now, proceed with Important/Minor later (Recommended when Critical count is low and the user wants to keep momentum)`
-     - `Fix Critical + Important now, Minor later (Recommended when both tiers have real issues that shouldn't ship)`
-     - `Fix all tiers now before proceeding (Recommended when review surfaced significant problems across all tiers)`
-     - `Proceed as-is — acknowledge risk (Recommended only when findings are false positives or truly cosmetic)`
+     - `Fix Critical issues now, proceed with Important/Minor later (best when Critical count is low and the user wants to keep momentum)`
+     - `Fix Critical + Important now, Minor later (best when both tiers have real issues that shouldn't ship)`
+     - `Fix all tiers now before proceeding (best when review surfaced significant problems across all tiers)`
+     - `Proceed as-is — acknowledge risk (only when findings are false positives or truly cosmetic)`
 
    **B. Reviewing a PR by number (isolated, throwaway worktree)** — the decision *is* what review to submit to the author. **First build the review payload** (per Phase 7's "Build the review payload" procedure) and show the preview, then ask **once** — Phase 7 executes the choice without re-asking:
    - **Preview** (show before the question):
@@ -214,10 +214,10 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      - Review body (the tier table + trend + proof-check from step 1 — **not** the Requirement Analysis section, which is terminal-only per step 1's note and never posted)
    - **Prior-review check**: `gh pr view <#> --json reviews -q ".reviews[].author.login"` vs `gh api user -q .login`. If you already reviewed this PR, warn that GitHub stacks new reviews (no update-in-place) before asking.
    - **AskUserQuestion** single-select: "Phase 6: reviewing PR #N — [N] line-level comments + [event type], previewed above. My recommendation: [option]. How do you want to act on these findings?"
-     - `Post line-level review now (Recommended — findings are concrete; the author sees each issue in context)` — batch via `gh api` (Phase 7)
-     - `Post summary only (Recommended when line-level comments would be noisy or the diff is trivial)` — single `gh pr review --body` (Phase 7)
+     - `Post line-level review now (best when findings are concrete — the author sees each issue in context)` — batch via `gh api` (Phase 7)
+     - `Post summary only (best when line-level comments would be noisy or the diff is trivial)` — single `gh pr review --body` (Phase 7)
      - `Fix + push to the PR branch (only if you have write access / it's your own PR — worktree fixes are discarded unless committed + pushed)` — apply fixes in `$WT`, commit, push before Phase 7 cleanup
-     - `Skip — I'll post manually (Recommended when the body needs rephrasing or the PR isn't ready for external review)` — nothing posted
+     - `Skip — I'll post manually (best when the body needs rephrasing or the PR isn't ready for external review)` — nothing posted
    - To tweak the top-level body first, pick a post option and say so (or answer Other) — adjust the body, then proceed.
 
 3. Record the decision; Phase 7 executes it:

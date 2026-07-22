@@ -33,8 +33,8 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 5. Present to user: proposed version + changelog draft + `RELEASE_SHA`.
 6. **Analyze**: changelog completeness (all user-facing changes captured?), semver correctness (breaking changes → major, features → minor, fixes → patch), CI status on `RELEASE_SHA`. **Recommend** confirm when changelog is complete and semver is correct; recommend revise when categorization looks off.
 7. **AskUserQuestion** single-select: "Phase 1 ready: release [version] at [RELEASE_SHA] with [N] changes in the changelog. Proceed?"
-   - `Confirm and proceed (Recommended when changelog is complete, semver is correct, and CI on RELEASE_SHA is green)`
-   - `Revise version or changelog (Recommended when categorization is off, commits are missing, or CI is red)`
+   - `Confirm and proceed (best when changelog is complete, semver is correct, and CI on RELEASE_SHA is green)`
+   - `Revise version or changelog (best when categorization is off, commits are missing, or CI is red)`
    - `Abort — not releasing today`
 
 **Next**: Phase 2 (Bump).

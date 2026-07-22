@@ -86,9 +86,9 @@ proceed plan-only into execution.
 - Present the ranked list, then **AskUserQuestion** single-select:
   "[N] candidates: [ranked list]. Blast radius: [low/med/high]. Dependencies: [none/chain].
   Recommended order: [...]. Approve?"
-  - `Approve — execute in recommended order (Recommended when candidates are independent and blast radius is low)`
-  - `Revise — drop / add / reorder (Recommended when scope or order is off)`
-  - `Reject — keep as analysis only (Recommended when you want the findings without acting)`
+  - `Approve — execute in recommended order (best when candidates are independent and blast radius is low)`
+  - `Revise — drop / add / reorder (best when scope or order is off)`
+  - `Reject — keep as analysis only (best when you want the findings without acting)`
 - A planning request is **not** authorization to execute. **Denial ≠ approval.** If
   `AskUserQuestion` is denied (dontAsk / headless `-p`), render the same question as numbered
   prose and wait for an explicit reply; if no human can answer, **stop at analysis-only** — never

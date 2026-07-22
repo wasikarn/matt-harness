@@ -92,8 +92,8 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body "Emergency fix for ...\n\nRepro: ...\nRollback path: ..." --label "hotfix" --label "P0"
    ```
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?"
-   - `Merge now (Recommended when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge
-   - `Wait for normal CI (Recommended for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later
+   - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge
+   - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later
 5. **Merge via GitHub CLI (server-side only):**
    ```bash
    gh pr merge <n> --admin --squash --delete-branch

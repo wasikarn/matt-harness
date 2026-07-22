@@ -36,8 +36,8 @@ Both paths converge at Phase 4 and share every phase after it verbatim.
 
 **Actions**:
 1. **AskUserQuestion** single-select: "Is this a blank-slate task (need codebase recon + scope clarification first) or an already-scoped change (bug/feature/refactor with a known boundary)?"
-   - `Blank slate (Recommended when the codebase area, extension points, or full scope aren't known yet)` → Path A
-   - `Already scoped (Recommended when you know exactly what needs to change and where)` → Path B
+   - `Blank slate (best when the codebase area, extension points, or full scope aren't known yet)` → Path A
+   - `Already scoped (best when you know exactly what needs to change and where)` → Path B
 2. **Shared scope gate** (applies to both paths): if the description spans multiple independent subsystems, STOP and propose decomposition. Each subsystem gets its own `/ship` run.
 
 **Path A** → continue to Phase 1.

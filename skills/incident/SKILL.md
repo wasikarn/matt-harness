@@ -19,8 +19,8 @@ Run a production incident from first alert to resolution. **Incident response is
 
 3. **Confirm mitigation plan** — Before executing outward-facing / irreversible actions:
    - **AskUserQuestion** single-select: "Severity = [S1/S2/S3/S4], blast radius = [service / subset / none], recommended mitigation = [rollback / kill-switch / circuit breaker / scale / hotfix]. Proceed?"
-     - `Execute mitigation now (Recommended when the user is the incident commander and the blast radius is confirmed)` — proceed to step 4
-     - `Escalate first (Recommended when severity is S1 or blast radius is expanding)` — stop; notify on-call or exec before acting
+     - `Execute mitigation now (best when the user is the incident commander and the blast radius is confirmed)` — proceed to step 4
+     - `Escalate first (best when severity is S1 or blast radius is expanding)` — stop; notify on-call or exec before acting
 4. **Mitigate** — In order of speed. **Note N/A steps explicitly** (e.g., "Rollback: N/A — no recent deploy") rather than skipping silently:
    - Rollback (fastest)
    - Kill-switch / feature flag

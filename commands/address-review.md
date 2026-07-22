@@ -95,9 +95,9 @@ Initial input: $ARGUMENTS
 
 3. **Analyze**: ratio of actionable vs clarify vs wontfix, presence of Critical findings, reviewer authority (maintainer vs peer), and user's past triage pattern from memory. **Recommend** the action that clears the most threads with least back-and-forth.
 4. **AskUserQuestion** single-select: "Phase 2 triage: [N] threads classified ([A] actionable / [C] clarify / [W] wontfix / [O] out-of-scope). Approve these classifications and proceed to implementation?"
-   - `Approve — proceed to Phase 3 (Recommended when categories look correct and the plan clears the most threads with least back-and-forth)`
-   - `Revise — specify which thread(s) are misclassified (Recommended when a thread's category doesn't match the reviewer's intent)`
-   - `Pause — need more context before proceeding (Recommended when the table is incomplete or a reviewer is a required maintainer with unresolved Critical findings)`
+   - `Approve — proceed to Phase 3 (best when categories look correct and the plan clears the most threads with least back-and-forth)`
+   - `Revise — specify which thread(s) are misclassified (best when a thread's category doesn't match the reviewer's intent)`
+   - `Pause — need more context before proceeding (best when the table is incomplete or a reviewer is a required maintainer with unresolved Critical findings)`
 
 **Anti-pattern**: starting Phase 4 implementation on best-guess classifications. Triage is the human/user's call, not yours.
 

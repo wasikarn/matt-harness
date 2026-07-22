@@ -8,9 +8,9 @@ Shared by both entry paths of `/ship` (Path A calls this inside Phase 4 step 1; 
 1. Parse `$ARGUMENTS` — if the user already said "fix" or "bug", classify as bug; if "feature" or "add", classify as feature; if "refactor" or "clean up", classify as refactor.
 2. **Analyze**: keywords in arguments (`fix`, `bug`, `feature`, `add`, `refactor`), scope (single file vs subsystem), presence of existing repro steps or error symptoms. **Recommend** the classification that best fits.
 3. **AskUserQuestion** single-select: "Classify: keywords = [...], scope = [single file / subsystem / multi-subsystem], repro steps = [present / absent]. My recommendation: [classification]. Confirm?"
-   - `Bug fix (Recommended when repro steps or error symptoms are present and the goal is to correct existing behavior)`
-   - `New feature (Recommended when adding new behavior, UI, or capability that didn't exist before)`
-   - `Refactor (Recommended when restructuring code without changing external behavior)`
+   - `Bug fix (best when repro steps or error symptoms are present and the goal is to correct existing behavior)`
+   - `New feature (best when adding new behavior, UI, or capability that didn't exist before)`
+   - `Refactor (best when restructuring code without changing external behavior)`
 4. **Scope check**: if the description spans multiple independent subsystems, STOP and propose decomposition — one `/ship` run per subsystem.
 5. Route:
    - **Bug fix** → `/fix-bug $ARGUMENTS`. Wait for it to complete.

@@ -54,8 +54,8 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
    - **Protection exists** → step 3's force-push just produced a fresh SHA with no completed status checks yet (and possibly dismissed reviews, if the repo dismisses stale reviews on push) → `--admin` is needed to land now instead of waiting for CI to re-run on the new SHA. This is a real bypass of a real policy — say so plainly in step 5, don't fold it silently into a generic confirmation line.
    - If step 2 found `allow_squash_merge: false` → STOP now. `--squash` will fail outright; resolve the strategy mismatch before retrying.
 5. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / N/A — no CI configured], approvals [N], conflicts [none / yes]. Target: [base-branch]. [No branch protection to bypass / Branch protection active — this merge uses --admin to bypass it]. Merge will squash + delete branch. Proceed?"
-   - `Merge now (Recommended when all gates pass and the user is ready to land)` — execute server-side merge
-   - `Abort (Recommended when something changed since validation or the user wants to re-check)` — stop; user can re-run later
+   - `Merge now (best when all gates pass and the user is ready to land)` — execute server-side merge
+   - `Abort (best when something changed since validation or the user wants to re-check)` — stop; user can re-run later
 6. Execute **server-side** merge via GitHub CLI, using step 4's flag decision:
    ```bash
    gh pr merge <n> --squash --delete-branch              # no protection (step 4: 404)

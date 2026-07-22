@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.7] — 2026-07-22
+
+User called in the notation sweep v0.68.6 had deferred: rename the template option annotation
+`(Recommended when X)` → `(best when X)` across the fleet, so the word "Recommended" only ever
+reaches a menu as the runtime marker on a `label`. 44 option strings converted across 13 files —
+`commands/{address-review,fix-bug,post-mortem,ship-merge,ship-release}.md`,
+`commands/ship/{COMMAND.md,references/classify.md}`,
+`skills/{incident,incident/references/hotfix-reference,orchestrate,pr,recursive-improve,review-pr}` —
+via a global two-variant sed (`(Recommended when ` → `(best when `, `(Recommended for ` →
+`(best for `) plus 4 hand-fixed outliers: `review-pr:217`'s marker-with-em-dash form became
+`(best when findings are concrete — …)`; `review-pr:207`'s acknowledge-risk option became
+`(only when findings are false positives or truly cosmetic)` deliberately — calling the risky
+option "best" would be wrong, and it reads as a hard constraint rather than a recommendation; and
+`post-mortem.md`'s two options that already contained their own "best when" clause were reworded
+to `…, especially when …` to avoid a doubled "best for … best when". Two `(Recommended)` instances
+were kept on purpose: `commands/address-review.md:150` (`Leave open (Recommended)`) is an
+unconditional default and is exactly the shape the doctrine now prescribes, and
+`skills/grpc-node-patterns/SKILL.md:56` is a markdown heading, not a menu option. The doctrine
+sentence in `output-styles/staff-eng.md` was generalized to match — it now cites
+`Label (best when X)` "or any equivalent authoring-time 'recommended when' annotation", so it
+can't go stale against the remaining variants (`best for`, `only when`). Verified no hook, gate,
+audit check, or eval fixture asserts any of the old strings. **The construction/adherence split
+still holds and shouldn't be collapsed:** the *template* surface is now construction-safe — the
+word "Recommended" no longer exists in a position the model can paste into a `description` — but
+ad-hoc menus (options composed fresh, no template) remain governed by the doctrine line alone,
+i.e. adherence, with no deterministic gate possible. Half the surface is closed by construction;
+the other half is not. v0.68.6's "deferred" wording in `CHANGELOG.md`/`CLAUDE.md` is left as
+written — it was accurate for that release.
+
 ## [0.68.6] — 2026-07-22
 
 User reported that the `(Recommended)` marker in `AskUserQuestion` menus keeps landing in an

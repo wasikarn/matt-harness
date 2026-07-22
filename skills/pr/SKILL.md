@@ -163,9 +163,9 @@ not a per-file list; GitHub's own "Files changed" tab already shows that>
 Render the **complete** proposed title + body to the user, then confirm with a single
 `AskUserQuestion` before creating — this is the in-flow gate; **do not ask twice**:
 
-- `Create the PR with this body (Recommended when the body reads correctly)`
-- `Edit the body first (Recommended when a section is wrong or thin)`
-- `Cancel (Recommended when this shouldn't be a PR yet)`
+- `Create the PR with this body (best when the body reads correctly)`
+- `Edit the body first (best when a section is wrong or thin)`
+- `Cancel (best when this shouldn't be a PR yet)`
 
 On "Edit", apply the user's change and re-render once; on "Cancel", stop.
 

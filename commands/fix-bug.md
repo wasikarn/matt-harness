@@ -87,8 +87,8 @@ Initial report: $ARGUMENTS
 5. **Ledger entry**: `YYYY-MM-DD HH:MM | Phase 3 | H1 tested | <instrumentation> | <evidence: found/missing> | fallback to H2? <yes/no>`.
 6. **Analyze**: instrumentation evidence strength (did expected signal appear?), falsifiability (would evidence look different if hypothesis were wrong?), fallback count (how many times have we fallen back already?). **Recommend** proceed when evidence is strong and reproducible; recommend reject when evidence is weak or contradicted.
 7. **AskUserQuestion** single-select: "Phase 3 confirmed: hypothesis '[H1 description]' is supported by [evidence summary]. Approve this hypothesis and proceed to fix strategy?"
-   - `Approve hypothesis and proceed to Phase 4 (Recommended when instrumentation evidence is strong and reproducible; H1 is ranked highest by likelihood × cheapness-to-test)`
-   - `Reject — need more investigation (Recommended when evidence is weak, contradicted, or a higher-ranked hypothesis was not tested yet)`
+   - `Approve hypothesis and proceed to Phase 4 (best when instrumentation evidence is strong and reproducible; H1 is ranked highest by likelihood × cheapness-to-test)`
+   - `Reject — need more investigation (best when evidence is weak, contradicted, or a higher-ranked hypothesis was not tested yet)`
 8. Strip instrumentation before Phase 5 — temporary scaffolding only, no permanent log spam.
 
 **Anti-pattern**: "It could be X, Y, or Z" without ranking or testing — that's a list, not a hypothesis. Writing the fix without confirming the hypothesis = fixing the wrong thing.
@@ -106,9 +106,9 @@ Initial report: $ARGUMENTS
 2. Present chosen strategy to the user — surgical change at <file:line> doing X, OR structural change with refactor scope Y.
 3. **Analyze**: scope of buggy code (single function vs cross-module), presence of missing seam/abstraction, regression-test feasibility. **Recommend** the shape with lowest blast radius that still fixes the root cause.
 4. **AskUserQuestion** single-select: "Phase 4: the buggy code is at [file:line] — [scope description]. Which fix shape do you prefer?"
-   - `Surgical fix (Recommended for localized logic errors in a single function; minimal blast radius, fastest to ship)` — proceed with minimal change at the identified location
-   - `Structural fix (Recommended when the bug reveals a missing seam or wrong abstraction; higher blast radius but prevents recurrence)` — delegate to the `refactor-cleaner` agent (`/refactor-clean`) for cross-module refactor
-   - `Reject — need more info (Recommended when the root cause is still unclear or the fix scope is ambiguous)`
+   - `Surgical fix (best for localized logic errors in a single function; minimal blast radius, fastest to ship)` — proceed with minimal change at the identified location
+   - `Structural fix (best when the bug reveals a missing seam or wrong abstraction; higher blast radius but prevents recurrence)` — delegate to the `refactor-cleaner` agent (`/refactor-clean`) for cross-module refactor
+   - `Reject — need more info (best when the root cause is still unclear or the fix scope is ambiguous)`
 
 ---
 
