@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.58.11-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.1-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get 17 specialist agents, 33 bundled workflow skills, and 17 slash commands, plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get a fleet of specialist agents, workflow skills, and slash commands (see [What You Get](#what-you-get) for current counts), plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
 
@@ -54,8 +54,8 @@ kbg:kbg-help
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
 >
-> **Note:** Step 4 is required, not optional. 17 of kbg's own skills and several
-> hooks/commands route to matt-pocock's skills by namespaced name
+> **Note:** Step 4 is required, not optional. Several of kbg's own skills,
+> commands, and hooks route to matt-pocock's skills by namespaced name
 > (`mattpocock-skills:<name>`). A fresh clone/install is not self-contained
 > without them. Installed as a plugin — not vendored, not `gh skill`-installed
 > (migrated off `gh skill` 2026-07-17). Re-sync with
@@ -64,7 +64,7 @@ kbg:kbg-help
 **Uninstall:** `/plugin uninstall kbg`  
 **Disable (keep installed):** set `"kbg@kobig": false` in `settings.json`
 
-After changing any surface: bump both manifest versions → `claude plugin validate --strict .` → commit → push → `claude plugin update kbg@kobig` → restart.
+After changing any surface, follow the release cycle in [Adding a Component](#development) below (bump both manifest versions → validate → commit → push → update → restart).
 
 ---
 
@@ -72,8 +72,8 @@ After changing any surface: bump both manifest versions → `claude plugin valid
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
-| **Agents** | 17 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Skills** | 34 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Agents** | 20 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 17 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
@@ -116,14 +116,17 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | Agent | Role |
 |---|---|
 | `code-architect` | System design, module boundaries, and dependency decisions |
+| `code-implementer` | Detects the stack, loads the matching `kbg:*-patterns` skill, writes the smallest-scope diff, verifies |
 | `backend-architect` | API contracts, service boundaries, data ownership, caching, reliability — the systems-design layer above framework-narrow `*-patterns` skills |
 | `security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks |
 | `code-reviewer` | Quality, correctness, patterns, and missing edge cases |
+| `blind-spot-hunter` | Post-review adversarial hunter for cross-file, framework-behavior, and data-flow blind spots normal review misses |
 | `performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs |
 | `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
 | `silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns |
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
 | `requirement-analyst` | Senior-level requirement analysis of a ticket/spec/PRD — ambiguities, missing ACs, edge cases, readiness verdict |
+| `plan-reviewer` | Adversarial review of an implementation plan before code exists — requirement coverage, risk, edge cases, testability |
 | `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Dart/Flutter widgets, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
 | `summarizer` | Clarity/compression specialist — condenses long content into filler-free prose for any audience |
@@ -155,8 +158,8 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 17 specialist subagents (.md each)
-├── skills/               # 33 workflow skills (SKILL.md per directory)
+├── agents/               # 20 specialist subagents (.md each)
+├── skills/               # 34 workflow skills (SKILL.md per directory)
 ├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
@@ -234,7 +237,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 
 | Source | License | Adopted |
 |---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | 21 skills, installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
 | kbg-native | MIT | 34 skills · 20 agents · 17 commands |
