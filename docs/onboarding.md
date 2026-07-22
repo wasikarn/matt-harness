@@ -8,8 +8,8 @@ in-context, no scroll.
 ## What this repo is (1 sentence)
 
 A personal Claude Code harness delivered as an installable plugin (`kbg@kobig`):
-12 subagents, 46 skills, 17 commands, governance hooks, and mandatory doctrine
-injection.
+skills, agents, commands, governance hooks, and mandatory doctrine injection —
+see `BOUNDARY.md` below for the live count.
 
 ## The 3 doctrine files (read in this order)
 

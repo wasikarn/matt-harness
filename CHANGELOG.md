@@ -5,6 +5,73 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.0] — 2026-07-22
+
+User-requested: the `plan-reviewer` build (v0.67.0) shipped a stale hand-maintained
+fleet-count string for the 6th traceable time in this repo's history ("19-agent
+fleet", "11/19", "1/19" — see v0.67.0's own entry below) — each caught by a
+*different* ad-hoc mechanism (a proxy smoke test, a real agent dispatch, a manual
+grep sweep), never by a systemic fix. The user asked to close this structurally:
+"auto-derive the counts." `advisor()` reframed the request before design started —
+the recurrence is a *detection* failure, not a fix-effort failure (every instance
+was a one-line fix); the real gap is that nothing runs automatically to catch it.
+That produced two separate fixes rather than one generator: (1) a new
+harness-audit check (48, WARN) against an explicit, named list of doc locations
+that carry a live fleet count — deliberately not a general "any N-agent-shaped
+string" scanner, which would false-positive on every changelog entry and dated
+origin note (confirmed pattern from 3 sweeps this session); (2) for the genuinely
+fragile spots — ratios whose denominator drifts independently of the fact a reader
+actually cares about — deleting the number instead of maintaining it, across 9
+locations in `docs/agent-tool-patterns.md`, `docs/agent-authoring-conventions.md`
+(3 spots), `docs/agent-voice-extension.md`, `docs/common-mistakes.md`,
+`docs/command-authoring-conventions.md` (2 spots — the second `advisor()` catch
+below), and `docs/onboarding.md` (also the second-pass catch). One scoped judgment
+call flipped during the first `advisor()` review:
+`agent-authoring-conventions.md`'s "19/20 agents carry a Prompt Defense Baseline"
+ratio was initially going to be kept and tracked as a 7th check location, but
+`advisor()` pointed out the qualitative form ("every agent except `ideate-critic`")
+carries the same information while staying true as the fleet grows — reworded
+instead, keeping the check to two simple primitives instead of a third, more
+complex agents-with-heading computation. A small sync script
+(`skills/inventory/scripts/sync-fleet-counts.sh`, mirroring the existing
+`inventory-boundary.sh` precedent) auto-writes the structured "N skills · M agents
+· P commands" spots — scoped to anchor-targeted line replacement, not a file-wide
+regex, since README.md carries a *different* project's own matching-shaped line a
+few lines away from kbg's own. Running it live found and fixed a genuinely stale
+count neither this session's earlier grep sweeps nor the plan-reviewer build's own
+verification passes had caught: README.md's snapshot line and comparison-table row
+both still said "33 skills" against a live count of 34. A real bug surfaced during
+self-testing check 48: an anchor starting with `-` (`"-agent survivor set"`) was
+silently parsed by `grep` as an option flag rather than a search pattern — fixed by
+adding `--` before the pattern in both the check and the sync script. A second
+`advisor()` pass, called before declaring done, caught that every sweep so far had
+been agent-shaped only (`N agents?`, `/19`, `/20`) — it asked for one *positive*
+sweep of every live "34 skills"/"17 commands"/"20 agents" token across all docs to
+close the skills/commands axis the stale-pattern sweeps structurally couldn't
+cover. That sweep found 3 more real instances: `docs/onboarding.md` (the
+first-page "First 10 minutes" cold-start doc) still said "12 subagents, 46 skills,
+17 commands" — a second `advisor()` pass caught that force-fitting this one
+narrative sentence into the tracked "N skills · M agents · P commands" template
+(to make it auto-writable) read worse than the plain comma-series it started as,
+so it was reworded to prose instead and pointed at `BOUNDARY.md` for the live
+count, matching the reword-not-track treatment used everywhere else prose-only —
+not added as a tracked location; and `docs/command-authoring-conventions.md`
+carried two more fragile ratios, one of which was *currently wrong* ("13 of 17
+commands... flat files" against a live count of 15) — both reworded (the second,
+"9 of 17... already do this," already named all 9 commands in a parenthetical,
+making the fraction pure redundancy). Not built: a shared `lib/fleet-counts.sh`
+(the counting logic is 3-4 lines; duplicating it twice is cheaper than a sourcing
+dependency at this size) or auto-write for the 2 prose-only agent-count locations
+(`skills/orchestrate/reference.md`, `docs/agent-voice-extension.md`) — one-off
+phrasings, not a repeated template, so the check alone backstops them; its WARN
+message now names the sync script directly so a fix stays one command, not a
+hand-edit. Check 48 tracks 4 structured triple locations (`plugin.json`,
+`marketplace.json`, README.md ×2) plus the 2 prose-only agent-count spots — its
+own location list is itself hand-maintained, the same defect class one level up;
+a universal scanner was rejected for the false-positive reasons above, so the real
+mitigation for new prose going forward is the reword-not-track convention, not a
+closed detection guarantee.
+
 ## [0.67.0] — 2026-07-22
 
 User-requested: kbg-harness had a hole between "interrogate the requirement"

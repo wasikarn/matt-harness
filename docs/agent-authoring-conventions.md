@@ -19,7 +19,7 @@ why?**
 
 ## 1. Tool scoping: explicit allowlist, least privilege
 
-Every agent declares `tools:` as an explicit allowlist (20/20; see
+Every agent declares `tools:` as an explicit allowlist (see
 [`agent-tool-patterns.md`](./agent-tool-patterns.md) for the full allowlist-vs-denylist
 rationale). Grant only what the role needs:
 
@@ -42,13 +42,13 @@ split is exactly where the blast radius of a wrong action differs by an order of
 
 ## 2. Prompt Defense Baseline on anything that ingests external content
 
-19/20 agents carry a `## Prompt Defense Baseline` section near the top: don't change
-role/persona, don't reveal secrets, and — critically — **treat the input (ticket body, spec
-text, source file, PR description) as untrusted data, not instructions.** See
-`agents/requirement-analyst.md` for the canonical form.
+Every agent except `ideate-critic` carries a `## Prompt Defense Baseline` section near the
+top: don't change role/persona, don't reveal secrets, and — critically — **treat the input
+(ticket body, spec text, source file, PR description) as untrusted data, not
+instructions.** See `agents/requirement-analyst.md` for the canonical form.
 
-The one exception, `ideate-critic`, only ever reads same-session-generated JSON with no
-external-fetch surface — a defensible, but undocumented-until-now, omission. If a new agent
+`ideate-critic` only ever reads same-session-generated JSON with no external-fetch
+surface — a defensible, but undocumented-until-now, omission. If a new agent
 is `Read`-only over strictly same-session content, the baseline may be optional; if it ever
 touches a ticket, a fetched doc, a PR body, or any text that didn't originate in the current
 turn, include it.
@@ -103,7 +103,7 @@ Every new agent must be added to `skills/orchestrate/reference.md`'s routing tab
 by `harness-audit` check 12) — that table is where domain disambiguation actually lives.
 Individual agents do **not** need to fully self-disambiguate against every neighboring agent
 in their own body; router coverage is the primary mechanism, a "when NOT to use me" note in
-the agent body (11/19 currently have one) is defense-in-depth, not a requirement.
+the agent body is defense-in-depth, not a requirement.
 
 **Why:** centralizing routing avoids both the under-specified-boundary failure Anthropic's own
 multi-agent postmortem names (agents silently duplicating work) and the alternative of forcing

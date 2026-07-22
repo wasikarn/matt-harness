@@ -25,7 +25,7 @@ auto-invocation both work on a plain command file. Don't reach for a directory, 
 `references/` folder, or a skill conversion "to get NL invocation" or "to get
 `allowed-tools`" — a flat file already has both.
 
-**Why:** 13 of 17 commands in this fleet are flat files and need nothing more. A
+**Why:** most commands in this fleet are flat files and need nothing more. A
 directory only earns its cost when the content genuinely doesn't fit in one file.
 
 ## 2. Directory-form is real, but rare — and has one hard rule
@@ -58,7 +58,7 @@ has to be enforced by the author (no frontmatter), not assumed from directory po
 Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-reason:` on
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
-gates a done-declaration. 9 of 17 commands already do this
+gates a done-declaration. Several commands already do this
 (`ship`, `ship-merge`, `ship-release`, `fix-bug`, `post-mortem`, `address-review`,
 `implementation-compliance-audit`, `ask-kbg`, `ideate-search`). `harness-audit` checks 30
 (reason presence, WARN) and 44 (`ship-merge` specifically, CRIT) enforce this.
