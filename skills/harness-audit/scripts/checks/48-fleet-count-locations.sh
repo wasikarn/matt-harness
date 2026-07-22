@@ -21,10 +21,10 @@
 #
 # Repo-identity gate: CLAUDE_DIR resolves to whichever checkout audit.sh runs
 # against (dotfiles-nested vs. this flat plugin repo), and this check ships
-# inside the plugin cache. A missing file is already handled per-location
-# below, but a file that EXISTS in another valid context without ever
-# carrying the anchor would false-WARN at anyone not running kbg-harness — so
-# gate the whole fragment on this being the real kbg-harness checkout.
+# inside the plugin cache. A file that EXISTS in another valid context
+# without ever carrying the anchor would false-WARN at anyone not running
+# kbg-harness — so gate the whole fragment on this being the real
+# kbg-harness checkout.
 _is_kbg=0
 if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]; then
   [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "kbg" ] && _is_kbg=1
@@ -43,7 +43,10 @@ if [ "$_is_kbg" = "1" ]; then
   # which grep would otherwise parse as an option.
   _check_triple() {
     local f="$1" anchor="$2" line
-    [ -f "$f" ] || return 0
+    if [ ! -f "$f" ]; then
+      warn "fleet-count check 48: tracked file not found: ${f#"$CLAUDE_DIR"/} — location list may be stale (file moved/deleted)"
+      return 0
+    fi
     line=$(/usr/bin/grep -F -- "$anchor" "$f" 2>/dev/null || true)
     if [ -z "$line" ]; then
       warn "fleet-count check 48: anchor '$anchor' not found in ${f#"$CLAUDE_DIR"/} — location list may be stale (file moved/reworded)"
@@ -59,7 +62,10 @@ if [ "$_is_kbg" = "1" ]; then
   # agent count (not the full skills/agents/commands triple).
   _check_agent_count() {
     local f="$1" anchor="$2" line
-    [ -f "$f" ] || return 0
+    if [ ! -f "$f" ]; then
+      warn "fleet-count check 48: tracked file not found: ${f#"$CLAUDE_DIR"/} — location list may be stale (file moved/deleted)"
+      return 0
+    fi
     line=$(/usr/bin/grep -F -- "$anchor" "$f" 2>/dev/null || true)
     if [ -z "$line" ]; then
       warn "fleet-count check 48: anchor '$anchor' not found in ${f#"$CLAUDE_DIR"/} — location list may be stale (file moved/reworded)"

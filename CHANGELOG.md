@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.1] — 2026-07-22
+
+`/kbg:implementation-compliance-audit` run against v0.68.0's own commit (`48e621a`)
+— 4 fresh-context verifiers, each given only its slice of the approved plan plus
+the pinned commit range, no access to the implementer's own narrative or
+pre-declared deviation list. Result: 27/27 requirements CONFORMS, both pre-declared
+deviations (reword scope expanded from 6 to 9 locations; the repo-identity gate
+re-verified after a mid-session revert) came back independently confirmed by
+verifiers who had no visibility into that pre-declaration — a genuine falsification
+pass, not a rubber stamp. One pre-declared gap was real and unremediated: `claude
+plugin update kbg@kobig` was never run after v0.68.0 shipped, confirmed live by
+listing the plugin cache directory (topped out at v0.67.0) — fixed by running it
+now. One new, independently-discovered gap survived to this version: the verifier
+auditing check 48 itself found that `_check_triple`/`_check_agent_count` silently
+returned clean (0 findings) if a tracked file was deleted or renamed, contradicting
+the check's own stated design intent ("fail loud... instead of silently no-op'ing")
+— a moved-anchor-within-a-file failed loud, but a moved/deleted *file* did not.
+Fixed: both helpers now WARN by name when the tracked file itself is missing,
+verified live by temporarily moving `README.md` aside and confirming 2 WARNs fire
+(one per anchor), then restoring it. A second, more theoretical gap the same
+verifier flagged — an anchor matching twice within one file could let a correct
+first occurrence mask a stale second — is currently unreproducible (every anchor
+appears exactly once today) and was left as a documented, accepted risk rather
+than built against speculatively (Rule 2). A third verifier hit a one-off, fully
+unreproducible anomaly (a single stale-count sync run wrote "99 skills" instead of
+"34," self-corrected on 6 immediate re-runs including a `bash -x` trace) — treated
+as environmental noise from four verifiers running concurrent git/bash commands
+against the same live checkout, not a script defect, since the underlying `find`
+count was independently confirmed stable and correct in isolation.
+
 ## [0.68.0] — 2026-07-22
 
 User-requested: the `plan-reviewer` build (v0.67.0) shipped a stale hand-maintained
