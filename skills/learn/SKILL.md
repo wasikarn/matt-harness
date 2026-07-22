@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Sweep a session transcript for cross-turn patterns (repeated workflows, re-litigated decisions) ambient auto-memory misses; batch-gate via AskUserQuestion. Don't use for single known memories or self-improvement."
+description: "Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories."
 ---
 
 # Skill: learn

@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.10] — 2026-07-23
+
+User asked to "improve all skills" via `/skill-creator:skill-creator`. Running that skill's literal
+per-skill methodology (interview → test prompts → paired subagent runs → benchmark → eval viewer)
+across all 35 skills would mean 35 separate eval loops — most of them (the `*-patterns` reference
+skills) don't even fit skill-creator's own guidance for when an eval loop is worth it. Ran
+`kbg:harness-audit` instead — cheap, deterministic, read-only — and asked the user to pick a scope
+from the real findings rather than guessing. They picked the cheap structural pass.
+
+Fixed the 3 real doctrine gaps the audit caught: `learn`'s description was missing both a "Use
+when" trigger clause and a "Don't use for" negation clause; `add-surface` and `claude-md-health`
+opened with a generic verb (matt-pocock doctrine wants a coined leading term) and ran over the
+25-word cap. Trimming them to fit the cap first dropped the negation clause by accident — a second
+audit pass caught that regression before it shipped. Also regenerated both `BOUNDARY.md` copies
+(kbg-harness root and the dotfiles-repo mirror `HARNESS.md` points at) — the audit's own drift
+check flagged both stale against the fleet after the description edits.
+
+Left two categories of finding unfixed, on purpose: `orchestrate` (33K chars) and `review-pr` (46K
+chars) both trip the audit's 20K-char SKILL.md-body heuristic, but a chunk of what's inline in
+`orchestrate` is load-bearing safety content (the `--permission-mode plan` warning, the tathep
+hard-deny privacy tier) that shouldn't move to a reference file a session might not read before
+delegating — moving it just to satisfy a char-count heuristic would trade a real safety property
+for a cosmetic pass. The cumulative skill+command description budget (9297 chars against a
+conservative 8000-char ceiling) needs trims across ~15-20 more descriptions that the per-skill
+doctrine check never flagged individually — a distinct, larger editorial pass, not a byproduct of
+these 3 fixes. Both are INFO/soft-WARN findings that the audit's own comments already flag as
+advisory, not gating; flagged back to the user as a scoped follow-up rather than forced through in
+this pass.
+
 ## [0.68.9] — 2026-07-22
 
 User added the ordering half of the rule they'd left out across v0.68.6–.8: the recommended option

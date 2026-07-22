@@ -1,6 +1,6 @@
 ---
 name: claude-md-health
-description: "Audit a CLAUDE.md/doctrine file against 3 health checks — readable-by-behavior, findable, fix-once (no cross-file staleness). Use when a governance doc has grown or gone stale. Don't use for content-completeness (claude-md-management:claude-md-improver)."
+description: "Scan a CLAUDE.md/doctrine file against 3 health checks (readable-by-behavior, findable, fix-once). Use when a governance doc has grown stale. Don't use for content-completeness (claude-md-management:claude-md-improver)."
 ---
 
 # CLAUDE.md Health Audit
