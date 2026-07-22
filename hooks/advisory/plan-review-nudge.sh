@@ -18,6 +18,18 @@
 # no need to re-read the plan file (which gets overwritten on the next
 # plan-mode cycle in the same session, see cc-plan-mode-single-file-per-session
 # memory), and this hook never quotes the plan text back anyway.
+#
+# Known ceiling (kbg:plan-reviewer retroactive review, 2026-07-22): the test
+# suite fixtures the same tool_response.plan field this script reads, so a
+# future Claude Code version silently renaming/relocating that field would
+# make both the hook AND its test go quiet with no error signal -- the exact
+# class of silent regression this hook exists to prevent, one layer deeper.
+# No fix possible from inside this repo (the field is CC's contract, not
+# ours) -- re-run the live-fire smoke test (approve a real plan, confirm the
+# nudge appears) after any Claude Code version bump. The reject/cancel-never-
+# fires claim above is doc-verified only, not empirically tested against a
+# real rejection -- low-impact if wrong (a spurious advisory nudge, never a
+# wrong action), noted here rather than built against speculatively.
 set -uo pipefail
 
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell

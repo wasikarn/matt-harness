@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.4] — 2026-07-22
+
+Retroactive `kbg:plan-reviewer` dispatch against v0.68.3's own build plan — the plan predated
+the hook's existence (chicken-and-egg: the hook that would have nudged this review didn't exist
+until the plan it should have reviewed was already approved), so it never got the pre-code review
+`decision-doctrine-map.md`'s own "Plan → implement" row calls for on a consequential plan. Verdict:
+ready-with-caveats, 82% confidence, 0 blockers. One real Medium finding, fixed: `test-plan-review-nudge.sh`
+fixtures the exact same `tool_response.plan` field the hook itself reads, so a future Claude Code
+version silently renaming that field would make both the hook and its test go quiet with zero error
+signal — the identical structural flaw already documented as a prior real incident in
+`test-flow-nudge.sh`'s own comments (`tool_input` vs top-level `prompt`, shipped green, never fired
+in production). No code fix is possible from inside this repo (the field is Claude Code's contract,
+not ours) — added a header comment on `plan-review-nudge.sh` naming the ceiling and pointing at the
+one available mitigation: re-run the live-fire smoke test after any Claude Code version bump. One Low
+finding (reject-path doc-verified only, not empirically tested against a real rejection) noted in the
+same comment rather than built against speculatively — a spurious nudge on a wrong-case fire is
+low-impact for an advisory-only hook. One Low finding (a Bookkeeping-list documentation gap in the
+original plan text, `BOUNDARY.md`'s regen step was actually done, just not listed) was cosmetic only,
+no action taken. Five decoys cleared on inspection: malformed-JSON risk to the whole hook fleet (ruled
+out — `plugin validate --strict` clean, all 9 pre-existing entries intact), plan-text-injection into
+the emitted nudge (ruled out — the hook only checks `plan` for truthiness, never interpolates it),
+missing `tool_name` re-check (ruled out — matches the fleet's single-matcher convention, only
+`verifier-protect.sh` re-checks because it's wired under two matchers), a "missing harness-audit
+check" (ruled out — check 11 already covers any unwired hook generically), and nudge fatigue (already
+weighed and accepted in the v0.68.3 plan itself, and fires less often than `flow-nudge.sh` already does).
+
 ## [0.68.3] — 2026-07-22
 
 User-requested: a deterministic trigger for dispatching `kbg:plan-reviewer` after a plan is
