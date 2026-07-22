@@ -55,6 +55,18 @@ fix" doctrine rung or nudge branch — `kbg:silent-failure-hunter` already exist
 incident demands it; named in the new map section with a stated revisit trigger instead of
 built speculatively.
 
+## [0.66.1] — 2026-07-22
+
+The v0.66.0 commit (`a8c1791`) shipped bare with no version bump for the audit's
+own remediation — the compliance audit's fixes landed on disk and in the commit,
+but `claude plugin update` had already synced the plugin cache to `v0.66.0` once
+*before* the audit caught and fixed the deviation, and a same-version re-run is a
+documented no-op (`plugin-cache-same-version-stale-trap`) — confirmed live:
+`~/.claude/plugins/cache/kobig/kbg/v0.66.0/hooks/advisory/flow-nudge.sh` still had
+the deviated 5th-route bullet after the fix was committed. This version exists
+purely to actually ship what that commit already wrote — same pattern, same fix,
+as v0.62.1. No content change beyond the version bump.
+
 ## [0.65.0] — 2026-07-20
 
 Deep-research + plan-mode critique of `skills/` (full internal read of all 34 skill
