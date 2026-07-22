@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.9] — 2026-07-22
+
+User added the ordering half of the rule they'd left out across v0.68.6–.8: the recommended option
+must always be **first** in the list, not just marked. Same structure as v0.68.6 — the
+`AskUserQuestion` tool contract already says "make that the first option in the list", and it was
+still being missed, so the fix again targets what overrides it rather than restating it. The
+override here is order inertia: every conditional template in the fleet lists its options in a
+fixed authoring order (escalating scope, cheapest-first, and so on), and the option that actually
+earns the marker at runtime is rarely the one the template happens to list first — so following
+the template's order silently violates the contract.
+
+One sentence added to `output-styles/staff-eng.md`, adjacent to the marker-placement rule it
+belongs with: the marked option is always listed first, *whatever order the surrounding template
+or your own drafting happened to put it in*, and in a `multiSelect` menu the marked options lead.
+The "whatever order the template put it in" clause is the load-bearing part — it names the
+inertia directly instead of stating the rule in the abstract.
+
+No template edits: the conditional templates cannot pre-order what they cannot pre-resolve
+(v0.68.6's finding), and a check of the fleet's only hardcoded marker — `commands/address-review.md:150`
+(`Leave open (Recommended)`) — confirmed it is already first in its own list, so nothing shipped
+is in conflict. Same ceiling as the three prior releases: model adherence, no deterministic gate
+possible.
+
 ## [0.68.8] — 2026-07-22
 
 User asked how the v0.68.6/.7 marker rule applies to a `multiSelect` (checkbox) menu, naming
