@@ -5,6 +5,40 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.11] — 2026-07-23
+
+Batch 0 of the multi-session skill-improvement plan (`docs/plans/skill-improvement-batches.md`):
+the description-budget pre-pass, run before any `/skill-creator` batch starts so later
+description-optimizer passes have headroom instead of re-fighting the same char ceiling per skill.
+
+Surveyed the ~28 longest skill/command descriptions fleet-wide for cuttable characters. Nearly all
+of it turned out to already be dense, doctrine-required text sitting at or near the 25-word cap —
+trigger phrases, Thai translations, cross-reference skill names that check 05's negation/trigger
+regexes and matt-doctrine both require. Cutting further would trade real trigger/disambiguation
+signal for a WARN, not a real improvement — `advisor()` called this out directly as optimizing the
+proxy metric instead of what it stands for. Found and applied the one genuine cut that cost nothing:
+`compliance-audit`'s redundant `, before declaring it done` clause (already implied earlier in the
+same sentence). Fleet description total: 9297 → 9271 chars.
+
+Check 47's WARN does not clear — the original target was under 8000 chars — and is accepted as-is
+rather than chased further. The check's own header comment already flags 8000 as the conservative
+end of an unreconciled range (empirical ceilings run ~15-16K); 9271 sits at roughly 60% of that
+higher figure, nowhere near the actual harm the check exists to catch (a description silently
+dropping out of context). Lowering the threshold itself was explicitly ruled out as a way to close
+this batch — that would be editing the verifier because the target is hard to hit, and it's a
+protected-path change needing its own justification, not a side effect of a pre-pass batch.
+
+Also shipped a real Critical gap surfaced by a `kbg:plan-reviewer` adversarial pass on this same
+plan: `score-decision`'s `disable-model-invocation` safety flag had no CRIT guard against being
+silently dropped — only `recursive-improve` did, via check 39. Added check 49 (mirrors 39's shape),
+known-bad/known-good fixtures, and a new self-test block in `test-harness-audit.sh`; bumped the
+audit's split-integrity guard from 48 to 49 fragments. Verified live: bad fixture fires CRIT, good
+fixture stays silent.
+
+The plan document itself was updated to record this target-vs-outcome deviation explicitly — the
+original "clears check 47" done-criterion is superseded by the outcome above, not silently declared
+met.
+
 ## [0.68.10] — 2026-07-23
 
 User asked to "improve all skills" via `/skill-creator:skill-creator`. Running that skill's literal

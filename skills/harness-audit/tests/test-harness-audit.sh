@@ -4,12 +4,15 @@
 # The audit's own fragment integrity guard catches LOST checks, not SILENT
 # checks. The audit has shipped silent gaps before (v0.35.5 found real ones), so
 # this pairs each known-bad fixture with a clean one and asserts the matching
-# check FIRES on bad and is SILENT on good. Two checks only (Rule 2 — two
-# fixtures cover the highest-silence-risk checks and prove the self-test
-# mechanism; a full fleet-wide fixture suite is speculative):
+# check FIRES on bad and is SILENT on good. Three checks (Rule 2 — fixtures
+# cover the highest-silence-risk checks and prove the self-test mechanism; a
+# full fleet-wide fixture suite is speculative):
 #   39 — recursive-improve disable-model-invocation flag (CRIT)
 #   40 — dead `kbg:` reference doc-rot (WARN; exit stays 0 — asserted via the
 #        Warnings line, not the exit code)
+#   49 — score-decision disable-model-invocation flag (CRIT; added 2026-07-23
+#        alongside check 49 itself — the other safety-load-bearing instance of
+#        the flag, previously unguarded)
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
@@ -62,6 +65,20 @@ if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
   ok "check-40 good fixture silent"
 else
   bad "check-40 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Check 49 — CRIT must fire when the flag is missing, stay silent when present.
+run_check 49 "$FIX/check-49-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-49 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-49 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 49 "$FIX/check-49-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-49 good fixture silent"
+else
+  bad "check-49 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
 echo ""
