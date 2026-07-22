@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.6] — 2026-07-22
+
+User reported that the `(Recommended)` marker in `AskUserQuestion` menus keeps landing in an
+option's `description`, where it often sits at the tail of a paragraph and is hard to spot — they
+asked for it in the option title instead. The `AskUserQuestion` tool contract already says
+"add `(Recommended)` at the end of the label", so a second rule saying the same thing would have
+been weak leverage; `advisor()` pushed the diagnosis to what was *overriding* it. Two override
+sources found: (1) `output-styles/staff-eng.md`'s own decision-question bullet pushed "one-line
+consequence … in its `description`" and said nothing about marker placement, steering the marker
+into the description; (2) ~40 template option strings across 12 shipped skills/commands written as
+`` `Label (Recommended when X)` `` — the model splits that into a short `label` plus a
+`description` carrying the marker, i.e. the bug by construction. Fixed (1) directly, and covered
+(2) in the same sentence with a rendering rule that names the notation: a `Label (Recommended when
+X)` string is authoring-time selection guidance, not literal option text — resolve which condition
+holds now, render that one option's `label` as `Label (Recommended)`, move the reason to its
+`description`. A second `advisor()` pass reconciled the initial "also rewrite the templates"
+advice against evidence it didn't have: those strings are conditional *by design* (whether
+`Parallel` is recommended depends on the runtime diff), so the marker cannot be pre-placed at
+authoring time — placement is inherently a runtime decision, making the single doctrine rule the
+coherent fix rather than a dodge. **Ceiling, stated plainly:** this is model adherence, not
+enforcement — no deterministic gate is possible for it. For ad-hoc menus (the common case, fires
+every session) the rule is the whole fix; for the template-driven menus the literal
+`(Recommended when X)` text still sits in the trap position, overridden by adherence only. The
+construction-level fix — a notation sweep renaming `(Recommended when X)` → `(best when X)` across
+~40 spots so the runtime rule is the sole emitter of the word — is deferred per Rule 2, not done
+speculatively.
+
 ## [0.68.5] — 2026-07-22
 
 User asked whether `/kbg:implementation-compliance-audit` (31 chars, the longest command name in
