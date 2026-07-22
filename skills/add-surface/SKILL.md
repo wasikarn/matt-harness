@@ -1,6 +1,6 @@
 ---
 name: add-surface
-description: Add or remove a plugin surface (agent, skill, command, hook, output-style, theme) in kbg-harness. Use when creating a new file in one of those auto-discovered directories.
+description: Add or remove a plugin surface (agent, skill, command, hook, output-style, theme) in kbg-harness. Use when creating a new file in one of those auto-discovered directories. Don't use for editing an existing surface's content.
 ---
 
 **Auto-discovered directories:** `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`.
