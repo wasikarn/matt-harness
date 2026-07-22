@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.2] — 2026-07-22
+
+`/kbg:claude-md-health` run against this repo's own `CLAUDE.md`. Tests 1/2 (readable,
+findable) passed clean. Test 3 (fix-once / doc-vs-reality) found the most significant
+gap of any pass this session: `add-surface`'s real skill file lived at
+`.claude/skills/add-surface/SKILL.md`, not the documented flat `skills/add-surface/SKILL.md`
+— confirmed via `git ls-files`, a live filesystem check, and the identical misplaced path
+in the shipped plugin cache. Every harness-audit check that counts/validates skills (01, 02,
+05, `audit.sh`'s own frontmatter loop) scans `$CLAUDE_DIR/skills/*` only, so this skill had
+been silently excluded from the "34 skills" figure this session's own v0.68.0/v0.68.1 work
+tracked everywhere — the true live count was 35 the whole time. Fixed: `git mv`'d the skill
+into place, added a missing negation clause to its description (check 05 would have WARNed
+on it the moment it entered the scanned directory for the first time), fixed 4 dangling
+path references (`CLAUDE.md`, `docs/command-authoring-conventions.md` ×3), re-ran
+`sync-fleet-counts.sh` to propagate 34→35 across `plugin.json`/`marketplace.json`/README.md,
+and regenerated `BOUNDARY.md`. Three smaller Test-3 findings, also fixed: a dead pointer
+("21 of his skills installed... see README.md Quick Start") whose target no longer states
+that number (removed in v0.68.0/.1's own README pass, for the same reason — unreconciled);
+2 stray local git branches (`worktree-agent-*`, dangling refs from an old worktree-isolated
+run, no live worktree attached, confirmed fully-merged and safe-deleted) contradicting the
+Branching model section's "single branch: develop only" claim; and a stale dated ratio
+("2/33 native skills carry `## Design checks`") refreshed to today's live count (2/35, same
+2 carriers). One audit finding was a false positive I caught and retracted before proposing
+a fix: `orchestrate/SKILL.md`'s reference to `mattpocock-skills:wayfinder` looked like a dead
+skill reference at first grep, but `wayfinder` is real — confirmed live in the installed
+mattpocock-skills plugin cache. Bonus, outside the repo: a stale memory file
+(`disable-model-invocation-criterion`) claiming "2 skills + 8 commands" was found via the
+audit's own memory-sweep step and corrected to the live count (9 commands, missing
+`ship/COMMAND.md` from the prior tally).
+
 ## [0.68.1] — 2026-07-22
 
 `/kbg:implementation-compliance-audit` run against v0.68.0's own commit (`48e621a`)

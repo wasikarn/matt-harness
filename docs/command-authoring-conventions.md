@@ -8,7 +8,7 @@
 `disable-model-invocation` for irreversible actions, fresh-context verifiers), but found
 one real defect no doctrine had ever named: `commands/`'s directory-form loader doesn't
 distinguish a command's own entrypoint from its private reference files. The only prior
-guidance (`.claude/skills/add-surface/SKILL.md`) said "follow the pattern of an existing
+guidance (`skills/add-surface/SKILL.md`) said "follow the pattern of an existing
 component in the same directory" — which is exactly how the defect spread from `ship` to
 `ideate`. This doc is what the fleet actually needs to get right, made explicit.
 
@@ -106,7 +106,7 @@ command delegates to, per `agent-authoring-conventions.md`).
    completeness), 20 (description length + duplicate-surface), 30 (disable-model-invocation
    reason), 46 (reference-file frontmatter leak) all touch new commands directly.
 6. Bump `.claude-plugin/plugin.json` + `marketplace.json` per
-   `.claude/skills/add-surface/SKILL.md`'s standard procedure.
+   `skills/add-surface/SKILL.md`'s standard procedure.
 
 ## Cross-references
 
@@ -115,7 +115,7 @@ command delegates to, per `agent-authoring-conventions.md`).
 - [`agent-authoring-conventions.md`](./agent-authoring-conventions.md) — the same kind of
   doc for `agents/`; several principles here (grow on proven need, dead-field hygiene)
   mirror it directly.
-- `.claude/skills/add-surface/SKILL.md` — the mechanical add/remove/bump procedure for
+- `skills/add-surface/SKILL.md` — the mechanical add/remove/bump procedure for
   any auto-discovered surface, commands included.
 - `skills/harness-audit/scripts/checks/` — 06, 20, 30, 44, 46 are the mechanical checks
   over this doc's §2–§4. As with the agent doc, there is deliberately no structural

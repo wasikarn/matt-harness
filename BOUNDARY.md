@@ -50,6 +50,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 ## Skills — Repo
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
+| add-surface | Add or remove a plugin surface (agent, skill, command, hook, output-style, theme) in kbg-harness. Use when creating a new file in one of those auto-discovered directories. Don't use for editing an existing surface's content. | inline | auto |
 | adonisjs-patterns | AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks. | inline | auto |
 | agent-architecture-audit | Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review. | inline | auto |
 | backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Express/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends. | inline | auto |
@@ -115,7 +116,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-22T03:15:16Z_
+_Generated: 2026-07-22T05:18:40Z_
 
 ---
 
