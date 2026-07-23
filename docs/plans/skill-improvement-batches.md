@@ -26,7 +26,7 @@ where it actually left off before re-running anything.
 | B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☑ done (1 real fix, 4 no-change) | 2026-07-23 |
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☑ done (2 real fixes + 3 dead-ref fixes) | 2026-07-23 |
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☑ done (0 new edits — see note below) | 2026-07-23 |
-| C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started (latency-critical-systems already had the A3-fmt fix; the rest still open) | |
+| C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☑ done (1 real fix, 5 no-change) | 2026-07-23 |
 
 ## Context
 
@@ -431,6 +431,31 @@ was no cross-reference surface for the `security-review`-style dead-reference bu
 full read of each (`langchain-langgraph-patterns`, `effect-ts-patterns`, `grpc-node-patterns`,
 `tauri-v2-patterns`) found nothing to fix. Reviewed, no change to any of the 4. No version bump, no
 CHANGELOG entry, no CLAUDE.md bullet — matches B2's precedent for a genuinely empty batch.
+
+**C3 outcome (2026-07-23) — final batch, closes the entire plan:** lightest pass, continued
+autonomously per the session goal. `latency-critical-systems` already had its completion criterion
+from A3-fmt; reread confirmed no cross-reference surface (no dead-reference risk). The other 5 were
+read in full:
+
+- **`drizzle-patterns`, `hono-patterns`, `adonisjs-patterns`, `fastapi-patterns`**: all already
+  doctrine-complete (Verify-before-use + Common Pitfalls/Anti-Patterns) and carry no
+  "Related"/"See Also" section — no dead-reference surface. Reviewed, no change to any of the 4.
+- **`cost-aware-llm-pipeline`**: doctrine-complete (`## Done when` + Anti-Patterns), but found a
+  dead reference cited twice — `` `claude-api` `` skill, which does not exist anywhere in this
+  fleet or any installed plugin. Fixed both citations to point at a generically-correct source
+  (Anthropic's pricing docs / live session context) instead of a nonexistent skill.
+
+**Plan complete.** All 10 batches (0, A1, A1b, A2, A3, A3-fmt, B1, B2, B3, C1, C2, C3) are closed.
+Total real fixes across the marathon: 1 malformed-heading fix (`decide`, A1) + 4 more of the same
+class (`codebase-onboarding`, `context-budget`, `inventory`, `latency-critical-systems`, A3/A3-fmt)
++ 2 missing-doctrine-element additions (`add-surface`, `harness-audit`, B1) + 1 more
+(`agent-architecture-audit`, B3) + 1 prose trim (`orchestrate`, A1b) + 1 stale-line-number fix
+(`commands/ideate/COMMAND.md`, A1b) + 6 dead-reference fixes (`production-audit` ×2 A2,
+`dart-flutter-patterns` ×2 + `backend-patterns` + `mysql-patterns` C1, `cost-aware-llm-pipeline` C3)
++ the description-budget pre-pass (Batch 0). The rest of the fleet (the majority) was reviewed and
+confirmed already doctrine-complete — "reviewed, no change" was the modal outcome throughout, which
+this plan's own mid-marathon note (see "Update" above) already flagged as the expected, correct
+shape once the fleet turned out leaner than the plan's original framing assumed.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.

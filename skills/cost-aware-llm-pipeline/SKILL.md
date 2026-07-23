@@ -23,8 +23,8 @@ Patterns for controlling LLM API costs while maintaining quality. Combines model
 Automatically select cheaper models for simple tasks, reserving expensive models for complex ones.
 
 ```python
-# Model ids drift across releases — use the claude-api skill as the source
-# of truth and pass the current ids in here rather than hardcoding.
+# Model ids drift across releases — check the current session context or
+# Anthropic's model docs for the live ids rather than hardcoding stale ones.
 MODEL_SONNET = "claude-sonnet-5"
 MODEL_HAIKU = "claude-haiku-4-5-20251001"
 
@@ -163,9 +163,9 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
 The routing intuition this pattern exploits — Haiku-tier models run roughly
 1x, Sonnet-tier ~4x, Opus-tier ~19x per token — is what motivates routing
 simple tasks to the cheapest model. **For current model ids and exact
-per-token pricing, use the `claude-api` skill** — absolute prices and model
-ids change across releases; this skill owns the routing pattern, not the
-price sheet.
+per-token pricing, check Anthropic's pricing docs or the live session
+context** — absolute prices and model ids change across releases; this
+skill owns the routing pattern, not the price sheet.
 
 ## Best Practices
 

@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.20] — 2026-07-23
+
+Batch C3, final batch — closes the entire skill-improvement plan (`docs/plans/skill-improvement-batches.md`):
+`drizzle-patterns`, `hono-patterns`, `adonisjs-patterns`, `fastapi-patterns`,
+`latency-critical-systems`, `cost-aware-llm-pipeline`. Lightest pass, continued autonomously.
+
+`latency-critical-systems` already had its completion criterion from the A3-fmt spillover.
+`drizzle-patterns`/`hono-patterns`/`adonisjs-patterns`/`fastapi-patterns` were all already
+doctrine-complete with no cross-reference surface. `cost-aware-llm-pipeline` was doctrine-complete
+but cited a dead `` `claude-api` `` skill twice — it doesn't exist anywhere in this fleet or any
+installed plugin. Fixed both citations to point at a real source (Anthropic's pricing docs / the
+live session context) instead.
+
+**All 10 batches are now closed** (0, A1, A1b, A2, A3, A3-fmt, B1, B2, B3, C1, C2, C3). Across the
+whole marathon: 5 malformed-completion-criterion-heading fixes, 3 missing-doctrine-element
+additions, 1 prose trim, 1 stale-line-number fix, 7 dead-reference fixes, and the description-budget
+pre-pass. The modal outcome throughout was "reviewed, no change" — most of the fleet was already
+doctrine-complete, matching this plan's own mid-marathon note that the fleet turned out leaner than
+its original framing assumed.
+
 ## [0.68.19] — 2026-07-23
 
 Batch C1, first pattern-tier batch: `dart-flutter-patterns`, `backend-patterns`, `mysql-patterns`.
