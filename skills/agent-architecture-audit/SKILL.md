@@ -111,3 +111,10 @@ Apply Layers 1–8 for LangGraph agents:
 
 Do not blame the model before falsifying wrapper-layer regressions. The most common
 finding is that the model was fine and a wrapper layer introduced the defect.
+
+## Completion criterion
+
+Every finding carries symptom → mechanism → source layer → root cause → evidence (file:line) →
+confidence — a diagnosis without file:line evidence is a guess, not a finding. The fix plan is
+code-first (Phase 4): a fix that only edits prompt text doesn't close a Layer 6/7 tool-discipline
+finding, since that's the exact gap the finding named.

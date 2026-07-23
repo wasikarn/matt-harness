@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.18] — 2026-07-23
+
+Batch B3, closing the utility/meta tier (B1+B2+B3): `agent-architecture-audit`, `eval-harness`,
+`goal-craft`, `learn`, `recursive-improve`. Light pass, continued autonomously per the session goal.
+
+All 5 matched the plan's own catalogue (none in the missing-one/missing-both gap tables). Reread
+confirmed 4 of 5 accurately: `eval-harness` (completion criterion + anti-patterns section already
+present), `goal-craft` (every procedure step has its own Done-when/failure-mode pair), `learn` (has
+`## Done when`; step 3's "Filter hard" is substantively the failure-mode section under a matching
+name), `recursive-improve` (has `## Failure Modes to Avoid` + per-step success criteria;
+`disable-model-invocation` flag re-verified intact, file untouched). `agent-architecture-audit` was
+the one real gap: had a `## Guardrail` (failure-mode) but no completion criterion at all — added one
+grounded in the file's own Phase 3/4 content.
+
 ## [0.68.17] — 2026-07-23
 
 Batch B1 of the skill-improvement plan: `add-surface`, `harness-audit`, `memory-lint` — first

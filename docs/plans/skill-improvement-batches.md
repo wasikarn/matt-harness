@@ -23,7 +23,7 @@ where it actually left off before re-running anything.
 | A3-fmt — fleet-wide completion-criterion format pass (spun out of A3, see note) | ☑ done (3 real fixes, 10 false positives ruled out) | 2026-07-23 |
 | B1 — add-surface, harness-audit, memory-lint | ☑ done (3 real fixes, scope guard held) | 2026-07-23 |
 | B2 — context-budget, inventory, claude-md-health | ☑ done (0 new edits — see note below) | 2026-07-23 |
-| B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☐ not started | |
+| B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☑ done (1 real fix, 4 no-change) | 2026-07-23 |
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☐ not started | |
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☐ not started | |
 | C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started (latency-critical-systems already had the A3-fmt fix; the rest still open) | |
@@ -385,6 +385,24 @@ against false-confidence ("don't let a clean Test-1/2 pass read as healthy," "ne
 Test-3 section read as a pass"). Reviewed, no change to any of the 3. No version bump, no
 CHANGELOG entry, no CLAUDE.md bullet — nothing shipped to the plugin cache this batch, only this
 plan-doc note (matches CLAUDE.md's own "doc-only edits skip the bump" convention).
+
+**B3 outcome (2026-07-23) — closes the utility/meta tier (B1+B2+B3):** light pass, continued
+autonomously per the session goal. All 5 matched the plan's own catalogue ("everything else already
+carries both guards" — none were in the missing-one/missing-both gap tables), and reread confirmed
+4 of 5 accurately:
+
+- **`eval-harness`**: already has `## Completion criterion` and an `## Eval Anti-Patterns` section
+  serving as failure modes. Reviewed, no change.
+- **`goal-craft`**: every one of its 6 procedure steps carries its own "Done when:"/"Failure mode to
+  avoid:" pair — more granular than a single trailing section. Reviewed, no change.
+- **`learn`**: has an explicit `## Done when`; step 3 ("Filter hard (this is most of the value)") is
+  substantively the failure-mode section under a name matching its content. Reviewed, no change.
+- **`recursive-improve`**: has a `## Failure Modes to Avoid` heading plus a "Success criterion" per
+  step; `disable-model-invocation` flag re-verified intact (untouched file, no edit risk). Reviewed,
+  no change.
+- **`agent-architecture-audit`**: the one real gap — a `## Guardrail` section already covered
+  failure-mode, but no completion criterion existed at all. Added one grounded in the file's own
+  Phase 3/4 content (finding format, code-first fix requirement).
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.
