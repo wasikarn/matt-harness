@@ -5,6 +5,34 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.25] — 2026-07-23
+
+User reported that Claude-created PRs and PR comments "barely ever match" the templates the
+harness already defines. Definition-level audit came back clean — `kbg:pr`'s body template and
+`review-pr/reference.md`'s reply templates are each single-sourced, no competing definitions
+anywhere in the fleet — so the gap is a runtime/discoverability one, not a template one. Two
+confirmed real gaps, no concrete inconsistent PR/comment example available to pin down further:
+
+1. **`skills/incident/references/hotfix-reference.md` Phase 4** built its `gh pr create --body`
+   as a raw ad-hoc string (`"Emergency fix for ...\n\nRepro: ...\nRollback path: ..."`), bypassing
+   `kbg:pr`'s Summary/Changes/Testing/Related-Issues structure entirely, with no note (unlike the
+   file's own merge-command "Sync seam" comment) that this was a deliberate divergence. Fixed to
+   reuse the same headings plus a hotfix-only **Rollback** section — same speed, consistent shape.
+2. **No advisory nudge covers "reply to PR review comments."** `flow-nudge.sh` already nudges
+   pure PR-creation asks toward `kbg:pr`, but nothing pointed a "reply to the review"/"respond to
+   reviewer feedback" ask toward `/address-review` — which the model can't discover on its own
+   (it's a command, not a listed skill) and can't self-invoke either (`disable-model-invocation:
+   true`). Added a matching carve-out (English + Thai, mirroring the existing PR_INTENT shape) that
+   tells the model to say the literal `/address-review` string. Context set deliberately narrow
+   (`review|reviewer|thread`, not `comment`/`feedback` — those are everyday words that would fire a
+   GitHub-PR nudge on unrelated prompts like "respond to the comment about the budget"; caught by
+   `advisor()` before shipping). 12 new test cases in `test-flow-nudge.sh` (73/73 passing), including
+   3 regression guards for exactly that false-positive class.
+
+Honesty note carried into the user-facing summary: an advisory nudge can only get the user to type
+the command — the harness's advisory-never-gates architecture means it can't force consistency by
+itself, and neither fix was verified against a real inconsistent artifact (none was available).
+
 ## [0.68.24] — 2026-07-23
 
 `ship-merge`: removed Approval status as a scored/gating criterion from the Phase 1 review

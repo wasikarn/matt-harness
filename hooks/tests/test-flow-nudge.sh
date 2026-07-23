@@ -203,6 +203,30 @@ else
 fi
 
 echo ""
+echo "--- reply-to-PR-review intent (routes to /address-review) ---"
+test_nudge  "reply to review comments"      "reply to the review comments on this PR"
+test_nudge  "respond to reviewer feedback"  "respond to the reviewer feedback"
+test_nudge  "address the review feedback"   "address the review feedback on PR 42"
+test_nudge  "answer the review comments"    "answer the review comments please"
+test_silent "review a PR is not a reply (no reply/respond/answer/address verb)" "review this PR"
+test_silent "address with no PR/review context" "address the bug in the login flow"
+# Regression guards: 'comment'/'feedback' are everyday words dropped from the
+# trigger context on purpose — these must NOT fire the GitHub-PR nudge.
+test_silent "respond to a comment (no review/reviewer/thread context)" "respond to the comment about the budget"
+test_silent "address feedback from a retro (not a PR)" "address the feedback from the retro"
+test_silent "reply to a comment on a design doc (not a PR)" "reply to her comment on the design doc"
+test_nudge  "Thai: fix-per-review (แก้ตามรีวิว, address-review's own trigger)" "แก้ตามรีวิวให้หน่อย"
+test_nudge  "Thai: reply to review (ตอบ...รีวิว)" "ตอบรีวิวให้หน่อย"
+addr_out=$(echo "$(user_prompt_payload "reply to the review comments on this PR")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$addr_out" | /usr/bin/grep -qi "address-review"; then
+  echo "  ✅ CONTENT: reply-to-review ask names '/address-review'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED '/address-review': <$(printf '%s' "$addr_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- nudge content contract (must name plan mode) ---"
 # Lock the plan-first framing: a future edit that drops the plan-mode line from
 # the nudge output must fail here (the fire/silent tests only check the trigger,

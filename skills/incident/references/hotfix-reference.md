@@ -89,8 +89,34 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 2. Push branch: `git push origin <branch>`
 3. Create PR with emergency labels — **`--base` is the production branch the hotfix was cut from, never the integration branch (develop):**
    ```bash
-   gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body "Emergency fix for ...\n\nRepro: ...\nRollback path: ..." --label "hotfix" --label "P0"
+   gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body "$(cat <<'EOF'
+   ## Summary
+
+   <P0/P1/P2> hotfix: <what broke, one line> — <what this fix does, one line>
+
+   ## Changes
+
+   <files touched, one line>
+
+   ## Testing
+
+   Repro: `<repro command>`
+   <regression test note from Phase 2, or "manual verification: ...">
+
+   ## Rollback
+
+   <rollback path if this fix needs to be reverted>
+
+   ## Related Issues
+
+   Fixes #<issue>
+   EOF
+   )" --label "hotfix" --label "P0"
    ```
+   Mirrors `kbg:pr`'s body structure (Summary/Changes/Testing/Related Issues — see `skills/pr/SKILL.md`
+   Phase 4) plus a hotfix-only **Rollback** section; keep the two in sync if either's headings change.
+   A hotfix skips `kbg:pr`'s own preview-confirm gate for speed (Phase 0-3 already are the review), but
+   the body shape stays the same so a hotfix PR reads like every other PR in this repo.
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?"
    - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge
    - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later

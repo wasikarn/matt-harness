@@ -69,6 +69,19 @@ EOF
   exit 0
 }
 
+emit_address_review_nudge() {
+  cat <<'EOF'
+
+[kbg:flow-nudge] Replying to PR review feedback → tell the user to type `/address-review`
+  It triages every open thread, fixes in clusters, and replies per-thread with a commit
+  sha citation — instead of an ad-hoc `gh pr comment`/`gh api` reply with no fixed shape.
+  `/address-review` is user-invocation-only (disable-model-invocation: true) — the model
+  cannot run it; say the literal string so the user can type it themselves.
+The nudge is advisory; the model judges.
+EOF
+  exit 0
+}
+
 # Read stdin ONCE into a variable. The greps below all read stdin; if they
 # shared the live pipe, the first grep would consume it and the rest would
 # see EOF and never match — silently defeating the carve-out (found v0.36.0
@@ -108,6 +121,34 @@ fi
 if /usr/bin/grep -qE "($THAI_PR_VERB).{0,12}(pull request|\bPRs?\b)" <<< "$INPUT_TH" \
    && ! /usr/bin/grep -qE "$THAI_IMPL_NO_PR_CREATE" <<< "$INPUT_TH"; then
   emit_pr_nudge
+fi
+
+# Reply-to-PR-review intent -> address-review, not creation. Placed before the
+# IMPL gate for the same reason as PR_INTENT: reply/respond/answer aren't IMPL
+# verbs, so without this carve-out the whole hook stays silent on exactly the
+# prompt that reported this gap (ad-hoc `gh pr comment`/`gh api` replies with no
+# fixed shape, because the model never learns `/address-review` exists — it's a
+# command, not a listed skill, and disable-model-invocation blocks the model
+# from just running it). Partial verb stems (repl/respond/answer/address), no
+# \b, mirrors this file's existing PR_INTENT convention (creat/open/rais/mak).
+# Context set is deliberately narrow — review|reviewer|thread only, NOT
+# comment/feedback: those are everyday words ("respond to the comment about
+# the budget", "address the feedback from the retro") that would fire this
+# GitHub-specific nudge on prompts with nothing to do with a PR. Caught in
+# review before shipping — the sibling PR_INTENT pattern anchors on an actual
+# GitHub noun (`pull request|\bPRs?\b`) for the same reason.
+PR_REPLY_INTENT='(repl|respond|answer|address).{0,15}(review|reviewer|thread)'
+if /usr/bin/grep -qiE "$PR_REPLY_INTENT" <<< "$INPUT"; then
+  emit_address_review_nudge
+fi
+
+# Thai reply-to-PR-review intent. ตอบ/แก้ตาม (reply/fix-per-review) is address-
+# review's own frontmatter Thai trigger phrase ("แก้ตามรีวิว") — bare substring
+# match, no \b (Thai has no ASCII word boundaries), same convention as THAI_IMPL.
+# รีวิว (review) only, not คอมเมนต์ (comment) — same over-generic-word exclusion
+# as the English pattern above.
+if /usr/bin/grep -qE "แก้ตามรีวิว|ตอบ.{0,15}รีวิว|ตอบกลับ.{0,15}(รีวิว|reviewer)" <<< "$INPUT_TH"; then
+  emit_address_review_nudge
 fi
 
 if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH"; then
