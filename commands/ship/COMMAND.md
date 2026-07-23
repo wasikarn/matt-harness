@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or approved PRs (/ship-merge)."
+description: "Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or a PR already ready to merge (/ship-merge)."
 argument-hint: Description of the task or change to ship
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external and spawns agents — full ship loop ending in merge
@@ -155,7 +155,7 @@ There is no autonomous loop. Each iteration requires explicit user re-invocation
 **Goal**: Land the change with proof and clean review.
 
 **Actions**:
-1. Invoke `/ship-merge`. Its own Phase 1 already runs the full Rule-14-scored review-state gate (Critical findings, CI status, review freshness, approvals, coverage) — don't duplicate that check here.
+1. Invoke `/ship-merge`. Its own Phase 1 already runs the full Rule-14-scored review-state gate (Critical findings, CI status, review freshness, coverage) — don't duplicate that check here.
 
 ---
 

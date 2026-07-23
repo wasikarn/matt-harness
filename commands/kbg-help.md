@@ -20,7 +20,7 @@ You don't need to memorize every surface — describe what you're doing, and the
 | **BUILD** — implement | `/ship` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
-| **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (already-approved PR) · `/ship-release` (version/tag cut) |
+| **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (reviewed PR) · `/ship-release` (version/tag cut) |
 
 Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`mattpocock-skills:triage`** (one issue → `/fix-bug`, `/ship`, `mattpocock-skills:research`, `kbg:decide` probe mode).
 

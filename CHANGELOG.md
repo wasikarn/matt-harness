@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.24] — 2026-07-23
+
+`ship-merge`: removed Approval status as a scored/gating criterion from the Phase 1 review
+gate, per user request after a live merge got stuck at 85/100 — passing the 70 threshold but
+tripped by the 0-scored, 15-weight Approval-status floor (0 < 40) on a PR the model itself
+authored. GitHub doesn't count a PR author's own approval toward a required-reviewer gate, so
+this criterion could never clear for a self-authored PR regardless of review quality.
+
+Fix: dropped the table row (weight base now 30/25/20/10 = 85, via the doc's existing
+renormalization formula — no rebalancing needed); changed Phase 1 step 4 from a hard
+"otherwise fails" check to an informational note; updated the N/A-exclusion narrative (now only
+CI status has a "policy might not exist" angle) and the automation-bias-guard's worked example,
+which used Approval's 15 weight to reach exactly 70 for a sensitive-path self-review — removing
+it drops that ceiling to ~64.7, so a sensitive-path own-branch review can no longer pass Phase 1
+on deterministic signals alone; the only path through is now re-reviewing via `kbg:review-pr`'s
+`pr-by-number` mode. Real GitHub-side approval enforcement isn't gone — Phase 2's existing
+`--admin`-bypass-with-explicit-confirmation is now the sole enforcement point, unchanged.
+Also fixed a stale `docs/onboarding.md` positioning line ("After PR approval" → "After review").
+
+Ran a fresh-context adversarial review of the diff before committing (self-review of a gate change
+is exactly the maker-grades-own-work problem this repo's own doctrine rejects). It confirmed the
+4-file edit's arithmetic and cross-references were sound, but caught 6 leftover references the
+first pass missed: `commands/ship/COMMAND.md` (2 spots — Phase 8 text and its own frontmatter
+`description`), `commands/ask-kbg.md`, `commands/kbg-help.md`, and `skills/pr/SKILL.md` (2 spots)
+all still described a 5-criterion scored gate or an "already-approved PR" precondition that no
+longer exists. Fixed all 6, then regenerated `BOUNDARY.md` (`inventory-boundary.sh --repo-only`
+— CLAUDE.md's own documented gotcha: the script writes to STDOUT, the `>` redirect is required
+every time, and it was skipped in the first pass). Full gauntlet re-run green after the fixes.
+
 ## [0.68.23] — 2026-07-23
 
 `/kbg:compliance-audit` on the skill-improvement marathon (`docs/plans/skill-improvement-batches.md`

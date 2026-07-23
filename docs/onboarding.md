@@ -23,7 +23,7 @@ see `BOUNDARY.md` below for the live count.
 |---|---|---|
 | `/ship` | From idea to shipped | Full loop from blank-slate or already-scoped (Phase 0 asks which); embeds acceptance gating before the ship step. |
 | `kbg:review-pr` | After pushing a PR | Multi-agent review (code, tests, security, types) over the diff. |
-| `/ship-merge` | After PR approval | Verifies the diff + merges. The human gate sits between review and merge. |
+| `/ship-merge` | After review | Verifies the diff + merges. The human gate sits between review and merge. |
 
 Other useful ones: `/fix-bug`, `research`, `/frame`,
 `/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).

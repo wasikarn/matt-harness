@@ -36,7 +36,7 @@ Every on-ramp above assumes you already know which one to pick. This is what run
 
 - **Someone else's PR, or a re-review** → `kbg:review-pr` (by number or branch — `/ship` Phase 6 calls the same skill internally for its own diff).
 - **Reviewer left comments to address** → `/address-review` — fetch, classify, fix via `/fix-bug`, reply.
-- **Approved PR, ready to land** → `/ship-merge` — a scored gate (Critical findings, CI, freshness, approval, coverage), not a bare boolean.
+- **PR reviewed, ready to land** → `/ship-merge` — a scored gate (Critical findings, CI, freshness, coverage), not a bare boolean.
 - **Cutting a version** → `/ship-release` — bump, changelog, review gate, tag, merge, monitor.
 
 ## Codebase & harness health

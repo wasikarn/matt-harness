@@ -16,7 +16,7 @@ unflagged external-write surface requires (same posture as `kbg:review-pr`'s sub
 turn the current branch's commits into a pull request.
 
 **When NOT to use:**
-- Merging an approved PR → `/ship-merge`.
+- Merging a reviewed PR → `/ship-merge`.
 - Replying to reviewer comments → `/address-review`.
 - Reviewing a PR's code → `kbg:review-pr`.
 
@@ -208,7 +208,7 @@ Artifacts referenced:
 
 **Suggested next step:**
 - Needs review           → `kbg:review-pr`
-- Reviewed + approved     → `/ship-merge <number>`
+- Reviewed, ready to land → `/ship-merge <number>`
 - Reviewer left comments  → `/address-review <number>`
 - Open in browser         → `gh pr view <number> --web`
 
