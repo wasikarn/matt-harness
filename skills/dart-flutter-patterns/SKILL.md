@@ -126,6 +126,8 @@ Widget buildFrom(UserState state) => switch (state) {
 
 ### Freezed for Boilerplate-Free Immutability
 
+Freezed 3.x requires the `abstract` (or `sealed`, for union types) keyword on the class — a bare `class X with _$X` no longer compiles.
+
 ```dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -133,7 +135,7 @@ part 'user.freezed.dart';
 part 'user.g.dart';
 
 @freezed
-class User with _$User {
+abstract class User with _$User {
   const factory User({
     required String id,
     required String name,

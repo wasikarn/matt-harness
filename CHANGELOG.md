@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.22] — 2026-07-23
+
+Second context7 currency-check pass, closing the honesty gap the v0.68.21 addendum left open: only
+3 of 13 pattern-tier skills had actually been re-verified against real docs at that point. User
+asked to check the remaining 10 (`backend-patterns`, `cost-aware-llm-pipeline`,
+`dart-flutter-patterns`, `drizzle-patterns`, `fastapi-patterns`, `grpc-node-patterns`,
+`hono-patterns`, `langchain-langgraph-patterns`, `latency-critical-systems`, `mysql-patterns`).
+
+Found one real drift: `dart-flutter-patterns`' Freezed example used the bare `class User with
+_$User` form — Freezed 3.x (confirmed 3.2.5 is genuinely pub.dev's current stable, published
+2026-02-03, not an RC) requires the `abstract` (or `sealed`, for union types) keyword; the bare form
+no longer compiles. Fixed the example plus added a one-line note on the v3 requirement. This skill
+has no `tathep_projects` pin, so context7 + pub.dev was the only verification path available.
+
+The other 9 verified clean: `drizzle-patterns` (`relations()` still correct — `0.45.2` is genuinely
+npm's `latest`, confirmed via the registry API, not `defineRelations()`'s pre-1.0 API),
+`hono-patterns`, `fastapi-patterns`, `backend-patterns`, `mysql-patterns`,
+`cost-aware-llm-pipeline`, `grpc-node-patterns`, `langchain-langgraph-patterns` (HITL section
+already uses the current `interrupt()`/`Command()` pattern, not the deprecated `NodeInterrupt`).
+`latency-critical-systems` has no single library dependency, so no context7 check applies. All 13 of
+13 pattern-tier skills are now checked against real, current docs — full detail in
+`docs/plans/skill-improvement-batches.md`'s second addendum.
+
 ## [0.68.21] — 2026-07-23
 
 Post-plan follow-up on `docs/plans/skill-improvement-batches.md`, prompted by `advisor()` before

@@ -28,6 +28,7 @@ where it actually left off before re-running anything.
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☑ done (0 new edits — see note below) | 2026-07-23 |
 | C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☑ done (1 real fix, 5 no-change) | 2026-07-23 |
 | Post-plan addendum — real context7 currency check (advisor-flagged gap) | ☑ done (1 real fix: adonisjs-patterns) | 2026-07-23 |
+| Second addendum — remaining 10 pattern skills, closes 13/13 cohort | ☑ done (1 real fix: dart-flutter-patterns/Freezed 3.x) | 2026-07-23 |
 
 ## Context
 
@@ -500,6 +501,53 @@ This also closes the second `advisor()` finding: `` `mattpocock-skills:tdd` `` (
 fleet already cites nested mattpocock skills by base name without a directory prefix
 (`mattpocock-skills:writing-great-skills` is the same shape, per root `CLAUDE.md`), so the
 reference was never dead — no fix needed there.
+
+**Second addendum (2026-07-23) — the remaining 7 pattern skills, closing the cohort to 13/13.**
+User asked to check the other 10 not yet re-verified as of the first addendum
+(`backend-patterns`, `cost-aware-llm-pipeline`, `dart-flutter-patterns`, `drizzle-patterns`,
+`fastapi-patterns`, `grpc-node-patterns`, `hono-patterns`, `langchain-langgraph-patterns`,
+`latency-critical-systems`, `mysql-patterns` — 3 of these, `dart-flutter-patterns`,
+`backend-patterns`, `mysql-patterns`, already had a *non-context7* fix from C1, but none had a real
+docs cross-check). Ran the same recipe (context7 `resolve-library-id`/`query-docs`, plus real-repo
+`grep` where a `tathep_projects` pin exists, plus an npm/pub.dev `dist-tags`/`latest`-version check
+whenever a "is the newer major actually current" question came up) against all 10:
+
+- **`dart-flutter-patterns`**: real drift found, distinct from C1's earlier fix. Freezed 3.x
+  requires the `abstract` (or `sealed`, for union types) keyword on an `@freezed` class — a bare
+  `class X with _$X` no longer compiles. Confirmed Freezed 3.2.5 (published 2026-02-03) is genuinely
+  the current stable on pub.dev, not an RC — same "matches deployed reality" check as
+  `drizzle-patterns`, but this time it flips to a real fix rather than a false positive. The skill's
+  `User` example used the bare v2 form; fixed to `abstract class User with _$User`, plus a one-line
+  note explaining the v3 requirement. This skill has no `tathep_projects` pin (`origin: ECC`), so
+  context7 + pub.dev was the only verification path — no real repo to cross-check against. Riverpod
+  (already uses the current v3 unified `Ref` type, not a deprecated per-provider `ExampleRef`
+  subclass) and GoRouter were also checked and are clean; Dio and BLoC/Cubit syntax were not
+  independently re-verified via context7 this pass (stable, low-drift-risk APIs — interceptor
+  chaining and `emit()` haven't had a breaking release).
+- **`drizzle-patterns`**: verified clean. `relations()` (not the v1 `defineRelations()`) is correct
+  because `0.45.2` — the version both target repos (`tathep-anpr-service`,
+  `tathep-video-processing`) pin — is still npm's `dist-tags.latest`, confirmed via
+  `curl https://registry.npmjs.org/drizzle-orm`; `bun-sql` client setup and `onConflictDoUpdate`
+  syntax both match context7 docs.
+- **`hono-patterns`**: verified clean. zValidator, RPC `hc<AppType>`, and `c.var`/`Variables`
+  context pattern all match context7 docs exactly against the pinned `hono@^4.12.27`/`^4.10.6`.
+- **`fastapi-patterns`**, **`backend-patterns`**, **`mysql-patterns`**,
+  **`cost-aware-llm-pipeline`**, **`grpc-node-patterns`**, **`langchain-langgraph-patterns`**,
+  **`latency-critical-systems`**: all verified clean. FastAPI's `Annotated`/`Depends` DI pattern and
+  `response_model` priority; Zod's `.issues` property; MySQL 8.0's `VALUES()` deprecation and
+  replica_parallel_workers/LOGICAL_CLOCK replication settings; the Anthropic SDK's
+  `RateLimitError`/`APIConnectionError`/`InternalServerError` classes and `cache_control: {"type":
+  "ephemeral"}` syntax; `grpc-health-check`'s `HealthImplementation`/`addToServer` pattern; and
+  LangGraph's HITL section (already uses the current v1.0-era `interrupt()`/`Command(resume=...)`,
+  not the deprecated `NodeInterrupt` class) — all confirmed current against context7 with no
+  discrepancy found. `latency-critical-systems` has no single library dependency (a
+  methodology/architecture skill, not framework-API-bound) — no context7 check applies to it the way
+  it does the others.
+
+Net: 1 real fix (`dart-flutter-patterns`, Freezed 3.x), 9 confirmed clean. Combined with the first
+addendum's 3, this closes the honesty gap that addendum explicitly flagged open — **all 13 of 13
+pattern-tier skills have now been checked against real, current docs**, not just reread against
+training knowledge.
 
 ## Per-batch closeout ritual (matches the pattern from the prior structural-audit pass)
 
