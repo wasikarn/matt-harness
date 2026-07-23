@@ -24,7 +24,7 @@ where it actually left off before re-running anything.
 | B1 — add-surface, harness-audit, memory-lint | ☑ done (3 real fixes, scope guard held) | 2026-07-23 |
 | B2 — context-budget, inventory, claude-md-health | ☑ done (0 new edits — see note below) | 2026-07-23 |
 | B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☑ done (1 real fix, 4 no-change) | 2026-07-23 |
-| C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☐ not started | |
+| C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☑ done (2 real fixes + 3 dead-ref fixes) | 2026-07-23 |
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☐ not started | |
 | C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started (latency-critical-systems already had the A3-fmt fix; the rest still open) | |
 
@@ -403,6 +403,26 @@ carries both guards" — none were in the missing-one/missing-both gap tables), 
 - **`agent-architecture-audit`**: the one real gap — a `## Guardrail` section already covered
   failure-mode, but no completion criterion existed at all. Added one grounded in the file's own
   Phase 3/4 content (finding format, code-first fix requirement).
+
+**C1 outcome (2026-07-23) — first pattern-tier batch:** lightest pass (currency spot-check +
+shared failure-mode template + dead-reference sweep), continued autonomously per the session goal.
+
+- **`dart-flutter-patterns`**: matched the plan's "missing both" gap ranking — genuinely had no
+  `## Verify before use` section at all (unlike the other pattern skills). Added the shared
+  template. Also found and fixed 2 dead references while there: `` `flutter-dart-code-review` ``
+  (no such skill; real target is the `flutter-reviewer` agent) and a `rules/dart/` path that
+  doesn't exist anywhere in this repo (removed — no equivalent content under another name).
+- **`backend-patterns`**: already had `## Verify before use` (the doctrine element the gap table
+  flagged was likely already satisfied) — found and fixed a dead `` `security-review` `` reference
+  (no such skill/agent; real target is `kbg:security-auditor`).
+- **`mysql-patterns`**: already complete (Anti-Patterns table + Output Expectations + Verify
+  before use — one of the 3 pattern skills this plan's own "Depth per tier" section names as
+  already having the shared template). Found and fixed the same `` `security-review` `` dead
+  reference in its own "Related" section.
+
+The `security-review` dead reference is now a confirmed recurring pattern (this is its 3rd fix this
+plan, after `production-audit` in A2) — a fleet-wide grep after the 3rd fix confirmed no remaining
+instances.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.

@@ -540,5 +540,9 @@ testWidgets('CartBadge shows item count', (tester) async {
 - [BLoC Library](https://bloclibrary.dev/)
 - [GoRouter](https://pub.dev/packages/go_router)
 - [Freezed](https://pub.dev/packages/freezed)
-- Skill: `flutter-dart-code-review` — comprehensive review checklist
-- Rules: `rules/dart/` — coding style, patterns, security, testing, hooks
+- Agent: `flutter-reviewer` — comprehensive Flutter/Dart review checklist
+
+## Verify before use
+
+1. Before applying, verify any pattern against Flutter/Dart's current docs.
+   APIs drift across versions; if one has moved, the patterns above name where each silently fails — never copy unverified, avoid drift by checking the changelog.

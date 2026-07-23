@@ -371,7 +371,7 @@ When this skill is used for review, return:
 ## Related
 
 - Skill: `backend-patterns` - API and service-layer patterns
-- Skill: `security-review` - secret handling, auth, and least privilege
+- Skill: `kbg:security-auditor` - secret handling, auth, and least privilege
 - Agent: `code-reviewer` - broader review workflow
 
 ## Verify before use

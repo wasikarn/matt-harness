@@ -447,7 +447,7 @@ production APIs: they reset on deploy, split across replicas, and fail open in
 serverless or multi-instance environments.
 
 Keep the backend layer responsible for choosing the integration point, the HTTP
-contract, and the error shape; use `security-review` for abuse case review.
+contract, and the error shape; use `kbg:security-auditor` for abuse case review.
 
 ## Background Jobs & Queues
 

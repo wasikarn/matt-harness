@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.19] — 2026-07-23
+
+Batch C1, first pattern-tier batch: `dart-flutter-patterns`, `backend-patterns`, `mysql-patterns`.
+Lightest pass (currency spot-check + shared failure-mode template + dead-reference sweep),
+continued autonomously per the session goal.
+
+`dart-flutter-patterns` matched the plan's "missing both" gap ranking — genuinely had no
+`## Verify before use` section. Added the shared template; also fixed 2 dead references found
+along the way (`` `flutter-dart-code-review` `` → the real `flutter-reviewer` agent; a `rules/dart/`
+path that doesn't exist in this repo, removed). `backend-patterns` and `mysql-patterns` were both
+already doctrine-complete; each had the same dead `` `security-review` `` reference (real target:
+`kbg:security-auditor`) — this is now the 3rd fix of that exact reference this plan (1st in
+`production-audit`, A2). A fleet-wide grep after the 3rd fix confirmed no remaining instances.
+
 ## [0.68.18] — 2026-07-23
 
 Batch B3, closing the utility/meta tier (B1+B2+B3): `agent-architecture-audit`, `eval-harness`,
