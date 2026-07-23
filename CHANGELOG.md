@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.14] — 2026-07-23
+
+Batch A2 of the skill-improvement plan: `pr`, `incident`, `security-auditor`, `production-audit`.
+User set a session goal ("do every batch until finished and correct per the whole plan") after A1b
+started — continued the already-confirmed light-pass protocol without re-asking per batch.
+
+Read all 4 against the plan's gap table (none listed) and matt's 6 doctrine elements. `pr` and
+`task-prep` remain the only 2 native skills carrying an explicit `## Design checks` section;
+`incident` and `security-auditor` both have explicit completion criteria and (for
+`security-auditor`) its own verifier-separation step. All three: reviewed, no change.
+
+`production-audit` had two real dead/malformed references: `` `security-review` `` (in two spots)
+matches neither this fleet's actual skill (`security-auditor`) nor agent (`security-reviewer`), and
+`` `tdd` `` is missing its `mattpocock-skills:` prefix — as written, neither resolves. Both were
+invisible to check 40 (dead-`kbg:`-reference detector) because neither was written in `kbg:`-prefixed
+form. Fixed both and converted the surrounding "See Also" references to prefixed form so future
+drift here becomes visible to the existing check.
+
 ## [0.68.13] — 2026-07-23
 
 Batch A1b: in-place prose-tightening for `orchestrate` and `review-pr`, the fleet's two

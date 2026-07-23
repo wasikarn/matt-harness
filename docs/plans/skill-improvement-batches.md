@@ -18,7 +18,7 @@ where it actually left off before re-running anything.
 | 0 — description-budget pre-pass | ☑ done (WARN accepted, see note below) | 2026-07-23 |
 | A1 — decide, orchestrate, review-pr, task-prep (skill-creator loop only) | ☑ done (scope downgraded, see note below) | 2026-07-23 |
 | A1b — orchestrate + review-pr in-place prose-tightening (separate session from A1) | ☑ done (low yield, correct outcome — see note below) | 2026-07-23 |
-| A2 — pr, incident, security-auditor, production-audit | ☐ not started | |
+| A2 — pr, incident, security-auditor, production-audit | ☑ done (1 real fix, 3 no-change) | 2026-07-23 |
 | A3 — codebase-onboarding, score-decision, tech-humanize | ☐ not started | |
 | B1 — add-surface, harness-audit, memory-lint | ☐ not started | |
 | B2 — context-budget, inventory, claude-md-health | ☐ not started | |
@@ -278,6 +278,30 @@ clean up after).
   0-char change. Per `advisor()`'s explicit framing, this is a complete and correct A1b outcome for
   this file, not an under-delivered batch — the INFO-only body-size finding never required a
   reduction, only a genuine-looseness check, and none was found.
+
+**A2 outcome (2026-07-23):** same protocol as A1/A1b, applied without re-asking per-batch (the
+user's session goal — "do every batch until finished and correct" — covers continuing the
+already-confirmed light-pass-on-no-defect approach). Read all 4 skills in full against the plan's
+gap table (none listed) and matt's 6 doctrine elements.
+
+- **`pr`**: already carries its own `## Design checks` section (one of only 2 native skills that
+  do, with `task-prep`) — completion criterion, no-op test, and failure-mode guard all explicit.
+  Reviewed, no change.
+- **`incident`**: explicit `## Done when`, `## Constraints`, `## Output Format`, and a named model
+  footer. Reviewed, no change.
+- **`security-auditor`**: has its own verifier-separation step (spawns a fresh `security-reviewer`
+  agent against remediated files rather than re-auditing its own fix) plus an explicit BLOCK/PASS
+  completion criterion. Reviewed, no change.
+- **`production-audit`**: found 2 real dead/malformed cross-references while doing the same read —
+  `` `security-review` `` (line 29 and in "See Also") matches neither this fleet's actual skill
+  (`security-auditor`) nor the agent (`security-reviewer`), and `` `tdd` `` (See Also) is missing
+  its `mattpocock-skills:` prefix, so as written it doesn't resolve to anything installed. Both
+  were invisible to `harness-audit` check 40 (dead-`kbg:`-reference detector) because neither was
+  written in `kbg:`-prefixed form — the exact blind spot CLAUDE.md's own note on check 40 already
+  documents. Fixed both (line 29 now points to the `security-reviewer` agent, matching
+  `security-auditor`'s own documented skill-vs-agent split; "See Also" now uses `kbg:`/
+  `mattpocock-skills:`-prefixed form throughout, so future drift here becomes visible to check 40).
+  Verified via full audit re-run — clean, no new findings.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.
