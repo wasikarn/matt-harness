@@ -25,7 +25,7 @@ where it actually left off before re-running anything.
 | B2 — context-budget, inventory, claude-md-health | ☑ done (0 new edits — see note below) | 2026-07-23 |
 | B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☑ done (1 real fix, 4 no-change) | 2026-07-23 |
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☑ done (2 real fixes + 3 dead-ref fixes) | 2026-07-23 |
-| C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☐ not started | |
+| C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☑ done (0 new edits — see note below) | 2026-07-23 |
 | C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started (latency-critical-systems already had the A3-fmt fix; the rest still open) | |
 
 ## Context
@@ -423,6 +423,14 @@ shared failure-mode template + dead-reference sweep), continued autonomously per
 The `security-review` dead reference is now a confirmed recurring pattern (this is its 3rd fix this
 plan, after `production-audit` in A2) — a fleet-wide grep after the 3rd fix confirmed no remaining
 instances.
+
+**C2 outcome (2026-07-23):** zero new file changes, genuinely 0 incremental diff. All 4 files
+already had the shared `## Verify before use` template plus a `## Common Pitfalls` section (the
+failure-mode equivalent), and none carried a "Related"/"See Also" section — so, unlike C1, there
+was no cross-reference surface for the `security-review`-style dead-reference bug to hide in. A
+full read of each (`langchain-langgraph-patterns`, `effect-ts-patterns`, `grpc-node-patterns`,
+`tauri-v2-patterns`) found nothing to fix. Reviewed, no change to any of the 4. No version bump, no
+CHANGELOG entry, no CLAUDE.md bullet — matches B2's precedent for a genuinely empty batch.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.
