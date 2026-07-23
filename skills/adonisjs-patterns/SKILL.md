@@ -1,6 +1,6 @@
 ---
 name: adonisjs-patterns
-description: "AdonisJS v5 patterns: IoC, Lucid ORM, Japa, VineJS, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks."
+description: "AdonisJS v5 patterns: IoC, Lucid ORM, Japa, validator, middleware, auth guards, ace CLI. Use when building an AdonisJS v5 backend. Don't use for non-AdonisJS frameworks."
 metadata:
   origin: kbg
   tathep_projects:
@@ -93,24 +93,27 @@ test('GET /users', async ({ client }) => {
 
 Run: `node ace test` or `node ace test --files=tests/unit/**.spec.ts`
 
-## VineJS Validation
+## Validation
 
-Validators live in `app/validators/`. Always validate at the controller boundary:
+Validators live in `app/Validators/`, one class per validator (`node ace make:validator`). Always validate at the controller boundary via `schema.create` + `rules` (the built-in `@ioc:Adonis/Core/Validator` — this is what ships in real v5.9 projects; VineJS is a v6+ default and isn't a drop-in for a v5 app without adding `@vinejs/vine` yourself):
 
 ```typescript
-import vine from '@vinejs/vine'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
+import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
-export const createUserValidator = vine.compile(
-  vine.object({
-    email: vine.string().email().normalizeEmail(),
-    name: vine.string().minLength(2).maxLength(100),
-    role: vine.enum(['admin', 'user']),
+export default class CreateUserValidator {
+  constructor(protected ctx: HttpContextContract) {}
+
+  public schema = schema.create({
+    email: schema.string([rules.email(), rules.unique({ table: 'users', column: 'email' })]),
+    name: schema.string([rules.minLength(2), rules.maxLength(100)]),
+    role: schema.enum(['admin', 'user'] as const),
   })
-)
+}
 
 // In controller
-async store({ request }: HttpContext) {
-  const data = await request.validateUsing(createUserValidator)
+async store({ request }: HttpContextContract) {
+  const data = await request.validate(CreateUserValidator)
   return User.create(data)
 }
 ```

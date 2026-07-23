@@ -27,6 +27,7 @@ where it actually left off before re-running anything.
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☑ done (2 real fixes + 3 dead-ref fixes) | 2026-07-23 |
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☑ done (0 new edits — see note below) | 2026-07-23 |
 | C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☑ done (1 real fix, 5 no-change) | 2026-07-23 |
+| Post-plan addendum — real context7 currency check (advisor-flagged gap) | ☑ done (1 real fix: adonisjs-patterns) | 2026-07-23 |
 
 ## Context
 
@@ -459,6 +460,46 @@ shape once the fleet turned out leaner than the plan's original framing assumed.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.
+
+**Post-plan addendum (2026-07-23) — the currency check that never actually ran.** `advisor()`,
+called before declaring the marathon done, flagged a real gap: C1/C2/C3's "currency spot-check"
+was a self-grade — each skill was reread against training knowledge, not verified against context7
+or the real target repos, which is the one step this tier's recipe named a tool for
+("currency/accuracy check against the real library docs (via context7 MCP where available)"). Ran
+it for real against the 3 highest-drift pattern skills (fast-moving libraries + a versioned
+framework where "is this major even current" is itself a live question):
+
+- **`adonisjs-patterns`**: real drift found. The skill's "VineJS Validation" section taught
+  `@vinejs/vine`, but neither target repo (`tathep-platform-api`, `bluedragon-eye-analytics-api`,
+  both pinned `@adonisjs/core@^5.9.0`) has `@vinejs/vine` installed — both use the legacy built-in
+  `@ioc:Adonis/Core/Validator` (`schema.create` + `rules`), confirmed by grepping real
+  `app/Validators/*.ts` and controller call sites in `tathep-platform-api`. VineJS is a v6+
+  default, not a drop-in for a v5 app. Fixed: swapped the section to the actual validator pattern in
+  use, updated the frontmatter description's keyword, re-ran `harness-audit` (caught the edit
+  pushing the description to 26 words — trimmed back under the cap), regenerated both `BOUNDARY.md`
+  copies.
+- **`effect-ts-patterns`**: verified clean. Real pin (`effect@^3.19.x` in both target repos) matches
+  context7's current `/effect-ts/effect` major; the skill's `Layer.effect` + `Context.Tag` syntax
+  matches context7's docs example verbatim. No drift.
+- **`tauri-v2-patterns`**: verified clean. Real pin (`tauri = "2"` in `tathep-player`'s Cargo.toml)
+  matches context7's current v2 major (no v3 exists yet); the skill's capability permission strings
+  (`dialog:allow-open`, `dialog:allow-save`, `shell:allow-open`) were cross-checked against context7's
+  dialog/shell plugin permission tables and confirmed real, valid identifiers.
+- **`dart-flutter-patterns` (C1), `backend-patterns`/`mysql-patterns` (C1),
+  `cost-aware-llm-pipeline`/`drizzle-patterns`/`hono-patterns`/`fastapi-patterns`/
+  `latency-critical-systems` (C3)**: not re-checked against context7 this pass — 3 was judged a
+  representative sample of the highest-drift risk (fast-moving TS-ecosystem library, a framework
+  with a live major-version question, a native-platform API), not full coverage. Flagging this
+  honestly rather than implying the whole cohort was re-verified: if a future session has reason to
+  doubt one of the untouched 7, the same recipe (resolve-library-id → query-docs → cross-check
+  against the real pinned repo version) applies.
+
+This also closes the second `advisor()` finding: `` `mattpocock-skills:tdd` `` (the A2
+`production-audit` fix) is a real, resolvable skill — confirmed at
+`~/.claude/plugins/cache/mattpocock/mattpocock-skills/1.2.0/skills/engineering/tdd/SKILL.md`. The
+fleet already cites nested mattpocock skills by base name without a directory prefix
+(`mattpocock-skills:writing-great-skills` is the same shape, per root `CLAUDE.md`), so the
+reference was never dead — no fix needed there.
 
 ## Per-batch closeout ritual (matches the pattern from the prior structural-audit pass)
 

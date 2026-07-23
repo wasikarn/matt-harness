@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.21] — 2026-07-23
+
+Post-plan follow-up on `docs/plans/skill-improvement-batches.md`, prompted by `advisor()` before
+declaring the marathon done: the pattern-tier "currency check" the plan's own recipe named (verify
+against context7 / real library docs) never actually ran during C1–C3 — each skill was reread
+against training knowledge instead, which is the maker grading its own work. Ran it for real via
+context7 against the 3 highest-drift candidates (`effect-ts-patterns`, `tauri-v2-patterns`,
+`adonisjs-patterns`) plus a check against the actual pinned dependency versions in the real tathep
+target repos.
+
+Found one real gap: `adonisjs-patterns`' "VineJS Validation" section taught `@vinejs/vine`, but
+neither target repo (`tathep-platform-api`, `bluedragon-eye-analytics-api`, both pinned
+`@adonisjs/core@^5.9.0`) has VineJS installed — both use the legacy built-in
+`@ioc:Adonis/Core/Validator` (`schema.create` + `rules`), confirmed by grepping real
+`app/Validators/*.ts` files and controller call sites. VineJS is a v6+ default, not a v5 drop-in.
+Fixed the section and the frontmatter description keyword to match the actual codebase. `effect-ts`
+(pinned `^3.19.x`, matches context7's current major) and `tauri-v2` (pinned `"2"`, matches
+context7's current major; capability permission strings cross-checked against the dialog/shell
+plugin permission tables) verified clean — no drift.
+
+Also closed a second `advisor()`-flagged item: confirmed `` `mattpocock-skills:tdd` `` (the A2
+`production-audit` fix) is a real, resolvable skill, not a dead reference — the fleet already cites
+nested mattpocock skills by base name without a directory prefix elsewhere
+(`mattpocock-skills:writing-great-skills`).
+
+Not re-verified against context7 this pass: the other 7 pattern skills the plan's currency-check
+step also nominally covered (`dart-flutter-patterns`, `backend-patterns`, `mysql-patterns`,
+`drizzle-patterns`, `hono-patterns`, `fastapi-patterns`, `cost-aware-llm-pipeline`,
+`latency-critical-systems`) — 3 was a representative sample, not full coverage. Documented plainly
+in the plan file rather than implied as done.
+
 ## [0.68.20] — 2026-07-23
 
 Batch C3, final batch — closes the entire skill-improvement plan (`docs/plans/skill-improvement-batches.md`):
