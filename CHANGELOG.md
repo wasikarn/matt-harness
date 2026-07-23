@@ -25,8 +25,9 @@ fixes:
    holding `Bash` and therefore requiring the `AskUserQuestion` gate — but neither appeared in the
    "every review agent holds Bash" list, while `reference.md`'s fuller fleet mapping already had
    both. A reader trusting the SKILL.md list at face value (rather than independently re-checking
-   each agent's `tools:` grant, which rule 31 already tells them to do) would have no signal these
-   two need gating. Added both to the enumeration.
+   each agent's `tools:` grant, which the skill's own text already tells them to do — "gate on each
+   agent's actual `tools:` grant, not this name list") would have no signal these two need gating.
+   Added both to the enumeration.
 2. **`decide/SKILL.md` cited `domain-modeling` bare, unnamespaced, in both its occurrences** (mode
    table + the persistence line) — the exact defect class already fixed once in `task-prep/SKILL.md`
    (see the 0.6x-range entry above: 12 bare `mattpocock-skills` citations repointed, invisible to
