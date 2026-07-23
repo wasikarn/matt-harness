@@ -94,5 +94,6 @@ MCP is the dominant variable — check active server count with `/doctor`.
 Do not remove a component based on token savings alone. Verify it has no active
 command reference and no CLAUDE.md dependency before marking it removable.
 
-1. verify each savings claim against the live context — confirm the component is actually loaded before counting it.
-   If a claim drifts from measured usage or you remove a component still referenced, the audit fails — never cut based on token savings alone.
+## Completion criterion
+
+Verify each savings claim against the live context — confirm the component is actually loaded before counting it. If a claim drifts from measured usage or you remove a component still referenced, the audit fails — never cut based on token savings alone.

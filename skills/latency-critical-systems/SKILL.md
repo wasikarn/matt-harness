@@ -73,5 +73,6 @@ ready.
 - Keep secrets and private payloads out of logs and benchmark artifacts.
 - No per-event allocation in the hot path — per-event closures and object literals become GC pressure under load; at a load spike the GC pause can be the p99 source, not the round-trip. Profile with `--trace-gc` (Node) / the JVM/Go/.NET equivalent before attributing p99 to the network segment.
 
-1. confirm the latency budget holds under realistic load — verify the p99 stays inside the SLO across the canary window.
-   If a fix drifts the bottleneck elsewhere or the canary shows degraded providers, avoid declaring victory — never close without a green canary run.
+## Completion criterion
+
+Confirm the latency budget holds under realistic load — verify the p99 stays inside the SLO across the canary window. If a fix drifts the bottleneck elsewhere or the canary shows degraded providers, avoid declaring victory — never close without a green canary run.

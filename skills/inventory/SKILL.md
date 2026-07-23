@@ -88,5 +88,6 @@ Each row carries its description, so a keyword scan surfaces the right capabilit
 - Post-audit — confirm agent tool-grant fixes landed everywhere (use boundary map)
 - Drift detection — committed `BOUNDARY.md` snapshot catches silent fleet changes
 
-1. confirm the cross-layer list matches what Claude Code actually surfaces — verify a few entries load via /skills or /agents.
-   If the list drifts from the live fleet (a surface added/removed since last regen), avoid routing from stale data — never present a capability that isn't loadable.
+## Completion criterion
+
+Confirm the cross-layer list matches what Claude Code actually surfaces — verify a few entries load via /skills or /agents. If the list drifts from the live fleet (a surface added/removed since last regen), avoid routing from stale data — never present a capability that isn't loadable.

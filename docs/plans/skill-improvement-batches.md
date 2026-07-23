@@ -19,13 +19,14 @@ where it actually left off before re-running anything.
 | A1 — decide, orchestrate, review-pr, task-prep (skill-creator loop only) | ☑ done (scope downgraded, see note below) | 2026-07-23 |
 | A1b — orchestrate + review-pr in-place prose-tightening (separate session from A1) | ☑ done (low yield, correct outcome — see note below) | 2026-07-23 |
 | A2 — pr, incident, security-auditor, production-audit | ☑ done (1 real fix, 3 no-change) | 2026-07-23 |
-| A3 — codebase-onboarding, score-decision, tech-humanize | ☐ not started | |
+| A3 — codebase-onboarding, score-decision, tech-humanize | ☑ done (1 real fix, 2 no-change) | 2026-07-23 |
+| A3-fmt — fleet-wide completion-criterion format pass (spun out of A3, see note) | ☑ done (3 real fixes, 10 false positives ruled out) | 2026-07-23 |
 | B1 — add-surface, harness-audit, memory-lint | ☐ not started | |
-| B2 — context-budget, inventory, claude-md-health | ☐ not started | |
+| B2 — context-budget, inventory, claude-md-health | ☐ not started (context-budget + inventory already had the A3-fmt fix; claude-md-health + the remaining real work still open) | |
 | B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☐ not started | |
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☐ not started | |
 | C2 — langchain-langgraph-patterns, effect-ts-patterns, grpc-node-patterns, tauri-v2-patterns | ☐ not started | |
-| C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started | |
+| C3 — drizzle-patterns, hono-patterns, adonisjs-patterns, fastapi-patterns, latency-critical-systems, cost-aware-llm-pipeline | ☐ not started (latency-critical-systems already had the A3-fmt fix; the rest still open) | |
 
 ## Context
 
@@ -302,6 +303,53 @@ gap table (none listed) and matt's 6 doctrine elements.
   `security-auditor`'s own documented skill-vs-agent split; "See Also" now uses `kbg:`/
   `mattpocock-skills:`-prefixed form throughout, so future drift here becomes visible to check 40).
   Verified via full audit re-run — clean, no new findings.
+
+**A3 outcome (2026-07-23):** same protocol as A1/A1b/A2, continued autonomously per the session
+goal. Read all 3 skills against the plan's gap table and matt's 6 doctrine elements.
+
+- **`score-decision`**: explicit `## Completion criterion`, `## Failure modes`, a "Don't duplicate
+  canon" section, and the check-49 `disable-model-invocation` CRIT guard (re-grepped post-read —
+  flag intact). Reviewed, no change.
+- **`tech-humanize`**: every numbered step in "Process and Output" already carries its own "Done
+  when:" / "Failure mode to avoid:" pair — more granular than a single trailing completion
+  criterion, not less. Reviewed, no change.
+- **`codebase-onboarding`**: found the same structural defect `decide` had in A1 — a trailing
+  orphaned `1.` list item (completion-criterion prose, no `2.`, no heading of its own) glued onto
+  the end of "### Example 3" with no section break. Fixed: promoted into its own
+  `## Completion criterion` heading, content unchanged.
+
+**A3-fmt outcome (2026-07-23) — fleet-wide finding spun out of A3, tracked as its own pass per
+`advisor()`:** finding `codebase-onboarding`'s defect matching `decide`'s exact shape raised the
+question of whether this was isolated or systemic. A coarse heuristic grep
+(`tail -5 "$f" | grep -qE '^1\. '`) across all 35 skills surfaced 14 candidates. Per `advisor()`'s
+explicit caution — the grep proves "a line starting with `1.` near EOF," not "orphaned
+completion-criterion with no heading" — every candidate was read individually (trailing ~12 lines)
+before any fix:
+
+- **3 genuine defects** (no heading at all, item glued onto an unrelated prior section — the exact
+  `decide`/`codebase-onboarding` shape): `context-budget` (glued onto "## Guardrail"),
+  `inventory` (glued onto "## When this skill pays back"'s bullet list), `latency-critical-systems`
+  (glued onto "## Guardrails"). All 3 fixed the same way: promoted into `## Completion criterion`,
+  content unchanged.
+- **10 false positives, ruled out**: `adonisjs-patterns`, `backend-patterns`, `drizzle-patterns`,
+  `effect-ts-patterns`, `fastapi-patterns`, `grpc-node-patterns`, `hono-patterns`,
+  `langchain-langgraph-patterns`, `mysql-patterns`, `tauri-v2-patterns` all already carry a proper
+  `## Verify before use` heading — the single `1. Before applying, verify any pattern against X's
+  current docs...` item under it is a deliberate shared template (the same one this plan's own
+  "Depth per tier" section names as already present in `fastapi-patterns`/`mysql-patterns`), not an
+  orphaned artifact. A single-item ordered list under its own heading isn't "dangling" the way an
+  unheaded item glued onto a foreign section is. Left untouched.
+
+Verified via `bash skills/harness-audit/scripts/audit.sh` (clean, same pre-existing WARN as
+Batch 0, no new findings) and a re-run of the coarse grep restricted to the 4 fixed files + the 10
+ruled-out files — the 4 fixed files no longer match (heading now present), the 10 still match as
+expected (their heading is real, the grep is just coarse). This is a **pure markdown formatting
+fix — content unchanged** in all 4 files; don't oversell it as a functional improvement.
+
+**Batch-table reconciliation:** `context-budget` and `inventory` (B2) and `latency-critical-systems`
+(C3) already have this specific fix — their future batch should not re-discover and re-fix the
+same pattern; only their tier's actual remaining work (utility/meta light pass, pattern currency
+check) is still open for them.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.

@@ -202,5 +202,6 @@ Generate or update a project-specific CLAUDE.md based on detected conventions. I
 **Action**: Read existing CLAUDE.md, run Phases 1-3, merge new findings
 **Output**: Updated `CLAUDE.md` with additions clearly marked
 
-1. verify the onboarding guide against the live code — confirm every entry point + convention named actually exists in the repo.
-   If a claim drifts from what the code does (detected vs actual differ), trust the code — never ship a guide that guesses when it could verify.
+## Completion criterion
+
+Verify the onboarding guide against the live code — confirm every entry point + convention named actually exists in the repo. If a claim drifts from what the code does (detected vs actual differ), trust the code — never ship a guide that guesses when it could verify.

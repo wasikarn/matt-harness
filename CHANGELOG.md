@@ -5,6 +5,48 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.16] — 2026-07-23
+
+Fleet-wide completion-criterion format pass, spun out of A3 (tracked as its own version per
+`advisor()`'s guidance — 13 of the 14 candidate files belong to later batches (B2/C3), so bundling
+them into A3's commit would misrepresent what A3 actually touched).
+
+Finding `codebase-onboarding`'s defect (see 0.68.15) matching `decide`'s exact shape (A1) raised the
+question of whether it was systemic. A coarse grep (`tail -5 | grep '^1\. '`) across all 35 skills
+surfaced 14 candidates. Each was read individually before any fix, per `advisor()`'s explicit
+caution that the grep proves "a line starting with `1.` near EOF," not "orphaned artifact."
+
+Result: 3 genuine defects — `context-budget`, `inventory`, `latency-critical-systems` — each had a
+trailing `1.` completion-criterion item with no heading, glued onto an unrelated prior section
+(`## Guardrail`, a bullet list, `## Guardrails` respectively). Fixed the same way as `decide`/
+`codebase-onboarding`: promoted into `## Completion criterion`, content unchanged. The other 10
+candidates (the pattern-skill cohort: `adonisjs-patterns`, `backend-patterns`, `drizzle-patterns`,
+`effect-ts-patterns`, `fastapi-patterns`, `grpc-node-patterns`, `hono-patterns`,
+`langchain-langgraph-patterns`, `mysql-patterns`, `tauri-v2-patterns`) already carry a proper
+`## Verify before use` heading — a deliberate shared template, not an orphaned artifact — and were
+left untouched. Pure formatting fix, content unchanged in all 4 files.
+
+Batch-table reconciliation in `docs/plans/skill-improvement-batches.md`: `context-budget`/
+`inventory` (B2) and `latency-critical-systems` (C3) already have this fix; their future batch
+shouldn't re-discover and re-fix the same pattern.
+
+## [0.68.15] — 2026-07-23
+
+Batch A3 of the skill-improvement plan: `codebase-onboarding`, `score-decision`, `tech-humanize`.
+Continued autonomously per the session goal ("do every batch until finished and correct per the
+whole plan"), same protocol as A1/A1b/A2.
+
+`score-decision` and `tech-humanize`: both already carry explicit completion criteria and
+failure-mode guards (`tech-humanize` more granularly than most — every numbered step in its
+"Process and Output" section has its own "Done when:"/"Failure mode to avoid:" pair).
+`score-decision`'s check-49 `disable-model-invocation` CRIT guard re-verified intact. Reviewed, no
+change to either.
+
+`codebase-onboarding`: found the same structural defect `decide` had in A1 — a trailing orphaned
+`1.` list item (completion-criterion prose, no `2.`, no heading) glued onto the end of
+"### Example 3" with no section break. Fixed: promoted into `## Completion criterion`, content
+unchanged. This finding is what prompted the fleet-wide sweep in 0.68.16.
+
 ## [0.68.14] — 2026-07-23
 
 Batch A2 of the skill-improvement plan: `pr`, `incident`, `security-auditor`, `production-audit`.
