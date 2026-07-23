@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.23] — 2026-07-23
+
+`/kbg:compliance-audit` on the skill-improvement marathon (`docs/plans/skill-improvement-batches.md`
+vs. its shipped diff, `2f3c8d5^..392f7e3`). 5 fresh-context verifiers, 26 requirements, all CONFORM
+— no MISSING, no unjustified DEVIATED. Full report in the audit summary; one real finding required
+remediation before declaring done.
+
+**Real fix, found by the audit's own adversarial-completeness mandate on gate/verifier-perimeter
+surfaces:** checks 39 and 49 (the CRIT guards protecting `recursive-improve`'s and
+`score-decision`'s `disable-model-invocation: true` flag) used a raw `head -20 | grep -qF` substring
+match instead of a frontmatter-scoped key lookup. A verifier constructed a fixture where the real
+frontmatter key is absent but the literal string appears elsewhere in the first 20 lines (e.g. inside
+`description:` prose) — the old check stayed silent instead of firing CRIT. Fixed both checks to use
+the existing `fm_get` helper (`skills/_lib/frontmatter-helpers.sh`), which only matches `^key:` inside
+the real `---...---` frontmatter block. Added a regression fixture
+(`skills/harness-audit/tests/known-bad/check-49-bad-prose-mention/`) reproducing the exact bypass,
+wired into `test-harness-audit.sh` (7/7 pass). Also fixed a stale `1..48`/`01..48` comment in
+`audit.sh` (should have read 49 since check 49 shipped).
+
 ## [0.68.22] — 2026-07-23
 
 Second context7 currency-check pass, closing the honesty gap the v0.68.21 addendum left open: only

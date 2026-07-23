@@ -175,8 +175,8 @@ safe_count() {
 echo "=== Skill Audit Report ==="
 echo "Root: $REPO_ROOT"
 
-# ── checks (sourced in filename-glob order; fragments are numbered 1..48 with
-# filename prefix == '# N.' header, so glob-sorting by 01..48 sources them in
+# ── checks (sourced in filename-glob order; fragments are numbered 1..49 with
+# filename prefix == '# N.' header, so glob-sorting by 01..49 sources them in
 # numeric order). Sourced via the script dir (not CWD) so the audit
 # runs correctly from any CWD, matching the _lib sourcing above. Fail-closed
 # guard below catches any lost/dup fragment BEFORE the summary prints a

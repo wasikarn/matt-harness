@@ -12,8 +12,16 @@
 # deep-verification audit (Decision Coverage / Knowledge Coverage rounds).
 # CRIT (not WARN, unlike #30's reason-presence check): a silently-dropped
 # flag on this one surface is a safety regression, not a doc gap.
+#
+# Frontmatter-scoped (fm_get), not a raw substring grep over the first 20
+# lines: a `compliance-audit` adversarial pass (2026-07-23) found the prior
+# `head -20 | grep -qF` form false-negatives if the literal string
+# "disable-model-invocation: true" appears anywhere in the first 20 lines —
+# e.g. inside `description:` prose — even when the real frontmatter key was
+# actually stripped. fm_get only matches `^key:` inside the real `---...---`
+# block, closing that gap.
 _f="$CLAUDE_DIR/skills/recursive-improve/SKILL.md"
 if [ -f "$_f" ]; then
-  head -20 "$_f" | grep -qF 'disable-model-invocation: true' || \
+  [ "$(fm_get "$_f" disable-model-invocation)" = "true" ] || \
     crit "'recursive-improve/SKILL.md': missing 'disable-model-invocation: true' — this is the one safety-load-bearing instance of the flag (no-model-self-start invariant); its absence means the CLAUDE.md selection criterion could route unattended dispatch to this skill"
 fi

@@ -12,7 +12,10 @@
 #        Warnings line, not the exit code)
 #   49 — score-decision disable-model-invocation flag (CRIT; added 2026-07-23
 #        alongside check 49 itself — the other safety-load-bearing instance of
-#        the flag, previously unguarded)
+#        the flag, previously unguarded). Also carries a prose-mention
+#        regression fixture (check-49-bad-prose-mention, added the same day
+#        by a `compliance-audit` adversarial pass) proving checks 39/49 are
+#        frontmatter-scoped, not a raw substring grep.
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
@@ -79,6 +82,18 @@ if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
   ok "check-49 good fixture silent"
 else
   bad "check-49 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Regression test — a `compliance-audit` adversarial pass (2026-07-23) found
+# the raw `head -20 | grep -qF` form (checks 39/49's original shape)
+# false-negatives when the literal flag string appears only in prose (e.g.
+# `description:`) with the real key absent. Both checks were fixed to use
+# frontmatter-scoped `fm_get` instead; this fixture proves the fix.
+run_check 49 "$FIX/check-49-bad-prose-mention"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-49 prose-mention regression fixture still fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-49 prose-mention regression fixture did NOT fire CRIT — the frontmatter-scoping fix has regressed (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
 echo ""
