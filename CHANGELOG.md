@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.13] — 2026-07-23
+
+Batch A1b: in-place prose-tightening for `orchestrate` and `review-pr`, the fleet's two
+oversized (INFO-only, 20K-char threshold) SKILL.md bodies. A1 had already read both files for
+doctrine-guard presence and found no gap — `advisor()` flagged that this is a different lens from
+prose density, and a genuinely defect-free file can still carry loose wording, so re-read both with
+that lens specifically rather than reusing A1's verdict.
+
+`orchestrate`: found one real redundancy — the Bounded fan-out (F8.5) "Hard rules" list had rule 4
+restating rule 2's Workflow-tool/Agent-tool distinction almost verbatim, adding only one new point
+(without a code-level clamp, the next Workflow author re-writes the same soft cap). Trimmed rule 4
+to that one point. 33173 → 32891 chars. Also fixed a real bug hit while checking blast radius:
+`commands/ideate/COMMAND.md` cited this section by line number (`lines ~295-308`) in two spots,
+already stale before this edit — removed the line numbers since both citations already also name
+the section by heading.
+
+`review-pr`: re-read in full, found no safe cut. The one apparent redundancy (a "missing/failed
+dispatch is not a clean pass" reminder appearing three times) is deliberate repetition at each
+decision point where the model must act on it, not bloat — cutting it risks a silent false-clean
+verdict. 0-char change, reported as the correct outcome rather than a shortfall — the driver was an
+INFO finding with no reduction requirement, only a genuine-looseness check.
+
+Used git (not a workspace snapshot) as the rollback reference this time, avoiding the phantom-skill
+trap A1 hit and cleaned up after.
+
 ## [0.68.12] — 2026-07-23
 
 Batch A1 of the skill-improvement plan: `decide`, `orchestrate`, `review-pr`, `task-prep` —

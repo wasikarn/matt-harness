@@ -102,7 +102,7 @@ directly via the qmd MCP tool.
 >
 > **Peak concurrent = 5** (at the F8.5 hard cap per
 > `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
-> (F8.5)", lines ~295-308). The 2 waves are sequential:
+> (F8.5)"). The 2 waves are sequential:
 > Phase 1 → Phase 2 → Phase 3. Total Agent calls per run ≈ 8 to
 > 10. **Do not collapse into 1 wave.**
 >
@@ -474,7 +474,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
   `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
-  (F8.5)" (lines ~295-308)
+  (F8.5)"
   sets the peak-concurrent cap at 5 agents per wave, enforced by
   the lead clamping the work-list before spawning. The 2-wave
   structure in this skill is engineered to fit that cap exactly.

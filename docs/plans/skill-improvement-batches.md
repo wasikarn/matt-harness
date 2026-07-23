@@ -17,7 +17,7 @@ where it actually left off before re-running anything.
 |---|---|---|
 | 0 — description-budget pre-pass | ☑ done (WARN accepted, see note below) | 2026-07-23 |
 | A1 — decide, orchestrate, review-pr, task-prep (skill-creator loop only) | ☑ done (scope downgraded, see note below) | 2026-07-23 |
-| A1b — orchestrate + review-pr in-place prose-tightening (separate session from A1) | ☐ not started | |
+| A1b — orchestrate + review-pr in-place prose-tightening (separate session from A1) | ☑ done (low yield, correct outcome — see note below) | 2026-07-23 |
 | A2 — pr, incident, security-auditor, production-audit | ☐ not started | |
 | A3 — codebase-onboarding, score-decision, tech-humanize | ☐ not started | |
 | B1 — add-surface, harness-audit, memory-lint | ☐ not started | |
@@ -42,6 +42,18 @@ reference-doc skills).
 
 This plan is the batch schedule + per-batch recipe. It does not execute anything — each batch runs
 as its own skill-creator session, reviewed and approved before the next one starts.
+
+**Update (2026-07-23, after Batch 0/A1/A1b):** user set a session `/goal` — "ทำทุก batch จนเสร็จและถูกต้อง
+ตามแผนทั้งหมด" (do every batch until finished and correct per the whole plan) — after A1b started.
+Standing per-batch approval is replaced by continuous execution through the remaining batches; the
+per-batch rigor (closeout ritual, verification, honest-outcome reporting) is unchanged, only the
+between-batch pause is removed. **Also worth flagging before the remaining batches run:** all three
+batches closed so far (0, A1, A1b) found the fleet leaner / more doctrine-complete than this plan's
+original framing assumed — Batch 0 found almost no cuttable description fluff, A1 found 3 of 4
+skills already carrying both doctrine guards, A1b found ~1 genuine prose-tightening spot across two
+46K-char files. The remaining batches' effort estimates in this plan were calibrated to the original
+"most skills need real work" framing; expect them to land lighter too, and treat "reviewed, no
+change needed" as a normal, correct outcome rather than a sign a batch under-delivered.
 
 ## Adversarial review (2026-07-23, `kbg:plan-reviewer`)
 
@@ -238,6 +250,34 @@ downgrade proposal via `AskUserQuestion`; user picked the downgrade.
   a `*-workspace/` directory in place past a batch's closeout — same trap will reproduce.
 - A1b (orchestrate/review-pr prose-tightening) is unaffected by this downgrade — it was always a
   separate, explicit batch, not something A1 was going to do anyway.
+
+**A1b outcome (2026-07-23) — prose lens re-applied, not a copy of A1's "no change" verdict:**
+`advisor()` warned not to let A1's doctrine-guard read (there/not-there) stand in for a prose-
+density read on the same two files — a file can be defect-free while still having genuinely loose
+wording. Re-read both with that lens, enumerating each file's load-bearing points (named gates,
+contracts, safety warnings, fail-closed dispositions) first so they could be checked for survival
+after any edit. No `*-workspace/` snapshot this time — git at commit `773bea3` was the rollback
+reference (per `advisor()`, sidesteps the phantom-skill trap directly instead of remembering to
+clean up after).
+
+- **`orchestrate`**: found one genuine redundancy — Bounded fan-out's "Hard rules" numbered list had
+  rule 4 restating rule 2's Workflow-tool/Agent-tool distinction almost verbatim, adding only one
+  new point (a durability argument: without a code-level clamp, the next Workflow author re-writes
+  the same soft cap). Trimmed rule 4 to that one point; rules 1–3 untouched. 33173 → 32891 chars.
+  Verified via `git diff`: the edit is exactly that one rule's restated sentences, nothing else
+  moved. Also fixed a real, unrelated bug hit while checking blast radius: `commands/ideate/
+  COMMAND.md` cited this section by `lines ~295-308` in two places — already stale before this edit
+  (actual location was line 152), now worse after it. Both citations already also named the section
+  by heading (`§"Bounded fan-out — hard cap (F8.5)"`), so the fix removes the drift-prone line
+  numbers rather than repointing them to numbers that will just drift again.
+- **`review-pr`**: re-read in full with the prose lens specifically. The apparent redundancy found
+  (the "a missing/failed dispatch is not a clean pass" point appears in Phase 4 step 4, Phase 5 step
+  3.6, and Phase 5 step 4) is deliberate repetition at each decision point where the model must act
+  on it, not accidental bloat — a legitimate technique in a gate/review skill, and cutting it is
+  exactly the kind of edit that could silently create a false-clean verdict. No safe cut found;
+  0-char change. Per `advisor()`'s explicit framing, this is a complete and correct A1b outcome for
+  this file, not an under-delivered batch — the INFO-only body-size finding never required a
+  reduction, only a genuine-looseness check, and none was found.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.
