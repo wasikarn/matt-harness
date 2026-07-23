@@ -16,7 +16,7 @@ where it actually left off before re-running anything.
 | # | Status | Closed on |
 |---|---|---|
 | 0 — description-budget pre-pass | ☑ done (WARN accepted, see note below) | 2026-07-23 |
-| A1 — decide, orchestrate, review-pr, task-prep (skill-creator loop only) | ☐ not started | |
+| A1 — decide, orchestrate, review-pr, task-prep (skill-creator loop only) | ☑ done (scope downgraded, see note below) | 2026-07-23 |
 | A1b — orchestrate + review-pr in-place prose-tightening (separate session from A1) | ☐ not started | |
 | A2 — pr, incident, security-auditor, production-audit | ☐ not started | |
 | A3 — codebase-onboarding, score-decision, tech-humanize | ☐ not started | |
@@ -210,6 +210,34 @@ threshold by moving safety content out.
 | **C1** | Pattern | `dart-flutter-patterns`, `backend-patterns`, `mysql-patterns` | Worst pattern gap + largest files |
 | **C2** | Pattern | `langchain-langgraph-patterns`, `effect-ts-patterns`, `grpc-node-patterns`, `tauri-v2-patterns` | |
 | **C3** | Pattern | `drizzle-patterns`, `hono-patterns`, `adonisjs-patterns`, `fastapi-patterns`, `latency-critical-systems`, `cost-aware-llm-pipeline` | Includes the 3 already-complete pattern skills |
+
+**A1 outcome (2026-07-23) — scope downgraded before any subagent spawn, user-confirmed:** before
+running skill-creator's full paired-benchmark loop on all 4, checked the plan's own gap table —
+only `decide` is listed as missing a guard; `orchestrate`/`review-pr`/`task-prep` are in A1 for
+size/traffic, not a demonstrated defect. `advisor()` flagged that forcing a full with-skill/
+baseline subagent-pair loop onto 3 judgment-heavy skills with no known problem risks costly churn
+(each run loads up to 46K chars) for a result the no-regression guardrail would discard anyway
+("a different-but-not-better rewrite is a discard, not a ship"). Presented the finding + a
+downgrade proposal via `AskUserQuestion`; user picked the downgrade.
+
+- **`decide`**: read in full. Check 36 passed clean (has a `verify` token), but the body's actual
+  completion-criterion sentence was structurally malformed — a lone `1.` list item with no `2.`,
+  glued onto the end of `## Guardrails` with no heading of its own. Reformatted into its own
+  `## Completion criterion` section, content unchanged. Verified: diff vs. the pre-edit snapshot is
+  exactly that structural move, check 36 stays clean, no other line touched.
+- **`orchestrate`, `review-pr`, `task-prep`**: read in full each. All three already carry explicit
+  completion criteria, named failure modes, and (for `task-prep`) a `## Design checks` self-audit
+  section — matt's 6 doctrine elements are all present. Descriptions were already checked in Batch
+  0's fleet-wide survey (all three sit at the 25-word cap with no cuttable fluff). **Outcome:
+  reviewed, no change** — the guardrail's default holds because no defect surfaced, not because the
+  review was skipped.
+- **Workspace snapshots** (`skills/<name>-workspace/skill-snapshot/`, created for all 4 as the
+  no-regression baseline) were deleted after closeout — the audit's skill-discovery glob picked
+  them up as 4 phantom skills (35 → 39) since it matches `SKILL.md` at any depth under `skills/`,
+  not just one level. Confirmed clean (back to 35) after cleanup. Note for A2/A3/B*/C*: don't leave
+  a `*-workspace/` directory in place past a batch's closeout — same trap will reproduce.
+- A1b (orchestrate/review-pr prose-tightening) is unaffected by this downgrade — it was always a
+  separate, explicit batch, not something A1 was going to do anyway.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.

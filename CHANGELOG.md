@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.12] — 2026-07-23
+
+Batch A1 of the skill-improvement plan: `decide`, `orchestrate`, `review-pr`, `task-prep` —
+the plan's "worst workflow gap + highest-traffic skills" workflow-tier batch, originally scoped
+for skill-creator's full paired with-skill/baseline benchmark loop.
+
+Checked the plan's own gap table before spending anything on the fan-out: only `decide` is listed
+as missing a doctrine guard; the other three already carry both (completion criterion + failure-
+mode guard) — they're in this batch for size/traffic, not a demonstrated defect. `advisor()`
+flagged that a full benchmark loop on judgment-heavy skills with no known problem risks costly
+churn (each subagent run loads up to 46K chars) for an outcome the plan's own no-regression
+guardrail would discard anyway. Presented the finding and a downgrade proposal to the user, who
+confirmed: full treatment for `decide` only, light qualitative reread for the other three.
+
+`decide`: check 36 passed clean, but on a full read the body's completion-criterion sentence was
+structurally broken — a lone `1.` list item with no `2.`, glued onto the end of `## Guardrails`
+with no heading of its own. Reformatted into its own `## Completion criterion` section; content
+unchanged, verified via diff against a pre-edit snapshot.
+
+`orchestrate` / `review-pr` / `task-prep`: read in full each. All three already carry explicit
+completion criteria and named failure modes (`task-prep` even has its own `## Design checks`
+self-audit section — one of only 2 skills in the fleet that does). Outcome: reviewed, no change.
+Their descriptions were already confirmed lean in Batch 0's survey, so no optimizer pass was run
+either — it would have re-confirmed a known null result.
+
+Found and fixed one process gap along the way: the skill-creator no-regression convention (snapshot
+to `<skill>-workspace/skill-snapshot/` before editing) creates a directory the audit's skill-
+discovery glob picks up as a phantom skill (35 → 39, since it matches `SKILL.md` at any depth, not
+one level down). Deleted the four snapshot workspaces after closeout, confirmed the count returns
+to 35. Noted in the plan for every later batch: clean up `*-workspace/` before closeout, not after.
+
 ## [0.68.11] — 2026-07-23
 
 Batch 0 of the multi-session skill-improvement plan (`docs/plans/skill-improvement-batches.md`):
