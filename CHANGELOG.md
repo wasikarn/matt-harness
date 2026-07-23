@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.26] — 2026-07-23
+
+User asked for a thorough re-review of v0.68.25 right after it shipped and CC restarted onto it.
+Self-review (running the actual snippets, not just re-reading them) plus a fresh-context
+`kbg:code-reviewer` pass on the diff found 3 real bugs in that release, all now fixed:
+
+1. **Heredoc terminator broke on indentation (self-caught).** The hotfix-reference.md fix used
+   `gh pr create --body "$(cat <<'EOF' ... EOF)"`, but the whole snippet sits inside a numbered
+   list item's markdown code fence, so every line — including the closing `EOF` — carried 3
+   leading spaces. Bash requires an unindented terminator for a plain `<<'EOF'`; verified by
+   extracting and running the exact snippet, which threw `unexpected EOF while looking for
+   matching ')'`. Copy-pasting the "fixed" command would have failed outright.
+2. **Replacement also broke, worse (fresh-context-caught).** Swapped the heredoc for a
+   single-quoted `BODY='...'` variable — syntactically fine, but any apostrophe in the *filled-in*
+   content (`"doesn't"`, `"isn't"`) closes the quote early and the remainder executes as literal
+   shell commands. Verified: `manual verification: confirmed the endpoint doesn't 500 anymore`
+   silently truncated the body and ran `t`, `500`, `anymore` etc. as commands. This is worse than
+   bug 1 — it fails silently/partially instead of loudly, during the exact P0 window this file
+   exists for. Fixed by dropping inline shell-string construction entirely: the agent now writes
+   the body to a temp file (via the Write tool) and passes `--body-file <path>` — immune to
+   apostrophes, backticks, and heredoc-indentation by construction, since there's no shell
+   quoting left to get wrong.
+3. **Two regex precision gaps in the new `flow-nudge.sh` carve-out.** `thread` (English) and the
+   broader `ตอบ...รีวิว` co-occurrence (Thai) were both too generic — verified live: "reply to the
+   thread on Slack about lunch plans", "answer this thread with a summary", and Thai "ตอบคำถาม
+   ลูกค้าในรีวิวสินค้าให้หน่อย" (answer customer questions in a product review) all wrongly fired
+   the `/address-review` nudge, none PR-related. Cut `thread` from the English context set (kept
+   `review|reviewer`); narrowed Thai to just `แก้ตามรีวิว` (address-review's own literal trigger
+   phrase) instead of the generic co-occurrence check. Also tightened the bare `repl` stem to
+   `repl(y|ies|ying)` — it was matching "replicate"/"replica" too ("replicate the reviewer
+   environment" firing the reply nudge). Added an impl-verb guard mirroring `PR_INTENT`'s own
+   `IMPL_NO_PR_CREATE` pattern, so "implement the fix, refactor the module, and reply to the
+   review thread" falls through to the plan-first nudge instead of losing it to the narrower one.
+
+7 new regression tests added for the exact false positives found (`test-flow-nudge.sh` now
+77/77). Net effect on the user-facing behavior described in v0.68.25 is unchanged (same nudge,
+same hotfix template shape) — this release is entirely about making the underlying mechanics
+actually correct rather than merely appearing correct on the cases already tested.
+
 ## [0.68.25] — 2026-07-23
 
 User reported that Claude-created PRs and PR comments "barely ever match" the templates the

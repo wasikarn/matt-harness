@@ -88,8 +88,13 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    ```
 2. Push branch: `git push origin <branch>`
 3. Create PR with emergency labels — **`--base` is the production branch the hotfix was cut from, never the integration branch (develop):**
-   ```bash
-   gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body "$(cat <<'EOF'
+   Write the body to a temp file first (the Write tool, not a bash heredoc or quoted string —
+   real hotfix content routinely contains apostrophes/backticks that break inline shell-string
+   construction; `--body-file` sidesteps quoting entirely), matching this structure — mirrors
+   `kbg:pr`'s Summary/Changes/Testing/Related-Issues headings (see `skills/pr/SKILL.md` Phase 4)
+   plus a hotfix-only **Rollback** section:
+
+   ```markdown
    ## Summary
 
    <P0/P1/P2> hotfix: <what broke, one line> — <what this fix does, one line>
@@ -110,11 +115,12 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    ## Related Issues
 
    Fixes #<issue>
-   EOF
-   )" --label "hotfix" --label "P0"
    ```
-   Mirrors `kbg:pr`'s body structure (Summary/Changes/Testing/Related Issues — see `skills/pr/SKILL.md`
-   Phase 4) plus a hotfix-only **Rollback** section; keep the two in sync if either's headings change.
+
+   Then:
+   ```bash
+   gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body-file <path-to-file> --label "hotfix" --label "P0"
+   ```
    A hotfix skips `kbg:pr`'s own preview-confirm gate for speed (Phase 0-3 already are the review), but
    the body shape stays the same so a hotfix PR reads like every other PR in this repo.
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?"

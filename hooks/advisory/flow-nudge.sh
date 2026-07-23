@@ -131,23 +131,34 @@ fi
 # command, not a listed skill, and disable-model-invocation blocks the model
 # from just running it). Partial verb stems (repl/respond/answer/address), no
 # \b, mirrors this file's existing PR_INTENT convention (creat/open/rais/mak).
-# Context set is deliberately narrow — review|reviewer|thread only, NOT
-# comment/feedback: those are everyday words ("respond to the comment about
-# the budget", "address the feedback from the retro") that would fire this
-# GitHub-specific nudge on prompts with nothing to do with a PR. Caught in
-# review before shipping — the sibling PR_INTENT pattern anchors on an actual
-# GitHub noun (`pull request|\bPRs?\b`) for the same reason.
-PR_REPLY_INTENT='(repl|respond|answer|address).{0,15}(review|reviewer|thread)'
-if /usr/bin/grep -qiE "$PR_REPLY_INTENT" <<< "$INPUT"; then
+# Context set is `review|reviewer` only — NOT comment/feedback (excluded up
+# front: everyday words like "respond to the comment about the budget") and
+# NOT `thread` either (added, then cut on fresh-context review: "reply to the
+# thread on Slack" / "answer this thread with a summary" fire on Slack/forum/
+# worker threads that have nothing to do with a PR — the same over-generic-
+# noun mistake the comment/feedback exclusion already existed to avoid). An
+# impl-heavy prompt still falls through to the plan-first nudge instead
+# (mirrors PR_INTENT's own IMPL_NO_PR_CREATE guard) — otherwise "implement the
+# fix, refactor the module, and reply to the review thread" would lose the
+# plan-first nudge to this narrower one. `repl(y|ies|ying)`, not bare `repl` —
+# a bare stem also matches "replicate"/"replica"/"replace" ("replicate the
+# reviewer environment" wrongly fired on the bare stem, caught on review).
+PR_REPLY_INTENT='(repl(y|ies|ying)|respond|answer|address).{0,15}(review|reviewer)'
+if /usr/bin/grep -qiE "$PR_REPLY_INTENT" <<< "$INPUT" \
+   && ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT"; then
   emit_address_review_nudge
 fi
 
-# Thai reply-to-PR-review intent. ตอบ/แก้ตาม (reply/fix-per-review) is address-
-# review's own frontmatter Thai trigger phrase ("แก้ตามรีวิว") — bare substring
-# match, no \b (Thai has no ASCII word boundaries), same convention as THAI_IMPL.
-# รีวิว (review) only, not คอมเมนต์ (comment) — same over-generic-word exclusion
-# as the English pattern above.
-if /usr/bin/grep -qE "แก้ตามรีวิว|ตอบ.{0,15}รีวิว|ตอบกลับ.{0,15}(รีวิว|reviewer)" <<< "$INPUT_TH"; then
+# Thai reply-to-PR-review intent. Deliberately just address-review's own
+# frontmatter Thai trigger phrase ("แก้ตามรีวิว"), not a broader ตอบ...รีวิว
+# co-occurrence check — คำว่า รีวิว is an everyday Thai loanword for product/
+# restaurant reviews ("ตอบคำถามลูกค้าในรีวิวสินค้าให้หน่อย" = "please answer
+# customer questions in the product review" fires on the broader pattern and
+# has nothing to do with a PR), far more generic than English "review" in this
+# harness's mostly-engineering context. Same impl-verb guard as the English
+# block above.
+if /usr/bin/grep -qE "แก้ตามรีวิว" <<< "$INPUT_TH" \
+   && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH"; then
   emit_address_review_nudge
 fi
 

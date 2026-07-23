@@ -212,11 +212,32 @@ test_silent "review a PR is not a reply (no reply/respond/answer/address verb)" 
 test_silent "address with no PR/review context" "address the bug in the login flow"
 # Regression guards: 'comment'/'feedback' are everyday words dropped from the
 # trigger context on purpose — these must NOT fire the GitHub-PR nudge.
-test_silent "respond to a comment (no review/reviewer/thread context)" "respond to the comment about the budget"
+test_silent "respond to a comment (no review/reviewer context)" "respond to the comment about the budget"
 test_silent "address feedback from a retro (not a PR)" "address the feedback from the retro"
 test_silent "reply to a comment on a design doc (not a PR)" "reply to her comment on the design doc"
+# Regression guards: 'thread' was also tried and cut on fresh-context review —
+# too generic (Slack/forum/worker threads), same mistake as comment/feedback.
+test_silent "reply to a Slack thread (not a PR)" "reply to the thread on Slack about lunch plans"
+test_silent "answer a forum thread (not a PR)" "answer this thread with a summary"
+# Regression guard: bare 'repl' stem also matched replicate/replica/replace —
+# must require an actual reply/replies/replying form.
+test_silent "replicate the reviewer environment (not a reply)" "we should replicate the reviewer environment on staging"
+# Impl-heavy prompt still falls through to plan-first, mirrors PR_INTENT's
+# own IMPL_NO_PR_CREATE guard — the narrower address-review nudge must not
+# steal a prompt that also has real implementation work in it.
+impl_reply_out=$(echo "$(user_prompt_payload "implement the fix, refactor the auth module, and reply to the review thread")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$impl_reply_out" | /usr/bin/grep -qi "plan mode" \
+   && ! printf '%s' "$impl_reply_out" | /usr/bin/grep -qi "address-review"; then
+  echo "  ✅ CONTENT: impl-heavy reply-to-review ask falls through to plan-first, not address-review"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED plan-first only: <$(printf '%s' "$impl_reply_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
+fi
 test_nudge  "Thai: fix-per-review (แก้ตามรีวิว, address-review's own trigger)" "แก้ตามรีวิวให้หน่อย"
-test_nudge  "Thai: reply to review (ตอบ...รีวิว)" "ตอบรีวิวให้หน่อย"
+# Regression guard: รีวิว (review) alone is an everyday Thai loanword for
+# product/restaurant reviews — must NOT fire on a non-PR product-review ask.
+test_silent "Thai: answer customer questions in a product review (not a PR)" "ตอบคำถามลูกค้าในรีวิวสินค้าให้หน่อย"
 addr_out=$(echo "$(user_prompt_payload "reply to the review comments on this PR")" | bash "$HOOK" 2>/dev/null)
 if printf '%s' "$addr_out" | /usr/bin/grep -qi "address-review"; then
   echo "  ✅ CONTENT: reply-to-review ask names '/address-review'"
