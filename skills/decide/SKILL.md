@@ -27,7 +27,7 @@ Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session):
 | Reasoning/plan/ADR already exists — stress-test it | `critique` |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
 | Chaos or incident | Stop — use `kbg:incident` instead |
-| Decision already made, needs a record | `domain-modeling` directly (owns the ADR rule) |
+| Decision already made, needs a record | `mattpocock-skills:domain-modeling` directly (owns the ADR rule) |
 | Disprove a confident output before committing to it | Stop — spawn an external fresh-context skeptic that has not seen the work (`doubt-driven` pattern; canonical instance is the adversarial pass in `kbg:review-pr`) — not a mode here, because the skeptic must not share this context |
 | A pile of competing tasks/asks, not yet one bounded question | Stop — use `kbg:orchestrate` first to triage effort and execution shape; come back here once triage lands on a single reversible-choice question |
 
@@ -185,7 +185,7 @@ Trade-offs accepted: ...
 - Bias guards applied: framing / anchoring / confirmation / sunk-cost
 ```
 
-Persist via `domain-modeling` (owns the ADR rule) when the decision warrants a durable ADR.
+Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the decision warrants a durable ADR.
 
 ## Guardrails
 

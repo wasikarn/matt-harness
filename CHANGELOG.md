@@ -5,6 +5,43 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.27] — 2026-07-23
+
+`skill-creator:skill-creator` invoked to "optimize" 7 skills: `tech-humanize`, `orchestrate`,
+`incident`, `goal-craft`, `decide`, `recursive-improve`, `task-prep`. Scoped to a targeted content
+pass (same scope as v0.68.25/.26's pr/review-pr/address-review pass) — no automated eval loop, no
+live description-optimizer run, since two of the seven (`decide`, `recursive-improve`) are
+deliberately low-trigger/gated by design and making them more "triggery" would be a regression, not
+an improvement. `advisor()` flagged the correct prior going in: the fleet's audit history is mostly
+"reviewed, no change," so the risk was manufacturing edits to justify the pass, not missing a real
+one. Read all 7 solo (no subagent fan-out, to avoid re-running the exact grep-and-declare-dead
+pattern the fresh-context near-misses in v0.68.25/.26 already exposed). 5 of 7 (`tech-humanize`,
+`incident`, `goal-craft`, `recursive-improve`, `task-prep`) came back doctrine-complete — every
+bundled file, cross-referenced command, script, and hook wiring verified to actually exist. 2 real
+fixes:
+
+1. **`orchestrate/SKILL.md`'s Gated-agent enumeration was stale.** The fleet grew by 2 agents since
+   this list was last written (`blind-spot-hunter` 2026-07-18, `plan-reviewer` 2026-07-22), both
+   holding `Bash` and therefore requiring the `AskUserQuestion` gate — but neither appeared in the
+   "every review agent holds Bash" list, while `reference.md`'s fuller fleet mapping already had
+   both. A reader trusting the SKILL.md list at face value (rather than independently re-checking
+   each agent's `tools:` grant, which rule 31 already tells them to do) would have no signal these
+   two need gating. Added both to the enumeration.
+2. **`decide/SKILL.md` cited `domain-modeling` bare, unnamespaced, in both its occurrences** (mode
+   table + the persistence line) — the exact defect class already fixed once in `task-prep/SKILL.md`
+   (see the 0.6x-range entry above: 12 bare `mattpocock-skills` citations repointed, invisible to
+   `harness-audit` check 40, which only catches drift on refs already in `kbg:` form). Unlike
+   `orchestrate`'s bare `wayfinder` mentions (which sit right below a header that already spells out
+   `mattpocock-skills:wayfinder` — a legitimate shorthand once anchored), `decide/SKILL.md` never
+   spells out the full name anywhere, so a reader hitting this skill in isolation has no signal
+   `domain-modeling` is an external plugin skill, not kbg-native. Repointed both occurrences to
+   `mattpocock-skills:domain-modeling`.
+
+Considered and left alone: the docs/reference/ files (`judgment-ladder.md`, `strategic-judgment.md`,
+`reasoning-models.md`) also cite `domain-modeling` bare, matching this same pattern — but fixing
+those is outside this pass's 7-skill scope (Rule 2); noting it here so a future pass doesn't
+re-discover it from scratch.
+
 ## [0.68.26] — 2026-07-23
 
 User asked for a thorough re-review of v0.68.25 right after it shipped and CC restarted onto it.
