@@ -447,7 +447,8 @@ read in full:
   fleet or any installed plugin. Fixed both citations to point at a generically-correct source
   (Anthropic's pricing docs / live session context) instead of a nonexistent skill.
 
-**Plan complete.** All 10 batches (0, A1, A1b, A2, A3, A3-fmt, B1, B2, B3, C1, C2, C3) are closed.
+**Original batch schedule complete.** All 12 batches (0, A1, A1b, A2, A3, A3-fmt, B1, B2, B3, C1, C2,
+C3 — the plan started at 10, A1b and A3-fmt split out mid-marathon) are closed.
 Total real fixes across the marathon: 1 malformed-heading fix (`decide`, A1) + 4 more of the same
 class (`codebase-onboarding`, `context-budget`, `inventory`, `latency-critical-systems`, A3/A3-fmt)
 + 2 missing-doctrine-element additions (`add-surface`, `harness-audit`, B1) + 1 more
@@ -548,6 +549,10 @@ Net: 1 real fix (`dart-flutter-patterns`, Freezed 3.x), 9 confirmed clean. Combi
 addendum's 3, this closes the honesty gap that addendum explicitly flagged open — **all 13 of 13
 pattern-tier skills have now been checked against real, current docs**, not just reread against
 training knowledge.
+
+**Plan fully complete (2026-07-23).** Original 12-batch schedule + both post-plan addenda are
+closed — 14/14 rows in the Progress table above. No open work remains against this plan; a future
+session finding this file should treat it as historical record, not a to-do list.
 
 ## Per-batch closeout ritual (matches the pattern from the prior structural-audit pass)
 
