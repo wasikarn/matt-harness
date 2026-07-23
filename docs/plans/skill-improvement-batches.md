@@ -21,7 +21,7 @@ where it actually left off before re-running anything.
 | A2 — pr, incident, security-auditor, production-audit | ☑ done (1 real fix, 3 no-change) | 2026-07-23 |
 | A3 — codebase-onboarding, score-decision, tech-humanize | ☑ done (1 real fix, 2 no-change) | 2026-07-23 |
 | A3-fmt — fleet-wide completion-criterion format pass (spun out of A3, see note) | ☑ done (3 real fixes, 10 false positives ruled out) | 2026-07-23 |
-| B1 — add-surface, harness-audit, memory-lint | ☐ not started | |
+| B1 — add-surface, harness-audit, memory-lint | ☑ done (3 real fixes, scope guard held) | 2026-07-23 |
 | B2 — context-budget, inventory, claude-md-health | ☐ not started (context-budget + inventory already had the A3-fmt fix; claude-md-health + the remaining real work still open) | |
 | B3 — agent-architecture-audit, eval-harness, goal-craft, learn, recursive-improve | ☐ not started | |
 | C1 — dart-flutter-patterns, backend-patterns, mysql-patterns | ☐ not started | |
@@ -350,6 +350,28 @@ fix — content unchanged** in all 4 files; don't oversell it as a functional im
 (C3) already have this specific fix — their future batch should not re-discover and re-fix the
 same pattern; only their tier's actual remaining work (utility/meta light pass, pattern currency
 check) is still open for them.
+
+**B1 outcome (2026-07-23):** first utility/meta-tier batch — light pass (name the specific gap,
+draft the fix, skip the paired benchmark), continued autonomously per the session goal. Scope guard
+honored: `harness-audit`'s fix stayed to `SKILL.md` prose only, no new check script.
+
+- **`add-surface`**: genuinely missing both doctrine elements (matched the plan's own gap-ranking
+  table) — an 18-line procedure list with no completion criterion or failure-mode section at all.
+  Added both: a completion criterion (validate + version match + live-listing confirmation) and 3
+  failure modes (same-version no-op, skipped `BOUNDARY.md` regen, content-edit-vs-surface-add
+  confusion).
+- **`harness-audit`**: same — reference-table-heavy body with no explicit "done when" or "what goes
+  wrong" section. Added a completion criterion (re-run clean after a fix, not just read the summary)
+  and 3 failure modes (WARN misread as pass, stale `--plugin-cache` override, fixing without
+  re-running) — all grounded in mechanics the file already documents elsewhere (exit-code semantics,
+  plugin-cache auto-detection), not new claims.
+- **`memory-lint`**: on reread, already carries both elements' *substance* — just scattered inline
+  rather than under a scannable heading (the drift-to-apply warning in the `--trim` section, the
+  slug-vs-filename mismatch note, the links-are-memory-only rule). Consolidated into one
+  `## Failure modes` section restating existing content, not adding new claims. No completion
+  criterion added — `exit code = finding count; 0 = clean` is already a sufficient, well-placed
+  completion signal for a deterministic linter, unlike the workflow tier where "done" is more
+  subjective.
 
 Batch order is a starting point, not a contract — if a batch surfaces something that changes
 priority for the next one, re-order and note why in this file.

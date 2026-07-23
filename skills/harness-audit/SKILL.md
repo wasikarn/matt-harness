@@ -117,6 +117,24 @@ Add new checks to `audit.sh` in the order they appear. Each check emits:
 
 - `references/health.md` — full `--health` mode contract (formerly `kbg:harness-health`).
 
+## Completion criterion
+
+The audit ran to completion (exit code = finding count, not a script crash) and every CRIT finding
+was either fixed and re-verified with a clean re-run, or explicitly accepted with a documented
+reason. Reading the summary line after a fix, without re-running the audit, is not done — a typo in
+the fix itself only shows up on the re-run.
+
+## Failure modes
+
+- **WARN read as pass.** Exit code is a raw finding count, not a pass/fail bit — a WARN-only run
+  still exits nonzero. Check the CRIT/WARN/INFO breakdown, not just "exit 0 or not."
+- **Stale `--plugin-cache` override.** F1's plugin-aware skip auto-detects the live cache version
+  via `sort -V | tail -1` — a manually-passed `--plugin-cache` pointing at a stale version
+  reintroduces the false F1s the auto-detection exists to avoid.
+- **Fixing without re-running.** A finding is only closed once the audit re-runs clean on it —
+  editing the file and assuming the fix landed skips the one step that would catch a mistake in the
+  fix itself.
+
 ## METHODOLOGY alignment
 
 - **Independent checks:** every check runs independently; one failure doesn't mask others.

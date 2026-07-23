@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.17] — 2026-07-23
+
+Batch B1 of the skill-improvement plan: `add-surface`, `harness-audit`, `memory-lint` — first
+utility/meta-tier batch, light pass (name the specific gap, draft the fix, skip the paired
+benchmark). Continued autonomously per the session goal. Scope guard honored: `harness-audit`'s fix
+stayed to `SKILL.md` prose only, no new check script under `scripts/checks/`.
+
+`add-surface` and `harness-audit` were both genuinely missing a completion criterion and a
+failure-mode section entirely (matching the plan's own gap-ranking table) — both are dense
+reference-table-style bodies with no "done when" or "what goes wrong" content at all. Added both
+sections to each, grounded in mechanics the files already document elsewhere (version-bump no-op
+semantics, plugin-cache auto-detection, exit-code-as-finding-count) rather than new claims.
+
+`memory-lint`: on reread, already had the substance of both elements — just scattered inline rather
+than under a scannable heading (a drift-to-apply warning buried in the `--trim` section, a
+slug-vs-filename mismatch note, the links-are-memory-only rule). Consolidated into one
+`## Failure modes` section restating existing content. No completion criterion added — the
+existing `exit code = finding count; 0 = clean` is already sufficient for a deterministic linter.
+
 ## [0.68.16] — 2026-07-23
 
 Fleet-wide completion-criterion format pass, spun out of A3 (tracked as its own version per

@@ -73,6 +73,17 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 - **Read before write:** before adding a memory, lint surfaces an existing one it should link to or supersede.
 - **Memory authoring format:** one lesson per file, frontmatter (`name:`, `description:`), body with the fact plus `**Why:**` and `**How to apply:**`, link related memories with `[[slug]]`; dedupe against existing files before writing, and never delete — archive under `_archive/` (see the A3 rubric above).
 
+## Failure modes
+
+- **Skipping straight to apply.** `--auto-archive --yes` without first reading the `--dry-run` plan
+  can `mv` entries you meant to keep — always review the plan-mode action list before applying.
+- **Linking by `name:` slug instead of filename stem.** `name:` fields are inconsistent storewide
+  (hyphen vs underscore, prefixed or not) — a link authored against the slug can resolve to nothing
+  even though the file exists. Always link by filename stem.
+- **Using `[[links]]` for non-memory references.** Wikilinks only resolve memory↔memory — a link to
+  a skill or doctrine file (`decommission`, METHODOLOGY) always shows as dangling. Use backticked
+  prose references for those instead.
+
 ## Related
 
 - `harness-audit` — same shape for the skill/agent/hook ecosystem (check 13 covers MEMORY.md pointer→file; this covers the reverse + links)

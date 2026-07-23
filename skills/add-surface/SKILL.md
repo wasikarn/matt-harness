@@ -15,3 +15,19 @@ description: Build or remove a plugin surface (agent, skill, command, hook, outp
 When `skills/inventory/` is present, regenerate the capability map with:
 `bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md`
 (STDOUT-only — `>` redirect mandatory. Run `bash skills/inventory/scripts/inventory.sh` first for the unified cross-layer listing; see `skills/inventory/reference.md` for witness + boundary details.)
+
+## Completion criterion
+
+The new surface loads: `claude plugin validate --strict` passes, both manifests carry the same
+bumped version, and the component appears in the live `/skills`/`/agents`/`/commands` listing after
+`claude plugin update kbg@kobig` + restart. For a removal, confirm `harness-audit`'s fleet count
+dropped by one and no dangling `kbg:`-reference to it remains.
+
+## Failure modes
+
+- **Same-version edit.** A cached plugin no-ops on an unchanged version — step 3's bump is not
+  optional, and skipping it means the edit silently never takes effect.
+- **Skipped `BOUNDARY.md` regen.** Leaves the capability map stale the next time `inventory` reads
+  it as ground truth.
+- **Editing content, not adding a surface.** This skill creates or removes a directory-level
+  component. Changing an existing component's content is a direct edit, not this skill's job.
