@@ -5,6 +5,76 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.28] — 2026-07-24
+
+`skill-creator:skill-creator`'s actual eval-driven loop run against `orchestrate/SKILL.md` for
+real (v0.68.27's pass was a solo-read content pass, not this mechanism) — user asked to "improve +
+optimize" the skill and have staff-engineer agents do the review/feedback instead of reviewing
+output themselves. Substituted skill-creator's human eval-viewer step with dispatched reviewer
+agents throughout; no human looked at a single test-case output before it shipped.
+
+**Iteration 1 — diagnose.** 5 realistic multi-task-inbox prompts, each targeting one documented
+behavior (Eisenhower/Impact×Effort/Value×Risk selection + write-capable gating, Fast Path Gate,
+fan-out clamp to 5, ticket-injection guard, security precedence + explicit drop). Each run twice
+(with the skill, and a no-skill baseline) as a dry run — real Agent/AskUserQuestion calls disabled,
+sub-agents narrate what they'd dispatch instead of dispatching. 5 staff-engineer reviewer agents
+then judged with-skill vs. baseline per case and produced concrete SKILL.md fix suggestions,
+verified against the live source file rather than taken on faith. 4 real fixes shipped:
+
+1. **Fast Path Gate criterion 2 was inverted.** "Expected output >30 lines and <2000 tokens"
+   required *more* than 30 lines, excluding the single most obvious fast-path case (a 1-line fix)
+   from the gate meant to cover it. Fixed to `<30 lines`.
+2. **The `## Example` section's table didn't match its own Output Format spec** (3 columns vs. the
+   mandated 6), and its Input string listed 4 items against a 5-row table (an orphan "dark-mode
+   toggle" row with nothing introducing it) — a model skimming the example over the spec could ship
+   an under-specified table missing `Agent`/`Done-when`/`Status`. Expanded the table to the full 6
+   columns and fixed the Input string to actually list all 5 items.
+3. **The Validation-chain's "ungated Validator" carve-out contradicted the blanket Gated rule** for
+   the same agent (`security-reviewer`) depending on which section a reader hit first — the
+   carve-out only holds when a Builder already produced an artifact to review; a standalone
+   first-pass review of untouched-for-a-year code is Gated regardless of which agent runs it. Added
+   a one-line disambiguation at the point of ambiguity.
+4. **The sanitize-before-dispatch rule lived only in Step 1, read once, not enforced at the actual
+   dispatch point.** A reviewer verified this against a real generation: the model's own with-skill
+   run dispatched `requirement-analyst` with a ticket-injection test case *before* its own named
+   mitigation (re-fetching the canonical ticket) had run — the one control that could've kept the
+   injected text out never got a chance to. Moved the sanitize instruction into the F9 spawn-prompt
+   template itself, resolved a wording collision ("inline the values, don't summarize" vs. "never
+   lift ticket text verbatim"), and required ungated read-only dispatches to sanitize too (a
+   read-only agent can't act on an injected instruction, but can still launder it into a written
+   analysis that repeats the injected framing as legitimate context).
+
+Two smaller doctrine tightenings rode along: a mechanical/deterministically-verified item (e.g.
+dependency-checker output) no longer inherits a batch's Value×Risk framing just because it arrived
+in the same message; the `kbg:decide` handoff is now named directly in the matrix-selection section
+instead of only in a standalone paragraph after the example. Also documented (not built — no proven
+need yet, Rule 2) that the fan-out cap's "a human sees every dispatch" argument assumes an attentive
+reviewer, not a rubber-stamped batch approval, and that Fast Path items don't count against the cap.
+
+**Iteration 2 — verify, not assume.** Blind old-vs-new comparison, same 5 prompts, A/B randomized.
+New version won all 5 cases, no regressions — but the comparison itself has two confounds worth
+naming honestly: comparator prompts described each side's per-dimension strengths rather than
+staying fully blind, and old/new are separate generations, so part of any "win" is generation
+variance rather than the edit (in one case the *old* run's loss traced to a fabricated
+incident→`diagnosing-bugs` link its generation invented, unrelated to anything this pass changed).
+The real evidence for the 4 fixes above is direct inspection, not the comparison score: criterion 2
+was a literally inverted condition, the example table contradicted its own spec, the carve-out
+contradicted the blanket Gated rule, and the sanitize gap was reproduced live (the with-skill run's
+own dispatch fired before its named mitigation ran). The comparison corroborates; it doesn't carry
+the claim on its own.
+
+**Description optimization** (`scripts.run_loop`, 16-query eval set — 8 should-trigger/8
+should-not, drafted then critiqued by a staff-engineer reviewer agent standing in for the human
+sign-off step, catching 3 weak queries before the run). 3 iterations, honest negative result: train
+and held-out test scores stayed flat (test 3/6 in every iteration) or got worse (train 7/10 →
+6/10 by iteration 3) despite two substantially rewritten, more explicit descriptions. The failure
+pattern was consistent across all 3 iterations and both rewrites: explicit "prioritize/route this"
+phrasings and the literal Thai trigger phrase reliably fire; vent-y "what do I even do"/"no idea
+where to start" phrasings reliably don't, regardless of description wording — a phrasing-style
+ceiling the description text doesn't control, not a wording bug. Kept the current description
+unchanged rather than ship a longer rewrite for zero measured gain — the holdout mechanism did
+exactly what it's for here, catching a train-only "improvement" that didn't generalize.
+
 ## [0.68.27] — 2026-07-23
 
 `skill-creator:skill-creator` invoked to "optimize" 7 skills: `tech-humanize`, `orchestrate`,
