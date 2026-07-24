@@ -5,6 +5,42 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.29] — 2026-07-24
+
+`skill-creator:skill-creator`'s full improve+optimize loop run against `tech-humanize/SKILL.md`,
+same agents-only-review substitution as v0.68.28. Iteration 1 (4 evals, with-skill vs. baseline,
+graded by 4 dispatched staff-engineer reviewers): the 44 scripted assertions were 100%
+non-discriminating (a capable no-skill baseline clears the same literal-phrase/em-dash checks), so
+the real signal came from qualitative review. 2 real gaps shipped: (1) the "what still reads AI"
+step (step 3) and the final rewrite (step 4) ran as disconnected exercises — a run named a real
+weakness in step 3 and shipped it unfixed in step 4 without ever revisiting it; fixed by binding
+step 4 to walk step 3's bullets one at a time and name the specific fix or an explicit
+"kept as tradeoff" call. (2) a self-consistency gap in step 2 — a term step 1 explicitly cleared as
+not-a-tell could get silently overridden mid-rewrite with no way for step 3/4 to catch it, since it
+was never named as a problem; fixed with a guard requiring any such change to be named, not quietly
+made. Both fixes verified against re-run evals; the second is suggestive but not fully isolated
+(4 test runs total, cause and effect not cleanly separated).
+
+Iteration 2 moved to description-optimization (`scripts/run_loop.py`, 5 max iterations, 20
+hand-authored trigger queries reviewed and fixed by 2 subagents before running — near-duplicate
+should-trigger queries, a mislabeled should-not-trigger query, and a redundant one, all caught
+before they could bias the run). Result: no ship-worthy improvement. `run_loop` exited at
+`max_iterations` (never converged on `all_passed`), its best candidate scored 5/8 vs. the original's
+implicit baseline on a held-out test set (one query flipping, train score moved the *opposite*
+direction, 11/12→10/12 — noise, not signal, on n=8/n=12), and — the fact that actually decided
+it — the candidate ran 142 words against this repo's own `≤25-word` skill-description budget
+(CLAUDE.md: "descriptions load on every Task spawn"), a 5.7x regression on a documented constraint
+to chase a gain within noise. Kept the original description unchanged. Real finding, not a wash:
+3 of 4 should-trigger test queries (a plain README-intro rewrite, a Thai UI-error-message rewrite, a
+contractor spec-doc rewrite) never reliably triggered the skill across any of the 5 iterations,
+including ones the longer candidate description explicitly named by genre — since making the
+description *more* explicit about exactly those genres didn't move the needle, this is not a
+description-wording problem. Consistent with skill-creator's own doctrine ("Claude only consults
+skills for tasks it can't easily handle on its own... may not trigger even if the description
+matches perfectly") — a single-paragraph rewrite reads as easy enough to just do without consulting
+the skill. No fix shipped for this; flagged as a structural under-triggering pattern, not something
+description-tuning can close.
+
 ## [0.68.28] — 2026-07-24
 
 `skill-creator:skill-creator`'s actual eval-driven loop run against `orchestrate/SKILL.md` for

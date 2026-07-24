@@ -108,14 +108,14 @@ Look for **clusters** of tells, not isolated ones — a single em dash means not
    Done when: every tell actually present is named, not just the first 2–3 obvious ones.
    Failure mode to avoid: stopping after the loudest tells (em dash, "delve") and missing a cluster that only shows up on a full pass.
 2. **Draft rewrite** — natural aloud, varied length, simple constructions (is/are/has · คือ/เป็น), correct register, grit gate applied.
-   Done when: every tell named in step 1 has been addressed in the draft.
-   Failure mode to avoid: deleting AI-isms without adding grit — lands in the "clean but neutral" safe middle the Grit Gate above scores ~30/100 AI, not 0.
+   Done when: every tell named in step 1 has been addressed in the draft, and everything step 1 explicitly cleared (not a tell) is left as written. If a cleared term now looks wrong while you're drafting, that's new information — name it, don't just quietly change it.
+   Failure mode to avoid: deleting AI-isms without adding grit — lands in the "clean but neutral" safe middle the Grit Gate above scores ~30/100 AI, not 0. Also avoid: overriding your own step-1 "not a tell" call mid-rewrite without saying so — an untracked change like that can't get caught by step 3/4, because it was never named as a problem in the first place.
 3. Ask **"what still makes this read AI?"** and answer in a few bullets.
    Done when: at least one honest gap is named, even a minor one.
    Failure mode to avoid: answering "nothing, looks good" — that's grading your own work instead of scrutinizing it.
-4. **Final rewrite** addressing them, zero em dashes (#14).
-   Done when: every bullet from step 3 is either fixed or named as a deliberate tradeoff (e.g., formal vocabulary the genre requires).
-   Failure mode to avoid: a final rewrite indistinguishable from the draft — if step 3 found nothing, re-run step 3, don't skip step 4.
+4. **Final rewrite** addressing them, zero em dashes (#14). Before calling it done, walk step 3's bullets one at a time and, for each, name the specific change in the final text that fixes it — or write "kept as tradeoff: <reason>" (e.g., formal vocabulary the genre requires). A bullet with neither is unfixed, no matter how clean the final rewrite reads on its own; writing a polished final pass isn't the same as checking it against what step 3 found.
+   Done when: every bullet from step 3 has a named resolution — fixed-where, or tradeoff-why — not just a rewrite that hopes it addressed them.
+   Failure mode to avoid: a final rewrite indistinguishable from the draft — if step 3 found nothing, re-run step 3, don't skip step 4. Also avoid naming a real weakness in step 3 and then shipping it unchanged in step 4 without ever revisiting it — step 3 and step 4 have to actually connect, not run as two independent exercises.
 
 Deliver: the draft, the brief "still-AI" bullets, the final rewrite, and (optionally) a short change summary.
 
