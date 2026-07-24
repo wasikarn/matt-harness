@@ -70,6 +70,39 @@ maxed) and not something worth chasing on this split size — logged as a genuin
 where triggering should stop vs. where the skill's own internal routing should take over, same shape
 as eval 1's untouched design tradeoff above.
 
+## [0.68.31] — 2026-07-24
+
+Follow-up on v0.68.30, same session: `advisor()` flagged that the 4 fixes above only got my own
+re-read after applying them — the reviewers verified the *gaps* and proposed fix *text*, but no
+fresh-context agent ever saw the *edited* `SKILL.md`, skipping the harness's own v0.68.24 norm
+("fresh-context review before committing... caught 6 leftover references the first pass missed").
+Dispatched one fresh-context reviewer at the edited file cold, no knowledge of why the edits were
+made. Verdict: 2 of the 4 spots clean (no-op-test reword, present-but-thin classification); the
+other 2 had a real issue.
+
+**Fix 1 — genuine redundancy, not complementary as written:** Step 6's overflow-priority paragraph
+(fix 2 in v0.68.30) and the pre-existing "fold Step 3.5's `open_questions` into this batch"
+paragraph both landed as "fold `open_questions` in," four lines apart, with the overflow paragraph
+already presupposing the fold-in fact it hadn't stated yet — a cold reader hit real déjà vu, not a
+deliberate two-layer rule. Merged into one paragraph: state the fold-in fact once, immediately
+followed by the overflow-priority ordering.
+
+**Fix 2 — connective gap in fix 1's own mismatch-note path:** Step 3.5 item 2 (the new topical
+sanity check) said a ticket-mismatch note should "fold into Step 6 as an open question," but item 2
+explicitly skips `requirement-analyst` dispatch on mismatch — so there's never a structured
+`open_questions` field to fold from. Step 6's language only described `open_questions` as a
+dispatch-produced field, so how this one ad-hoc note was supposed to ride the same mechanism was
+left implicit. Made explicit: the note is added to Step 6's `open_questions` batch directly, treated
+the same as a dispatched entry despite having no dispatch behind it.
+
+Also dropped an inaccurate claim from the same paragraph: it said overflow leftovers get "picked up
+in the pre-send checklist (Step 12)," but Step 12's checklist only covers
+`<done-when>`/`<scope>`/`<artifacts>`/`<reference>` — no mechanism there touches `open_questions` or
+`<edge-cases>`. Left only the accurate claim (Step 10's re-verify pass).
+
+Both fixes are `SKILL.md`-only, same file, same blast-radius call as v0.68.30 — no new mechanism, no
+new field, just tightening two spots the fresh-context read caught that self-review didn't.
+
 ## [0.68.29] — 2026-07-24
 
 `skill-creator:skill-creator`'s full improve+optimize loop run against `tech-humanize/SKILL.md`,
