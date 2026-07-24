@@ -17,19 +17,28 @@ already exists or still needs to be built.
 
 ## Mode selection
 
-Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session): one-way door? → blast radius → riskiest assumption. A one-way door defaults to `strategize`.
+Rows are checked top-to-bottom; apply the **first** row that matches — this is what
+resolves an apparent conflict between rows, not a judgment call made fresh each time.
+
+Run the decision-sizing triad first (METHODOLOGY Rule 1, injected each session):
+one-way door? → blast radius → riskiest assumption. The triad sizes the stakes; it
+does not bypass the table. A one-way door pulls toward `strategize`, but only once
+the rows above it don't match first — scope still unstated routes to `clarify` (you
+can't judge "one-way door?" without knowing scope first), and an existing plan/ADR
+routes to `critique` (auditing what's on the table beats re-deriving it from scratch,
+even when that plan reads as hard to reverse).
 
 | Situation | Mode |
 |---|---|
+| Chaos or incident | Stop — use `kbg:incident` instead |
+| A pile of competing tasks/asks, not yet one bounded question | Stop — use `kbg:orchestrate` first to triage effort and execution shape; come back here once triage lands on a single decision to size against the rows below |
 | Scope or assumptions still unstated | `clarify` |
 | Read-only: understand before committing | `probe` |
 | Reversible choice, analyzable trade-offs | `decide` (default — Judgment Ladder) |
-| Reasoning/plan/ADR already exists — stress-test it | `critique` |
+| Reasoning/plan/ADR already exists **from outside this session** — stress-test it | `critique` |
+| Disprove a confident output **this session already produced** | Stop — spawn an external fresh-context skeptic that has not seen the work (`doubt-driven` pattern; canonical instance is the adversarial pass in `kbg:review-pr`) — not a mode here, because the skeptic must not share this context; `critique`'s own confirmation-bias guard can't substitute for genuine context separation on this session's own output |
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
-| Chaos or incident | Stop — use `kbg:incident` instead |
 | Decision already made, needs a record | `mattpocock-skills:domain-modeling` directly (owns the ADR rule) |
-| Disprove a confident output before committing to it | Stop — spawn an external fresh-context skeptic that has not seen the work (`doubt-driven` pattern; canonical instance is the adversarial pass in `kbg:review-pr`) — not a mode here, because the skeptic must not share this context |
-| A pile of competing tasks/asks, not yet one bounded question | Stop — use `kbg:orchestrate` first to triage effort and execution shape; come back here once triage lands on a single reversible-choice question |
 
 ## Announce the active mode
 
@@ -41,7 +50,7 @@ Before the analysis runs, the first line of the response states the active mode 
 | probe | `**Mode: probe** — systems-thinking + leverage-points` |
 | decide | `**Mode: decide** — Judgment Ladder (5 rungs)` |
 | critique | `**Mode: critique** — red-team + steel-manning` |
-| strategize | `**Mode: strategize** — Rumelt kernel + Lafley-Martin` |
+| strategize | `**Mode: strategize** — Rumelt kernel + real options + red-team + Lafley-Martin` |
 
 ---
 
@@ -54,7 +63,8 @@ Resolve unstated scope or assumptions before any other mode runs. Analyze → re
    a load-bearing assumption the request leaves implicit.
 2. **Recommend.** State your working interpretation as a default, not a question.
 3. **Ask.** Only if the ambiguity is consequential enough that guessing wrong is
-   expensive — use `AskUserQuestion` for a genuine fork; otherwise proceed on the
+   expensive — use `AskUserQuestion` for a genuine fork, or a plain-text fork in the
+   response if that tool isn't exposed in this context; otherwise proceed on the
    stated default and flag it.
 
 **Bias to guard:** framing bias — a narrow first framing of the ask silently
@@ -67,8 +77,14 @@ Output: scope is resolved, then hand off to `probe`, `decide`, or `strategize`.
 
 ## Mode: decide (default)
 
-Interactive walk through the 5-rung Judgment Ladder.
-Match depth to stakes — reversible low-stakes choices need only 1–2 rungs.
+Interactive walk through the 5-rung Judgment Ladder. Pause with `AskUserQuestion`
+only at a genuine fork where guessing wrong is expensive (same bar as `clarify`);
+otherwise narrate the rungs straight through and flag open assumptions inline rather
+than blocking on each one.
+
+Match depth to stakes (reversibility, magnitude, time pressure, uncertainty,
+precedent — judgment-ladder.md's Proportionality rule) — reversible low-stakes
+choices need only rungs 1–2 (Recognize + Frame), not the full climb.
 
 ### 1. Recognize
 Name the actual choice, its owner, its timing, and its trigger.
@@ -101,7 +117,10 @@ Systems-thinking analysis *before* committing to a frame. Use when the diagnosis
 itself is contested or the problem space is complex/emergent.
 
 1. Map the system: actors, flows, feedback loops, delays.
-2. Name the leverage points — the highest-impact spots to intervene (see `docs/reference/thinking-skills/`).
+2. Name the leverage points — the highest-impact spots to intervene (catalog at
+   `docs/reference/thinking-skills/skills/` — read via Bash, `cat
+   "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<file>"`; the bare
+   repo-relative path resolves nowhere in a foreign-project CWD).
 3. Stress-test the diagnosis: what would prove the current frame wrong?
 4. Output: a framing memo, not a decision — hand off to `decide` or `strategize`.
 
@@ -110,16 +129,24 @@ itself is contested or the problem space is complex/emergent.
 ## Mode: strategize
 
 For irreversible or long-horizon commitments where rivals adapt and resources are
-constrained. Grounded in Rumelt's kernel:
+constrained. Walks six steps, grounded in Rumelt's kernel plus real-options and
+red-team discipline:
 
 1. **Diagnosis** — simplified explanation of the actual challenge (not a goal).
 2. **Guiding policy** — overall approach to the obstacles named in the diagnosis.
 3. **Coherent actions** — steps that coordinate to carry out the policy.
+4. **Map irreversibilities and real options** — per commitment, name whether it's an
+   irreversible bet, a reversible probe, a stage gate, or an adaptive commitment (see
+   "Real options and adaptive commitment" in the reference). Buy information before
+   buying irreversibility.
+5. **Red-team the strategy** — run the reference's "Strategic red-team" question set
+   against the diagnosis, guiding policy, and coherent actions.
+6. **Commit to the strategy loop** — cross-check with Lafley-Martin's five choices
+   (winning aspiration → where to play → how to win → capabilities → management
+   systems), then commit with a named revisit trigger.
 
-A weak diagnosis produces a vague policy. If the three elements don't fit, loop.
-
-Cross-check with Lafley-Martin five choices: winning aspiration → where to play →
-how to win → capabilities → management systems.
+A weak diagnosis produces a vague policy; a policy that fails the red-team is not
+ready to commit. If the elements don't fit, loop back to Diagnosis.
 
 **Full model detail:** read via Bash — `cat "${KBG_PLUGIN_ROOT}/docs/reference/strategic-judgment.md"`.
 
@@ -140,12 +167,18 @@ a proposal on the table. Not for generating a new decision from scratch (`decide
    surfaced. If the proposal survives, say why the strongest objection doesn't hold.
    If it doesn't survive, name what changes.
 
-**Bias to guard:** confirmation bias — the proposal's author (possibly this session)
-is structurally motivated to find it sound. Ask: "what evidence would prove this
-proposal wrong, and did we look for it or just for evidence it's right?"
+**Bias to guard:** confirmation bias — the proposal's author is structurally
+motivated to find it sound. If that author is this session itself (drafted or
+reasoned through earlier in this conversation), the mode-selection table's skeptic
+row applies instead — critique's own guard isn't strong enough for that case. Ask:
+"what evidence would prove this proposal wrong, and did we look for it or just for
+evidence it's right?"
 
 Output: a verdict — the reasoning holds, holds with a named caveat, or needs rework —
-plus the one assumption most worth re-verifying.
+plus the one assumption most worth re-verifying, and, when the verdict carries a
+caveat or needs rework, what specifically would need to change (per step 3) — a
+verdict without a concrete next step leaves the reader with a red flag and no path
+forward.
 
 ---
 
@@ -158,7 +191,7 @@ Produce a decision record at the end of any `decide` or `strategize` session:
 
 - Date: YYYY-MM-DD
 - Owner: @name
-- Mode: clarify | probe | decide | critique | strategize
+- Mode: decide | strategize
 
 ## Decision statement
 <one sentence>
@@ -185,6 +218,12 @@ Trade-offs accepted: ...
 - Bias guards applied: framing / anchoring / confirmation / sunk-cost
 ```
 
+This is the compact default. For a one-way-door or high-stakes decision, use
+`judgment-ladder.md`'s fuller template instead (adds `Consulted`, an `Evidence`
+column on the assumptions table, a `## Scenarios` probability/impact table, and a
+separate `Next check-in date`) — read via Bash,
+`cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`.
+
 Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the decision warrants a durable ADR.
 
 ## Guardrails
@@ -192,10 +231,18 @@ Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the dec
 - Do not run this skill in chaos or under active incident — stabilize first.
 - `probe` output is a memo, not a decision. Do not skip to commitment from probe.
 - A decision without a revisit trigger is not finished.
-- Match effort to stakes: trivial reversible choices skip to rung 5 directly.
+- Match effort to stakes: trivial reversible choices need only rungs 1–2 (Recognize
+  + Frame), not the full climb — see "Match depth to stakes" under Mode: decide.
 
 ## Completion criterion
 
-Verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric) — confirm a reader could re-derive the Decision from the Frame and assumptions. For a numeric weighted verdict, apply the `kbg:score-decision` rubric (METHODOLOGY Rule 14) inline — the skill itself is `disable-model-invocation: true`, so tell the operator to run `/kbg:score-decision` if a formal, on-demand artifact is what's actually needed.
+This criterion applies per mode's own output shape, not one template for all five:
 
-If the reasoning drifts from the stated criteria or the revisit trigger is missing, the decision is not finished — never close a choice without a re-open condition.
+- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions.
+- **`strategize`** — same Output format template, mapped from its own step vocabulary: Diagnosis + Guiding policy fill the Frame section, the irreversibility map and red-team results are the tested assumptions, and Commitment's revisit trigger comes from step 6's strategy loop (progress metric = whatever the red-team/tripwire step names as the signal to watch).
+- **`critique`** — verify the verdict (holds / holds with caveat / needs rework), the one assumption most worth re-verifying, and — when the verdict isn't a clean "holds" — what specifically would need to change are all stated. No Frame/Commitment record required; critique audits an existing plan rather than producing a new one.
+- **`clarify` / `probe`** — completion is the stated handoff itself (resolved scope + working default, or a framing memo) — these modes never produce a decision record and aren't held to the Frame/Commitment bar.
+
+For a numeric weighted verdict, apply the `kbg:score-decision` rubric (METHODOLOGY Rule 14) inline — its default criteria (Evidence/Doctrine/Net load/Risk-inverted/Proportionality/No-conflict) are shaped for a `decide`-style trade-off table; for a `strategize` output, adapt them to score the guiding policy's coherence and whether it survived the red-team rather than forcing a single-option comparison onto a qualitative kernel. `score-decision` itself is `disable-model-invocation: true`, so tell the operator to run `/kbg:score-decision` if a formal, on-demand artifact is what's actually needed.
+
+If a `decide`/`strategize` session's reasoning drifts from the stated criteria or the revisit trigger is missing, it is not finished — never close a choice without a re-open condition.

@@ -187,7 +187,7 @@ Use the ladder for **implementation and design choices inside an established arc
 **Quick coding flow:**
 1. Is the decision hard to reverse or long-lived? → `kbg:decide (strategize mode)`.
 2. Is it reversible within days and analyzable? → climb the ladder with `kbg:decide`.
-3. Is the answer already committed and only needs a record? → `domain-modeling` (owns the ADR rule).
+3. Is the answer already committed and only needs a record? → `mattpocock-skills:domain-modeling` (owns the ADR rule).
 
 ## Connection to Decision Quality
 
@@ -233,7 +233,7 @@ work). Use them as a cross-check at the rung where each one is most dangerous.
 ## kbg surfaces
 
 - `kbg:decide` — interactive walk through the ladder
-- `domain-modeling` — record the decision as an ADR after the ladder
+- `mattpocock-skills:domain-modeling` — record the decision as an ADR after the ladder
 - `kbg:decide` probe mode — systems-thinking analysis before the ladder
 - `kbg:decide` clarify mode — when the decision itself is still ambiguous
 - `kbg:decide` critique mode — stress-test reasoning in a decision or ADR

@@ -5,6 +5,69 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.32] — 2026-07-25
+
+`skill-creator:skill-creator`'s full improve+optimize loop run against `decide/SKILL.md`, same
+agents-only-review substitution as v0.68.28–31 — user asked by name. 4 mode-targeted evals (decide,
+critique, clarify, strategize), with-skill vs. no-skill dry-run pairs, 4 independent staff-engineer
+reviewers verifying findings against live source. The strategize eval traced a real bug (the dry run
+bundled an "auth+billing" ask into one diagnosis where the baseline correctly split it) to a genuine
+precedence contradiction between clarify's "resolve scope before any other mode runs" and the triad's
+"one-way door defaults to strategize" — no rule said which wins when both match. Fixed with an explicit
+first-match-wins mode-selection table (checked top to bottom).
+
+Real fixes from the main pass: (1) mode-selection precedence rule, above; (2) `strategize` expanded from
+3 inline steps to the 6 `strategic-judgment.md` actually documents (real-options mapping + red-team were
+real content already sitting in the reference doc, just not wired into the skill body — a genuine
+documentation-drift bug, not a style choice); (3) `critique`'s Output spec now requires naming what
+specifically would change on any non-clean verdict, not just "needs rework"; (4) Completion criterion
+split per mode's own output shape instead of one Frame/Commitment template forced onto all five; (5) the
+`decide`-mode rung-depth contradiction (skip-to-rung-5 vs. 1–2-rungs-for-low-stakes) resolved via a
+Proportionality cross-reference; (6) the compact vs. `judgment-ladder.md`'s fuller decision-record
+template precedence made explicit; (7) `probe` mode's leverage-points citation fixed to the same
+Bash-read-via-`KBG_PLUGIN_ROOT` pattern `decide`/`strategize` already used, closing a bare
+repo-relative-path dead end in a foreign-project CWD; (8) bare `mattpocock-skills:domain-modeling` /
+`mattpocock-skills:research` citations namespaced across `judgment-ladder.md` and `strategic-judgment.md`
+— closing the gap v0.68.27 explicitly deferred "for a future pass" on the reference docs, which this was;
+(9) `clarify`/`decide` modes got a plain-text fallback for `AskUserQuestion` when that tool isn't exposed
+in the execution context — kept as a low-cost defensive addition, but flagged honestly rather than
+oversold: the dry-run agents that surfaced it lacked the tool as an artifact of the eval environment, and
+whether a real non-interactive `decide` session (headless run, workflow `agent()` call) hits this path
+often enough to matter is unconfirmed, not demonstrated.
+
+A first fresh-context reviewer (cold read of the edited file, no memory of the fix pass) then caught 5
+more real issues the self-review missed: bare `research` citations the pass above hadn't reached yet, the
+mode-selection table's chaos/pile-of-tasks stop-rows sitting *after* the working modes (silently defeating
+the newly-added first-match-wins rule for exactly the cases it names), the strategize Output-format
+field-mapping note, a critique-vs-external-skeptic output disambiguation, and an `Evidence`-column
+parenthetical fix — all shipped.
+
+`advisor()` then caught what that first fresh-context pass itself missed: the very fix for the
+critique-vs-skeptic disambiguation had shipped a new contradiction — the mode-selection table said
+same-session output routes to the external skeptic ("critique's own guard can't substitute"), while
+critique's own Bias-to-guard paragraph still said "the proposal's author (possibly this session)" as if
+critique handled that case directly. Two sections gave a reader opposite instructions for the identical
+scenario. Fixed by scoping critique's guard language to hand off to the skeptic row when the author is
+this session, rather than claiming to cover it. Also fixed in the same pass: the `strategize` banner
+still read "Rumelt kernel + Lafley-Martin" only, silent on the now-explicit real-options/red-team steps —
+propagated.
+
+Per `advisor()`'s explicit instruction not to commit-then-follow-up again, a second fresh-context reviewer
+ran against the file *as it then stood* (not the diff) before any commit. It surfaced 4 more candidates;
+3 were real and fixed — the pile-of-tasks hand-back row said "reversible-choice question," excluding
+exactly the irreversible cases `strategize` exists for; the external-skeptic row's "before committing to
+it" qualifier left already-committed same-session critique with no covered row (neither `critique`, scoped
+to outside-session, nor the skeptic row, scoped to pre-commitment); and the compact decision-record
+template's `Mode:` field listed all 5 modes as valid values when Completion criterion says only `decide`
+and `strategize` ever produce that record. The 4th candidate — that the fuller-template escalation note
+reads "orphaned" for `strategize` — was evaluated and rejected: the wording is mode-agnostic and already
+covered by strategize's own "same Output format template" completion-criterion language: a genuine
+negative, not a gap papered over.
+
+Skipped deliberately: the description-optimization loop. `decide` is rare-trigger by design
+(`decision-doctrine-map.md`, ~0 real-world invocations across multiple prior audits, [[kbg-decide-zero-real-world-invocations-2026-07-02]]) — the failure mode a triggering-accuracy loop fixes doesn't apply
+to a skill that's supposed to stay low-trigger.
+
 ## [0.68.30] — 2026-07-24
 
 `skill-creator:skill-creator`'s full improve+optimize loop run against `task-prep/SKILL.md`, same
