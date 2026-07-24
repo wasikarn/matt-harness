@@ -15,7 +15,7 @@ Run before publishing. Each item must be checkable. See CLAUDE.md § "Skill auth
 - [x] **≤25 words** in description (25).
 - [x] **One trigger** per branch in description (use: non-trivial task; don't: idea, one-liner).
 - [x] **Completion criterion** — "a paste-ready prompt whose `<done-when>` a context-poor reader can name + a check Claude can run."
-- [x] **No-op test** — fully-formed input → verifier returns `ready` → emit unchanged; no manufactured edits.
+- [x] **No-op test** — a genuinely gap-free draft → no manufactured or padding edits; emit unchanged. Field-complete isn't gap-free — Step 3.5 or the Step 9 checker surfacing a real latent gap on a 9-field-filled draft is the skill working as intended, not a broken guarantee.
 - [x] **Two-cut check** — routing gate (router-first) + template-fill are sequential cuts that each earn their keep; not split by invocation.
 - [x] **Failure mode** named inline at the drift step (padding, idea-forcing, re-asking filled fields).
 - [x] **Provenance** — `metadata.origin: kbg-native` (ECC `prompt-optimizer` contributed the Phase-0 stack-sniff skeleton + consult-only invariant; adapted, not copied).
@@ -70,7 +70,8 @@ Two independent detect paths (METHODOLOGY Rule 3 — interrogate the claim, not 
 
 **Jira path — detect**: the draft contains the case-insensitive substring `jira` **and** a ticket-key-shaped token (`[A-Z][A-Z0-9]*-\d+`, e.g. `TP-871`) — requiring both avoids false-triggering on unrelated tokens shaped like `UTF-8`/`ISO-8601`. If detected:
 1. Fetch the ticket via the **`jira-acli:acli` skill** — never a raw `acli` command or a direct `mcp__*atlassian*`/`mcp__*Rovo*` call (CLAUDE.md's global routing rule). `jira-acli` is a separate plugin; if it isn't installed, treat that the same as a fetch failure below — note it, don't fall back to a raw call. Fetch failure (bad key, no access, plugin missing) → note it inline and skip to Step 4 unaffected; an unresolved ticket reference never blocks task prep.
-2. Dispatch `requirement-analyst` (Agent tool) with the fetched body as its prompt. Capture: `business_trace`, `functional_requirements`, `non_functional_requirements`, `acceptance_criteria`, `edge_cases_missing`, `open_questions`.
+2. **Topical sanity check**: does the fetched summary plausibly match what the draft says the ticket is about? A wrong-but-valid key (typo, copy-paste from another task) fetches cleanly and looks like success — nothing else catches this. Mismatch → treat the same as a fetch failure: note it inline, skip dispatch, fold "ticket key resolves but its content doesn't match the draft" into Step 6 as an open question. Soft check, not a hard gate — a false positive just falls back to draft-only prep, same cost as any other fetch failure.
+3. Match confirmed (or no mismatch found) → dispatch `requirement-analyst` (Agent tool) with the fetched body as its prompt. Capture: `business_trace`, `functional_requirements`, `non_functional_requirements`, `acceptance_criteria`, `edge_cases_missing`, `open_questions`.
 
 **Non-Jira path — detect**: no ticket reference, but the draft states a real feature or behavior requirement (new user-facing capability, a rule the system must enforce, a workflow to support) — not a purely mechanical change (rename, typo, config bump, dependency version). **Bias toward skip on any doubt** — this path spawns a second Opus agent on top of Step 6's verifier, so it only earns its cost when there's an actual requirement to interrogate, not just a task to execute. If detected: dispatch `requirement-analyst` (Agent tool) with the **draft text itself** as its prompt (no fetch — the draft is the source). Capture the same fields as the Jira path.
 
@@ -92,7 +93,7 @@ The 9 fields and their intent (canonical source: `docs/reference/task-handoff-te
 - `<output>` — format/length/audience for the answer.
 - `<edge-cases>` — gotchas you foresee, or "interview me for edge cases first."
 
-For each field, mark: **present** (in the draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap).
+For each field, mark: **present** (in the draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap). **Present** doesn't mean adequate — whether a present field is too thin to act on is Step 9's call, not this step's; the assembler is the wrong reader to catch its own vagueness.
 
 **Success criterion:** a 9-row map with present/derivable/absent per field.
 
@@ -126,6 +127,8 @@ Ask only for **absent** fields that actually cost the user. Priority order — `
 2. **`<scope>` in/out missing → ask.**
 3. **`<reference>` missing and Glob found none → ask** ("an existing file/test/pattern to match?").
 4. **`<artifacts>` missing on a bug/error task → ask** for a paste or `@file` (stack trace, log, screenshot).
+
+**If more than 4 fields end up ask-worthy** (the four above, plus Step 3.5's `open_questions` and `<edge-cases>` below), the ≤4 batch cap forces a cut. Extend the priority order past `<artifacts>`: Step 3.5 `open_questions` next (a concrete, ticket-sourced ambiguity outranks generic foresight-gathering), then `<edge-cases>` last. Ask the top 4, note in the emitted prompt that N more remain open, and pick them up in the re-verify pass (Step 10) or the pre-send checklist (Step 12) — don't silently drop them.
 
 **Skip** `<context>`/`<constraints>`/`<output>`/`<edge-cases>` if obvious from input or CLAUDE.md — don't pad. Listing rules Claude already follows makes them noise it learns to ignore (failure mode: over-specified constraints).
 

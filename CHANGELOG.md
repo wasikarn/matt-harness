@@ -5,6 +5,71 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.30] — 2026-07-24
+
+`skill-creator:skill-creator`'s full improve+optimize loop run against `task-prep/SKILL.md`, same
+agents-only-review substitution as v0.68.28/.29 — user asked for it by name, not framed as new
+evidence against the "don't re-audit without new evidence" note on this surface ([[task-prep-critique-v0618-2026-07-20]]):
+that prior note covers pattern-match design critique, this is a different, executable mechanism
+(real dry runs + a real verifier dispatch), and the honest prior after 4 clean design passes was
+"expect near-clean again," not "go find something."
+
+**Mechanism fix before dispatch, per `advisor()`:** task-prep's two signature mechanisms —
+verifier-separation (Step 9's fresh-context `task-prep-checker`) and interactive gap-asking
+(Step 6's `AskUserQuestion`) — both degrade under a naive background dry run (an agent simulating
+its own verifier is exactly the maker-grades-own-work anti-pattern the skill exists to prevent).
+Fix: with-skill dry-run agents stopped at each eval's natural boundary (Step 2 redirect, Step 6 gap
+list, or Step 8 assembled prompt) and never simulated the checker; the real `kbg:task-prep-checker`
+agent was dispatched separately from the main session on the one eval that reached Step 8 cleanly,
+preserving genuine fresh-context/Opus separation.
+
+**4 evals** (routing-gate hypothesis-no-repro, main-flow gap-selection on a pagination task, a
+no-op full-template test, a Jira ticket-fetch path), with-skill vs. no-skill baseline, 4 dispatched
+staff-engineer reviewers verified each pair against live source before anything shipped. One eval
+accidentally validated itself harder than designed: the Jira ticket key picked to be a fabricated,
+unfetchable number instead collided with a real, unrelated, closed ticket in production Jira — a
+genuine test of "fetch succeeds but content doesn't match the draft," caught cleanly by both the
+with-skill run and the baseline via a read-only `acli workitem view` (no mutation).
+
+**4 real, source-grounded fixes shipped, all `SKILL.md`-only** (per `advisor()`'s blast-radius
+call — `task-handoff-template.md` is externally verified and shared by the skill + checker, so
+higher bar to touch; none of the 4 needed it):
+1. Step 3.5's Jira path had a fetch-*failure* fallback (bad key / no access / plugin missing) but
+   no check for fetch-*succeeds-but-wrong-ticket* — a topical sanity check now sits between fetch
+   and `requirement-analyst` dispatch, same degrade-to-draft-only posture as the existing failure
+   cases.
+2. Step 6's ≤4-question ask-batch had no priority rule once Step 3.5's `open_questions` and
+   `<edge-cases>` compete for the same 4 slots as the core done-when/scope/reference/artifacts
+   list — a bug task can genuinely hit 5 candidates. Added an explicit priority extension and an
+   explicit "don't silently drop the rest" rule.
+3. The Design Checks' "No-op test" line overclaimed: it read as "field-complete draft → guaranteed
+   byte-identical output," but a field-complete draft can still carry a real latent gap (the
+   baseline reviewer independently found one — an edge-case field that names a problem but never
+   states the resolution) that Step 9 legitimately catching is the skill working, not the
+   guarantee breaking. Reworded to say what's actually guaranteed.
+4. Step 4's present/derivable/absent classification had no room for "present but too thin to act
+   on" — added one sentence pointing that judgment at Step 9 (the checker already has this bucket
+   by design) rather than adding a vagueness check to the assembler, which would just reintroduce
+   the self-grading problem the skill is built to avoid.
+
+One eval (routing-gate hypothesis-no-repro) came back clean on independent review — a legitimate
+design tradeoff (hard redirect vs. TDD-shape's "continue and reshape"), not a bug — matching the
+honest prior rather than manufacturing a finding to justify the exercise.
+
+**Description-optimization** (`scripts.run_loop`, 20 hand-authored queries, 2 staff-engineer
+reviewers fixed the draft first — one real mislabel matched to `SKILL.md`'s own "hypothesis-as-task,
+no repro" don't-use text, 4 near-verbatim copies of the skill's own bracketed examples replaced with
+sharper prep-framed near-misses): the loop hit `all_passed` on the 12-query train split in iteration
+1 and correctly never attempted a rewrite — kept the original description unchanged. Real, unforced
+finding on the 8-query held-out test split (67% accuracy): 2 of the "sharper" negatives the
+reviewers specifically strengthened (hypothesis-no-repro and multi-task, both wrapped in explicit
+prep-framing language) triggered the live skill 3/3 in real testing, not 0/3 as labeled — empirical
+evidence that prep-framing language alone pulls the model toward consulting task-prep even on
+content its own Step 2 gate would then redirect elsewhere. Not a description defect (train already
+maxed) and not something worth chasing on this split size — logged as a genuine open question about
+where triggering should stop vs. where the skill's own internal routing should take over, same shape
+as eval 1's untouched design tradeoff above.
+
 ## [0.68.29] — 2026-07-24
 
 `skill-creator:skill-creator`'s full improve+optimize loop run against `tech-humanize/SKILL.md`,
