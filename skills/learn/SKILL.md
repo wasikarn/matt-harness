@@ -68,14 +68,22 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
    - **Corrections whose rule only generalizes in hindsight** — "no, do X instead" where the
      generalizable version only becomes clear after seeing where else it applied (or should have).
    - **Stated preferences / conventions** — "always…", "never…", "in this repo we…" — include these
-     even as single-turn moments if step 3's dedupe check shows native ambient hasn't already
-     captured them.
+     even as single-turn moments; drop only if step 3's dedupe check shows native ambient already
+     captured them — an inconclusive check is not grounds to drop (see step 3).
 
 3. **Filter hard (this is most of the value).** Drop a candidate if:
-   - it's already in `MEMORY.md` or an existing `memory/` file (dedupe — read the index first; this
-     now also catches what native ambient capture already wrote earlier in the same session);
-   - the repo already records it (code structure, git history, CLAUDE.md, an ADR) — per the memory
-     rules, save what was *non-obvious*, not what a file already states;
+   - it's already in `MEMORY.md` or an existing `memory/` file — dedupe against the store at
+     `~/.claude/projects/<project-dir>/memory/` (the same project directory step 1's
+     `find-transcript.sh` resolves to — cwd with every `/` replaced by `-`): read `MEMORY.md` first,
+     then any files it links to that look topically relevant. Match on
+     *substance*, not exact wording — a candidate that restates an existing memory's meaning in
+     different words is still a duplicate. This also catches what native ambient capture already
+     wrote earlier in the same session. If the store can't be located or read, don't drop on that
+     basis — say so explicitly and let step 4's gate decide, rather than silently assuming either
+     "already captured" or "clearly new";
+   - the repo already records it (code structure, git history, CLAUDE.md, an ADR) or a tool/platform
+     default already enforces it (a guardrail hook, a linter rule, a built-in safety check) — per the
+     memory rules, save what was *non-obvious*, not what something else already guarantees;
    - it only mattered to this conversation (ephemeral), or it's a secret/credential;
    - it was a trivial one-off (a typo, a simple syntax slip) with no generalizable rule behind it —
      a "no, do X instead" correction is only high-signal when X *generalizes* past this one spot.

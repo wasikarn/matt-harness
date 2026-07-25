@@ -5,6 +5,51 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.47] — 2026-07-25
+
+`skill-creator:skill-creator` improve+optimize loop run against `skills/learn/SKILL.md`, per user
+request to delegate the eval-set-review step to staff-eng agents. Improve half: 3 fixtures
+(cross-turn workflow-repetition, negative-discipline/leaked-secret, dedupe-against-real-store),
+6 dry-runs, 3 fresh-context doc-first graders (one per fixture) — all converged independently
+on the same root cause: step 3's dedupe check names no location for the memory index, no default
+for an inconclusive dedupe, and no match criterion for "duplicate." 4 real fixes shipped: added
+the concrete store path (mirroring step 1's `find-transcript.sh` precedent), an explicit
+inconclusive-dedupe default (don't drop, let step 4's gate decide), a 4th dedupe source
+(tool/platform defaults — guardrail hooks, linters — not just repo/docs), and a substance-not-
+wording match criterion. 2 fresh-context whole-file re-review rounds converged clean, catching
+2 issues the first fix round introduced (a step 2/step 3 logic mismatch, a "slug" term collision
+with the real project-directory mechanism). Logged, not fixed: all 3 fixtures showed the
+without-skill baseline matching with-skill on substance — the harness's own dispatch prompt told
+both arms to mine the transcript, so this measured execution quality given the sweep runs, not
+whether the sweep triggers at all; nothing in this harness could test the skill's actual claim
+(only explicit invocation does a full-transcript retrospective pass).
+
+Optimize half: 2 staff-eng agents independently reviewed a 20-item draft trigger eval set,
+reconciled into 23 items. Live `run_eval.py` execution (chosen over `run_loop.py`, since no
+description-wording evidence existed yet) hit 2 tooling snags first — a JSON-shape mismatch
+(the script wants a bare array, not the reconciliation's wrapped object) and a self-inflicted
+double-backgrounding bug (manual `&` plus the tool's own background flag orphaned the first
+run mid-execution) — both fixed, not the script's fault. Corrected run: 18/23 passed, 13/13
+negatives clean, 5/5 failures on positives. Re-sampling the 5 failures at n=5 (not n=1) ruled out
+noise — consistently low but non-zero rates. Two raw manual `claude -p` traces then isolated the
+actual mechanism: `kbg:learn`'s trigger condition is "a session with real mineable multi-turn
+content" — a `claude -p` eval query IS a fresh session whose entire content is that one line, so
+a capable model correctly notices there's nothing to mine, either by invoking the skill and
+finding an empty transcript, or (more often) by just reasoning through the query's hypothetical
+directly. This is a harness-structure mismatch, not a description defect — no description change
+shipped, matching this repo's own established precedent (v0.68.29/.30/.36/.37/.41/.43). Corrects
+an eval-set reconciliation note from earlier in this same loop, which had judged this skill's
+live-execution risk "milder" than the blind-spot-hunter/typescript-reviewer/plan-reviewer
+precedent on the grounds that every positive query is self-contained single-message language —
+that distinction collapsed on contact with the actual mechanism: self-contained query *text* is
+not the same as a reproducible entry *condition*, and the entry condition this skill needs
+(a session with real content behind it) can't exist inside a `claude -p` invocation regardless of
+wording. Full writeup: `learn-workspace/optimize/findings.md`. Separately flagged to the user, not
+part of this skill's content: an unconfirmed "Ponytail" persona hook (not part of this repo's
+documented hook set) was confirmed via direct trace to inject into every `claude -p` subprocess
+this user's Claude Code spawns, including headless eval runs — it didn't change this run's
+conclusion, but it's an unresolved measurement-environment question for future eval-driven loops.
+
 ## [0.68.46] — 2026-07-25
 
 Closes out `agents/plan-reviewer.md`, which was left sitting uncommitted with no matching
