@@ -54,11 +54,11 @@ Bash-read-via-`KBG_PLUGIN_ROOT` pattern `decide`/`strategize` already used, clos
 repo-relative-path dead end in a foreign-project CWD; (8) bare `mattpocock-skills:domain-modeling` /
 `mattpocock-skills:research` citations namespaced across `judgment-ladder.md` and `strategic-judgment.md`
 — closing the gap v0.68.27 explicitly deferred "for a future pass" on the reference docs, which this was;
-(9) `clarify`/`decide` modes got a plain-text fallback for `AskUserQuestion` when that tool isn't exposed
-in the execution context — kept as a low-cost defensive addition, but flagged honestly rather than
-oversold: the dry-run agents that surfaced it lacked the tool as an artifact of the eval environment, and
-whether a real non-interactive `decide` session (headless run, workflow `agent()` call) hits this path
-often enough to matter is unconfirmed, not demonstrated.
+(9) `clarify` mode got a plain-text fallback for `AskUserQuestion` when that tool isn't exposed in the
+execution context — kept as a low-cost defensive addition, but flagged honestly rather than oversold: the
+dry-run agents that surfaced it lacked the tool as an artifact of the eval environment, and whether a real
+non-interactive `decide` session (headless run, workflow `agent()` call) hits this path often enough to
+matter is unconfirmed, not demonstrated.
 
 A first fresh-context reviewer (cold read of the edited file, no memory of the fix pass) then caught 5
 more real issues the self-review missed: bare `research` citations the pass above hadn't reached yet, the
