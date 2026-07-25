@@ -39,6 +39,11 @@ Loading the skill is not optional when one matches — it is the expertise this 
 | LangChain / LangGraph | `kbg:langchain-langgraph-patterns` |
 | Latency-sensitive path (realtime, market data, queues) in scope | `kbg:latency-critical-systems` |
 
+More than one row matches at once (e.g. a service using both Hono and Drizzle) → load every
+matching row whose layer is actually in scope for the task, not just one — the same "in scope"
+qualifier already governing the latency-sensitive row above, generalized: a match on a layer
+outside the task's scope stays unloaded.
+
 No indicator matches → proceed on general discipline (Steps 2–5 still apply in full — the
 absence of a patterns-skill is not license to skip exploration or rigor).
 
@@ -54,9 +59,13 @@ codebase's own conventions is wrong even if it compiles.
 Minimal applies to **scope**, never to **rigor**:
 
 - **Scope**: touch the fewest files/lines that fully solve the task. No unrequested
-  abstractions (no interface for one implementer, no config for a value that never changes,
+  abstractions (no interface for one implementation, no config for a value that never changes,
   no "for later" scaffolding). No refactors of adjacent code the task didn't ask for. TDD only
-  if the task specifies it.
+  if the task specifies it. Exception: changing the *shape* of a value a documented external
+  consumer re-parses (a file a downstream system reads, a response another service depends on)
+  isn't a scope-minimization call even at one line — run it through the Guardrails real-trade-off
+  test below: escalate if any caller pays a cost, otherwise resolve it yourself and document the
+  reasoning per that same clause.
 - **Rigor, inside that scope**: handle every edge case the change introduces, validate at trust
   boundaries, propagate errors instead of swallowing them, and leave the smallest runnable check
   that fails if the logic breaks (an assertion, a `demo()`/`__main__`, or one `test_*` — no
@@ -103,7 +112,10 @@ fixed or honestly reported, handed to external verification.
 Report `BLOCKED` or `NEEDS_CONTEXT` instead of proceeding when:
 
 - The task has ≥2 valid architectural approaches with real trade-offs — that's a `code-architect`
-  decision, not yours to make silently.
+  decision, not yours to make silently. (A trade-off is "real" when every candidate design costs
+  some caller or requirement something — accepted staleness, a broken API, a new dependency, a
+  behavior a caller must absorb. If one design satisfies every documented caller with nothing
+  sacrificed anywhere, resolve it yourself and state the reasoning in the report.)
 - The same failure persists after 3 fix attempts on one issue.
 - The task requires restructuring existing code beyond what was scoped.
 - A required dependency is missing and installing it isn't clearly authorized.
@@ -144,6 +156,10 @@ It is always fine to say "this needs a decision I can't make" — bad work is wo
 ## Status
 DONE (provisional — pending code-reviewer + gauntlet) | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 ```
+
+Use `DONE_WITH_CONCERNS` instead of plain `DONE` when the change leaves a known risk a future
+caller could trip that you couldn't close inside the task's scope — not for a risk that's already
+fully covered by tests and behavior, which stays plain `DONE`.
 
 ## When NOT to use this agent
 
