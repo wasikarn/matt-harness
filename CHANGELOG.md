@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.33] — 2026-07-25
+
+Follow-up on v0.68.32, same session: `probe` was the one `kbg:decide` mode the main eval batch
+didn't cover (4 evals ran decide/critique/clarify/strategize). User asked for a targeted follow-up,
+scoped light on request — a single dry-run pair plus one reviewer, not a full 4-scenario batch,
+matching effort to a mode that (like the rest of `decide`) sees ~0 real-world invocations.
+
+Prompt: a contested-diagnosis scenario (three teams blaming three different causes for a checkout
+conversion drop, explicitly asking not to commit to a fix yet). The with-skill run correctly
+selected `probe`, executed all four steps in order, and outperformed baseline on the systems-level
+read — flagging that latency can masquerade as "confusing form" in the data, that support tickets
+are a lagging self-selected signal, and that three self-referential team theories arriving together
+is itself a diagnostic signal. But baseline independently surfaced two things the with-skill run
+missed: the payment/checkout-infra step as an unclaimed 4th candidate cause, and a canary/holdback
+test recommendation.
+
+The reviewer traced the canary/holdback gap to correct scope discipline, not a defect — probe's
+own Output step is explicit that it hands off a framing memo, not a fix recommendation, and the
+user's prompt asked to hold off on fixes. But the payment-step miss was real: Step 1 (map the
+system) named the payment processor as an actor, but Step 3 (stress-test) only asked what would
+falsify the three *stated* theories, with no instruction tying it back to the full actor list from
+Step 1 — the skill's own artifact held the answer and the next step never asked for it. Fixed by
+having Step 3 explicitly cross-check every actor named in Step 1's map, not just the theories
+already on the table.
+
 ## [0.68.32] — 2026-07-25
 
 `skill-creator:skill-creator`'s full improve+optimize loop run against `decide/SKILL.md`, same
