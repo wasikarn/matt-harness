@@ -80,6 +80,11 @@ specific to this codebase:
 - **"Consider adding error handling"** on a call whose error path is handled by
   the caller or framework, such as Express error middleware, React error
   boundaries, top-level `try/catch`, or Promise chains with `.catch` upstream.
+  Before concluding the path is covered, trace one hop outward — a wrapper
+  import (`asyncHandler`-style), the route registration, or the middleware
+  chain — this coverage is usually one hop away, not visible in the function
+  body itself, so reasoning from the body alone risks landing on the right
+  non-finding without ever checking the thing this bullet is about.
 - **"Missing input validation"** when the function is internal and its callers
   already validate. Trace at least one caller before flagging.
 - **"Magic number"** for well-known constants: `200`, `404`, `1000` ms, `60`,
@@ -105,6 +110,11 @@ specific to this codebase:
 - **Security theater**: flagging `Math.random()` in a non-cryptographic context
   such as animation, jitter, or sampling, or flagging `eval`/`Function` in a
   plugin system that is explicitly a code-loading surface.
+- **"Needs a feature flag / rollout plan"** for a single-line constant or
+  config-value change on an existing branch — a flag protects a new deploy
+  surface; a bare value swap doesn't create one. See the
+  `transition_requirement` rule under the Requirement-Coverage Lens for the
+  full test.
 
 When tempted to flag one of the above, ask: "Would a senior engineer on this
 team actually change this in review?" If no, skip.
@@ -160,6 +170,18 @@ rules: a documented repo standard always overrides the baseline (suppress the
 smell where the repo endorses what it would flag), and every smell below is a
 labelled heuristic ("possible Feature Envy") never a hard violation — skip
 anything tooling already enforces.
+
+These are structural observations about the code's shape, not bug reports.
+Default them to **MEDIUM**, not this section's HIGH — "labelled heuristic,
+never a hard violation" is a lower bar than a defect that will definitely
+misbehave, and MEDIUM findings don't hit the HIGH/CRITICAL proof gate above
+(three required items, including a concrete failure scenario — exactly what
+a structural observation can't supply). Don't drop a smell just because
+nothing calls the code yet; that's this heuristic's own default-severity
+question, already answered by MEDIUM, not a reason to withhold the finding
+entirely. If a smell is also causing an active, demonstrable bug — not just
+a shape problem — report that at the severity and evidence bar the bug
+itself earns, using the normal Pre-Report Gate.
 
 - **Mysterious Name** — a function, variable, or type whose name doesn't reveal what it does or holds. → rename it; if no honest name comes, the design's murky.
 - **Feature Envy** — a method that reaches into another object's data more than its own. → move the method onto the data it envies.
@@ -266,7 +288,13 @@ Scoped to this project's stack — MySQL/MariaDB (`kbg:mysql-patterns`) and Driz
 ORM (`kbg:drizzle-patterns`). Check raw SQL, query builders, and Drizzle calls alike.
 
 - **UPDATE/DELETE without WHERE** — mutates or destroys every row in the table.
-  Treat as a data-loss risk, not a style nit.
+  Tag this **CRITICAL**, not the section's default HIGH — an unscoped mass
+  mutation is as irreversible as anything in the Security section, and
+  "data-loss risk" is not a style nit that a HIGH label communicates. This is
+  the severity once the Pre-Report Gate's proof is met, not a bypass of it —
+  usually trivial here, since the unscoped query text is its own trigger; if
+  a genuine scoping guard exists elsewhere (a dynamically-built WHERE, an ORM
+  hook) that the diff doesn't show, demote per the gate's own rule.
 - **Unindexed WHERE/JOIN columns** — a filter or join column with no index forces
   a full table scan; check migrations for a matching index before approving a new
   query pattern.
@@ -291,7 +319,7 @@ await db.transaction(async (tx) => {
 });
 ```
 
-### Requirement-Coverage Lens (opt-in — HIGH when active)
+### Requirement-Coverage Lens (opt-in)
 
 Only active when `kbg:review-pr` dispatches you with a ticket's extracted
 requirements (from `requirement-analyst`) in the prompt — never self-invoked,
@@ -312,12 +340,22 @@ never assumed present.
   no trace → **Important**. A `transition_requirement` (migration/rollback/
   flag) with no trace → **Important** if the diff's change size plausibly
   needs one, otherwise skip — don't manufacture a transition-plan gap on a
-  change too small to need one.
+  change too small to need one. A single-line constant or config-value
+  change on an already-existing branch (no new branch, endpoint, schema, or
+  migration added by the diff) is the paradigm skip case — and the
+  requirement being named in the ticket doesn't change that: every
+  `transition_requirement` reaching this lens is by definition ticket-named
+  (that's what `requirement-analyst` extracted it as), so "the ticket says
+  so" can't be the test or this clause never fires. These tiers render on
+  this file's CRITICAL/HIGH/MEDIUM/LOW scale (Review Output Format, below)
+  as **Critical → CRITICAL** and **Important → HIGH** — a missing stated
+  acceptance criterion blocks the same way a Security CRITICAL does; it
+  isn't capped at HIGH/Warning.
 - Every coverage finding still needs `file:line` evidence where a match
   *does* exist (to explain why it's a partial match, not silence) or an
   explicit "checked \<paths\> via grep, no match" when it's a true absence —
   same evidence bar as every other finding (Confidence-Based Filtering,
-  below). A finding with no trace of having checked beyond the diff doesn't
+  above). A finding with no trace of having checked beyond the diff doesn't
   meet the bar.
 - This lens finds gaps in the *diff*, not the *ticket*. Ambiguous or
   untestable requirements are `requirement-analyst`'s job (already run
