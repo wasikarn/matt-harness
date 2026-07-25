@@ -222,6 +222,28 @@ test_silent "answer a forum thread (not a PR)" "answer this thread with a summar
 # Regression guard: bare 'repl' stem also matched replicate/replica/replace —
 # must require an actual reply/replies/replying form.
 test_silent "replicate the reviewer environment (not a reply)" "we should replicate the reviewer environment on staging"
+# Distance-window regression guards (eval-set review, 2026-07-25): window
+# widened 15->18 chars after two independent staff-eng reviewers + a live
+# run confirmed these natural phrasings were silently missed at 15.
+test_nudge  "address the feedback the reviewer left (18-char gap, was missed at 15)" "address the feedback the reviewer left before we merge"
+test_nudge  "answer all of X's review comments (18-char gap, was missed at 15)" "I need to answer all of miguel's review comments before we merge"
+# Precision guards for the same widen: an 8-prompt check at window=20 already
+# false-positived on "design review meeting"; these must all stay silent at
+# 18, which is why 18 was chosen over 20.
+test_silent "respond to legal before a review (not a PR reply)" "please respond to legal before the review"
+test_silent "design review meeting (not a PR review)" "address this in the design review meeting"
+test_silent "annual performance review (not a PR review)" "respond to HR before your annual performance review"
+test_silent "code review with the team lead, generic (not an address-review ask)" "answer these questions before your code review with the team lead"
+test_silent "review of an RFC (not a PR)" "address the concerns raised during the review of the RFC"
+test_silent "compliance review (not a PR)" "respond to the auditor before the compliance review next week"
+# Known, deliberately unfixed ceiling: reversed noun-then-verb order isn't
+# matched. Fixing it needs (review|reviewer).{0,N}(respond|answer|address),
+# and those three common verbs in reverse risk far more false positives (e.g.
+# "the review said we should address the schema") than the gap is worth —
+# the nudge is advisory, the model is expected to catch this on its own
+# reading. Asserted explicitly so a future regex change that starts matching
+# this is a conscious choice, not a silent drift.
+test_silent "reversed order: noun before verb (documented ceiling, not a bug)" "let's go through the reviewer's comments one by one and reply"
 # Impl-heavy prompt still falls through to plan-first, mirrors PR_INTENT's
 # own IMPL_NO_PR_CREATE guard — the narrower address-review nudge must not
 # steal a prompt that also has real implementation work in it.
@@ -232,6 +254,23 @@ if printf '%s' "$impl_reply_out" | /usr/bin/grep -qi "plan mode" \
   pass=$((pass + 1))
 else
   echo "  ❌ CONTENT EXPECTED plan-first only: <$(printf '%s' "$impl_reply_out" | head -c 160)>" >&2
+  fail=$((fail + 1))
+fi
+# Bounded-to-review implement phrasing ("the requested changes") is exempt
+# from the impl carve-out above — this is address-review's own Phase 4+5
+# job, not freestanding work needing plan-first.
+test_nudge  "implement the requested changes + reply (bounded to review, exempt from impl carve-out)" "implement the requested changes and reply to the review thread"
+# But the exemption is narrow: a real freestanding bolt-on (no "requested
+# changes" phrase) still correctly falls through to plan-first, same as the
+# impl_reply_out check above — must not accidentally widen the exemption to
+# every reviewer-mentioning impl prompt.
+bolt_on_out=$(echo "$(user_prompt_payload "let's fix the bugs the reviewer flagged and also refactor the auth module")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$bolt_on_out" | /usr/bin/grep -qi "plan mode" \
+   && ! printf '%s' "$bolt_on_out" | /usr/bin/grep -qi "address-review"; then
+  echo "  ✅ CONTENT: bundled reviewer-fix + unscoped refactor still falls through to plan-first"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED plan-first only: <$(printf '%s' "$bolt_on_out" | head -c 160)>" >&2
   fail=$((fail + 1))
 fi
 test_nudge  "Thai: fix-per-review (แก้ตามรีวิว, address-review's own trigger)" "แก้ตามรีวิวให้หน่อย"

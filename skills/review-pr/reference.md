@@ -163,6 +163,16 @@ This is [intentional / out of scope for this PR / addressed in <other-place>] be
 Tracked as #<issue-number>. Out of scope for this PR — [reason]. Will pick up in follow-up.
 ```
 
+### Blending a sha into Wontfix / Clarify
+
+The Wontfix and Clarify shapes aren't mutually exclusive with citing a sha. If a commit landed and genuinely fixed part of the concern before the cluster stalled or got reclassified (e.g. `/address-review` Phase 4 step 3's one-retry-then-stop), lead with the Fixed template's sha + one-line summary, then follow with the full Wontfix or Clarify body — don't drop the citation, and don't abbreviate the body, just because the category ended up Wontfix/Clarify instead of Fixed:
+```
+Fixed in `<short-sha>`: [what that commit changed].
+[Rationale in 1-3 sentences].
+This is [intentional / out of scope for this PR / addressed in <other-place>] because [reason].
+```
+(Clarify blends the same way — swap the last two lines for Clarify's `[Specific question]. I'm not sure I understand [aspect]...` line.)
+
 ### Anti-patterns (author)
 
 - **Performative agreement** — "Great catch!" / "You're absolutely right!" / "Good point, thanks!" violates technical rigor. The sha citation + one-line change summary IS the acknowledgment.

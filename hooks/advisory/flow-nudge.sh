@@ -143,9 +143,33 @@ fi
 # plan-first nudge to this narrower one. `repl(y|ies|ying)`, not bare `repl` —
 # a bare stem also matches "replicate"/"replica"/"replace" ("replicate the
 # reviewer environment" wrongly fired on the bare stem, caught on review).
-PR_REPLY_INTENT='(repl(y|ies|ying)|respond|answer|address).{0,15}(review|reviewer)'
+# Window is {0,18}, not {0,15}: measured gap on two real missed phrasings
+# ("answer all of miguel's review comments", "address the feedback the
+# reviewer left") is 18-19 chars — 15 silently missed both. Widened only to
+# 18, not further: an 8-prompt precision check (2026-07-25) showed window=20
+# already false-positives on "address this in the design review meeting" (a
+# non-PR design review), so 18 is the largest width that closes the measured
+# gap without that regression. Reversed noun-then-verb order ("the reviewer's
+# comments... reply") is a known, deliberately unfixed ceiling — matching it
+# needs `(review|reviewer).{0,N}(respond|answer|address)`, and those three
+# common verbs in the reversed direction risk far more false positives (e.g.
+# "the review said we should address the schema") than the forward direction
+# ever did; the nudge is advisory, the model is expected to catch this case
+# on its own reading even when the regex doesn't.
+PR_REPLY_INTENT='(repl(y|ies|ying)|respond|answer|address).{0,18}(review|reviewer)'
+# "implement/apply the requested changes" describes Phase 4+5 work address-
+# review's own Phase 3 already plans for — exempt it from the IMPL carve-out
+# below so a bounded, reviewer-scoped ask doesn't lose the nudge to the
+# generic plan-first one. Deliberately narrow (a fixed collocation, not a
+# broader "reviewer + changes" pattern) so it doesn't also exempt a prompt
+# that bundles the review-scoped fix with real freestanding work, e.g. "fix
+# the bugs the reviewer flagged and also refactor the auth module" — that
+# still needs plan-first for the unscoped "refactor" half, so it correctly
+# stays out of this exemption (no "requested changes" phrase either).
+IMPL_BOUNDED_TO_REVIEW='(requested|suggested) changes'
 if /usr/bin/grep -qiE "$PR_REPLY_INTENT" <<< "$INPUT" \
-   && ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT"; then
+   && ( ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" \
+        || /usr/bin/grep -qiE "$IMPL_BOUNDED_TO_REVIEW" <<< "$INPUT" ); then
   emit_address_review_nudge
 fi
 

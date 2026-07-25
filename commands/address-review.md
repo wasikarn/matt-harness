@@ -32,7 +32,8 @@ Initial input: $ARGUMENTS
    - No args → `gh pr view --json number,baseRefName,headRefName,headRefOid,state,url` (current branch's PR)
    - `<n>` → `gh pr view <n> --repo "$(gh repo view --json nameWithOwner --template '{{.nameWithOwner}}')" --json number,baseRefName,headRefName,headRefOid,state,url`
    - Abort if no PR found OR state != OPEN.
-   - **Assert working branch == PR branch before any edit.** Run `git rev-parse --abbrev-ref HEAD`; it must equal `headRefName`. If it differs, STOP — don't edit: either `git checkout <headRefName>` (local branch exists + worktree clean) or tell the user they're on the wrong branch. Editing the current worktree while it sits on a different branch lands fixes on the wrong PR (the `fix/TP-582`-while-addressing-`feature/TP-650` failure mode).
+   - **Assert working branch == PR branch before doing anything else in this command.** Run `git rev-parse --abbrev-ref HEAD`; it must equal `headRefName`. If it differs, STOP the entire run here — don't fetch threads, don't triage, don't edit: either `git checkout <headRefName>` (local branch exists + worktree clean) or tell the user they're on the wrong branch. This is a whole-flow halt, not just an edit gate: Phase 2's `isOutdated` handling reads the file's *current* state off the local worktree, so continuing past a branch mismatch risks triaging off the wrong branch's file content, not just editing on the wrong branch. Editing the current worktree while it sits on a different branch also lands fixes on the wrong PR (the `fix/TP-582`-while-addressing-`feature/TP-650` failure mode).
+   - Once the branch check passes, confirm local HEAD is current before any edit lands: `git fetch` and compare against `headRefOid` (or just `git pull --ff-only` if behind). Branch-name equality alone doesn't catch a worktree that's on the right branch but stale — editing there risks a diff based on outdated context or a rejected non-fast-forward push later.
    - Capture **PR_HEAD_AT_FETCH = headRefOid** — this is the commit Claude sees the review against. Phase 4 commits land AFTER this; Phase 5 citations reference the NEW shas, not `PR_HEAD_AT_FETCH`. Pinning makes "what was the PR state when the review was triaged?" answerable.
 2. Fetch all review threads via **GraphQL, not REST** — the REST `pulls/<n>/comments` endpoint has no resolved-status field at all, so it cannot answer "is this thread open." Use this query (verified against the live GitHub API):
 
@@ -82,7 +83,7 @@ Initial input: $ARGUMENTS
    - **clarify** — reviewer's concern needs more info; reply with a question
    - **wontfix** — disagree or out-of-scope; reply with rationale, leave thread open
    - **out-of-scope** — track as follow-up issue, reply pointing to the issue
-   - **`isOutdated` threads** (from Phase 1): the code at that `path:line` has since moved or been rewritten — read the file's *current* state before classifying. The comment may already be moot (code deleted/replaced) or still apply at a different line; don't classify off the stale diff position alone.
+   - **`isOutdated` threads** (from Phase 1): the code at that `path:line` has since moved or been rewritten — read the file's *current* state before classifying. The comment may already be moot (code deleted/replaced) or still apply at a different line; don't classify off the stale diff position alone. If it's moot because a commit already resolved it (whether landed this session or pre-existing on the branch before this run started) → classify **wontfix**, cite that commit's sha via the "addressed in `<other-place>`" reply shape. Never `actionable` for a thread with nothing left to fix in Phase 4 — and never auto-resolve-eligible, since only `actionable + fixed` qualifies for auto-resolve in Phase 5 step 1.
 2. Present a table to the user:
 
    ```
@@ -113,7 +114,7 @@ Initial input: $ARGUMENTS
 3. Mark bug-shaped clusters for `/fix-bug` delegation:
    - Reviewer described observable wrong behavior + can be reproduced
    - Reviewer's concern is a missing edge case in a code path
-4. Present plan to user. Confirm before Phase 4.
+4. Present plan to user. Confirm before Phase 4 — a plain-text acknowledgment is enough here (unlike Phase 2/5's `AskUserQuestion` gates): the plan is a re-ordering of choices the user already approved in Phase 2, not a new classification decision.
 
 ---
 
@@ -123,14 +124,16 @@ Initial input: $ARGUMENTS
 
 **Actions**:
 1. **Pre-implement verification** (per cluster, before editing — external reviewers including LLM-based ones often lack codebase context):
-   - **Verify the claim against THIS codebase**: read the code the reviewer is commenting on. Check whether their suggested fix is technically correct for the current context (existing patterns, constraints, dependencies). If the suggestion is wrong or context-blind, re-classify the cluster (move to `clarify` with a pushback question, or `wontfix` with a technical rationale) — don't blindly implement.
+   - **Verify the claim against THIS codebase**: read the code the reviewer is commenting on. Check whether their suggested fix is technically correct for the current context (existing patterns, constraints, dependencies). If the suggestion is wrong or context-blind, re-classify the cluster (move to `clarify` with a pushback question, or `wontfix` with a technical rationale) — don't blindly implement. Default to `wontfix` when the counter-evidence is direct, written, and dated (a runbook, a comment, a prior decision record); default to `clarify` when it's inferred or the reviewer might be citing information this pass doesn't have. Same as the YAGNI bullet below, surface every reclassified cluster to the user before Phase 5 posts its reply — a reclassification is a new decision Phase 2's approval never covered, and posting it unreviewed can push back on a blocking reviewer with no human checkpoint in between.
    - **YAGNI check on "do it properly" suggestions**: if the reviewer says "implement properly" / "expand this" / "refactor to support X", grep the codebase for actual usage of the affected code path first. Unused endpoints/functions should be deleted, not expanded. Surface DELETE as an alternate proposal to the user before implementing any expansion.
-   - **Author-aware dedup**: skip re-firing a fix on a thread your own commit already addressed *more recently* than the reviewer's comment (compare the thread's `originalCommit.oid` / `created_at` from Phase 1 against your commits). Re-acting on an already-handled thread is how an uncapped fix loop churns no-op commits.
+   - **Author-aware dedup**: skip re-firing a fix on a thread already addressed *more recently* than the reviewer's comment by a commit on this branch authored by the PR's own author (compare the thread's `originalCommit.oid` / `created_at` from Phase 1 against `git log --format='%H %an %s' <headRefName>` filtered to that author — this covers the whole branch history, not just commits made earlier in this Phase 4 pass). Re-acting on an already-handled thread is how an uncapped fix loop churns no-op commits. This is the same "already resolved, just not by this pass" situation as the `isOutdated` case above — handle it the same way: re-classify to `wontfix`, cite the pre-existing commit's sha via the "addressed in `<other-place>`" reply shape, and surface it to the user alongside the other reclassified clusters. Don't leave it silently `actionable` with nothing in the Phase 4 sha mapping — Phase 5 still needs a reply for it.
 2. For each verified actionable cluster (in Phase 3 order):
-   - **Bug-shaped** → invoke `/fix-bug` with the reviewer's concern as the bug report. `/fix-bug` returns with its own commit sha. Capture it.
+   - **Bug-shaped** → invoke `/fix-bug` with the reviewer's concern as the bug report. `/fix-bug` usually returns with its own commit sha — capture it. But `/fix-bug` can legitimately stall with no commit (its own "no-progress halts" — a stagnation guard, a different mechanism from this command's per-cluster retry cap below — route to its step-7 "need more investigation" branch instead of committing). If it returns empty-handed, treat that cluster like this command's own retry-cap outcome below: re-classify `clarify` or `wontfix`, no sha to cite, surface why in Phase 5.
    - **Inline edit** → apply the fix directly, commit with a focused message (reference the thread: `fix(auth): null-check user_id (review #thread-1)`). Capture the sha.
    - **Wontfix / clarify / out-of-scope** → skip code; will be handled in Phase 5 reply only.
-3. **Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (same failure twice is guessing, not fixing — escalate, don't retry again)**; if they still fail, **stop that cluster** — don't keep patching. Re-classify its thread as `clarify` or `wontfix` with a note explaining the failed fix, and surface it in Phase 5. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
+3. **Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (same failure twice is guessing, not fixing — escalate, don't retry again)**; if they still fail, **stop that cluster** — don't keep patching, even if the retry surfaced a *different* failure that looks like an unrelated flake. Re-classify its thread as `clarify` or `wontfix`. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
+   - **Don't assert an unverified cause.** If the note attributes the residual failure to something ("unrelated flake," "pre-existing issue") without having actually checked, say so as an open question in the reply, not as fact — a reviewer-facing claim about why something broke needs the same evidence bar as any other claim in this command.
+   - **A stalled cluster isn't always "nothing fixed."** If a commit landed before the cluster stalled — this Phase 4 pass, or `/fix-bug` per the branch above — the `clarify`/`wontfix` reclassification doesn't erase it: cite the sha and summarize what it changed (per Core Principles' "cite the sha," which isn't scoped to `actionable + fixed` only) *alongside* the clarify question or wontfix rationale in Phase 5 — see `review-pr/reference.md` §"Blending a sha into Wontfix / Clarify" for the shape. Real progress that happened doesn't disappear because the cluster didn't fully resolve.
 4. Maintain a running mapping: `{sha: [thread-id, ...]}`. This is the input to Phase 5.
 5. Conditional agent routing **launched in parallel** for inline-edit clusters only (bug-shaped clusters get this routing from `/fix-bug`'s own Phase 7 — don't double-route):
    - Reviewer flagged error handling → `silent-failure-hunter` agent on the fix
@@ -149,7 +152,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 1. **Ask once, up front**: `AskUserQuestion` single-select — *"After replying, auto-resolve the actionable threads you fixed?"*:
    - `Leave open (Recommended)` — reviewer verifies and resolves. Default. The reply (sha + summary) is correct maker output; closing the reviewer's thread on their behalf is the maker asserting the verifier's job — the exact circularity kbg's verifier-separation model exists to prevent.
    - `Auto-resolve fixed threads` — after replying, resolve every `actionable + fixed` thread. Never `wontfix` / `clarify` / `out-of-scope` — those stay open by design regardless of this choice.
-2. For EVERY line-level thread classified in Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<databaseId>` (the root comment's `databaseId` from Phase 1, identical to a REST comment `id`). Use the reply body shapes in `review-pr/reference.md` §"Reply Comment Templates" (Fixed / Wontfix / Clarify / Out-of-scope) — the single source. For non-empty **review-body** items from Phase 1 step 3 (no thread to reply into), post one `gh pr comment <n> --body "<text>"` acknowledging how it was addressed. Per-category thread action:
+2. For EVERY line-level thread classified in Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<databaseId>` (the root comment's `databaseId` from Phase 1, identical to a REST comment `id`). Use the reply body shapes in `review-pr/reference.md` §"Reply Comment Templates" (Fixed / Wontfix / Clarify / Out-of-scope, plus §"Blending a sha into Wontfix / Clarify" for a stalled-but-partially-fixed cluster per Phase 4 step 3) — the single source. For non-empty **review-body** items from Phase 1 step 3 (no thread to reply into), post one `gh pr comment <n> --body "<text>"` acknowledging how it was addressed. Per-category thread action:
    - **actionable + fixed** → post the `Fixed in <sha>: …` reply. If the user opted into auto-resolve in step 1, resolve the thread now:
      ```graphql
      mutation($threadId:ID!) {
@@ -159,9 +162,9 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
      via `gh api graphql -F threadId=<id> -f query='<above>'`, using the thread node `id` from Phase 1 (not the comment `databaseId`). Requires repo write access (a PR author's PAT qualifies — verified against GitHub's docs: resolving needs write access, not authorship of the original thread). `unresolveReviewThread` (same shape) reverses it if needed. If the user chose "leave open," skip resolution entirely — the reply alone is this thread's Phase 5 output.
    - **wontfix** → post the rationale reply. Leave thread open.
    - **clarify** → post the question reply. Leave thread open.
-   - **out-of-scope** → post the `Tracked as #<issue-number>` reply. Leave open or resolve at user's discretion.
+   - **out-of-scope** → post the `Tracked as #<issue-number>` reply. Leave thread open — same as wontfix and clarify, per step 1's auto-resolve rule (only `actionable + fixed` is ever eligible).
 3. **Verify gate**: count line-level threads from Phase 1 == count of thread-replies posted, AND count non-empty review-body items from Phase 1 step 3 == count of acknowledgment comments posted. Track these as two separate tallies — a review body was never going to get a thread-reply, so folding it into one count either false-alarms (looks like a missed reply) or false-passes (masks an actually-missed thread). If either tally is short, STOP and reply to the missed ones before continuing.
-4. Surface a summary to the user: `N threads addressed (X fixed / Y wontfix / Z clarify / W out-of-scope)` + `M review-body items acknowledged` + (if auto-resolve was chosen) `R threads resolved`.
+4. Surface a summary to the user: `N threads addressed (X fixed / Y wontfix / Z clarify / S out-of-scope)` + `M review-body items acknowledged` + (if auto-resolve was chosen) `R threads resolved`. `N` is line-level threads only (`X+Y+Z+S == N`) — `M` is a separate tally, never folded into `N` or its breakdown, since a review-body item was never a thread to begin with (per step 3's dual-tally gate). Worked example: 3 line-level threads (2 fixed, 1 wontfix) + 1 non-empty review body acknowledged → `3 threads addressed (2 fixed / 1 wontfix / 0 clarify / 0 out-of-scope)` + `1 review-body item acknowledged` — not `4 threads addressed`.
 
 **Anti-patterns**: see `review-pr/reference.md` §"Anti-patterns (author)" — silent push, performative agreement, defensive tone. The sha citation + one-line summary IS the acknowledgment; skip the social ceremony. Silent push (fixing without per-thread replies) is the failure mode this command exists to prevent.
 
@@ -195,6 +198,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 2. Summarize:
    - PR # and URL
    - Threads handled — breakdown by category (fixed / wontfix / clarify / out-of-scope)
+   - Review-body items acknowledged (separate count, from Phase 5 step 4 — not folded into the thread breakdown above, since it was never a thread)
    - Commits added with sha → thread mapping
    - CI state from Phase 6
    - **Suggested next step:**
@@ -202,6 +206,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
      - Reviewer approves on push        → /ship-merge
      - Another pass wanted before merge → kbg:review-pr
      - wontfix-heavy and abandoned      → `gh pr close <n>`
+     - Pushback posted, nothing to push, a required reviewer's block still stands → await their response to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
 
 ---
 
@@ -211,7 +216,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 - **Memory dependencies**:
   - `feedback_reply_after_pr_fix.md` — Phase 5 is the codified version of "per-thread reply + cite sha = part of done"
   - `feedback_prefer_gh_cli_for_github.md` — all GitHub ops via gh, not curl
-- **`/fix-bug` delegation**: Phase 4 invokes `/fix-bug` for bug-shaped comments. `/fix-bug` returns with its own commit sha — capture it for Phase 5 citation. Don't run /fix-bug recursively per-comment; cluster first, then one /fix-bug per cluster.
+- **`/fix-bug` delegation**: Phase 4 invokes `/fix-bug` for bug-shaped comments. `/fix-bug` usually returns with its own commit sha — capture it for Phase 5 citation. It can also legitimately stall with no commit (see Phase 4 step 2); that outcome re-classifies the cluster instead. Don't run /fix-bug recursively per-comment; cluster first, then one /fix-bug per cluster.
 - **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git patterns) runs automatically on every Bash call during commits.
 - **Agent routing reference**: silent-failure-hunter (error-handling regressions in fixes), security-reviewer (auth/secrets fixes), code-reviewer (general correctness regression on fixes, including its comment-accuracy lens if the fix added/changed docstrings).
 - **Resolves threads only on explicit per-run opt-in (default off)**: GitHub's "Resolve conversation" is a separate action from posting a reply — Phase 5 step 1 asks once per run whether to auto-resolve `actionable + fixed` threads via the `resolveReviewThread` GraphQL mutation. Default is "leave open" so the reviewer verifies and resolves; `wontfix` / `clarify` / `out-of-scope` threads are never auto-resolved regardless of the choice.
