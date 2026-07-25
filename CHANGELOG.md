@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## Eval-set review, no version bump — 2026-07-25
+
+Follow-up on v0.68.32/v0.68.33, same session: user asked for a staff-engineer-agent review of the
+eval SET itself (were the 5 mode-scenarios good tests?), not the skill content again. 2 independent
+reviewers, no shared framing. Both converged on the same headline gap: only `probe`'s eval prompt
+survived context compaction verbatim; the other 4 (strategize, critique, clarify, decide) exist only
+as post-hoc summaries. Those 4 fixes aren't independently re-runnable — they were correctly shipped
+based on a single reviewer's judgment at the time, but should be read as **plausible, not
+independently re-confirmed**, not as re-testable regression evidence. v0.68.32's item 9 already
+flagged the `clarify` `AskUserQuestion` fallback this way; both reviewers separately picked that same
+fix as the one most likely to be a dry-run-environment artifact rather than a real gap (subagents
+lacked the tool; a live session usually has it) — worth a second look if `decide` ever gets used
+enough to matter, not urgent enough to chase now.
+
+One reviewer raised a concrete hypothesis worth checking rather than dismissing: does the new
+first-match-wins mode-selection table force every `strategize` candidate through a `clarify` detour
+even when only a trivial detail is unstated on an otherwise urgent, clearly-irreversible call?
+Checked against the live text — `clarify`'s own step 3 already guards this ("Ask. Only if the
+ambiguity is consequential enough that guessing wrong is expensive... otherwise proceed on the
+stated default and flag it"), so a trivial gap resolves to a fast default-and-proceed, not a real
+blocking detour. A genuine negative, not a gap papered over — no fix needed.
+
+Both reviewers independently concluded further eval cycles on this file have crossed into
+diminishing returns for a skill with ~0 real-world invocations
+([[kbg-decide-zero-real-world-invocations-2026-07-02]]). Stopping the eval-driven loop here rather
+than manufacturing a 4th round.
+
 ## [0.68.33] — 2026-07-25
 
 Follow-up on v0.68.32, same session: `probe` was the one `kbg:decide` mode the main eval batch
