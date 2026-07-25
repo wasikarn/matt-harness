@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.46] — 2026-07-25
+
+Closes out `agents/plan-reviewer.md`, which was left sitting uncommitted with no matching
+documentation after 2 other sessions in the same concurrent cluster (`blind-spot-hunter.md`
+v0.68.43, `code-implementer.md` v0.68.44) finished and closed their own entries. This session's
+own context has no fixture runs, dry-run outputs, or grader reviews for this file — whichever
+session produced this diff isn't the one that documented it, and that provenance gap is real and
+stays real; this entry does not retroactively claim otherwise.
+
+Before committing, read the whole file fresh (not the diff) for internal self-consistency, since
+committing content this session can't independently vouch for is exactly the automation-bias risk
+`review_mode`'s own guard exists to flag. Found the changes coherent and non-contradictory: the
+`production-ready` verdict criterion tightened from "zero Critical/High findings" to "zero findings
+of any severity," which resolves a genuine precedence overlap with `ready-with-caveats` ("only
+Medium/Low findings remain") that could previously read true simultaneously on a Medium/Low-only
+result — the same defect shape already fixed once in `kbg:decide` (v0.68.32) and again in
+`typescript-reviewer` (v0.68.40, `Approve`/`Warning`). The rest of the diff (a `not-ready`-decided-
+first rule keyed on whether the plan names a checkable target, a caller-hands-you-the-plan
+tightening in the Circularity Guard, lens 4-vs-5 and 4-vs-8 disambiguation notes, a citation-
+traceability rule for `cleared_decoys`) reads as one coherent pass, not a grab-bag of unrelated
+edits. No fresh multi-round re-review was run — this is a one-pass consistency check, not the
+fixture-based improve loop the other entries in this file describe, and should not be cited as
+equivalent evidence.
+
 ## [0.68.45] — 2026-07-25
 
 `skill-creator:skill-creator` improve+optimize loop run against `agents/code-reviewer.md`, per user request to send staff-eng agents to do the "Eval Set Review" step instead of the user personally. First run against this specific agent — the fleet's most heavily used, most complex reviewer (5 active lenses: general quality, comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, plus opt-in requirement-coverage).
