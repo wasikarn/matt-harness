@@ -5,6 +5,64 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.34] — 2026-07-25
+
+`skill-creator:skill-creator` improve+optimize loop run against `commands/ship-merge.md`, staff-eng
+agents standing in for every human review step per user request (same substitution pattern as
+v0.68.27–.33). This command carries `disable-model-invocation: true` (server-side PR merge), so both
+halves of the loop were reframed: "improve" ran 5 fixture-based dry-run scenarios (no real `gh`/`git`
+calls — all API responses embedded as literal fixture text) against Phase 1's Rule-14 scored gate,
+each independently graded by a fresh-context agent that derived the correct answer from doc text
+*before* reading the with-skill output; "optimize" skipped `run_loop.py` (incompatible with a flat
+command file, and trigger-rate is moot when the model can never invoke the command) in favor of two
+independent staff-eng reviews of an 18-query set testing whether Claude's advisory *text* correctly
+recommends `/ship-merge` vs. redirects elsewhere.
+
+2 real doc fixes, both in the scored-gate section: (1) the verified-N/A renormalization formula
+carried a stray `× 100` that contradicted the doc's own worked examples two paragraphs later (100x
+overcompute if applied literally — didn't flip the one scenario that hit it, since 100 or 10,000 both
+clear the 70 threshold, but could flip a verdict near a boundary elsewhere); (2) the fatal-weakness
+floor's *default* behavior (any criterion below 40 fails regardless of weighted sum) was never stated
+as a general rule — only the automation-bias guard's one named exemption existed in text, so a reader
+had to infer the default rather than read it. A dry-run agent reached the correct STOP on a stale-review
+scenario, but by elimination reasoning, not by citing stated text — exactly the "right verdict via an
+unstated rule" pattern the grading rubric was built to catch, not just "did the number match." Added an
+explicit **Floor rule (default)** paragraph and tightened the closing Gate line to point back at it.
+3 of 5 scenarios graded clean (sensitive-own-branch, both-at-once, incomplete-review-ordering) —
+matching verdicts derived from text the doc actually states, not inference. A fresh-context re-review
+(zero prior context on the file, dispatched per this repo's own confirmed-2x lesson that a fix can
+ship a new contradiction) caught exactly that: the new Floor-rule paragraph claimed no criterion
+besides the automation-bias-zeroed one gets any exemption, directly beside a paragraph stating
+verified-N/A criteria "drop out of the floor check entirely" — a second, unnamed way out. Fixed with
+one clause distinguishing *exemption* (scored, floor doesn't apply to that 0) from *exclusion* (never
+scored, so the floor question is moot). The same pass verified the arithmetic fix reproduces both of
+the doc's worked examples exactly, and flagged one deferred, pre-existing gap (the criteria table's
+predicates are all boolean, but the new floor language assumes a 0–100 scale nothing defines) as
+real but out of scope for this round's two targeted bugs. A third, fully cold pass then re-read the
+file as it stood after the contradiction fix (not the diff) and confirmed it held up — closing the
+pattern rather than shipping a third unverified edit. That pass found two more zero-risk items in the
+same paragraph (an ambiguous "score it low" instruction against a criterion the table itself defines
+as binary, tightened to "0"; a dangling reference to a retired mechanism, removed) and one new,
+deliberately deferred gap: a missing review-state file currently reads as vacuously satisfying the
+Critical-findings criterion rather than failing it, worth a dedicated fixture before it's touched. Sync-seam check
+(`commands/ship/COMMAND.md`, `commands/kbg-help.md`, `skills/incident/references/hotfix-reference.md`)
+found no restated floor/formula text needing a matching edit — `/ship`'s `COMMAND.md` already defers
+explicitly rather than duplicating the gate, and hotfix's Phase 4 doesn't run Phase 1 at all.
+
+The two eval-set reviewers converged on some findings independently (an unscoreable ambiguous query,
+a near-identical partial-approval positive query proposed by both without seeing each other's draft)
+and disagreed on one (which half of a near-duplicate merge-conflict pair to keep — resolved via the
+more thoroughly argued case). One reviewer's headline finding, entirely missed by the other: zero
+query coverage for the automation-bias guard — arguably the command's most distinctive piece of
+judgment, and the exact mechanic this pass's doc fixes touch. That query's expected label is left as
+an explicit open question in the reconciled set (`recommendation-eval-set-final.json`, 10
+positive/13 negative) rather than forced to a single answer — two candidate answers are genuinely
+defensible and it's a real judgment call, not something a synthesis pass should silently default.
+Deliberately did not run the reconciled set live: the automation-bias guard is a Phase 1-internal
+rule invisible before invocation, so a live pass would measure generic assistant phrasing, not
+anything the command doc's content controls — out of scope for what was asked (review the eval set,
+not resize-and-validate it).
+
 ## Eval-set review, no version bump — 2026-07-25
 
 Follow-up on v0.68.32/v0.68.33, same session: user asked for a staff-engineer-agent review of the
