@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.48] — 2026-07-25
+
+User asked me to study 6 recent llm-wiki articles on graph engineering and Claude 5
+context-engineering doctrine, then apply what's genuinely useful to this harness — read all six
+before touching anything, per Rule 2 (proven need, not speculative import). Cross-checked each
+against the live repo state rather than trusting the articles' prose.
+
+**Shipped: a real, currently-live doc-rot bug + its regression guard.** CLAUDE.md already documents
+that check 40 (dead `kbg:`-reference doc-rot) structurally can't see a skill mis-cited in slash
+form — its regex only fires on the `kbg:` token, so `` `/incident` `` (a skill, not a command)
+reads as valid. That's the exact "validate the graph before it runs" principle one of the six
+articles argues for, applied to kbg's own skill/command citation graph — and it wasn't
+hypothetical: a live instance was still sitting in `commands/post-mortem.md` (`` `/incident` ``
+instead of `` `kbg:incident` ``, its third confirmed occurrence after two others fixed in v0.35.0).
+Fixed the citation and added check 50 (`50-skill-cited-in-slash-form-doc-rot.sh`) as the sibling
+guard: flags a backtick-wrapped `` `/name` `` where `name` matches a known skill and is NOT also a
+command name, excluding `former|removed`-context lines (mirroring check 40/37/38's guard for
+legitimate historical references — a real one exists:
+`docs/reference/hook-lifecycle-contracts.md`'s mention of "the removed `/learn` command"). Dry-run
+against the full doc set before writing the check: exactly one hit, the known bug, zero false
+positives. Bumped `audit.sh`'s hardcoded check-fragment integrity guard from 49→50 in the same
+commit (its own fail-closed assertion would otherwise reject the new fragment).
+
+**Confirmed already covered, no build needed.** `skills/orchestrate/reference.md`'s "Dynamic-workflow
+pattern vocabulary" section already names the same 6-pattern taxonomy (fan-out-and-synthesize,
+adversarial verification, loop-until-done, etc.) one of the six articles describes — sourced from
+the same author (trq212) as a separate article already cited there. A second article's "anchors"
+argument (a graph is only as honest as the facts inside it that refuse to move — tests that
+actually ran, not self-graded consistency) restates this repo's own already-shipped "unifying
+crux" doctrine (CLAUDE.md §Architecture: score, not feel; gates are deterministic verifiers, never
+an LLM grading its own output). A third article's custom Python graph-runtime (checkpoint, resume,
+error-as-routable-data, pre-execution validation) doesn't transfer — kbg is a Claude Code plugin,
+not a custom agent runtime, and the host Workflow tool already provides resume (`resumeFromRunId`),
+null-containment on thrown thunks, and worktree isolation natively.
+
+**Declined, stated why.** A fourth article's pitch (Graphiti + Neo4j bi-temporal knowledge-graph
+memory via MCP) was not adopted — no demonstrated multi-hop-query failure in this harness's actual
+history, a new heavy infra dependency (Docker, a graph DB, an ingestion discipline), and marketing-
+grade unsourced stats ("36-46% accuracy gains," a 2028 Gartner projection) not worth trusting at
+face value. kbg's existing MEMORY.md (index + per-topic files + `[[links]]`) already solves the
+proven need at far lower cost.
+
+**Caveat surfaced, not acted on.** One article's central example — a rule it says Anthropic
+*removed* from Claude Code's system prompt for newer models ("default to writing no comments...
+one short line max," replaced by "match the surrounding code's comment density") — is still
+present verbatim in this live session's own system prompt. Checked kbg's own doctrine layers
+(project CLAUDE.md, global CLAUDE.md, RTK.md, the output style) for a same-topic collision with
+that instruction: none found — kbg's matt-pocock skill-authoring philosophy ("explain why, not
+ALL-CAPS MUSTs") is scoped to skill-prose authoring, not code-comment style, so it doesn't actually
+clash with it. No CLAUDE.md edits made — per operator's own review-before-editing-shared-doctrine
+posture, this and two other candidates (CLAUDE.md's "Recent versions" section as the file's
+clearest progressive-disclosure candidate; a proactive fold-rule for `MEMORY.md`, currently
+102/200 lines against its silent-truncation ceiling — CLAUDE.md's own "Recent versions" cap-and-fold
+precedent has no equivalent there yet) are reported to the operator to pick from rather than
+shipped unilaterally.
+
 ## [0.68.47] — 2026-07-25
 
 `skill-creator:skill-creator` improve+optimize loop run against `skills/learn/SKILL.md`, per user

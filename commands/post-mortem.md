@@ -26,7 +26,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 **Actions**:
 1. Check `$ARGUMENTS` for a bug identifier (JIRA key, GitHub issue, PR number, or short summary).
-2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `/fix-bug` or `/incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
+2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `/fix-bug` or `kbg:incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
 3. For whatever remains missing or unclear, ask the user explicitly:
    - **Reproducible trigger**: exact steps, environment, inputs that cause the failure. Can someone else make it happen?
    - **Known mechanism**: what code path, what invariant, what race, what assumption broke? One-paragraph explanation.
