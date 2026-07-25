@@ -129,7 +129,7 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `plan-reviewer` | Adversarial review of an implementation plan before code exists — requirement coverage, risk, edge cases, testability |
 | `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Dart/Flutter widgets, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
-| `summarizer` | Clarity/compression specialist — condenses long content into filler-free prose for any audience |
+| `summarizer` | Clarity/compression specialist — condenses long content into filler-free output for any audience |
 | `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 | `task-prep-checker` | Fresh-context verifier for a `task-prep` handoff prompt — runs the golden-rule colleague test |
 
