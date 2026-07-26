@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture, API design, and DB optimization for Node.js/Express/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends.
+description: Backend architecture, API design, and DB optimization for Node.js/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends.
 metadata:
   origin: ECC
 ---
@@ -11,7 +11,7 @@ Backend architecture patterns and best practices for scalable server-side applic
 
 ## When to Activate
 
-- Designing REST or GraphQL API endpoints
+- Designing REST API endpoints
 - Implementing repository, service, or controller layers
 - Optimizing database queries (N+1, indexing, connection pooling)
 - Adding caching (Redis, in-memory, HTTP cache headers)
@@ -43,6 +43,7 @@ GET /api/markets?status=active&sort=volume&limit=20&offset=0
 interface MarketRepository {
   findAll(filters?: MarketFilters): Promise<Market[]>
   findById(id: string): Promise<Market | null>
+  findByIds(ids: string[]): Promise<Market[]>
   create(data: CreateMarketDto): Promise<Market>
   update(id: string, data: UpdateMarketDto): Promise<Market>
   delete(id: string): Promise<void>
@@ -85,16 +86,21 @@ class MarketService {
     // Fetch full data
     const markets = await this.marketRepo.findByIds(results.map(r => r.id))
 
-    // Sort by similarity
+    // Sort by similarity, highest score first — scoreB - scoreA, not the
+    // other way round, or unmatched markets (defaulted to 0) sort to the front
     return markets.sort((a, b) => {
       const scoreA = results.find(r => r.id === a.id)?.score || 0
       const scoreB = results.find(r => r.id === b.id)?.score || 0
-      return scoreA - scoreB
+      return scoreB - scoreA
     })
   }
 
-  private async vectorSearch(embedding: number[], limit: number) {
+  private async vectorSearch(
+    embedding: number[],
+    limit: number
+  ): Promise<Array<{ id: string; score: number }>> {
     // Vector search implementation
+    return []
   }
 }
 ```
@@ -102,28 +108,40 @@ class MarketService {
 ### Middleware Pattern
 
 ```typescript
-// Request/response processing pipeline
-export function withAuth(handler: NextApiHandler): NextApiHandler {
-  return async (req, res) => {
-    const token = req.headers.authorization?.replace('Bearer ', '')
+// Request/response processing pipeline — App Router route handler wrapper.
+// (A Pages Router API middleware wraps (req, res) instead of returning a
+// Response; every other example in this file is App Router, so this one
+// matches rather than mixing conventions.)
+export function withAuth(
+  handler: (req: Request, user: JWTPayload) => Promise<Response>
+) {
+  return async (req: Request): Promise<Response> => {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '')
 
     if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // handler is async, so an error it throws surfaces as a promise
+    // rejection, not a synchronous throw — `return handler(...)` without
+    // await lets that rejection escape this try/catch uncaught. verifyToken
+    // and handler need separate error handling for the catch below to mean
+    // anything.
+    let user: JWTPayload
     try {
-      const user = await verifyToken(token)
-      req.user = user
-      return handler(req, res)
+      user = verifyToken(token)
     } catch (error) {
-      return res.status(401).json({ error: 'Invalid token' })
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
+
+    return handler(req, user)
   }
 }
 
 // Usage
-export default withAuth(async (req, res) => {
-  // Handler has access to req.user
+export const GET = withAuth(async (req, user) => {
+  // Handler receives the authenticated user
+  return NextResponse.json({ success: true })
 })
 ```
 
@@ -168,7 +186,7 @@ markets.forEach(market => {
 
 ### Indexing & Pool Sizing
 
-For multi-column filters, one composite index beats two single-columns — Postgres bitmap-scan across two indexes is slower than one composite read. Order the composite equality-first, then range/sort, and carry the `SELECT` columns via an `INCLUDE` covering index to skip the heap fetch. For pool sizing on Supabase/Postgres, the aggregate `(pool_size + max_overflow) × instances` must stay under the server `max_connections` cap with ~20% headroom for replicas and migrations — sizing per-instance in isolation exhausts connections under multi-pod fan-out.
+For multi-column filters, one composite index beats two single-columns — Postgres bitmap-scan across two indexes is slower than one composite read. Order the composite equality-first, then range/sort, and carry the `SELECT` columns via an `INCLUDE` covering index to skip the heap fetch. For pool sizing on Supabase/Postgres, the aggregate `pool.max × instances` (node-postgres's `Pool` option, or `connection_limit` in a Prisma connection string) must stay under the server `max_connections` cap with ~20% headroom for replicas and migrations — sizing per-instance in isolation exhausts connections under multi-pod fan-out.
 
 ### Transaction Pattern
 
@@ -195,20 +213,30 @@ CREATE OR REPLACE FUNCTION create_market_with_position(
 RETURNS jsonb
 LANGUAGE plpgsql
 AS $$
+DECLARE
+  v_market_id int;
 BEGIN
   -- Start transaction automatically; list columns explicitly (serial id not in payload)
   INSERT INTO markets (creator_id, question, closes_at)
-    SELECT creator_id, question, closes_at FROM jsonb_populate_record(NULL::markets, market_data);
+    SELECT creator_id, question, closes_at FROM jsonb_populate_record(NULL::markets, market_data)
+    RETURNING id INTO v_market_id;
+  -- Use the id just generated, not position_data's own market_id field — the
+  -- client can't know the new market's id yet, so trusting a client-supplied
+  -- value here either fails a not-null/FK constraint or silently attaches
+  -- the position to the wrong (pre-existing) market.
   INSERT INTO positions (market_id, user_id, side, size)
-    SELECT market_id, user_id, side, size FROM jsonb_populate_record(NULL::positions, position_data);
+    SELECT v_market_id, user_id, side, size FROM jsonb_populate_record(NULL::positions, position_data);
   RETURN jsonb_build_object('success', true);
 EXCEPTION
   WHEN OTHERS THEN
-    -- Rollback happens automatically
-    RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+    -- Rollback happens automatically. Re-raise instead of returning a
+    -- failure payload — see the note below the block.
+    RAISE;
 END;
 $$;
 ```
+
+**Don't let the exception handler swallow the failure:** an `EXCEPTION WHEN OTHERS` block that `RETURN`s a `success: false` payload completes the function *normally* from Postgres's point of view — no error propagates. `supabase.rpc()` then comes back with `error: null` and `data: { success: false, ... }`, so the TypeScript wrapper's `if (error) throw new Error(...)` never fires on the exact failure this SQL was written to catch, and `return data` hands the caller a payload that looks like success unless it separately checks `data.success`. Bare `RAISE;` inside the handler re-throws the original error so it actually reaches the caller's `error` field instead.
 
 ## Caching Strategies
 
@@ -243,6 +271,8 @@ class CachedMarketRepository implements MarketRepository {
   async invalidateCache(id: string): Promise<void> {
     await this.redis.del(`market:${id}`)
   }
+
+  // Other MarketRepository methods delegate straight to baseRepo, omitted for brevity
 }
 ```
 
@@ -338,7 +368,7 @@ async function fetchWithRetry<T>(
       lastError = error as Error
 
       if (i < maxRetries - 1) {
-        // Exponential backoff: 1s, 2s, 4s
+        // Exponential backoff: 2^i seconds (1s, 2s, ... — attempt count bounded by maxRetries, no delay ceiling)
         const delay = Math.pow(2, i) * 1000
         await new Promise(resolve => setTimeout(resolve, delay))
       }
@@ -352,7 +382,7 @@ async function fetchWithRetry<T>(
 const data = await fetchWithRetry(() => fetchFromAPI())
 ```
 
-**Two fixes before shipping the above:** (1) add jitter — `delay + Math.random() * base` — so N replicas retrying at 1s/2s/4s don't form a synchronized retry storm that re-kills the recovering dependency; (2) gate retry on idempotency — `fn` is retried unconditionally, so a POST/create that failed after the write succeeded produces a duplicate. For non-idempotent verbs require an `Idempotency-Key` header or a dedupe row before retrying.
+**Two fixes before shipping the above:** (1) add jitter — `Math.pow(2, i) * 1000 + Math.random() * 1000` — so N replicas retrying in lockstep (1s, 2s at the default `maxRetries = 3`) don't form a synchronized retry storm that re-kills the recovering dependency; (2) gate retry on idempotency — `fn` is retried unconditionally, so a POST/create that failed after the write succeeded produces a duplicate. For non-idempotent verbs require an `Idempotency-Key` header or a dedupe row before retrying.
 
 ## Authentication & Authorization
 
@@ -364,7 +394,7 @@ import jwt from 'jsonwebtoken'
 interface JWTPayload {
   userId: string
   email: string
-  role: 'admin' | 'user'
+  role: 'admin' | 'moderator' | 'user'
 }
 
 export function verifyToken(token: string): JWTPayload {
@@ -401,10 +431,10 @@ export async function GET(request: Request) {
 ```typescript
 type Permission = 'read' | 'write' | 'delete' | 'admin'
 
-interface User {
-  id: string
-  role: 'admin' | 'moderator' | 'user'
-}
+// requireAuth() above returns JWTPayload — reuse it here instead of a
+// separately-shaped User, or hasPermission()/requirePermission() declare an
+// argument type requireAuth() can never actually produce.
+type User = JWTPayload
 
 const rolePermissions: Record<User['role'], Permission[]> = {
   admin: ['read', 'write', 'delete', 'admin'],
@@ -445,6 +475,20 @@ Rate limiting must use a shared store such as Redis, a gateway, or the
 platform's native limiter. Do not use per-process in-memory counters for
 production APIs: they reset on deploy, split across replicas, and fail open in
 serverless or multi-instance environments.
+
+Decide what happens when the shared store itself goes down — don't inherit
+whatever the client library defaults to silently. If the store is shared with
+other traffic-critical paths (e.g. the same Redis also backs your cache), a
+store outage already exposes the backend through those paths, so failing the
+limiter open too compounds the exposure — fail closed (`503` + a short
+`Retry-After`) instead. If rate limiting is pure defense-in-depth on an
+isolated store, failing open avoids turning a store blip into a full outage.
+Either is legitimate; leaving it undecided is not — most client libraries fail
+open by default without saying so.
+
+Derive the store key from the caller's credential (hash it) rather than using
+the raw API key or token as the literal key name — a raw key otherwise
+surfaces in the store's own dashboard, logs, and debugging tools in plaintext.
 
 Keep the backend layer responsible for choosing the integration point, the HTTP
 contract, and the error shape; use `kbg:security-auditor` for abuse case review.
@@ -504,7 +548,7 @@ export async function POST(request: Request) {
 }
 ```
 
-**The `JobQueue` above is unbounded — no depth cap, no backpressure.** Under bursty load it grows until heap exhaustion (OOM). Cap the queue depth and reject above a high-water mark with `503` + `Retry-After` instead of pushing forever; for cross-replica durability (jobs lost on crash, split across replicas) back the queue with Redis/BullMQ rather than an in-memory array.
+**The `JobQueue` above is unbounded and per-process — no depth cap, no backpressure, and every job in memory is lost on a pod recycle or invisible to the other replicas.** For a multi-replica service, treat Redis/BullMQ as the default, not a fallback: it persists jobs across crashes and lets any replica claim the next one, so it doesn't have the heap-growth risk just described at all. Only an in-process queue (single instance, jobs cheap to lose) needs the depth-cap fix: reject above a high-water mark with `503` + `Retry-After` instead of pushing forever. Don't bolt that 503 control onto a Redis/BullMQ queue — it guards against a different failure mode (heap OOM) than the one an external queue actually has (rising latency as depth grows, not process death); alert on queue depth instead (e.g. BullMQ's `getWaitingCount()`). The `POST` handler above is a case in point: on a serverless deployment (a common target for a Next.js route like this one), the function can freeze or tear down the instant the handler returns. `add()` doesn't await `process()`, so a job already dequeued can be frozen mid-execution — started but not guaranteed to finish. Worse, a job added while the queue is already busy (e.g. a second request landing on the same warm instance before the first drains) sits untouched in the array until the loop reaches it — if the environment tears down first, that job can fail to ever start. Either way, that's a stronger reason to reach for Redis/BullMQ here than heap growth alone.
 
 ## Logging & Monitoring
 

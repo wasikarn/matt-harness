@@ -5,6 +5,105 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.53] — 2026-07-27
+
+`skill-creator:skill-creator` improve+optimize loop run against `skills/backend-patterns/SKILL.md`,
+per user request to delegate the eval-set-review step to 2 staff-eng agents. This ECC-origin file
+had never been fixture-tested before.
+
+**Improve:** 3 fixtures (async job queue, idempotent retry, rate limiting under serverless), 6
+dry-run agents, 3 doc-first graders. The original 3-fixture hypothesis was refuted across the
+board (both with-skill and no-skill outputs independently reached for correct, race-free
+implementations in every case), but grading surfaced 2 real gaps anyway: the Background Jobs
+section welded an in-process depth-cap fix to a Redis/BullMQ durability fix as if both applied
+together, when the 503 control only makes sense for the architecture the fix itself replaces; the
+Rate Limiting section named the in-memory-counter failure mode but said nothing about the
+recommended shared-store's own failure mode, and the two dry runs resolved that silently in
+opposite, undocumented directions (fail-open vs fail-closed).
+
+What followed was 5 rounds of fresh-context, non-diff, whole-file adversarial re-review — each
+round finding genuine new defects, some in freshly-edited text, some in completely untouched
+Repository/Service/Transaction/RBAC sections that had shipped unexamined since the file was first
+imported. Every fix was verified empirically, not asserted: a live Postgres 16 Docker container (3
+separate times — the transaction re-raise fix, the market_id linkage bug, and a final
+before/after check), `tsc --strict` against a real installed TypeScript (multiple times, catching
+real `TS2551`/`TS2339`/`TS2741`/`TS2591` errors), and live Node execution with simulated timing to
+trace real async interleaving. Confirmed defects, most to least severe:
+
+- **Transaction Pattern SQL silently swallowed failures as fake successes.** The `EXCEPTION WHEN
+  OTHERS` handler `RETURN`ed a `{success: false}` payload instead of re-raising — Postgres saw the
+  function complete normally, so `supabase.rpc()` came back with `error: null`, and the
+  TypeScript wrapper's `if (error) throw` never fired on the exact failure the SQL was written to
+  catch. Fixed to a bare `RAISE;`.
+- **The same SQL never linked the new position to the market it had just created** — the second
+  INSERT read `market_id` from client-supplied JSON instead of the row the first INSERT had just
+  produced. Verified against a live container two ways: a live run with a stale client-supplied
+  `market_id` silently attached the position to the wrong, pre-existing market. Fixed with
+  `DECLARE v_market_id int` + `RETURNING id INTO v_market_id`, re-verified the fix holds under the
+  same adversarial input.
+- **`MarketRepository` was missing `findByIds`** despite the Service layer example calling it one
+  section down — added to the interface.
+- **`vectorSearch` had no return statement** (inferred `Promise<void>`) despite its result being
+  consumed by `.map()`/`.find()` two lines later — 6 real `tsc --strict` errors. Fixed with a
+  return type and a `return []`.
+- **RBAC's `User` type didn't match what `requireAuth()` actually returns** (`JWTPayload`) — a
+  real `TS2741`. Replaced the separately-shaped `User` interface with `type User = JWTPayload` and
+  widened `JWTPayload.role` to the 3-tier union RBAC's own `rolePermissions` table already assumed.
+- **The Next.js Middleware Pattern example had drifted to Pages Router** (`NextApiHandler`,
+  `req`/`res`) while every other example in the file is App Router — rewritten to match, which in
+  turn surfaced a real bug in the rewrite itself: `return handler(req, user)` without `await`
+  inside a `try` let the handler's own promise rejections escape the `catch` uncaught (a classic
+  `no-return-await`-inside-`try` trap). Fixed by resolving the token first, returning the handler
+  call unwrapped after the `try` block closes.
+- **`searchMarkets` sorted by similarity ascending**, not descending — with a `|| 0` fallback for
+  unmatched results, this put the *least* relevant markets first. Fixed to `scoreB - scoreA`.
+- Frontmatter and "When to Activate" both overclaimed scope the file's actual content doesn't
+  back: `/Express` (zero Express-specific syntax anywhere, and the Middleware fix above removed
+  the file's one remaining non-App-Router example) and `or GraphQL` (zero GraphQL content) — both
+  dropped. Pool-sizing prose used SQLAlchemy/Python vocabulary (`pool_size`, `max_overflow`) in a
+  Node-scoped skill — corrected to `pool.max` / Prisma's `connection_limit`.
+
+Two findings were assessed and deliberately left as-is, not silently dropped: RBAC's
+`requirePermission`/`DELETE` usage has no try/catch around `requireAuth`'s throw (pre-existing,
+minor, doesn't match the file's own `errorHandler` convention elsewhere — a real but low-severity
+gap for a future pass); the Transaction Pattern's `EXCEPTION WHEN OTHERS THEN RAISE;` block is a
+functional no-op that still pays PL/pgSQL's per-call subtransaction overhead — kept anyway because
+it visibly warns against the swallow-the-failure anti-pattern at the exact point a reader would be
+tempted to introduce it, which outweighs a micro-optimization in a patterns-teaching file.
+
+**Optimize:** drafted a 24-item trigger eval set, then handed the review to 2 independent staff-eng
+agents (no shared context) per the user's explicit request — the first time this exact ask
+("send staff engineer agents instead of me") named the delegation directly rather than it being
+inferred from precedent. Reviewer 1 verified every label against the live SKILL.md and each
+sibling's own description, found all 24 correct but caught a factual overclaim in one item's note
+and 4 real coverage gaps (logging and indexing had zero items despite being named "When to
+Activate" bullets; the skill's own explicit `kbg:security-auditor` hand-off and
+`kbg:backend-architect`'s explicit architecture-level-vs-per-query N+1 distinction were both named
+in-file with zero boundary items testing them). Reviewer 2 ran an orthogonal check — not "are the
+labels right" but "is the signal genuine" — and found a real systematic bias: 8 of 12 original
+false items carried an obvious blocklist token (a language/framework name) while 9 of 12 true items
+carried none, meaning a trivial keyword blocklist would score 20/24 without evaluating real
+content-fit. Fixed by adding negatives with no blocklist token instead of adding tech names to the
+bare positives (which would have just moved the bias). Reviewer 2 also caught that one item tested
+a TypeScript boundary `typescript-patterns` doesn't actually cover (enum-vs-union has no content in
+that skill) and reworded it to the Branded Types example that skill's body actually contains, and
+found 3 legitimate multi-skill co-dispatch cases (backend-patterns+drizzle-patterns,
++typescript-patterns, +latency-critical-systems) that a single boolean can't score — moved to
+`manual_inspection_items` rather than forced. Net: 24 → 29 scored items + 3 manual, 0 cuts.
+
+Live run (`detect_trigger.py`, copied from the already-fixed typescript-patterns copy): 15/29 raw,
+cleanly split rather than noisy — all 15 false items scored correct (100%), including one that
+didn't just decline but actively routed to the right sibling (`Skill(kbg:mysql-patterns)`); all 14
+true items scored incorrect (0/14), every one investigated via Bash/ToolSearch or answered inline
+instead of loading the skill. Root cause, distinct from prior non-discriminating runs: every true
+item narrates an ambient existing codebase ("our markets service," "our API routes") that doesn't
+exist in the harness's actual repo, so the model's most reasonable move is to check whether the
+referenced thing exists rather than assume a build task — a measurement artifact of the cold
+single-shot harness, not a sign the description under-triggers in real use, where this skill's
+primary path is `code-implementer.md`'s deterministic Step-1 stack table, not the description's
+wording. No description change shipped, per Rule 2 — matches this fleet's established precedent
+for the same failure shape (v0.68.28/.29/.30/.37/.41/.43/.44/.50).
+
 ## [0.68.52] — 2026-07-26
 
 Removed `skills/codebase-onboarding` (ECC-imported). Follow-up to v0.68.51's 7-skill removal: user
