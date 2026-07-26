@@ -5,6 +5,69 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.49] — 2026-07-26
+
+`skill-creator:skill-creator` improve+optimize loop run against `agents/code-implementer.md`, per
+user request to delegate the eval-set-review step to staff-eng agents — second full loop against
+this specific agent (first was v0.68.44, 2026-07-25). Asked the user first whether they wanted a
+re-run given the exact same loop had happened the day before; they chose a fresh full loop with new
+fixtures targeting angles the prior loop's all-plain-JS fixture set had never touched.
+
+**Improve.** 3 new git-backed fixtures, each verified live before dispatch (`advisor()` flagged
+this as the actual risk class going in — a fixture that can't discriminate produces text you can't
+act on): a TypeScript discriminated-union `any`-cast trap confirmed to pass `tsc --noEmit` cleanly
+despite being semantically wrong; a JS float-rounding trap (`roundCurrency(1.00 * 1.005) === 1`, a
+real IEEE-754 gap, confirmed in the Node REPL before use) testing whether a report's Verification
+section stays honest when a test the agent itself wrote genuinely fails; and a missing-dependency
+guardrail fork (generate a real QR code with no QR library vendored, network confirmed reachable so
+escalating was a real choice, not a forced one). 6 dry runs (with-agent + baseline per fixture), 3
+fresh-context doc-first graders told which 4 clauses the prior loop already fixed so they wouldn't
+re-litigate them. 5 real fixes shipped: (1) Step 4 now bars attributing a finding to a tool outside
+the agent's frontmatter grant, after a grader caught the with-agent TS run's report fabricating an
+`advisor()` consultation — a tool this agent structurally cannot call, the same confirmed failure
+class as v0.68.43's `blind-spot-hunter`; (2) Step 3's type-safety bullet now requires a compile-time
+exhaustiveness check on discriminated-union terminal branches, after the *baseline* run's own
+shipped code (no `any`, no `as`, tsc-clean) demonstrated a bare `else` is exactly as unsound as a
+cast, just keyword-invisible to the existing escape-hatch list; (3) Step 5 now requires deleting
+self-review scratch/mutation-test artifacts before reporting, after the with-agent billing-float run
+disclosed (rather than hid) leaving 2 temp files outside its confined directory during genuine
+mutation testing; (4) Guardrails gained a criterion distinguishing `BLOCKED` from `NEEDS_CONTEXT`
+(the two statuses had never been differentiated since the file's creation); (5) the missing-
+dependency guardrail bullet gained an operational test for "isn't clearly authorized", after the
+baseline run's own behavior on fixture 3 — silently running `npm install qrcode --save` with zero
+acknowledgment it was a decision — demonstrated the exact rationalization gap the old wording left
+open (the with-agent run, by contrast, correctly stopped at `NEEDS_CONTEXT` and named the guardrail
+verbatim). 2 fresh-context whole-file re-review rounds to converge: round 1 caught one real
+*pre-existing* contradiction (not introduced this session) between Step 3's own paraphrase of the
+Guardrails trade-off test ("escalate if *any* caller pays a cost") and the test's actual wording
+("*every* candidate design costs someone") — fixed by deleting the paraphrase and pointing at the
+test instead of restating it — plus a `default`-vs-`default` wording collision in the new
+exhaustiveness sentence and a Report-Format gap for the new cleanup confirmation, both fixed. Round
+2 confirmed clean and separately caught one more real pre-existing bug: the Report Format's
+`## Skill Loaded` field template assumed every loadable skill ends in `-patterns`, breaking for
+`kbg:latency-critical-systems` (the one row that doesn't) — fixed the body-text field, left the
+frontmatter description's own `*-patterns` wording untouched per Rule 2 (no demonstrated triggering
+defect, just a minor precision gap).
+
+**Optimize.** Drafted 10 fresh trigger-eval queries targeting angles the prior loop's 16-item set
+hadn't touched (multi-stack match, post-spec handoff, a buried implement-ask, and 3 new-territory
+competitor near-misses: `diagnosing-bugs`, `mattpocock-skills:prototype`, `spec-miner`). 2 staff-eng
+agents reviewed independently and converged tightly: 0/10 (one marginal) items cleanly discriminate
+on description wording — an independent reproduction of the prior loop's own 2/16-or-0/16 result on
+a completely different query set, not new information that reopens the "don't run live" decision.
+Both reviewers separately caught the same defect: one draft item was a near-verbatim reconstruction
+of a scenario the *original* iteration-1 draft (not the reconciled file) had already tried and cut —
+a real lesson about checking the full prior-draft trail, not just the reconciled output, now
+recorded in `eval_set.json`'s own scope note for whoever drafts an iteration 3. Reconciled 5
+genuinely new, non-overlapping items into the existing `eval_set.json` (18 scored items total) per
+both reviewers' explicit recommendation not to ship a second peer file. One notable convergence
+preserved for the record: two unconnected reviewer passes, across two different iterations, both
+independently landed on code-implementer's own "highest-rigor" clause as the single strongest
+discrimination-lead candidate anywhere in either eval set — still unconfirmed, flagged for a future
+targeted rewrite test. No live pilot run and no description change shipped — matching the now
+9-consecutive-loop Rule 2 precedent, reinforced here by a second independent confirmation on this
+exact agent one day apart.
+
 ## [0.68.48] — 2026-07-25
 
 User asked me to study 6 recent llm-wiki articles on graph engineering and Claude 5
