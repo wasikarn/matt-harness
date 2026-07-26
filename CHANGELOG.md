@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.50] — 2026-07-26
+
+New skill `skills/typescript-patterns` — TypeScript language idioms and `tsconfig.json` choices,
+built and improve+optimized via `skill-creator:skill-creator`, per user request in Thai to cover
+version compatibility across 5.9-7.x. Caught and corrected a real factual gap in my own research
+before it shipped: an initial narrow `npm view typescript versions` filter (matching only a `6.`
+prefix) led me to conclude TypeScript 7 was still preview-only; an unfiltered `npm view typescript
+version` (prompted by a background dry-run agent's independent finding) showed 7.0.2 already GA,
+published 2026-07-08 — the skill's version table and "5.9-7.x compatible" framing were rewritten
+around that fact, every compiler-option claim re-verified against real `typescript@5.9.3`,
+`6.0.3`, `7.0.2`, and `tsgo` installs. Wired into `agents/code-implementer.md`'s Step-1 table and
+`agents/typescript-reviewer.md`'s Reference section so both surfaces route to it instead of
+treating it as absent (the reviewer agent previously said outright that no such skill existed).
+
+Improve loop: 3 fixtures, 6 dry-run agents. One fixture (discriminated-union exhaustiveness)
+showed a clear, real improvement — the with-skill output used a switch + `never`-typed
+exhaustiveness guard, the baseline used a plain if/else chain with no compile-time guard. Two
+fixtures turned out non-discriminating once test-harness bugs in `grade.sh` were fixed (missing
+`package.json`/`@types/node`/`src/index.ts` in the grading sandbox, not defects in either
+produced config) — reported honestly rather than left broken to manufacture a difference.
+Downgraded one grading check from a hard pass/fail grep on `never`-token presence to an explicit
+"SIGNAL" note, since token presence alone doesn't prove the guard actually gates the switch.
+
+Optimize loop: per user request, delegated the eval-set-review step to 2 independent staff-eng
+agents instead of doing it personally. They reconciled a 23-item trigger eval set (+1
+manual-inspection item for a legitimate multi-skill co-dispatch case) and one reviewer verified by
+direct source read that `typescript-reviewer-workspace/optimize/detect_trigger.py`'s `Skill`
+tool-use branch logged but never set `triggered = True` — a real, generalizable scoring bug (any
+correctly-triggered `Skill()` call would score as a miss) fixed in a corrected copy for this
+skill's own optimize run. Live trigger run (23/23 items): 15/23 raw, but false items scored 11/11
+including 3 correct routes to the actual right sibling skill (`kbg:effect-ts-patterns`,
+`kbg:backend-architect`, `kbg:grpc-node-patterns`), and true items split exactly on the
+implementation-vs-advisory line both reviewers flagged as the real risk — 4/5 on queries that
+write code/config, 0/7 on pure conceptual questions the model answered inline, matching
+skill-creator's own documented triggering mechanism verbatim. No description change shipped for
+that reason — precision is perfect and recall is implementation-shaped by design, not a gap.
+
+`advisor()` caught two things before commit: first, my own write-up of that finding had lumped it
+in with this repo's prior non-discriminating-eval precedents (v0.68.28/.29/.30/.37/.41/.43/.44) —
+those runs produced no usable signal at all, while this one produced a clean, interpretable,
+asymmetric result, and burying it under "nothing to see here" would have hidden the strongest part
+of the finding; corrected to state it on its own terms. Second, and more consequential: SKILL.md's
+own `description` and "When to Activate" section still said "writing or editing any `.ts`/`.tsx`
+file," directly contradicting the narrower `code-implementer` gate ("tsconfig or a
+type-modeling/compiler-option decision in scope") that reviewer feedback had already narrowed
+earlier in the same session — the ninth confirmed instance of this repo's "fix ships a new
+contradiction" pattern ([[re-review-after-every-fix-round-2026-07-25]]). Fixed both to match the
+narrower, gate-consistent framing the live run's own 0/7 advisory-miss result argues for.
+
+Shipping mechanics: fixed harness-audit's own check-36 findings on the new skill (added a negation
+clause and trimmed the description to 25 words; added `typescript` to the coined-term leading-word
+vocabulary list alongside sibling frameworks `hono`/`drizzle`/`effect-ts`; added a lowercase
+`verify`/`done when` completion-criterion sentence) rather than shipping with avoidable WARN/INFO
+noise. Skill count 35 → 36 across `plugin.json`, `marketplace.json`, `README.md`. `BOUNDARY.md`
+regenerated, `claude plugin update kbg@kobig` run to clear the transient F1 cache-lag CRIT.
+
 ## [0.68.49] — 2026-07-26
 
 `skill-creator:skill-creator` improve+optimize loop run against `agents/code-implementer.md`, per

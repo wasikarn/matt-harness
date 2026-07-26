@@ -20,9 +20,9 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | requirement-analyst | Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts. | ["Read", "Grep", "Glob"] | no |
 | security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
-| silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. | [Read, Grep, Glob, Bash] | yes |
+| silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. Use when reviewing error handling — try/catch, fallbacks, or async error flow. | [Read, Grep, Glob, Bash] | yes |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
-| summarizer | Summarizes any text, doc, or transcript into clear, filler-free prose for any audience — BLUF structure, source-fidelity, information-density calibration. Use for condensing long content. | ["Read", "Grep", "Glob"] | no |
+| summarizer | Summarizes any text, doc, or transcript into clear, filler-free output for any audience — BLUF structure, source-fidelity, information-density calibration. Use for condensing long content. | ["Read", "Grep", "Glob"] | no |
 | task-prep-checker | Fresh-context verifier for a task-prep prompt. Runs the golden-rule colleague test against the 9-field handoff template; returns a structured gap list. Read-only — never edits, never invents. | ["Read", "Glob", "Grep"] | no |
 | typescript-reviewer | Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 
@@ -85,6 +85,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | task-prep | Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners. | inline | auto |
 | tauri-v2-patterns | Tauri v2 desktop app patterns: IPC, capabilities/permissions, state, events, plugins, tauri.conf.json. Use when building or upgrading a Tauri v2 app. Don't use for Tauri v1. | inline | auto |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
+| typescript-patterns | TypeScript language idioms and tsconfig choices, compatible across 5.9, 6.0, and the 7.0 native-compiler line. Use when creating or changing tsconfig.json, or making a type-modeling/compiler-option decision (any vs unknown, discriminated unions, strictness, module resolution) — not for routine .ts edits that touch neither. | inline | auto |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -118,7 +119,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-07-23T08:15:34Z_
+_Generated: 2026-07-26T15:19:57Z_
 
 ---
 

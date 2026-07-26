@@ -45,7 +45,7 @@ You DO NOT refactor or rewrite code — you report findings only.
 - **`any` without justification**: Disables type checking — use `unknown` and narrow, or a precise type
 - **Non-null assertion abuse**: `value!` without a preceding guard — add a runtime check
 - **`as` casts that bypass checks**: Casting to unrelated types to silence errors — fix the type instead
-- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness, call it out explicitly
+- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness (turning `strict`/`noImplicitAny` off, disabling a check), call it out explicitly. Don't confuse this with `kbg:typescript-patterns`' forward-compat table — dropping `baseUrl`, flipping `esModuleInterop`/`allowSyntheticDefaultImports` to `true`, or moving off `node10`/`classic` resolution replace options TypeScript 6.0 already errors on by default; they tighten conformance, they don't relax it
 
 ### HIGH -- Async Correctness
 - **Unhandled promise rejections**: `async` functions called without `await` or `.catch()`
@@ -124,7 +124,10 @@ Only report issues with >80% confidence. Flag correctness-affecting gaps; treat 
 
 ## Reference
 
-This repo does not ship a dedicated `typescript-patterns` skill. For detailed TypeScript/JavaScript patterns, use `kbg:backend-patterns` (the kept TS/backend base) plus the model's native knowledge.
+For write-time TypeScript language idioms and version-compatible `tsconfig.json` choices, use
+`kbg:typescript-patterns`. For API/DB architecture on a plain Node/Express/Next.js backend, use
+`kbg:backend-patterns` (the kept TS/backend base). This agent reviews the diff after the fact —
+it does not load either skill itself.
 
 ---
 

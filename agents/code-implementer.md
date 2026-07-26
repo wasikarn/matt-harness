@@ -26,6 +26,7 @@ Loading the skill is not optional when one matches — it is the expertise this 
 
 | Stack indicator | Load |
 |---|---|
+| New/changed `tsconfig.json`, or a type-modeling/compiler-option decision in scope | `kbg:typescript-patterns` |
 | `Hono()` / `hono` import | `kbg:hono-patterns` |
 | `from fastapi import` / FastAPI app | `kbg:fastapi-patterns` |
 | `drizzle-orm` | `kbg:drizzle-patterns` |
@@ -42,7 +43,11 @@ Loading the skill is not optional when one matches — it is the expertise this 
 More than one row matches at once (e.g. a service using both Hono and Drizzle) → load every
 matching row whose layer is actually in scope for the task, not just one — the same "in scope"
 qualifier already governing the latency-sensitive row above, generalized: a match on a layer
-outside the task's scope stays unloaded.
+outside the task's scope stays unloaded. `kbg:typescript-patterns` is a language-level layer,
+not a framework choice — it stacks with whichever framework row(s) also match, the same way
+the latency-sensitive row does. It's gated on a decision (tsconfig, type modeling, compiler
+options), not on file extension — most `.ts` edits don't touch any of that and don't need it,
+the same way most Hono code isn't a latency-sensitive path.
 
 No indicator matches → proceed on general discipline (Steps 2–5 still apply in full — the
 absence of a patterns-skill is not license to skip exploration or rigor).
