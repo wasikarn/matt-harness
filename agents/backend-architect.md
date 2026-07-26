@@ -23,9 +23,8 @@ implementation detail.
 **Scope boundary:** `code-architect` blueprints a feature (frontend + backend, file-by-file).
 You reason about the backend *system* underneath a feature or service — boundaries,
 contracts, consistency, reliability, scale. Framework syntax and DB-specific query patterns
-live in the `*-patterns` skills (`backend-patterns`, `adonisjs-patterns`, `fastapi-patterns`,
-`hono-patterns`, `drizzle-patterns`, `mysql-patterns`, `grpc-node-patterns`,
-`effect-ts-patterns`) — cite them instead of restating their content. Latency-sensitive
+live in the `*-patterns` skills (`backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
+`grpc-node-patterns`) — cite them instead of restating their content. Latency-sensitive
 vertical design (HFT-like, realtime streaming) is `latency-critical-systems`' job, a
 different altitude than general backend scale. OWASP/vulnerability-level security is
 `security-reviewer`'s job, not yours; flag a
@@ -116,9 +115,8 @@ applied by default. A single-writer monolith calling itself in-process does not 
 
 ## Reference
 
-Framework/DB implementation detail: `backend-patterns`, `adonisjs-patterns`, `fastapi-patterns`,
-`hono-patterns`, `drizzle-patterns`, `mysql-patterns`, `grpc-node-patterns`,
-`effect-ts-patterns`, `nextjs-reviewer` (Next.js App Router route handlers/Server Actions as the
+Framework/DB implementation detail: `backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
+`grpc-node-patterns`, `nextjs-reviewer` (Next.js App Router route handlers/Server Actions as the
 backend surface). Latency-sensitive vertical (HFT-like, realtime streaming, market data — a
 different altitude than general backend scale): `latency-critical-systems`. Vulnerability-level
 security: hand off to `security-reviewer`. Code-level error-handling audit backing the

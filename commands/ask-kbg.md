@@ -58,7 +58,7 @@ Upkeep, not feature work — reach for these on a spare moment, or when the harn
 
 ## Stack references — pull in ad hoc, not part of any flow
 
-Framework/language pattern skills, invoked when you're working in that stack, sequenced with nothing: `kbg:adonisjs-patterns`, `kbg:backend-patterns`, `kbg:dart-flutter-patterns`, `kbg:drizzle-patterns`, `kbg:effect-ts-patterns`, `kbg:fastapi-patterns`, `kbg:grpc-node-patterns`, `kbg:hono-patterns`, `kbg:langchain-langgraph-patterns`, `kbg:latency-critical-systems`, `kbg:mysql-patterns`, `kbg:tauri-v2-patterns`, `kbg:cost-aware-llm-pipeline`, `kbg:tech-humanize`.
+Framework/language pattern skills, invoked when you're working in that stack, sequenced with nothing: `kbg:backend-patterns`, `kbg:drizzle-patterns`, `kbg:grpc-node-patterns`, `kbg:latency-critical-systems`, `kbg:mysql-patterns`, `kbg:cost-aware-llm-pipeline`, `kbg:tech-humanize`.
 
 ## Discovery layer — three surfaces, don't confuse them
 

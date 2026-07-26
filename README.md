@@ -135,21 +135,13 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 
 ### Tathep Platform
 
-Tathep-scoped stack-pattern skills: kbg-native where no upstream fit existed,
-restored unmodified from ECC where it did (`dart-flutter-patterns`).
+Tathep-scoped stack-pattern skills, kbg-native.
 
 | Skill | When to reach for it |
 |---|---|
-| `kbg:adonisjs-patterns` | AdonisJS v5 routes, Lucid ORM, Japa tests, VineJS validation, and Edge templates |
 | `kbg:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / MySQL / SQLite |
-| `kbg:effect-ts-patterns` | Effect-TS layers, services, typed error channels, and functional pipelines |
 | `kbg:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes |
-| `kbg:hono-patterns` | Hono routes, middleware, validation, and deployment for Bun / Node.js / edge runtimes |
-| `kbg:langchain-langgraph-patterns` | LangChain chains, agents, RAG pipelines, and LangGraph stateful multi-step workflows |
-| `kbg:fastapi-patterns` | FastAPI structure, Pydantic v2, dependency injection, async handlers, service layers |
 | `kbg:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns |
-| `kbg:tauri-v2-patterns` | Tauri v2 IPC commands, capabilities / permissions model, Rust app state, events, and plugins |
-| `kbg:dart-flutter-patterns` | Dart/Flutter null safety, state management (BLoC/Riverpod/Provider), GoRouter, Dio, Freezed, clean architecture |
 
 ---
 
@@ -159,7 +151,7 @@ restored unmodified from ECC where it did (`dart-flutter-patterns`).
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 20 specialist subagents (.md each)
-├── skills/               # 34 workflow skills (SKILL.md per directory)
+├── skills/               # 29 workflow skills (SKILL.md per directory)
 ├── commands/             # 17 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
@@ -233,14 +225,14 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 36 skills · 20 agents · 17 commands).
+> `ls commands/` (real current fleet: 29 skills · 20 agents · 17 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 36 skills · 20 agents · 17 commands |
+| kbg-native | MIT | 29 skills · 20 agents · 17 commands |
 
 ---
 

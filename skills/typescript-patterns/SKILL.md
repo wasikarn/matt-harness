@@ -7,8 +7,9 @@ description: "TypeScript patterns: type-modeling idioms and tsconfig choices com
 
 This covers the **language and compiler** layer — type-system idioms and `tsconfig.json`
 choices — underneath whichever framework skill also applies. It composes with those; it
-doesn't replace them. A service using both Hono and Drizzle loads `kbg:hono-patterns` and
-`kbg:drizzle-patterns` for their frameworks, plus this skill for the TypeScript underneath.
+doesn't replace them. A service using both `backend-patterns` and Drizzle loads
+`kbg:backend-patterns` and `kbg:drizzle-patterns` for their frameworks, plus this skill for
+the TypeScript underneath.
 
 **Not this skill's job:** API/DB architecture on a plain Node/Express/Next.js backend —
 that's `kbg:backend-patterns`. Post-hoc review of a diff — that's `kbg:typescript-reviewer`.

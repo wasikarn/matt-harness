@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.51] — 2026-07-26
+
+Removed 7 Tathep-scoped framework-pattern skills per user request: `adonisjs-patterns`,
+`dart-flutter-patterns`, `effect-ts-patterns`, `fastapi-patterns`, `hono-patterns`,
+`langchain-langgraph-patterns`, `tauri-v2-patterns`. Deleted each skill directory and swept every
+live-surface reference: README.md's Tathep Platform table plus 3 skill-count callouts (36 → 29),
+`agents/backend-architect.md`'s `*-patterns` citation lists (2 spots), `agents/code-implementer.md`'s
+stack-detection table (7 rows removed, multi-match example reworded off Hono), `agents/python-reviewer.md`'s
+now-vacuous FastAPI framework-pattern pointer (removed — no other kbg Python-framework skill to
+point to instead), `commands/ask-kbg.md`'s framework-skill list, and 2 illustrative-example mentions
+(`skills/inventory/SKILL.md`'s sample output row, `skills/typescript-patterns/SKILL.md`'s Hono+Drizzle
+stacking example). Left `docs/plans/skill-improvement-batches.md` untouched — a closed, dated
+historical record of already-completed work on those skills ("Durable copy of a plan approved in
+plan mode 2026-07-23," every batch marked done), not live doctrine, same treatment as this file's
+own past entries. Skill count 36 → 29.
+
 ## [0.68.50] — 2026-07-26
 
 New skill `skills/typescript-patterns` — TypeScript language idioms and `tsconfig.json` choices,
