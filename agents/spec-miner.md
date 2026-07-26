@@ -35,7 +35,7 @@ You extract behavioral specifications from existing codebases that have no OpenS
 
 ### Phase 1: Scope Discovery (self-bootstrapping)
 
-This agent is fully self-sufficient — it does not require `codebase-onboarding`.
+This agent is fully self-sufficient — it does not require any other onboarding tool to run first.
 
 1. **Detect project structure** (minimum viable scan):
    - Find package manifests: `package.json`, `go.mod`, `pom.xml`, `pyproject.toml`, etc.
@@ -196,7 +196,7 @@ Write the `description` in the frontmatter to include a summary of the module's 
 
 ## Integration with Other Agents
 
-- **This agent is fully self-sufficient.** It does not require `codebase-onboarding` or any other agent to run first.
+- **This agent is fully self-sufficient.** It does not require any other agent to run first.
 - **After you run**: `Explore` will use your specs as the primary information source — checking `Last verified` freshness before trusting
 - **Future changes**: `code-architect` will add `## ADDED Requirements` blocks; the `tdd` skill will read `#### Scenario:` blocks to generate test skeletons; `code-reviewer` will grep `<!-- enforced: -->` to verify implementation still matches spec; MODIFIED Requirements will match by `<!-- id: -->`, not by name
 

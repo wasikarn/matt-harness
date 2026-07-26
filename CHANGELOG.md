@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.52] — 2026-07-26
+
+Removed `skills/codebase-onboarding` (ECC-imported). Follow-up to v0.68.51's 7-skill removal: user
+asked which of the 6 remaining zero-invocation skills were also worth cutting. Checked usage
+against ~all session transcripts (7216 files across every project) plus each skill's own stated
+scope before answering, rather than trusting the zero-invocation count alone — 5 of 6
+(`agent-architecture-audit`, `claude-md-health`, `context-budget`, `eval-harness`,
+`production-audit`) turned out to have a real, articulated reason to exist despite zero measured
+use (a live target system, a proven track record, explicit differentiation from neighboring
+skills, or cross-references from other skills) and were kept. `codebase-onboarding` was the one
+clean case: generic import, no fleet dependency (the one natural pairing, `spec-miner`, explicitly
+says it doesn't need it), and its trigger condition — "joining a new project" — structurally
+doesn't recur against this user's actual fixed repo set. Deleted the directory and cleaned 2
+dangling references in `agents/spec-miner.md` and one catalog line in `commands/ask-kbg.md`; no
+other live surface cited it. Skill count 29 → 28.
+
 ## [0.68.51] — 2026-07-26
 
 Removed 7 Tathep-scoped framework-pattern skills per user request: `adonisjs-patterns`,

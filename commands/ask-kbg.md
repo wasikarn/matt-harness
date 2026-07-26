@@ -53,7 +53,6 @@ Upkeep, not feature work — reach for these on a spare moment, or when the harn
 - `kbg:security-auditor` — deep threat-model (auth/secrets/injection/XSS) on PRs touching auth/APIs/payments.
 - `kbg:security-scan` — AgentShield sweep of agent/hook/MCP/permission/secret surfaces (not code vulnerabilities — that's `security-auditor`).
 - `kbg:cost-report` / `kbg:eval-harness` — narrower single-purpose tools (cost ledger, EDD setup). Decision tools (`kbg:decide`, `kbg:score-decision`, `kbg:goal-craft`) are under "Thinking & deciding" above.
-- `kbg:codebase-onboarding` — catalogue an unfamiliar codebase into an onboarding guide.
 - `kbg:build-fix` / `kbg:refactor-clean` / `kbg:test-coverage` — single-purpose engineering utilities; `/ship` also reaches for these internally at the right phase.
 
 ## Stack references — pull in ad hoc, not part of any flow
