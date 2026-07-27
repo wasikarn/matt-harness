@@ -13,17 +13,38 @@ log that ECC's `stop:cost-tracker` hook writes.
 
 The tracker appends one JSON object per session-stop to
 `~/.local/share/kbg/metrics/costs.jsonl`. Each row's `estimated_cost_usd` is a
-**cumulative snapshot for that (`session_id`, `model`) pair** — not for the session as a
-whole. If a session switches models mid-run (`claude-opus-4-8` for a while, then
-`glm-5.2`), each model gets its own independent running counter within the same
-session, and a later row can report a *lower* number than an earlier row simply
-because it belongs to a different model's counter. **The report takes the latest row
-per (`session_id`, `model`) pair and sums across all of them** — taking only the
-single latest row per `session_id` (ignoring `model`) silently drops every model's
-cost except whichever one happened to be active at the session's last stop, which
-undercounted total tracked spend by 55% (confirmed against production data,
-2026-07-28: $34,698 reported vs. $53,883 actual — 32 of 362 sessions had switched
-models at least once).
+**cumulative snapshot for the whole session** — it sums token usage across every
+assistant turn in the transcript from the start, with no per-model split, then prices
+that whole-session total at whichever model produced the *most recent* turn. So
+`input_tokens`/`output_tokens`/`estimated_cost_usd` are always non-decreasing across a
+session's rows, confirmed against production data, 2026-07-28 (all 32 of 362 sessions
+that switched models at least once showed monotonic `input_tokens`). **The report
+takes the single latest row per `session_id` (ignoring `model`) and sums across
+sessions** — this is the whole and correct total (verified by an independent
+telescoping-delta recomputation that landed on the identical figure, $34,698.3252,
+2026-07-28).
+
+An earlier version of this doc claimed the opposite — that each model kept an
+independent per-`session_id`+`model` counter, and that summing the latest row per
+(`session_id`, `model`) pair recovered a "55% undercount." That claim was wrong: it
+double- and triple-counts the same underlying cumulative tokens every time a session
+switches models, inflating the true $34,698 total to a fabricated $53,883. Confirmed
+false by reading `hooks/stop/cost-tracker.sh` directly — the row-writing `jq` sums
+every assistant message unconditionally, with no `model` filter before the sum.
+
+**Known limitation — the "By model" breakdown is approximate for mixed-model
+sessions.** Because a row's cost prices the *entire* session's cumulative tokens at
+the currently-active model's rate, a session that switches models has its whole cost
+attributed to whichever model was active at the session's last stop — the other
+model(s) used earlier in that session show $0 in the breakdown even though they did
+real work. This affects ~9% of sessions (32/362, 2026-07-28) and only distorts the
+per-model split; the overall total stays correct regardless. A tried fix
+(delta-per-row, attributed to that row's model) does exist but overstates the total by
+~31% when negative deltas — a real signal from the repricing, not noise — are clamped
+to zero to avoid negative per-model figures; discarded as a worse trade. Recovering an
+accurate per-model split would require changing `cost-tracker.sh` to accumulate cost
+per model incrementally going forward — a hook change, not something reconstructable
+from historical rows.
 
 Row schema:
 `{ timestamp, session_id, transcript_path, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, rate_verified, estimated_cost_usd }`
@@ -51,7 +72,8 @@ remote/headless session), the buckets will follow that environment's zone instea
 1. Check that `~/.local/share/kbg/metrics/costs.jsonl` exists. If it does not, tell the
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
-2. Reduce rows to the latest snapshot per (session, model) pair and aggregate.
+2. Reduce rows to the latest snapshot per session (by `session_id`, ignoring `model`)
+   and aggregate.
 3. Present a compact report, or export recent rows as CSV when the argument is `csv`.
 
 `node` is used instead of `sqlite3`/`jq` so this works identically on macOS,
@@ -65,9 +87,9 @@ const fs=require("fs"),os=require("os"),path=require("path");
 const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
-const bySessionModel=new Map();
-for(const r of rows){const k=(r.session_id||r.transcript_path||r.timestamp)+" "+(r.model||"");const p=bySessionModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySessionModel.set(k,r);}
-const latest=[...bySessionModel.values()];
+const bySession=new Map();
+for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;const p=bySession.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySession.set(k,r);}
+const latest=[...bySession.values()];
 const cost=r=>Number(r.estimated_cost_usd)||0;
 const fmtLocal=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 const day=r=>fmtLocal(new Date(r.timestamp));

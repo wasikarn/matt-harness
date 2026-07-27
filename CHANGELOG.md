@@ -5,6 +5,52 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.80] — 2026-07-28
+
+Chased down the `advisor()`-flagged question left open at the end of v0.68.79 — whether
+multi-model sessions were attributed correctly in the "By model" breakdown — and initially
+got it wrong. Row patterns (cost visibly dropping when a session switched models, jumping back
+up when a prior model resumed) looked exactly like independent per-(`session_id`, `model`)
+counters, so `cost-report.md`'s dedup step was rekeyed to (`session_id`, `model`) and summed
+across all pairs. This "fixed" the total from $34,698 to a fabricated $53,883, verified against
+an independent Python recomputation and by running the actual edited script — both of which
+matched the wrong number exactly, because both were built on the same wrong assumption.
+
+Calling `advisor()` again before push didn't re-analyze the same row patterns — it asked to
+read the actual writer, `hooks/stop/cost-tracker.sh`, before trusting an inference built from
+output shape alone. Its `jq` sums every assistant message's token usage across the **whole**
+transcript unconditionally, with no `model` filter before the sum, and tags each row with only
+`model: (last.m)` — the model of the most recent message. So every row is one whole-session
+cumulative counter, **repriced at whichever model happens to be currently active** — not
+independent per-model counters. Confirmed empirically: `input_tokens` is monotonically
+non-decreasing across all 32 multi-model sessions in production data, zero exceptions (an
+independent-counter design would show resets on every switch back to a prior model; it never
+did).
+
+The decisive check: a delta-based per-session recomputation (`cost[i] − cost[i−1]`, summed
+across every row) landed on **exactly** $34,698.3252 — byte-identical to the original
+latest-row-per-session total. This isn't circumstantial: it's a telescoping-sum identity
+(consecutive deltas within a session always collapse to the last row's value), and it proves
+the original total was correct all along. The "fix" was double- and triple-counting the same
+underlying cumulative tokens every time a session switched models. Reverted the dedup key back
+to `session_id` alone.
+
+The real, narrower bug survives the correction: the "By model" breakdown does mis-attribute a
+mixed-model session's *entire* cost to whichever model was active at that session's last stop,
+hiding that other models did real work earlier in the same session (~9% of sessions, 32/362).
+Tried a delta-per-row attribution instead (each row's cost delta credited to that row's model,
+clamping negative deltas to 0 since a negative per-model figure makes no sense) — this
+overstated the total by 31% ($45,420 vs. the true $34,698), because the negative deltas are
+real signal from the repricing-at-current-model design, not noise, and clamping silently
+discards them. Discarded as a worse trade than the status quo. Documented the limitation
+plainly in `cost-report.md` instead of shipping a broken "fix" for it: recovering an accurate
+per-model split would require changing `cost-tracker.sh` to accumulate cost per model
+incrementally going forward — a hook change affecting future data only, not something
+reconstructable from historical rows.
+
+Rewrote both this project's own CHANGELOG entry for v0.68.79 (below) and the backing memory
+file — both had recorded the wrong 55%-undercount claim as verified fact.
+
 ## [0.68.79] — 2026-07-28
 
 Picked `commands/cost-report.md` as the next `/review-fixtures`-style target — an Explore
@@ -13,39 +59,22 @@ found 14 surfaces never subjected to any quality pass. `cost-report` stood out b
 `review-pr` (v0.68.77), it has abundant real local production data to mine directly
 (`~/.local/share/kbg/metrics/costs.jsonl`, 5985 rows) instead of needing fixtures.
 
-First finding was a real but secondary timezone-boundary bug: the report's "today"/"yesterday"
-buckets were computed from each row's UTC calendar date, mislabeling several hours of a user's
-actual "today" spend as "yesterday" for anyone west of UTC — reproduced live at 01:51 local in
-UTC+7 (still 2026-07-27 UTC): unfixed output showed "today: $972.84" (mostly the prior local
-day's spend) and "yesterday: $1.53". Fixed by switching to `Date`'s local getters instead of
+Found and fixed a real timezone-boundary bug: the report's "today"/"yesterday" buckets were
+computed from each row's UTC calendar date, mislabeling several hours of a user's actual
+"today" spend as "yesterday" for anyone west of UTC — reproduced live at 01:51 local in UTC+7
+(still 2026-07-27 UTC): unfixed output showed "today: $972.84" (mostly the prior local day's
+spend) and "yesterday: $1.53". Fixed by switching to `Date`'s local getters instead of
 `toISOString`.
 
-`advisor()`, consulted before the first fix's commit was pushed, found the timezone fix was
-itself environment-dependent (verified: running the same script under `TZ=UTC` reverts to
-exactly the bug just fixed; `TZ=America/New_York` gives a third different answer) — correct for
-the realistic case of a user running this interactively on their own machine (confirmed the
+`advisor()`, consulted before the fix's commit was pushed, found the timezone fix was itself
+environment-dependent (verified: running the same script under `TZ=UTC` reverts to exactly the
+bug just fixed; `TZ=America/New_York` gives a third different answer) — correct for the
+realistic case of a user running this interactively on their own machine (confirmed the
 Bash-tool subprocess here resolves `Asia/Bangkok` from the OS with `TZ` unset), but worth
-documenting as a real limitation rather than claiming as fully solved. It also flagged a bigger,
-unverified claim: whether sessions using more than one model in the same run were being
-correctly attributed in the "By model" breakdown.
-
-Checking that turned up the actual headline bug. `estimated_cost_usd` is a cumulative counter
-**per (`session_id`, `model`) pair**, not per session as a whole — the doc's own description
-("cumulative snapshot for that session") was wrong, and the report's reduction step (keep only
-the latest row per `session_id`) silently discarded every model's accumulated cost except
-whichever one happened to be active at the session's very last stop. Quantified against
-production data: 32 of 362 sessions (≈9%) switched models at least once, and those sessions
-alone accounted for undercounting **total tracked spend by 55%** ($34,698 reported vs. $53,883
-actual). Fixed by keying the dedup on (`session_id`, `model`) instead of `session_id` alone and
-summing across all of a session's model-pairs — verified against an independent Python
-recomputation of the same raw file before touching the command, then re-verified by extracting
-and running the actual edited script against the same real data, both matching exactly
-($53,883.1714 total, byte-identical per-model breakdown). Also found and left alone: 1 of 5985
-rows missing `session_id` (has a working fallback key, low-impact per Rule 2), 2 rows tagged
-`model:"<synthetic>"` (already correctly flagged `rate_verified:false` by the existing UI, no
-separate handling needed), and 23 within-session negative cost deltas that turned out to be the
-expected signature of the per-model-counter design, not data corruption — that dead end is what
-led to discovering the real per-(session,model) semantics.
+documenting as a real limitation rather than claiming as fully solved. It also flagged a
+bigger, unverified claim: whether sessions using more than one model in the same run were being
+correctly attributed in the "By model" breakdown — chased down, and initially answered wrong,
+in v0.68.80 above.
 
 Corrected the CHANGELOG's own prior draft of the fleet-count fix below: it had asserted a
 specific root cause ("deleted over time without the count being updated *each time*") that
