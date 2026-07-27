@@ -25,18 +25,24 @@ evidence the incomplete-review guard has ever actually been bypassed by a real f
 
 Traced root cause: `REHUNT_STATUS` and `DISPATCH_FAILURES` are both freeform bash variables
 a session is expected to set itself during Phase 5 step 3.6, constrained only by a prose
-comment two lines above the printf block — zero code-level enforcement. Fixed by adding a
-`case` canonicalization step in `skills/review-pr/SKILL.md`'s Phase 7 write block: any
-`$REHUNT` value that isn't exactly one of the 4 canonical tokens now fails closed to
-`incomplete` (same as an explicit incomplete re-hunt), rather than being trusted verbatim.
-Verified with a standalone `bash -n` + execution test reproducing 8 cases, including 3 of
-the real narrative strings pulled from production files — all now correctly force
-`clean:false` where they previously would have passed through as opaque unrecognized
-strings with `clean` computed from `critical_count` alone (accidentally safe so far, but not
-because the mechanism guaranteed it). No `harness-audit` check added — Rule 2: the write-site
-canonicalization closes the actual gap; a separate shape-validator check would be redundant
-until there's a proven case it needed to catch something the canonicalization doesn't already
-fail closed on.
+comment two lines above the printf block — zero code-level enforcement. First fix: a `case`
+canonicalization step in `skills/review-pr/SKILL.md`'s Phase 7 write block, so any `$REHUNT`
+value that isn't exactly one of the 4 canonical tokens fails closed to `incomplete` rather
+than being trusted verbatim. Verified with a standalone `bash -n` + execution test
+reproducing 8 cases, including 3 of the real narrative strings pulled from production files.
+
+`advisor()` caught that this write-side fix alone doesn't close the gap it claims to: the
+`case` block only runs for sessions that execute review-pr's own printf script, and the
+corpus itself proves ~19% don't — a state file with `rehunt` missing entirely (the printf
+hardcodes that key) could not have come from this script, canonicalization or not. Those are
+exactly the files `ship-merge`'s reader would still read `critical_count: 0` from as a face-
+value clean pass. Added a matching read-side clause to `commands/ship-merge.md`'s
+Incomplete-review guard (step 6, Phase 1): a missing `rehunt`, or one that isn't exactly one
+of the 4 canonical tokens, is now treated identically to an explicit `"incomplete"` — score
+Critical-findings 0, trip the fatal-weakness floor, STOP. This is the fix that actually covers
+both populations (script-run and hand-authored files), independent of which one produced the
+file being read. No `harness-audit` check added — Rule 2: the reader-side guard is the
+proven-need fix; a separate shape-validator check would be redundant on top of it.
 
 ## [0.68.76] — 2026-07-28
 
