@@ -122,11 +122,15 @@ export function withAuth(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // handler is async, so an error it throws surfaces as a promise
-    // rejection, not a synchronous throw — `return handler(...)` without
-    // await lets that rejection escape this try/catch uncaught. verifyToken
-    // and handler need separate error handling for the catch below to mean
-    // anything.
+    // verifyToken's throw is the only thing this catch handles. handler is
+    // async, so its errors are promise rejections a plain try/catch can only
+    // shield with an explicit `await` inside the try -- deliberately not
+    // added here: that would catch the handler's own bugs too and mislabel
+    // them "Invalid token", hiding real errors behind a fake auth failure.
+    // Handler errors are meant to propagate to the route's own error
+    // handling (see Error Handling Patterns). Splitting the try this way
+    // keeps that boundary honest instead of implying protection it doesn't
+    // provide.
     let user: JWTPayload
     try {
       user = verifyToken(token)

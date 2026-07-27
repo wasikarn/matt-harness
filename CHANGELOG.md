@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.54] — 2026-07-27
+
+Follow-up to v0.68.53, same day. After shipping that release, the user asked to verify the fix
+worked against a real query — a live `Skill(kbg:backend-patterns)` invocation confirmed the loaded
+content matched the fix, and a live Postgres run re-confirmed the transaction `market_id` fix
+against an adversarial input (a stale client-supplied `market_id` was correctly ignored in favor of
+the id the transaction had just created). The user then asked to check the *other two* fixes from
+that release the same way — a sharper ask than it first sounds, since two of v0.68.53's fixes were
+verified only by `tsc --strict` (a type check, not a behavior check) or by reasoning, never by
+actually running the code.
+
+The sort-direction fix held up: real Node execution with a deliberately unmatched market
+(score-fallback `|| 0`) confirmed the old `scoreA - scoreB` put the *unmatched* market first and
+the *best actual match* last — exactly backwards — and the fix (`scoreB - scoreA`) corrects it.
+
+The Middleware Pattern fix did not hold up as described. v0.68.53 claimed the App-Router rewrite
+had surfaced a real `no-return-await`-inside-`try` bug — that the original `return handler(req,
+user)` (no `await`, inside a `try`) let the handler's promise rejections "escape the catch
+uncaught," and that splitting the try fixed it. Three live Node runs disproved this: calling an
+async function never throws synchronously no matter what its body does, so the *original* code's
+`try/catch` could never have caught a handler rejection either — with or without splitting the try,
+as long as `await` itself is never added. A third run proved the only thing that *would* change the
+behavior is adding a real `await` inside the try — and that would be the wrong fix, since it would
+catch the handler's own internal bugs and mislabel them "Invalid token," hiding real errors behind
+a fake auth failure. The restructuring from v0.68.53 is kept (it stops the code from implying
+protection it never had), but the comment justifying it as a behavioral fix was false. Corrected the
+comment in `skills/backend-patterns/SKILL.md` and the v0.68.53 entry above to state this accurately
+instead of claiming a bug that live testing disproved.
+
+Net effect: one of v0.68.53's eight "confirmed and fixed" bugs wasn't actually a behavioral bug —
+a code-clarity improvement wearing a bug-fix's justification. Caught by taking "check it actually
+works" literally and running the code instead of re-reading the reasoning that produced the fix.
+
 ## [0.68.53] — 2026-07-27
 
 `skill-creator:skill-creator` improve+optimize loop run against `skills/backend-patterns/SKILL.md`,
@@ -50,11 +83,18 @@ trace real async interleaving. Confirmed defects, most to least severe:
   real `TS2741`. Replaced the separately-shaped `User` interface with `type User = JWTPayload` and
   widened `JWTPayload.role` to the 3-tier union RBAC's own `rolePermissions` table already assumed.
 - **The Next.js Middleware Pattern example had drifted to Pages Router** (`NextApiHandler`,
-  `req`/`res`) while every other example in the file is App Router — rewritten to match, which in
-  turn surfaced a real bug in the rewrite itself: `return handler(req, user)` without `await`
-  inside a `try` let the handler's own promise rejections escape the `catch` uncaught (a classic
-  `no-return-await`-inside-`try` trap). Fixed by resolving the token first, returning the handler
-  call unwrapped after the `try` block closes.
+  `req`/`res`) while every other example in the file is App Router — rewritten to match. A
+  fresh-context re-review flagged the rewrite's `return handler(req, user)` (no `await`, inside a
+  `try`) as a classic `no-return-await`-inside-`try` bug that would let handler errors escape the
+  `catch` uncaught. Live Node execution (3 variants, run for real rather than reasoned about)
+  proved that claim wrong: an async `handler` never throws synchronously, so the original code's
+  `try/catch` could never have caught its rejections either, with or without `await` placement —
+  only actually *adding* `await` changes anything, and doing so would be the wrong fix (it would
+  catch the handler's own bugs and mislabel them "Invalid token", hiding real errors behind a fake
+  auth failure). The restructuring (splitting `verifyToken`'s try from the handler call) is kept
+  anyway — not because it changes behavior, it doesn't, but because the original shape *implied*
+  protection it never had. The comment shipped with the fix has been corrected to say this
+  accurately instead of claiming a behavioral bug that further live testing disproved.
 - **`searchMarkets` sorted by similarity ascending**, not descending — with a `|| 0` fallback for
   unmatched results, this put the *least* relevant markets first. Fixed to `scoreB - scoreA`.
 - Frontmatter and "When to Activate" both overclaimed scope the file's actual content doesn't
