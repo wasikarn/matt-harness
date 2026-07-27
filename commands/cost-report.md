@@ -20,9 +20,14 @@ that whole-session total at whichever model produced the *most recent* turn. So
 session's rows, confirmed against production data, 2026-07-28 (all 32 of 362 sessions
 that switched models at least once showed monotonic `input_tokens`). **The report
 takes the single latest row per `session_id` (ignoring `model`) and sums across
-sessions** — this is the whole and correct total (verified by an independent
-telescoping-delta recomputation that landed on the identical figure, $34,698.3252,
-2026-07-28).
+sessions** — this is the correct aggregation of what the tracker recorded (verified by
+an independent telescoping-delta recomputation that landed on the identical figure,
+$34,698.3252, 2026-07-28). It is not the same as a correct *dollar* total, though:
+whichever model doesn't match `haiku`/`opus`/`sonnet` in the tracker's rate table falls
+back to the Sonnet rate as a guess (`rate_verified: false`) — on 2026-07-28's data
+that's over half the total, $17,510 of $34,698, priced at a rate that isn't the actual
+model's. The report's `(rate unverified)` tag on each affected model is the only signal
+of this; take the total as "correctly summed," not "correctly priced."
 
 An earlier version of this doc claimed the opposite — that each model kept an
 independent per-`session_id`+`model` counter, and that summing the latest row per
