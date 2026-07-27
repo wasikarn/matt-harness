@@ -1,9 +1,12 @@
 # Skill Fixture-Review Prompt Template — 2-agent independent review
 
 A fill-in prompt skeleton for the "review the fixture outputs" step of a
-`skill-creator:skill-creator` improve+optimize loop (Step 4 in that skill's own flow).
+`skill-creator:skill-creator`-style improve+optimize loop (Step 4 in that skill's own flow).
 Use it instead of reading the with-skill/without-skill outputs solo — solo review is the
-default the model falls back to unless told otherwise.
+default the model falls back to unless told otherwise. The loop this template serves isn't
+skill-only — this fleet has run it against a Skill, an Agent (`silent-failure-hunter`,
+v0.68.36), and a Command (`ship-merge`, v0.68.34) alike, all with the same fixture shape.
+"Skill" below is used loosely for whichever of the three is the actual target.
 
 ## Why this shape, not solo review
 
@@ -32,9 +35,9 @@ supporting evidence).
 
 | Situation | Use |
 |---|---|
-| Grading/reviewing fixture outputs from a `skill-creator` improve loop, ≥2 eval cases | **This template**, 2 agents |
-| A single eval case, or a quick sanity check with no downstream skill-content decision riding on it | Solo review — the 2-agent cost isn't earning its keep |
-| Reviewing a PR / production diff (not a skill-creator fixture) | Use `kbg:code-reviewer` instead — different tool, same "don't review solo" instinct doesn't transfer verbatim |
+| Grading/reviewing fixture outputs from a `skill-creator`-style improve loop (skill, agent, or command target), ≥2 eval cases | **This template**, 2 agents |
+| A single eval case, or a quick sanity check with no downstream content decision riding on it | Solo review — the 2-agent cost isn't earning its keep |
+| Reviewing a PR / production diff (not a fixture from this kind of loop) | Use `kbg:code-reviewer` instead — different tool, same "don't review solo" instinct doesn't transfer verbatim |
 
 ## The template
 
@@ -43,10 +46,10 @@ message as two parallel `Agent` tool invocations — if they run in separate tur
 stop being independent, which is the entire point.
 
 ```text
-You are doing a PR-style code review of fixture-test outputs from a skill-creation loop
-for a Claude Code skill called [SKILL_NAME] ([one-line domain description, e.g.
-"Express/Next.js/plain Node-TS backend patterns: async jobs, retries, rate limiting,
-transactions, repositories, RBAC, etc"]).
+You are doing a PR-style code review of fixture-test outputs from a skill-creator-style
+improve loop for a Claude Code [skill / agent / command — pick the actual type] called
+[TARGET_NAME] ([one-line domain description, e.g. "Express/Next.js/plain Node-TS backend
+patterns: async jobs, retries, rate limiting, transactions, repositories, RBAC, etc"]).
 
 Read these [N] files directly (each is [describe the actual output artifact — a single
 implementation.md, or a full output directory with generated code files plus a
@@ -63,13 +66,14 @@ The prompts each output responds to:
 
 Do NOT read any grading.json files in those directories — form your own independent
 judgment from the actual code first, to avoid anchoring on prior grading. After you've
-formed your own view, you may read the current skill file at [path to SKILL.md] for
-calibration — specifically to check whether a bug you spot in a with_skill output is
-something the CURRENT skill content would still teach, or whether it's already been
-fixed since these fixtures were generated ([if this skill has had bug-fix rounds since
-the fixtures were generated, list them here by version + one-line description, so the
-reviewer can rule out re-flagging closed bugs — omit this sentence entirely on a skill's
-first iteration]).
+formed your own view, you may read the current target file at [path to the skill's
+SKILL.md, the agent's agents/<name>.md, or the command's commands/<name>.md — whichever
+this target actually is] for calibration — specifically to check whether a bug you spot
+in a with_skill output is something the CURRENT content would still teach, or whether it's
+already been fixed since these fixtures were generated ([if this target has had bug-fix
+rounds since the fixtures were generated, list them here by version + one-line description,
+so the reviewer can rule out re-flagging closed bugs — omit this sentence entirely on a
+target's first iteration]).
 
 For each of the [N] outputs, write a genuine, critical, real-findings paragraph — the way
 a staff engineer would comment on a pull request. Actually trace the logic ([1-2
@@ -124,19 +128,19 @@ names, assertions) change every time; these three don't:
    is exactly what a second reviewer is supposed to correct for.
 2. **Verify empirically where checkable.** A numeric/timing claim in a code comment is a
    claim, not a fact — run it.
-3. **Check against the *current* SKILL.md before crediting or blaming the skill.** A bug
-   in a fixture generated before a fix round isn't evidence the skill still has the
+3. **Check against the *current* target file before crediting or blaming it.** A bug
+   in a fixture generated before a fix round isn't evidence the target still has the
    problem — and skipping this step is how a fixture-only bug gets misattributed as a
-   skill-content gap (or vice versa).
+   real content gap (or vice versa).
 
 ## After both agents return
 
-Reconcile before touching SKILL.md:
+Reconcile before touching the target file:
 
 - A finding **both** agents hit independently → high confidence it's real; still separate
-  "the bug exists" from "here's why the skill caused it" (see caveat above).
+  "the bug exists" from "here's why the target caused it" (see caveat above).
 - A finding **one** agent hit → record it, but it's single-sourced — worth fixing if it
-  traces to a specific SKILL.md clause, worth noting as fixture-only otherwise.
-- Before crediting any finding to the skill itself, grep the current SKILL.md for the
-  relevant example/rule — a bug that doesn't trace to any skill content is a fixture
-  artifact, not a skill gap, and shouldn't drive a SKILL.md edit.
+  traces to a specific clause in the target file, worth noting as fixture-only otherwise.
+- Before crediting any finding to the target itself, grep the current target file for the
+  relevant example/rule — a bug that doesn't trace to any of its content is a fixture
+  artifact, not a real gap, and shouldn't drive an edit to it.

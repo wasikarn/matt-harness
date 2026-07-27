@@ -1,16 +1,23 @@
 ---
 name: review-fixtures
-description: "Dispatch 2 independent staff-eng agents to adversarially review skill-creator fixture outputs (with_skill vs baseline) before deciding a SKILL.md fix. Use mid a skill-creator improve+optimize loop once fixtures exist. Don't use for PR review (kbg:code-reviewer) or skill-creator's own quantitative grading/benchmark step."
-argument-hint: <skill-name> [iteration-path]
+description: "Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (kbg:code-reviewer) or skill-creator's own quantitative grading/benchmark step."
+argument-hint: <skill/agent/command-name> [iteration-path]
 ---
 
 # /review-fixtures — 2-agent independent fixture review
 
-Runs the qualitative review step of a `skill-creator:skill-creator` improve+optimize loop
-with 2 independent agents instead of a single solo read. This is a refinement of that
+Runs the qualitative review step of a `skill-creator:skill-creator`-style improve+optimize
+loop with 2 independent agents instead of a single solo read. This is a refinement of that
 skill's own Step 4 ("grade, aggregate, launch the viewer") — it doesn't replace grading or
 the benchmark step, it replaces *solo eyeballing of the fixture outputs* with an
 adversarial 2-agent pass whose convergence and disagreement both carry signal.
+
+**Not skill-only.** The underlying fixture-loop and workspace convention are already
+surface-agnostic in this fleet's own practice — it's been run against a Skill
+(`backend-patterns`, `frontend-patterns`, `tech-humanize`), an Agent
+(`silent-failure-hunter`, v0.68.36), and a Command (`ship-merge`, v0.68.34) alike, all using
+the identical `<name>-workspace/` layout. This command just needs to resolve which of the
+three the target actually is — see Step 1.
 
 **Why 2 agents, not 1**, and the exact prompt skeleton this command fills in: read
 `${KBG_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5
@@ -19,16 +26,23 @@ that must not be cut — this command only orchestrates around it.
 
 ## Steps
 
-### 1. Parse arguments
+### 1. Parse arguments and resolve the target surface
 
-`$1` = skill name (strip a leading `kbg:` if present). `$2` = optional iteration path.
+`$1` = skill/agent/command name (strip a leading `kbg:` if present). `$2` = optional iteration path.
 
-If `$1` is empty, show usage and stop — do not guess which skill:
+If `$1` is empty, show usage and stop — do not guess which target:
 ```
-Usage: /review-fixtures <skill-name> [iteration-path]
+Usage: /review-fixtures <skill/agent/command-name> [iteration-path]
 Example: /review-fixtures backend-patterns
 Example: /review-fixtures backend-patterns backend-patterns-workspace/iteration-2
 ```
+
+Resolve which surface `$1` actually is by checking, in this order: `skills/$1/SKILL.md`,
+`agents/$1.md`, `commands/$1.md`. Whichever exists is the **target file** referenced in
+Steps 4 and 8 below. If none of the three exist, stop and report exactly that — don't guess
+a path or default to assuming it's a skill. Steps 2–3's workspace/eval-case discovery don't
+need this resolution at all — the `<name>-workspace/` and `eval-*/` conventions are already
+identical across all three surface types.
 
 ### 2. Locate the workspace
 
@@ -63,11 +77,11 @@ exactly what's missing — don't guess eval names or prompts from context.
 
 ### 4. Best-effort prior-fix context
 
-Run `git log --oneline -- skills/<skill-name>/SKILL.md` filtered to commits after the
+Run `git log --oneline -- <target file resolved in Step 1>` filtered to commits after the
 workspace directory's mtime. If this turns up fix commits, they're worth telling the
 reviewers about (so they don't re-flag something already closed, and don't misattribute a
-fixture-only bug as a live skill gap or vice versa). If nothing turns up, or the skill has
-no prior fix history, omit that context entirely rather than padding the prompt.
+fixture-only bug as a live gap or vice versa). If nothing turns up, or the target has no
+prior fix history, omit that context entirely rather than padding the prompt.
 
 ### 5. Pick agent 2's differentiation angle
 
@@ -81,7 +95,7 @@ end up with two copies of the same prompt instead of complementary coverage.
 
 ### 6. Fill and dispatch both agents
 
-Using the template from the reference doc (Step 0 above): fill in the skill name, domain
+Using the template from the reference doc (Step 0 above): fill in the target name, domain
 description, file list (from Step 3), eval prompts, assertions, prior-fix context (Step
 4, or omit), and the agent-2-only differentiation line (Step 5).
 
@@ -96,10 +110,11 @@ entire point of independent review.
 Once both return, follow the reference doc's "After both agents return" section:
 
 - A finding both agents hit independently → high confidence it's real; still separate
-  "the bug exists" from "here's why the skill caused it."
+  "the bug exists" from "here's why the target caused it."
 - A finding only one agent hit → record it, single-sourced.
-- Before crediting anything to the skill itself, grep the *current* SKILL.md for the
-  relevant example/rule. No trace found → it's a fixture artifact, not a skill gap.
+- Before crediting anything to the target itself, grep the *current* target file
+  (resolved in Step 1) for the relevant example/rule. No trace found → it's a fixture
+  artifact, not a real gap.
 
 Write the reconciled findings to `<iteration-path>/feedback.json` in this shape (matches
 what `skill-creator`'s own eval-viewer feedback file looks like, so it drops into the same
@@ -116,19 +131,23 @@ place in the loop):
 
 ### 8. Report
 
-Summarize to the user: which findings are skill-attributable (traced to a specific
-SKILL.md clause) vs fixture-only, and which are single-sourced vs double-confirmed. Don't
-edit SKILL.md as part of this command — that's a separate decision the user makes from the
-reconciled findings, not an automatic next step.
+Summarize to the user: which findings are target-attributable (traced to a specific
+clause in the resolved target file) vs fixture-only, and which are single-sourced vs
+double-confirmed. Don't edit the target file as part of this command — that's a separate
+decision the user makes from the reconciled findings, not an automatic next step.
 
 Suggested next step:
-- Findings trace to specific SKILL.md content → open `skills/<skill-name>/SKILL.md` and
-  apply the fix, then re-run fixtures to measure the change (don't ship an unmeasured fix
-  as if it were proven). **When re-running, don't hand the re-verification agent a
-  `Skill(<name>)` invocation** — until the fix is version-bumped and the plugin
-  reinstalled, that resolves against the installed cache, not the live edit, and will
-  silently test stale content with no error (confirmed 2026-07-27, tech-humanize
-  v0.68.59 — see CLAUDE.md's "Plugin lifecycle & install" gotchas). Instruct it to `Read`
-  the repo file path directly instead.
-- Nothing traces to the skill → say so plainly. A clean reconciliation is a valid result,
+- Findings trace to specific content in the target file → open it (Step 1's resolved path)
+  and apply the fix, then re-run fixtures to measure the change (don't ship an unmeasured
+  fix as if it were proven). **When re-running, don't hand the re-verification agent a
+  name-based reference to the fixed surface** — not `Skill(<name>)`, and not `subagent_type:
+  <name>` for a plugin-scoped Agent either, since `agents/`, `commands/`, and `skills/` all
+  ship inside the same single versioned bundle (`~/.claude/plugins/cache/kobig/kbg/<version>/`
+  — confirmed identical layout, 2026-07-27). Until the fix is version-bumped and the plugin
+  reinstalled, any of those name-based resolutions will silently serve the stale cached
+  version instead of the live edit, no error (confirmed the hard way, tech-humanize
+  v0.68.59 — see CLAUDE.md's "Plugin lifecycle & install" gotchas). Instruct the
+  re-verification agent to `Read` the repo file path directly instead, regardless of which
+  of the three surface types it is.
+- Nothing traces to the target → say so plainly. A clean reconciliation is a valid result,
   not a failure to find something.

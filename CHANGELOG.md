@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.62] — 2026-07-27
+
+User asked whether `/review-fixtures` can be used beyond skills — agents, commands. Checked
+the evidence rather than guessing: the underlying `skill-creator`-style fixture loop (with_skill/
+baseline generation, `<name>-workspace/` layout) has already run against an Agent
+(`silent-failure-hunter`, v0.68.36) and a Command (`ship-merge`, v0.68.34), both using the
+identical workspace convention as any Skill loop — so the pattern was never skill-only in
+practice. But the `/review-fixtures` command's own text (written skill-first, v0.68.57) had 4
+hardcoded `skills/<name>/SKILL.md` references (Steps 4, 7, 8) that would resolve to the wrong
+path against an agent or command target. Generalized: Step 1 now resolves which of
+`skills/$1/SKILL.md`, `agents/$1.md`, `commands/$1.md` actually exists and uses that as the
+target file everywhere downstream; genericized the reference template's skill-only language the
+same way. Verified the new resolution logic directly against 3 real targets (`silent-failure-hunter`
+→ Agent, `ship-merge` → Command, `backend-patterns` → Skill) — all three resolved correctly.
+
+Caught and fixed one wrong claim of my own before it shipped: an early draft of the stale-cache
+warning (Step 8) claimed the cache-staleness trap from v0.68.59/61 "only applies to a Skill
+target," reasoning that Agent/Command re-verification goes through a different tool. Checked
+before committing — `agents/`, `commands/`, and `skills/` all ship inside the exact same
+single versioned cache bundle, confirmed by diffing directory listings — so the trap applies
+identically to all three surface types, not just Skills. Corrected the command's own text and
+broadened the CLAUDE.md gotcha entry it points to, rather than shipping a plausible-sounding
+but unverified distinction.
+
 ## [0.68.61] — 2026-07-27
 
 User asked whether `/review-fixtures` itself had anything worth improving, after using it twice
