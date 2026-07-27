@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.73] — 2026-07-27
+
+Inspected `nextjs-reviewer.md` directly (no fixtures — all findings verified against
+primary sources or by reading the file, per `advisor()`'s steer that a behavioral fixture
+tests review quality, not the factual/scoping bugs actually found). Checked the three
+most load-bearing version-specific claims (fetch caching default flip in v15, Client
+Router Cache `staleTimes` change, `middleware.ts`→`proxy.ts` rename in v16) against real
+Next.js v16.2.9 docs via context7 — all held clean. Found and fixed 4 smaller issues: (1)
+the App Router File Conventions section named a Route Handler `route.tsx`, but Route
+Handlers export functions returning `Response` objects and never JSX — the convention is
+strictly `route.ts`, and the same file's own worked example elsewhere already used the
+correct extension; (2) the Related section claimed `backend-patterns` "mentions Next.js
+as one of three backend targets" — checked that skill directly, it names exactly two
+(Node.js/Next.js), no "three targets" framing anywhere in it; (3)+(4), the real find: the
+agent's own step-1 scoping instruction (`git diff` scoped to `app/`, `middleware.ts`,
+`next.config.*`) and the Scope-vs-typescript-reviewer table both omitted `proxy.ts` even
+though the file's own Middleware section documents, in detail, that v16 renamed
+`middleware.ts` to `proxy.ts` — on a v16 project the agent's own entry condition would
+silently skip the exact file its Middleware guidance exists to review. Caught by
+`advisor()`, not by the initial read. Also confirmed `nextjs-reviewer` has zero routing
+wiring into `review-pr` (unlike `python-reviewer`/`flutter-reviewer`, never listed as
+"wired but unexercised") — flagged as a real gap but declined per Rule 2: extension-based
+routing can't express the trigger (Next.js files are `.ts`/`.tsx`, indistinguishable from
+generic TypeScript by extension alone), the condition would need new path-based matching
+logic in a load-bearing skill, and there's no evidence yet that anyone has hit the gap.
+
 ## [0.68.72] — 2026-07-27
 
 Removed `flutter-reviewer` on user request. It was picked as a candidate for the next
