@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.63] — 2026-07-27
+
+User asked to run a skill-creator improve+optimize loop against `/review-fixtures` itself
+(v0.68.62). Rather than manufacture synthetic fixtures, checked the command's own schema
+assumptions against every real Agent-target workspace already in the repo — 6 of them
+(`silent-failure-hunter`, `blind-spot-hunter`, `code-reviewer`, `plan-reviewer`, `summarizer`,
+`requirement-analyst`), cheaper and more conclusive than a fresh fixture run. Found the
+command's Step 3 would hard-fail on nearly all of them: it only recognized `with_skill/` +
+`no_skill|without_skill|old_skill/` and required `eval_metadata.json`, but every real
+Agent-loop workspace instead uses `with_agent/` + `baseline/`, and stores the task prompt in
+a per-eval `prompt.md` or an iteration-level shared `prompts.md` (not inside any `eval-*/`
+dir — a 4th source confirmed live, 7 workspaces use it) — `eval_metadata.json` doesn't exist
+in any of them. This directly contradicted v0.68.62's own claim of having "already run
+against an Agent... alike, all using the identical workspace layout" — that precedent used ad
+hoc manual review, not this command's actual Step 2/3 schema. Fixed: broadened the with-run
+and baseline name search, added graceful degradation instead of a hard stop when
+`eval_metadata.json` is absent (checking `prompt.md` → iteration-level `prompts.md` →
+`review.md`'s paraphrase, in that order), and corrected the command's opening claim to state
+the two conventions separately instead of implying one schema covers both. Live-verified
+twice: a first dry-run agent (reading the repo file directly, not the stale installed cache)
+correctly resolved Step 1 and the broadened `with_agent`/`baseline` names, but nearly missed
+the shared `prompts.md` file entirely — it only found it by luck, via one eval's `review.md`
+citing it by name — surfacing the 4th-source gap live rather than by inspection alone. Fixed
+that gap immediately and re-verified with a second dry-run agent against all 4 evals: it now
+finds `prompts.md` unconditionally, off directory presence alone, not off a lucky citation.
+
 ## [0.68.62] — 2026-07-27
 
 User asked whether `/review-fixtures` can be used beyond skills — agents, commands. Checked

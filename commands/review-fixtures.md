@@ -12,12 +12,17 @@ skill's own Step 4 ("grade, aggregate, launch the viewer") — it doesn't replac
 the benchmark step, it replaces *solo eyeballing of the fixture outputs* with an
 adversarial 2-agent pass whose convergence and disagreement both carry signal.
 
-**Not skill-only.** The underlying fixture-loop and workspace convention are already
-surface-agnostic in this fleet's own practice — it's been run against a Skill
-(`backend-patterns`, `frontend-patterns`, `tech-humanize`), an Agent
-(`silent-failure-hunter`, v0.68.36), and a Command (`ship-merge`, v0.68.34) alike, all using
-the identical `<name>-workspace/` layout. This command just needs to resolve which of the
-three the target actually is — see Step 1.
+**Not skill-only.** The `<name>-workspace/iteration-N/eval-*/` layout itself is already
+surface-agnostic in this fleet's own practice — used for a Skill (`backend-patterns`,
+`frontend-patterns`, `tech-humanize`), an Agent (`silent-failure-hunter`, `blind-spot-hunter`,
+`code-reviewer`, `plan-reviewer`, `summarizer`, `requirement-analyst`), and a Command
+(`ship-merge`) alike. This command just needs to resolve which of the three the target
+actually is — see Step 1. **The two conventions inside that layout differ, though**: Skill
+loops built via `skill-creator`'s own spawn template consistently produce `with_skill/` +
+`no_skill|without_skill|old_skill/` + `eval_metadata.json`; every Agent-target loop run ad hoc
+in this repo instead produces `with_agent/` + `baseline/`, a per-eval `prompt.md` in place of
+`eval_metadata.json`, and often a pre-written `review.md`. Step 3 below has to tolerate both —
+don't assume the Skill-side names apply to an Agent or Command target.
 
 **Why 2 agents, not 1**, and the exact prompt skeleton this command fills in: read
 `${KBG_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5
@@ -60,20 +65,36 @@ not inside the installed plugin, so don't resolve it from `${KBG_PLUGIN_ROOT}`).
 
 For each `eval-*/` directory under the iteration path:
 
-- Read `eval_metadata.json` for the original task `prompt` and any `assertions`. If
-  assertions are empty, note that as a gap rather than inventing some — the reviewers can
-  still do a general-quality pass, just without assertion-level scoring.
-- Find the `with_skill/` subdirectory and whichever baseline sibling actually exists —
-  check for `no_skill/`, `without_skill/`, and `old_skill/` in that order, since all three
-  names have shown up in this repo's own history depending on whether the loop was
-  creating a new skill or improving an existing one. Use whichever is present; don't
-  assume one name.
-- Determine the output shape per config directory: a single `outputs/implementation.md`,
-  or a full `outputs/` directory with multiple files plus a `SUMMARY.md`. List whatever's
-  actually there.
+- Get the original task prompt and any `assertions`, checking sources in this order:
+  `eval_metadata.json` (`prompt` + `assertions` fields — the Skill-loop convention); a bare
+  `prompt.md` file in the eval directory (seen in Agent-loop workspaces like
+  `plan-reviewer-workspace`/`requirement-analyst-workspace`); an iteration-level shared
+  `prompts.md` sitting one level up at `<iteration-path>/prompts.md` (NOT inside the eval
+  directory — used across all evals in that iteration in `silent-failure-hunter-workspace`,
+  `blind-spot-hunter-workspace`, `code-reviewer-workspace`, `summarizer-workspace`,
+  `typescript-reviewer-workspace`, and `code-implementer-workspace`; look up the entry
+  matching this eval's name inside it); then, only if none of those exist, a task
+  description embedded in an existing `review.md`'s opening section — treat this last source
+  as a paraphrase, not the verbatim original prompt, and say so if you use it. If none of the
+  four exist, or assertions specifically are empty/absent, note that as a gap rather than
+  inventing one — the reviewers can still do a general-quality pass, just without
+  assertion-level scoring. A missing prompt source is a gap to note, not a reason to stop the
+  whole command (see below).
+- Find the with-run subdirectory and the baseline sibling, checking names in this order —
+  don't assume either pair applies to a target type it wasn't observed on: with-run —
+  `with_skill/`, `with_agent/`, `with_command/`; baseline — `no_skill/`, `without_skill/`,
+  `old_skill/`, `baseline/`. Use whichever pair is present. If the eval directory has exactly
+  one subdirectory that isn't a recognized baseline name, treat that as the with-run
+  directory even if its name doesn't match the list above, rather than failing outright.
+- Determine the output shape per config directory: a single `outputs/implementation.md`; a
+  full `outputs/` directory with multiple files plus a `SUMMARY.md`; or — the most common
+  shape for Agent-target loops in this repo — a flat `output.md` directly inside the
+  with-run/baseline directory, no `outputs/` wrapper at all. List whatever's actually there.
 
-If `eval_metadata.json` is missing or no `eval-*/` directories are found, stop and report
-exactly what's missing — don't guess eval names or prompts from context.
+If no `eval-*/` directories are found at all, stop and report exactly that — don't guess eval
+names. A missing `eval_metadata.json`/`prompt.md`/`review.md` on an otherwise-valid eval
+directory is not itself a stop condition — proceed with the general-quality pass noted above
+and flag the missing prompt context in the dispatched agents' prompts and in Step 8's report.
 
 ### 4. Best-effort prior-fix context
 
@@ -85,7 +106,9 @@ prior fix history, omit that context entirely rather than padding the prompt.
 
 ### 5. Pick agent 2's differentiation angle
 
-Read the eval prompts from Step 3 and name ONE concrete failure mode that's plausible for
+Read the eval prompts from Step 3 — or, if a given eval had no prompt source at all, skim
+its with-run/baseline `output.md` files directly to infer the domain — and name ONE concrete
+failure mode that's plausible for
 this domain but easy for a single reviewer to skim past — concurrency/race conditions for
 anything concurrent or multi-replica, injection/boundary handling for anything taking user
 input, accessibility/memoization/stale-closures for UI, N+1/index cases for anything
@@ -133,8 +156,11 @@ place in the loop):
 
 Summarize to the user: which findings are target-attributable (traced to a specific
 clause in the resolved target file) vs fixture-only, and which are single-sourced vs
-double-confirmed. Don't edit the target file as part of this command — that's a separate
-decision the user makes from the reconciled findings, not an automatic next step.
+double-confirmed. If any eval in Step 3 had no prompt source at all (no
+`eval_metadata.json`/`prompt.md`/`review.md`), say so explicitly — findings from that eval
+rest on inferred context, not a stated task, so they warrant more skepticism. Don't edit the
+target file as part of this command — that's a separate decision the user makes from the
+reconciled findings, not an automatic next step.
 
 Suggested next step:
 - Findings trace to specific content in the target file → open it (Step 1's resolved path)
