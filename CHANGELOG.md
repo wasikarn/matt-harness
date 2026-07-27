@@ -5,6 +5,46 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.74] — 2026-07-27
+
+First-ever `/review-fixtures nextjs-reviewer` run. No existing workspace, so built 2 fixture
+evals from scratch. Per `advisor()`'s steer, kept Eval 0 cheap (2 dispatches, no
+reconciliation) as a direct regression check on the v0.68.73 `proxy.ts` scoping fix: same
+repo dispatched against the current (fixed) agent instructions vs. the pre-fix v0.68.72
+snapshot (`git show 732fe5b^`), pasted inline per file path — not name-based resolution, to
+avoid silently testing the stale plugin cache. Confirmed empirically: the pre-fix agent's own
+scope filter (`git diff --staged -- app/ middleware.ts 'next.config.*'`) excludes `proxy.ts`
+entirely and approves with zero findings despite 2 planted HIGH bugs sitting in the only
+staged file; the fixed agent catches both, plus an unprompted third insight (an unscoped
+matcher composed with the redirect-to-`/login` target risks an infinite redirect loop once a
+login page exists). Eval 1 (Server/Client boundary + Server Actions, 2 real bugs + 3 decoys
+pulled from the agent's own Anti-Patterns list) ran the full 2-dispatch + 2-independent-reviewer
+loop, with baseline = a generic senior-engineer reviewer with zero Next.js-specific
+instructions (not a stale snapshot), to measure the specialized agent's actual incremental
+value. Result was more nuanced than expected: the generic baseline nearly matched the
+specialist — caught both real bugs, avoided all 3 decoys through sound generic reasoning, and
+independently caught 2 real gaps the specialist missed (unchecked `res.ok` on every `fetch()`,
+duplicate-stats-rendered-twice as leftover UI debris) — while the specialist's edge was
+doctrine-anchored severity calibration (correctly tiered the missing-`revalidatePath` gap as
+CRITICAL per its own taxonomy; baseline scored the identical bug Medium despite calling it "a
+real correctness gap" in its own prose) rather than raw bug-catching rate. Both independent
+reconciliation reviewers, cross-checked against live Next.js docs, converged on one real,
+externally-verified bug: the specialist's CRITICAL #1 claimed Next.js encrypts `.bind()`
+closure arguments passed to a Server Action — backwards per Next.js's own security docs
+(`.bind()` args are the explicit *unencrypted* opt-out; only inline-closure-captured variables
+get AES encryption). Grepped the current file first per the reconciliation contract — confirmed
+it never mentions `.bind()` or "encrypt" at all, so this wasn't a wrong assertion in the file,
+it was a real content gap that let the reviewing agent invent a plausible-but-wrong mechanism
+explanation, in the risk-understating direction. Fixed with a clarifying addition to the
+Server Actions section. Also fixed the second double-confirmed gap: no doctrine anywhere
+addressed unchecked `fetch()` failures — added a new HIGH bullet to App Router File Conventions
+(missing `res.ok` check + no `error.tsx` in the segment = silent-failure correctness bug, not
+just a missing-try/catch nicety). Declined 2 single-sourced/lower-confidence items per Rule 2:
+a possible CRITICAL-vs-HIGH severity-table reclassification for password-hash-shaped leaks
+(one reviewer only, more of a judgment call than a verified defect), and an explicit
+Suspense-boundary bullet (a completeness nicety, not a correctness bug — this fleet's Noise
+Control convention).
+
 ## [0.68.73] — 2026-07-27
 
 Inspected `nextjs-reviewer.md` directly (no fixtures — all findings verified against

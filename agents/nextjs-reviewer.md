@@ -91,7 +91,7 @@ export async function updateProfile(formData: FormData) {
 }
 ```
 
-- **Trusting a client-supplied ID for the mutation target** (as in the BAD example above) instead of deriving it from the session — this is the Server Action shape of IDOR (CWE-639); see `security-reviewer` for the general pattern.
+- **Trusting a client-supplied ID for the mutation target** (as in the BAD example above) instead of deriving it from the session — this is the Server Action shape of IDOR (CWE-639); see `security-reviewer` for the general pattern. This applies identically whether the ID arrives via `formData.get()` **or** a bound argument (`deleteAccount.bind(null, userId)` called from a `<form action={...}>`) — Next.js's own docs are explicit that `.bind()` arguments are **not** encrypted (that's the tradeoff for the performance opt-out); only variables captured by an *inline* closure action get encrypted. Don't credit a `.bind()`-passed ID with any more trust than a raw form field — both are attacker-controlled until the action re-derives identity from the session itself.
 - **No schema validation on `FormData`/args** — every field pulled via `formData.get()` is attacker-controlled string data with no type guarantee.
 - **Missing `revalidatePath`/`revalidateTag` after a mutation** — the action succeeds but the UI shows stale data until a hard refresh; this is a correctness bug users report as "my change didn't save."
 
@@ -110,6 +110,7 @@ export async function updateProfile(formData: FormData) {
 - **`loading.tsx` present but the page does no `await` before first paint** — a loading state that never actually shows (because nothing suspends) is dead code masking a missing Suspense boundary elsewhere, or is genuinely unnecessary.
 - **`route.ts` (Route Handler) and `page.tsx` in the same segment** — not supported; Next.js will error at build time, but the intent ("I want this URL to serve both HTML and JSON depending on Accept header") needs a different route/redirect strategy.
 - **Parallel routes (`@slot`) or intercepting routes (`(.)folder`) added without a documented reason** — these are advanced, easy-to-misconfigure primitives (default `default.tsx` fallback missing causes a 404 on hard navigation to an unmatched slot). Flag if the simpler alternative (conditional rendering in a single page) would work.
+- **A `fetch()` in a Server Component with no `res.ok` check and no `error.tsx` anywhere in the segment** — a failed or non-2xx response still resolves; `res.json()` either throws on a non-JSON error body or returns a shape missing the fields the JSX expects, and with no error boundary in the tree the page renders with an empty/`undefined` value instead of failing loud. On a route where stale-or-wrong data is worse than an error page (a price, a balance, anything users act on), this is a silent-failure correctness bug, not just a missing try/catch nicety — flag both the missing status check and the missing `error.tsx`.
 
 ### HIGH — Middleware
 
