@@ -73,6 +73,6 @@ find .scratch -path '*/review-pr-*/ledger.md' -type f -exec stat -f '%m %N' {} +
 
 ## What this policy is *not*
 
-- **Not an ML system.** No training, no model, no auto-tuning. Just counters + thresholds. Per `feedback_mnimiy_xposts_verify_tier` and `feedback_subagent_output_verify_tier`, anything more clever is a Verify-tier artifact that needs explicit verification.
+- **Not an ML system.** No training, no model, no auto-tuning. Just counters + thresholds. Per `skills/orchestrate/SKILL.md`'s Verify-tier principle (non-code producer output — stats, patterns, claims — needs corroboration before it's trusted), anything cleverer than counters + thresholds is exactly that kind of artifact and needs the same explicit verification here.
 - **Not a hard blocker.** A tightening is an *advisory strictness* — the orchestrator surfaces it, the user can override. The gate is not silently enforced; the user sees the rule being applied.
 - **Not persistent across machines.** `.scratch/` is local. A second clone / a new machine starts with no ledger history.

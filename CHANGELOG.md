@@ -5,6 +5,47 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.65] — 2026-07-27
+
+Ran a `skill-creator`-style improve+optimize loop against `skills/review-pr/SKILL.md`
+(350-line, 7-phase orchestration skill, never fixture-tested before), per user request.
+No workspace existed, so per `advisor()`'s steer, mined real production evidence first
+instead of building synthetic fixtures from scratch — cheaper and more conclusive, same
+play that worked on `/review-fixtures` itself in v0.68.63. Found and fixed 2 real bugs:
+
+1. **Phase 3's harness-diff test-coverage pattern was dead code in this repo.** The rule
+   meant to auto-fire `code-reviewer`'s test-coverage lens on harness diffs matched
+   `claude/{agents,skills,commands,hooks}/` — a path prefix that doesn't exist anywhere in
+   kbg-harness (confirmed: `agents/`, `skills/`, `commands/`, `hooks/` all live at repo
+   root, no `claude/`-prefixed dir). A fresh agent reading the current text, given a real
+   `hooks/gates/*.sh`-only diff and `kbg:review-pr tests`, independently reproduced the
+   bug live: zero reviewers routed, silently reviewing nothing — the exact opposite of the
+   rule's stated intent. A no-skill baseline on the same diff immediately flagged it as a
+   real gap worth blocking on, sharpening the contrast. Fixed: the pattern now matches
+   either `.claude/{agents,skills,commands,hooks}/` (the standard per-project convention)
+   or a repo-root `{agents,skills,commands,hooks}/` (this repo's own layout).
+2. **Phase 7's state-file JSON contract wasn't holding in production.** Census of all 105
+   real `~/.claude/state/review-pr-*.json` files found ~40 diverging from the documented
+   7-field schema — renamed keys (`rehunt` → `rehunt_triggered`/`rehuntStatus`), dropped
+   fields (`branch`, `review_mode` missing entirely), even a fully camelCase file with no
+   `clean` key at all. Root-caused via a live diagnostic: a fresh agent instructed to run
+   Phase 7 step 1's bash block *literally* produced the exact documented schema (verified
+   7/7 field match) — so the block itself isn't broken. The drift traces to sessions that
+   skip running it and hand-narrate a richer JSON summary instead, silently breaking the
+   exact keys `/ship-merge`'s scored gate depends on. Fixed: added an explicit instruction
+   that the block must run as-is via Bash (not be paraphrased), with additive fields
+   welcomed but the required 7 names never renamed or dropped — explains the why via the
+   real census data, not a bare MUST.
+
+Also fixed a minor dangling citation in `policy.md` (`feedback_mnimiy_xposts_verify_tier`
+— a garbled reference to nothing) to point at the real `skills/orchestrate/SKILL.md`
+Verify-tier concept it was gesturing at. Checked Phase 5 step 3.6's zero-findings re-hunt
+trigger (fires on final post-verification state, skips on trivial diffs) against 2 fresh
+scenario evals — both came back correct against current text, no fix needed there. Live
+re-verification confirmed: re-running eval-A's exact scenario against the fixed SKILL.md
+text (read directly from the repo file, not `Skill()`, per the stale-cache gotcha)
+correctly routes `code-reviewer` with the test-coverage lens.
+
 ## [0.68.64] — 2026-07-27
 
 User asked to move kbg-harness toward "graph engineering" after reading a vendor blog post.
