@@ -5,6 +5,61 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.75] — 2026-07-27
+
+Ran a second `/review-fixtures plan-reviewer` reconciliation pass against the existing
+`plan-reviewer-workspace/iteration-1` outputs — without realizing a first pass had already run.
+Discovered mid-task: `git diff HEAD -- agents/plan-reviewer.md` came back empty, and the file's
+live "Circularity guard" section already read as the post-fix version. `git log` traced this to
+275df7c ("close out plan-reviewer.md left by a concurrent session," v0.68.46, 2026-07-25) — an
+earlier, undocumented-as-a-fixture-loop session had already run an equivalent 2-reviewer
+reconciliation against this same workspace, found and fixed a hard-stop template-partial-fill bug
+and a lens-4-vs-6 mistagging issue, and ran its own verification round (2 of 3 fixes confirmed
+holding). Called `advisor()` before deciding how to proceed rather than either discarding the
+new pass's work or silently overwriting the prior `feedback.json`.
+
+Verdict: merge, don't overwrite. `feedback.json`'s existing `reviews` + `verification_round`
+sections stayed untouched (that verification round can't be reconstructed). Compared the two
+passes' conclusions: both reviewers in this second pass independently re-derived the exact
+"the Circularity guard's strict paraphrase-vs-artifact behavior is correct as-is, not a
+competence gap" verdict the prior pass had already recorded — corroboration across two
+independent reconciliations run two days apart, not a new finding, so `agents/plan-reviewer.md`
+itself received zero further edits this round.
+
+Two items were genuinely new, not re-derivations:
+- `skills/harness-audit/SKILL.md`'s "Extending checks" section documented the wrong extension
+  mechanism — it described the pre-refactor design (a single `audit.sh` appending
+  `[CRIT] <id>: <message>` lines directly) instead of the real one (each check lives in its own
+  `scripts/checks/NN-slug.sh` file, dot-sourced via a `checks/[0-9][0-9]-*.sh` glob, calling
+  shared `crit`/`warn`/`info` functions that increment totals `audit.sh` aggregates). Fixed,
+  verified against the live glob/function names in `audit.sh` itself.
+- Fixture-b's (`audit-check-50`) planted-defects ground truth referenced "check 50" as an
+  available slot; `checks/50-skill-cited-in-slash-form-doc-rot.sh` already occupies that number
+  (added v0.68.48) and the specific over-500-line skill names/counts the fixture cited had also
+  drifted (`dart-flutter-patterns` deleted in v0.68.51; `backend-patterns` now 641 lines,
+  `frontend-patterns` 845 and didn't exist when the fixture was authored). Neither iteration-1
+  run could have caught the collision since it postdates their 2026-07-25 generation date — noted
+  in `planted-defects.md` as a fixture-durability caveat, not a grading penalty against either
+  output.
+
+One item was closure, not discovery: the prior pass's `feedback.json` had already flagged
+fixture-c's (`rename`) ground truth as wrong — its "clean single-variable rename, zero findings"
+premise missed a real third `_norm` occurrence at `audit.sh:122` that both iteration-1 outputs
+independently caught — but only said "the answer key needs correcting," future tense, never
+applied. This pass's reviewers re-verified the same grep result and the correction was actually
+written into `planted-defects.md` this time.
+
+Real gap surfaced in `/review-fixtures` itself, logged but not built this round (Rule 2 — no
+second confirmed instance yet): the command has no step that reads a workspace's existing
+`feedback.json` before dispatching a fresh reconciliation pass, so a second run against the same
+target re-derives already-recorded conclusions from scratch instead of scoping new dispatches to
+what the prior pass left uncovered. Worth a Step 3.5 read-first check if this recurs.
+
+Also fixed, unrelated to the plan-reviewer target: `feedback.json` and `planted-defects.md` live
+inside the gitignored `plan-reviewer-workspace/` dev directory, so neither is part of this
+commit — they're durable on disk but outside version control, consistent with every other
+`*-workspace/` fixture directory in this repo.
+
 ## [0.68.74] — 2026-07-27
 
 First-ever `/review-fixtures nextjs-reviewer` run. No existing workspace, so built 2 fixture

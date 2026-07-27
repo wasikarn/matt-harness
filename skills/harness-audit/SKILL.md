@@ -107,11 +107,20 @@ Wire into a post-fleet-change hook for continuous enforcement.
 
 ## Extending checks
 
-Add new checks to `audit.sh` in the order they appear. Each check emits:
+Add a new check as its own file under `scripts/checks/`, named `NN-slug.sh` (2-digit prefix,
+hyphen, then a short slug — `audit.sh`'s loader globs `checks/[0-9][0-9]-*.sh` and dot-sources
+each match into its own shell process, so a wrong extension or separator means the check silently
+never runs). Call the shared `crit "<message>"` / `warn "<message>"` / `info "<message>"`
+functions to report a finding — they increment the shared `CRIT_COUNT`/`WARN_COUNT`/`INFO_COUNT`
+totals `audit.sh` aggregates at the end; a check does not print its own formatted line for
+`audit.sh` to parse.
 
-- `[CRIT] <id>: <message>` — requires immediate fix
-- `[WARN] <id>: <message>` — should fix but not blocking
-- `[INFO] <id>: <message>` — expected behavior, document only
+- `crit` — requires immediate fix
+- `warn` — should fix but not blocking
+- `info` — expected behavior, document only
+
+After adding a check, bump the integrity guard's expected count (`_exp_ids` near the end of
+`audit.sh`) in the same commit — it fails closed if the check count doesn't match.
 
 ## References
 
