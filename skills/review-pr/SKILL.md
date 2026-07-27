@@ -252,6 +252,17 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    # It must NOT reach /ship-merge as clean — otherwise the machine gate reads critical_count:0 as a
    # clean pass, the exact rubber-stamp the human was told was "verdict incomplete." Force clean:false.
    REHUNT="${REHUNT_STATUS:-n/a}"
+   # Canonicalize: audited 105 real production state files (2026-07-28) and found
+   # REHUNT_STATUS set to free-text narrative ("ran — step 3.6 surfaced 1 Important...",
+   # "not_triggered", "complete", 15+ distinct shapes) instead of one of the 4 tokens
+   # above in most sampled runs — the comment alone doesn't constrain what a session
+   # writes here. Anything that isn't exactly one of the 4 tokens is treated as
+   # not-certified (fail closed, same as an explicit "incomplete") — a narrative
+   # summary is not proof the hunt actually finished clean.
+   case "$REHUNT" in
+     clean|skipped-trivial|incomplete|n/a) ;;
+     *) REHUNT="incomplete" ;;
+   esac
    if [ "$REHUNT" = "incomplete" ] || [ -n "${DISPATCH_FAILURES:-}" ]; then
      CLEAN=false
    else
