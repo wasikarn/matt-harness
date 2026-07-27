@@ -11,48 +11,65 @@ log that ECC's `stop:cost-tracker` hook writes.
 
 ## Where the data lives
 
-The tracker appends one JSON object per session-stop to
-`~/.local/share/kbg/metrics/costs.jsonl`. Each row's `estimated_cost_usd` is a
-**cumulative snapshot for the whole session** — it sums token usage across every
-assistant turn in the transcript from the start, with no per-model split, then prices
-that whole-session total at whichever model produced the *most recent* turn. So
-`input_tokens`/`output_tokens`/`estimated_cost_usd` are always non-decreasing across a
-session's rows, confirmed against production data, 2026-07-28 (all 32 of 362 sessions
-that switched models at least once showed monotonic `input_tokens`). **The report
-takes the single latest row per `session_id` (ignoring `model`) and sums across
-sessions** — this is the correct aggregation of what the tracker recorded (verified by
-an independent telescoping-delta recomputation that landed on the identical figure,
-$34,698.3252, 2026-07-28). It is not the same as a correct *dollar* total, though:
-whichever model doesn't match `haiku`/`opus`/`sonnet` in the tracker's rate table falls
-back to the Sonnet rate as a guess (`rate_verified: false`) — on 2026-07-28's data
-that's over half the total, $17,510 of $34,698, priced at a rate that isn't the actual
-model's. The report's `(rate unverified)` tag on each affected model is the only signal
-of this; take the total as "correctly summed," not "correctly priced."
+The tracker appends one or more JSON objects per session-stop to
+`~/.local/share/kbg/metrics/costs.jsonl`, one per **model actually used in that
+session so far**. Every stop re-derives cumulative totals from the full transcript
+(stateless — no separate counter file), groups assistant turns by `.message.model`,
+and writes each model's own true cumulative `input_tokens`/`output_tokens`/
+`estimated_cost_usd`, priced at that model's own rate. These rows carry
+`model_scoped: true`. **The report takes the latest row per (`session_id`, `model`)
+pair among `model_scoped` rows and sums across a session's pairs.** The hook's per-model
+token computation was verified against a real 3-model production transcript
+(`claude-opus-4-8`, `claude-sonnet-5`, `glm-5.2`) by running the actual hook end-to-end
+and confirming each model's cost matched a hand computation from the raw token counts,
+2026-07-28. The report's own aggregation of `model_scoped` rows is only regression-gated
+against a single-row synthetic case so far (zero `model_scoped` rows exist in production
+data as of this writing — the installed plugin hook won't write them until this version
+ships and a session stops under it) — treat the multi-row aggregation path as untested
+by real data until the first genuinely multi-model session produces it.
 
-An earlier version of this doc claimed the opposite — that each model kept an
-independent per-`session_id`+`model` counter, and that summing the latest row per
-(`session_id`, `model`) pair recovered a "55% undercount." That claim was wrong: it
-double- and triple-counts the same underlying cumulative tokens every time a session
-switches models, inflating the true $34,698 total to a fabricated $53,883. Confirmed
-false by reading `hooks/stop/cost-tracker.sh` directly — the row-writing `jq` sums
-every assistant message unconditionally, with no `model` filter before the sum.
+**Rows written before this fix (no `model_scoped` field) used a different, coarser
+design**: one row per stop, summing token usage across the *entire* transcript with no
+per-model split, then pricing that whole-session total at whichever model produced the
+most recent turn. A session that switched models had its `input_tokens`/
+`estimated_cost_usd` monotonically increasing regardless of which model was active —
+confirmed against production data, 2026-07-28 (all 32 of 362 sessions that switched
+models at least once showed monotonic `input_tokens` under the old design). **For a
+session with no `model_scoped` rows at all** (it stopped for the last time before this
+fix shipped, so it will never get an updated row), the report falls back to the old
+behavior: dedup by `session_id` alone, take the single latest row — this is the
+correct aggregation of what the old design recorded (verified by an independent
+telescoping-delta recomputation that landed on the identical figure, $34,698.3252,
+2026-07-28), and it's the best available total for a session that can't be re-measured.
+A session with at least one `model_scoped` row uses **only** those rows for its total,
+never mixed with its own older rows — a `model_scoped` row recomputes from the whole
+transcript, so it already supersedes anything the old design recorded earlier in that
+same session.
 
-**Known limitation — the "By model" breakdown is approximate for mixed-model
-sessions.** Because a row's cost prices the *entire* session's cumulative tokens at
-the currently-active model's rate, a session that switches models has its whole cost
-attributed to whichever model was active at the session's last stop — the other
-model(s) used earlier in that session show $0 in the breakdown even though they did
-real work. This affects ~9% of sessions (32/362, 2026-07-28) and only distorts the
-per-model split; the overall total stays correct regardless. A tried fix
-(delta-per-row, attributed to that row's model) does exist but overstates the total by
-~31% when negative deltas — a real signal from the repricing, not noise — are clamped
-to zero to avoid negative per-model figures; discarded as a worse trade. Recovering an
-accurate per-model split would require changing `cost-tracker.sh` to accumulate cost
-per model incrementally going forward — a hook change, not something reconstructable
-from historical rows.
+**Prior mistake, corrected the same day:** an earlier version of this doc, and an
+earlier version of the hook's row-writing logic, both assumed (wrongly, before either
+was actually read) that old-format rows already carried an independent per-model
+counter, and "fixed" the report by deduping old rows on (`session_id`, `model`) and
+summing. That inflated the true $34,698 total to a fabricated $53,883 — old rows are
+whole-session snapshots, and summing several of them for one session double- and
+triple-counts the same cumulative tokens. Reverted before that shipped; this hook
+change is what makes the (`session_id`, `model`) dedup actually correct, for
+`model_scoped` rows only.
+
+Neither design is a correct *dollar* total on its own, though: whichever model doesn't
+match `haiku`/`opus`/`sonnet` in the tracker's rate table falls back to the Sonnet rate
+as a guess (`rate_verified: false`) — on 2026-07-28's data (still mostly old-format
+rows at that point) that was over half the total, $17,510 of $34,698, priced at a rate
+that isn't the actual model's. The report's `(rate unverified)` tag on each affected
+model is the only signal of this; take any total as "correctly summed," not
+"correctly priced," until every model in the rate table is a real, verified rate.
 
 Row schema:
-`{ timestamp, session_id, transcript_path, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, rate_verified, estimated_cost_usd }`
+
+`model_scoped` is `true` on rows written by the per-model design; absent (falsy) on
+rows written by the old whole-session design — see above for how the report treats
+each.
 
 `rate_verified` is `false` when `model` didn't match a known pricing tier
 (`haiku`/`opus`/`sonnet`) — the cost was estimated at the Sonnet rate as a
@@ -77,8 +94,9 @@ remote/headless session), the buckets will follow that environment's zone instea
 1. Check that `~/.local/share/kbg/metrics/costs.jsonl` exists. If it does not, tell the
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
-2. Reduce rows to the latest snapshot per session (by `session_id`, ignoring `model`)
-   and aggregate.
+2. For each session: if it has any `model_scoped` row, reduce to the latest row per
+   (`session_id`, `model`) pair and sum across pairs; otherwise reduce to the single
+   latest row per `session_id` (ignoring `model`). Aggregate across sessions.
 3. Present a compact report, or export recent rows as CSV when the argument is `csv`.
 
 `node` is used instead of `sqlite3`/`jq` so this works identically on macOS,
@@ -93,8 +111,20 @@ const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
 const bySession=new Map();
-for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;const p=bySession.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySession.set(k,r);}
-const latest=[...bySession.values()];
+for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;if(!bySession.has(k))bySession.set(k,[]);bySession.get(k).push(r);}
+const latest=[];
+for(const rs of bySession.values()){
+  const scoped=rs.filter(r=>r.model_scoped===true);
+  if(scoped.length){
+    const byModel=new Map();
+    for(const r of scoped){const k=r.model||"";const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    latest.push(...byModel.values());
+  }else{
+    let best=null;
+    for(const r of rs){if(!best||String(r.timestamp)>String(best.timestamp))best=r;}
+    if(best)latest.push(best);
+  }
+}
 const cost=r=>Number(r.estimated_cost_usd)||0;
 const fmtLocal=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 const day=r=>fmtLocal(new Date(r.timestamp));
@@ -124,8 +154,8 @@ const fs=require("fs"),os=require("os"),path=require("path");
 const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
-console.log("timestamp,session_id,model,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,estimated_cost_usd");
-for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.estimated_cost_usd].join(","));
+console.log("timestamp,session_id,model,model_scoped,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,estimated_cost_usd");
+for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.estimated_cost_usd].join(","));
 '
 ```
 

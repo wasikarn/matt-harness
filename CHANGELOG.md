@@ -5,6 +5,61 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.81] — 2026-07-28
+
+Fixed the real limitation v0.68.80 had documented but not built: `hooks/stop/cost-tracker.sh`
+recorded one whole-session cumulative counter per stop, repriced at whichever model was
+currently active, so a mixed-model session's "By model" breakdown always attributed 100% of
+the cost to whichever model was active at the session's last stop. The hook already re-parses
+the full transcript from scratch on every stop (stateless by design, no separate counter file);
+the fix groups assistant turns by `.message.model` before summing, instead of tagging one
+whole-session sum with `last.m`. This writes one row per model actually used in the session so
+far, each carrying that model's own true cumulative tokens and cost, marked `model_scoped:
+true` so the report can tell new-format rows apart from old ones.
+
+Verified the grouping wasn't a no-op before writing it: a real 3-model production transcript
+(`claude-opus-4-8`/`claude-sonnet-5`/`glm-5.2`, session `c143be4b...`) confirmed `.message.model`
+genuinely varies per assistant turn (227/111/30 messages respectively), not just at `last.m`.
+Ran the new jq unredirected (no `2>/dev/null` swallow) against that transcript and hand-verified
+the per-model costs against the raw token math before trusting it. Then ran the actual hook
+script end-to-end — synthetic payload piped through the real file, `metrics_dir` redirected to
+a scratch directory so production data was never touched — and confirmed the appended rows
+matched the hand computation exactly (`claude-opus-4-8`: $137.398207, `claude-sonnet-5`:
+$15.992448, `glm-5.2`: $8.731548).
+
+Updated `commands/cost-report.md`'s aggregation to match: for a session with any `model_scoped`
+row, dedup by (`session_id`, `model`) among those rows and sum — safe now because a
+`model_scoped` row recomputes from the whole transcript, so it supersedes anything an older row
+recorded earlier in that same session, and different models' `model_scoped` rows are never
+mixed with old-format rows. For a session with zero `model_scoped` rows (it stopped for the
+last time before this shipped, so it'll never get an updated row), the report still falls back
+to the pre-fix behavior: dedup by `session_id` alone. Regression-gated the fallback path against
+real production data before and after the change — byte-identical total on the same snapshot
+read both ways ($34,718.7725, 362 sessions at time of test), confirming the report change is a
+no-op until `model_scoped` rows actually start appearing (which won't happen until this version
+ships and reinstalls — the installed plugin cache is a separate path from the repo working
+tree, confirmed the hook edit had zero effect on the live-installed hook mid-session).
+
+Added real test coverage for the new behavior: the existing `hooks/tests/test-session-stop.sh`
+suite only ever used single-model transcripts, so the grouping change was a no-op for every
+existing assertion (one model → one group, same result as before) — the gauntlet would have
+stayed green even on a broken multi-model implementation. Added a new adversarial case (two
+assistant turns, two distinct models) asserting exactly two `model_scoped:true` rows, each
+carrying only its own model's token counts, not summed together.
+
+`advisor()` before push caught two more things: the grouped-by-model jq produced an all-zero
+row for `<synthetic>` turns (present in most transcripts) with no matching cost — harmless to
+totals, but a permanent `$0.0000 <synthetic> (rate unverified)` noise row in every future "By
+model" listing. Added a `select(.input_tokens + .output_tokens + .cache_write_tokens +
+.cache_read_tokens > 0)` filter after the group-by so zero-usage rows never get written.
+Separately, `cost-report.md`'s prose read as if the hook run above had verified the *report's*
+multi-row aggregation logic, when what it actually verified was the *hook's* per-model token
+computation — the report's `model_scoped` branch has zero real multi-row data to exercise yet
+(the byte-identical regression check only proved the branch untaken, not correct on real
+input) and won't until this version ships, reinstalls, and a genuinely multi-model session
+stops under it. Split the claim into what's actually verified vs. what's still pending real
+data, so a future reader doesn't treat an untested branch as tested.
+
 ## [0.68.80] — 2026-07-28
 
 Chased down the `advisor()`-flagged question left open at the end of v0.68.79 — whether

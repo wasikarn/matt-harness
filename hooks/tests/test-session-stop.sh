@@ -163,6 +163,39 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 assert "aggregates a multi-line transcript into one summed JSONL cost row" "$ok"
 rm -rf "$fake_home" "$transcript"
 
+# Adversarial: multi-MODEL transcript (two assistant lines, different `.message.model`)
+# must write ONE row PER MODEL, each model_scoped:true, each carrying only that
+# model's own tokens — not one summed row tagged with whichever model was last used
+# (the pre-fix behavior this rewrite replaced).
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+python3 -c '
+import json
+for model, tok_in, tok_out in [("claude-opus-4-8", 100, 50), ("claude-sonnet-5", 200, 80)]:
+    line = {"type": "assistant", "message": {"model": model,
+      "usage": {"input_tokens": tok_in, "output_tokens": tok_out,
+                "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
+    print(json.dumps(line))
+' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "multi-model"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+opus_row=$(/usr/bin/grep '"model":"claude-opus-4-8"' "$metrics_file" 2>/dev/null)
+sonnet_row=$(/usr/bin/grep '"model":"claude-sonnet-5"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "2" ]] \
+  && printf '%s' "$opus_row" | /usr/bin/grep -q '"model_scoped":true' \
+  && printf '%s' "$opus_row" | /usr/bin/grep -q '"input_tokens":100' \
+  && printf '%s' "$opus_row" | /usr/bin/grep -q '"output_tokens":50' \
+  && printf '%s' "$sonnet_row" | /usr/bin/grep -q '"model_scoped":true' \
+  && printf '%s' "$sonnet_row" | /usr/bin/grep -q '"input_tokens":200' \
+  && printf '%s' "$sonnet_row" | /usr/bin/grep -q '"output_tokens":80' \
+  && printf '%s' "$opus_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
+  && printf '%s' "$sonnet_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "multi-model transcript writes one model_scoped row per model with that model's own tokens" "$ok"
+rm -rf "$fake_home" "$transcript"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
