@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.67] — 2026-07-27
+
+Ran `/review-fixtures security-reviewer` (first-ever fixture pass on `agents/security-reviewer.md`,
+198-line OWASP checklist + CWE-tagged pattern table + attack-chain composition agent), per user
+request. Per `advisor()`'s steer, mined real production evidence first: across 6 review-pr state
+files where this agent was dispatched, it never produced a refuted finding (CLEAN or
+`isReal:false` on every direct hit) — but also zero confirmed true-positive catches, so recall
+was untested by real evidence and worth a fixture pass. Two defects were verifiable directly from
+the mined evidence with no fixtures needed, both fixed:
+
+1. **`npx eslint . --plugin security` had an unconditional side effect.** Verified live: when a
+   project hasn't installed `eslint`/`eslint-plugin-security` (the common case), `npx` silently
+   fetches `eslint` from the registry into the npm cache and then fails on the missing plugin —
+   a real network fetch + disk write from a nominally read-only reviewer, for zero signal. Fixed:
+   gated both Analysis Commands behind an existing-dependency check.
+2. **`review-pr` Phase 3 routing didn't match this agent's own "When to Run" contract.** The
+   agent's own spec says ALWAYS on payment code and dependency updates; `skills/review-pr/SKILL.md`
+   Phase 3 only routed it on auth/secrets/external-input matches (confirmed via grep: no
+   "payment"/"dependency" keyword anywhere in the routing rules) — a payments-only or
+   lockfile-only diff never reached this reviewer. Fixed: broadened the routing condition.
+
+Built 2 fixture evals (IDOR + attack-chain composition; JWT algorithm confusion), each with
+false-positive decoys pulled straight from the agent's own "Common False Positives" list
+(`.env.example` placeholders, a SHA256 checksum, a marked test secret), run through
+`with_agent`/`baseline` per the established Agent-target convention. 2 independent staff-eng
+reviewers reconciled all 4 outputs, one assigned a fix-quality differentiation angle (does the
+proposed remediation actually close the gap under an edge case, not just "was the bug named").
+Confirmed the agent's §3c attack-chain doctrine has real, measurable effect: `with_agent`
+composed the IDOR + missing-rate-limiting into one escalated CRITICAL; baseline filed them as
+separate findings with no severity escalation. Found and fixed 2 real, skill-attributable bugs,
+both live-verified against real `jsonwebtoken`:
+
+1. The canonical IDOR GOOD example (`invoice.userId !== req.user.id`) was copied verbatim by
+   both with_agent and baseline (reviewer 2 traced it back to §3b) — and has a real
+   type-coercion gap: a string-vs-number ID mismatch makes strict `!==` always deny (silently
+   breaks every legitimate user), and a naive `!=` "fix" would reopen a coercion bypass. Fixed
+   the example to normalize types before comparing, with the failure mode spelled out.
+2. Live-tested the actual JWT forgery attack against `jsonwebtoken` 8.5.1 and 9.0.3 (both
+   reviewers ran this independently). Found something none of the 4 fixture outputs caught: the
+   fixture's own `.env.example` placeholder value for the public key defeats jsonwebtoken 9.0.3's
+   implicit key-shape algorithm inference — the forged token verifies successfully on the
+   current library version when the key is misconfigured this way, a live and current bypass,
+   not a legacy-only concern. Fixed §3b's JWT GOOD example to make explicit that the
+   `algorithms` pin is what closes the gap unconditionally, not the library's implicit inference.
+
+One more real gap, single-sourced but cheap and low-risk to fix: reviewer 1 found `with_agent`
+silently skipped 2 of its own OWASP checklist items (excessive data exposure via `SELECT *`,
+missing audit logging) on the same eval that baseline caught unguided — added a one-line
+reminder to complete the full numbered sweep even after finding a headline CRITICAL. One
+fixture-workspace hygiene note for future loops: the eval-1 `with_agent` run read `prompts.md`
+(the ground-truth answer key) while orienting, self-disclosed in its own output — that data
+point was discounted accordingly rather than treated as clean.
+
 ## [0.68.65] — 2026-07-27
 
 Ran a `skill-creator`-style improve+optimize loop against `skills/review-pr/SKILL.md`

@@ -26,6 +26,14 @@ You are an expert security specialist focused on identifying and remediating vul
 
 ## Analysis Commands
 
+Only on a Node project that already has these as installed dependencies — check
+`package.json`/`node_modules` first. `npx eslint . --plugin security` on a project that hasn't
+installed `eslint`/`eslint-plugin-security` doesn't just fail: `npx` silently fetches `eslint`
+from the registry into the npm cache before failing on the missing plugin, a real network
+fetch and disk write from a review that's supposed to be read-only, for zero signal (verified
+live: the plugin check never actually runs). Skip both commands entirely on non-Node stacks or
+when the deps aren't already present — the manual pattern review below is not gated on this.
+
 ```bash
 npm audit --audit-level=high
 npx eslint . --plugin security
@@ -34,10 +42,19 @@ npx eslint . --plugin security
 ## Review Workflow
 
 ### 1. Initial Scan
-- Run `npm audit`, `eslint-plugin-security`, search for hardcoded secrets
+- If the Node deps are already installed (see above), run `npm audit` and `eslint-plugin-security`; otherwise skip straight to manual review
+- Search for hardcoded secrets
 - Review high-risk areas: auth, API endpoints, DB queries, file uploads, payments, webhooks
 
 ### 2. OWASP Top 10 Check (with CWE references)
+
+Work the full numbered list below on every review, even after finding a headline CRITICAL —
+verified live that stopping early is a real failure mode: a run that correctly caught and
+escalated an IDOR chain still skipped items #3 (an unfiltered `SELECT *` shipped straight to
+the client) and #10 (zero audit logging on the same financial-data route) in the same file, both
+of which an unguided general review caught without any checklist at all. The headline finding
+doesn't excuse the rest of the sweep.
+
 1. **Injection** (CWE-89 SQL, CWE-78 OS command, CWE-943 NoSQL) — Queries parameterized? User input sanitized? ORMs used safely?
 2. **Broken Auth** (CWE-287, CWE-347 JWT signature) — Passwords hashed (bcrypt/argon2)? JWT validated? Sessions secure?
 3. **Sensitive Data** (CWE-311, CWE-312) — HTTPS enforced? Secrets in env vars? PII encrypted? Logs sanitized?
@@ -90,10 +107,18 @@ app.get('/invoices/:id', requireAuth, async (req, res) => {
 // GOOD: ownership checked against the authenticated principal
 app.get('/invoices/:id', requireAuth, async (req, res) => {
   const invoice = await db.getInvoice(req.params.id);
-  if (!invoice || invoice.userId !== req.user.id) return res.sendStatus(404);
+  if (!invoice || String(invoice.userId) !== String(req.user.id)) return res.sendStatus(404);
   res.json(invoice);
 });
 ```
+
+**Watch for this specific bug even when an ownership check exists**: a raw `!==` comparison
+between an ID from the DB (often a string for `BIGINT`/`NUMERIC` columns depending on the
+driver) and an ID from the JWT/session (often a number) silently denies every legitimate user
+— strict-but-wrong reads as "secure" in review. Worse, a maintainer chasing that bug report who
+"fixes" it with loose `!=` reopens a coercion bypass (`undefined != null` is `false` in JS).
+Normalize both sides to the same type before comparing, or push the check into the query itself
+(`WHERE id = ? AND user_id = ?`) so there's no comparison to get wrong.
 
 **JWT `alg: none` / algorithm confusion (CWE-347):** if the verifier accepts whatever `alg`
 the token header claims, an attacker crafts an unsigned or HS256-signed-with-the-public-key
@@ -105,6 +130,16 @@ jwt.verify(token, secretOrPublicKey);
 // GOOD: pin the expected algorithm explicitly
 jwt.verify(token, secretOrPublicKey, { algorithms: ['RS256'] });
 ```
+
+**The pin is load-bearing, not defense-in-depth.** Newer `jsonwebtoken` versions narrow the
+default algorithm set by inferring an allowed family from the shape of `secretOrPublicKey` (PEM
+header detection) — but that inference only holds for a well-formed key. Verified live: with an
+unpinned call and a misconfigured key value (a truncated PEM, a placeholder left over from a
+bad deploy — e.g. a literal `your_public_key_here` string), a forged HS256 token using that key
+string as the HMAC secret still verifies successfully on the current jsonwebtoken major version.
+Don't credit "modern jsonwebtoken defaults are safer" as a mitigating factor when scoring this
+finding — the explicit `algorithms` pin is what closes the gap unconditionally regardless of
+whether the key is configured correctly.
 
 **Mass assignment (CWE-915):** spreading a request body straight into a DB write lets the
 client set fields it was never meant to control.
