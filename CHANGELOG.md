@@ -5,6 +5,41 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.58] — 2026-07-27
+
+Ran a 2-eval `skill-creator` fixture loop against `skills/orchestrate/SKILL.md` (a
+degenerate-urgency backlog with a Fast-Path-eligible item, and an 8-item pile testing the
+fan-out cap plus the no-live-user headless gate), then `/review-fixtures orchestrate` to
+exercise that command against real fixtures for the first time — per user request, both to
+generate data for the new command and to see what it found. 2 independent staff-eng agents
+reviewed all 4 outputs (`with_skill`/`no_skill` × 2 evals); reconciled findings in
+`orchestrate-workspace/iteration-1/feedback.json` confirmed the v0.68.28 Fast Path Gate and
+Validator-safety-carve-out fixes both hold under fresh adversarial scenarios — verified live
+against `agents/security-reviewer.md`'s and `agents/summarizer.md`'s actual `tools:` frontmatter,
+not just asserted — and surfaced 2 new skill-attributable bugs:
+
+- The Output Format table's Route/Status column enum (`inline / parallel / sequential / drop`;
+  `dispatched / deferred / dropped`) didn't match the vocabulary the skill's own worked Example
+  and `reference.md`'s parallel "Path" column actually used ("delegate", "avoid", "schedule",
+  "research" as a bare Route value) — the same defect class v0.68.28 closed once elsewhere
+  ("an Example table that contradicted its own Output Format spec"), recurring here. Fixed: 3
+  Example rows (`prod 500s`, `auth refactor`, `pnpm move`) corrected to lead with a valid enum
+  token, plus a new bridging rule in the Output Format section translating `reference.md`'s Path
+  vocabulary down to the 4-value Route enum instead of letting it leak through verbatim.
+- The Example's "prod 500s" row labeled its Route "sequential: diagnose → fix → verify" but
+  staffed only one agent, with no separate Validator — contradicting the skill's own Validation
+  chain doctrine ("every non-trivial write should be a chain, not a single dispatch"). Fixed:
+  added the missing Validator leg (`code-reviewer`, ungated, confirms the Builder's fix) and
+  corrected the row's summary sentence, which had claimed no ungated agent was needed in this
+  example — no longer true once the Validator leg exists.
+
+3 more findings from the review were fixture-only or cosmetic, not skill defects, and left
+unfixed per the reconciliation record: a fixture output citing the wrong prioritization matrix's
+exception clause for one item (outcome unchanged either way), a fixture inventing a location for
+a nonexistent file (traces to the eval's own design, not the skill), and a fixture asking
+`security-reviewer` to render an access-grant verdict beyond its documented escalate-only scope
+(the fixture's own overreach, not something the skill told it to do).
+
 ## [0.68.56] — 2026-07-27
 
 Follow-up to v0.68.53/.54, same day, per user request: "did we do this same thing with

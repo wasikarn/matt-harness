@@ -328,13 +328,13 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 
 | Task | Quadrant | Route | Agent | Done-when | Status |
 |---|---|---|---|---|---|
-| prod 500s | Q1 urgent + important, specialized | sequential: diagnose → fix → verify | a write-capable agent (`build-error-resolver`/`code-implementer`) — gated | errors gone + root cause in commit | dispatched (pending confirm) |
-| auth refactor | Q2 + touches auth | **security precedence**: `security-reviewer` first → then a write-capable agent (clarity-only scope) | `security-reviewer` → `code-implementer`/`refactor-cleaner` — both gated | security-reviewer verdict on record + refactor merged, tests green | deferred (confirm before each) |
-| signups CSV | Q3 urgent, not important | **inline** — trivial query; orchestrating costs more (guardrail) | lead (direct, no agent) | CSV delivered | dispatched |
-| pnpm move | Q2 important, not urgent | `research` — compare + report, don't migrate | `mattpocock-skills:research` | trade-off brief filed (staged: the actual reversible-choice call routes to `kbg:decide` once the data exists, not back through this matrix) | deferred |
-| dark-mode toggle | Q4 neither urgent nor important | **drop** | none | n/a | dropped — mark `wontfix`; outside current roadmap |
+| prod 500s | Q1 urgent + important, specialized | sequential: Builder fixes → Validator confirms | `build-error-resolver`/`code-implementer` (Builder, gated) → `code-reviewer` (Validator, ungated) | root cause fixed, committed, and validator confirms errors gone (verdict on record) | dispatched (pending confirm) |
+| auth refactor | Q2 + touches auth | sequential: `security-reviewer` first (security precedence) → then a write-capable agent (clarity-only scope) | `security-reviewer` → `code-implementer`/`refactor-cleaner` — both gated | security-reviewer verdict on record + refactor merged, tests green | deferred (confirm before each) |
+| signups CSV | Q3 urgent, not important | inline — trivial query; orchestrating costs more (guardrail) | lead (direct, no agent) | CSV delivered | dispatched |
+| pnpm move | Q2 important, not urgent | parallel: research via `mattpocock-skills:research` — compare + report, don't migrate | `mattpocock-skills:research` | trade-off brief filed (staged: the actual reversible-choice call routes to `kbg:decide` once the data exists, not back through this matrix) | deferred |
+| dark-mode toggle | Q4 neither urgent nor important | drop | none | n/a | dropped — mark `wontfix`; outside current roadmap |
 
-Every agent dispatched here holds Bash or Edit/Write → present the plan, get one go-ahead before dispatching the batch (the ungated path applies only to `code-reviewer`/`code-architect`, none needed here). CSV inline. Dark-mode dropped.
+Every *write-capable* leg dispatched here (Builder/Fixer roles — holds Bash or Edit/Write) needs the single AskUserQuestion gate before the batch goes out; prod-500s' Validator confirm step (`code-reviewer`) is ungated per the Gating rules table above and doesn't need a separate ask. CSV inline. Dark-mode dropped.
 
 **Boundary with `kbg:decide`:** orchestrate decides *whether and how to spend effort* on
 an ask — inline / parallel / sequential / drop, and which surface receives it — before
@@ -362,9 +362,11 @@ Present the allocation as a table, then a one-line disposition summary.
 
 | Task | Quadrant | Route | Agent | Done-when | Status |
 |---|---|---|---|---|---|
-| <task> | <Q1–Q4> | inline / parallel / sequential / drop | <agent or "lead"> | <observable> | dispatched / deferred / dropped |
+| <task> | <Q1–Q4> | inline / parallel / sequential / drop (optionally followed by a short `: descriptor`, e.g. "sequential: Builder fixes → Validator confirms" — see the Example above) | <agent or "lead"> | <observable> | dispatched / deferred / dropped |
 
 Summary: `N dispatched, M deferred, K dropped — <one-line why for each non-dispatched>`.
+
+The Route cell's leading word MUST be one of the four values above — never copy a `reference.md` Path-column word (`schedule`, `delegate`, `avoid`, `do last`, etc.) straight into this cell. Those Path words name the matrix's *disposition recommendation*; Route names the *execution shape* once that recommendation is applied. Translate: `schedule` / `delegate to a later wave` → `parallel` or `sequential` (whichever shape the item will actually take once dispatched), Status `deferred`; `avoid` → `drop`, Status `dropped`; `delegate` (dispatch now) → `parallel` or `sequential`, Status `dispatched`. If a Path word doesn't translate cleanly, that's a sign the item needs its own judgment call, not a mechanical copy.
 
 ## METHODOLOGY alignment
 
