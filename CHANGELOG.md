@@ -9,8 +9,10 @@ Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
 Ran `/review-fixtures python-reviewer`, picked as the next target because it's a newly-wired
 `review-pr` route (per `skills/review-pr/SKILL.md`'s own note that python-reviewer,
-flutter-reviewer, and nextjs-reviewer were added to routing without ever being exercised
-through it) with zero production review history to mine. Per `advisor()`'s steer after two
+flutter-reviewer, and typescript-reviewer were added to the by-extension routing table
+without ever being exercised through it) with zero production review history to mine.
+(`nextjs-reviewer` is a separate case — it isn't referenced in `review-pr/SKILL.md` at all,
+not even in the unexercised set; corrected after initially conflating the two.) Per `advisor()`'s steer after two
 straight dispatch-heavy loops (build-error-resolver, performance-optimizer) that found zero
 agent-attributable bugs via fixtures, inverted the effort split: inspected the agent file
 directly first, cross-checked against `code-reviewer.md`/`security-reviewer.md` as fleet
