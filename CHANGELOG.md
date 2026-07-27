@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.60] — 2026-07-27
+
+User asked whether prior `/review-fixtures`-style loops (backend-patterns, frontend-patterns,
+orchestrate) had actually gotten every confirmed finding fixed, the same way tech-humanize just
+did. Audited all 3 feedback.json files against current SKILL.md content instead of trusting the
+CHANGELOG's own past claims: backend-patterns and frontend-patterns checked out clean (their one
+skill-attributable finding each was already fixed, v0.68.55/v0.68.56). `orchestrate` had 3
+confirmed skill-attributable findings from its v0.68.58 review, but only 2 were fixed — the third
+(both reviewers independently found it) was never closed: an item routed to a **Skill**
+(`mattpocock-skills:*`) rather than an Agent structurally escaped the gating classification
+entirely, since the Ungated/Gated lists in Step 4 only enumerate Agent-tool dispatches by name.
+Confirmed still-open via this session's own earlier iteration-2 re-verification before this fix.
+
+Root cause: a Skill has no hard `tools:` ceiling the way an Agent does — its `allowed-tools`
+field only pre-approves specific calls, it doesn't restrict what the invoking actor can do. A
+Skill runs inside whatever session calls it and inherits that actor's own tool access. Added an
+explicit rule: gate on the actor that will invoke the Skill, not the Skill's name — if that's the
+lead session itself (the common case), treat the item as Gated by default, same as any
+write-capable Agent. Re-verified live (fresh agent, reading the repo file directly rather than
+`Skill(kbg:orchestrate)`, to avoid the exact stale-cache trap `v0.68.59` had just documented):
+items 4, 8, and (incidentally) 5 all routed to `mattpocock-skills:*` Skills and were all correctly
+classified Gated, with no escape-hatch agent in the current fleet clearing the read-only bar
+either. One honest caveat the verification agent flagged on its own evidence: the eval prompt
+named the skill as a candidate before routing happened, so this proves the classification logic
+fires correctly once a Skill route exists — it doesn't independently prove a lead would reach for
+a Skill over an Agent unprompted.
+
 ## [0.68.59] — 2026-07-27
 
 Ran the new `/review-fixtures` 2-agent loop against `skills/tech-humanize/SKILL.md` for the
