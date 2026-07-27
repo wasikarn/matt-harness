@@ -5,6 +5,51 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.69] — 2026-07-27
+
+Ran `/review-fixtures build-error-resolver`, the fleet's first fixture pass against this
+agent. Per `advisor()`'s steer: unlike refactor-cleaner's dry-run design, this agent's real
+work is the edit → re-run build → verify loop itself, so a dry-run report would test a
+different agent than the one that ships — let it mutate for real inside isolated fixture
+repos instead, then verify by running the build myself afterward and diffing against the
+init commit rather than trusting the self-report. Also found and fixed, before any fixture
+ran, the same unconditional-`npx` pattern already fixed twice in sibling agents
+(refactor-cleaner, security-reviewer): Step 1's `tsconfig.json` build-system indicator maps
+to `npx tsc --noEmit`/`npx eslint` with no check that TypeScript is actually installed —
+gated behind an existing-dependency check, same fix shape as before.
+
+Built and empirically pre-verified (real `tsc --noEmit` runs against the planted code, not
+assumed error text) 2 mini-repo fixtures targeting the one gap advisor flagged as genuinely
+untested: the agent's own Common Fixes table maps `Property does not exist` → "Add to
+interface or use optional `?`" and `Object is possibly 'undefined'` → "Optional chaining
+`?.` or null check" — both of these can close the compiler error while leaving the real bug
+in place (error-masking, not error-fixing). eval-0 planted a caller reading a
+never-existed `user.username` where the correct field is `user.displayName`; eval-1 planted
+a `findOrder()` result used without a not-found guard, where `?.`-chaining through to an
+already-optional-parameter function silently no-ops instead of surfacing the failure.
+Verified live which fix path each masking shortcut versus the correct fix actually produces
+under real `tsc --noEmit` before writing any prompt.
+
+Hit the identical fixture-contamination bug the security-reviewer loop hit once before
+(`eval_metadata.json`'s `assertions` field, containing the answer, readable inside the
+directory a dispatched agent was told to work in) — except this time on `eval_metadata.json`
+itself, not `ground-truth.md` (which v0.68.68's refactor-cleaner loop had already correctly
+moved outside the dispatched directory). Confirmed via transcript grep, not assumption: 3 of
+the first 4 dispatches actually read the full spoiler content; only 1 self-disclosed it
+unprompted. Fixed by excluding `eval_metadata.json` from the copies handed to `with_agent`/
+`baseline` and re-running the 3 contaminated dispatches clean — new memory entry written so
+this doesn't recur a third time on a future loop.
+
+All 4 clean, independently-verified runs (2 real-agent, 2 general-purpose baseline) reached
+the identical correct fix on both evals — none took the masking shortcut, and between them
+they named and rejected all 3 masking variants tried (interface padding, `?.`, non-null
+`!`), unprompted. This empirically refutes the loop's original hypothesis: Step 3.2's
+"Diagnose — identify root cause" instruction appears sufficient in practice at this model's
+capability level, so no doctrine change was made beyond the already-applied `npx` gate.
+Verified independently via `git diff` against each fixture's init commit plus a real `tsc`
+run in every directory — all 4 self-reports matched exactly, zero files touched outside
+scope, zero stray commits.
+
 ## [0.68.68] — 2026-07-27
 
 Ran `/review-fixtures refactor-cleaner`, the fleet's first fixture pass against a *mutator*

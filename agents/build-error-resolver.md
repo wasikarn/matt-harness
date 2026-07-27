@@ -63,6 +63,14 @@ Stop and ask the user if:
 
 ## npm / tsc Diagnostics (TypeScript/JavaScript)
 
+Only run an `npx`-based command when the package is already an installed dependency
+(check `package.json`/`node_modules` first) — Step 1's `tsconfig.json` indicator only
+confirms the project *targets* TypeScript, not that `typescript` is actually installed.
+Verified live on `refactor-cleaner`'s and `security-reviewer`'s equivalent `npx` steps: on
+an uninstalled package, `npx` silently fetches it from the registry into the npm cache
+before running — a real network fetch and disk write nobody asked for. If the check fails,
+fall back to whatever build command Step 1's table already names (`npm run build`) instead.
+
 ```bash
 npx tsc --noEmit --pretty
 npx tsc --noEmit --pretty --incremental false   # Show all errors
