@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.76] — 2026-07-28
+
+Second `/review-fixtures ship-merge` round, continuing directly from v0.68.75's plan-reviewer
+session. `ship-merge-workspace/iteration-1/` already had `findings.md` (v0.68.34) recording 3
+applied doc fixes and 2 deliberately-deferred items. `advisor()` steered away from re-litigating
+either the applied fixes or the deferred items — both would just re-derive settled conclusions —
+toward the one thing the prior pass explicitly flagged as untested: whether Phase 1's prose holds
+up without the fixture's numbered scaffolding questions steering the reasoning.
+
+First attempt at that test failed on contact. Two independent reviewers were told to read each
+`scenario-N.md` fixture, ignore its embedded `## Task` section, and derive a verdict cold. Both
+independently reported back that the instruction couldn't actually be honored — a normal file
+read loads the whole file, scaffolding included, before "ignore it" can take effect. This is a
+3rd confirmed instance of a contamination pattern already logged in memory
+(`fixture-eval-metadata-contamination`, previously 2x: security-reviewer, build-error-resolver) —
+updated that memory rather than writing a new one, and broadened its title/description to cover
+the "scaffolding bundled into the same file as the data" variant, not just "a separate answer-key
+file sitting nearby."
+
+Closed the gap by splitting every `ship-merge-workspace/fixtures/scenario-*.md` into a
+`-data.md` (fixture facts only) and a `-task-scaffolded.md` (the original numbered questions,
+preserved verbatim so the existing `grading.md`/`with_skill/output.md` stay reproducible), plus
+one new shared `task-bare.md` (scenario-agnostic, no hints). While splitting, also caught and
+stripped two remaining leaks the combined files had smuggled into their "data" sections —
+scenario 4's diff listing literally said "not a sensitive path" next to itself, and scenario 2's
+review list said "informational only, not scored" — both directly answering a question Phase 1
+is supposed to make the reader work out. Added a `README.md` documenting the convention
+(gitignored workspace, nothing committed).
+
+Re-ran the bare-prompt test with the new files — but caught one more leak before dispatching:
+the filenames themselves name the mechanism (`scenario-5-freshness-mismatch-data.md` tells you
+what's being tested before you open it). Fixed by inlining both the fixture data (under neutral
+labels PR A–E) and the current Phase 1 doc text directly into each dispatch prompt, with
+filesystem access to `ship-merge-workspace/` withheld until an explicit Pass-2 step. Both
+reviewers, fully independent, reached 5/5 verdict matches against the existing graded outputs —
+zero divergence, no missed guards, no wrong ordering. This is the first round that actually
+demonstrates Phase 1's fixes (the v0.68.34 formula fix and floor-rule-default paragraph) hold
+under real unscaffolded conditions, not just against the same scaffolded prompts that produced
+them.
+
+One new finding survived, verified independently three times over (both reviewers separately,
+then reproduced by hand): the automation-bias guard's own worked example already computes both
+`50` (no-CI) and `≈64.7` (real-CI) side by side for an identical automation-bias zero, but never
+explains why the no-CI case scores *lower* despite having, if anything, fewer bad signals.
+Verified by hand: excluding a passing CI criterion from the denominator raises the zeroed
+Critical criterion's proportional weight (30/60 = 50% vs. 30/85 ≈ 35%) — a no-CI repo has less
+deterministic signal available to offset an untrusted self-tiered review, so it's a *stricter*
+case for this guard, not a more lenient one. Added one clarifying sentence at the exact spot the
+two worked numbers already sit, matching the precedent the freshness case set (name the
+counterintuitive relationship explicitly rather than leaving a reader to infer it from bare
+arithmetic).
+
+`feedback.json` in the workspace records both reconciliation rounds; `findings.md` from the prior
+round is referenced, not overwritten. Neither workspace file is part of this commit
+(`ship-merge-workspace/` is gitignored, same as every other `*-workspace/` fixture directory).
+
 ## [0.68.75] — 2026-07-27
 
 Ran a second `/review-fixtures plan-reviewer` reconciliation pass against the existing
