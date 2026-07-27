@@ -5,6 +5,19 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.78] — 2026-07-28
+
+Fleet-count drift fix, found while researching the next `/review-fixtures` target: `plugin.json`,
+`marketplace.json`, and `README.md` all claimed "18 commands," but `ls commands/*.md` shows 16.
+Traced the count back through `git log --diff-filter=D -- 'commands/*.md'` — several commands
+(`implement.md`, `deep-dive.md`, `pr.md`, and others across multiple prior removals) were deleted
+over time without the fleet-count strings being updated afterward each time, the same class of
+drift v0.68.72 fixed for the agent count. No source-of-truth script generates these counts
+automatically — `kbg-help.md` derives its own count live via `ls`, but the 3 files above hardcode
+the number as prose. Fixed all 3 to "16 commands." No new `harness-audit` check added (Rule 2):
+this is a docs-hygiene fix, not a proven-recurring pattern yet — the next time this drifts is the
+signal a check would be worth adding.
+
 ## [0.68.77] — 2026-07-28
 
 Picked `review-pr` as the next `/review-fixtures` target after ship-merge's loop closed
