@@ -65,7 +65,6 @@ free. Flag a hand-rolled `if not isinstance(...)` validation block on a boundary
 exactly what Pydantic exists to replace.
 
 ### HIGH — Pythonic Patterns
-- Use list comprehensions over C-style loops
 - Use `isinstance()` not `type() ==`
 - Use `Enum` not magic numbers
 - Use `"".join()` not string concatenation in loops
@@ -127,6 +126,9 @@ exactly what Pydantic exists to replace.
 - Missing docstrings on public functions
 - `print()` instead of `logging`
 - `from module import *` — namespace pollution
+- List comprehensions over C-style loops — no functional difference, so this
+  is Noise Control's "skip stylistic preferences" territory unless the loop
+  body is doing something a comprehension can't express cleanly
 - `value == None` — use `value is None`
 - Shadowing builtins (`list`, `dict`, `str`)
 
@@ -161,7 +163,9 @@ except:
 try:
     process(record)
 except (ValueError, KeyError) as e:
-    logger.warning("skipping malformed record %s: %s", record.id, e)
+    # record just proved malformed — don't presume its shape (e.g. record.id
+    # raises AttributeError if record is a plain dict, masking the real error)
+    logger.warning("skipping malformed record: %s", e)
 ```
 
 **SQL injection via f-string:**
@@ -172,6 +176,10 @@ cursor.execute(f"SELECT * FROM users WHERE email = '{email}'")
 # GOOD: parameterized — the driver escapes it, not string formatting
 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
 ```
+Placeholder syntax is driver-specific (PEP 249 leaves paramstyle to the module) — `%s` is
+psycopg2/MySQLdb/PyMySQL, but stdlib `sqlite3` uses `?` and errors on `%s`
+(`OperationalError: near "%": syntax error`, verified against `sqlite3.paramstyle`). Check
+which driver the code actually imports before suggesting this fix verbatim.
 
 **`is None` vs `== None`:** `==` can be overridden by `__eq__`, so it can silently return an
 unexpected result for a class with custom equality; `is` checks identity and is always correct

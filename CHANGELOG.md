@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.71] — 2026-07-27
+
+Ran `/review-fixtures python-reviewer`, picked as the next target because it's a newly-wired
+`review-pr` route (per `skills/review-pr/SKILL.md`'s own note that python-reviewer,
+flutter-reviewer, and nextjs-reviewer were added to routing without ever being exercised
+through it) with zero production review history to mine. Per `advisor()`'s steer after two
+straight dispatch-heavy loops (build-error-resolver, performance-optimizer) that found zero
+agent-attributable bugs via fixtures, inverted the effort split: inspected the agent file
+directly first, cross-checked against `code-reviewer.md`/`security-reviewer.md` as fleet
+precedent, and dispatched only one confirmatory eval instead of building two from scratch.
+Found and fixed 3 real bugs: "Use list comprehensions over C-style loops" was tagged HIGH
+(blocking, per Approval Criteria), directly contradicting the agent's own Noise Control rule
+("skip stylistic preferences unless they violate project conventions or cause functional
+issues") and `code-reviewer`'s established convention of defaulting pure-shape/style
+observations to MEDIUM — moved to MEDIUM. The canonical SQL-injection GOOD example used `%s`
+(psycopg2/MySQL paramstyle), verified via direct `sqlite3` execution to raise
+`OperationalError: near "%": syntax error` against Python's own stdlib driver (`qmark`
+paramstyle) — added a driver-paramstyle caveat. The canonical bare-except GOOD example
+dereferenced `record.id` inside the handler, verified via direct execution to raise a fresh
+unhandled `AttributeError` when `record` is a plain dict (an ordinary shape for "malformed
+record" data), masking the original exception entirely — fixed by dropping the attribute
+access. A fourth hypothesis from `advisor()` — a CRITICAL/HIGH/MEDIUM vs `review-pr`'s
+Critical/Important/Minor vocabulary mismatch — was investigated and refuted: `code-reviewer`
+and `security-reviewer` use the identical internal vocabulary, and `review-pr` Phase 5
+re-derives tiers by independent reasoning about each finding's substance, not by
+string-matching the sub-agent's label, so the two vocabularies were never actually coupled.
+The one confirmatory dispatch (a live sqlite3 fixture with an f-string SQL injection)
+validated the paramstyle fix — the agent's suggested fix correctly used `?` and cited the
+exact doctrine language — and surfaced a real bonus bug outside this fixture's scope
+(connection/cursor never closed, correctly avoiding the "`with sqlite3.connect()` closes the
+connection" trap, which the doctrine doesn't even cover).
+
 ## [0.68.70] — 2026-07-27
 
 Ran `/review-fixtures performance-optimizer`, picked as the next target because it's the
