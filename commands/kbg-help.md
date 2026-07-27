@@ -33,7 +33,7 @@ The 12-agent fleet is grouped by what each one **owns** — not by project phase
 | **DEFINE** | `spec-miner` (requirements/spec/AC mining) |
 | **DESIGN** | `code-architect` (blueprint, interfaces, seams) |
 | **BUILD** | `build-error-resolver` (auto-detects build system, fixes build/type errors) |
-| **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
+| **REVIEW** | `code-reviewer` (carries the comment-accuracy, type-design/illegal-states, and behavioral test-coverage lenses) · `typescript-reviewer` · `python-reviewer` · `security-reviewer` · `silent-failure-hunter` · `performance-optimizer` |
 | **OPERATE** | `refactor-cleaner` (dead-code removal, behavior-preserving refactor) |
 | **Cross-cutting** | `ideate-critic` (fresh-context critics/sensors) |
 

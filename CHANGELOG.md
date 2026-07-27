@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.72] — 2026-07-27
+
+Removed `flutter-reviewer` on user request. It was picked as a candidate for the next
+`/review-fixtures` loop (same "newly wired into `review-pr`, zero production history"
+category as `python-reviewer`), but Flutter/Dart isn't an actual stack in use anywhere in
+this harness's real projects — `dart-flutter-patterns` was already removed for the same
+reason in v0.68.51 ("zero fleet dependency"). Keeping the reviewer agent alive for a
+framework nothing here builds was speculative surface area (Rule 2), not a proven gap.
+Deleted `agents/flutter-reviewer.md` and swept every live reference: `README.md` (fleet
+table row + 2 agent-count mentions), `agents/task-prep-checker.md`, `docs/agent-authoring-
+conventions.md` (list + fleet count), `commands/kbg-help.md`, `skills/inventory/scripts/
+inventory-boundary.sh` (table row + the file-ownership table's own 13→12-agent count),
+`skills/review-pr/reference.md` + `SKILL.md` (routing table, "these three agents" → "these
+two", Integration Notes prose), `skills/orchestrate/SKILL.md` + `reference.md` (Bash-gated
+list, 20-agent → 19-agent survivor set), `docs/agent-voice-extension.md` (20-agent → 19-
+agent fleet), both plugin manifests (version + 20→19 agent count), and regenerated
+`BOUNDARY.md`. Left CHANGELOG.md's and `docs/plans/skill-improvement-batches.md`'s own
+historical entries untouched — those describe past state accurately at the time they were
+written, same convention as every prior removal (v0.68.51, v0.68.52).
+
 ## [0.68.71] — 2026-07-27
 
 Ran `/review-fixtures python-reviewer`, picked as the next target because it's a newly-wired

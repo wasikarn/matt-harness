@@ -24,7 +24,7 @@ Every agent declares `tools:` as an explicit allowlist (see
 rationale). Grant only what the role needs:
 
 - **Read-only reviewers/analysts** (`code-reviewer`, `security-reviewer`,
-  `python-reviewer`, `typescript-reviewer`, `flutter-reviewer`, `nextjs-reviewer`,
+  `python-reviewer`, `typescript-reviewer`, `nextjs-reviewer`,
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
   `requirement-analyst`, `task-prep-checker`, `spec-miner`, `summarizer`): `Read`, `Grep`,
   `Glob`, sometimes `Bash` for inspection (`git log`, `git diff`). Never `Write`/`Edit`.
@@ -112,7 +112,7 @@ grows.
 
 ## 7. Grow on proven need, not speculatively
 
-20 agents got here via individually-justified commits (91, as of the last count — 2026-07-20), each solving a real, named gap —
+19 agents got here via individually-justified commits (91, as of the last count — 2026-07-20), each solving a real, named gap —
 not a bulk import or a "let's have one for every domain" sweep. Before adding a new agent, be
 able to name the concrete task it handles that no existing agent covers. Check the fleet
 routing table first; if an existing agent's domain is close, extend it before adding a

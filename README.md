@@ -127,7 +127,7 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `spec-miner` | Extracts implicit requirements from code when no spec doc exists |
 | `requirement-analyst` | Senior-level requirement analysis of a ticket/spec/PRD — ambiguities, missing ACs, edge cases, readiness verdict |
 | `plan-reviewer` | Adversarial review of an implementation plan before code exists — requirement coverage, risk, edge cases, testability |
-| `typescript-reviewer` · `python-reviewer` · `flutter-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Dart/Flutter widgets, Next.js App Router rendering/caching |
+| `typescript-reviewer` · `python-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
 | `summarizer` | Clarity/compression specialist — condenses long content into filler-free output for any audience |
 | `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
@@ -225,14 +225,14 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 29 skills · 20 agents · 18 commands).
+> `ls commands/` (real current fleet: 29 skills · 19 agents · 18 commands).
 
 | Source | License | Adopted |
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
-| kbg-native | MIT | 29 skills · 20 agents · 18 commands |
+| kbg-native | MIT | 29 skills · 19 agents · 18 commands |
 
 ---
 

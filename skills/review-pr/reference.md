@@ -54,7 +54,6 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 | `requirement-analyst` | Senior-level requirement analysis of a Jira ticket's own body — ambiguities, missing ACs, edge cases, readiness verdict. Dispatched by Phase 1.5 when a ticket is referenced; never fetches, never touches the diff (that's the coverage lens above) |
 | `typescript-reviewer` | TS/JS type safety, async correctness, security, idiomatic patterns — routed alongside `code-reviewer` when `.ts`/`.tsx`/`.js`/`.jsx` is the dominant changed-file language |
 | `python-reviewer` | PEP 8, Pythonic idioms, type hints, security, performance — routed alongside `code-reviewer` when `.py` is the dominant changed-file language |
-| `flutter-reviewer` | Dart/Flutter widget best practices, state management, performance, accessibility, architecture — routed alongside `code-reviewer` when `.dart` is the dominant changed-file language |
 | native `/simplify` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
 ## Tips

@@ -224,7 +224,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 13-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 12-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
@@ -232,7 +232,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `code-reviewer` | any file | yes | Read-only review *by intent* (comment-accuracy / type-design / test-coverage lenses) — `tools:` grants Bash (Bash can mutate) |
 | `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | yes | Read-only TS/JS review *by intent* — type safety, async correctness — `tools:` grants Bash (Bash can mutate) |
 | `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
-| `flutter-reviewer` | `*.dart`, `lib/`, `pubspec.yaml` | yes | Read-only Dart/Flutter review *by intent* — widgets, state mgmt, Dart idioms — `tools:` grants Bash (Bash can mutate) |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
 | `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
 | `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write + Bash) |
