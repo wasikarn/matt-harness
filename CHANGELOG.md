@@ -5,6 +5,54 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.56] — 2026-07-27
+
+Follow-up to v0.68.53/.54, same day, per user request: "did we do this same thing with
+backend-patterns too?" — answer was no. That release's Outputs review was 5 rounds of solo
+fresh-context adversarial whole-file re-review against `SKILL.md` itself, not the
+eval-viewer-based "2 independent staff-eng agents review the actual fixture outputs, write
+feedback.json" pattern established this session for `frontend-patterns`. User asked to run the
+same pattern retroactively against `backend-patterns-workspace/iteration-1/`'s existing 6
+outputs (3 evals × with_skill/no_skill: async-job-queue, idempotent-retry,
+rate-limit-serverless) — no need to regenerate fixtures, they were still on disk.
+
+Both agents converged strongly on one finding: the rate-limit-serverless `with_skill` output
+uses the raw, unhashed API key as the literal Redis key, directly violating a rule
+`SKILL.md`'s own Rate Limiting section states in prose ("derive the store key from the
+caller's credential (hash it)"). One agent confirmed via `@upstash/ratelimit`'s own type
+declarations that the raw key ends up plaintext-visible in the store's dashboard and `SCAN`
+output; the other independently found the identical bug via the same package's docs. Notable:
+the `no_skill` baseline hashed the key correctly with zero guidance at all, which `advisor()`
+flagged as real counter-evidence against "the rule wasn't sticky enough" — the safer framing,
+stated in `feedback.json` rather than the CHANGELOG asserting a mechanism as proven, is that
+the section had zero code examples of any kind (the hash rule was one bare sentence with
+nothing to anchor it, unlike the adjacent fail-open/fail-closed guidance the model *did*
+follow, which has a full paragraph of reasoning and concrete triggers). Added a minimal
+PASS/FAIL code snippet to `SKILL.md` — verified empirically before shipping (not just
+reasoned): `createHash('sha256').update(apiKey).digest('hex')` produces a plain 64-char hex
+string, and `@upstash/ratelimit`'s `limit(identifier, req)` accepts an arbitrary string with
+no truncation in its own installed source.
+
+The two agents also found real, non-overlapping bugs in the other 4 outputs that don't trace
+to any `SKILL.md` example (Background Jobs' and Retry-with-Backoff's sections are prose +
+naive-example-plus-warning, with no BullMQ- or gateway-retry-specific worked code for these
+bugs to have been inherited from) — recorded as qualitative fixture findings in
+`feedback.json` rather than shipped as skill changes: an idempotency guard in the async-job
+with_skill output that deletes its own flag before rethrowing (protects only crash-before-ack,
+not the retry-after-failure case its own comment claims); a `worker.on('failed')` handler
+verified against BullMQ's real source to fire on every failed attempt, not just terminal
+exhaustion, mislabeling attempt 1-of-5 as permanent; a shared Redis connection in the no-skill
+baseline that defeats fail-fast producer semantics; an ambiguous exhaustion status in the
+idempotent-retry with_skill output that could reintroduce the double-charge risk it exists to
+prevent; and (both agents, empirically confirmed via a live Node run) an HTTP-date-form
+`Retry-After` header parsed with `Number()` producing `NaN`, which `setTimeout` then fires in
+~1ms — an almost-instant retry exactly when the gateway asked to back off.
+
+`feedback.json` written directly to `backend-patterns-workspace/iteration-1/` (no eval-viewer
+browser session needed this time, since the ask was agent-delegated review, not user review)
+with `status: complete`, including an explicit unmeasured-change note that the reviewed
+with_skill output still reflects the pre-fix `SKILL.md`.
+
 ## [0.68.55] — 2026-07-27
 
 Built `skills/frontend-patterns` (React/TS component, hook, client-state, forms, and

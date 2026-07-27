@@ -494,6 +494,21 @@ Derive the store key from the caller's credential (hash it) rather than using
 the raw API key or token as the literal key name — a raw key otherwise
 surfaces in the store's own dashboard, logs, and debugging tools in plaintext.
 
+```typescript
+import { createHash } from 'node:crypto'
+
+function toRateLimitKey(apiKey: string): string {
+  // PASS: a 64-char hex digest, not the credential itself
+  return createHash('sha256').update(apiKey).digest('hex')
+}
+
+await ratelimit.limit(toRateLimitKey(apiKey))
+
+// FAIL: the raw key is now a literal Redis key name, visible in the
+// store's dashboard, SCAN output, and any request logging in between
+await ratelimit.limit(apiKey)
+```
+
 Keep the backend layer responsible for choosing the integration point, the HTTP
 contract, and the error shape; use `kbg:security-auditor` for abuse case review.
 
