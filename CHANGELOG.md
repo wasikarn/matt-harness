@@ -5,6 +5,61 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.68] — 2026-07-27
+
+Ran `/review-fixtures refactor-cleaner`, the fleet's first fixture pass against a *mutator*
+agent (Write/Edit/Bash — deletes and consolidates code directly, not just review-only). Per
+`advisor()`'s steer: no production evidence to mine (unlike security-reviewer, this agent
+isn't dispatched through `review-pr` and leaves no state-file trail), so went straight to
+fixtures — but with containment as the first design question, since a with_agent dispatch
+here can Write/Edit/`git commit`, not just report. Built 2 self-contained mini-repos, each
+with its own local `git init`, both dispatch prompts scoped to dry-run only (report the
+removal plan and hypothetical diffs, no real edits, no commits), and ground truth kept at the
+workspace root outside `iteration-1/` (the security-reviewer loop's contamination lesson).
+Verified directly via `git status` in both fixture repos before reconciling: all 4 dispatches
+honored the dry-run constraint, zero mutations, zero commits.
+
+Found and fixed 2 defects verifiable without fixtures, same classes as security-reviewer's
+v0.68.67 fixes: the 4 npx-based Detection Commands (`knip`/`depcheck`/`ts-prune`/`eslint`) had
+the identical unconditional-side-effect shape, sharper here since this agent also holds
+Write/Edit — gated behind an existing-dependency check. And `agents/refactor-cleaner.md` was
+the only write-capable agent in the fleet whose own doctrine instructed autonomous `git
+commit` ("Commit after each batch," with no confirmation gate) — confirmed by checking the 3
+sibling mutator agents (`build-error-resolver`, `performance-optimizer`, `code-implementer`),
+none of which have any commit instruction at all — contradicting CLAUDE.md's global "only
+commit when explicitly asked" policy and the fact that orchestrate's dispatch-time
+`AskUserQuestion` gate approves running the agent once, not N unsupervised commits after.
+Fixed: replaced with "stage and describe, never commit autonomously."
+
+2 independent staff-eng reviewers reconciled all 4 with_agent/baseline outputs, one assigned
+to check whether proposed diffs are mechanically complete (not just categorically correct).
+eval-0 (Next.js file-route convention + string-keyed registry dispatch + one genuinely dead
+export) turned out to be a wash — both configs landed on all 4 correct verdicts with
+comparable reasoning, and the fixture itself had a real construction gap (nothing in the
+mini-repo actually calls the registry's own `dispatch()`, discovered because with_agent
+correctly flagged it as ambiguous rather than confidently either way) — corrected in
+`ground-truth.md`, noted as a fixture-only gap, no skill change. eval-1 (barrel re-export +
+two discount-calculator functions both actually called from different sites + a Flask route
+registered only via decorator) produced the standout result: my own original ground truth
+claimed the two calculator functions were safe to consolidate onto the "more complete"
+version without checking, and with_agent caught that this was wrong — live-verified via Node
+that they diverge on negative percents, over-100 percents, and rounding, correctly tagged the
+consolidation RISKY pending regression tests. Both reviewers independently re-ran the same
+Node check and got identical numbers. Baseline reproduced a softened version of the exact
+trap the correction is about: headlined "just consolidate onto V2" with only qualitative
+reasoning, caveated after the fact, never executing the functions. Reviewer 2's
+mechanics-focused pass additionally verified with_agent's hypothetical diff for this
+consolidation is complete (updates the call site AND deletes the superseded file together) —
+baseline never produced an actual diff on either eval despite the prompt requiring one.
+
+One more real, skill-attributable bug, single-sourced but concrete: the two with_agent runs
+handled the Safety Checklist's "Tests pass after removal" item inconsistently under an
+identical zero-test-suite condition — permissive (still SAFE) in eval-0, a hard ceiling
+blocking every SAFE verdict in eval-1. Traced to the checklist item having no stated rule for
+"no test suite exists at all." Fixed: scoped it — a confirmed zero-reference deletion can
+still be SAFE with no tests (nothing live to regress), but anything touching a live call site
+cannot be marked SAFE without tests regardless of how convincing the manual analysis looks.
+
 ## [0.68.67] — 2026-07-27
 
 Ran `/review-fixtures security-reviewer` (first-ever fixture pass on `agents/security-reviewer.md`,
