@@ -5,6 +5,67 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.59] — 2026-07-27
+
+Ran the new `/review-fixtures` 2-agent loop against `skills/tech-humanize/SKILL.md` for the
+first time — no prior fixture history existed for this skill. Built a 3-eval set (EN PR
+description loaded with puffery, a TH standup update with a fabrication trap, an EN ADR
+closing section that's genuinely hollow source material) via a `skill-creator`-style
+with_skill/no_skill fixture loop, then dispatched 2 independent staff-eng agents to review
+all 6 outputs. Both reviewers independently grepped the actual delivered text (not the
+outputs' own change-summary claims) and converged on 3 real, skill-attributable bugs, all
+fixed:
+
+- **SKILL.md's own "Calques to kill" worked example fabricated a number.** Line 43's fix for
+  `claimed ทดสอบบน staging ผ่าน` was `ทดสอบ 4 เคส drafted รอ run จริง` — inventing a specific
+  case count with zero grounding, directly contradicting the anti-fabrication rule stated a
+  few lines later in the same file. It was also miscategorized: not a calque (loan-translation)
+  issue at all, but a Grit-Gate/anti-fabrication one. Removed from the calque table; the "4
+  เคส" phrasing traced back to an ambiguous placeholder in `patterns-thai.md`'s own §32 "TBD is
+  a positive pattern" block, marked `[N]` there now so a future edit can't reintroduce the same
+  fabricated literal.
+- **No sanctioned move existed for a single unverifiable claim inside an otherwise-real
+  draft.** The Grit Gate's fabrication-boundary escape hatch ("say so, or ask for specifics")
+  was scoped only to a wholly hollow source. The TH standup eval had one unverifiable claim
+  embedded in an otherwise substantive update, and the fixture run — correctly declining to
+  copy the fabricated "4 เคส" in — had no legal option left except leaving the claim's
+  unqualified "passed" assertion completely untouched, which failed the assertion anyway.
+  Added a new rule: treat this as Tier-2 hedge (keep the claim, strip unearned
+  certainty-intensifiers like `เรียบร้อยแล้ว`, invite a follow-up where the genre allows) —
+  distinct from both "invent a number" and "drop it outright."
+- **The "zero em dashes" rule wasn't actually enforced.** The EN PR `with_skill` fixture
+  shipped 2 em dashes in its final rewrite despite SKILL.md stating the rule twice, and its own
+  change summary falsely claimed they were cut. Sharpest data point: the unguided no_skill
+  baseline for the same prompt had only 1 em dash — on the one fully mechanical,
+  grep-checkable rule in the whole skill, the skill-guided run did worse than no guidance.
+  Reworded the Process and Output Step 4 instruction to require a literal re-scan of the
+  delivered text for the `—` character, not just a stylistic reminder.
+
+Re-verified both fixes live against the edited skill (`iteration-2/`) rather than shipping
+unmeasured — and caught a real methodology trap doing it. The first em-dash re-run agent
+called the Skill tool by name and got a false "0 em dashes, fix confirmed" result: the
+installed plugin cache tops out at v0.68.57 and is byte-identical to the pre-fix repo
+content, so `Skill(kbg:tech-humanize)` silently loaded the *old* Step 4 wording — the
+result happened to match what the real fix should produce, but for the wrong reason, since
+the new mechanical-rescan instruction was never actually in play. A second agent (the hedge
+re-run) independently caught the same trap and self-corrected by reading the repo file
+directly instead of resolving the skill by name; that finding is what triggered going back
+and re-testing the em-dash agent too. Once both agents genuinely tested the live repo file
+(not the cache), both fixes held: the em-dash re-run produced 0 em dashes in the delivered
+final rewrite (grep-verified on the isolated blockquote, not the surrounding commentary),
+and the hedge re-run's final phrase for the target claim changed from iteration-1's
+`staging ผ่านมาก่อน` (same unqualified certainty, different word) to `staging ผ่าน (ไม่ได้
+list ว่าเช็คอะไรบ้าง)` (keeps the real claim, drops the unearned certainty marker, adds a
+factual note about what wasn't specified) — a genuine behavior change, not cosmetic
+rewording. Added a note to CLAUDE.md's gotchas section so a future fixture-loop
+re-verification doesn't hit the same trap: don't invoke `Skill(<name>)` to test a
+same-session, not-yet-shipped edit — it resolves against the installed cache and will
+silently test stale content until the version is bumped and reinstalled.
+
+Full reconciled findings (including what was checked and came back clean — register/genre
+calibration, the ADR fixture's already-correct hollow-source handling) in
+`tech-humanize-workspace/iteration-1/feedback.json`.
+
 ## [0.68.58] — 2026-07-27
 
 Ran a 2-eval `skill-creator` fixture loop against `skills/orchestrate/SKILL.md` (a

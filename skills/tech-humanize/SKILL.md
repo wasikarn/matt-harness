@@ -40,7 +40,7 @@ Pick genre **and** language (orthogonal — choose each independently; match wha
 
 **Typography:** Thai has no inter-word spaces (space = phrase/sentence break); 1 space around English when it aids reading, but glued to identifiers/numbers is fine (`PR #82`, `v1.11.37`); Arabic numerals (`2026`, `77%`, `30 วัน`), not Thai numerals.
 
-**Calques to kill** (use a verb matching the real action): `ถือไว้`→`ยังไม่ปล่อยขึ้น prod / พักไว้`; `ดัน`→`merge / นำขึ้น prod`; `ระบบล้ม`→`ระบบล่ม / down`; claimed `ทดสอบบน staging ผ่าน`→`ทดสอบ 4 เคส drafted รอ run จริง`.
+**Calques to kill** (use a verb matching the real action): `ถือไว้`→`ยังไม่ปล่อยขึ้น prod / พักไว้`; `ดัน`→`merge / นำขึ้น prod`; `ระบบล้ม`→`ระบบล่ม / down`. An unverified completion claim (`ทดสอบบน staging ผ่าน`) isn't a calque — it's a fabrication-boundary case; see below and `patterns-thai.md` §32.
 
 ## The Grit Gate
 
@@ -50,6 +50,8 @@ Pick genre **and** language (orthogonal — choose each independently; match wha
 2. **Commit to a point of view.** Say which part matters and what you'd actually do. Neutral "balanced" reporting is the AI default. (Apply POV only where the genre allows it — blog/standup/ADR yes; legal/spec/reference stays plain, and plain *is* the human voice there.)
 
 **Fabrication boundary (don't fake grit).** Never invent a ticket, metric, cause, or source to manufacture grit. Pull specifics only from the source or surrounding context. **If the source is pure puffery with no real content and you have nothing to pull, the honest output is to say so or ask for the specifics — a polished, confidently-empty paragraph is still AI.** Don't paper over a hollow source with smooth prose.
+
+**A single unverifiable claim inside an otherwise real draft is a different case from a hollow source — don't handle it the same way.** Dropping the claim outright silently deletes something the user actually told you; inventing a replacement number or detail (a case count, a percentage) fabricates evidence they never gave you — both are wrong here even though one of them is the right move for a hollow source. The correct move is Tier-2 hedge (`patterns-thai.md` §32.1): keep the claim, but strip any certainty-intensifier the draft piled on top of it that isn't backed by a detail (`เรียบร้อยแล้ว`, "completely," "fully"), and where the genre allows a follow-up, ask what was actually checked rather than smoothing an absolute pass through untouched.
 
 Soulless vs alive — same facts, neutral report → real voice:
 > ❌ การทดลองนี้ได้ผลลัพธ์ที่น่าสนใจ agent สร้างโค้ดได้ 3 ล้านบรรทัด developer บางส่วนประทับใจ ขณะที่บางส่วนยังคงมีข้อสงสัย
@@ -113,7 +115,7 @@ Look for **clusters** of tells, not isolated ones — a single em dash means not
 3. Ask **"what still makes this read AI?"** and answer in a few bullets.
    Done when: at least one honest gap is named, even a minor one.
    Failure mode to avoid: answering "nothing, looks good" — that's grading your own work instead of scrutinizing it.
-4. **Final rewrite** addressing them, zero em dashes (#14). Before calling it done, walk step 3's bullets one at a time and, for each, name the specific change in the final text that fixes it — or write "kept as tradeoff: <reason>" (e.g., formal vocabulary the genre requires). A bullet with neither is unfixed, no matter how clean the final rewrite reads on its own; writing a polished final pass isn't the same as checking it against what step 3 found.
+4. **Final rewrite** addressing them, zero em dashes (#14) — treat this one as a literal character check, not a stylistic reminder: scan the actual delivered text for the `—` character before calling it done. Stating an intention to remove em dashes in a change summary is not the same as checking the text you're handing over — a fixture run once claimed em dashes were cut while two remained in the shipped rewrite. Before calling it done, walk step 3's bullets one at a time and, for each, name the specific change in the final text that fixes it — or write "kept as tradeoff: <reason>" (e.g., formal vocabulary the genre requires). A bullet with neither is unfixed, no matter how clean the final rewrite reads on its own; writing a polished final pass isn't the same as checking it against what step 3 found.
    Done when: every bullet from step 3 has a named resolution — fixed-where, or tradeoff-why — not just a rewrite that hopes it addressed them.
    Failure mode to avoid: a final rewrite indistinguishable from the draft — if step 3 found nothing, re-run step 3, don't skip step 4. Also avoid naming a real weakness in step 3 and then shipping it unchanged in step 4 without ever revisiting it — step 3 and step 4 have to actually connect, not run as two independent exercises.
 
