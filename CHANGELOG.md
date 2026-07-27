@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.55] — 2026-07-27
+
+Built `skills/frontend-patterns` (React/TS component, hook, client-state, forms, and
+rendering-perf patterns) via `skill-creator:skill-creator`, plus a dispatch row in
+`agents/code-implementer.md`'s stack-detection table. Skill count 29 → 30.
+
+Ran the fixture-test loop against 3 evals × with_skill/without_skill (6 outputs):
+market-list-fetch-debounce-virtualize, create-market-form-validation, and
+global-state-rerender-fix. Per user request, delegated both the Eval Set Review (trigger-
+description review) step and — after a mid-turn pivot ("can't you have staff-eng agents look at
+the results and give feedback instead of me?") — the fixture Outputs review itself to 2
+independent staff-eng agents each, rather than doing either personally. This is now a
+twice-reinforced preference for agent delegation over solo review work in this loop.
+
+The output review surfaced real findings and one real correction to my own prior read:
+
+- Two verified bugs in the without-skill baseline's date validation: `new
+  Date(value).getTime() > Date.now()` fails validation for today's actual date (wrong
+  comparison target, not just a timezone edge case), and `new Date('2026-02-30')` silently
+  rolls over to March 2 in V8, letting an invalid calendar date slip past the companion
+  "valid date" check. Neither is skill-attributable — neither run was asked for a future-date
+  rule, both invented it unprompted (already flagged as a retracted assertion in
+  `eval_metadata.json`) — but both are real, reproducible bugs in the baseline's own logic.
+- A correction to my own initial solo review: I'd praised the with-skill run's
+  `scrollToOffset(0)` scroll-reset as "a real fix." Both agents independently proved it's dead
+  code in that specific implementation — the component housing it fully unmounts and remounts
+  on every search, so the failure mode it guards against can't occur there. The equivalent gap
+  on the without-skill sibling is real, since that component genuinely stays mounted across
+  searches. Retracted and corrected in `feedback.json` rather than left standing.
+- A real bug traced to the skill's own canonical Virtualization example, not just a
+  fixture-run artifact: a fixed `estimateSize` with no `measureElement` wiring, so real
+  variable-height row content could overflow its allotted slot. The with-skill run's own
+  SUMMARY.md says the row height was "copied from the skill's own example, not tuned against a
+  real design" — the skill taught the bug, and the with-skill review agent didn't catch it;
+  only a later post-hoc cross-check did, which is the harder direction to catch since an
+  omission that runs in the skill's favor doesn't announce itself the way a worked-around bug
+  does. Fixed directly in `SKILL.md`: wired `ref={virtualizer.measureElement}` and
+  `data-index`, dropped the hardcoded row height, added a paragraph on when `measureElement`
+  is (and isn't) needed. Also fixed an unrelated pre-existing bug in the same code block found
+  while making this edit — `useRef` was used but never imported.
+- Corrected `benchmark.json`'s "Honest headline" note, which had credited the skill with
+  fixing 2 example bugs and implicitly cleared it on the rest. The corrected note names the
+  3rd bug plainly and records that iteration-1's fixture outputs still reflect the pre-fix
+  example — an unmeasured change, not silently claimed as validated, and not enough on its own
+  to justify a full 6-fixture re-run for a single-file correction.
+
+`feedback.json` written with `status: complete`; eval viewer server closed. Remaining
+feedback.json items (character-counter `aria-describedby` wiring, a duplicated
+`NAME_MAX_LENGTH` constant, a possible StrictMode double-count in a demo hook, and an
+interpretive disagreement between the two reviewers on Context-split vs. Zustand framing) are
+fixture/baseline-code commentary, not shipped as skill-content changes here — open for a
+future pass if warranted.
+
 ## [0.68.54] — 2026-07-27
 
 Follow-up to v0.68.53, same day. After shipping that release, the user asked to verify the fix

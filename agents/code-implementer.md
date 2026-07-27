@@ -30,6 +30,7 @@ Loading the skill is not optional when one matches — it is the expertise this 
 | `drizzle-orm` | `kbg:drizzle-patterns` |
 | `@grpc/grpc-js` | `kbg:grpc-node-patterns` |
 | Express / Next.js / plain Node-TS backend | `kbg:backend-patterns` |
+| React/TS frontend (components, hooks, client state, forms, rendering perf) | `kbg:frontend-patterns` |
 | MySQL / MariaDB schema or queries | `kbg:mysql-patterns` |
 | Latency-sensitive path (realtime, market data, queues) in scope | `kbg:latency-critical-systems` |
 
