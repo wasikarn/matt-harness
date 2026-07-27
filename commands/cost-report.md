@@ -23,6 +23,15 @@ Row schema:
 (`haiku`/`opus`/`sonnet`) — the cost was estimated at the Sonnet rate as a
 guess, not a matched price.
 
+`timestamp` is stored in UTC (`Z` suffix), but "today"/"yesterday"/the last-7-days
+buckets are computed from each `Date`'s **local** calendar fields (`getFullYear`/
+`getMonth`/`getDate`, not `toISOString`) — matching UTC calendar days instead would
+put several hours of a user's actual "today" spend under "yesterday" for anyone
+west of UTC (reproduced live against production data, 2026-07-28: at 01:51 local in
+UTC+7, UTC's calendar date was still the prior day, and the UTC-bucketed report
+showed $972 for "today" — mostly the actual prior day's spend — and $1.53 for
+"yesterday").
+
 ## What this command does
 
 1. Check that `~/.local/share/kbg/metrics/costs.jsonl` exists. If it does not, tell the
@@ -46,9 +55,10 @@ const bySession=new Map();
 for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;const p=bySession.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySession.set(k,r);}
 const latest=[...bySession.values()];
 const cost=r=>Number(r.estimated_cost_usd)||0;
-const day=r=>String(r.timestamp||"").slice(0,10);
-const today=new Date().toISOString().slice(0,10);
-const d=new Date(Date.now()-864e5).toISOString().slice(0,10);
+const fmtLocal=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+const day=r=>fmtLocal(new Date(r.timestamp));
+const today=fmtLocal(new Date());
+const d=fmtLocal(new Date(Date.now()-864e5));
 const sum=a=>a.reduce((s,r)=>s+cost(r),0);
 const f4=n=>"$"+n.toFixed(4);
 console.log("=== Cost summary ===");

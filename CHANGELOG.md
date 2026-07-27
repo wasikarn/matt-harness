@@ -5,7 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
-## [0.68.78] — 2026-07-28
+## [0.68.79] — 2026-07-28
+
+Picked `commands/cost-report.md` as the next `/review-fixtures`-style target — an Explore
+agent cross-referenced the full 64-surface fleet inventory against CHANGELOG.md history and
+found 14 surfaces never subjected to any quality pass. `cost-report` stood out because, like
+`review-pr` (v0.68.77), it has abundant real local production data to mine directly
+(`~/.local/share/kbg/metrics/costs.jsonl`, 5985 rows) instead of needing fixtures.
+
+Found and reproduced a real timezone-boundary bug live against that data: the report's
+"today"/"yesterday"/last-7-days buckets were computed from each row's UTC calendar date
+(`new Date().toISOString().slice(0,10)`), but `timestamp` values are stored in UTC while a
+user reads the report in their own local timezone. At the moment of testing (01:51 local in
+UTC+7, still 2026-07-27 in UTC), the unfixed script reported "today: $972.84" (actually
+showing the prior local day's spend) and "yesterday: $1.53" (nearly empty) — every day, for
+the ~7-hour window after local midnight in any timezone west of UTC, the report silently
+mislabels which calendar day a session's cost belongs to. Fixed by switching the day-bucketing
+function to `Date`'s local getters (`getFullYear`/`getMonth`/`getDate`) instead of
+`toISOString`, which resolves the ambiguity using the machine's actual local timezone rather
+than hardcoding a timezone — verified against the same live data post-fix: today/yesterday
+now split at local midnight, and the sum still reconciles exactly against the file's own
+latest-cumulative-snapshot-per-session logic (confirmed `$376.0015` "today" matches the file's
+literal most recent row for the one session active this morning). Also checked for a
+missing-`session_id` fallback bug (only 1 of 5985 rows lacks one, low-impact, not fixed per
+Rule 2) and confirmed all timestamps share one consistent 20-char ISO format (no parsing-drift
+risk). No other file in the repo duplicates this UTC-day-bucketing pattern.
+
+
 
 Fleet-count drift fix, found while researching the next `/review-fixtures` target: `plugin.json`,
 `marketplace.json`, and `README.md` all claimed "18 commands," but `ls commands/*.md` shows 16.
