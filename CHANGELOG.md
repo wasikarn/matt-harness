@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.61] — 2026-07-27
+
+User asked whether `/review-fixtures` itself had anything worth improving, after using it twice
+this session (tech-humanize, and the orchestrate audit that followed). One real, evidence-backed
+gap: the command's own Step 8 "Suggested next step" tells the user to "re-run fixtures to measure
+the change" after a SKILL.md fix, but never warns that doing so via `Skill(<name>)` silently tests
+the stale installed plugin cache instead of the live edit — exactly the trap this session hit
+twice today (v0.68.59's em-dash re-check, caught only via a follow-up question) before it got
+written up as a CLAUDE.md gotcha. The command that instructs the re-verification step didn't
+carry the one warning that keeps that step honest. Fixed: added the caveat directly to the
+Suggested Next Step text, pointing to CLAUDE.md's gotcha entry rather than duplicating the full
+explanation (avoids a second copy drifting out of sync). No other gaps found in the command's own
+steps 1–7 — both live runs this session (workspace-missing fallback, full 6-fixture review,
+reconciliation into `feedback.json`) executed exactly as documented with no friction.
+
 ## [0.68.60] — 2026-07-27
 
 User asked whether prior `/review-fixtures`-style loops (backend-patterns, frontend-patterns,

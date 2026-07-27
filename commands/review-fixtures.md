@@ -124,6 +124,11 @@ reconciled findings, not an automatic next step.
 Suggested next step:
 - Findings trace to specific SKILL.md content → open `skills/<skill-name>/SKILL.md` and
   apply the fix, then re-run fixtures to measure the change (don't ship an unmeasured fix
-  as if it were proven).
+  as if it were proven). **When re-running, don't hand the re-verification agent a
+  `Skill(<name>)` invocation** — until the fix is version-bumped and the plugin
+  reinstalled, that resolves against the installed cache, not the live edit, and will
+  silently test stale content with no error (confirmed 2026-07-27, tech-humanize
+  v0.68.59 — see CLAUDE.md's "Plugin lifecycle & install" gotchas). Instruct it to `Read`
+  the repo file path directly instead.
 - Nothing traces to the skill → say so plainly. A clean reconciliation is a valid result,
   not a failure to find something.
