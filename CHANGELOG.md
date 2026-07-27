@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.64] — 2026-07-27
+
+User asked to move kbg-harness toward "graph engineering" after reading a vendor blog post.
+Rather than build anything speculative, ran a deep-research pass first
+(`docs/research/graph-engineering-agent-systems-2026-07-27.md`, ~22 primary-source citations)
+and formalized the existing routing table, Builder→Validator→Fixer→Re-validator DAG, and
+gate-vs-advisory-sensor split as an explicit node/typed-edge/anchor model
+(`docs/reference/graph-model.md`) — no new mechanism built (Rule 2, no proven need). Two
+follow-on "if necessary, build X" prompts (RAG, then new anchors) were both checked against
+real repo state rather than built reflexively; both came back "not necessary" (qmd already
+covers RAG's use case; the one real anchor gap, `db-write-gate.sh`, has its fix in tathep's
+infra, not this repo). A subsequent spot-check for the "conflicting loops" failure mode
+(30 skills, 20 agents, 17 commands) found none — the near-universal "Don't use for X, use Y
+instead" clauses are functioning as a working guard without any formal detector — but did
+surface one real, verified documentation gap: `/ship` Phase 6's in-session review produces
+`review_mode: "own-branch"`, and if the diff touches a sensitive path,
+`/ship-merge`'s automation-bias guard (`commands/ship-merge.md:38`) will STOP the merge
+regardless of how clean Phase 6 looked — `/ship`'s own Failure Modes section never named
+this. Added one bullet to `commands/ship/COMMAND.md` naming the exception and the fix
+(re-review via `kbg:review-pr`'s PR-by-number mode).
+
 ## [0.68.63] — 2026-07-27
 
 User asked to run a skill-creator improve+optimize loop against `/review-fixtures` itself

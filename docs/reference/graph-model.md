@@ -68,6 +68,13 @@ harness can't rewrite." Whether closing this gap is worth it depends on whether 
 domain (a Claude Code plugin, evaluated mostly via fixture loops) has a real equivalent of
 "banked revenue" to anchor against — an open question, not resolved by this doc.
 
+**Related, already-designed-but-shelved:** `docs/research/sensor-staleness-notifier-design.md`
+(2026-06-15) addresses a narrower, adjacent problem — detecting when an *existing* sensor stops
+firing at all (a coverage gap, not a quality signal), which maps to the eigent.ai post's
+"measurement decay" failure mode specifically, not the external-anchor gap above. Status: design
+only ("awaiting HOOK-1 / AUDIT-1 / CMD-1 / FIX-1"), never built — no proven incident has forced it
+since. Listed here so a future pass doesn't re-derive the same design from scratch.
+
 ## Known limitation against prior art
 
 GraphBit's typed edges are enforced by a Rust engine at runtime: a node cannot run until its
