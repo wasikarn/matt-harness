@@ -12,9 +12,18 @@ log that ECC's `stop:cost-tracker` hook writes.
 ## Where the data lives
 
 The tracker appends one JSON object per session-stop to
-`~/.local/share/kbg/metrics/costs.jsonl`. Each row is a **cumulative snapshot for that
-session**, so the report takes the **latest row per `session_id`** and sums
-across sessions (summing every row would multiply-count).
+`~/.local/share/kbg/metrics/costs.jsonl`. Each row's `estimated_cost_usd` is a
+**cumulative snapshot for that (`session_id`, `model`) pair** — not for the session as a
+whole. If a session switches models mid-run (`claude-opus-4-8` for a while, then
+`glm-5.2`), each model gets its own independent running counter within the same
+session, and a later row can report a *lower* number than an earlier row simply
+because it belongs to a different model's counter. **The report takes the latest row
+per (`session_id`, `model`) pair and sums across all of them** — taking only the
+single latest row per `session_id` (ignoring `model`) silently drops every model's
+cost except whichever one happened to be active at the session's last stop, which
+undercounted total tracked spend by 55% (confirmed against production data,
+2026-07-28: $34,698 reported vs. $53,883 actual — 32 of 362 sessions had switched
+models at least once).
 
 Row schema:
 `{ timestamp, session_id, transcript_path, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, rate_verified, estimated_cost_usd }`
@@ -30,14 +39,19 @@ put several hours of a user's actual "today" spend under "yesterday" for anyone
 west of UTC (reproduced live against production data, 2026-07-28: at 01:51 local in
 UTC+7, UTC's calendar date was still the prior day, and the UTC-bucketed report
 showed $972 for "today" — mostly the actual prior day's spend — and $1.53 for
-"yesterday").
+"yesterday"). This depends on the Node process's own resolved local timezone
+(`Intl.DateTimeFormat().resolvedOptions().timeZone`, which follows the machine's
+system timezone setting when `TZ` is unset) — correct for the normal case of a user
+running this command interactively on their own machine, but if it's ever invoked in
+a context whose system/`TZ` timezone doesn't match the reader's own (a container, a
+remote/headless session), the buckets will follow that environment's zone instead.
 
 ## What this command does
 
 1. Check that `~/.local/share/kbg/metrics/costs.jsonl` exists. If it does not, tell the
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
-2. Reduce rows to the latest snapshot per session and aggregate.
+2. Reduce rows to the latest snapshot per (session, model) pair and aggregate.
 3. Present a compact report, or export recent rows as CSV when the argument is `csv`.
 
 `node` is used instead of `sqlite3`/`jq` so this works identically on macOS,
@@ -51,9 +65,9 @@ const fs=require("fs"),os=require("os"),path=require("path");
 const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
-const bySession=new Map();
-for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;const p=bySession.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySession.set(k,r);}
-const latest=[...bySession.values()];
+const bySessionModel=new Map();
+for(const r of rows){const k=(r.session_id||r.transcript_path||r.timestamp)+" "+(r.model||"");const p=bySessionModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))bySessionModel.set(k,r);}
+const latest=[...bySessionModel.values()];
 const cost=r=>Number(r.estimated_cost_usd)||0;
 const fmtLocal=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
 const day=r=>fmtLocal(new Date(r.timestamp));
@@ -64,7 +78,8 @@ const f4=n=>"$"+n.toFixed(4);
 console.log("=== Cost summary ===");
 console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
-console.log("total:     "+f4(sum(latest))+"  ("+latest.length+" sessions)");
+const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));
+console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
 const by=(key)=>{const m=new Map();for(const r of latest){const k=key(r)||"(unknown)";m.set(k,(m.get(k)||0)+cost(r));}return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
 const unverified=new Set(latest.filter(r=>r.rate_verified===false).map(r=>r.model||"(unknown)"));
 console.log("\n=== By model ===");for(const [k,v] of by(r=>r.model))console.log(f4(v).padStart(12)+"  "+k+(unverified.has(k)?"  (rate unverified)":""));

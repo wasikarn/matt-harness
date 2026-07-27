@@ -13,36 +13,55 @@ found 14 surfaces never subjected to any quality pass. `cost-report` stood out b
 `review-pr` (v0.68.77), it has abundant real local production data to mine directly
 (`~/.local/share/kbg/metrics/costs.jsonl`, 5985 rows) instead of needing fixtures.
 
-Found and reproduced a real timezone-boundary bug live against that data: the report's
-"today"/"yesterday"/last-7-days buckets were computed from each row's UTC calendar date
-(`new Date().toISOString().slice(0,10)`), but `timestamp` values are stored in UTC while a
-user reads the report in their own local timezone. At the moment of testing (01:51 local in
-UTC+7, still 2026-07-27 in UTC), the unfixed script reported "today: $972.84" (actually
-showing the prior local day's spend) and "yesterday: $1.53" (nearly empty) — every day, for
-the ~7-hour window after local midnight in any timezone west of UTC, the report silently
-mislabels which calendar day a session's cost belongs to. Fixed by switching the day-bucketing
-function to `Date`'s local getters (`getFullYear`/`getMonth`/`getDate`) instead of
-`toISOString`, which resolves the ambiguity using the machine's actual local timezone rather
-than hardcoding a timezone — verified against the same live data post-fix: today/yesterday
-now split at local midnight, and the sum still reconciles exactly against the file's own
-latest-cumulative-snapshot-per-session logic (confirmed `$376.0015` "today" matches the file's
-literal most recent row for the one session active this morning). Also checked for a
-missing-`session_id` fallback bug (only 1 of 5985 rows lacks one, low-impact, not fixed per
-Rule 2) and confirmed all timestamps share one consistent 20-char ISO format (no parsing-drift
-risk). No other file in the repo duplicates this UTC-day-bucketing pattern.
+First finding was a real but secondary timezone-boundary bug: the report's "today"/"yesterday"
+buckets were computed from each row's UTC calendar date, mislabeling several hours of a user's
+actual "today" spend as "yesterday" for anyone west of UTC — reproduced live at 01:51 local in
+UTC+7 (still 2026-07-27 UTC): unfixed output showed "today: $972.84" (mostly the prior local
+day's spend) and "yesterday: $1.53". Fixed by switching to `Date`'s local getters instead of
+`toISOString`.
 
+`advisor()`, consulted before the first fix's commit was pushed, found the timezone fix was
+itself environment-dependent (verified: running the same script under `TZ=UTC` reverts to
+exactly the bug just fixed; `TZ=America/New_York` gives a third different answer) — correct for
+the realistic case of a user running this interactively on their own machine (confirmed the
+Bash-tool subprocess here resolves `Asia/Bangkok` from the OS with `TZ` unset), but worth
+documenting as a real limitation rather than claiming as fully solved. It also flagged a bigger,
+unverified claim: whether sessions using more than one model in the same run were being
+correctly attributed in the "By model" breakdown.
 
+Checking that turned up the actual headline bug. `estimated_cost_usd` is a cumulative counter
+**per (`session_id`, `model`) pair**, not per session as a whole — the doc's own description
+("cumulative snapshot for that session") was wrong, and the report's reduction step (keep only
+the latest row per `session_id`) silently discarded every model's accumulated cost except
+whichever one happened to be active at the session's very last stop. Quantified against
+production data: 32 of 362 sessions (≈9%) switched models at least once, and those sessions
+alone accounted for undercounting **total tracked spend by 55%** ($34,698 reported vs. $53,883
+actual). Fixed by keying the dedup on (`session_id`, `model`) instead of `session_id` alone and
+summing across all of a session's model-pairs — verified against an independent Python
+recomputation of the same raw file before touching the command, then re-verified by extracting
+and running the actual edited script against the same real data, both matching exactly
+($53,883.1714 total, byte-identical per-model breakdown). Also found and left alone: 1 of 5985
+rows missing `session_id` (has a working fallback key, low-impact per Rule 2), 2 rows tagged
+`model:"<synthetic>"` (already correctly flagged `rate_verified:false` by the existing UI, no
+separate handling needed), and 23 within-session negative cost deltas that turned out to be the
+expected signature of the per-model-counter design, not data corruption — that dead end is what
+led to discovering the real per-(session,model) semantics.
+
+Corrected the CHANGELOG's own prior draft of the fleet-count fix below: it had asserted a
+specific root cause ("deleted over time without the count being updated *each time*") that
+`git log` only partially supports — one historical commit shows the count *was* updated on a
+prior deletion (18→17), so "each time" overclaimed a pattern that wasn't fully traced. Trimmed
+to what's actually verified.
+
+## [0.68.78] — 2026-07-28
 
 Fleet-count drift fix, found while researching the next `/review-fixtures` target: `plugin.json`,
 `marketplace.json`, and `README.md` all claimed "18 commands," but `ls commands/*.md` shows 16.
-Traced the count back through `git log --diff-filter=D -- 'commands/*.md'` — several commands
-(`implement.md`, `deep-dive.md`, `pr.md`, and others across multiple prior removals) were deleted
-over time without the fleet-count strings being updated afterward each time, the same class of
-drift v0.68.72 fixed for the agent count. No source-of-truth script generates these counts
-automatically — `kbg-help.md` derives its own count live via `ls`, but the 3 files above hardcode
-the number as prose. Fixed all 3 to "16 commands." No new `harness-audit` check added (Rule 2):
-this is a docs-hygiene fix, not a proven-recurring pattern yet — the next time this drifts is the
-signal a check would be worth adding.
+No source-of-truth script generates these counts automatically — `kbg-help.md` derives its own
+count live via `ls`, but the 3 files above hardcode the number as prose, and it had drifted.
+Fixed all 3 to "16 commands." No new `harness-audit` check added (Rule 2): this is a docs-hygiene
+fix, not a proven-recurring pattern yet — the next time this drifts is the signal a check would
+be worth adding.
 
 ## [0.68.77] — 2026-07-28
 
