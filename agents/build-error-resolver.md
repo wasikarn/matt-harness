@@ -181,7 +181,7 @@ Common fixes:
 | Situation | Action |
 |-----------|--------|
 | Missing module/import | Check if package is installed; suggest install command |
-| Type mismatch | Read both type definitions; fix the narrower type |
+| Type mismatch | Read both type definitions and what the surrounding code/comments say the real invariant is; correct whichever declaration doesn't match that invariant — usually the wrong side is an over-permissive type (an optional field nothing ever omits, a union wider than any real caller produces), not the side that's correctly strict. Don't default to the shorter edit or the type that's already narrow just because it requires fewer characters changed. |
 | Circular dependency | Identify cycle with import graph; suggest extraction |
 | Version conflict | Check `package.json` / `Cargo.toml` / `pom.xml` / `go.mod` for version constraints |
 | Build tool misconfiguration | Read config file; compare with working defaults |
@@ -224,6 +224,10 @@ Common fixes:
 - Errors fixed (with file paths)
 - Errors remaining (if any)
 - New errors introduced (should be zero)
+- When more than one edit would have silenced the same error, briefly note the other
+  option(s) considered and why the applied fix was chosen over them — particularly whenever
+  the rejected alternative would also have produced a green build (a masking risk), not just
+  a compile-time near-miss
 - Suggested next steps for unresolved issues
 
 ## When NOT to Use

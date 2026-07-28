@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.88] — 2026-07-28
+
+Applied both target-attributable fixes iteration 3 of `build-error-resolver-workspace` found
+and left pending a user decision (recorded in `iteration-3/feedback.json`). Fix 1: the
+Recovery Strategies table's "Type mismatch | Read both type definitions; fix the narrower
+type" row was genuinely ambiguous — "the narrower type" as a bare comparative could mean
+"conform to whichever type is narrower" (correct) or "edit whichever declaration is
+currently narrower" (actively misdirects toward a masking trap iteration 3's fixture was
+built to catch). Reworded to name the actual decision criterion: correct whichever
+declaration doesn't match the surrounding code's stated invariant, not whichever edit is
+shorter or already narrow. Fix 2: Step 5's report-back template never asked the agent to
+note rejected alternatives, so a report couldn't distinguish "confronted a masking trap and
+correctly rejected it" from "never noticed it existed" — both produce the identical diff.
+Added a line requiring a brief note on rejected alternatives whenever one would also have
+produced a green build. Also closed iteration 4's separate, harder gap (the masking-trap and
+Step 3.4 loop-catching mechanic being the same branch, so avoiding the trap correctly meant
+never exercising the loop) — built `eval-5-unavoidable-cascade`, where the correct fix itself
+unavoidably surfaces a second real error; both with_agent and baseline produced the
+identical, fully correct two-file diff. No doctrine gap found there; the only fix applied was
+narrowing `ground-truth-iteration-4.md`'s own measurement claim, since a final report can't
+prove the loop mechanically fired versus was front-loaded by correct upfront reasoning.
+
 ## [0.68.87] — 2026-07-28
 
 Closed a real gap in this session's own review-fixtures practice: `blind-spot-hunter`'s v0.68.43
