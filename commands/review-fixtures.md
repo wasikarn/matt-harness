@@ -116,11 +116,28 @@ DB-facing, atomicity for anything read-then-write. State the pick and the one-li
 before moving on — this is a judgment call, not a coin flip, and a silent pick is how you
 end up with two copies of the same prompt instead of complementary coverage.
 
-### 6. Fill and dispatch both agents
+### 6. Fill, persist, and dispatch both agents
 
 Using the template from the reference doc (Step 0 above): fill in the target name, domain
 description, file list (from Step 3), eval prompts, assertions, prior-fix context (Step
 4, or omit), and the agent-2-only differentiation line (Step 5).
+
+**Before dispatching, write both composed prompts verbatim to
+`<iteration-path>/dispatch-prompts.md`** (one clearly-labeled section per agent, plus
+today's date). This is the only record of the literal text an agent actually received —
+`feedback.json`'s reconciled paragraph is a summary written *after* the fact, not a
+reproducible artifact, and a fixture-data-inlined prompt (the shape used when a scenario
+tests raw doc-reasoning against inlined data instead of critiquing pre-generated
+with_skill/baseline outputs) can run to thousands of words with no other copy anywhere. Like
+everything else under `<name>-workspace/`, this file is gitignored and local-only — it
+doesn't survive a machine loss or a fresh clone — but it survives context compaction, which
+is the failure mode that has actually bitten twice: a code-implementer eval-set pass
+(2026-07-25) and a `ship-merge` 2-reviewer pass (2026-07-28) both lost their dispatch
+prompts to compaction, recoverable only by grepping the raw session transcript afterward — a
+source that is not guaranteed to still exist by the time anyone needs it. If a later run in
+the same iteration reuses an unchanged prompt (e.g. a re-verification dispatch against the
+same fixtures), append a dated section recording that the prompt is unchanged from the run
+of `<that date>` — don't re-paste it, and don't silently skip the note.
 
 Dispatch both as `Agent` tool calls with `subagent_type: general-purpose` (needs
 Read/Grep/Glob/Bash — Bash specifically for the "verify empirically" instruction, e.g.
@@ -160,7 +177,9 @@ double-confirmed. If any eval in Step 3 had no prompt source at all (no
 `eval_metadata.json`/`prompt.md`/`review.md`), say so explicitly — findings from that eval
 rest on inferred context, not a stated task, so they warrant more skepticism. Don't edit the
 target file as part of this command — that's a separate decision the user makes from the
-reconciled findings, not an automatic next step.
+reconciled findings, not an automatic next step. Confirm `<iteration-path>/dispatch-prompts.md`
+was actually written (Step 6) before reporting completion — a skipped save here is a silent
+loss of the only reproducible record of what the reviewers actually saw.
 
 Suggested next step:
 - Findings trace to specific content in the target file → open it (Step 1's resolved path)

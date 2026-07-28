@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.83] — 2026-07-28
+
+Built the fix for a gap that's now bitten twice, both logged in memory but never closed at
+the source: `/review-fixtures` composes dispatch prompts live in-conversation and never
+saves them anywhere at all, so once the session that ran the dispatch gets compacted, the
+literal text 2 reviewers actually received is unrecoverable except by grepping the raw
+session transcript — a source with no retention guarantee. Confirmed on a
+`ship-merge-workspace` scenario 6/7 grading pass this same day: had to hand-recover both
+dispatch prompts and both reviewers' full outputs from `795791ae-...jsonl` after the fact,
+purely because the transcript happened to still be on disk.
+
+Fixed in `commands/review-fixtures.md` Step 6 (now "Fill, persist, and dispatch both
+agents"): before dispatching, write both composed prompts verbatim to
+`<iteration-path>/dispatch-prompts.md`, one labeled section per agent. Step 8's report now
+confirms that file was actually written before declaring the command complete, so a skipped
+save surfaces immediately instead of silently. Scoped the fix to the command file only —
+the reference template doc (`docs/reference/skill-fixture-review-prompt-template.md`) owns
+prompt *content*, not orchestrator housekeeping, so it didn't need the same edit.
+
 ## [0.68.82] — 2026-07-28
 
 Closed 2 deferred gaps in `ship-merge-workspace` that pass 2/pass 3 of `/review-fixtures`
