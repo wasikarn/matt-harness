@@ -39,7 +39,14 @@ You design feature architectures based on a deep understanding of the existing c
 - **find where similar features already live** (`Grep` for the closest existing analog — a
   sibling feature, a similar CRUD resource, a comparable background job) and use its actual
   file layout as the template, not a generic layered-architecture default. The existing analog
-  is ground truth; a textbook layering diagram is not.
+  is ground truth; a textbook layering diagram is not. **Exception: an analog that itself
+  violates the layer-direction or DI-style checks above is disqualified as ground truth, no
+  matter how close its structural shape is to the new feature.** A write-shaped analog that
+  imports infra directly is not a legitimate template for a new write just because both are
+  writes — it's the exact violation the checks above exist to catch. When the closest-shaped
+  analog and the layer-direction/DI-style rules disagree, the rules win: extend the compliant
+  pattern even if it's the less structurally similar one, and name the rejected analog's
+  violation explicitly rather than building a case for repeating it.
 
 ### 2. Architecture Design
 

@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.90] — 2026-07-28
+
+Deeper re-verification pass on `agents/code-architect.md`, following the `blind-spot-hunter`
+v0.68.87 precedent: re-ran `with_agent` fresh (Read the live doc directly, not
+`subagent_type` resolution) against the current post-v0.68.86-fix doc for all 3 original
+`code-architect-workspace` evals, then dispatched 2 independent reviewers to compare
+original vs. fresh output per eval. All 3 targeted fixes from v0.68.86 confirmed closed,
+verified against the actual shipped code rather than trusted from the agent's own report —
+including cross-file type/signature tracing on the code-slot fix and hand-checked test
+arithmetic on the ambiguity-callout fix. Also surfaced an unrelated finding on an eval no fix
+had targeted: both reviewers independently found the fresh run flipping to the wrong
+architectural pattern (extending a domain→infra anti-pattern instead of the correct
+constructor-injected port), where both the original pre-fix run and the no-doctrine baseline
+had agreed on the correct pattern — flagged by both reviewers as needing a second sample
+before treating it as fix-induced rather than run-to-run variance. A third independent
+sample reproduced the same wrong choice with a more sophisticated (if misapplied)
+justification, confirming 2/2 post-fix runs wrong vs. 2/2 pre-fix/baseline correct. Root
+cause traced to a specific line: the "closest existing analog is ground truth" bullet had no
+carve-out for an analog that itself violates the immediately preceding "detect layer
+direction" bullet — both fresh runs used true facts (no write precedent on the compliant
+port; the anti-pattern analog is structurally closer) to build a coherent case for the wrong
+conclusion. Fixed by adding an explicit precedence exception: an analog that violates the
+layer-direction/DI-style checks is disqualified as ground truth regardless of structural
+closeness, and the model should name the rejected analog's violation rather than argue past
+it.
+
 ## [0.68.89] — 2026-07-28
 
 `/review-fixtures ship` — first fixture-driven review for `commands/ship/COMMAND.md`, picked
