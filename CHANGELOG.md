@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.85] — 2026-07-28
+
+`/review-fixtures agents/backend-architect.md` — first fixture-driven loop for this target
+(`backend-architect-workspace/` didn't exist before this session). Since this agent traces
+real code (`Read`/`Grep`/`Glob`/`Bash`, not a prose-only reviewer), built 3 realistic 2-file
+code fixtures instead of prose scenarios, each embedding 2 anti-patterns from the agent's
+own table: a shared-DB/no-webhook-idempotency order-payments pair, a 3-hop sync call chain
+with an uninvalidated cache, and a non-idempotent queue consumer paired with an in-memory
+sticky-session store. Ran with-agent (`subagent_type: kbg:backend-architect`, verified
+byte-identical to the installed plugin cache before dispatch) vs. baseline
+(`general-purpose`, same prompt, no doctrine) for all 3, then dispatched 2 independent
+reviewers to compare. Both converged: the specialist added real doctrine-attributable value
+in every eval (per-hop timeout budgeting pulled near-verbatim from its own anti-pattern
+table, cross-process cache-coherence reasoning, correct orderId-vs-MessageId dedupe-key
+reasoning) — but baseline caught something with_agent missed in every single eval too,
+including an outright-wrong recommendation: agent 2 (assigned a concurrency/atomicity
+verification angle) spun up a live Postgres 16 container and proved, with real overlapping
+transactions, that with_agent's proposed atomic-claim SQL for the payment/queue idempotency
+fix (`UPDATE orders SET status='charging' WHERE id=$1 AND charge_id IS NULL`) does not
+actually close the concurrency race it's credited with closing — the guard column
+(`charge_id`) and the mutated column (`status`) don't match, so a second concurrent
+transaction's `WHERE` clause still evaluates true after the first commits. Baseline's SQL
+(guard and mutate the same column) is a correct compare-and-swap, empirically confirmed.
+`grep`-verified the doc had no worked SQL example anywhere for this pattern — a real,
+target-attributable gap, not a fixture artifact. Baseline also independently caught a
+serious client-controlled-pricing bug (`orders-service.ts` sums client-supplied
+`priceCents` with no server-side catalog lookup) that with_agent's own checklist missed on
+the same reviewed line — traced to a real gap in the systems-design checklist, which had no
+row asking whether a financially-consequential value is re-derived server-side vs. trusted
+from the caller. Presented both findings to the user rather than fixing unilaterally (per
+this command's own Step 8, and unlike the more clear-cut summarizer internal-contradiction
+case earlier this session) — user selected both. Fixed: added a worked-example callout
+after the Anti-Patterns table showing the guard-column-must-equal-mutated-column
+requirement with the exact wrong/right SQL from the finding; added a new "Source of truth"
+checklist row plus a matching Anti-Patterns row for client-trusted financial values,
+adjacent to the existing Data ownership entries. Self-verified via whole-file re-read
+post-fix — no new contradiction.
+
 ## [0.68.84] — 2026-07-28
 
 `/review-fixtures agents/summarizer.md`, first invocation since the Step 6 dispatch-prompts

@@ -53,6 +53,7 @@ security-shaped finding and hand it off rather than diagnosing it yourself.
 | API contract | Versioned? Pagination consistent? Error shape consistent across endpoints? Breaking changes gated? |
 | Idempotency | Do mutating endpoints exposed to retries/webhooks accept an idempotency key? |
 | Data ownership | Exactly one writer per table/collection? Cross-service reads go through an API, not a shared DB connection? |
+| Source of truth | Is a financially- or state-consequential value (price, amount, quantity) re-derived from the system's own record at the point of use, or trusted from client/caller input that could diverge from it? |
 | Consistency model | Strong or eventual, and does the code's error handling match which one it actually chose? Is a distributed operation faked with one local transaction (no saga/outbox)? |
 | Caching | Invalidation strategy defined (not "cache forever")? Stampede protection on hot keys? |
 | Queueing | Consumers idempotent (at-least-once delivery will replay them)? Dead-letter path exists? Ordering guarantee actually needed, or assumed? |
@@ -72,6 +73,7 @@ applied by default. A single-writer monolith calling itself in-process does not 
 | Pattern | Failure mode | Fix |
 |---|---|---|
 | Shared database, multiple writers | Schema changes break a service that doesn't own the table; no single source of truth | Route cross-service writes through an API; one writer per table |
+| Financially-consequential value trusted from client input | Client sets `priceCents`/`amountCents` to whatever it wants; order total or charge amount never checked against the system's own record | Re-derive the value server-side (catalog/pricing lookup) at the point of use; never persist a client-supplied number that determines money movement |
 | Sync call chain 3+ services deep, no timeout budget | One slow leaf service degrades the whole chain; timeouts don't compose automatically | Budget a timeout per hop that sums to less than the caller's own timeout |
 | No idempotency key on POST/payment/webhook endpoints | A client or gateway retry double-charges or double-creates | Accept a client-supplied idempotency key, dedupe server-side |
 | Cache with no invalidation strategy | Stale data served indefinitely, or a thundering-herd refill on expiry | Define invalidation on write; add jittered TTL or request coalescing for hot keys |
@@ -79,6 +81,15 @@ applied by default. A single-writer monolith calling itself in-process does not 
 | No retry budget or circuit breaker on an external dependency | One degraded dependency cascades into full outage via retry storms | Bound retries, add a circuit breaker that fails fast once a dependency is unhealthy |
 | Distributed operation as per-service local transactions, no saga/outbox | Partial failure leaves data permanently inconsistent, no compensating action | Outbox pattern for at-least-once publish, or an explicit saga with compensations |
 | State pinned to one instance (in-memory session, sticky routing as the only option) | Can't scale horizontally or roll instances without dropping state | Externalize state (shared cache/store) or make sticky routing a performance optimization, not a correctness requirement |
+
+**A dedupe/claim guard only closes a concurrency race if the `WHERE` clause's guard column is
+the same column the `UPDATE` actually sets.** `UPDATE orders SET status='charging' WHERE id=$1
+AND charge_id IS NULL` looks like an atomic claim but isn't — the `SET` clause never touches
+`charge_id`, so a second concurrent transaction's `WHERE` still evaluates true once the first
+commits, and both callers proceed. Guard and mutate the same column instead:
+`UPDATE orders SET status='charging' WHERE id=$1 AND status='pending'` — a concurrent second
+attempt now re-checks `status` after the first transaction's commit, sees `'charging'` instead of
+`'pending'`, and correctly gets zero affected rows.
 
 ## Output Format
 
