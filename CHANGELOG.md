@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.82] — 2026-07-28
+
+Closed 2 deferred gaps in `ship-merge-workspace` that pass 2/pass 3 of `/review-fixtures`
+explicitly declined to build speculatively: no existing fixture had an intermediate CI score
+value, and none had a wholly missing review-state file. Built 2 new fixtures
+(`scenario-6-ci-partial-pending`, `scenario-7-missing-review-state`) in the established
+split `-data.md`/`-task-scaffolded.md` format, plus a pre-registered expected analysis
+(`scenario-6-and-7-design-notes.md`) written before either was dispatched to any reviewer —
+same role `grading.md`'s "Independent derivation" section plays for scenarios 1-5, just
+written earlier in the loop.
+
+Dispatched 2 independent reviewers (doc text + fixture data fully inlined, zero filesystem
+access to `ship-merge-workspace/` so no access to the answer key) against both scenarios in
+one pass. Both matched the pre-registered arithmetic exactly (scenario 6: 70.588235...,
+floor-tripped by CI status; scenario 7: 0.0) and both reached STOP — though scenario 7's
+pre-registered breakdown itself omitted freshness (see below), so "matched exactly" holds for
+the total, not the full criterion-by-criterion breakdown. Along the way both independently
+surfaced 2 real, double-confirmed gaps in
+`commands/ship-merge.md`'s text: the CI-status criterion's "all required checks green"
+Measures wording has no explicit binary/no-partial-credit clause the way Review coverage
+does (both reviewers correctly ruled out partial credit only by analogy, not by an explicit
+statement — a proportional misreading would have flipped the verdict to PASS at ~90.3,
+confirmed by hand before building the fixture); and step 3's "all required checks must pass"
+reads enough like an independent Phase-1 stop that both reviewers had to infer it actually
+feeds step 6's scored table instead, citing step 4's "informational only" disclaimer as the
+pattern step 3 lacks.
+
+The 2-agent process also caught a real blind spot in my own pre-registered ground truth, not
+just in the doc: neither reviewer's Critical-findings scoring fell into the vacuous-true trap
+the deferred item worried about (both correctly scored 0, citing the doc's "never fabricate a
+clean result" language), but both independently noticed something `scenario-6-and-7-design-notes.md`
+missed entirely — Review freshness also scores 0 when no review-state file exists at all (no
+`last_sha` to match, and the N/A carve-out is scoped to CI only), not just Critical-findings
+and Review-coverage. Reviewers also productively disagreed on which specific clause justifies
+scoring Critical-findings 0 in the zero-file case: one read the Incomplete-review guard's
+"missing entirely" branch as extending to a wholly-absent file, the other argued (correctly,
+per the guard's own stated design intent — built for schema drift in a *produced* file,
+verified against the 105-production-file audit cited in the doc) that the guard doesn't
+cleanly cover total absence and the real justification is the adjacent anti-fabrication
+sentence instead.
+
+Verified all 3 candidate gaps against the actual doc text via `grep` before crediting anything
+to it (Rule per the reconciliation discipline: no trace found → fixture artifact, not a real
+gap — all 3 traced to genuine absences). Applied 3 fixes: the CI-status table row now states
+"binary, no partial credit for some-but-not-all-green"; step 3 now explicitly says it records
+the signal step 6 gates on rather than independently stopping Phase 1; and the "Verified-N/A
+criteria are excluded" paragraph now names which criteria fail when no review-state file
+exists at all (Critical findings + Review freshness, not just Review coverage) and clarifies
+the Incomplete-review guard's scope excludes that case. This is the first pass on this
+workspace since v0.68.34/v0.68.76/v0.68.77 to land more than one fix — passes 1-3 had already
+converged the doc to a stable, correct state for the 5 original scenarios; these 2 new
+scenarios found genuinely new ground. Not fixed: a clarification for the step-3/step-6
+relationship's remaining edge cases — both reviewers reached the correct answer without it,
+so the applied fix is a precision improvement, not a bug fix, and further tightening wasn't
+proven necessary.
+
 ## [0.68.81] — 2026-07-28
 
 Fixed the real limitation v0.68.80 had documented but not built: `hooks/stop/cost-tracker.sh`
