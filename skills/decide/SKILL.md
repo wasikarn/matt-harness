@@ -40,6 +40,21 @@ even when that plan reads as hard to reverse).
 | Irreversible / long-horizon / contested diagnosis | `strategize` |
 | Decision already made, needs a record | `mattpocock-skills:domain-modeling` directly (owns the ADR rule) |
 
+**Compound request, one table, multiple hits:** if a single request bundles two or more
+distinct asks that land on different rows (e.g. "critique this ADR, then help me decide
+whether to greenlight the follow-up"), run the table separately per clause and state each
+mode's own banner separately, in the order the asks appear — don't force multiple distinct
+asks under one banner just because they arrived in the same message.
+
+**Handing off to the external skeptic:** when the "disprove a confident output this session
+already produced" row fires, hand over the full reasoning/artifact produced — not a filtered
+summary or just a closing assumptions table. A same-session summary is exactly the kind of
+filtering the context-separation guard exists to route around; a brief that only carries
+forward what this session already flagged as risky hands the skeptic this session's blind
+spots along with its context. The full protocol for structuring the skeptic's actual review
+lives in `kbg:review-pr`'s doubt-driven pattern — this note only covers what decide itself
+hands off.
+
 ## Announce the active mode
 
 Before the analysis runs, the first line of the response states the active mode and its named principle(s) — one clause, no preamble:
@@ -84,7 +99,16 @@ than blocking on each one.
 
 Match depth to stakes (reversibility, magnitude, time pressure, uncertainty,
 precedent — judgment-ladder.md's Proportionality rule) — reversible low-stakes
-choices need only rungs 1–2 (Recognize + Frame), not the full climb.
+choices need only rungs 1–2 (Recognize + Frame), not the full climb (completion
+criterion below has the matching exception for what a rungs-1–2 response still owes).
+
+Even a rungs-1–2 shortcut still owes one thing from rung 4/5's playbook: if the
+request leans on an unverified quantitative or certainty claim (a stated cost, a
+"zero risk," a time estimate), spot-check that specific claim before accepting it.
+Skipping the full bias-guard checklist (reserved for rung 5's closing pass) is not
+the same as skipping anchoring on a load-bearing number the request handed you — a
+lightweight decision is exactly where an unverified number is most likely to just
+get accepted at face value.
 
 ### 1. Recognize
 Name the actual choice, its owner, its timing, and its trigger.
@@ -233,15 +257,18 @@ Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the dec
 
 - Do not run this skill in chaos or under active incident — stabilize first.
 - `probe` output is a memo, not a decision. Do not skip to commitment from probe.
-- A decision without a revisit trigger is not finished.
 - Match effort to stakes: trivial reversible choices need only rungs 1–2 (Recognize
-  + Frame), not the full climb — see "Match depth to stakes" under Mode: decide.
+  + Frame), not the full climb — see "Match depth to stakes" under Mode: decide. This
+  scales down tested assumptions and the formal progress metric (see the Completion
+  criterion's `decide` exception below); it does not scale down the revisit trigger.
+- A decision without a revisit trigger is not finished — this applies at every depth,
+  including a rungs-1–2-only response.
 
 ## Completion criterion
 
 This criterion applies per mode's own output shape, not one template for all five:
 
-- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions.
+- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions and a formal progress metric are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
 - **`strategize`** — same Output format template, mapped from its own step vocabulary: Diagnosis + Guiding policy fill the Frame section, the irreversibility map and red-team results are the tested assumptions, and Commitment's revisit trigger comes from step 6's strategy loop (progress metric = whatever the red-team/tripwire step names as the signal to watch).
 - **`critique`** — verify the verdict (holds / holds with caveat / needs rework), the one assumption most worth re-verifying, and — when the verdict isn't a clean "holds" — what specifically would need to change are all stated. No Frame/Commitment record required; critique audits an existing plan rather than producing a new one.
 - **`clarify` / `probe`** — completion is the stated handoff itself (resolved scope + working default, or a framing memo) — these modes never produce a decision record and aren't held to the Frame/Commitment bar.

@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.91] — 2026-07-28
+
+First-ever `/review-fixtures`-style loop for `skills/decide/SKILL.md` — no `decide-workspace/`
+existed before this run. Built 3 fixtures targeting explicit doctrine claims after an
+`advisor()` pass caught two problems in the initial draft (dropped a pure trigger-test eval
+with no measurable signal; fixed a self-critique eval that couldn't actually satisfy the
+mode-table row it was meant to test, by making the proposal self-authored in one shot). 2
+independent reviewers then compared with_skill vs. without_skill outputs across all 3 evals.
+Confirmed the v0.68.32 mode-precedence fix (scope-unstated beats irreversibility/existing-ADR)
+is holding, and confirmed the "disprove a confident output this session already produced"
+row works cleanly. Both reviewers independently converged, via separate reasoning paths, on
+a real live contradiction: the rungs-1–2 proportionality carve-out (added in v0.68.32) was
+never propagated to the `decide` completion criterion or Guardrails, both of which still
+unconditionally demanded tested assumptions + a formal progress metric — a recurrence of the
+"rung-depth contradiction" v0.68.32 itself claimed to fix, reintroduced by the very commit
+that added the completion criterion. Also double-confirmed a gap in "Announce the active
+mode": no provision for a single request bundling two different mode-table rows (the fixture
+handled it well only by improvising its own per-clause handling). One single-sourced but
+sharp structural finding (traced to a specific line, both configs shared the blind spot): the
+bias-guard checklist lives at rung 5, so a correctly-proportional short response structurally
+never applies anchoring-checking to an unverified numeric claim in the request. User selected
+all 4 findings to fix via `AskUserQuestion`. Fixed: exempted tested-assumptions/progress-metric
+(not the revisit trigger) from the `decide` completion criterion at rungs 1–2, reordered and
+cross-referenced the Guardrails bullets so they no longer read as two conflicting unconditional
+rules, added compound-request per-clause mode handling, added an explicit skeptic-handoff note
+(hand over the full artifact, not a filtered summary — the with_skill self-critique-eval brief
+was independently confirmed narrower than what the undisciplined baseline still caught), and
+decoupled a lightweight anchoring spot-check from the rung-5-only bias-guard checklist. Prompts
+and dispatch text persisted to `decide-workspace/iteration-1/{prompts,dispatch-prompts}.md`
+before dispatch, and assertions kept out of the fixture agents' working directories, per this
+session's own recently-hardened contamination lessons.
+
 ## [0.68.90] — 2026-07-28
 
 Deeper re-verification pass on `agents/code-architect.md`, following the `blind-spot-hunter`
