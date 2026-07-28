@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.84] — 2026-07-28
+
+`/review-fixtures agents/summarizer.md`, first invocation since the Step 6 dispatch-prompts
+fix (v0.68.83) shipped. Found `summarizer-workspace/iteration-1`'s existing fixtures predate
+v0.68.41's fix — reviewing them would just re-confirm already-fixed bugs, so `advisor()`
+redirected the dispatch: inline the *current* `agents/summarizer.md` in full for both
+agents, no fixture files, and ask whether v0.68.41's own fix (a new 3-way Prose/Bullets/Table
+structure fork) introduced a contradiction the 3 solo convergence rounds — each scoped to a
+different narrow bug — never checked for. Both agents independently converged on the same
+gap via the same textual anchor: Phase 5's Table criterion structurally matched the v0.68.41
+Anti-Patterns entry's own worked example (a causal chain of 3+ candidate causes with a
+confirmed/unconfirmed dimension), yet that entry only declared "needs prose," never
+addressing Table as the alternative its own item/dimension-count criteria would nominate.
+Agent 2 (assigned the multi-throughline angle) additionally found the Table criterion was
+self-contradictory on its own terms — an OR-qualifying clause ("≥3 items or dimensions")
+paired with an AND-reading exclusion ("two items" disqualifies outright, no dimension
+carve-out) — and that the doc's own before/after example flipped between qualifying and
+disqualifying depending on an arbitrary items-vs-dimensions labeling choice never fixed by
+the text. Also single-sourced by agent 2: the several-unrelated-throughlines Output Format
+block only re-applied the single-throughline block's Phase 5 citation to `detail`/
+`flagged_ambiguity` ("[...as above, per thread]"), never to `tl;dr`/`summary`, risking every
+thread in a multi-topic source defaulting to one uniform shape. Fixed all three: Table's
+definition now excludes causal/narrative content explicitly (mirroring the existing Bullets
+carve-out) and its exclusion clause was reworded to match the OR framing instead of
+contradicting it; the Anti-Patterns entry now covers tabling as well as bulleting a causal
+chain; the `detail:` field now states explicitly it may use a different structure than
+`summary`; and the multi-throughline block now states each thread runs Phase 5
+independently. Self-verified via a full whole-file re-read for a new contradiction post-fix
+(this repo's own confirmed "a fix ships a new contradiction" pattern) — none found. First
+live use of the v0.68.83 dispatch-prompts.md persistence fix:
+`summarizer-workspace/iteration-1/dispatch-prompts.md` now holds both composed prompts
+verbatim.
+
 ## [0.68.83] — 2026-07-28
 
 Built the fix for a gap that's now bitten twice, both logged in memory but never closed at
