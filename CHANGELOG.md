@@ -5,6 +5,41 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.86] — 2026-07-28
+
+`/review-fixtures agents/code-architect.md`, per user request to run the same fixture-driven
+loop on another never-tested agent (`code-architect`, `ideate-critic`, `spec-miner`, and
+`task-prep-checker` all had no workspace; picked `code-architect` as the closest match to
+`backend-architect`'s just-completed pass — it also traces real code and produces a
+structured blueprint). Built 3 code fixtures targeting the doctrine's sharpest claims:
+layer-direction detection hidden behind clean folder names, mirroring an existing analog's
+actual (non-standard) file layout under an explicit multi-provider premature-abstraction
+bait, and an established test-builder convention. Ran with-agent vs. baseline for each, then
+2 independent reviewers compared. Eval 0 showed near-total convergence (both blueprints
+independently found the same correct architecture) — not a doctrine failure, just a fixture
+solvable by careful reading alone. Eval 1: with_agent cleanly passed the premature-abstraction
+test baseline partially failed (a single-value `provider` column), but with_agent shipped
+**zero actual code** for that eval despite its own frontmatter promising "concrete files,
+interfaces," confirmed independently by both reviewers. Eval 2 was the sharpest: both
+blueprints depend entirely on an irreducibly ambiguous requirement (does "reserve" move
+quantity out of `onHand`, or hold it alongside?) — one reviewer found with_agent's own stated
+reason for rejecting the transfer reading is a non-sequitur (independently re-derived and
+confirmed: the claim that a dedicated `reserved` field "only makes sense" under the soft-hold
+model doesn't hold — it's exactly as meaningful under either reading), and both reviewers
+independently flagged that with_agent buried this load-bearing decision as one Trade-offs
+bullet, never in Risks, never in its own closing "flag for confirmation" section, while
+baseline surfaced it prominently up front and also fixed a duplicate-order resource-leak bug
+with_agent identified but declined to fix. 3 findings traced to specific gaps in the doctrine
+(grep-confirmed): §1 never instructed checking whether a design breaks the existing test
+suite; the Output Format's Files-to-Create/Modify tables have no slot for actual code despite
+§3's "key interfaces" promise; and nothing tells the agent to prominently flag a genuinely
+load-bearing ambiguous requirement rather than resolving it silently. Presented all 3 to the
+user rather than fixing unilaterally (per this command's Step 8) — user selected all 3.
+Fixed: extended §1's testing-patterns bullet, added a new "when the requirement itself is
+ambiguous" callout to §2, and required actual interface code (flagging unconfirmed
+dependencies as gaps inside it, not by omitting code entirely) in §3. Self-verified via
+whole-file re-read post-fix — no new contradiction.
+
 ## [0.68.85] — 2026-07-28
 
 `/review-fixtures agents/backend-architect.md` — first fixture-driven loop for this target
