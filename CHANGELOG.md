@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.94] — 2026-07-29
+
+Fixed the `/review-fixtures` command itself, surveying open gaps across everything learned
+from running it repeatedly this session and in prior sessions (per memory). Two real gaps in
+`commands/review-fixtures.md`'s own mechanics: (1) the prompt-compression finding from
+v0.68.93 — Step 6 now explicitly requires the reviewer-dispatch eval prompts be quoted
+**verbatim** from the true source (`eval_metadata.json`/`prompt.md`/`prompts.md`, or the
+literal original `Agent` dispatch text), never paraphrased, since a paraphrase that drops a
+qualifying phrase makes a faithfully-restated fact look invented — and two reviewers
+independently checking the *same* paraphrase produces a false double-confirmation, not real
+independent verification; (2) a new Step 3.5 ("Check for an existing reconciliation") — if
+`<iteration-path>/feedback.json` already exists, read it and ask the user whether to scope
+to the gap, re-run anyway, or treat it as current, rather than silently re-dispatching two
+full agent runs to re-derive an already-recorded verdict (confirmed once, `plan-reviewer`,
+2026-07-27 — previously left unfixed pending a second occurrence per Rule 2; fixed now on
+explicit user request rather than waiting for a repeat). Also institutionalized three
+fixture-construction lessons that had lived only in memory, not in any doc a cold session
+would load: added a "Fixture-construction hygiene" section to
+`docs/reference/skill-fixture-review-prompt-template.md` covering answer-key contamination
+(confirmed 3x), bench-script import-not-duplicate (confirmed 1x), and trap file-locality /
+loop-mechanic-conflict (confirmed on build-error-resolver) — plus a 4th "what not to cut"
+instruction (quote the original prompt verbatim) alongside the existing 3, propagated
+through to the command file's own "3 instructions" reference (now "4"). No fixture dispatch
+needed for this pass — all four fixes were already confirmed/double-confirmed from prior
+loops, so applied directly rather than re-verified through a fresh with_skill/baseline round.
+
 ## [0.68.93] — 2026-07-28
 
 `/review-fixtures`-style loop for `skills/score-decision/SKILL.md`, first-ever for this target

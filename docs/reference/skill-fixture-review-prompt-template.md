@@ -39,6 +39,48 @@ supporting evidence).
 | A single eval case, or a quick sanity check with no downstream content decision riding on it | Solo review — the 2-agent cost isn't earning its keep |
 | Reviewing a PR / production diff (not a fixture from this kind of loop) | Use `kbg:code-reviewer` instead — different tool, same "don't review solo" instinct doesn't transfer verbatim |
 
+## Fixture-construction hygiene (before you dispatch)
+
+This section covers fixture *construction*, which happens before this command's Step
+1 — `skill-creator:skill-creator` (or an ad hoc dispatch built the same way, the common
+case in this repo) is what actually builds the fixtures this template reviews. Three
+mistakes, confirmed multiple times across loops in this repo, make a fixture's result read
+as clean regardless of what's actually true. Check for all three before trusting any output
+this template helps you review.
+
+1. **Answer-key contamination.** Nothing that states or implies the correct fix —
+   `eval_metadata.json`'s `assertions` field, `prompts.md`, ground-truth notes, even a
+   task-scaffolding section bundled into the same file as the data — may sit anywhere a
+   dispatched agent's normal `ls`/`Glob`/`Read` can reach. Confirmed 3 times
+   (security-reviewer, build-error-resolver, ship-merge): a dispatched agent doing ordinary
+   orientation reads it, and an instruction to "ignore section X" doesn't work once the read
+   already happened — the whole file loads before the "ignore it" instruction can take
+   effect. Keep the answer key one level up (sibling to `with_skill`/`baseline`, not inside
+   either), or withhold the fixtures directory from filesystem access entirely and inline
+   only the data into the dispatch prompt. Even filenames can leak the mechanism
+   (`scenario-5-freshness-mismatch-data.md` names the bug before the file opens) — use
+   neutral labels ("PR A," "PR B") instead of descriptive ones.
+
+2. **A benchmark/timing script must import the real function, never inline-copy it.** A
+   copy-pasted duplicate looks correct and produces real-looking numbers at fixture-build
+   time, but silently disconnects the benchmark from whatever the dispatched agent actually
+   edits — confirmed on `performance-optimizer`. Before trusting any before/after number,
+   grep the bench script for the function's definition; if it appears there instead of an
+   `import`/`require`, the fixture is broken and every number it produces is meaningless
+   regardless of what the dispatched agent did.
+
+3. **Trap file-locality.** If a masking-trap fixture puts the correct fix in the same file
+   the compiler or error message points to, a diff-only pass/fail check can't distinguish
+   "the agent reasoned about which side of the bug was real" from "the agent never looks
+   past the file it was handed" — both produce the identical correct diff. For a fixture
+   meant to test diagnosis under genuine ambiguity, put the trap fix and the correct fix in
+   the same file and surface the error somewhere else, or note the weaker claim explicitly
+   in the fixture's own ground truth rather than letting a diff-only pass read as stronger
+   evidence than it is. Related: a trap and the loop-mechanic it's also meant to exercise
+   (e.g. "catch a self-introduced regression on re-run") can turn out to be the same
+   branch — an agent that correctly avoids the trap then never triggers the loop-mechanic
+   path either. Build those as two separate fixtures, not one.
+
 ## The template
 
 Copy once per agent. Fill every `[bracket]`. Send **both** agent calls in the same
@@ -59,7 +101,9 @@ SUMMARY.md — whatever this loop actually produced]):
 2. [path to eval-0 no_skill/baseline output]
 [... one pair per eval case]
 
-The prompts each output responds to:
+The prompts each output responds to (quoted **verbatim** from the original fixture-agent
+dispatch or from `prompts.md`/`eval_metadata.json`/`prompt.md` — never paraphrased; see
+"What not to cut" below for why):
 - [eval-0 name]: "[the original task prompt given to the fixture agent]"
 - [eval-1 name]: "[...]"
 [...]
@@ -132,6 +176,16 @@ names, assertions) change every time; these three don't:
    in a fixture generated before a fix round isn't evidence the target still has the
    problem — and skipping this step is how a fixture-only bug gets misattributed as a
    real content gap (or vice versa).
+4. **Quote the original task prompt verbatim — never paraphrase it.** A reviewer checking
+   whether an output "invented" a detail can only trust that check against the actual text
+   the fixture agent saw. A paraphrase that drops a qualifying phrase ("their own status
+   page confirms it," "directly checkable from...") makes a faithfully-restated fact look
+   fabricated — and two reviewers independently checking the *same* paraphrase will both
+   flag it, which reads as double-confirmation but is really one shared blind spot counted
+   twice. Confirmed on `score-decision` (v0.68.93): a whole cluster of "fabrication"
+   findings dissolved once checked against the true dispatch text. If the source prompt is
+   long, quote a shortened excerpt rather than trimming it to a summary — cut length, not
+   fidelity.
 
 ## After both agents return
 

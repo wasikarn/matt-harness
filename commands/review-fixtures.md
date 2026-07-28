@@ -26,8 +26,9 @@ don't assume the Skill-side names apply to an Agent or Command target.
 
 **Why 2 agents, not 1**, and the exact prompt skeleton this command fills in: read
 `${KBG_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5
-below. That file is the single source of truth for the prompt text and the 3 instructions
-that must not be cut — this command only orchestrates around it.
+below. That file is the single source of truth for the prompt text, the fixture-construction
+hygiene checklist, and the 4 instructions that must not be cut — this command only
+orchestrates around it.
 
 ## Steps
 
@@ -96,6 +97,33 @@ names. A missing `eval_metadata.json`/`prompt.md`/`review.md` on an otherwise-va
 directory is not itself a stop condition — proceed with the general-quality pass noted above
 and flag the missing prompt context in the dispatched agents' prompts and in Step 8's report.
 
+### 3.5. Check for an existing reconciliation
+
+Before generating anything new, check whether `<iteration-path>/feedback.json` already
+exists. If it doesn't, skip straight to Step 4 — this is the common case and needs no
+special handling.
+
+If it does exist, read it. Then tell the user plainly: a reconciliation already ran against
+this workspace (name the eval names and, if visible from the file's own content or a quick
+`git log` check, roughly when), and ask how to proceed rather than silently either re-doing
+the work or silently skipping it:
+- **Scope to the gap** — if the existing file only covers some evals, or a fix landed since
+  it was written (check via Step 4's `git log`), dispatch fresh reviewers only for what's
+  actually uncovered, with Step 5's differentiation angle aimed at what the prior pass
+  didn't check.
+- **Re-run anyway** — appropriate right after applying a fix, to measure whether it held;
+  say so explicitly when this is the reason.
+- **Treat the existing file as current** — if nothing has changed since it was written,
+  report its findings back to the user instead of re-dispatching, and stop here.
+
+**Why this matters:** running fresh reviewers against a workspace that already has a
+reconciliation burns two full agent dispatches to re-derive a verdict that's already
+recorded, with no way to tell from the output alone whether the second pass found something
+genuinely new or just repeated the first. Confirmed once (`plan-reviewer`, 2026-07-27) — a
+second pass independently re-derived a conclusion the existing `feedback.json` already had,
+only caught after the fact because `git diff` on the target file happened to come back
+empty.
+
 ### 4. Best-effort prior-fix context
 
 Run `git log --oneline -- <target file resolved in Step 1>` filtered to commits after the
@@ -121,6 +149,20 @@ end up with two copies of the same prompt instead of complementary coverage.
 Using the template from the reference doc (Step 0 above): fill in the target name, domain
 description, file list (from Step 3), eval prompts, assertions, prior-fix context (Step
 4, or omit), and the agent-2-only differentiation line (Step 5).
+
+**The eval prompts must be quoted verbatim from their true source — never paraphrased or
+summarized.** "True source" means whichever of `eval_metadata.json`, `prompt.md`, or the
+iteration-level `prompts.md` Step 3 actually found, or (if none exist) the literal text of
+the original `Agent` tool call that dispatched the fixture-generation agent. A reviewer has
+no way to tell your compressed restatement from the real thing, and will treat any
+qualifying phrase your paraphrase happened to drop as evidence the with-run output invented
+something — producing a "fabrication" finding that looks double-confirmed when two
+reviewers converge on it, but is really one shared blind spot (your paraphrase) counted
+twice. Confirmed the hard way on `score-decision` (v0.68.93): both reviewers independently
+flagged the same 3 "invented" details, and none of them held up once checked against the
+actual dispatch text — every one traced to a fact genuinely given, just dropped from the
+compressed reviewer prompt. If the true source is long, quote the relevant portion in full
+rather than trimming it — a shortened-but-verbatim excerpt is fine; a reworded one is not.
 
 **Before dispatching, write both composed prompts verbatim to
 `<iteration-path>/dispatch-prompts.md`** (one clearly-labeled section per agent, plus
