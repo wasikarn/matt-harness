@@ -123,7 +123,12 @@ Run yourself (all read-only):
   proved *which URLs match*, never the resulting `Location` string. A prior green check can be
   adjacent-but-not-covering; read what it literally tested.
 
-Name for the operator (you must not run these):
+Name for the operator (you must not run these) — this holds wherever you'd reconstruct the
+action, not just inside the repo under review: writing a scratch copy with the guard removed (or
+the mutation otherwise applied) and running it from `$TMPDIR` or any other scratch location is
+still running the mutation. Relocating it outside the tracked files doesn't turn a forbidden
+action into an empirical check you're cleared to perform yourself — the fixture repo not showing
+a diff afterward isn't the bar; not having performed the mutation at all is:
 - **The mutation** that would prove a test vacuous or a guard load-bearing (delete the guard →
   the test must fail).
 - **The query** that would confirm a state you're reasoning about (a `SELECT` on *staging* for a

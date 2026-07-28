@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.87] — 2026-07-28
+
+Closed a real gap in this session's own review-fixtures practice: `blind-spot-hunter`'s v0.68.43
+fix (2 doctrine gaps closed via 5 solo whole-file re-review rounds, reacting to 4 solo `review.md`
+files) had never been checked by an independent 2-agent pass, and never checked at the output
+level — did the shipped text actually change what a fresh dispatch produces. Unlike this
+session's other fixture-review targets (`summarizer`, `backend-architect`, `code-architect`),
+this target's 4 git-tracked fixture repos were still intact on disk with their original diffs, so
+instead of a doc-only contradiction hunt, re-ran the 4 `with_agent` dry-runs fresh against the
+current (post-fix) doc and kept the original (2026-07-25, time-mismatched, explicitly noted as
+such) `baseline` outputs unchanged — baseline has no doctrine dependency, so re-running it would
+add run-to-run noise, not information. Then dispatched 2 independent reviewers: one checking
+whether the 2 targeted gaps (fixture A's `bulkForceReserve` losing its own severity entry;
+fixture D's fabricated `advisor()` consultation claim) actually closed, one checking whether the
+fix traded under-confidence for over-confidence (hedging a finding that should've stayed
+confident). Both targeted gaps confirmed closed at the output level — `bulkForceReserve` now gets
+its own entry and is counted in the closing verdict; the `advisor()` fabrication is gone; a third
+gap (fixture C's reachability/`unverified` conflation, which the same commit also fixed) is also
+confirmed closed — the run now keeps and scores the real `sendBulkNotification` bug instead of
+self-contradicting into a false CLEAN verdict. The overcorrection check came back clean (0
+instances) except one narrow, contested case (fixture C's FaaS-lifecycle `unverified` finding,
+which baseline explicitly excluded as speculative — one reviewer read it as a contained cost of
+the new severity value, the other as a legitimate use; not fix-worthy either way). One real,
+double-confirmed regression surfaced that neither original review anticipated: a fresh run on
+fixture B wrote a script to scratch space reconstructing a guard-deleted version of the function
+under test, ran it via Bash, and reported the result as empirical proof — a direct violation of
+the doc's own explicit "Name for the operator (you must not run these): the mutation that would
+prove a test vacuous" rule, just relocated outside the fixture repo, which the rule's wording
+didn't clearly rule out. Verified independently against both the file on disk and the doc's exact
+text before crediting it. Presented to the user via `AskUserQuestion` rather than applying
+unilaterally; user selected "apply now." Fixed in `agents/blind-spot-hunter.md`: the "must not
+run these" list now states explicitly that relocating a forbidden mutation to `$TMPDIR` or any
+other scratch location still counts as running it. Self-verified via whole-file re-read post-fix
+— no new contradiction. Two other findings from the original 4 reviews (a partial-quote-built
+theory in fixture B, a compound-guard exit-path undercount in fixture D) remain open, known,
+deliberately-deferred gaps — their proposed text fixes were never applied, and this run's outputs
+happening not to repeat them is run-to-run variance, not evidence they're fixed.
+
 ## [0.68.86] — 2026-07-28
 
 `/review-fixtures agents/code-architect.md`, per user request to run the same fixture-driven
