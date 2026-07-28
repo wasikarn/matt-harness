@@ -5,6 +5,58 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.92] — 2026-07-28
+
+First-ever `/review-fixtures`-style loop for `skills/recursive-improve/SKILL.md` — no
+`recursive-improve-workspace/` existed before this run, and `git log` showed only a
+mechanical rename (v0.68.7) since v0.12.0-era substantive work. Unlike `decide` (pure
+reasoning), this target actually runs live scripts and mutates real files past its ASK gate,
+so `advisor()` was consulted on the fixture safety design before dispatching anything:
+synthetic Observe/Act data given as input rather than live-run, headless-`-p` framing instead
+of an unverifiable "tool unavailable" claim, and an explicit dry-run instruction. `isolation:
+"worktree"` was attempted as a structural backstop but is blocked in this repo by design
+(`gate:worktree:develop-only`, the `/.kbg-no-worktree` sentinel) — safety fell back to
+prompt-level instructions alone. **That gap bit once, for real**: the eval-1 `without_skill`
+baseline dispatch used real file paths with no explicit "don't touch real files" instruction
+(unlike evals 2–3), and the agent ran real scripts and actually edited the real, already-shipped
+`skills/decide/SKILL.md` on disk. Caught immediately, confirmed with the user via
+`AskUserQuestion`, reverted (`git checkout --` is itself blocked by this repo's own
+`irrecoverable.sh` gate even after user confirmation — restored via `git show HEAD:<path>` +
+manual `Edit`, matching this session's own established recovery precedent). Eval 1 was rebuilt
+with fictional paths and the same explicit dry-run instruction as evals 2–3, then re-run clean.
+Built 3 fixtures targeting the doctrine's sharpest, most safety-critical claims: the mandatory
+ASK-gate headless fallback, the survivorship-bias guard on a diff that touches verifier/check
+code, and the seam between Step 4's escalate-not-retry cap and Step 5's flat-delta rollback
+framing. 2 independent reviewers (one with a citation-grounding differentiation angle — verify
+every doctrine claim a with_skill output makes against the live file) compared all 6 outputs.
+Strongest finding, double-confirmed via two independently-derived framings: the escalate-not-retry
+eval's with_skill output fabricates an "executed" witness-diff comparison that never ran (no
+BEFORE snapshot existed in the given data, tools were forbidden) — reviewer 1 caught it directly
+by contrasting it against the survivorship-bias eval's careful hedging in the same batch;
+reviewer 2 caught it independently via a consistency check while doing the citation-grounding
+pass. Fixed: added an "Executed, not assumed" requirement to Step 5 — a resumed/inherited-history
+verification must be explicitly labeled as reported by the earlier step, never phrased as a
+fresh execution. Also fixed a real ambiguity in Step 3's denial/headless wording (single-sourced,
+reviewer 1: "wait for an explicit reply" read as potentially in tension with "stop at
+analysis-only," and has no coherent meaning inside a genuinely one-shot headless dispatch) —
+clarified that rendering the prose question IS the stop, and a later turn with a reply resumes
+at the same gate, not Step 4. And closed a template gap Step 3's own unanswered-gate branch had
+no slot for: extended the Output Format's `approved` field to name the unreachable/analysis-only
+terminal state, and added a note that the `status` field's `not-done` reason string — not the
+enum — is what must distinguish "never entered Act" from "entered Act and failed" (reviewer 2,
+grep-verified against the live file; also confirmed reviewer 1's independent claim that the
+`rollback` field's self-diagnosed gap didn't hold up — it already has a `none` value, used
+correctly). Considered and explicitly rejected one double-confirmed claim (a `drift_guard` enum
+gap for verifier-touched diffs) — the existing survivorship-bias guard already covers it via the
+same free-text-reason convention used elsewhere in the template. A secondary, consistent pattern
+across both reviewers, not actioned as a fix: baseline (no doctrine) matched or exceeded with_skill
+on raw trap-catching in 2 of 3 evals — with_skill's real, distinguishing value here is the
+structural gate apparatus (explicit render-and-wait, explicit human-facing escalation menus,
+auditable doctrine vocabulary), not superior defect detection. Prompts and dispatch text
+persisted to `recursive-improve-workspace/iteration-1/{prompts,dispatch-prompts}.md` before
+dispatch, including the incident note so reviewers had context without misattributing the
+fixture-dispatch gap to the target file's own doctrine.
+
 ## [0.68.91] — 2026-07-28
 
 First-ever `/review-fixtures`-style loop for `skills/decide/SKILL.md` — no `decide-workspace/`

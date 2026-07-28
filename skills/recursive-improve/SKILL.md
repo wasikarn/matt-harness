@@ -91,10 +91,14 @@ proceed plan-only into execution.
   - `Reject — keep as analysis only (best when you want the findings without acting)`
 - A planning request is **not** authorization to execute. **Denial ≠ approval.** If
   `AskUserQuestion` is denied (dontAsk / headless `-p`), render the same question as numbered
-  prose and wait for an explicit reply; if no human can answer, **stop at analysis-only** — never
-  fail open into execution.
-- **Success criterion:** an explicit Approve (with the candidate set the user signed off on) or a
-  Revise/Reject that loops back / ends.
+  prose in the turn's own output and stop there — "waiting for an explicit reply" means ending
+  the turn with the question on record, not an active poll loop; there is no live channel to
+  wait on inside a single headless dispatch. If no human can answer (this turn or ever), **stop
+  at analysis-only** — never fail open into execution. A later turn that carries an explicit
+  reply resumes at this same gate, not at Step 4 directly.
+- **Success criterion:** an explicit Approve (with the candidate set the user signed off on), a
+  Revise/Reject that loops back / ends, or — when no human is reachable this turn — the rendered
+  prose question plus an explicit stop-at-analysis-only statement. Only Approve authorizes Step 4.
 
 ### 4. Act — execute approved candidates
 
@@ -113,6 +117,11 @@ proceed plan-only into execution.
 
 ### 5. Verify — did it actually improve? (drift guard)
 
+- **Executed, not assumed.** The audit re-run, the deterministic checks, and Step 6's witness
+  diff must be something this turn actually ran. If Act happened in an earlier turn or session
+  and this pass is resuming to verify it, say so explicitly and label every result as reported
+  by that earlier step — never phrase an inferred or already-given result (a stated history, a
+  prior transcript) as if you just executed the command yourself.
 - Re-run `harness-audit` (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`). Compare the CRIT/WARN
   counts to the Observe baseline.
 - **Drift guard:** if no signal improved — audit finding count not down, and no other named metric
@@ -151,7 +160,7 @@ proceed plan-only into execution.
 recursive-improve — iteration <N> report
   observed:        <reader summary: gaps across N sessions> · <audit: C/W/I counts>
   proposed:        <N candidates>
-  approved:        <N>   (user gate: approve | revise | reject)
+  approved:        <N>   (user gate: approve | revise | reject | unreachable — analysis only)
   executed:        <N>   dropped: <N — and why>
   per candidate:
     - <name> · file:line | session | audit-id
@@ -163,6 +172,11 @@ recursive-improve — iteration <N> report
   witness_diff:    <fleet changes, or "none">
   backlog:         <candidates past the cap / deferred, or "none">
 ```
+
+`not-done` covers two distinct cases — the reason text is what makes it unambiguous, not the
+enum: never entered Act (gate came back unreachable/reject, or this candidate wasn't selected
+this iteration) versus entered Act and failed (retry cap spent, per Step 4's escalate-not-retry
+rule). Say which one happened in the reason string every time.
 
 ## Failure Modes to Avoid
 
