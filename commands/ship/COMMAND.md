@@ -155,7 +155,16 @@ There is no autonomous loop. Each iteration requires explicit user re-invocation
 **Goal**: Land the change with proof and clean review.
 
 **Actions**:
-1. Invoke `/ship-merge`. Its own Phase 1 already runs the full Rule-14-scored review-state gate (Critical findings, CI status, review freshness, coverage) — don't duplicate that check here.
+1. **Check for an existing PR**: `gh pr view --json number -q .number 2>/dev/null`. If none
+   exists yet, invoke `kbg:pr` to open one first — it runs its own templated preview/confirm
+   gate before creating anything. Don't shortcut this with a raw `gh pr create`, which skips
+   that gate. `/ship-merge`'s Phase 1 hard-requires a PR (`gh pr view`) and has no fallback of
+   its own for a branch with none — Path B's ordinary first-push case would otherwise dead-end
+   here after every prior phase already passed.
+2. Tell the user to run `/ship-merge` — this command carries `disable-model-invocation: true`,
+   so it cannot be invoked directly; hand the user the literal string, don't call it as a tool.
+   Its own Phase 1 already runs the full Rule-14-scored review-state gate (Critical findings,
+   CI status, review freshness, coverage) — don't duplicate that check here.
 
 ---
 

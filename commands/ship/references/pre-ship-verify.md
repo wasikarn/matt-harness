@@ -66,8 +66,11 @@ Criteria: <PASS N · MANUAL N · FAIL N>
 **AMBER:** list the MANUAL criteria and ask the user to confirm them before proceeding.
 
 **GREEN:** state the change is verified. Suggest next step:
-- PR exists → proceed to Phase 6 (`kbg:review-pr`).
-- No PR yet → create or push the branch before Phase 6.
+- Not pushed yet → push the branch, then proceed to Phase 6 (`kbg:review-pr`).
+- Proceed to Phase 6 regardless of whether a PR exists — `kbg:review-pr`'s own-branch mode
+  diffs against `git merge-base`, not a PR, so it doesn't need one. **A PR is not required
+  until Phase 8** (`/ship-merge` hard-requires one); if none exists yet, that's handled there
+  via `kbg:pr`, not here.
 
 ## Phase 4 — Audit trail
 

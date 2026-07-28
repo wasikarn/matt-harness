@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.89] — 2026-07-28
+
+`/review-fixtures ship` — first fixture-driven review for `commands/ship/COMMAND.md`, picked
+because it already carried a real, dated, previously-deferred finding: `CHANGELOG.md` v0.61.10
+(2026-07-20) had flagged that `/ship` never calls `kbg:pr` before handing off to `/ship-merge`,
+and that follow-up never happened. `ship` carries `disable-model-invocation: true`, so this was
+a dry-run doc-reasoning review (fixture facts + doc excerpts inlined, no live dispatch) — built
+1 scenario (`eval-phase8-no-pr-yet`), 2 independent reviewers, both of whom ran `gh pr view`
+live against a real no-PR branch to confirm the failure mechanics rather than assume them.
+Confirmed real: Phase 8's only action was "Invoke `/ship-merge`," which hard-requires a PR
+(`gh pr view`) with no fallback — Path B's ordinary first-push case dead-ends there after every
+other phase already passed, with no doc-sanctioned recovery. Reviewer 2's assigned
+differentiation angle (is the ONE existing "no PR yet" sentence, in `pre-ship-verify.md`'s
+GREEN branch, even correct?) sharpened a second finding beyond what was pre-registered before
+dispatch: that sentence pointed at the wrong phase (Phase 6 doesn't need a PR — verified via
+`review-pr`'s own-branch mode, which diffs against `git merge-base`) and its "create or push"
+wording was already trivially satisfied by the ordinary case, manufacturing false reassurance
+exactly where the condition doesn't matter. Fixed both: Phase 8 now checks for an existing PR
+and invokes `kbg:pr` first if none exists (not a raw `gh pr create`, which would skip `kbg:pr`'s
+own preview/confirm gate); `pre-ship-verify.md`'s GREEN branch now names Phase 8, not Phase 6,
+as where a PR is actually required. Also fixed a secondary, single-sourced wording nit reviewer
+2 caught: `ship-merge.md` itself carries `disable-model-invocation: true`, so Phase 8's "Invoke
+`/ship-merge`" was ambiguous about whether the model tool-calls it or hands the user the literal
+string — now states the latter explicitly.
+
 ## [0.68.88] — 2026-07-28
 
 Applied both target-attributable fixes iteration 3 of `build-error-resolver-workspace` found
