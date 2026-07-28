@@ -31,7 +31,7 @@ Propose 4–6 judging criteria, each **measurable** (you can cite the evidence t
 
 ### 3. Score each criterion
 
-Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `judgment-ladder.md`'s "Estimate risk" rung, read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
+Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). Reserve the block for when there's no basis to place any number at all — a criterion whose only basis is secondhand, self-reported, or uncorroborated still has a real, low position on most criteria's own scale (the default rubric's Evidence criterion measures "direct verification vs inferred" — inferred is a valid low score, not grounds to block) and should be scored there instead, letting the fatal-weakness floor (Step 4) catch it. A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `judgment-ladder.md`'s "Estimate risk" rung, read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
 
 ### 4. Verdict
 
@@ -73,7 +73,7 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 
 Before scoring, name whether the option set was **generated exhaustively** or **handed to you** (selection bias — a confident rank over an incomplete set can't surface an absent, better option). If handed to you and the stakes are real, ask whether a completeness/reframe pass ran first; if not, say so in the output rather than silently ranking as if the set were complete.
 
-When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable.
+When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable. **If the highest raw weighted sum belongs to a disqualified option** (not the one recommended), render that option's full breakdown too — a reader needs to verify the disqualification was a genuine floor call, not a scoring artifact, and that check is impossible without seeing the numbers behind it.
 
 ```markdown
 ## Decision Score: <decision> — rank <N> options
@@ -86,12 +86,12 @@ When the decision is to choose among ≥2 options (rank / recommend), score **ea
 **Recommend**: Option A — highest weighted among floor-passing.
 **Leverage**: <which criterion would flip A vs the runner-up, and what evidence would move it>
 
-— then render Option A's full criterion table (the single-decision format above).
+— then render Option A's full criterion table (the single-decision format above). If Option B's raw weighted sum was higher than A's despite disqualification, render B's table too.
 ```
 
 ## Completion criterion
 
-A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit. **For ranking**: a ranked table with the per-option floor verdict, a named recommendation among floor-passing options, and the recommended option's full criterion breakdown.
+A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit. **For ranking**: a ranked table with the per-option floor verdict, a named recommendation among floor-passing options, and the recommended option's full criterion breakdown — plus the disqualified top scorer's breakdown too, if a different, disqualified option has the higher raw weighted sum.
 
 ## Failure modes
 

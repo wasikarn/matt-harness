@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.93] — 2026-07-28
+
+`/review-fixtures`-style loop for `skills/score-decision/SKILL.md`, first-ever for this target
+(`git log` showed only a mechanical footer-addition commit, v0.30.2, since v0.26.0-era
+substantive work). Unlike `recursive-improve`, this skill's whole procedure is prose
+reasoning/scoring with no filesystem or tool-execution component — `advisor()` confirmed no
+worktree/mutation safety apparatus was needed, unlike the prior loop. `advisor()` also
+pressure-tested the initial 3-eval draft before dispatch and killed a 4th candidate (fatal-weakness-floor
+direct compliance) as a text-presence test in disguise — the rule is stated twice, verbatim, in
+the file, so a with_skill run complies by construction and a baseline has no floor concept to
+apply at all. Replaced with a sharper target advisor surfaced: what happens to the weighted-sum
+arithmetic and the Output Format's Verdict line when a top-weighted criterion is genuinely
+unscoreable, since Step 3 says block but the template shows Blocked/Weighted/Verdict as if all
+three always render together. Dispatched 6 fixture-generation agents (3 evals × with_skill/
+without_skill) plus 2 independent reviewers (one with an arithmetic-recomputation
+differentiation angle) — both prompt sets persisted to `dispatch-prompts.md` before dispatch.
+Both reviewers independently converged on a headline "evidence-laundering" finding (with_skill
+outputs dressing stipulated prompt facts as independently "confirmed") across 3 of 6 outputs —
+this **did not survive verification**: grep-confirmed against `prompts.md` (the true
+fixture-agent source) that every flagged phrase traced to a fact the original dispatch
+explicitly gave as stipulated/verified (e.g. "their own status page confirms it," "directly
+checkable from... the repo's existing docs"). Both reviewers had checked fidelity against
+`dispatch-prompts.md`'s compressed reviewer-facing paraphrase instead, which silently dropped
+those qualifying phrases — one shared blind spot counted twice, not independent confirmation.
+Recorded as a `/review-fixtures` process lesson (reviewer dispatch prompts must inline the
+verbatim fixture-agent prompt or point at the true source), not a `score-decision` doctrine gap.
+Two real, double-confirmed findings survived (both textual reads of the current file, independent
+of the prompt-fidelity issue): fixed a Step 3 ambiguity where "inferred/secondhand" evidence
+could be misread as grounds to block rather than score low and let the fatal-weakness floor
+catch it (both reviewers, plus the fixture agent's own mid-run `advisor()` call, independently
+converged on the same textual anchor — the floor's own worked failure-mode example is
+incoherent unless thin-evidence criteria get scored, not blocked); and closed a Ranking-format
+auditability gap where a disqualified option with the *highest* raw weighted sum never got its
+breakdown shown, making the disqualification unverifiable — the Output Format, its worked
+example, and the Completion criterion all now require that option's breakdown too. A
+run-level arithmetic slip (a Caveats line citing "~24 points under threshold" against the wrong
+comparator) was confirmed real but left unfixed — no SKILL.md clause pulls toward it.
+
 ## [0.68.92] — 2026-07-28
 
 First-ever `/review-fixtures`-style loop for `skills/recursive-improve/SKILL.md` — no
