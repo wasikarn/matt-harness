@@ -63,6 +63,7 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 - **Address Critical first**: Phase 6's tier prioritization is the gate
 - **Re-run after fixes**: Verify issues are resolved (new HEAD_SHA = fresh window)
 - **Use specific aspects**: Target specific reviewers when you know the concern (e.g., kbg:review-pr errors after touching exception handling)
+- **Cheap review, not a weaker one**: `kbg:review-pr <n> code` is the answer to "review this but keep it cheap" — it narrows to `code-reviewer`'s general-quality lens (plus a language specialist when one applies), taking the median run from ~4 dispatches to ~2. It's a narrowing, not a weakening: the mandatory general-quality lens still runs, unlike an improvised skip.
 
 ## Workflow Integration
 

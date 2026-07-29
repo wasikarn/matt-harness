@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.96] — 2026-07-29
+
+Investigated a request to add a review depth/level system to `kbg:review-pr` (quick/standard/
+deep tiers) and concluded against building it — Rule 2 (proven need). Two independent agents
+(a minimal-change skeptic, a trust-contract designer) plus direct mining of 106 real
+production `review-pr-*.json` files showed the target population (single-file, non-test
+diffs) is 6/106 (5.7%) and already runs at the cost floor: Phase 5 step 3.6 already skips on
+a trivial diff, and `kbg:review-pr <n> code` already narrows the median run from ~4
+dispatches to ~2 — a bigger saving than any depth tier could safely deliver, and it shipped
+undocumented. Investigating *why* the need felt unmet surfaced a real, confirmed bug instead:
+`review-pr-2603.json` shows PR #2603 invoked the Rule-2 trivial-diff economy (verbatim: "Rule
+2" in its own `rehunt` field) to justify dispatching only `typescript-reviewer` and never
+`code-reviewer` — a violation of Phase 3's own "always" rule for `code-reviewer`'s
+general-quality lens (`SKILL.md:77`), reached by substitution (the specialist's lens was
+recorded as "type-design + general TS quality") rather than open omission, which a
+"never drop code-reviewer" restatement alone would not have caught. Fixed with two edits to
+`skills/review-pr/SKILL.md`: the trivial-diff specialist-skip (line 78) now states explicitly
+that a specialist's lens description never substitutes for `code-reviewer`; the Rule-2
+economy at step 3.6 (line 143) now states explicitly that it is scoped to the hunter dispatch
+only, not a general license across Phase 3. `skills/review-pr/reference.md`'s Tips gained a
+line naming `kbg:review-pr <n> code` as the sanctioned cheap-review lever. Also documented a
+previously-unstated invariant in `commands/ship-merge.md`'s automation-bias guard: the
+guard's ≈64.7-point margin below the 70 threshold depends on no future scored criterion
+being added at weight ≥15 (re-derived: `(55 + W) × 100 ÷ (85 + W) ≥ 70` solves to `W ≥ 15`,
+the binding CI-present bound) — not hypothetical, since the 2026-07-23 Approval-status
+removal already moved this same arithmetic once. `advisor()` caught, before either edit
+landed, that a naive "code-reviewer always runs" restatement would have missed the actual
+#2603 mechanism (substitution via a broadened specialist lens, not omission) — confirmed
+against the raw state file before writing the fix. No `depth` field, no `rehunt` schema
+change, no new Phase 1 question — full reasoning and the deferred trust-contract design (for
+if the trivial-diff population ever stops being 5.7%) preserved in the session's approved
+plan.
+
 ## [0.68.95] — 2026-07-29
 
 Fixed a dangling cross-reference in `commands/review-fixtures.md`, caught by a drill-down
