@@ -12,14 +12,39 @@ Built on the **composer-not-creator** principle: the best upstream harness tools
 
 ## Table of Contents
 
+- [Why It's Built This Way](#why-its-built-this-way)
 - [Quick Start](#quick-start)
 - [What You Get](#what-you-get)
+- [Engineering Doctrine](#engineering-doctrine)
 - [Spotlight](#spotlight)
 - [Repository Layout](#repository-layout)
 - [Development](#development)
 - [Documentation](#documentation)
 - [Attribution](#attribution)
 - [License](#license)
+
+---
+
+## Why It's Built This Way
+
+kbg-harness isn't just a folder of skills and agents — its one structural rule is a strict
+split between what's allowed to **block** an action and what's only allowed to **advise**
+on it:
+
+- **Gates** (`hooks/gates/`) are deterministic, non-LLM checks. They can deny an action.
+- **Advisory sensors** (`hooks/advisory/`) are LLM-backed. They journal — they can never
+  deny.
+
+The reason: an LLM grading work the same model class just produced is circular — "two
+optimists agreeing." So no model here ever gates its own output; only a script that can't
+rationalize gets veto power. Every loop in the harness has to end at a **score** a
+deterministic check can branch on, not a feeling the model talks itself into.
+
+This rule is built from three named coding-agent disciplines — harness engineering, loop
+engineering, and graph engineering — each independently researched and adopted to a
+different degree, not taken on faith. See [Engineering Doctrine](#engineering-doctrine) for
+what's structural, what's vocabulary-only, and what's an open gap the harness admits to
+rather than hides.
 
 ---
 
@@ -80,6 +105,89 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 | **Themes** | 1 | `catppuccin-mocha` |
 
 > Hooks: SessionStart doctrine injection (METHODOLOGY.md), PreToolUse gates in `hooks/gates/`, advisory sensors in `hooks/advisory/`, and cost tracking in `hooks/stop/`. The operating model: gates deny the irrecoverable set; sensors journal but never gate.
+
+---
+
+## Engineering Doctrine
+
+kbg-harness's design draws on three named disciplines for coding-agent systems. Each was
+independently researched (primary sources cited below, not paraphrased secondhand) before
+anything was adopted — and each was adopted to a different degree. This section is here so
+that anyone evaluating the harness before installing it knows exactly what's structural,
+what's vocabulary-only, and what's an open gap the harness admits to rather than hides.
+
+### Harness engineering — the architectural spine
+
+**Source:** Sarah Böckeler (Thoughtworks, via Martin Fowler's site,
+[April 2026](https://martinfowler.com/articles/harness-engineering.html)) — a coding-agent
+harness modeled as a 2×2 of **direction** (feedforward / feedback) × **execution type**
+(computational / inferential). Her core warning: an *inferential* judge (an LLM) grading
+work the *same model class* just produced is circular — "two optimists agreeing" — and
+should never be trusted to gate.
+
+**Where it's used:**
+- This is the reason `hooks/` splits into `hooks/gates/` (deterministic, non-LLM, can deny)
+  and `hooks/advisory/` (LLM-backed, journals only, can never emit a blocking decision) — the
+  computational/inferential split *is* Böckeler's 2×2, applied as the harness's core
+  operating rule (CLAUDE.md's "Why — the unifying crux," under §Architecture).
+- `docs/harness-decay-cadence.md` re-applies the same 2×2 specifically to staleness/decay
+  reasoning — when a sensor should be trusted to fire, retired, or thickened as models change.
+- Grounding: `docs/research/harness-engineering-2026-04.md` plus two adversarial
+  follow-up critiques (`*-critique-cost.md`, `*-critique-gaps.md`) that pressure-tested the
+  article before it was adopted.
+
+**Verdict:** substantially adopted — not a citation, the structural backbone of how hooks
+are split and why an LLM is never wired to `permissionDecision: deny`.
+
+### Loop engineering — vocabulary kept, the autonomous endpoint rejected
+
+**Sources:** Sydney Runkle's ["Art of Loop
+Engineering"](https://x.com/sydneyrunkle/article/2066928783534289358) (agent loop /
+verification loop / event-driven loop / hill-climbing loop) and
+[@0xCodez's 14-step roadmap](https://x.com/0xCodez/article/2066867539305459732)
+(harness → loop → self-improving system).
+
+**Where it's used:**
+- kbg keeps the L1/L2 vocabulary — bounded loops with a human in it — but explicitly
+  rejects both sources' endpoint: an L3/L4 loop that restarts itself with no human turn.
+  This is the "no-model-self-start" rule (CLAUDE.md's Operating model), and it's why the
+  earlier L2–L5 "bounded-autonomy ratchet" build was retired rather than finished.
+- Concretely: `/ship`'s Phase 7 fix loop is explicit that "there is no autonomous loop —
+  each iteration requires explicit user re-invocation." Rule 4 ("define done, loop until
+  verified") governs the *inside* of one bounded pass, never a chain of passes that starts
+  itself.
+- Full keep/discard analysis of both sources lives in `BOUNDARY.md`'s cross-references
+  section.
+
+**Verdict:** the loop vocabulary and L1/L2 patterns are load-bearing; the L3/L4 unattended
+conclusion both sources argue toward is a deliberate non-goal, not an oversight.
+
+### Graph engineering — naming what already ran, not a new mechanism
+
+**Source:** eigent.ai's ["Graph Engineering for AI
+Agents"](https://www.eigent.ai/blog/graph-engineering-ai-agents), traced back to its actual
+academic root (GraphBit, [arXiv:2605.13848](https://arxiv.org/abs/2605.13848)) plus prior art
+(LangGraph, AutoGen, CrewAI) — because the blog post's own 4-way failure taxonomy turned out
+to repackage separately well-studied problems (specification gaming, goal
+misgeneralization, MAS coordination conflict) under new labels rather than contribute new
+science.
+
+**Where it's used:**
+- `docs/reference/graph-model.md` formalizes kbg's existing dispatch/verification structure
+  as an explicit graph: 5 node types (Skill, Agent, Command, Gate, Advisory sensor) and 4
+  typed edges (`routes-to`, `depends-on`, `verifies`, `hands-off-to`). It adds no new
+  mechanism — it names structure that was already running, scattered across
+  `skills/orchestrate/SKILL.md` and `BOUNDARY.md`, in one place.
+- Only one edge type — `verifies`, what the gates in `hooks/gates/` already do — is
+  mechanically enforced the way GraphBit enforces typed edges (a non-LLM engine decides).
+  The rest (which route an orchestrator picks, whether an upstream artifact was copied
+  correctly into the next spawn prompt, whether a skill's stated handoff is honored) are
+  **prompt-discipline**: the doc says so plainly rather than implying they're checked.
+- No external anchor exists yet — a held-out eval set the harness didn't author, or a real
+  usage metric. Documented as an open question in `graph-model.md`, not silently closed.
+
+**Verdict:** vocabulary borrowed to document an existing structure clearly; the structure
+predates the term, and the doc is explicit that this is naming, not new capability.
 
 ---
 
@@ -213,6 +321,9 @@ git config core.hooksPath git-hooks
 | [`docs/onboarding.md`](docs/onboarding.md) | 10-minute cold-start guide |
 | [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 vendored mental models (cc-thinking-skills) |
 | [`docs/reference/env-vars.md`](docs/reference/env-vars.md) | Operator-tunable environment variables |
+| [`docs/reference/graph-model.md`](docs/reference/graph-model.md) | Orchestration graph formalization — nodes, typed edges, anchors (see [Engineering Doctrine](#engineering-doctrine)) |
+| [`docs/research/harness-engineering-2026-04.md`](docs/research/harness-engineering-2026-04.md) | Primary-source grounding for the gates/advisory split |
+| [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) | Harness-engineering 2×2 applied to sensor staleness/decay |
 | [`CLAUDE.md`](CLAUDE.md) | Architecture and non-obvious gotchas for Claude Code instances |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release notes |
 
