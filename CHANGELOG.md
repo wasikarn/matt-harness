@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.97] — 2026-07-29
+
+`/kbg:compliance-audit` on v0.68.96's commit (`5dc0b4b`), the first run of this command:
+3 fresh-context verifiers checked all 12 requirements from the approved plan against the
+actual diff, independent of the implementation session's own account. All 12 conformed. One
+verifier carried the adversarial-completeness mandate against `ship-merge.md`'s
+automation-bias guard (a verifier-perimeter surface) and found the just-shipped weight-≥15
+invariant sentence was incomplete — it only guarded a single new criterion added in
+isolation, missing (a) cumulative weight from several smaller criteria added across separate
+future edits and (b) re-weighting an *existing* criterion upward. Fixed by generalizing to
+the live ratio `D ≥ (7/3) × C` (`D` = non-Critical weight sum, `C` = Critical findings'
+current weight) instead of hardcoded constants. A second independent re-check of that fix
+found a third bypass the fix itself introduced no defense against: lowering Critical
+findings' own weight alone, with `D` untouched, still moves the breakpoint and defeats the
+guard (verified: `C:30→23`, `D` unchanged at 55, score ≈70.5 — passes) — because "recompute
+D" doesn't touch `C` by definition. Fixed a second time with an explicit instruction to
+recompute both `C` and `D` and re-solve the ratio, plus a worked counter-example in the text
+itself. A third independent re-check confirmed this closes it. A fourth, different-mechanism
+finding surfaced during that final check — the shared "70" pass-threshold constant is reused
+across the whole Phase 1 gate (floor rule, N/A-renormalization, incomplete-review guard, this
+guard, the Gate line itself — 5 separate spots) and isn't covered by the invariant sentence's
+own recheck trigger ("any edit to the table above") — logged as an out-of-family known-gap
+per the audit's own scope discipline (Rule 2), not folded into this fix.
+
 ## [0.68.96] — 2026-07-29
 
 Investigated a request to add a review depth/level system to `kbg:review-pr` (quick/standard/
