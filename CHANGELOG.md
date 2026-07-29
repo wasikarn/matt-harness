@@ -5,6 +5,17 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.95] — 2026-07-29
+
+Fixed a dangling cross-reference in `commands/review-fixtures.md`, caught by a drill-down
+audit of the v0.68.94 fix rather than by a fixture loop — Step 6 pointed back to "Step 0
+above" for the reference-doc instruction, but the file had no `### 0.` heading, only an
+unnumbered intro paragraph the reference meant to name. Predates this session (`git blame`:
+2026-07-27, `f7c97d6d`) — not something v0.68.94 introduced or missed. Fixed by promoting
+that paragraph into a real `### 0. Read the reference doc first` step ahead of `### 1.`, so
+the existing "(Step 0 above)" reference now resolves to an actual heading instead of a
+label that never existed in the file.
+
 ## [0.68.94] — 2026-07-29
 
 Fixed the `/review-fixtures` command itself, surveying open gaps across everything learned
