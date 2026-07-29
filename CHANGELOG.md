@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.98] — 2026-07-29
+
+Filed the "70" pass-threshold known-gap from v0.68.97's compliance audit as an explicit
+in-file callout, on user request, rather than leaving it recorded only in `CHANGELOG.md`
+prose. `commands/ship-merge.md`'s automation-bias guard paragraph now carries a "Known gap,
+not yet closed" note directly after the weight-invariant sentence: the guard's invariant only
+covers edits to the criteria table's own weights (`C`/`D`), not a direct edit to the shared
+"70" threshold constant itself, which is reused across 5 spots in the same Phase 1 step 6
+gate (floor rule, N/A-renormalization, incomplete-review guard, this guard, the Gate line).
+Placed inline at the point of risk — where a future editor of this paragraph would actually
+see it — rather than in a separate tracking file, since this repo has no backlog/TODO
+convention and doesn't use GitHub issues for this kind of thing. No behavior change; this is
+documentation only.
+
 ## [0.68.97] — 2026-07-29
 
 `/kbg:compliance-audit` on v0.68.96's commit (`5dc0b4b`), the first run of this command:
