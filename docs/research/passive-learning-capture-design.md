@@ -1,9 +1,20 @@
 # Passive Learning-Capture — Maximal-Bounded design
 
-> **Status:** ✅ SHIPPED & DEFAULT-ON. Phase 1 v0.3.7, Phase 2 (§6) v0.3.8, default-ON flip
-> (opt-out `KBG_LEARN_CAPTURE=0`) v0.3.9 — all 2026-06-21. Owner chose **Build** on the §9.3
-> build-vs-hold call ("I forget often"), then **default-ON, all projects**.
-> **Date:** 2026-06-21 · **Decider:** Owner · **Operating point:** Maximal-bounded (locked).
+> **Status:** 🔴 RETIRED, not re-armed. Phase 1 shipped v0.3.7, Phase 2 (§6) shipped v0.3.8,
+> default-ON flip (opt-out `KBG_LEARN_CAPTURE=0`) shipped v0.3.9 — all 2026-06-21. Owner chose
+> **Build** on the §9.3 build-vs-hold call ("I forget often"), then **default-ON, all projects**
+> — then retired the whole design in the v0.6.0 "Engineering Constitution" reset (2026-06-30,
+> ADR 0006) alongside the L3/L4/L5 autonomy ladder. **Not re-armed since** — confirmed 2026-07-30:
+> the backing scripts (`learn-capture.sh`, `learn-drain-nudge.sh`, `read-candidates.sh`) are
+> absent from disk, and `skills/learn/SKILL.md` (the live replacement) states this explicitly.
+> The real driver: Claude Code shipped its own native ambient auto-memory (~CLI v2.1.59) after
+> this design shipped, making the custom capture/queue/confidence-scoring machinery below
+> redundant with a free platform feature — this repo's own memory store measured 132 files from
+> native capture vs. `kbg:learn` invoked in only 3 sessions (2026-07-20 count; 154 files total
+> as of 2026-07-30, same ballpark). See `skills/learn/SKILL.md`'s "Autonomy posture" section for
+> the live design that superseded this one.
+> **Date:** 2026-06-21 · **Decider:** Owner · **Operating point:** Maximal-bounded (locked at
+> the time — since abandoned; this document is a historical record, not a live reference).
 > **Rev 2 (2026-06-21):** revised after an **independent maker≠checker audit** (5 senior reviewers +
 > 1 adversarial verifier, fresh context). 0 blockers; **6 majors folded in below** — incl. the two
 > that decide net value (drain-loop + harvest-precision), ADR re-homed to **0002** (not 0003), the
@@ -15,8 +26,8 @@
 > (§3 row 6, §4's `METHODOLOGY.md Rule 8` row) — read those as referring to the
 > no-model-self-start rule (`CLAUDE.md`'s Operating model under §Architecture, current),
 > not a live `METHODOLOGY.md` rule number. Accurate as a snapshot of the harness at time
-> of writing — not a live reference; the shipped feature this document describes is
-> unaffected.
+> of writing — not a live reference; the feature this document describes is retired, not
+> live (see the Status line above). Read the rest of this document as design history.
 
 ## 1. Goal & operating point
 
@@ -104,11 +115,15 @@ posture` block at :18-20). Standalone CLAUDE.md §The operating model (was L4 se
 
 ## 6. Phase 2 — L3-guard additions (from the loop drill, optional-after-core)
 
-> **Status:** ✅ SHIPPED v0.3.8 (2026-06-21), owner-scoped. Built: **#3 queue-read (Route B)** +
-> **no-progress cap (`--max-flat`)**. **Dropped: runaway-guard** (active-hours/idle/cooldown) — a
-> category mismatch: those gate a *self-launching daemon*; kbg's loop is human-launched + already
-> bounded by `--max-runs`/`--max-duration`/`--fail-streak`. retry-storm/cost-drift/merge-conflict
-> skipped (retry already capped; no merge inside the loop).
+> **Status:** 🔴 RETIRED alongside §1's capture machinery and the L3/L4/L5 autonomy ladder
+> (v0.6.0 reset, ADR 0006, 2026-06-30). Shipped v0.3.8 (2026-06-21), owner-scoped. Built:
+> **#3 queue-read (Route B)** + **no-progress cap (`--max-flat`)**. **Dropped even before the
+> reset: runaway-guard** (active-hours/idle/cooldown) — a category mismatch: those gate a
+> *self-launching daemon*; kbg's loop was human-launched + already bounded by
+> `--max-runs`/`--max-duration`/`--fail-streak`. retry-storm/cost-drift/merge-conflict skipped
+> (retry already capped; no merge inside the loop). Confirmed 2026-07-30:
+> `recursive-improve/SKILL.md`'s current Observe step reads only harness signals (nudge
+> telemetry, review-pr marker, verification journal) — no queue read remains.
 
 Fold into `skills/recursive-improve/SKILL.md` `--auto` route (computational, within CLAUDE.md §The operating model (was L3 bounded autonomy, retired)):
 

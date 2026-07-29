@@ -46,6 +46,27 @@ skill, caught by the user, not by this checklist. (A hand-pinned HEAD hash is st
 to re-stale; the path is the stable anchor — run `git rev-parse HEAD` there when you need the
 current commit.)
 
+## Research: check qmd before web search
+
+Before starting primary-source research — fact-checking a claim, investigating a library/API,
+verifying a citation — search the local `qmd` collections first, then query `context7` for any
+library/framework doc lookup, before reaching for `WebSearch`. Relevant collections: `kbg-research`
+(this repo's own `docs/research/`), `kbg-memory` (this repo's own memory store), `llm-wiki` (the
+operator's personal knowledge vault, 1,600+ docs spanning every project), plus the tathep/dotfiles
+collections. Run `qmd status` (or the `status` MCP tool) for the full current list; scope a query
+to the relevant collections rather than searching all of them blind.
+
+**Why this line lives here, not in a skill:** kbg built exactly this qmd-first behavior once
+already, wired into a vendored `research` skill (v0.44.0, explicitly kept vendored so "a bare
+install would lose" the qmd/context7 fold-in). It was deleted anyway — commit `d99ccf3` swapped it
+for a bare `gh skill` copy, then v0.58.11 swapped that for the upstream `mattpocock-skills:
+engineering/research` plugin skill, which carries no qmd or context7 awareness (confirmed by grep,
+2026-07-30). Two unrelated migrations, both aimed at fixing namespace collisions, silently dropped
+this value with nobody catching it. A skill file is exactly the kind of surface an upstream resync
+can overwrite out from under you; `CLAUDE.md` isn't. The rule lives here so it survives the next
+resync and applies to every research-shaped task, not just the ones that happen to route through
+one particular skill.
+
 ## Architecture
 
 The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
