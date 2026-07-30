@@ -136,8 +136,24 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - Verifier errors, times out, or returns an unparseable verdict → **stays at its tier.** Same principle as Phase 4 step 4: a missing response is not evidence the finding is wrong.
    - When there are zero Critical/Important findings, this step has nothing to verify — hand off to **step 3.6**, which runs the symmetric guard for that case (a shared blind spot produces *no* finding, and step 3.5 only checks findings that already exist).
 
-   This roughly doubles agent dispatches on a review with several Critical/Important findings (see Integration Notes — Token budget). That cost buys the one thing SCRUTINIZE-4 structurally cannot: a verdict from someone other than the finder. **What this doesn't buy**: the refuter is still an LLM reading code, not a deterministic check — it closes the *independence* gap, not the *empirical-grounding* gap (a correlated hallucination across same-distribution reviewers can survive more LLM opinion). That second gap is covered elsewhere: Phase 6's proof-verification check (own-branch flow) requires actual test/typecheck artifacts, and `/ship-merge` Phase 1 step 6 refuses to trust same-session self-tiering on sensitive-path diffs.
-3.6. **Zero-findings adversarial re-hunt — the blind-spot guard.** Step 3.5 defends against *false positives* (findings that shouldn't survive) and does nothing when the reviewers returned zero Critical/Important findings. But zero findings is exactly the shared-blind-spot case the verifier-separation principle warns about: the maker and same-distribution reviewers can miss the *same* defect and surface no finding at all — a false *negative*, which no amount of refuting-existing-findings can catch. When **zero Critical/Important findings remain after step 3.5's dispositions** — either none were raised, or every one was refuted down to Minor (the trigger is the *final* state, not what step 3 first produced; a review that demoted its only real finding to Minor is exactly as blind-to-the-rest as one that found nothing) — AND the diff is **non-trivial** (≥2 files changed or ≥1 test file touched — the same threshold as Phase 6's proof check), dispatch **one** fresh `general-purpose` agent framed as an **adversarial hunt, not a re-review**: instruct it to *assume a defect exists in the pinned range (`$BASE_SHA..$HEAD_SHA`) and go find it*. Re-reviewing with the same lens just reproduces the zero; changing the posture from "check this" to "there is a bug here — locate it" is what gives a shared blind spot a chance to surface. The hunter returns structured findings (possibly none). (The standalone, dispatchable form of this exact discipline — usable outside a review-pr run, e.g. on a self-authored delta mid-session — is `agents/blind-spot-hunter.md`, which also carries the enriched hunt-shape checklist. Step 3.6 still dispatches an inline-framed `general-purpose` agent here; keep the two in sync until a follow-up single-sources them by having 3.6 dispatch the named agent.)
+   This roughly doubles dispatches on a review with several such findings (Integration Notes —
+   Token budget, in `reference.md`). It closes the *independence* gap, not the
+   *empirical-grounding* gap (a correlated hallucination across same-distribution reviewers can
+   still survive) — that second gap is Phase 6's proof-verification check (own-branch flow) and
+   `/ship-merge` Phase 1 step 6's distrust of same-session self-tiering on sensitive diffs.
+3.6. **Zero-findings adversarial re-hunt — the blind-spot guard.** Step 3.5 only checks findings
+   that already exist — it does nothing when reviewers return zero Critical/Important findings,
+   exactly the shared-blind-spot case (a false *negative* no refutation can catch). When **zero
+   Critical/Important findings remain after step 3.5's dispositions** — either none were raised, or
+   every one was refuted down to Minor (the trigger is the *final* state, not what step 3 first
+   produced) — AND the diff is **non-trivial** (≥2 files changed or ≥1 test file touched — same
+   threshold as Phase 6's proof check), dispatch **one** fresh `general-purpose` agent framed as an
+   **adversarial hunt, not a re-review**: instruct it to *assume a defect exists in the pinned range
+   (`$BASE_SHA..$HEAD_SHA`) and go find it* — re-reviewing with the same lens just reproduces the
+   zero; the reframe from "check this" to "there is a bug here — locate it" is what gives a shared
+   blind spot a chance to surface. The hunter returns structured findings (possibly none). (The
+   standalone dispatchable form, plus the sync note with `agents/blind-spot-hunter.md`:
+   `reference.md`.)
    - **Any Critical/Important finding it raises is verified before it counts.** A hunter told "assume a bug exists" is primed to manufacture a weak one — the exact false positive step 3.5 exists to kill — so apply step 3.5's fail-closed refutation (a *fresh* refuter, same disposition) to each hunter finding once, then tier it. The re-hunt itself runs **once**: a hunter finding never triggers another step 3.6, so the pass always terminates.
    - **Returns nothing** → the zero-findings clean pass stands, now backed by an independent adversarial pass. Record that the re-hunt ran (Phase 6 surfaces it).
    - **Skip** on a trivial diff (a single non-test file) — Rule 2, not worth the *hunter* dispatch — and whenever any Critical/Important finding *survives* step 3.5 (there's already a real finding to act on; step 3.5 owns that path). **This economy is scoped to step 3.6's own dispatch only** — it is not a general license to skip or substitute agents anywhere else in the review, including Phase 3's reviewer fan-out (Phase 3's own trivial-diff rule governs what may be skipped there, and it is narrower than this one).
@@ -233,72 +249,28 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 **Goal**: Record what was reviewed, what was addressed, suggested next step.
 
 **Actions**:
-1. Mark all todos complete. Write the review-state file so `/ship-merge`'s scored review gate can read it:
+1. Mark all todos complete. Write the review-state file so `/ship-merge`'s scored review gate can
+   read it, via the bundled script — never hand-author the JSON:
    ```bash
-   STATE_DIR="${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
-   mkdir -p "$STATE_DIR"
-   # DESTINATION — $STATE_DIR is OUTSIDE the throwaway worktree ($WT from Phase 2).
-   # Write the state file HERE, not to .scratch/ — .scratch/ is a relative path that
-   # resolves INSIDE $WT (rejected.md/ledger.md live there and are intentionally
-   # ephemeral), so anything written to .scratch/ is deleted in step 4's worktree
-   # cleanup. The state file is different: /ship-merge reads it AFTER the worktree
-   # is gone, so it MUST survive cleanup. (Reported in production: PR #2619's
-   # review-pr-2619.json was written to $WT/.scratch/ and lost with the worktree,
-   # so the merge gate read "no review ran." The assertion after the write below
-   # exists to make that failure loud instead of silent.)
-   # REHUNT_STATUS (Phase 5 step 3.6): "clean" (ran, nothing) | "skipped-trivial" | "incomplete"
-   # (required but hunter errored/timed out) | "n/a" (findings existed → 3.5 path, no re-hunt).
-   # An incomplete re-hunt or ANY dispatch failure means the review never certified zero criticals.
-   # It must NOT reach /ship-merge as clean — otherwise the machine gate reads critical_count:0 as a
-   # clean pass, the exact rubber-stamp the human was told was "verdict incomplete." Force clean:false.
-   REHUNT="${REHUNT_STATUS:-n/a}"
-   # Canonicalize: audited 105 real production state files (2026-07-28) and found
-   # REHUNT_STATUS set to free-text narrative ("ran — step 3.6 surfaced 1 Important...",
-   # "not_triggered", "complete", 15+ distinct shapes) instead of one of the 4 tokens
-   # above in most sampled runs — the comment alone doesn't constrain what a session
-   # writes here. Anything that isn't exactly one of the 4 tokens is treated as
-   # not-certified (fail closed, same as an explicit "incomplete") — a narrative
-   # summary is not proof the hunt actually finished clean.
-   case "$REHUNT" in
-     clean|skipped-trivial|incomplete|n/a) ;;
-     *) REHUNT="incomplete" ;;
-   esac
-   if [ "$REHUNT" = "incomplete" ] || [ -n "${DISPATCH_FAILURES:-}" ]; then
-     CLEAN=false
-   else
-     CLEAN=$([ "${CRITICAL_COUNT:-0}" -eq 0 ] && echo "true" || echo "false")
-   fi
-   REVIEW_MODE=$([ -n "${WT:-}" ] && echo "pr-by-number" || echo "own-branch")
-   # PR-by-number reviews are keyed per PR (recovered from $WT="<tmp>/review-pr-<#>",
-   # no new variable needed) — a single shared file would let a second PR's review
-   # clobber the first's before /ship-merge reads it (reported in production: #357
-   # overwritten by #358 from two reviews run close together). Own-branch reviews
-   # have only one active branch per working tree, so the shared file stays fine there.
-   if [ -n "${WT:-}" ]; then
-     STATE_FILE="$STATE_DIR/review-pr-${WT##*-}.json"
-   else
-     STATE_FILE="$STATE_DIR/review-last.json"
-   fi
-   printf '{"clean":%s,"critical_count":%s,"rehunt":"%s","last_sha":"%s","branch":"%s","review_mode":"%s","ts":"%s"}\n' \
-     "$CLEAN" "${CRITICAL_COUNT:-0}" "$REHUNT" "$HEAD_SHA" \
-     "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')" \
-     "$REVIEW_MODE" \
-     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-     > "$STATE_FILE"
-   # Post-write assertion — the state file MUST land OUTSIDE $WT so step 4's
-   # `git worktree remove "$WT" --force` can't delete it. If this exits non-zero,
-   # the write went to the wrong place (a prior run wrote to $WT/.scratch/ and
-   # lost the file to cleanup) — fix the path and re-run the block BEFORE step 4.
-   if [ -n "${WT:-}" ]; then
-     STATE_FILE_DIR=$(cd -- "$(dirname -- "$STATE_FILE")" && pwd -P)
-     WT_REAL=$(cd -- "$WT" && pwd -P)
-     case "$STATE_FILE_DIR" in
-       "$WT_REAL"|"$WT_REAL"/*) echo "ERROR: state file $STATE_FILE resolves INSIDE $WT — it will be deleted by step 4's cleanup. Rewrite it to \$STATE_DIR (outside the worktree) and re-run this block before proceeding." >&2; exit 1 ;;
-     esac
-   fi
-   test -s "$STATE_FILE" || { echo "ERROR: state file $STATE_FILE is missing/empty after write" >&2; exit 1; }
+   bash "${CLAUDE_SKILL_DIR}/scripts/write-review-state.sh" \
+     "${CRITICAL_COUNT:-0}" "${REHUNT_STATUS:-n/a}" "${DISPATCH_FAILURES:-}" "$HEAD_SHA" "${WT:-}"
    ```
-   **Run this block via Bash exactly as written — don't paraphrase it into hand-authored JSON.** The 7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`) are the machine-readable contract `/ship-merge`'s gate depends on. Confirmed against real production state files: sessions that skip running this script and instead narrate their own richer summary routinely rename or drop these exact keys (`rehunt` → `rehunt_triggered` / `rehuntStatus`; `branch` / `review_mode` dropped entirely; whole files in camelCase) — silently breaking the downstream gate's ability to read them, even though the review itself was fine. **Adding extra fields alongside the required 7 is fine and often useful** — a `note` with narrative detail, `important_count`/`minor_count` for a human audit trail, whatever helps a future reader — just never rename or omit the required 7.
+   Positional, not inherited env, on purpose: pass the actual values you're holding at this point
+   in the phase (`CRITICAL_COUNT` from Phase 5, `REHUNT_STATUS` from step 3.6, `DISPATCH_FAILURES`
+   from Phase 4 step 4, `HEAD_SHA`/`WT` from Phase 2) as literal arguments — an inherited-but-
+   unexported shell variable fails silently across the nested bash invocation this script call is.
+   Prints the written state-file path on success; a non-zero exit means the write didn't happen —
+   don't proceed to step 4's worktree cleanup until this succeeds.
+
+   **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
+   7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
+   are the machine-readable contract `/ship-merge`'s gate depends on. Confirmed against real
+   production state files: sessions that skip the script and narrate their own richer summary
+   routinely rename or drop these exact keys — silently breaking the downstream gate even though
+   the review itself was fine. **Adding extra fields alongside the required 7 is fine** (a `note`,
+   `important_count`/`minor_count` for a human audit trail) — just never rename or omit the 7. Full
+   script (canonicalization rule, keying scheme, the worktree-escape safety check, and the incident
+   history behind each): `scripts/write-review-state.sh`.
 
    `CRITICAL_COUNT` = number of Critical findings from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
 2. Summarize:
@@ -353,11 +325,11 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 ## Integration Notes (Project-Specific)
 
-- **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session. Phase 5 step 3.6 fires only on the zero-surviving-findings path with a non-trivial diff — one hunter dispatch, plus one 3.5-style refuter for each Critical/Important finding the hunter raises (usually zero). So the zero-findings path costs 1 + N dispatches where N is small; the several-findings path costs 3.5's ~one-per-finding. They're near-exclusive by trigger (3.6 only when nothing survived 3.5), so a single review never pays both at full volume. Phase 1.5 (opt-in, only when `JIRA_KEY` is detected) adds one `jira-acli:acli` fetch + one `requirement-analyst` dispatch, flat cost regardless of diff size — negligible next to the per-finding verifier cost above.
-- **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
-- **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
-- **GH CLI**: Use `gh pr view` to check PR state before launching review. `review-pr` reviews code, not CI status — plenty of repos have no CI wired up at all, so this skill never checks or gates on `gh pr checks` (that belongs to `/ship-merge`'s own required-checks gate, which only runs against repos that actually have branch protection configured). Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
-- **Review routing reference**: Code that touches auth/secrets → `kbg:security-auditor` for full audit. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. A detected Jira ticket → `requirement-analyst` (Phase 1.5, ticket-quality report) + code-reviewer's requirement-coverage lens (Phase 3/4, diff-vs-requirements). Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
-- **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr`.
-- **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
-- **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.
+- **Scope**: reviews code, not CI status — this skill never checks or gates on `gh pr checks`
+  (that belongs to `/ship-merge`'s own required-checks gate). Auth/secrets-touching diffs get
+  `security-reviewer`'s fast in-review flag (Phase 3); a deeper standalone threat-model audit is
+  `kbg:security-auditor` — a separate skill, run it directly when the diff warrants one.
+- Severity tiers and SCRUTINIZE-4 are defined in full in Phase 5 above — this section doesn't
+  repeat them. Token-budget estimate, hooks active during a session, the GH CLI submission
+  mechanics (already covered in Phase 7 step 3 too), the full routing-reference table, and the
+  rejection-rate ledger spec: `reference.md`.

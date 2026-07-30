@@ -50,6 +50,32 @@ These agents are invoked directly by a skill body, not by the user via `kbg:orch
 
 - `task-prep-checker` — Fresh-context verifier for `kbg:task-prep`. Grades an assembled task prompt against the 9-field handoff template (`docs/reference/task-handoff-template.md`) and runs the golden-rule colleague test, so the skill that assembled the prompt never grades its own work. Invoked by `skills/task-prep/SKILL.md` Step 9. Read-only (Read/Glob/Grep); returns a structured `ready|gaps` verdict per `agents/task-prep-checker.md`.
 
+## Bounded fan-out — cap history & rationale
+
+Supplementary detail for `SKILL.md § Bounded fan-out — hard cap (F8.5)`.
+
+A prior auto-split mechanism (`resolve_waves`/`f8_5_overflow_warnings` in
+`scripts/orchestrate/planner.py`) was removed as dead code — DAG-resolved waves, explicit
+`parallel`/`loop` stages, and total-spawn count all rely on the same manual clamp SKILL.md
+describes. Article `sub-agents-parallel-vs-sequential` and the `[[bounded-agent-spawning]]` memory
+converge on the same conclusion: clamp the work-list in code before fan-out, not in the prompt.
+
+**Cap history:** the hard cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5
+on owner request — the F8 band and the F8.5 cap now coincide at 3-5.
+
+**Why the Agent-tool clamp isn't a weaker guarantee than it sounds:** "Don't overspawn" is a vibe;
+`if len(worklist) > 5: worklist = worklist[:5]` is a contract — but that contract only exists where
+there's a work-list to slice (the Workflow tool's JS `parallel()`/`pipeline()` calls). The Agent
+tool has no work-list: each dispatch is one sequential, human-visible tool call, so the failure
+this rule guards against (an LLM-sized worklist silently overshooting before a human ever sees it)
+structurally can't happen when every dispatch is its own visible call. "You are the clamp" on that
+path means the operator sees and can stop each dispatch, not that the cap is unenforced — scoped
+to an attentive operator, not a rubber-stamped batch approval.
+
+**This is doctrine, not preference (Workflow tool).** The code-level clamp isn't a style choice —
+without it as a hard number in code, the next Workflow author writes the same soft "don't
+overspawn" prompt-request again, and it silently fails the same way.
+
 ## Scripted Execution Modes (L4)
 
 For urgent, not-important, bounded compound work — decompose then execute via bash scripts rather than interactive conversation. Same trust boundary. Same tools. Different orchestration style.
@@ -80,6 +106,26 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 # Run stage by stage, injecting previous stage outputs into next stage prompts
 # Validate end-to-end with py_compile / tsc / bash -n before integration
 ```
+
+## Spawn-prompt template — why each slot matters, and its anti-pattern
+
+Supplementary detail for `SKILL.md § Spawn-prompt template (gates F3)`.
+
+**Why this shape works:**
+
+- **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the subagent guesses (usually wrong).
+- **Why** — *optional; omit when self-evident.* One clause of intent (the goal or ADR the task serves) so the subagent resolves an ambiguous edge case toward the goal instead of guessing. METHODOLOGY's "give the reason" sub-rule applied to the spawn prompt — never pad a task whose What already implies its why.
+- **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the subagent) arbitrates cross-boundary edits.
+- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the subagent either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
+- **Files + Criteria + Constraints** — the testable contract. "Make the code work" is not a criterion. "`POST /health` returns `{"status":"ok","db":"ping","uptime_s":N}` with HTTP 200" is.
+- **Done-when** — three observable checks. Passes the orchestrator's verify gate without re-asking the subagent.
+
+**Anti-patterns (spawn-prompt quality):**
+
+- **"Implement feature X" as the entire prompt** — no What, no Where, no Focus. The subagent picks all four, usually wrong.
+- **Topic as deliverable** — "research the options" (not a thing to grep). Use "Brief at `.scratch/<slug>/brief.md` with 3 options, each with file:line citations."
+- **Implicit file ownership** — "we'll all edit SKILL.md" → merge conflict. One subagent owns each file; orchestrator resolves cross-cutting edits.
+- **Missing upstream contracts in Wave 2+** — the subagent re-derives or assumes. Inject from the plan file's `Depends On` field.
 
 ## Validation chain — worked example
 
@@ -237,6 +283,17 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 
 Supplementary evidence for `SKILL.md § External-model delegation`. The compressed pointers there
 link here; this is the full trail, not a routine read.
+
+**`--permission-mode plan` — 5-trial breakdown (2026-07-16).** Across 5 live trials on 3 models
+(3 on `kimi-k2.7-code:cloud` — no flags, `--allowedTools "Read" "Grep" "Glob"`, and
+`--permission-mode plan`; 1 on `glm-5.2:cloud` — `--permission-mode plan`; 1 on `minimax-m3:cloud`
+— `--permission-mode plan`), the no-flags run and the `--allowedTools` restriction both silently
+edited a real file, while `--permission-mode plan` (placed after `--`) held read-only in all three
+trials that used it — including a trial that explicitly instructed the model to write the file
+"now, do not just describe it"; the model refused, named that it was in plan mode, and flagged the
+prompt as looking like a test. That's a small trial count, not an exhaustive proof of "only this
+flag can ever work" — treat it as necessary, and re-verify read-only behavior if you switch models
+or Ollama changes the launcher.
 
 **Backend identity check (`minimax-m3:cloud` trial, 2026-07-16).** The launch printed `claude.ai
 connectors are disabled because ANTHROPIC_API_KEY or another auth source is set and takes

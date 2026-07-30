@@ -5,6 +5,42 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.115] — 2026-07-30
+
+Token-optimizer pass on `orchestrate` and `review-pr`, on explicit request — the two INFO
+size-outliers v0.68.113/114 had left alone as "already optimized once, legitimately
+load-bearing." An `advisor()` call before editing confirmed that verdict was right about the
+*content* (procedural decision-logic, not example code — nothing here splits as cleanly as
+backend-patterns/frontend-patterns did) but wrong that nothing more could move: the boundary
+for procedural skills isn't example-vs-insight, it's **instruction vs. justification-and-
+history** — trial breakdowns, incident narratives, and "why this shape works" explanations
+can move to `reference.md` even when the rule itself can't. `orchestrate`: 38,418 → 32,130
+chars (16% cut) — compressed the Ollama external-model-delegation section (biggest single
+win, moved the 5-trial permission-mode breakdown and backend-identity check to
+`reference.md`), the Bounded fan-out cap-history parenthetical, the Spawn-prompt template's
+"why this shape works" bullets, and a genuinely redundant "Upstream contract propagation"
+section that just restated content already in the Validation-chain worked example.
+`review-pr`: 49,258 → 41,877 chars (15% cut) — extracted Phase 7's ~7K inline bash block
+(the `/ship-merge` state-file writer) into `scripts/write-review-state.sh` with **explicit
+positional arguments, not inherited env** (the same inherited-but-unexported bug class that
+silently broke `wiki-scan`, v0.68.107, across a nested bash invocation); moved the
+Integration Notes section (mostly duplicative of Phase 3/5) to `reference.md`; lightly
+trimmed Phase 5 steps 3.5/3.6's motivation prose while leaving every trigger condition and
+fail-closed disposition untouched. The extracted script was verified byte-for-byte against
+the original inline logic across 3 cases (own-branch clean, PR-by-number with a
+non-canonical rehunt value + dispatch failure, and the inside-worktree safety trap) before
+the SKILL.md edit landed — same JSON output, same fail-closed canonicalization, same loud
+failure when the state dir resolves inside the throwaway worktree. Both files still exceed
+the 20,000-char advisory threshold and both INFOs persist — expected, not a failed pass:
+forcing either under the threshold would have meant cutting real decision-critical content
+(AskUserQuestion option strings, SCRUTINIZE-4 table, fail-closed dispositions, privacy
+tiers), which this pass deliberately did not touch. Verified every safety-critical phrase
+survived post-edit (spot-checked ~15 load-bearing strings across both files by grep) and
+that all `reference.md` pointers resolve. `harness-audit`: 0 CRIT, 0 WARN, 3 INFO
+(orchestrate 32,130 chars, review-pr 41,877 chars, description budget healthy) — the two
+size INFOs are now real, smaller numbers instead of the pre-pass ones, not a false claim of
+having cleared them.
+
 ## [0.68.114] — 2026-07-30
 
 Token-optimizer pass on `backend-patterns` and `frontend-patterns` (v0.68.113's remaining
