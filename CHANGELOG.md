@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.113] — 2026-07-30
+
+Checked the fleet's 5 remaining INFO findings (harness-audit, no CRIT/WARN left as of
+v0.68.112). One was a real, fixable audit-script bug: check 36's leading-word vocabulary
+list accepted `backend` as a framework-proper-noun leading word (M12: "a pattern-catalog
+skill's first word IS the framework") but was missing its exact structural sibling,
+`frontend` — `backend-patterns` and `frontend-patterns` share the same shape, same "the
+kept TS/<x> base" phrasing, same rationale, but only one was in the vocabulary. Added
+`frontend` next to `backend`; verified live, the false positive is gone. The remaining 4
+(SKILL.md size-outlier findings for backend-patterns, frontend-patterns, orchestrate,
+review-pr, all >20k chars) are real but not audit-script bugs — they're advisory-by-design
+("INFO only, never a hard cap" per the check's own comment) and orchestrate/review-pr
+already went through one reference.md split and are still large because their procedure
+content is genuinely load-bearing. backend-patterns/frontend-patterns have never been
+split at all, which does make them a legitimate first-time token-optimizer candidate — but
+that's real content-restructuring work with real risk, not a bug fix, so it's left as an
+open decision for the operator rather than done unilaterally. `harness-audit` now reports
+0 CRIT, 0 WARN, 5 INFO — all 5 are either accepted-by-design or awaiting an explicit
+go-ahead.
+
 ## [0.68.112] — 2026-07-30
 
 Closed the last remaining WARN from harness-audit (check 47, cumulative skill+command
