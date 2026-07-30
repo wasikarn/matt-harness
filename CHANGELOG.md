@@ -5,6 +5,71 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.106] — 2026-07-30
+
+Wired the operator's personal `llm-wiki` knowledge vault into kbg for cross-project reach.
+A `kbg:orchestrate`-routed research phase (3 parallel agents covering `oh-my-claudecode`'s
+install pattern, `graphify`'s capabilities, and external 2026 second-brain architecture)
+found the vault already implements the Karpathy "LLM Wiki" pattern correctly (`raw/` →
+`wiki/` → `hotcache.md`/`index.md`, with a report-only lint curator) — it needed reach, not
+a redesign. The proven gap: kbg's own "check qmd before web search" rule (`CLAUDE.md`) only
+loads when cwd is `kbg-harness`, so the vault was invisible from every other project;
+confirmed directly (0 matches for `llm-wiki`/`qmd`/`hotcache` in `~/.claude/CLAUDE.md`
+before this change).
+
+Two designs were pressure-tested and rejected before this shipped, both via dedicated
+adversarial-review agent dispatches: a SessionStart hook auto-injecting the vault's
+`hotcache.md` (killed — LLM-authored and mutable per the vault's own ownership table,
+13 days stale by the vault's own lint criterion, opens with a "reply and skip further
+browse" directive that would leak a skip-retrieval instruction into unrelated sessions,
+~700 tokens/session forever in a repo that folded 3 skills to reclaim 50 words per session
+load; matches the "reject apply" half of a prior ECC auto-inject pattern this repo already
+studied and split — see `docs/research/passive-learning-capture-design.md`), and `graphify`
+replacing `qmd` (killed — no vector/semantic search at all, lexical-seed + graph-traversal
+only, no auto-wired MCP server for Claude Code even if adopted additively).
+
+Shipped 3 pieces:
+
+- A ~100-token "Second Brain — llm-wiki" section added to the operator's global
+  `~/.claude/CLAUDE.md` (symlinked from `dotfiles/claude/CLAUDE.md`, committed and pushed
+  separately in that repo) — the always-on cross-project layer, at near-zero marginal cost
+  since it loads in every session already and can't be resynced away.
+- `commands/wiki-ingest.md` (`/kbg:wiki-ingest`) — `disable-model-invocation: true`,
+  wrapping the vault's own `scripts/ingest.sh`. The flag is doctrine-mandated, not a
+  preference: `docs/command-authoring-conventions.md`'s criterion is "hard to reverse or
+  reaches outside the repo," and `ingest.sh` trips both (4 writes, all outside this repo,
+  all append-only-by-design).
+- `skills/wiki-scan/SKILL.md` — read-only, wraps `lint-scan.sh`/`stats.sh` (verified
+  read-only: `mktemp` scratch only, no vault writes). Deliberately does not wrap `query.sh`
+  (redundant with the `qmd` MCP `llm-wiki` collection, and strictly worse — grep vs.
+  BM25+vector) or `lint.sh` (despite the name, it mutates — appends a summary line to
+  `log.md` on every run).
+
+A `kbg:plan-reviewer` pass on the approved plan, before any code was written, found and
+closed 5 real issues: (1) the "graceful-skip when the vault is absent" constraint had no
+actual enforcement in either new surface's body, and the plan's own verification gate tested
+an unrelated bash primitive instead of the real deliverable — fixed by adding an explicit
+`[ -d "$VAULT/wiki" ] || exit 0` preflight to both, and rewriting the gate to exercise the
+real logic; (2) a same-line `VAULT="..." bash "$VAULT/scripts/..."` invocation pattern is a
+live bash bug (word expansion on a prefix-assigned variable resolves against the shell's
+prior binding, not the just-assigned value) — live-reproduced by the reviewer, fixed by
+splitting the assignment onto its own statement; (3) `ingest.sh`'s own hotcache-append
+dedup guard (`grep -q "## Last session.*ingest" hotcache.md`) is already permanently
+tripped by the live vault's current `hotcache.md` heading, silently contradicting the
+command's stated 4-file write-contract — fixed by adding a post-invocation
+`git diff --stat` check and requiring the command report an explicit skip notice rather than
+claiming success; (4) the dotfiles CLAUDE.md edit lives in a separate git repo with
+pre-existing unrelated uncommitted WIP (`claude/settings.json`, `config/qmd/index.yml`) and
+the plan never named a commit step for it — fixed by adding an explicit stage-by-name +
+commit + push step, confirmed live that the unrelated files stayed unstaged; (5) a factual
+correction — the plan predicted the wrong harness-audit check would fire an INFO on the new
+skill's description; corrected and the description trimmed to resolve it outright rather
+than just fixing the prediction.
+
+A fleet-count drift was also caught and fixed mid-ship by `sync-fleet-counts.sh`: the
+pre-existing baseline was actually 18 commands, not the 16 this repo's own manifests and
+README claimed — the same recurring drift class documented for `v0.68.78`.
+
 ## [0.68.104] — 2026-07-30
 
 First-ever `/kbg:review-fixtures task-prep-checker` loop — no prior workspace, no fix
