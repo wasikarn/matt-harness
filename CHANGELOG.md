@@ -5,6 +5,42 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.116] — 2026-07-30
+
+Drill-down full audit of v0.68.115's just-shipped diff (61bd666), on explicit request — an
+independent fresh-context agent re-verified the commit's own "verified clean" claim against
+the real diff instead of trusting it, per the standing "verify adversarially before 'nothing'"
+practice. It did not fully hold up: 4 real defects found and fixed, all confirmed by direct
+`git show`/grep re-check before editing (not taken on the agent's word alone). (1) **Content
+loss, safety-relevant**: `orchestrate/SKILL.md`'s "direct write access for allowlisted models"
+paragraph had pointed to `reference.md` for "reopen conditions" that were never actually moved
+there — the specific two-part reopen gate (a concrete task propose-only can't serve, AND a
+throwaway write-mode trial being the risky action itself) existed in the pre-v0.68.115 file and
+was silently dropped by neither file. Restored inline in `SKILL.md` — it's a decision rule, not
+justification-and-history, so it belongs there per this pass's own stated boundary. (2) **New
+doc-accuracy bug in `review-pr/SKILL.md`**: the new sentence "a non-zero exit means the write
+didn't happen" is false for the worktree-escape trap — the script writes the file *before*
+checking whether the path resolves inside the doomed worktree, so that specific failure leaves
+a stray file behind. Confirmed by reading `write-review-state.sh`'s write-then-check ordering
+directly; fixed the sentence, left the script's inherited-from-the-original write order alone.
+(3) **Factual inaccuracy, 3 places**: the commit message, this CHANGELOG's own v0.68.115 entry,
+and `CLAUDE.md`'s Recent-versions bullet all claimed the "Upstream contract propagation"
+section was *cut* — `grep` shows its header is still live in `SKILL.md`; only its body was
+compressed. Fixed the CHANGELOG and CLAUDE.md wording (git history for the commit message
+itself is left as-is — corrected here instead of amended). (4) **Stale cross-reference exposed
+by the move**: `review-pr/reference.md`'s routing line (relocated from `SKILL.md` by v0.68.115,
+unexamined) said auth/secrets diffs route to `kbg:security-auditor` — contradicting the
+Phase 3 rule (and the new text the same pass added right next to it) that routes them to
+`security-reviewer`'s in-review flag, with `security-auditor` reserved for a separate deeper
+audit. This bug predates v0.68.115, but that pass's "spot-checked load-bearing strings" claim
+didn't catch its own new prose contradicting content it had just relocated. Fixed to match the
+actual routing rule. One finding from the drill-down (a dropped per-model read-only breakdown
+in the Ollama section's model-picker table) was assessed genuinely minor — the underlying claim
+("all 3 models verified read-only") survives elsewhere in `SKILL.md`, just not broken out
+per-model in the table — and left alone per Rule 2. `harness-audit`: 0 CRIT, 0 WARN, 3 INFO
+(unchanged from v0.68.115 — none of these 4 fixes were audit-visible; the audit script checks
+schema/manifest mechanics, not content fidelity).
+
 ## [0.68.115] — 2026-07-30
 
 Token-optimizer pass on `orchestrate` and `review-pr`, on explicit request — the two INFO
@@ -18,8 +54,9 @@ can move to `reference.md` even when the rule itself can't. `orchestrate`: 38,41
 chars (16% cut) — compressed the Ollama external-model-delegation section (biggest single
 win, moved the 5-trial permission-mode breakdown and backend-identity check to
 `reference.md`), the Bounded fan-out cap-history parenthetical, the Spawn-prompt template's
-"why this shape works" bullets, and a genuinely redundant "Upstream contract propagation"
-section that just restated content already in the Validation-chain worked example.
+"why this shape works" bullets, and compressed the "Upstream contract propagation" section's
+3-item list into one paragraph pointing at the Validation-chain worked example (the section
+itself stayed — only its body shrank).
 `review-pr`: 49,258 → 41,877 chars (15% cut) — extracted Phase 7's ~7K inline bash block
 (the `/ship-merge` state-file writer) into `scripts/write-review-state.sh` with **explicit
 positional arguments, not inherited env** (the same inherited-but-unexported bug class that

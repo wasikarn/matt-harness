@@ -259,8 +259,11 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    in the phase (`CRITICAL_COUNT` from Phase 5, `REHUNT_STATUS` from step 3.6, `DISPATCH_FAILURES`
    from Phase 4 step 4, `HEAD_SHA`/`WT` from Phase 2) as literal arguments — an inherited-but-
    unexported shell variable fails silently across the nested bash invocation this script call is.
-   Prints the written state-file path on success; a non-zero exit means the write didn't happen —
-   don't proceed to step 4's worktree cleanup until this succeeds.
+   Prints the written state-file path on success. On failure, don't proceed to step 4's worktree
+   cleanup — but a non-zero exit doesn't always mean nothing was written: the worktree-escape trap
+   catches a bad `REVIEW_PR_STATE_DIR` only after the file is already written to the
+   (about-to-be-deleted) wrong path. Fix the state dir and re-run rather than assuming the write
+   never happened.
 
    **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
    7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)

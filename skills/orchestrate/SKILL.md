@@ -226,8 +226,10 @@ untrusted model passes them the same as a trusted one. `--permission-mode plan` 
 actually doing the work, by keeping the external process from taking any action at all.
 
 **Considered and deferred — direct write access for allowlisted models.** Evaluated 2026-07-17;
-deferred, not refused — no concrete task has hit propose-only's ceiling yet. Full evidence trail +
-reopen conditions: `reference.md`; decision record: `CHANGELOG.md` v0.58.4.
+deferred, not refused. Re-open only when both hold: (a) a concrete task propose-only can't serve,
+and (b) a fresh write-mode trial on the specific model that would get access, run somewhere
+throwaway — the trial itself is the risky action, not a safe precursor to run ahead of need. Full
+evidence trail: `reference.md`; decision record: `CHANGELOG.md` v0.58.4.
 
 **Why this, not just the Agent tool:** a separate model family on a separate budget (the user's
 own Ollama account, not this session's model/quota) — a real second opinion, not the same model
