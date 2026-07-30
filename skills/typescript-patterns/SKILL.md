@@ -1,6 +1,6 @@
 ---
 name: typescript-patterns
-description: "TypeScript patterns: type-modeling idioms and tsconfig choices compatible across 5.9-7.x. Use for compiler-option or type-shape decisions. Don't use for routine .ts edits or backend architecture."
+description: "TypeScript idioms: type-modeling and tsconfig choices, compatible across 5.9-7.x. Use when picking compiler options or type shapes. Don't use for routine edits or backend architecture."
 ---
 
 # TypeScript Language Patterns

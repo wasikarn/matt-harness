@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.111] — 2026-07-30
+
+First `harness-audit` run since the `llm-wiki` wiring landed surfaced 4 false-positive
+`dead-script-pointer` WARNs (check 37) against `skills/wiki-scan/SKILL.md` and
+`commands/wiki-ingest.md` — the check only resolves script references against this repo,
+with no awareness of the new "wrap an external vault's own script, never vendor it" pattern
+those two surfaces introduced. Fixed check 37 to skip any reference resolving through
+`$VAULT`/`${KBG_WIKI_VAULT:-...}` before the existence check (verified: false positives
+gone, a genuine dead pointer in a throwaway fixture still fires). Also fixed two smaller,
+real audit findings while triaging the rest of the report: `typescript-patterns`' description
+used "Use for" instead of a recognized trigger phrase (check 05) — reworded to "Use when",
+re-tuned to stay at the 25-word cap; and check 36's completion-criterion detector
+(`\bverify\b`/`\bdone when\b`) was case-sensitive, so `typescript-patterns`' own `## Verify
+before use` / `Done when the chosen idiom...` sections never matched — added `-i`, matching
+check 05's existing case-insensitive convention (safe: only adds matches, can't newly flag
+anything that was previously clean). The remaining WARN (cumulative skill+command description
+budget, 8798/8000 conservative chars) was investigated and left alone — the 8000-char
+threshold assumes the platform's 1% default `skillListingBudgetFraction`, but this install's
+own `~/.claude/settings.json` sets it to 0.08 (8x), confirmed live; the existing
+`skill-listing-budget-mechanics` memory already reached "ship nothing" on this exact question
+33 days ago and it still holds. Regenerated `BOUNDARY.md` (flagged stale by the description
+edit). Also left alone, per Rule 2 — no proven need: `frontend-patterns`' non-coined leading
+word, and 4 SKILL.md files over the 20k-char token-optimizer threshold.
+
 ## [0.68.110] — 2026-07-30
 
 Closed the one reconciled finding from the first-ever `/kbg:review-fixtures wiki-scan`

@@ -22,7 +22,17 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
   [ -f "$_f" ] || continue
   # Pull interpreter-prefixed script paths: <interp> [flags] .../scripts/NAME.(sh|py|js)
   # Tolerate a ${VAR}/ or path prefix before scripts/; capture the basename.
-  while IFS= read -r _ref; do
+  while IFS= read -r _line; do
+    [ -z "$_line" ] && continue
+    # A reference resolving against an external vault (e.g. $VAULT/scripts/...,
+    # ${KBG_WIKI_VAULT:-...}/scripts/...) wraps llm-wiki's own scripts by design
+    # — CLAUDE.md's "wrap the vault's scripts, never reimplement" constraint.
+    # Those scripts live outside this repo on purpose and can never resolve via
+    # `find "$CLAUDE_DIR"`; that's not doc-rot, so skip before the existence check.
+    case "$_line" in
+      *VAULT*) continue ;;
+    esac
+    _ref=$(printf '%s\n' "$_line" | grep -oE 'scripts/[A-Za-z0-9_./${}-]+\.(sh|py|js)')
     [ -z "$_ref" ] && continue
     _base=$(basename "$_ref")
     # Resolve against the whole fleet (a wrapper may live in any skill's scripts/).
@@ -31,7 +41,6 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
       warn "dead script-pointer in ${_f#"$CLAUDE_DIR"/}: invokes '$_ref' but no '$_base' exists in the fleet (doc-rot — crashes on invoke)"
     fi
   done < <(grep -hoE '(bash|sh|python3|python|node|exec)[[:space:]]+[^|;&]*scripts/[A-Za-z0-9_./${}-]+\.(sh|py|js)' "$_f" 2>/dev/null \
-             | grep -oE 'scripts/[A-Za-z0-9_./${}-]+\.(sh|py|js)' \
              | sort -u)
 done
 unset _f _ref _base

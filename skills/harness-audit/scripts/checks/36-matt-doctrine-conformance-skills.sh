@@ -105,7 +105,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   # Inverted to `if cmd; then : ; else info; fi` so both branches end with
   # status 0; `if ! cmd; then info; fi` returns 1 when cmd succeeds (the
   # taken branch is the empty `else`), tripping set -e in the for-loop.
-  if printf '%s' "$body" | grep -qE '\b(verify|confirm|check that|expect|validate|done when)\b'; then
+  if printf '%s' "$body" | grep -qiE '\b(verify|confirm|check that|expect|validate|done when)\b'; then
     :
   else
     info "$name: body has no 'verify / confirm / done when' token — matt's completion-criterion rule requires every procedure to end on a checkable signal"
