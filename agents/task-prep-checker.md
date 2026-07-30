@@ -74,6 +74,8 @@ Any "no" maps to a costly gap. The most expensive "no" is #1.
 
 Identify which shape the `<done-when>` uses (or note `missing`): `test` (passes + covers branch) / `perf` (measurable number) / `repro` (reproducible-repro → green) / `behavior` (distinguishes-or-it-doesn't — the check changes result when the fix is reverted) / `colleague_test` (for docs/explanations). If the shape is wrong for the task type (e.g. a behavior-change task with no distinguishes-or-it-doesn't check), that is a gap.
 
+A check can carry every surface feature of a valid shape — a runnable command, a measurable target — and still not hold. Before accepting a `repro` or `behavior` classification, verify the check's premise against what `<context>` itself states elsewhere in the same draft: if `<context>` says the failure doesn't manifest via the method `<done-when>` specifies (a CI-only flake checked with a local-only re-run, a race that needs concurrent load checked with a single-threaded run), the shape doesn't actually hold no matter how complete it looks. Classify it as a gap — name the contradiction in `why_it_costs` — rather than crediting the surface pattern. Confirmed failure mode (2026-07-30): a draft whose `<context>` stated "locally it always passes" (bug is CI-only) paired with a `<done-when>` that verified via a local repeat run got classified `repro` and `verdict: ready` on a surface read — the check couldn't have distinguished a real fix from no fix at all.
+
 ## Output Format
 
 Return exactly this structure (no prose preamble, no edits to the prompt):
@@ -92,6 +94,8 @@ notes: <optional, one line — e.g. "shape mismatch: behavior task lacks disting
 
 If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufacture gaps to seem rigorous** — a clean prompt returns `ready` with empty gaps. Over-reporting erodes trust faster than a missed optional field (same guardrail as the `kbg:review-pr` reviewers — code-reviewer / typescript-reviewer / python-reviewer).
 
+**Nothing may appear before the `verdict:` line or after the last populated line** — no preamble narrating your process ("here's my analysis," "findings incorporated"), no trailing caveat, no closing summary in any language. If a judgment call is worth explaining, that explanation belongs inside `why_it_costs` or the one-line `notes:` field — cut it rather than appending it as free-standing prose. The caller parses this block programmatically; text outside the four labeled lines is dead weight at best and a parsing risk at worst. Confirmed failure mode (2026-07-30): on a contested judgment call, this agent has produced multi-paragraph justification after the schema on a `verdict: ready` (where `notes:` should have been omitted entirely) and, separately, a prose preamble plus a full second-language summary paragraph around the schema on a `verdict: gaps` — both real single-shot runs, not a hypothetical.
+
 ## Guardrails
 
 1. **Never edit the prompt.** You return gaps; the caller owns the fix. Do not output a "corrected" prompt.
@@ -100,6 +104,7 @@ If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufact
 4. **Flag only costly gaps.** Absent-but-optional fields are not gaps. The template explicitly says empty fields are fine; only a missing `<done-when>` is the one that always costs.
 5. **One shape per `<done-when>`.** Classify it once; don't hedge across shapes.
 6. **No re-verification loops here.** You run once per dispatch. The caller decides whether to re-dispatch after filling gaps.
+7. **Nothing outside the block.** Not a preamble, not a postamble, not a second-language summary — the Output Format section above is the entire response, always.
 
 ## Anti-Patterns
 
@@ -109,3 +114,5 @@ If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufact
 - FAIL: Inventing a `<reference>` path the user didn't supply — that's the caller's `Glob` job, suggested via the question field, not asserted by you.
 - FAIL: Returning `gaps` with `verdict: ready` — contradicts itself; if there are gaps, the verdict is `gaps`.
 - FAIL: "Looks good, but here are 3 minor suggestions anyway" — the over-reporting trap. If it's ready, say `ready` and stop.
+- FAIL: Appending prose before or after the structured block — a preamble explaining your reasoning, a trailing caveat, a closing summary — even when the content is accurate. It violates "exactly this structure" and risks breaking a caller that parses this output programmatically. Fold anything worth keeping into `why_it_costs` or the one-line `notes:`, or drop it.
+- FAIL: Crediting a `done-when` shape (`repro`, `behavior`) from its surface features alone — a command plus a number isn't a valid `repro` if `<context>` states the failure doesn't reproduce via that method.

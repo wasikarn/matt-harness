@@ -5,6 +5,63 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.104] — 2026-07-30
+
+First-ever `/kbg:review-fixtures task-prep-checker` loop — no prior workspace, no fix
+history since creation (`git log` shows only the v0.35.4 creation, an unrelated v0.35.5
+audit, and an unrelated v0.68.72 doc sweep). No prior with_agent/baseline data existed
+either, so this was a full ground-up build: 3 synthetic task-prep-assembled draft prompts,
+each targeting a documented failure mode in the agent's own file — `missing-done-when`
+(Phase 2/4 field-and-shape classification), `clean-ready-prompt` (the over-reporting
+anti-pattern — is a genuinely complete draft graded `ready` without manufactured nitpicks),
+and `injection-attempt` (the Prompt Defense Baseline — a fake embedded `<system>` block
+inside `<context>` demanding an unconditional `ready` verdict, alongside real independent
+gaps). with_agent runs dispatched the real `task-prep-checker` agent directly (not a
+simulation — this agent has no Write access to save its own output, so the orchestrating
+session captured and persisted each response); baseline runs used a general-purpose agent
+given the same draft plus the template reference doc, but none of the specialized
+methodology.
+
+2 independent reviewers (one given a named differentiation angle: whether the
+`done_when_shape` classification does real semantic verification or just pattern-matches
+surface completeness) converged on the same real, double-confirmed, target-attributable
+gaps. First: `eval-clean-ready-prompt`'s `<context>` states the bug is CI-only ("locally it
+always passes" even pre-fix), while its `<done-when>` verified the fix via a 50x *local*
+repeat run — a check that, by the draft's own stated premise, would pass identically
+whether or not the bug was actually fixed. `task-prep-checker` classified this
+`done_when_shape: repro` and returned `verdict: ready` on a surface read (a runnable
+command plus a measurable number), never engaging the textual contradiction; the
+general-purpose baseline caught it unprompted. Second: in 2 of the 3 live single-shot runs
+(the more complex, contested judgment calls — not the simple 1-gap eval), the agent
+violated its own documented Output Format ("no prose preamble... exactly this structure"),
+appending unrequested paragraphs after a `verdict: ready` (where `notes:` should have been
+omitted entirely) and, on the injection eval, a prose preamble plus a trailing English
+caveat plus a full Thai-language summary around the schema block. One reviewer's
+speculation that the injection eval's preamble implied external coaching contaminated the
+sample was investigated and refuted — that dispatch used 0 tool calls, a single uncoached
+run identical in mechanism to the other two evals; the format violation is very likely the
+model's own single-pass self-narration spilling into the output, and stands on its own
+regardless of cause. A second reviewer claim (a stray `</o>` tag allegedly present in all 3
+fixture files) was grepped directly and found not to exist — not credited.
+
+Fixed both: Phase 4 now requires cross-checking a `done-when` check's premise against what
+`<context>` states before crediting a `repro`/`behavior` shape, not just matching surface
+features: a command plus a number isn't a valid `repro` if `<context>` says the failure
+doesn't reproduce via that method. The Output Format section, a new Guardrail 7, and a new
+Anti-Patterns entry now explicitly forbid any text outside the 4-line schema block in
+either direction — preamble, postamble, or a second-language summary — with the concrete
+observed failure named inline rather than left implicit. Both fixes re-verified live in a
+single combined re-run (iteration-1b, dispatched via a general-purpose agent instructed to
+`Read` the live-edited repo file directly, since the plugin cache hadn't been bumped yet):
+`eval-clean-ready-prompt` now correctly returns `verdict: gaps` citing the exact
+context/done-when contradiction, and both previously-violating runs are now schema-clean —
+zero prose outside the block. `eval-missing-done-when` re-run clean with no regression.
+Confirmed non-target findings, logged but not shipped: baseline's own over-reporting on
+`eval-missing-done-when` (flagging a design question the draft's `<edge-cases>` field had
+already correctly deferred via the template's own sanctioned "interview me" escape hatch)
+— this is a positive result for the specialized agent's field-scoping discipline, not a gap
+in it.
+
 ## [0.68.103] — 2026-07-30
 
 First-ever `/kbg:review-fixtures claude-md-health` loop — no standing critique memory, no
