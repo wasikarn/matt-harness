@@ -31,8 +31,13 @@ append-only-by-design rather than cleanly reversible.
 Four writes, all outside this repo:
 
 1. `raw/<topic>/<basename>` — a copy of the source (skipped if the source is
-   already under `raw/`).
-2. `wiki/<topic>/src-<slug>.md` — a new curated page for the source.
+   already under `raw/`, regardless of topic — a file already filed under a
+   *different* topic's `raw/` folder still gets a wiki page created under the
+   newly-requested topic, so re-ingesting under a new topic can produce a
+   topic-mismatched pair: a wiki page under topic B whose `sources:` points
+   at a raw file still living under topic A).
+2. `wiki/<topic>/src-<slug>.md` — a new curated page for the source (skipped
+   if the page already exists).
 3. `log.md` — an append-only journal entry.
 4. `hotcache.md` — an append, **conditionally** (see gotcha 3 below).
 
@@ -78,9 +83,11 @@ silently resolve against whatever was already exported, not this value.)
    ```bash
    git -C "${KBG_WIKI_VAULT:-$HOME/llm-wiki}" diff --stat hotcache.md
    ```
-   If empty, tell the operator plainly that the hotcache append was skipped
-   and why, rather than silently letting the vault's "read hotcache.md first"
-   contract go stale.
+   Quote this command's actual output in your response — even when it's
+   empty — rather than just stating a conclusion inferred from the guard's
+   grep condition. If empty, tell the operator plainly that the hotcache
+   append was skipped and why, rather than silently letting the vault's "read
+   hotcache.md first" contract go stale.
 
 ## Output contract
 

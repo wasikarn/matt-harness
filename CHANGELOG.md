@@ -5,6 +5,41 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.108] — 2026-07-30
+
+Second `/kbg:review-fixtures` loop this session, this time for `commands/wiki-ingest.md` —
+the write-capable, `disable-model-invocation: true` sibling of v0.68.107's `wiki-scan` fix.
+`advisor()` was consulted again before building anything, since this target is materially
+more sensitive (it mutates `raw/`, `wiki/`, `log.md`, `hotcache.md`): confirmed a fixture
+agent reading the doc and running its own documented bash steps against a disposable clone
+is not what `disable-model-invocation` blocks — that flag stops the model from firing the
+real command off a chat "go," not from testing the script a human would eventually run.
+Built 2 evals (relative-path-source, happy-path-hotcache-skip), each with its own isolated
+`git clone` of the real vault per arm (4 clones total) rather than one shared clone, closing
+the cross-contamination gap the wiki-scan loop's own `fixture_construction_note` flagged.
+One eval used a decoy-file trap (a same-named `notes.md` at the vault clone's root) to test
+whether the doc's "resolve to absolute path first" instruction actually prevents a silent
+wrong-file ingest — both `with_command` and `baseline` arms independently avoided it
+(confirmed live via `git diff`/direct content checks on each clone), showing the trap didn't
+discriminate: a competent agent reading `ingest.sh`'s own ~15-line source finds the same
+gotcha unaided. The other eval (absolute path, real vault's already-tripped hotcache dedup
+guard inherited by every clone) discriminated cleanly — both reviewers independently
+confirmed the baseline never mentioned `hotcache.md` at all, because `ingest.sh`'s own
+"Next steps" stdout never hints it exists, while the `with_command` runs correctly caught
+and disclosed the skip both times. Reconciled 3 real, small, target-attributable, code-
+verified gaps and fixed all 3: item 1's "skipped if already under raw/" note didn't cover a
+topic-mismatch case (re-ingesting a file already filed under one topic with a different
+requested topic silently produces a wiki page under the new topic pointing at a raw file
+still under the old one — reproduced live against a scratch clone before and after the fix);
+item 2 lacked the same skip parenthetical item 1 had; gotcha 3's hotcache-check instruction
+didn't require quoting the actual `git diff --stat` output, only inferring from it — the
+same predicted-vs-verified gap class v0.68.107 just fixed elsewhere. One reviewer also
+caught and the orchestrator independently re-verified an error in its own dispatch context:
+a claim that both baseline arms' `output.md` disclosed a self-caught read-only reference to
+the real vault held for only one of the two — the other arm's disclosure existed only in its
+return-summary to the dispatcher, never in the user-facing deliverable, a fixture/reporting-
+channel nuance logged for future loops rather than a target-file fix.
+
 ## [0.68.107] — 2026-07-30
 
 First-ever `/kbg:review-fixtures` loop for `skills/wiki-scan/SKILL.md`, a few hours after
