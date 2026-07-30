@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.102] — 2026-07-30
+
+First-ever `/kbg:review-fixtures task-prep` loop, deliberately scoped past the standing
+"don't re-audit without new evidence" memory (`task-prep-critique-v0618`, 4 converged
+adversarial passes as of 2026-07-20). `v0.66.0` (2026-07-22) added a genuinely new
+capability since that critique — Step 3.5's non-Jira path, dispatching
+`requirement-analyst` directly on a draft's own text — and the one fixture round that ran
+afterward (`v0.68.30`/`.31`, 2026-07-24) targeted the Jira-mismatch path specifically, not
+this one. No `task-prep-workspace/` existed on this machine (fixture workspaces are
+gitignored), so this session built 3 fresh fixtures aimed at the unreviewed non-Jira
+boundary and ran skill-creator's fixture-generation steps for real, including live
+sub-agent dispatches (`requirement-analyst`, `task-prep-checker`) rather than simulating
+them, before the 2-reviewer pass.
+
+Both reviewers independently converged on a real regression: Step 3.5's non-Jira
+exclusion list named "dependency version" as a mechanical-change example, and a live run
+read a SendGrid v2→v3 migration (different auth scheme, payload shape, error semantics,
+template mechanics) as covered by that exclusion — "still mechanical, no new business
+rule" — skipping the `requirement-analyst` dispatch entirely. One reviewer caught the run
+contradicting its own Step 2 reasoning ("a multi-file external-API migration with real
+regression risk") one step later at Step 3.5. Both reviewers traced the concrete cost: the
+`without_skill` baseline, with no formal apparatus at all, surfaced SendGrid v3's
+Handlebars-based template mechanic as "often the largest hidden piece of a v2→v3 job" —
+content the skipped dispatch never had a chance to produce. Fixed by clarifying the
+exclusion covers a routine version bump with no behavior change, not a cross-version
+migration changing what the caller adapts to (auth, payload shape, error codes, rate
+limits) — diff size and blast radius, not the word "version." Re-ran the fixture live
+against the new wording: Step 3.5 now correctly fires, reasoning term-by-term against the
+clarified text, and surfaces the exact template/payload risk both reviewers found missing.
+
+Second fix, single-sourced but grep-verified against `agents/requirement-analyst.md`
+before shipping: that agent's Output Format carries a distinct `riskiest_assumption`
+field Step 3.5's capture list never named, so it was never wired to anything — it had to
+compete anonymously inside the generic `open_questions` list at Step 6 and could lose the
+last ask-slot to a lower-stakes item, which is what happened in a separate fixture (the
+analyst's designated top risk — a possible collision between the new rate limit and the
+exact feature its deadline was protecting — got demoted to a passing `<edge-cases>` line).
+Fixed by adding `riskiest_assumption` to the capture list and giving it its own priority
+tier in Step 6, ahead of generic `open_questions`. Confirmed working in the same
+re-verification run: `riskiest_assumption` now wins an ask-slot, and — as a side effect —
+Step 6's ≤4-field overflow-priority rule (the mechanism a third fixture was specifically
+built to exercise, but couldn't on the first pass since the skipped Step 3.5 dispatch was
+the only source of `open_questions`) triggered for real this time: 12 candidates reduced
+to 4, 8 explicitly deferred rather than dropped.
+
+One single-sourced, hypothetical finding logged but not shipped, per Rule 2: a plausible
+adjacent case — a compound draft bundling a sourced numeric change with an un-sourced
+discretionary add-on ("bump the window AND relax the burst allowance while we're at it")
+— could exit cleanly at Step 2's one-sentence trivial-diff gate before ever reaching Step
+3.5's or Step 6's more careful handling. Not something any of the 3 real fixture runs
+actually got wrong; deferred to a future round if a compound-draft case is ever built and
+demonstrates this firing incorrectly.
+
 ## [0.68.101] — 2026-07-30
 
 `/kbg:review-fixtures learn` (invoked as "drill-down improve + optimize skills/learn"): verified
