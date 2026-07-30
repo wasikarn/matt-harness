@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.112] — 2026-07-30
+
+Closed the last remaining WARN from harness-audit (check 47, cumulative skill+command
+description budget) on explicit request, rather than leaving it as an accepted non-issue.
+v0.68.111 had investigated it and concluded "ship nothing" because this install's own
+`skillListingBudgetFraction` (0.08) gives 8x the headroom the check's hardcoded 8000-char
+threshold assumed — correct, but it meant the check would keep re-firing the same
+already-settled WARN on every future run regardless. Fixed the root cause instead of
+re-confirming the same non-issue indefinitely: check 47 now reads the actually-configured
+budget (`SLASH_COMMAND_TOOL_CHAR_BUDGET` env override, else `skillListingBudgetFraction`
+from `.claude/settings.local.json` taking precedence over `~/.claude/settings.json`,
+matching Claude Code's own most-specific-wins precedence) and computes the real threshold
+dynamically, falling back to the original conservative 8000-char/1% default when nothing
+overrides it — so an installer who never touched their budget gets the exact same warning
+behavior as before. Verified both paths: this install now reports clean (8798/64000 chars,
+`skillListingBudgetFraction=0.08`), and an isolated fixture with no override still
+correctly falls back to 8000/1%. `harness-audit` now reports 0 CRIT, 0 WARN, 6 INFO
+(all four remaining are size/style advisories with no proven need, per Rule 2).
+
 ## [0.68.111] — 2026-07-30
 
 First `harness-audit` run since the `llm-wiki` wiring landed surfaced 4 false-positive
