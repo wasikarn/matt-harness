@@ -24,7 +24,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --auto-archive --dry-run
 python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --auto-archive --yes
 ```
 
-Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean.
+Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean. A separate staleness section prints below the findings (mtime-based, advisory — see Checks table) and never affects the exit code; tune its threshold with `--stale-days N` (default 90).
 
 ## Action mode (`--auto-archive`)
 
@@ -62,6 +62,9 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 | **Orphans** | indexed in MEMORY.md but no `[[links]]` in or out — disconnected from the wikilink graph |
 | **Index drift** | MEMORY.md ↔ files, **both** directions (unindexed file + stale pointer) |
 | **Load budget** | MEMORY.md within the official 200-line / 25KB session-load cap (warn ≥80%, fail if over — trailing entries silently never load) |
+| **Staleness** *(advisory only)* | A memory file's mtime past `--stale-days` (default 90) — surfaced for a human to re-check, not a defect; excluded if already marked `**SUPERSEDED**`. Doesn't count toward exit code. |
+
+mtime is a proxy for "untouched," not "unverified" — editing a file resets the clock even if the edit didn't re-check the underlying claim, and a file can be genuinely still-true well past the threshold. This exists because kbg has no per-memory `last_verified` field (and retrofitting one means migrating the whole store — not worth it for a lint-surface add-on); it's the cheapest signal available without a schema change. Confirmed proven need, not speculative: this session hit repeated real staleness incidents (`disable-model-invocation-criterion` drift, fleet-count drift, folded version counts going stale) that a check like this would have surfaced for review.
 
 `[[ ]]` is memory↔memory only. Reference skills/doctrine (`decommission`, METHODOLOGY) in prose with backticks, not `[[links]]` — those resolve to no memory and surface as dangling.
 

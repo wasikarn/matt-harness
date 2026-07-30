@@ -19,6 +19,14 @@ Detector checks (default mode):
   - load budget          — 200-line / 25KB cap on MEMORY.md
 Exit code = finding count (0 = clean). Fails loud if MEMORY_DIR is missing.
 
+Staleness (advisory, printed separately — does NOT count toward exit code):
+  - a memory file's mtime is the only durable signal this store has for "when was
+    this claim last touched" (no per-memory last-verified field exists or is worth
+    the migration cost — see skills/memory-lint/SKILL.md). A file untouched past
+    --stale-days is surfaced for a human to re-check, not treated as a defect —
+    an old memory can still be true. Files already marked **SUPERSEDED** in
+    MEMORY.md are excluded (already flagged through a different signal).
+
 Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memory_trim_session_2026_06_04.md):
   Class A — stale-superseded:   MEMORY.md pointer has **SUPERSEDED** marker + topic has 0 surviving inbound
   Class B — near-budget-collapse: pointer ≥250 chars + topic >5KB + pointer carries detail
@@ -44,6 +52,7 @@ POINTER_LINE_RE = re.compile(r"^- \[[^\]]+\]\(([^)]+\.md)\)(.*)$", re.MULTILINE)
 
 LINE_CAP = 200
 BYTE_CAP = 25 * 1024
+STALE_DAYS_DEFAULT = 90
 SUPERSEDED_ARCHIVE_DATE_FMT = "%Y-%m-%d"
 STUB_TEMPLATE = "- [{}](_archive/{}/{}) — archived on-demand"
 # The link target is the archived path so future grep/audit can find the file.
@@ -152,8 +161,46 @@ def detector_findings(state):
     return findings, total_links, linked_count
 
 
-def run_detector(state, as_json):
+def superseded_stems(state):
+    """Filenames whose MEMORY.md pointer line already carries a **SUPERSEDED** marker —
+    excluded from staleness since they're already flagged through a different signal."""
+    stems = set()
+    for line in state["idx"].splitlines():
+        if not SUPERSEDED_RE.search(line):
+            continue
+        m = re.search(r"\]\(([^)]+\.md)\)", line)
+        if m:
+            stems.add(m.group(1)[:-3])
+    return stems
+
+
+def staleness_findings(state, stale_days):
+    """mtime-based staleness — advisory only, never counted toward exit code.
+
+    A memory file's mtime is the only durable "last touched" signal this store
+    has; there's no per-memory last-verified field (and adding one means
+    migrating every existing file — not worth it for a lint-surface add-on).
+    An old memory isn't wrong by default, just worth a human glance.
+    """
+    now = time.time()
+    skip = superseded_stems(state)
+    stale = []
+    for f in sorted(state["files"]):
+        if f[:-3] in skip:
+            continue
+        try:
+            age_days = int((now - os.path.getmtime(os.path.join(state["d"], f))) / 86400)
+        except OSError:
+            continue
+        if age_days >= stale_days:
+            stale.append({"file": f, "age_days": age_days})
+    stale.sort(key=lambda x: -x["age_days"])
+    return stale
+
+
+def run_detector(state, as_json, stale_days):
     findings, total_links, linked_count = detector_findings(state)
+    stale = staleness_findings(state, stale_days)
     if as_json:
         print(json.dumps({
             "mode": "detector",
@@ -162,6 +209,8 @@ def run_detector(state, as_json):
             "links": total_links,
             "linked": linked_count,
             "findings": findings,
+            "stale": stale,
+            "stale_days_threshold": stale_days,
         }, indent=2))
         sys.exit(0 if not findings else len(findings))
 
@@ -177,6 +226,16 @@ def run_detector(state, as_json):
     if not findings:
         print("  clean — no dangling links, orphans, or index drift")
     print(f"\nExit: {len(findings)}")
+
+    print()
+    print(f"--- Staleness (advisory, not counted in exit code — threshold: {stale_days}d) ---")
+    if stale:
+        for s in stale:
+            print(f"  STALE: {s['file']} — {s['age_days']}d since last edit")
+        print(f"  {len(stale)} file(s) worth a re-check; not a defect, just old")
+    else:
+        print(f"  none — every memory touched within {stale_days}d")
+
     sys.exit(len(findings))
 
 
@@ -612,6 +671,8 @@ def main():
     ap.add_argument("--yes", action="store_true",
                     help="Skip y/N confirm and apply mutations (implies --no-dry-run)")
     ap.add_argument("--json", action="store_true", help="Machine-readable output")
+    ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT,
+                    help=f"Advisory staleness threshold in days (default: {STALE_DAYS_DEFAULT})")
     args = ap.parse_args()
 
     d = memory_dir(args.memory_dir)
@@ -622,7 +683,7 @@ def main():
     if args.auto_archive:
         sys.exit(run_action_mode(state, args))
     else:
-        run_detector(state, args.json)
+        run_detector(state, args.json, args.stale_days)
 
 
 if __name__ == "__main__":

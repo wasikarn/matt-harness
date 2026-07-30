@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.99] — 2026-07-30
+
+Added an mtime-based staleness signal to `memory-lint`, the one piece worth porting from a
+direct-comparison drill-down against ECC's `continuous-learning-v2` instinct system (confidence
+scoring, decay, auto-apply-at-threshold, project→global promotion). `advisor()` and a follow-up
+code read of the actual ECC source (`observer.md`, `instinct-cli.py`) both converged against
+porting the confidence/auto-apply layer: its "user didn't correct" signal turns out to be a
+background Haiku agent inferring non-objection from the absence of a correction message in a raw
+tool-call log, with no approve/confirm/reject command anywhere in the CLI — the exact "never
+looked at" failure mode that would make self-graded auto-apply unsound, not the "survived N
+corrections" signal it was first assumed to be. The one piece with a real, already-proven gap on
+kbg's side was ECC's decay formula (confidence −0.02/week unobserved) — mirrored here as a
+`memory-lint.py` mtime check flagging entries untouched past `--stale-days` (default 90,
+tunable), printed as its own advisory section and deliberately **not** counted toward the
+detector's exit code, since an old memory isn't a defect the way a dangling link is. Files
+already marked `**SUPERSEDED**` in `MEMORY.md` are excluded (already flagged through a different
+signal). No new field, no migration of the ~110 existing memory files — mtime was the only signal
+available without a schema change. `SKILL.md`'s Checks table and Run section updated to match;
+verified live against this repo's own memory store (60 files flag at a 30-day threshold, exit
+code unchanged at 62 regardless of `--stale-days`, confirming the two are fully decoupled).
+
 ## [0.68.98] — 2026-07-29
 
 Filed the "70" pass-threshold known-gap from v0.68.97's compliance audit as an explicit
