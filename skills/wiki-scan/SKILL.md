@@ -70,12 +70,12 @@ it is. The final line is machine-readable:
   last `lint.sh` (not `lint-scan.sh`) pass. Non-zero isn't a defect by
   itself, just a signal the mutating lint hasn't caught up.
 
-## Verify / done-when
+## Verify / done when
 
 Report the Summary line verbatim, with each non-zero counter either
-explained (why it's expected) or listed as an open item. `lint-scan.sh`
-always exits 0 by design — a non-zero exit means the vault path resolved
-wrong, not that the vault itself is unhealthy.
+explained (why it's expected) or listed as an open item. Confirm
+`lint-scan.sh` exited 0 — it always does by design, so a non-zero exit means
+the vault path resolved wrong, not that the vault itself is unhealthy.
 
 ## Failure-mode guard
 
