@@ -5,6 +5,48 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.103] — 2026-07-30
+
+First-ever `/kbg:review-fixtures claude-md-health` loop — no standing critique memory, no
+substantive prior fix history (only the creation commit, v0.60.0, plus a pure
+description-wording fix, v0.68.10). Since this skill's core mechanic is running real `git
+log`/`git branch`/`grep` against actual file history (Test 3's doc-vs-doc and
+doc-vs-reality drift checks), the 3 fixtures were built as real, isolated synthetic git
+repos with controlled commit dates — not prose-only scenarios — so with_skill dry runs
+would genuinely exercise the mechanic rather than simulate reasoning about it: a
+doc-vs-doc staleness case (two docs disagreeing, dates determining which is stale), a
+doc-vs-reality drift case (a claimed branch that never existed, plus a flag-count claim
+that drifted after a module's flag was removed), and the skill's own explicitly-named
+failure mode — a self-contained doc with nothing checkable, testing whether the audit
+honestly reports "Test 3 not exercised" rather than letting a clean Test-1/2 pass read as
+full health.
+
+All 3 core mechanics held up cleanly across all 3 evals — both reviewers independently
+re-ran every `git`/`grep` command shown as evidence against the real fixture repos and
+found no fabricated evidence anywhere. One real, grep-verified, target-attributable gap
+surfaced (single-sourced, but concrete): Phase 4's verdict-column instruction read
+"verdict (pass/fail/not-exercised)" as a loose parenthetical example rather than a pinned
+literal-string requirement, and the 3 dry runs each formatted it differently — Pass/FAIL/
+Not exercised in one (inconsistent even within itself), Fail/Not exercised in another, and
+a third that invented qualifier states like "fail (partial)" and "pass
+(pass-because-small)." Nothing conflated not-exercised with pass, but a batch of these
+reports wouldn't be reliably grep-able for a canonical verdict string. Fixed by pinning
+the exact lowercase, hyphenated strings and folding partial-satisfaction into the evidence
+column instead of inventing a 4th state. Re-ran live against the fix: the verdict column
+now comes back consistently formatted.
+
+One double-confirmed but non-target-attributable finding logged, not shipped, per Rule 2:
+both reviewers independently caught one dry run misreporting its target file's line count
+(claimed 16, actually 15) while quoting file content — a real, if minor, instance of
+exactly the evidence-fidelity failure Test 3 exists to catch, just self-inflicted. Nothing
+in SKILL.md instructs citing an exact line count, so this doesn't trace to any doc content
+— a one-off arithmetic slip in that run's own report-writing, not a systemic gap.
+Separately, a genuine data point *for* the skill's value proposition surfaced unprompted
+in the freeform without_skill baseline: its own compressed summary table got a
+date-math conclusion backwards (direction and magnitude both wrong) in exactly the kind of
+drift-during-summarization the skill's citation-per-cell table format structurally
+prevents in the with_skill runs.
+
 ## [0.68.102] — 2026-07-30
 
 First-ever `/kbg:review-fixtures task-prep` loop, deliberately scoped past the standing

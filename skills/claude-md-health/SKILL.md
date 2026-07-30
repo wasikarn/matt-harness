@@ -72,7 +72,7 @@ Report a finding either way — a wrong "canonical" doc, or a doc that's merely 
 
 ### Phase 4 — Report
 
-Table: file | check | verdict (pass/fail/not-exercised) | evidence. Confirm every fail with the actual grep/git output, not a re-read of the same file — a duplication claim needs a second, independent source before it counts as a finding.
+Table: file | check | verdict | evidence. **Verdict column: exactly one of `pass` / `fail` / `not-exercised`** — lowercase, hyphenated, no other casing or synonyms (`Pass`, `FAIL`, `unverifiable`, `unexercised` all drift from this and make verdicts hard to grep across a batch of audit reports later). A partially-satisfied check is still `fail` — explain the partial nature in the evidence column, don't invent a fourth state. Confirm every fail with the actual grep/git output, not a re-read of the same file — a duplication claim needs a second, independent source before it counts as a finding.
 
 ### Phase 5 — Fix (only on request)
 
