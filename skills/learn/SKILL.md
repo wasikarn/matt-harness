@@ -81,9 +81,16 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
      wrote earlier in the same session. If the store can't be located or read, don't drop on that
      basis — say so explicitly and let step 4's gate decide, rather than silently assuming either
      "already captured" or "clearly new";
-   - the repo already records it (code structure, git history, CLAUDE.md, an ADR) or a tool/platform
-     default already enforces it (a guardrail hook, a linter rule, a built-in safety check) — per the
-     memory rules, save what was *non-obvious*, not what something else already guarantees;
+   - the repo already records it (code structure, git history, CLAUDE.md, an ADR) or a *deterministic,
+     fail-closed* tool/platform default already enforces it (a guardrail hook that blocks the action, a
+     linter rule, a CI check) — not an advisory prose instruction (a system-prompt bullet, a "please
+     don't" line) that a model could still comply past. Even then, only drop the candidate if the
+     default covers its full substance: the specific *why* and any narrower guidance (an approved
+     alternative, an incident it's guarding against) the candidate adds on top of the default's blanket
+     rule, and the default is scoped to the *project the transcript is about*, not just whatever
+     tooling happens to be running this mining session. A default that's broader-but-shallower than the
+     candidate doesn't make the candidate redundant — per the memory rules, save what was *non-obvious*,
+     not what something else already guarantees;
    - it only mattered to this conversation (ephemeral), or it's a secret/credential;
    - it was a trivial one-off (a typo, a simple syntax slip) with no generalizable rule behind it —
      a "no, do X instead" correction is only high-signal when X *generalizes* past this one spot.

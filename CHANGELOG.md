@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.101] — 2026-07-30
+
+`/kbg:review-fixtures learn` (invoked as "drill-down improve + optimize skills/learn"): verified
+the 4 findings iteration-1 shipped as commit `de0e631` (v0.68.47) actually landed in the live
+`skills/learn/SKILL.md` — confirmed textually — then closed the real gap that fix left open: no
+fresh run had ever re-measured whether the fix changed behavior, versus just reading correctly on
+the page. Re-ran all 3 iteration-1 fixtures live against the current (then-unmodified) SKILL.md
+into a new `iteration-2/`, then dispatched 2 independent reviewer agents per
+`commands/review-fixtures.md` comparing NEW (post-v0.68.47) vs OLD (pre-v0.68.47) outputs.
+
+Both reviewers independently converged, via separate reasoning paths, on the same real
+regression: v0.68.47's `"or a tool/platform default already enforces it"` dedupe-exclusion clause
+was worded broadly enough that the model applied it to *advisory prose* (the Bash tool's own
+"Git Safety Protocol" system-prompt line, not a deterministic mechanism) and never required the
+cited default to be scoped to the *transcript's own project* rather than whatever tooling happens
+to be running the mining session. Concretely: the negative-discipline fixture's single clearest
+positive candidate — a force-push rule with an incident-specific why and a `--force-with-lease`
+alternative — got dropped entirely, a zero-candidate output on the exact fixture built to test
+survival of that candidate (assertion C4). Fixed by narrowing the clause to defaults that are
+deterministic/fail-closed (not advisory), cover the candidate's full substance (not just a
+same-topic blanket rule), and are scoped to the transcript's target project. Re-ran the fixture
+live against the new wording: the candidate now survives, with the model correctly reasoning
+through both new conditions before declining to drop it.
+
+One single-sourced, not-shipped finding: fix (a)'s cwd-based store-location derivation applied
+inconsistently across two same-iteration runs, both built on a fictional target project layered
+on the real kbg-harness cwd — traced to a fixture-set artifact iteration-1's own findings.md had
+already considered and intentionally declined to add scoping language for (real invocations
+always dedupe the same project by construction). Logged, no doc change. `learn-workspace/` stays
+gitignored/local-only per this repo's convention; `dispatch-prompts.md` and `feedback.json`
+persist the reviewer prompts and reconciliation for anyone re-opening this workspace later.
+
 ## [0.68.100] — 2026-07-30
 
 Committed `scripts/workflows/deep-research.js` — the canonical deep-research Workflow script,
