@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.110] — 2026-07-30
+
+Closed the one reconciled finding from the first-ever `/kbg:review-fixtures wiki-scan`
+loop (v0.68.107) that never actually shipped — `wiki-scan-workspace/iteration-1/feedback.json`'s
+4th cross-cutting finding (double-confirmed, both reviewers, marked `target_attributable: false`
+because the root cause lives in the vault's own `scripts/stats.sh`, not in kbg's doc — so it
+read as out of scope and got dropped instead of turned into the one-line SKILL.md caveat the
+finding itself recommended). Verified live before fixing: `lint-scan.sh` reports `orphans=0` on
+the current vault, `stats.sh` reports `Orphans: 18` for the same state — `stats.sh`'s inbound-link
+index only scans `wiki/`, while `lint-scan.sh` also counts `index.md` as a link source (the fix
+from commit `3d9f2ea`, which `stats.sh` never received). Added a caveat to `skills/wiki-scan/SKILL.md`'s
+orphan-counter gloss: treat `lint-scan.sh`'s Summary line as canonical, not `stats.sh`'s own
+"Orphans: N" output. Docs-only, no behavior change — the bug itself stays unfixed by design
+(wrap the vault's scripts, never reimplement them; that's an operator-driven vault fix, not a
+kbg one).
+
 ## [0.68.109] — 2026-07-30
 
 Fixed a doc-gloss bug in `skills/wiki-scan/SKILL.md` found while mapping a proposed

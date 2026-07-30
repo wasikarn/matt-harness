@@ -68,6 +68,14 @@ it is. The final line is machine-readable:
 - `orphans` — pages with no inbound `[[wikilink]]`. Some are *intentional*
   (standalone reference pages) — check the page's own frontmatter for an
   explicit `orphan: intentional` marker before flagging it as a defect.
+  **This is the canonical count — `stats.sh`'s own "Orphans: N" line can
+  disagree and should not be trusted over it.** `stats.sh` builds its
+  inbound-link index from `wiki/` alone; `lint-scan.sh` also counts
+  `index.md` as a link source (a fix `stats.sh` never received — verified
+  live: `lint-scan.sh` reports `orphans=0` on the current vault while
+  `stats.sh` reports `Orphans: 18` for the same state). This is a bug in
+  the vault's own `stats.sh`, out of scope to fix here (wrap, don't
+  reimplement) — just don't repeat its number as the health verdict.
 - `fm_issues` — missing or malformed frontmatter fields.
 - `unsourced` — a file under `raw/` whose basename appears nowhere in any
   `wiki/*.md` page's text (`lint-scan.sh:90-116`) — a source that was
