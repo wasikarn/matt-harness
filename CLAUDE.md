@@ -77,6 +77,12 @@ check, respectively; see their own files for the doctrine reasoning (public-plug
 private-vault, graceful-skip when `~/llm-wiki` is absent, `disable-model-invocation` on the
 mutating command).
 
+**Live-fire confirmed (2026-07-30):** a fresh session in a genuinely different project (not
+kbg-harness) spontaneously reached for `qmd` scoped to `collection: "llm-wiki"` on a research
+question, unprompted — the mirror rule above reaches a foreign session as designed. This was
+the one part of the design that couldn't be verified by grep or script (a prompt-only routing
+rule either triggers in the wild or it doesn't); it does.
+
 ## Architecture
 
 The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
