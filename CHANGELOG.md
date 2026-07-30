@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.109] — 2026-07-30
+
+Fixed a doc-gloss bug in `skills/wiki-scan/SKILL.md` found while mapping a proposed
+second-brain "folder template" idea against this project's actual `llm-wiki` wiring
+(most of the template's categories — Contract, Vault Structure, most Curators, most
+Skills, local-first Privacy — already exist here in leaner form; Triggers and Graph
+Shapes stay explicitly rejected per v0.68.106's own "Explicitly cut" table; the rest
+has no proven need yet, so nothing else was built, per Rule 2). The skill's own gloss
+of `lint-scan.sh`'s `unsourced` counter read "claims with no `sources:` citation" —
+verified against the live script (`lint-scan.sh:90-116`) that's backwards: `unsourced`
+actually flags a `raw/` file whose basename never appears in any `wiki/*.md` page's
+text — an ingested source nobody has synthesized into a curated page yet, not a page
+missing a citation for a claim. Fixed the gloss and the intro line that echoed the
+same wrong direction ("unsourced claims" → "raw sources with no wiki page built from
+them yet"). Docs-only, no behavior change.
+
 ## [0.68.108] — 2026-07-30
 
 Second `/kbg:review-fixtures` loop this session, this time for `commands/wiki-ingest.md` —

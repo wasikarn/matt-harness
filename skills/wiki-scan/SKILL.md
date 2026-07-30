@@ -6,9 +6,9 @@ description: "Scan llm-wiki vault health: orphans, frontmatter, citation integri
 # wiki-scan
 
 Read-only health check over `~/llm-wiki` (the operator's personal knowledge
-vault) — orphaned pages, missing frontmatter, unsourced claims, broken
-citations, and corpus stats. Wraps the vault's own `scripts/lint-scan.sh` and
-`scripts/stats.sh`; never reimplements them.
+vault) — orphaned pages, missing frontmatter, raw sources with no wiki page
+built from them yet, broken citations, and corpus stats. Wraps the vault's
+own `scripts/lint-scan.sh` and `scripts/stats.sh`; never reimplements them.
 
 **Search goes to `qmd` first, not here.** Use the `qmd` MCP `query` tool
 scoped to `collection: "llm-wiki"` for finding content by meaning — it's
@@ -69,7 +69,14 @@ it is. The final line is machine-readable:
   (standalone reference pages) — check the page's own frontmatter for an
   explicit `orphan: intentional` marker before flagging it as a defect.
 - `fm_issues` — missing or malformed frontmatter fields.
-- `unsourced` — claims with no `sources:` citation.
+- `unsourced` — a file under `raw/` whose basename appears nowhere in any
+  `wiki/*.md` page's text (`lint-scan.sh:90-116`) — a source that was
+  ingested but never synthesized into a curated page yet. Skips vendored
+  repo snapshots (files carrying `source_path:` instead of `source:`), so
+  this only flags article-shaped sources, not reference corpora. Despite
+  the name, this is **not** "a wiki page's claim missing a `sources:`
+  citation" — that's a different, unrelated failure mode this counter
+  doesn't check.
 - `idx` — pages missing from `index.md`, or index entries pointing nowhere.
 - `raw_refs` — a page's frontmatter `sources:` field naming a `raw/` file
   that doesn't exist.
