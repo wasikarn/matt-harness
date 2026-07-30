@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.114] — 2026-07-30
+
+Token-optimizer pass on `backend-patterns` and `frontend-patterns` (v0.68.113's remaining
+2 INFO size-outliers, over threshold and never split, unlike orchestrate/review-pr which
+already went through this once). Split both SKILL.md files into a lean trigger+gotchas
+file plus a new `reference.md` holding every full code example, matching the split
+convention orchestrate/review-pr already established in this fleet. `backend-patterns`:
+20,954 → 9,324 chars (new `reference.md`: 14,898 chars). `frontend-patterns`: 24,988 →
+9,619 chars (new `reference.md`: 18,916 chars). Every prose insight — the load-bearing part
+of these skills, not the boilerplate code around it — was kept in full and verified by
+phrase-match against the original (stampede guard, exception-swallowing, retry
+jitter/idempotency, queue backpressure, rate-limit key-hashing for backend; render-props
+and fetching-hook race guards, Zustand-vs-Context tradeoff, virtualizer measureElement,
+focus-trap gap, framer-motion/motion package naming for frontend). All 33
+`reference.md#anchor` pointers verified to resolve to real headers before shipping.
+`harness-audit` now reports 0 CRIT, 0 WARN, 3 INFO (orchestrate/review-pr, already
+optimized once and accepted as legitimately load-bearing; description budget, healthy).
+
 ## [0.68.113] — 2026-07-30
 
 Checked the fleet's 5 remaining INFO findings (harness-audit, no CRIT/WARN left as of
