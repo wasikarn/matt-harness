@@ -62,6 +62,33 @@ already correctly deferred via the template's own sanctioned "interview me" esca
 — this is a positive result for the specialized agent's field-scoping discipline, not a gap
 in it.
 
+## [0.68.105] — 2026-07-30
+
+An `advisor()` pass on v0.68.104's shipped fix (run before declaring that loop done, per
+this repo's own doctrine) caught 3 things the initial ship missed — all in
+`agents/task-prep-checker.md`, on top of the same first-ever fixture loop, no new eval
+cases needed. (1) The iteration-1b re-verification run for `eval-clean-ready-prompt`
+returned the now-correct `verdict: gaps` but still emitted `done_when_shape: repro` — the
+very shape v0.68.104's own fix says shouldn't be credited once the premise check fails,
+leaving a contradictory pair of machine-readable claims in the same block. Fixed with an
+explicit instruction: when the premise check fails, emit `missing` (the same enum value
+already used for an absent check), not `repro`/`behavior`. (2) The iteration-1b dispatch
+prompts all ended with "Do not add anything beyond what it specifies" — a sentence that
+externally restates v0.68.104's Output Format fix, so a schema-clean result from the 2
+previously-violating evals couldn't distinguish "the doc fix worked" from "the agent obeyed
+the redundant extra instruction in its dispatch." Re-ran `eval-injection-attempt` alone
+(iteration-1c, the more severe of the 2 confounded runs) with that sentence removed — came
+back schema-clean regardless, closing the gap in the verification claim itself, not the
+underlying fix, which held. (3) One of the re-verified outputs wrote `field: <done-when>`
+with the literal angle brackets from the draft's own tag syntax, instead of the bare field
+name `eval-missing-done-when`'s run used — the same unpinned-placeholder-vocabulary drift
+closed for the verdict column in `claude-md-health` one release ago. Fixed with an explicit
+placeholder note under the Output Format block naming the 9 bare field values and stating
+the angle brackets are never literal output. All 3 fixes are documentation-only guardrail
+tightenings on an already-correct verdict path — no behavior change to `verdict` or
+`colleague_test_pass`, confirmed by the iteration-1c re-run returning the identical verdict
+and gap set as iteration-1b modulo the schema-cleanliness question being tested.
+
 ## [0.68.103] — 2026-07-30
 
 First-ever `/kbg:review-fixtures claude-md-health` loop — no standing critique memory, no
