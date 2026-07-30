@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.100] — 2026-07-30
+
+Committed `scripts/workflows/deep-research.js` — the canonical deep-research Workflow script,
+consolidated this session from 8 ad-hoc inline runs (2026-07-03 through 2026-07-18) that had each
+re-authored the same ~23KB script from scratch instead of saving it once. Design: Scope (decompose
+question into 3-6 search angles) → pipeline(Search → URL-dedup → Fetch+Extract, no barrier) →
+barrier → 3-vote adversarial Verify (≥2/3 refutes kills a claim) → Synthesize. Model-tiering is
+selective: Haiku for the mechanical stages (Scope/Search/Fetch), session-default model for the two
+judgment-heavy stages (Verify, Synthesize) where a wrong answer is expensive. Caps are hardcoded in
+code, not left to the model: `MAX_FETCH=15`, `MAX_VERIFY_CLAIMS=25`, `VOTES_PER_CLAIM=3` — the max
+possible agent count (`1 + angles + sources + claims×votes + 1`) tops out at ~98-99, matching what
+both live smoke-test runs actually produced.
+
+Validated with two live runs against the same real question (Zig's current stable release and 1.0
+status) rather than shipped on faith. Run 1 hung: 98/99 sub-agents returned, 1 never completed, and
+the harness kept reporting `status: running` for ~6 hours with zero journal activity — most likely
+one stuck agent blocking the Verify phase's `parallel()` barrier, though session-compaction-related
+orphaning of the background task tracking couldn't be ruled out from the evidence available. Stopped
+via `TaskStop` rather than left to leak. No code change made on a single occurrence (Rule 2 — proven
+recurrence would be the trigger for a timeout/circuit-breaker, not one hang). Run 2, same question,
+same script, unmodified: completed clean — 99/99 agents done, 0 errors, 0 skipped, ~12.3 min, 637
+tool calls — and produced a real cited report (Zig 0.16.0 is current stable, no 1.0 yet, sourced
+across ziglang.org/Codeberg/Wikipedia/zvm; adversarial verification caught and killed 3 stale/wrong
+claims sourced from GitHub's cached releases page). Confirms the run-1 stall was very likely transient,
+not a reproducible defect in the script.
+
 ## [0.68.99] — 2026-07-30
 
 Added an mtime-based staleness signal to `memory-lint`, the one piece worth porting from a
