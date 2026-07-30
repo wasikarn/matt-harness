@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.107] — 2026-07-30
+
+First-ever `/kbg:review-fixtures` loop for `skills/wiki-scan/SKILL.md`, a few hours after
+it shipped in v0.68.106. No workspace existed, so `advisor()` was consulted before building
+one — the skill's whole job is running real scripts against the operator's real, mutable
+personal vault, and a no-skill baseline agent with Bash access could plausibly mutate it.
+Built 2 fixtures (not the usual 3, proportionate to a small, freshly-shipped, read-only
+skill per Rule 2) against a disposable `git clone` of the real vault, never the real vault
+itself — one targeting the mutation-boundary trap (`lint.sh` vs `lint-scan.sh`, both
+similarly named, only one mutates), one targeting interpretive calibration and a
+citation-script direct-invocation trap. Found a real, quadruple-confirmed bug: 2 independent
+with-skill fixture agents and 2 independent reviewers all hit and correctly diagnosed the
+same root cause — `SKILL.md`'s preflight sets `VAULT` as a plain, unexported shell variable,
+so the Run section's `bash "$VAULT/scripts/..."` calls spawn child processes that never see
+it; both `lint-scan.sh` and `stats.sh` re-derive their own `VAULT` internally and silently
+fall back to `$HOME/llm-wiki` when unset. `KBG_WIKI_VAULT` therefore only selected which
+script *file* ran, never what it actually *scanned* — a real user pointing the skill at a
+non-default vault would have silently gotten results from their default vault instead, no
+error. The bug was latent in the original ship because the fallback happens to equal the
+real vault at its default path; the review's own `KBG_WIKI_VAULT`-pointed-at-a-scratch-clone
+fixture design is what exposed it. One reviewer added that the skill's own "Verify / done
+when" section was structurally blind to this exact failure (a clean exit 0 happens
+regardless of which vault got scanned) — fixed alongside the root cause. Independently
+verified `commands/wiki-ingest.md` does **not** share this bug (3 separate confirmations:
+this session's own direct repro plus both reviewers) — its prefix-assignment invocation
+style correctly exports into the child process, unlike `wiki-scan`'s split-statement form.
+Two smaller, real, target-attributable gaps also fixed: a third, legacy `scripts/lint-wiki.sh`
+existed in the vault, undocumented in the failure-mode guard, with *no* path safety at all
+(no `VAULT`, no `cd` — would silently scan the caller's own cwd if ever invoked the
+documented way); and `lint-scan.sh` has no broken-`[[wikilink]]` check at all (only the
+excluded, mutating `lint.sh` does), so a with-skill run had silently answered only 2 of a
+user's explicit 3-part health-check ask without disclosing the gap. All 3 fixes applied to
+`SKILL.md` and re-verified live against the scratch clone (confirmed: reports the clone's
+real 892-source count, not the real vault's 904, after the fix; graceful-skip still holds).
+A handful of single-sourced, non-target-attributable findings (small factual slips in
+baseline-agent outputs, unrelated to the skill's own content) are recorded in
+`wiki-scan-workspace/iteration-1/feedback.json` but didn't warrant a fix.
+
 ## [0.68.106] — 2026-07-30
 
 Wired the operator's personal `llm-wiki` knowledge vault into kbg for cross-project reach.

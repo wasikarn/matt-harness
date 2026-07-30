@@ -22,6 +22,7 @@ is a public plugin, and most installs will not have `~/llm-wiki`:
 
 ```bash
 VAULT="${KBG_WIKI_VAULT:-$HOME/llm-wiki}"
+export VAULT
 [ -d "$VAULT/wiki" ] || { echo "llm-wiki vault not found at $VAULT — skipping"; exit 0; }
 ```
 
@@ -29,6 +30,18 @@ Assign `VAULT` as its own statement before referencing it again — a
 same-line prefix assignment (`VAULT=... bash "$VAULT/..."`) resolves the
 inline `$VAULT` against the shell's prior binding, not the value just set;
 splitting the assignment out is what makes the later reference correct.
+
+**`export` it too, not just assign it.** The Run section below invokes
+`lint-scan.sh`/`stats.sh` via `bash "$VAULT/scripts/..."` — that correctly
+picks *which script file* runs, but each script independently re-derives its
+own `VAULT` from its own environment (`VAULT="${VAULT:-$HOME/llm-wiki}"`
+internally, not from this skill's `KBG_WIKI_VAULT`). An unexported `VAULT`
+never reaches that child process, so the script silently falls back to its
+own `$HOME/llm-wiki` default regardless of what `KBG_WIKI_VAULT` pointed at
+— confirmed live: the fallback happens to equal the real vault at the
+default path, so this reads as working every time, and breaks silently the
+one time the vault lives somewhere else. A clean exit code doesn't catch
+this either — see Verify below.
 
 ## Run
 
@@ -77,6 +90,12 @@ explained (why it's expected) or listed as an open item. Confirm
 `lint-scan.sh` exited 0 — it always does by design, so a non-zero exit means
 the vault path resolved wrong, not that the vault itself is unhealthy.
 
+Exit 0 alone doesn't prove the *right* vault was scanned, only that *some*
+vault was — an unexported `VAULT` (see the preflight above) fails silently
+into `$HOME/llm-wiki`, not loudly. If ever running the Run section's
+commands standalone, outside this skill's own preflight block, confirm
+`VAULT` is actually exported in that shell first.
+
 ## Failure-mode guard
 
 1. **`lint.sh` is not `lint-scan.sh` despite the similar name.** `lint.sh`
@@ -91,6 +110,16 @@ the vault path resolved wrong, not that the vault itself is unhealthy.
    be *named* `llm-wiki` but isn't the vault, and it silently scans the wrong
    place. `lint-scan.sh` already calls it correctly, post-`cd`; that's the
    only sanctioned path to it.
+4. **`lint-wiki.sh` is a third, legacy script sharing the `lint`-shaped
+   name — never invoke it either.** Unlike the two scripts above, it has no
+   `VAULT` variable and no `cd` at all; it takes an optional positional path
+   argument defaulting to `.` (the caller's own cwd). Invoked the same way
+   as the two documented scripts (`bash "$VAULT/scripts/lint-wiki.sh"`, no
+   argument), it would silently scan wherever the invoking shell happens to
+   be — kbg-harness itself, in a normal session — and print confident,
+   plausible-looking, and completely meaningless orphan/broken-link counts.
+   `lint-scan.sh` is the actively-maintained successor; this one is unused
+   by the vault's own docs and exists only from the original import commit.
 
 ## What this skill does NOT do
 
@@ -98,3 +127,7 @@ the vault path resolved wrong, not that the vault itself is unhealthy.
 - Does not mutate the vault — `lint.sh` and `ingest.sh` are user-invoked only
   (`kbg:wiki-ingest`), never run from here.
 - Does not manage kbg's own memory store — use `kbg:memory-lint`.
+- Does not check for broken `[[wikilink]]`s — that check only exists in the
+  excluded, mutating `lint.sh`. If a user specifically asks about broken
+  links, say so explicitly rather than silently answering only the
+  orphans/citations portion of the ask.
