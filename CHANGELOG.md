@@ -5,6 +5,35 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.117] — 2026-07-31
+
+Requested drill-down analysis of "which commands should convert to skills" — found the actual
+answer is none, and shipped the two real findings the analysis surfaced instead. The 2026-07-07
+`command-vs-skill-equivalence` criterion (convert to skill only for bundled scripts/reference
+files/`paths:` scoping) is now stale: `docs/command-authoring-conventions.md` (2026-07-20)
+already established that directory-form commands (`commands/<name>/COMMAND.md` + `references/`)
+give bundled reference files without a skill conversion, and a repo-wide grep confirmed zero of
+the fleet's 30 skills use `paths:` scoping — the one theoretically remaining skill-exclusive
+capability has no live precedent anywhere in this harness. Two real, mechanically-verified
+findings from the analysis: (1) `harness-audit` check 42 (SKILL.md size-outlier, 20K-char
+threshold) had no command-side counterpart — `commands/address-review.md` sat at 23,556 chars,
+over that same threshold, with no mechanical check able to see it; added check 51
+(`51-command-body-size-outlier.sh`), scoped to command entrypoints only (flat `commands/*.md` +
+directory-form `commands/*/COMMAND.md`), which immediately also caught `commands/ideate/
+COMMAND.md` at 23,372 chars — a second real outlier the manual char-count survey had missed
+entirely (it only checked flat files). Bumped the check-fragment integrity guard in `audit.sh`
+from 50 to 51. (2) Split `commands/address-review.md` into directory-form
+(`commands/address-review/COMMAND.md` + `references/`), matching the `ship`/`ideate` precedent
+— moved the Phase 1 GraphQL fetch-threads query and the "Integration Notes (Project-Specific)"
+section into two `references/` files, verified byte-for-byte identical to the original source
+lines via `diff` before deleting the flat file (the "verify adversarially" discipline applied to
+a refactor, not just a review). 23,556 → 20,729 chars; still a residual INFO (barely over the
+20K threshold) but a deliberate stop — forcing the last ~700 chars out risked cutting real
+procedure or manufacturing an artificial split, the same call v0.68.115 made for orchestrate/
+review-pr. `harness-audit`: 0 CRIT, 0 WARN, 5 INFO (up from 3 — the 2 new size-outlier findings
+are real, not regressions; `ideate/COMMAND.md`'s split is left open, not yet acted on). Full
+gauntlet green.
+
 ## [0.68.116] — 2026-07-30
 
 Drill-down full audit of v0.68.115's just-shipped diff (61bd666), on explicit request — an

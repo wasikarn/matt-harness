@@ -35,37 +35,7 @@ Initial input: $ARGUMENTS
    - **Assert working branch == PR branch before doing anything else in this command.** Run `git rev-parse --abbrev-ref HEAD`; it must equal `headRefName`. If it differs, STOP the entire run here — don't fetch threads, don't triage, don't edit: either `git checkout <headRefName>` (local branch exists + worktree clean) or tell the user they're on the wrong branch. This is a whole-flow halt, not just an edit gate: Phase 2's `isOutdated` handling reads the file's *current* state off the local worktree, so continuing past a branch mismatch risks triaging off the wrong branch's file content, not just editing on the wrong branch. Editing the current worktree while it sits on a different branch also lands fixes on the wrong PR (the `fix/TP-582`-while-addressing-`feature/TP-650` failure mode).
    - Once the branch check passes, confirm local HEAD is current before any edit lands: `git fetch` and compare against `headRefOid` (or just `git pull --ff-only` if behind). Branch-name equality alone doesn't catch a worktree that's on the right branch but stale — editing there risks a diff based on outdated context or a rejected non-fast-forward push later.
    - Capture **PR_HEAD_AT_FETCH = headRefOid** — this is the commit Claude sees the review against. Phase 4 commits land AFTER this; Phase 5 citations reference the NEW shas, not `PR_HEAD_AT_FETCH`. Pinning makes "what was the PR state when the review was triaged?" answerable.
-2. Fetch all review threads via **GraphQL, not REST** — the REST `pulls/<n>/comments` endpoint has no resolved-status field at all, so it cannot answer "is this thread open." Use this query (verified against the live GitHub API):
-
-   ```graphql
-   query($owner:String!, $repo:String!, $number:Int!, $cursor:String) {
-     repository(owner:$owner, name:$repo) {
-       pullRequest(number:$number) {
-         reviewThreads(first:100, after:$cursor) {
-           pageInfo { hasNextPage endCursor }
-           nodes {
-             id                # PRRT_... thread node id — needed only if resolving in Phase 5
-             isResolved
-             isOutdated
-             path
-             line
-             comments(first:100) {
-               nodes {
-                 databaseId    # == REST comment id → reply target for Phase 5
-                 author { login }
-                 body
-                 createdAt
-                 originalCommit { oid }   # Phase 4 author-aware dedup input
-               }
-             }
-           }
-         }
-       }
-     }
-   }
-   ```
-
-   Run via `gh api graphql -F owner=<owner> -F repo=<repo> -F number=<n> -f query='<above>'`. **Loop on `pageInfo.hasNextPage`/`endCursor` until false** — a PR can accumulate more threads than one page; a single unpaged call silently drops the overflow, which breaks "don't lose any." `comments(first:100)` is a per-thread ceiling covering all but pathological threads — `ponytail:` no nested-cursor loop yet, add one only if a thread ever exceeds 100 replies.
+2. Fetch all review threads via **GraphQL, not REST** — the REST `pulls/<n>/comments` endpoint has no resolved-status field at all, so it cannot answer "is this thread open." Run the exact query in `references/fetch-threads-query.md` via `gh api graphql`. **Loop on `pageInfo.hasNextPage`/`endCursor` until false** — a single unpaged call silently drops overflow threads, which breaks "don't lose any"; the reference file has the full field-selection detail (thread id, resolved/outdated status, root comment ids for Phase 5 replies).
 3. Fetch overall reviews: `gh pr view <n> --json reviews` — capture review-level state (CHANGES_REQUESTED / APPROVED / COMMENTED), which reviewer left it, and the review's own **`body`** field. A non-empty `body` (verified live: reviewers routinely put the actual substantive ask here, not just in line comments) is a first-class item to triage in Phase 2 — it has no thread to reply into or resolve, so address it in code and acknowledge it in the Phase 5 summary rather than expecting a thread-reply.
 4. **READ holistically** — before grouping or classifying, read every comment body (including review bodies from step 3) in full once. Build a holistic sense of what the reviewer is concerned about overall (theme: "auth handling is sloppy" vs "tests need work" vs "just style nits"). This frames the per-thread triage in Phase 2 and prevents missing connections between threads that look unrelated in isolation.
 5. Identify open threads — a thread is open iff **`isResolved == false`** (the real field; GraphQL returns pre-grouped threads, so no manual `in_reply_to_id` reconstruction is needed).
@@ -212,12 +182,4 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phases 1-3 (understand all threads + classify + plan before editing). Surface conflicts, don't average → Phase 2 forces explicit per-thread classification, never "kind of fix". Rule 4 (verify-intent loop) → Phase 4 cluster tests + Phase 6 CI check. Abort loud → Phase 5 verify-count gate aborts if any thread is missed.
-- **Memory dependencies**:
-  - `feedback_reply_after_pr_fix.md` — Phase 5 is the codified version of "per-thread reply + cite sha = part of done"
-  - `feedback_prefer_gh_cli_for_github.md` — all GitHub ops via gh, not curl
-- **`/fix-bug` delegation**: Phase 4 invokes `/fix-bug` for bug-shaped comments. `/fix-bug` usually returns with its own commit sha — capture it for Phase 5 citation. It can also legitimately stall with no commit (see Phase 4 step 2); that outcome re-classifies the cluster instead. Don't run /fix-bug recursively per-comment; cluster first, then one /fix-bug per cluster.
-- **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git patterns) runs automatically on every Bash call during commits.
-- **Agent routing reference**: silent-failure-hunter (error-handling regressions in fixes), security-reviewer (auth/secrets fixes), code-reviewer (general correctness regression on fixes, including its comment-accuracy lens if the fix added/changed docstrings).
-- **Resolves threads only on explicit per-run opt-in (default off)**: GitHub's "Resolve conversation" is a separate action from posting a reply — Phase 5 step 1 asks once per run whether to auto-resolve `actionable + fixed` threads via the `resolveReviewThread` GraphQL mutation. Default is "leave open" so the reviewer verifies and resolves; `wontfix` / `clarify` / `out-of-scope` threads are never auto-resolved regardless of the choice.
-- **Fork PRs**: If the PR is from a fork, `gh api` calls need explicit `--repo <upstream-owner>/<repo>` to target the right repo. Phase 1 step 1 captures `nameWithOwner` for this purpose.
+See `references/integration-notes.md` — METHODOLOGY alignment, memory dependencies, `/fix-bug` delegation recap, hooks active, agent-routing recap, thread auto-resolve default, and fork-PR handling.
