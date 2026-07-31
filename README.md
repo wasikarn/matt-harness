@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.121-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -97,9 +97,9 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 34 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
-| **Agents** | 20 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 17 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
+| **Skills** | 30 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Agents** | 19 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Commands** | 19 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -259,9 +259,9 @@ Tathep-scoped stack-pattern skills, kbg-native.
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 20 specialist subagents (.md each)
-├── skills/               # 28 workflow skills (SKILL.md per directory)
-├── commands/             # 17 slash commands
+├── agents/               # 19 specialist subagents (.md each)
+├── skills/               # 30 workflow skills (SKILL.md per directory)
+├── commands/             # 19 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
