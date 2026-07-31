@@ -4,23 +4,27 @@ Mode: Exploration, investigation, learning
 Focus: Understanding before acting
 
 ## Behavior
-- Read widely before concluding
-- Ask clarifying questions
-- Document findings as you go
-- Don't write code until understanding is clear
+- Read widely before concluding — trace the actual code/docs, don't assume from names.
+- Check local search first: if a `qmd`-style MCP is configured, query the relevant collection before WebSearch — local prior research beats re-deriving it. For library/framework/API docs specifically, prefer a `context7`-style MCP (if configured) over WebSearch — current docs beat training-data recall.
+- Cite evidence as file:line or a doc URL; mark anything you couldn't confirm this turn as unverified rather than stating it flatly.
+- No edits — this is a read-only frame. Produce a brief, not a change.
+- Name the riskiest assumption and the one fact that would flip the conclusion (Rule 1) before calling the research done.
 
 ## Research Process
 1. Understand the question
 2. Explore relevant code/docs
-3. Form hypothesis
+3. Form a hypothesis
 4. Verify with evidence
 5. Summarize findings
 
 ## Tools to favor
 - Read for understanding code
 - Grep, Glob for finding patterns
-- WebSearch, WebFetch for external docs
-- Task with Explore agent for codebase questions
+- The `Explore` agent for broad codebase fan-out — don't read everything inline yourself
+- WebSearch, WebFetch for external sources, after local/doc-specific search has been checked
 
 ## Output
-Findings first, recommendations second
+Findings first, recommendations second.
+
+## Not this frame's job
+For a broad multi-source sweep with synthesis across sources, a dedicated research skill or a Workflow-based deep-research pass (if available) is a better fit than this ad hoc frame.

@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.119] — 2026-07-31
+
+Rewrote all 3 `contexts/` files (`dev.md`, `review.md`, `research.md`), on explicit request
+after a drill-down surfaced they were stale in two different ways at once. Git history showed
+commit `12d219f` (2026-06-28) replaced kbg-custom versions with stock templates from
+`affaan-m/everything-claude-code` — the replacement cited zero kbg doctrine (no Rule numbers,
+no agent-fleet routing, no output-styles relationship) despite `doctrine-bootstrap.sh` now
+injecting the Rule 1–4/13/14 triad every session. But the pre-swap kbg-custom versions weren't
+a valid revert target either — they referenced "Two-Axis Triage" and a "ponytail ladder" as
+named concepts that no longer exist anywhere in current doctrine (confirmed via repo-wide
+grep), and one routed findings to `pr-test-analyzer`, an agent that no longer exists in the
+fleet. Rewrote fresh instead of reverting: each file now points at current Rule numbers
+(3/4/1) rather than reprinting them (avoids duplicating what doctrine-bootstrap already
+injects), routes to the *current* agent fleet (`code-architect`/`code-implementer`/
+`build-error-resolver`/`refactor-cleaner`/`performance-optimizer` for dev; `security-reviewer`/
+`silent-failure-hunter`/`typescript-reviewer`/`python-reviewer`/`nextjs-reviewer`/
+`plan-reviewer`/`blind-spot-hunter` for review), and replaces the dead Two-Axis Triage
+language in `review.md` with the fleet's actual current triage (Critical/Important/Minor,
+confidence-gated, matching `review-pr` Phase 5's own scheme). `research.md` picked up the
+qmd-first / context7-first research doctrine, phrased generically ("if a `qmd`-style MCP is
+configured") rather than hardcoding this operator's own collection names — `contexts/` ships
+inside the plugin bundle to every installer (confirmed via a live plugin-cache directory
+listing: it's a full-repo mirror, not scoped to the `agents/skills/commands/hooks/output-styles/
+themes/` list CLAUDE.md's own "Adding or removing a surface" section names — that list governs
+manifest/inventory tooling, not cache-copy scope), so operator-specific collection names would
+be wrong for anyone else. Each file also gained a short "Not this frame's job" section pointing
+at the heavier skill/command (`code-implementer`/`/ship`, `review-pr`) so `/frame` doesn't
+tempt hand-replicating a pipeline it was never meant to run. `BOUNDARY.md` unchanged by design
+— `contexts/` isn't part of the inventory tooling's scan surface, confirmed by a zero-hit grep
+before deciding to skip the regen.
+
 ## [0.68.118] — 2026-07-31
 
 Follow-up to v0.68.117's check-51 finding, on explicit request: split `commands/ideate/
