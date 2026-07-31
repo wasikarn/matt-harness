@@ -68,17 +68,16 @@ fall back to the deterministic picker in
 
 If the session context already carries an `<ideate-convergence status="warning">`
 block (injected upstream when today's runs on similar problems are converging),
-Step 0 honours it. The automated capture side of this feature — a SessionEnd
-embedding hook and its `convergence.sh` query script — is **not currently wired**
-(removed in the from-scratch reset); treat convergence as advisory-only unless
-that capture path is rebuilt.
+Step 0 honours it. The automated capture side — a SessionEnd embedding hook +
+`convergence.sh` query script — is **not currently wired** (removed in the
+from-scratch reset); treat convergence as advisory-only until rebuilt.
 
 ## Ideate memory search (user command)
 
-Past `kbg:ideate` runs are searchable through the `ideate-memory` qmd collection
-when a capture path populates it. The automated SessionEnd capture hook is **not
-currently wired** (removed in the reset); until it is rebuilt, search only
-returns runs captured by other means. Query with:
+Past `kbg:ideate` runs are searchable via the `ideate-memory` qmd collection once
+a capture path populates it. The SessionEnd capture hook is **not currently
+wired** (same reset); until rebuilt, search only returns runs captured by other
+means. Query with:
 
 ```
 /ideate-search caching
@@ -207,12 +206,11 @@ After all 5 Diverge branches return:
 
 **Fresh-context critic — default on the auto-fire path.**
 Host-Claude scoring (Phase 2 + 3 run on the same model class as the
-Phase 1 generators) carries the LLM-judge-circularity caveat
-documented in `CLAUDE.md`'s "Why — the unifying crux" (under
-§Architecture). Step 2's self-judge gate already requires a YES
-answer to "high-stakes?" before this command can auto-fire — any
-run that reaches Phase 1 via Step 2 has, by construction, already
-been judged high-stakes, so:
+Phase 1 generators) carries the LLM-judge-circularity caveat from
+`CLAUDE.md`'s "Why — the unifying crux" (§Architecture). Step 2's
+self-judge gate already requires a YES on "high-stakes?" before
+auto-fire — any run reaching Phase 1 via Step 2 is, by construction,
+already judged high-stakes, so:
 
 - **Auto-fired run (reached via Step 2):** default the critic pass
   to the `ideate-critic` agent (`agents/ideate-critic.md`) instead
@@ -227,12 +225,11 @@ been judged high-stakes, so:
   this harness's `harness-audit` already flags as toothless
   elsewhere.
 
-`ideate-critic` uses the same scoring rubric but starts from a
-fresh context, reducing the chance that the host Claude's own
-generation anchors the judgment. Output is still **advisory
-evidence**, not ground truth; the user remains the gate. See
-CLAUDE.md's Operating model, under §Architecture, on "the
-implementer agreeing with its own work."
+`ideate-critic` uses the same scoring rubric but starts fresh,
+reducing the chance the host's own generation anchors the judgment.
+Output is still **advisory evidence**, not ground truth — the user
+is the gate (CLAUDE.md §Architecture, "the implementer agreeing
+with its own work").
 
 This routing change doesn't add a third fan-out wave: Phase 2 goes
 from 0 agent calls (host-inline) to 1 sequential agent call on the
@@ -429,22 +426,19 @@ These are how this skill goes wrong. Watch for them.
   [3-axis scoring rubric](#3-axis-scoring-rubric) note on
   `trap` being a free-text reason field rather than a silent
   drop.
-- **Same-model judge treated as ground truth.** Phase 2 + 3
-  scoring on the host Claude is the same model class as the
-  generators. Treat it as advisory evidence, not ground truth —
-  the user is the gate. See [Phase 2 — Focus](#phase-2--focus)
-  and CLAUDE.md §Architecture (the unifying crux: an LLM judging its own output is circular).
+- **Same-model judge treated as ground truth.** Phase 2 + 3 scoring runs on
+  the same model class as the generators — advisory evidence, not ground
+  truth. Full reasoning: [Phase 2 — Focus](#phase-2--focus).
 
 ## Cost
 
 ≈ 8 to 10 Agent calls per run (5 diverge + 1 score + 1 cluster +
 3 deepen, with score + cluster on the host) — or ≈ 9 to 11 on an
 auto-fired run, which adds 1 call for the `ideate-critic` pass (see
-[Phase 2 — Focus](#phase-2--focus)). About 5 to 10x a
-single-shot answer. The brief includes an advisory cost-estimate line
-so the operator sees the token envelope up front. Not for every
-keystroke. For decision points where the cost of the obvious answer is
-high.
+[Phase 2 — Focus](#phase-2--focus)). Same multiplier as the Pre-flight
+gate above. The brief includes an advisory cost-estimate line so the
+operator sees the token envelope up front. Not for every keystroke —
+for decision points where the cost of the obvious answer is high.
 
 Source: `references/provenance.md` §"Cost source".
 

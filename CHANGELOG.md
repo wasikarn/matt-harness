@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.121] — 2026-07-31
+
+Fixed harness-audit's 5 remaining INFO findings on explicit "fix all remaining" request, with a
+re-verification step built in rather than trusting prior sessions' conclusions at face value.
+`commands/address-review/COMMAND.md` (20,729→20,350 chars) and `commands/ideate/COMMAND.md`
+(20,846→20,543 chars) each got a genuine trim pass — cut restated sentences, duplicate cost
+figures, and connective-tissue prose, verified line-by-line that no procedural content was lost.
+Both still sit modestly over the 20K threshold; forcing the rest out would cut real content, so
+the residual overage is accepted, same precedent as prior passes. `skills/orchestrate/SKILL.md`
+(32,316 chars) and `skills/review-pr/SKILL.md` (42,109 chars) — already through one optimizer
+pass in v0.68.115 — got a fresh read-through plus a phrase-repetition grep specifically to check
+whether that pass's "further cuts would lose real content" conclusion still held, rather than
+assuming it did. It held: no redundant prose found in either file. review-pr's one apparent
+repeat (the submit-gate "never asked twice" rule, stated at 3 points: Core Principles, Phase 6,
+Phase 7) is deliberate safety reinforcement at each real decision point where missing it would
+double-post a review to a live GitHub PR — left as-is. `harness-audit`: 0 CRIT, 0 WARN, 5 INFO
+(unchanged count, smaller numbers on the two files that moved — not a false claim of clearing
+them). Also closed out iteration-3 of an address-review-workspace fixture-testing pass this
+session: three iterations across `docs/` this session found no discriminator between
+address-review's doctrine and generic engineering judgment on the target's Phase 5 bookkeeping
+rules — two of three tested mechanics failed because the fixture's own prose leaked the answer,
+the third (tally separation) turned out to be independently derivable from GitHub's own API
+(no resolve toggle exists on a review-body comment), not doctrine-only. Full write-up:
+`address-review-workspace/iteration-3/feedback.json`. `address-review/COMMAND.md` itself was
+not edited by that pass — a clean negative result, not evidence of a defect.
+
 ## [0.68.120] — 2026-07-31
 
 Full-project official-docs accuracy audit (workflow-driven, 218 claims across 13 domains
