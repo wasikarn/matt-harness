@@ -106,21 +106,8 @@ directly via the qmd MCP tool.
 > Phase 1 → Phase 2 → Phase 3. Total Agent calls per run ≈ 8 to
 > 10. **Do not collapse into 1 wave.**
 >
-> The 2026-06-12 audit caught a 44→105-agent failure mode where a
-> soft cap on a work-list was silently doubled by an audit + verify
-> layer (see `memory/bounded-agent-spawning.md` and
-> `memory/whole-repo-dig-2026-06-16.md`). There is no eval/regression
-> fixture for this — `eval/` does not exist in this repo (CLAUDE.md:
-> "eval gate [is] pending rebuild"). What is actually code-enforced
-> is narrower than a fixture would claim: the F8.5 hard cap in
-> `skills/orchestrate/SKILL.md` clamps any single wave's work-list
-> to ≤5 before spawning ("the clamp is the JS work-list slice
-> before `parallel()`/`pipeline()`"). This command's Phase 1 (5)
-> and Phase 3 (3) sizes are written to sit inside that per-wave
-> clamp. The "exactly 2 waves, not 3+" shape is this command's own
-> design contract (see Phase 1 / Phase 2 / Phase 3 below), not
-> something F8.5 polices — F8.5 caps how big a wave can get, not
-> how many waves a skill runs.
+> Audit history for this cap (the 44→105-agent failure mode that motivated it) and the exact
+> enforcement mechanism: `references/provenance.md` §"2-wave fan-out — audit history".
 
 ## Phase 1 — Diverge
 
@@ -165,12 +152,7 @@ For the problem P:
 3. **Wait for all 5 to return** before reading the outputs. Do not
    start reading one branch before the others are done.
 
-Source for the algorithm shape: upstream
-`/tmp/adhd-repo/skills/adhd/SKILL.md:47-82` and
-`/tmp/adhd-repo/src/engine.ts:28-36, 61-101`. The
-`kbg-vs-adhd.md` doc (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
-records the port decisions (deterministic frame pick replacing
-`Math.random()`, no zod, parse-failure surface-not-swallow).
+Algorithm-shape source + port-decision record: `references/provenance.md` §"Phase 1 algorithm-shape source".
 
 ## Phase 2 — Focus
 
@@ -265,8 +247,7 @@ invoke `ideate-critic` with the Input Contract in
 deepen pass can still run as 3 parallel Agent calls on the host,
 using the critic's `shortlist` as input.
 
-Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
-`/tmp/adhd-repo/src/engine.ts:103-175, 177-229`.
+Source: `references/provenance.md` §"Phase 2 critic-routing source".
 
 ## Frames table
 
@@ -396,7 +377,7 @@ wall of prose. The structure is the point.
    Format: *"What if we took this seriously: {highest-novelty
    survivor}"* — drawn from `engine.ts:307-312`.
 
-Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:145-157`.
+Source: `references/provenance.md` §"Output-shape source".
 
 ## When NOT to use
 
@@ -465,39 +446,10 @@ so the operator sees the token envelope up front. Not for every
 keystroke. For decision points where the cost of the obvious answer is
 high.
 
-Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
+Source: `references/provenance.md` §"Cost source".
 
 ## Cross-references
 
-- **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
-  records the port decisions, the eval-rigor limitation (n=1
-  upstream), and the things explicitly rejected.
-- **F8.5 hard cap (load-bearing)** —
-  `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
-  (F8.5)"
-  sets the peak-concurrent cap at 5 agents per wave, enforced by
-  the lead clamping the work-list before spawning. The 2-wave
-  structure in this skill is engineered to fit that cap exactly.
-- **Fresh-context critic pattern** —
-  `agents/ideate-critic.md`
-  is the kbg-native critic used for the same-model-critic-circularity
-  caveat (see [Phase 2 — Focus](#phase-2--focus)). Score + cluster +
-  deepen are engineered to be re-pointable at this fresh-context
-  critic.
-- **Methodology on maker ≠ checker** —
-  CLAUDE.md's Operating model, under §Architecture — the implementer
-  agreeing with its own work is not proof; the verifying agent
-  must be given fresh context.
-- **Bounded-agent-spawning precedent** —
-  `memory/bounded-agent-spawning.md`
-  — the failure mode this skill's 2-wave cap is designed to
-  prevent; full narrative + enforcement caveat in
-  [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing).
-  Not backed by a regression fixture — do not cite one that isn't
-  built.
-- **Eval rigor limitation (explicit)** — this skill ports
-  faithfully from an n=1 upstream demo. The
-  `kbg-vs-adhd.md` §"Eval rigor limitation" section (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
-  is the load-bearing
-  disclaimer: treat this as a structured brainstorming tool, not
-  a quality-validated generator.
+See `references/provenance.md` §"Cross-references" — why this exists (`kbg-vs-adhd.md`), the
+F8.5 hard cap, the fresh-context critic pattern, maker≠checker methodology, the
+bounded-agent-spawning precedent, and the explicit eval-rigor limitation.

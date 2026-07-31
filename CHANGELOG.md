@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.118] — 2026-07-31
+
+Follow-up to v0.68.117's check-51 finding, on explicit request: split `commands/ideate/
+COMMAND.md` (23,372 chars, over the 20K size-outlier threshold check 51 had just caught) the
+same way `address-review.md` was split — it was already directory-form (`COMMAND.md` +
+`references/frames.md`), so this added a second reference file rather than converting the
+surface's shape. New `references/provenance.md` consolidates 4 scattered "Source: upstream
+`/tmp/adhd-repo/...`" one-line citations (Phase 1, Phase 2, Output shape, Cost), the 2-wave
+fan-out WARNING's audit-history paragraph (the 44→105-agent failure mode that motivated the
+F8.5 cap — kept the load-bearing WARNING itself inline, moved only the historical
+justification), and the full "Cross-references" section — all genuinely non-essential-per-run
+provenance/rationale material, none of it needed to actually execute a `/ideate` run. Every
+extraction verified line-range-exact via `diff` against `git show HEAD` before editing; the
+only differences found were 3 deliberate cross-reference retargets (anchor links like
+`[Phase 2 — Focus](#phase-2--focus)` don't resolve across files, so they were rewritten to
+point at `COMMAND.md` explicitly) — no content lost. 23,372 → 20,846 chars; a small residual
+overage remains, same accepted outcome as `address-review.md` in v0.68.117 and orchestrate/
+review-pr in v0.68.115 — forcing the last ~800 chars out risked cutting real content for a
+cosmetic threshold clear. `harness-audit`: 0 CRIT, 0 WARN, 5 INFO (same count as v0.68.117 —
+both size-outlier INFOs shrank, neither cleared). Full gauntlet green.
+
 ## [0.68.117] — 2026-07-31
 
 Requested drill-down analysis of "which commands should convert to skills" — found the actual
