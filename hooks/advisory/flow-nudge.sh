@@ -4,8 +4,12 @@
 # before editing, with the heavyweight spec flow (mattpocock-skills:grilling →
 # mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship) as the
 # branch for a feature to spec out. UserPromptSubmit
-# hook. Output → stdout (CC surfaces as a system-reminder); never blocks,
-# always exits 0. Errors are silently swallowed.
+# hook. Output → plain stdout — docs: "added as context Claude can see and
+# act on" (not the JSON hookSpecificOutput.additionalContext path, which is
+# what's specifically documented as wrapped in a "system reminder"; this
+# script uses plain stdout instead, a separately-documented mechanism with
+# the same practical effect); never blocks, always exits 0. Errors are
+# silently swallowed.
 #
 # Heuristic: a flow verb implies non-trivial work regardless of length.
 #   - Empty prompt → silent.

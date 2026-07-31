@@ -185,7 +185,7 @@ gh pr create \
 
 ```bash
 gh pr view --json number,url,title,state,baseRefName,headRefName,additions,deletions,changedFiles
-gh pr checks --json name,status,conclusion 2>/dev/null || true
+gh pr checks --json name,state,bucket 2>/dev/null || true
 ```
 
 ---

@@ -318,7 +318,10 @@ interface MarketStore {
   selectMarket: (id: string) => void
 }
 
-export const useMarketStore = create<MarketStore>((set) => ({
+// The curried `()()` form is Zustand's own recommended TypeScript pattern —
+// `create<T>(...)` without it degrades to a type assertion rather than a
+// proper annotation, which can silently hide shape mismatches.
+export const useMarketStore = create<MarketStore>()((set) => ({
   markets: [],
   selectedMarketId: null,
   setMarkets: (markets) => set({ markets }),

@@ -116,7 +116,7 @@ export async function updateProfile(formData: FormData) {
 
 - **Node.js-only API used in `middleware.ts` — but check the pinned version's default runtime first (step 3 above), it has moved twice:**
   - **Through Next.js 15.1**: middleware runs on the **Edge runtime** by default. `fs`, most native Node modules, and many DB client libraries (Prisma's default engine, raw `mysql2`) are unavailable or silently behave differently. Check for imports that assume a Node runtime.
-  - **15.2+**: an opt-in Node.js runtime became available (`experimental.nodeMiddleware` / `export const runtime = 'nodejs'`); **15.5+** it's stable.
+  - **15.2+**: an opt-in Node.js runtime became available; **15.5+** it's stable. The syntax is middleware-specific: `export const config = { runtime: 'nodejs' }` (nested inside the config object) — not a bare top-level `export const runtime = 'nodejs'`, which is the separate Route Segment Config syntax used by Pages/Layouts/Route Handlers, not middleware.
   - **16.x**: the primitive itself was renamed — `middleware.ts` is deprecated in favor of `proxy.ts`, and **Proxy defaults to the Node.js runtime**, the opposite of the pre-15.2 default. On a v16 project, don't assume Edge-runtime constraints apply without checking which convention and runtime the file actually declares.
 - **Overly broad `matcher` config** — a matcher of `'/:path*'` with no exclusions runs middleware on every static asset request (`/_next/static/*`, `/favicon.ico`), adding latency to requests that never needed it. Scope the matcher to the actual routes needing the check.
 - **Heavy computation or a synchronous external call in middleware** — Edge middleware has tight execution-time limits; a slow auth check here adds latency to *every* matched request, not just the ones that need it. Prefer a lightweight cookie/JWT check in middleware and defer the expensive verification to the route/action itself.
@@ -140,7 +140,7 @@ export async function updateProfile(formData: FormData) {
 
 - **`next/image` without `width`/`height` (or `fill` with a sized parent)** — causes layout shift (CLS); the whole point of `next/image` is to prevent this, so a missing dimension defeats it.
 - **`next/image` with a `sizes` prop missing on a responsively-styled image** — without `sizes`, the browser assumes the image is as wide as the viewport and over-fetches a larger asset than displayed.
-- **`next/script` with the wrong `strategy`** — a non-critical third-party script (analytics, chat widget) loaded with `beforeInteractive` blocks hydration; should default to `afterInteractive` or `lazyOnload` unless the script genuinely must run before the page is interactive.
+- **`next/script` with the wrong `strategy`** — a non-critical third-party script (analytics, chat widget) loaded with `beforeInteractive` runs earlier than needed (preloaded and fetched before any first-party code) and delays first-party script execution, even though Next's own docs state its execution does not block hydration itself; should default to `afterInteractive` or `lazyOnload` unless the script genuinely must run before the page is interactive.
 - **`generateMetadata` awaiting the same data the page component also fetches, sequentially** — Next.js dedupes identical `fetch()` calls automatically via the Data Cache, but a raw DB call in both `generateMetadata` and the page component without `cache()` runs twice, and if not parallelized (metadata resolution can run concurrently with the page render) adds unnecessary latency.
 
 ## Diagnostic Commands
@@ -158,7 +158,9 @@ eslint . --ext .ts,.tsx               # confirm eslint-config-next is active (ca
 cat next.config.* 2>/dev/null
 ```
 
-The `next build` output's route table (○ Static, ● SSG, λ Dynamic) is the ground truth for
+The `next build` output's route table (○ Static, ƒ Dynamic — the current two-symbol App
+Router legend; ● SSG and λ Dynamic are stale Pages Router-era symbols, not current output) is
+the ground truth for
 whether a route is actually being statically rendered — don't infer this from source alone
 when the build output is available; report a mismatch between stated intent and actual
 build-time classification as a finding.

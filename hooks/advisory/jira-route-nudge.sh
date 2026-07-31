@@ -3,8 +3,10 @@
 # routing through the jira-acli plugin's skills (jira-acli:acli,
 # jira-acli:jira-content, jira-acli:confluence-content) before any direct
 # mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit
-# hook. Output -> stdout (CC surfaces as a system-reminder); never blocks,
-# always exits 0. Errors are silently swallowed.
+# hook. Output -> plain stdout — docs: "added as context Claude can see and
+# act on" (not the JSON hookSpecificOutput.additionalContext path, which is
+# what's specifically documented as wrapped in a "system reminder"); never
+# blocks, always exits 0. Errors are silently swallowed.
 #
 # Why still non-blocking here (the actual block lives elsewhere now): this
 # fires on the PROMPT, before any tool call exists yet, so there is nothing

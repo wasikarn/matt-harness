@@ -118,12 +118,13 @@ what's vocabulary-only, and what's an open gap the harness admits to rather than
 
 ### Harness engineering — the architectural spine
 
-**Source:** Sarah Böckeler (Thoughtworks, via Martin Fowler's site,
+**Source:** Birgitta Böckeler (Thoughtworks, via Martin Fowler's site,
 [April 2026](https://martinfowler.com/articles/harness-engineering.html)) — a coding-agent
 harness modeled as a 2×2 of **direction** (feedforward / feedback) × **execution type**
 (computational / inferential). Her core warning: an *inferential* judge (an LLM) grading
-work the *same model class* just produced is circular — "two optimists agreeing" — and
-should never be trusted to gate.
+work the *same model class* just produced is circular, and should never be trusted to gate.
+kbg's own shorthand for that circularity — "two optimists agreeing" — doesn't appear in the
+article itself; it's this repo's coined phrase for the idea, not a quote.
 
 **Where it's used:**
 - This is the reason `hooks/` splits into `hooks/gates/` (deterministic, non-LLM, can deny)

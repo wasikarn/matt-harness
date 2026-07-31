@@ -5,6 +5,96 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.120] — 2026-07-31
+
+Full-project official-docs accuracy audit (workflow-driven, 218 claims across 13 domains
+checked against live primary sources, not training recall) found 37 double-confirmed
+inaccuracies and 17 unverifiable claims — full record persisted at
+`docs/research/official-docs-audit-2026-07-31.md`. Fixed all 37 plus 3 promoted
+sourcing-claim defects from the unverifiable set (same defect class: a true claim with a
+wrong or unconfirmable citation).
+
+**Critical, behavior-changing:** the `WorktreeCreate`/`WorktreeRemove` gate
+(`gate:worktree:develop-only`, `hooks/gates/worktree-create-block.sh`) has been dead code as a
+*deny* mechanism since it was added (v0.29.0) — it read `tool_name`/`tool_input.branch`, fields
+those events never actually send (confirmed against raw Claude Code doc HTML, not a WebFetch
+summary, after one recheck agent's claimed schema turned out to be fabricated by a
+summarizer). Independent of that bug, registering *any* hook on `WorktreeCreate` replaces
+Claude Code's default worktree creation and requires the hook to itself create the worktree
+and emit the resulting path, or "worktree creation fails with an error" — this gate's allow
+path was a bare `sys.exit(0)` with no output, so it was silently breaking every legitimate
+`WorktreeCreate`-triggered worktree (`isolation: "worktree"` agents/workflows, `claude
+--worktree`, background sessions) in every repo running this plugin, not just this one. A
+memory record from 2026-07-28 shows this already happened live (`isolation: "worktree"` failed
+with "WorktreeCreate hook failed" in this exact repo, at the time misattributed to "the
+doctrine gate correctly refusing"). Fixed by deregistering both hooks.json entries and
+deleting the now-dead `worktree-create-block.sh` + its test suite
+(`hooks/tests/test-worktree-create.sh`, 34 tests that validated against the same invented
+payload shape the gate used — self-consistent, reality-disconnected, structurally unable to
+catch this class of bug). The develop-only branching doctrine is unaffected: the `git worktree
+add -b` block in `gate:bash:irrecoverable` (`PreToolUse:Bash`) was always the doctrine's real
+enforcement point for Bash-invoked worktree creation (`WorktreeCreate` never fires for it), and
+`review-pr`'s detached worktrees use raw Bash too. Verified live: piping a docs-accurate
+payload into the old gate returned rc=0 with empty stdout (confirming the dead deny path); the
+surviving Bash-side check still correctly denies `git worktree add -b <new-branch>` and allows
+everything else. `CLAUDE.md`'s Branching model section, `irrecoverable.sh`'s own comments, and
+`docs/reference/hook-lifecycle-contracts.md` all updated to match — the contracts doc also
+picked up 4 more unrelated findings from the same audit (wrong hook/event counts — 8→6 events,
+18→16 registrations after this removal; the `permissionDecision` enum was missing `allow`/
+`defer` and had a fake `none`; a stale `path-hardcode.sh` row for a script folded into
+`verifier-protect.sh` weeks ago; a false "no PostToolUse hooks registered" claim — one is live,
+`plan-review-nudge.sh`).
+
+**Other behavior fixes:** `hooks/stop/cost-tracker.sh`'s Haiku/Opus/Sonnet pricing table was
+stale on all 3 tiers (Haiku/Opus matched retired-model pricing off by 20%/3x; Sonnet matched
+the *upcoming* 2026-09-01 standard rate, not the live 2026-07-31 introductory rate, off by
+50%) — fixed to current live rates, with a date-gated branch for Sonnet's introductory-pricing
+window so it self-corrects on 2026-09-01 without another manual edit. Verified via unit test
+(direct `rate()` function check) and end-to-end (real transcript fixture through the full
+script, output verified, fixture rows cleaned from the real `costs.jsonl` afterward). Note:
+this is a forward fix only — historical `costs.jsonl` rows through today stay priced at the
+old (partially wrong) rates; whether to re-derive them or just note the discontinuity date is
+an open decision, not made here. `skills/pr/SKILL.md`'s `gh pr checks --json name,status,conclusion`
+was a shipped command that errors when actually run (`Unknown JSON field`), silently swallowed
+by `2>/dev/null || true` — fixed to the real field names (`name,state,bucket`), verified live.
+
+**Doc-accuracy and domain-skill content fixes (no runtime effect):** `context-budget/SKILL.md`
++ `env-vars.md`'s MCP-tool-cost and context-window assumptions were stale against Claude
+Code's current tool-search-by-default architecture and Sonnet 5's 1M default window;
+`env-vars.md`'s `MAX_THINKING_TOKENS` line described a retired 31,999-token "ultrathink"
+default instead of the current 10,000; `command-authoring-conventions.md` and
+`docs/agent-tool-patterns.md` had a frontmatter-schema overclaim and a broken citation URL
+respectively; `hooks.json`'s `Write|Edit|MultiEdit` matchers dropped the dead `MultiEdit`
+alternation (not a real Claude Code tool); `learn-nudge.sh`/`flow-nudge.sh`/
+`jira-route-nudge.sh` had misquoted or mislabeled doc citations (a fabricated "session is
+suspending" quote, a "system-reminder" label applied to the wrong output mechanism);
+`atlassian-mcp-gate.sh` had an unconfirmable "confirmed against docs" sourcing claim, softened
+to state what's actually verified vs. assumed. Domain-skill content: `nextjs-reviewer.md`
+(wrong middleware Node-runtime syntax, an overstated `beforeInteractive`-blocks-hydration
+claim, a stale Pages-Router route-table legend), `frontend-patterns/reference.md` (Zustand's
+non-curried `create<T>()` pattern, which degrades to a type assertion), `drizzle-patterns/SKILL.md`
+(deprecated object-return index syntax), `grpc-node-patterns/SKILL.md` (overstated
+"works without modification" Bun claim), `mysql-patterns/SKILL.md` (a MariaDB variable name
+that doesn't exist — `slave_parallel_mode` is real, `slave_parallel_type` isn't),
+`typescript-patterns/SKILL.md` (`@typescript/native-preview`'s wind-down status post-7.0-GA,
+`downlevelIteration`'s deprecation status undersold as merely "moot"),
+`cost-aware-llm-pipeline/SKILL.md` (stale cost-tier ratios computed from retired-model
+pricing, a flat 1024-token cache-minimum claim that's actually model-dependent — 512/1024/4096
+by tier), `performance-optimizer.md` (`readFileSync` mis-categorized as CPU-bound work
+belonging on `worker_threads`, when Node's own docs treat sync I/O and CPU-bound compute as
+separate categories with different fixes), and `README.md` (misattributed "Sarah Böckeler" —
+the real author is Birgitta Böckeler — and a "two optimists agreeing" phrase presented as a
+quote from her article; it's kbg's own coined shorthand, confirmed absent from the source
+text). `skills/security-auditor/SKILL.md`'s OWASP Top 10:2021 classification is accurate to
+that edition; OWASP has since published Top 10:2025 — left as a stated judgment call
+(edition currency vs. checklist stability), not auto-migrated.
+
+`harness-audit` check 06's and check 22's own source-citation comments were also wrong (a
+"not part of the schema" overclaim for `name:` frontmatter; an off-by-one "31-event" comment
+against a `DOC_EVENTS` set that was already correct at 30) — fixed; neither check's actual
+runtime behavior was affected. `BOUNDARY.md` regenerated to drop the deleted test-file
+reference. Full gauntlet verification pending this entry's own commit.
+
 ## [0.68.119] — 2026-07-31
 
 Rewrote all 3 `contexts/` files (`dev.md`, `review.md`, `research.md`), on explicit request

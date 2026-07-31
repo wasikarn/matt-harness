@@ -239,14 +239,23 @@ for w in windows:
         if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
             deny("git add -A/. stages everything — stage files by name instead")
         if sub == "worktree" and args and args[0] == "add":
-            # kbg single-branch doctrine gate (mirror of
-            # worktree-create-block.sh for the WorktreeCreate event).
-            # The Bash event fires for the git-worktree-add command
-            # even though the dedicated WorktreeCreate event does NOT
-            # fire for Bash-invoked worktree creation (verified against
-            # code.claude.com/docs/en/hooks). Without this check, the
-            # doctrine gap is open via Bash even if the WorktreeCreate
-            # event is wired. Sentinel-walk-up mirrors gate 1.
+            # kbg single-branch doctrine gate. This is the ONLY enforcement
+            # point for the doctrine — a prior companion gate on the native
+            # WorktreeCreate event (worktree-create-block.sh) was removed
+            # 2026-07-31: it read tool_name/tool_input, fields that event
+            # never actually sends (confirmed against code.claude.com/docs/en/hooks
+            # raw HTML), so its deny logic was dead code, and independent of
+            # that bug, registering ANY hook on WorktreeCreate replaces the
+            # Claude Code default worktree creation and requires the hook
+            # to emit the resulting path — this one never did, so it was
+            # silently breaking every legitimate WorktreeCreate-triggered
+            # worktree (isolation:"worktree", claude --worktree, background
+            # sessions) in every repo running this plugin. See
+            # docs/research/official-docs-audit-2026-07-31.md. This Bash-side
+            # check is unaffected: the dedicated WorktreeCreate event never
+            # fires for Bash-invoked `git worktree add` in the first place
+            # (verified against the same docs), so it was never part of the
+            # broken mechanism.
             #
             # Find the new-branch name. The git-worktree-add argv
             # order is flexible — the -b flag may come before or

@@ -24,9 +24,11 @@
 # it fires once per session end and says nothing about content.
 # Verified against the test in hooks/tests/test-learn-nudge.sh.
 #
-# `reason` gate: skip `resume` (docs: "session is being suspended for later
-# resumption" — not closing out, so "before you close out" would be false)
-# and `clear` (docs: user ran `/clear` — frequent mid-work housekeeping, and
+# `reason` gate: skip `resume` (docs: "Session switched via interactive
+# /resume" — the session ended because the user left it for a possibly-
+# different session via /resume, not because this session is pausing to be
+# continued later; "before you close out" would be a false framing either
+# way) and `clear` (docs: user ran `/clear` — frequent mid-work housekeeping, and
 # since tool-result turns inflate the turn count, MIN_TURNS filters almost
 # nothing here; nudging on every `/clear` is nag-fatigue noise, not signal).
 set -uo pipefail

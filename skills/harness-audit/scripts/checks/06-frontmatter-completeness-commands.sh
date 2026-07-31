@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # 6. Frontmatter completeness — commands
-# Per code.claude.com/docs/en/slash-commands: a command file under
-# `.claude/commands/<name>.md` derives its command name from the file name
-# (without extension). `name:` frontmatter is NOT part of the slash-command
-# schema — it's a plugin-root `SKILL.md` construct. Warn-only for missing name:
-# (preserves audit visibility without blocking on a field the schema doesn't
-# require).
+# Per code.claude.com/docs/en/skills (custom commands were merged into the
+# skills frontmatter schema; slash-commands redirects there): `name:` IS a
+# documented, valid field in the schema that governs `.claude/commands/`
+# files too — it just isn't what determines the invoked command name there.
+# For a file under `.claude/commands/`, the command name always comes from
+# the file name (without extension), regardless of `name:`. Warn-only for
+# missing name: (preserves audit visibility without blocking on a field
+# that doesn't affect invocation for this file location).
 for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/commands"/*/COMMAND.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f" .md)

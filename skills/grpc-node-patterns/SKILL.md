@@ -239,10 +239,17 @@ healthImpl.setStatus('anpr.ANPRService', 'SERVING')
 
 ## Bun Compatibility
 
-`@grpc/grpc-js` works on Bun without modification. Use native Node.js imports:
+`@grpc/grpc-js` mostly works on Bun with native Node.js imports, but the compatibility surface
+is genuinely partial, not full — Bun's own compat docs mark `node:http2` (which grpc-js
+depends on) at "95.25% of gRPC's test suite passes," not fully green, and there's a real
+history of protocol-level bugs specific to this combination (malformed HTTP/2 frames breaking
+Envoy, a compression-filter crash on single-file executables, missing trailers). Check the
+current Bun version and open grpc-js/Bun issues before assuming it works unmodified,
+especially for streaming or large messages:
 
 ```typescript
-// Works on Bun directly — no polyfills needed
+// Mostly works on Bun directly — verify against the current Bun version for
+// your actual traffic shape (streaming, large messages) before relying on it
 import * as grpc from '@grpc/grpc-js'
 import * as protoLoader from '@grpc/proto-loader'
 ```

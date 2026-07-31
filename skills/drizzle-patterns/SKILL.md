@@ -28,10 +28,13 @@ export const users = pgTable('users', {
   emailVerified: boolean('email_verified').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => ({
-  emailIdx: index('users_email_idx').on(table.email),
-  statusCreatedIdx: index('users_status_created_idx').on(table.status, table.createdAt),
-}))
+// Array-return form for the third argument — the current documented pattern.
+// The older object-return form (`(table) => ({ emailIdx: ... })`) still
+// compiles but triggers a deprecation warning since drizzle-orm v0.36.0.
+}, (t) => [
+  index('users_email_idx').on(t.email),
+  index('users_status_created_idx').on(t.status, t.createdAt),
+])
 
 // Type inference — use these instead of writing types manually
 export type User = typeof users.$inferSelect

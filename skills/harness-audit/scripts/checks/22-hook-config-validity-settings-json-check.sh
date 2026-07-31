@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 22. Hook config validity — settings.json (checks C–F).
-# Verified against code.claude.com/docs/en/hooks (31-event canonical set, fetched
-# 2026-05-30). Findings are WARN not CRIT: vendor docs lag features (Rule 1), so
+# Verified against code.claude.com/docs/en/hooks (30-event canonical set, re-confirmed
+# 2026-07-31 via raw HTML fetch — the DOC_EVENTS set below matches the live doc
+# item-for-item). Findings are WARN not CRIT: vendor docs lag features (Rule 1), so
 # an unrecognized event/type may be real-but-undocumented — flag for a human, do
 # not fail the build. A bad regex, by contrast, genuinely never matches.
 if [ -f "$SETTINGS" ]; then

@@ -33,9 +33,12 @@ compiler rewritten in Go (codename Corsa). **This is no longer a future concern:
 7.0 reached general availability on the main `typescript` npm package** (7.0.2, with 7.1.0
 already in nightly `-dev` builds), and the old JavaScript-hosted compiler's own repository
 states plainly that TypeScript 6.0 was its last release — all TypeScript development now
-happens in the Go rewrite. `npx tsc --version` today resolves to the Go-built binary; the
-`@typescript/native-preview` package (binary `tsgo`) continues in parallel as the bleeding-edge
-nightly channel. A fixed list of legacy compiler options already failed the build **by
+happens in the Go rewrite. `npx tsc --version` today resolves to the Go-built binary. The
+`@typescript/native-preview` package (binary `tsgo`) is being wound down now that 7.0 is GA —
+its last publish was 2026-07-07, just before GA — with nightly builds moving to the main
+`typescript` package's `next` dist-tag instead (`typescript@next`, updating daily); don't
+depend on `@typescript/native-preview` staying maintained going forward. A fixed list of
+legacy compiler options already failed the build **by
 default** on TypeScript 6.0 — confirmed directly against a real 6.0.3 install, these were
 `error TS5107`/`TS5101`, not warnings, with `"ignoreDeprecations": "6.0"` as the only escape
 hatch — and TypeScript 7.0 removes that escape hatch entirely, confirmed the same way against
@@ -60,7 +63,7 @@ helper — both lists match exactly, and both were verified by actually running
 | `esModuleInterop: false` | error by default | must be `true` | `esModuleInterop: true` |
 | `allowSyntheticDefaultImports: false` | error by default | hard error, no opt-out | drop the override — `esModuleInterop: true` implies it |
 | `alwaysStrict: false` | error by default | hard error, no opt-out | drop the override; `strict: true` implies it |
-| `downlevelIteration` | error by default | moot | a modern `target` (ES2015+) makes it unnecessary |
+| `downlevelIteration` | error by default | hard error, no opt-out (setting it either way is deprecated, same mechanism as the rest of this table) | a modern `target` (ES2015+) makes it unnecessary — drop the option entirely rather than setting it |
 
 **Migrating an existing project off `baseUrl`:** the `paths` values need the `./`/`../` prefix
 added at the same time — dropping `baseUrl` without fixing the paths is a second, separate

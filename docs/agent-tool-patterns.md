@@ -59,7 +59,7 @@ disallowedTools: Write, Edit, NotebookEdit
 
 - The agent needs most of the default toolset, and the denylist is a small adjustment (1-3 tools).
 - The agent is a generalist (multi-domain) and the team does not want to enumerate the full capability set in the frontmatter.
-- The vendor schema explicitly supports it (it does — see `code.claude.com/docs/en/agents`), and the team is OK with the implicit-inheritance tradeoff.
+- The vendor schema explicitly supports it (it does — see `code.claude.com/docs/en/sub-agents`, the actual subagent frontmatter reference), and the team is OK with the implicit-inheritance tradeoff.
 
 **Why kbg-harness does not currently use it:**
 

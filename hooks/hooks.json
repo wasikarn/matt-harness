@@ -66,7 +66,7 @@
       },
       {
         "id": "gate:write:verifier-protect",
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit",
         "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/hooks.json (deny-gates + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit.",
         "hooks": [
           {
@@ -138,7 +138,7 @@
       },
       {
         "id": "gate:write:worktree-guard",
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "matcher": "Write|Edit|NotebookEdit",
         "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when CLAUDE_PROJECT_DIR is known and outside the tathep workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the tathep path spawns python.",
         "hooks": [
           {
@@ -197,32 +197,6 @@
             "type": "command",
             "command": "bash",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/learn-nudge.sh"]
-          }
-        ]
-      }
-    ],
-    "WorktreeCreate": [
-      {
-        "id": "gate:worktree:develop-only",
-        "description": "Gate: enforce kbg single-branch doctrine — deny WorktreeCreate when /.kbg-no-worktree sentinel is present AND a new non-develop branch is being created. Allow detached review-pr worktrees, develop worktrees, and existing-branch worktrees. No-op in repos without the sentinel. Exit 2 + stderr; fail-safe allow on parse / resolution error.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-create-block.sh"]
-          }
-        ]
-      }
-    ],
-    "WorktreeRemove": [
-      {
-        "id": "gate:worktree:develop-only-remove",
-        "description": "Gate: symmetric observer — WorktreeRemove has no decision control per CC docs, but wiring it lets future audit checks verify both events are registered. The script body is a no-op allow on this event.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-create-block.sh"]
           }
         ]
       }

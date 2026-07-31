@@ -60,7 +60,10 @@ npx lighthouse https://your-app.com --output=json --output-path=./lighthouse.jso
 npx lighthouse https://your-app.com --only-categories=performance
 ```
 
-**Node is single-threaded: one sync call >10ms blocks every concurrent request on the event loop.** CPU-bound work (`pbkdf2Sync`, `readFileSync`, `JSON.parse` of >5MB, crypto over large buffers) belongs on pooled `worker_threads`, not the main thread — `--prof`/`--inspect` shows it as one long tick where every other request stalls. Raise `UV_THREADPOOL_SIZE` only when fs/crypto/dns saturate the default pool of 4 (async syscalls), not for CPU compute.
+**Node is single-threaded: one sync call >10ms blocks every concurrent request on the event loop.** Two different fixes for two different causes — Node's own docs are explicit that `worker_threads` help CPU-intensive work, not I/O ("The Node.js built-in asynchronous I/O operations are more efficient than Workers can be"):
+  - **CPU-bound work** (`pbkdf2Sync`, `JSON.parse` of >5MB, crypto over large buffers) — belongs on pooled `worker_threads`, not the main thread.
+  - **Sync I/O** (`readFileSync` and other `*Sync` fs calls) — is not CPU-bound; the fix is switching to the async form (`fs.readFile`/`fs.promises.readFile`), already backed by the libuv threadpool, not moving it to `worker_threads`.
+  `--prof`/`--inspect` shows either case as one long tick where every other request stalls. Raise `UV_THREADPOOL_SIZE` only when fs/crypto/dns saturate the default pool of 4 (async syscalls), not for CPU compute.
 
 ## Performance Review Workflow
 

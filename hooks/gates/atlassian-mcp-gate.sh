@@ -41,10 +41,16 @@
 #
 # Session marker: ~/.local/share/kbg/jira-acli-sessions/<session_id>, plain
 # touch (no expiry -- a session ends the tmp namespace with it; leftover
-# 0-byte files are harmless). Subagents share the parent session_id in the
-# hook payload (confirmed against docs.claude.com/docs/en/hooks.md,
-# 2026-07-15), so a marker set by the orchestrator is visible to a dispatched
-# subagent's own Atlassian MCP calls without it having to reload the skill.
+# 0-byte files are harmless). Assumes subagents share the parent session_id
+# in the hook payload, so a marker set by the orchestrator is visible to a
+# dispatched subagent's own Atlassian MCP calls without it having to reload
+# the skill. NOT independently confirmed against the official hooks doc --
+# code.claude.com/docs/en/hooks documents session_id generically ("Current
+# session identifier") and confirms agent_id/agent_type distinguish a
+# subagent's hook events, but does not explicitly state whether session_id
+# itself is identical to the parent's. Re-verify empirically (dispatch a
+# subagent, diff its hook payload's session_id against the parent's) before
+# relying on this for anything higher-stakes than the current cold-start nudge.
 #
 # Escape hatch: KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 (precedent:
 # worktree-guard.py's TATHEP_ALLOW_MAIN_EDIT=1) -- cheap insurance if the

@@ -70,11 +70,16 @@ other agentic tools (Cursor, Windsurf) converge on.
 
 ## 4. Frontmatter fields — what's actually functional
 
-Confirmed recognized and functional: `name`, `description`, `argument-hint`,
-`disable-model-invocation` / `disable-model-invocation-reason`, `allowed-tools`, `model`,
+Confirmed recognized and functional (per the unified skills/commands frontmatter schema at
+`code.claude.com/docs/en/skills`): `name`, `description`, `argument-hint`,
+`disable-model-invocation`, `allowed-tools`, `model`,
 `agent` (only meaningful when paired with `context: fork` — setting `agent:` alone, without
 `context: fork`, does nothing at the schema level; any delegation you see happening is
 carried entirely by the command's prose telling the model to invoke that agent).
+`disable-model-invocation-reason` is **not** part of that schema — it's a non-standard-but-harmless
+kbg convention that Claude Code tolerates as unrecognized frontmatter, same as CLAUDE.md's own
+"Skill/agent/command mechanics" note says. Keep using it for the documentation value, but don't
+call it "recognized and functional" the way the schema-backed fields above are.
 
 **Do not add `subtask:`** — it does not appear in Anthropic's documented command-frontmatter
 schema and is very likely inert (an ECC-port artifact). `metadata:` (freeform, e.g.

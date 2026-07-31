@@ -21,7 +21,12 @@ reductions before adding more components or when session quality degrades.
 
 - Prose files: `word count × 1.3`
 - Code-heavy files: `char count / 4`
-- MCP tool schema: `~500 tokens per tool`
+- MCP tool schema: deferred by default (tool search is on unless disabled) — only tool
+  names + server instructions (~100-150 tokens/tool) load at session start; full schemas
+  load on demand when Claude actually searches for and uses a tool. Cost no longer scales
+  linearly with connected-tool count under this default. Confirmed live against
+  `code.claude.com/docs/en/mcp` ("Scale with MCP tool search"), 2026-07-31 —
+  `docs/research/official-docs-audit-2026-07-31.md`.
 - Agent `description` frontmatter: always loaded, even if agent is never invoked
 
 ## Phase 1 — Inventory
@@ -35,7 +40,9 @@ wc -l agents/*.md | sort -rn | head -20
 # Skills — flag files >400 lines
 find skills -name SKILL.md | xargs wc -l | sort -rn | head -20
 
-# MCP servers — count tools (biggest lever: ~500 tokens/tool)
+# MCP servers — count tools. With tool search on (the default), only names +
+# server instructions load upfront; full schemas defer until actually used —
+# a large server no longer costs proportionally at session start.
 # Check ~/.claude.json mcpServers section
 
 # CLAUDE.md chain — flag combined total >300 lines
@@ -54,7 +61,7 @@ wc -l ~/.claude/CLAUDE.md CLAUDE.md .claude/CLAUDE.md 2>/dev/null
 
 Ranked by token savings:
 
-1. **MCP over-subscription** — each tool costs ~500 tokens; a 30-tool server costs more than all skills combined. CLI-wrapping servers (`gh`, `git`, `npm`) are prime removal candidates.
+1. **MCP over-subscription** — with tool search off (or on an older CLI version), each tool costs a full schema upfront and a 30-tool server can cost more than all skills combined; with tool search on (current default), only names load upfront and this matters far less. Check whether tool search is active before treating server count as the dominant lever. CLI-wrapping servers (`gh`, `git`, `npm`) are still removal candidates on cleanliness grounds even when the token cost is low.
 2. **Bloated agent descriptions** — `description` frontmatter loads into every Task tool invocation. Cap at 25 words.
 3. **Heavy agents** — files >200 lines inflate Task context on every spawn.
 4. **Redundant components** — skill that duplicates agent logic, rule that duplicates CLAUDE.md.
@@ -67,7 +74,8 @@ Context Budget Report
 ═══════════════════════════════════════
 
 Total estimated overhead: ~XX,XXX tokens
-Context window: 200K (Sonnet)
+Context window: 1M (Sonnet 5 default) — confirm the actual model/window in use;
+  older models or a gateway without 1M support fall back to 200K
 Effective available: ~XXX,XXX tokens (XX%)
 
 Component Breakdown:

@@ -161,7 +161,9 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
 ## Relative Cost
 
 The routing intuition this pattern exploits — Haiku-tier models run roughly
-1x, Sonnet-tier ~4x, Opus-tier ~19x per token — is what motivates routing
+1x, Sonnet-tier ~2-3x, Opus-tier ~5x per token (current tiers, confirmed
+2026-07-31; the ratio compresses as pricing evolves — it used to be closer
+to 1x/4x/19x under now-retired model pricing) — is what motivates routing
 simple tasks to the cheapest model. **For current model ids and exact
 per-token pricing, check Anthropic's pricing docs or the live session
 context** — absolute prices and model ids change across releases; this
@@ -172,7 +174,7 @@ skill owns the routing pattern, not the price sheet.
 - **Start with the cheapest model** and only route to expensive models when complexity thresholds are met
 - **Set explicit budget limits** before processing batches — fail early rather than overspend
 - **Log model selection decisions** so you can tune thresholds based on real data
-- **Use prompt caching** for system prompts over 1024 tokens — saves both cost and latency
+- **Use prompt caching** for system prompts over the model's minimum cacheable prefix — saves both cost and latency. The minimum is model-dependent, not a flat 1024 tokens: 512 for Claude Opus 5, 1024 for Sonnet 5/Sonnet 4.6/Opus 4.8, but 4,096 for Claude Haiku 4.5 — a prompt sized for Sonnet's threshold routed to Haiku by this skill's own routing logic would silently fail to cache (no error, `cache_creation_input_tokens` stays 0). Check the target model's actual minimum before sizing the cached prefix.
 - **Never retry on authentication or validation errors** — only transient failures (network, rate limit, server error)
 
 ## Anti-Patterns to Avoid

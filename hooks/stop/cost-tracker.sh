@@ -42,15 +42,30 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   ' "$transcript" 2>/dev/null) || usages=''
 
   if [[ -n "$usages" && "$usages" != "[]" ]]; then
+    # Sonnet 5 runs introductory pricing ($2/$10/$2.50/$0.20 per MTok) through
+    # 2026-08-31; standard pricing ($3/$15/$3.75/$0.30, unchanged from prior
+    # Sonnet generations) resumes 2026-09-01. Confirmed live against
+    # platform.claude.com/docs/en/about-claude/pricing, 2026-07-31 —
+    # docs/research/official-docs-audit-2026-07-31.md.
+    if [[ "$(date -u +%Y%m%d)" -lt 20260901 ]]; then
+      sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
+    else
+      sonnet_rate='{"i":3.0,"o":15.0,"cw":3.75,"cr":0.30}'
+    fi
     rows=$(printf '%s' "$usages" | jq -c \
       --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       --arg sid "$session_id" \
-      --arg tp "$transcript" '
+      --arg tp "$transcript" \
+      --argjson sonnet_rate "$sonnet_rate" '
       def rate:
-        if (.model | ascii_downcase | test("haiku")) then {i:0.80,o:4.0,cw:1.00,cr:0.08,v:true}
-        elif (.model | ascii_downcase | test("opus")) then {i:15.0,o:75.0,cw:18.75,cr:1.50,v:true}
-        elif (.model | ascii_downcase | test("sonnet")) then {i:3.0,o:15.0,cw:3.75,cr:0.30,v:true}
-        else {i:3.0,o:15.0,cw:3.75,cr:0.30,v:false} end;
+        # Haiku 4.5 and Opus 5/4.8 rates confirmed live against
+        # platform.claude.com/docs/en/about-claude/pricing, 2026-07-31 —
+        # the previously coded values were retired-model (Haiku 3.5, Opus
+        # 4.1/4) pricing. See docs/research/official-docs-audit-2026-07-31.md.
+        if (.model | ascii_downcase | test("haiku")) then {i:1.00,o:5.0,cw:1.25,cr:0.10,v:true}
+        elif (.model | ascii_downcase | test("opus")) then {i:5.0,o:25.0,cw:6.25,cr:0.50,v:true}
+        elif (.model | ascii_downcase | test("sonnet")) then ($sonnet_rate + {v:true})
+        else ($sonnet_rate + {v:false}) end;
       .[] | . as $u | ($u | rate) as $r |
       { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
         model_scoped: true,

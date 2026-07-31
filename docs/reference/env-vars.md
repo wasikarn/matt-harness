@@ -46,7 +46,7 @@ Recommended values for context/cost efficiency, sourced from ECC token-optimizat
 
 | Var | Recommended | Effect |
 |---|---|---|
-| `MAX_THINKING_TOKENS` | `10000` | Extended thinking reserves up to 31,999 output tokens for internal reasoning. 10k cuts hidden cost ~70% vs the default. Set to `0` for trivial tasks. Toggle with **Option+T** (macOS). |
+| `MAX_THINKING_TOKENS` | `10000` | Extended thinking reasoning budget; current live default is already `10000` (the older `31,999` "ultrathink" ceiling was a prior Claude Code version — confirmed against `code.claude.com/docs/en/env-vars`, 2026-07-31). Setting it to `10000` today is a no-op, not a cost-cutting change. Set to `0` to disable extended thinking for trivial tasks; raise it above 10000 if a task needs deeper reasoning than the default budget. Toggle with **Option+T** (macOS). |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | (per current fleet) | Model for subagents spawned via the Task tool. Pick a cheap tier for exploration/file reading; switch the main session to a stronger model for complex reasoning without changing this. |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `50` | Compacts at 50% context used instead of the CC default 95%. Compacts **earlier** = better summarization quality in long sessions. ECC recommended. |
 
@@ -57,15 +57,30 @@ Use the right model per task mid-session:
 /model opus     # complex architecture, multi-step reasoning
 ```
 
-## Context Window Management (ECC)
+## Context Window Management (ECC, stale — see correction below)
 
-Each loaded MCP server's tool descriptions consume tokens from your 200k context window — a fully-loaded setup can shrink usable space to ~70k.
+The section below is the original ECC token-optimization guidance and predates Claude Code's
+current default: MCP tool search. Confirmed live against `code.claude.com/docs/en/mcp`
+("Scale with MCP tool search") and `docs/en/costs` ("Reduce MCP server overhead"),
+2026-07-31 (`docs/research/official-docs-audit-2026-07-31.md`) — with tool search on (the
+default), only tool names + server instructions load at session start; full schemas defer
+until Claude actually searches for and uses a tool. Anthropic states explicitly: "Claude Code
+doesn't impose a fixed per-server tool cap; the practical limit is your context window
+budget." The specific numeric limits below (10 servers / 80 tools, linear scaling) describe
+the pre-tool-search architecture and should not be treated as current hard limits. Sonnet 5's
+default context window is also 1M, not 200k (see Model Configuration above) — re-derive the
+"fully-loaded setup" estimate against whichever window is actually active.
 
-**Limits to stay under:**
-- **10 MCP servers active** — beyond this, tool-description overhead is measurable
-- **80 tools total active** — token cost scales linearly with tool count
+Each loaded MCP server's tool descriptions still consume some tokens (tool names + server
+instructions, upfront) — a very large server count is still worth trimming for cleanliness,
+just not because of the linear-scaling/hard-cap math below.
 
-Use `/mcp` in-session to disable unused servers. Prefer keeping heavy-schema MCPs (Figma, Atlassian, MongoDB) inactive unless actively needed.
+**Historical limits this section originally recommended (now stale, kept for context):**
+- ~~10 MCP servers active — beyond this, tool-description overhead is measurable~~
+- ~~80 tools total active — token cost scales linearly with tool count~~
+
+Use `/mcp` in-session to disable unused servers if you notice real context pressure. Prefer
+keeping heavy-schema MCPs (Figma, Atlassian, MongoDB) inactive unless actively needed.
 
 **Agent teams cost:** each teammate agent consumes tokens independently. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"` disables agent-team spawning.
 
