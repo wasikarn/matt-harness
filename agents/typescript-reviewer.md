@@ -126,7 +126,7 @@ Only report issues with >80% confidence. Flag correctness-affecting gaps; treat 
 
 For write-time TypeScript language idioms and version-compatible `tsconfig.json` choices, use
 `kbg:typescript-patterns`. For API/DB architecture on a plain Node/Express/Next.js backend, use
-`kbg:backend-patterns` (the kept TS/backend base). This agent reviews the diff after the fact —
+`kbg:backend-patterns`. This agent reviews the diff after the fact —
 it does not load either skill itself.
 
 ---

@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.122] — 2026-08-01
+
+Added `harness-audit` check 52 — a ratchet for the fleet's own de-facto anti-duplication
+convention: every skill description names a `Don't use for X` boundary. Prompted by mapping a
+ThoughtWorks article ("Should we still design code for humans?") against this repo's own state;
+its one concrete recommendation is "deterministic test harnesses that validate design
+constraints," and the gap it surfaced was real — nothing detects purpose overlap across the 68
+skill/command/agent surfaces, caught so far only by human memory (one confirmed incident,
+`review-prompt-duplication-pattern`). The obvious first design — a description-similarity
+detector — was built and rejected empirically: pairwise Jaccard over all 2,278 surface pairs
+returns deliberate siblings at the top (`backend-patterns`/`frontend-patterns` 0.43,
+`python-reviewer`/`typescript-reviewer` 0.32), the same false-positive trap that retired check
+36's failure-mode proxy 2026-07-16. What the data showed instead: 30/30 skills already carry the
+boundary clause, unenforced — a real ratchet with zero findings today and zero false positives by
+construction. Scoped to skills only (agents/commands are dispatched deliberately, not
+auto-triggered on description match — enforcing there would be 17/2 and 5/14 low-value noise).
+A `kbg:plan-reviewer` pass on the approved plan (before any code was written) caught 3 real,
+reproduced-live gaps: the verification steps had an unstated ordering dependency on the
+`harness-audit` description fix landing first (reproduced: running the negative control before
+that fix lands returns 2 INFOs, not 1); `agents/typescript-reviewer.md` quoted a phrase
+(`the kept TS/backend base`) this pass deletes from `backend-patterns`, which the plan's own
+BOUNDARY.md-regen step doesn't catch (generated-from-description drift vs. hand-authored prose
+drift are different failure classes); and the new check file's `# 52. ` header requirement — load
+-bearing for `audit.sh`'s split-integrity guard — was implied by precedent but never stated. All
+three fixed before implementation. Verified live: a negative control (scratch copy, one skill's
+clause stripped) fires exactly one INFO naming that skill; the real tree returns 0 findings for
+check 52 and holds at 0 CRIT/0 WARN/5 INFO overall; full gauntlet green. Standing item named but
+not touched this pass: the `204-test critical-hooks suite` + `eval dataset gate` have carried a
+"pending rebuild" label across 6+ files for 60+ versions — the finding that maps most directly to
+the article's concrete recommendation, and the one still owed a decide-or-delete call.
+
 ## [0.68.121] — 2026-07-31
 
 Fixed harness-audit's 5 remaining INFO findings on explicit "fix all remaining" request, with a

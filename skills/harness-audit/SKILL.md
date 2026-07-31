@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Single harness-state surface, two modes: default fleet/schema audit, --health for session token cost. Use for harness audits or cost checks; not repo lint/security (kbg:security-auditor)."
+description: "Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (kbg:security-auditor)."
 ---
 
 # Harness Audit

@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture, API design, and DB optimization for Node.js/Next.js — the kept TS/backend base. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends.
+description: Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (kbg:frontend-patterns).
 metadata:
   origin: ECC
 ---

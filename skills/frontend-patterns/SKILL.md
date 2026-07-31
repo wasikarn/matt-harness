@@ -1,6 +1,6 @@
 ---
 name: frontend-patterns
-description: Frontend architecture, component design, and rendering optimization for React/TS — the kept TS/frontend base. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular frontends.
+description: Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, or server/API work (kbg:backend-patterns).
 metadata:
   origin: ECC
 ---
