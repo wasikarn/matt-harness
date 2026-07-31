@@ -81,6 +81,34 @@ this template helps you review.
    branch — an agent that correctly avoids the trap then never triggers the loop-mechanic
    path either. Build those as two separate fixtures, not one.
 
+4. **In a closed-book fixture, only workflow-convention rules can discriminate — not
+   evidence-discovery, and not judgment quality.** Confirmed on `address-review` (iteration-1
+   → iteration-2, 2026-07-31; see `address-review-workspace/iteration-1/feedback.json` and
+   `iteration-2/feedback.json` for the full run). A "dry run, no live commands, all data you
+   need is below" fixture format — the norm for this repo's command/agent evals — means every
+   fact the correct answer depends on has to be inlined into *both* the with-skill and the
+   baseline prompt regardless of how deeply it's supposedly buried (a code comment vs. a git-log
+   entry vs. a `git blame` result someone would have to go dig for in a real repo). Two design
+   axes both failed for this reason: (a) making the answer harder to *find* — moving the
+   justification from an inline comment to commit history didn't work, because the commit
+   history had to be handed to the baseline in the prompt text anyway, same as the with-skill
+   arm; (b) making the *judgment call* harder — a near-miss where surface evidence looks like a
+   fix but isn't (an author-matched, later commit that relocates a bug instead of fixing it)
+   also didn't work, because a generically diligent agent applies ordinary due diligence
+   ("does this diff actually contain what I think it contains?") and reaches the same
+   conclusion the skill's specific rule would have produced. The one thing that did
+   discriminate, found in iteration-1 by accident rather than by this design intent: a rule
+   about how the *target skill/command itself* operates — its classification taxonomy, an
+   auto-resolve eligibility rule, a reply-template selection rule, a "surface this to the user
+   before doing X" checkpoint — something no amount of code/data reasoning can derive, because
+   it isn't a fact about the code, it's a fact about the workflow. When designing a fixture
+   meant to discriminate, aim the trap at one of those workflow-only rules, not at hiding or
+   complicating the underlying evidence — and verify the design by asking "could a competent
+   engineer with zero knowledge of this skill's existence, given the exact same inlined data,
+   reach a different conclusion than the correct one?" If the honest answer is no, the fixture
+   will not discriminate no matter how it's dressed up, and it's worth saying so rather than
+   iterating on data-hiding variants.
+
 ## The template
 
 Copy once per agent. Fill every `[bracket]`. Send **both** agent calls in the same
