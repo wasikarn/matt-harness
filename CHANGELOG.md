@@ -5,6 +5,34 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.125] — 2026-08-01
+
+Ran `/kbg:compliance-audit` (first use since it shipped) against the only formal plan this session
+had: `modular-seeking-valiant.md` (check 52, v0.68.122) versus its implementing commit `6cc9bf4`.
+Re-derived a 10-item requirement checklist from the plan file itself (not memory), pre-declared 3
+known deviations (a wrong flag in the plan's own `BOUNDARY.md` regen command, an unplanned edit to
+`agents/typescript-reviewer.md`, an implicit `# 52. ` header requirement — all three from a
+pre-implementation `plan-reviewer` pass), then dispatched 3 fresh-context verifiers with no memory
+of the implementation: code conformance, content conformance, and a live re-run of the plan's own
+Verification section (not trusting the original session's "gauntlet was green" claim). All 10
+requirements conformed; all 3 pre-declared deviations matched what the verifiers independently
+found, on their own, without being told the deviation list. The one genuinely new finding came from
+the adversarial-completeness mandate this command requires for any verifier touching a
+security/verifier-perimeter surface (check 52's own script lives under
+`skills/harness-audit/scripts/checks/**`, one of this repo's protected paths): the matcher's bare
+`not for` alternative matched as a free substring anywhere in a description — `"this dashboard is
+not for production traffic"` false-negatived, reading as conformant with no real boundary clause,
+exactly the trap the check's own header comment claimed to guard against. Confirmed 0/30
+conformant skills relied on the bare form standalone (all already match via `don't use
+for/to/it for`), so removed it outright rather than anchor it — simpler and fully closes the class
+rather than narrowing it, on a file where simplicity is itself a safety property. Re-verified live
+after the fix: the bypass string no longer matches, all 3 legitimate forms still do, the negative
+control still fires exactly 1 INFO, the full audit still holds 0 CRIT/0 WARN/5 INFO, gauntlet
+green. Logged, not fixed, per Rule 2: an uncontracted `"Do not use for X"` still doesn't match
+either form — not a spec deviation (only contracted forms were ever required) and no shipped skill
+uses that phrasing today, so no live impact; a latent gap for a future skill author, not a current
+bug.
+
 ## [0.68.124] — 2026-08-01
 
 Closed the one item v0.68.123 explicitly deferred — whether ad hoc `/review-fixtures` loops have a
