@@ -5,6 +5,45 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.124] — 2026-08-01
+
+Closed the one item v0.68.123 explicitly deferred — whether ad hoc `/review-fixtures` loops have a
+proven gap that would justify a new, purpose-built persisted regression suite (distinct from the
+old, deliberately-not-rebuilt eval dataset gate). Dispatched a research agent to sweep the full
+10,737-line `CHANGELOG.md` for the discriminating test `advisor()` proposed: has a loop ever found
+a regression in a surface a prior loop had already fixed? The first dispatch spawned its own
+nested sub-agents mid-task and stalled on a stub "waiting" message — reported to the user as a
+failure and relaunched with an explicit no-sub-agent constraint. The relaunch completed cleanly.
+The original dispatch then also recovered on its own and returned a full report later, in the
+background — giving two independent sweeps of the same evidence instead of one, which is what
+surfaced the actual finding: the two reports disagreed on 2 of 5 claimed regressions
+(code-architect v0.68.86→90, blind-spot-hunter v0.68.43→87). Re-reading this repo's own
+already-written v0.68.90/v0.68.87 bullets settled it in favor of the report that flagged them as
+holds, not regressions — both bullets say outright that the targeted fixes closed clean and what
+each pass additionally found was a new, adjacent bug neither fix had touched. Net evidence: 0
+clean cases of "fixed, verified, then broke again"; the two survivors (`learn` v0.68.47→101,
+`summarizer` v0.68.41→84) are both "never actually verified live at fix time," a different disease
+a persisted rerun suite doesn't treat — verifying at fix time does, which `/review-fixtures`
+already does when run. The one real gap both reports found independently: `orchestrate`
+v0.68.58→60, where a confirmed finding was never applied and sat unnoticed until a later,
+unrelated audit happened to check — a *tracking* gap, not a *rerun* gap; a regression suite would
+not have caught it. Verdict, per Rule 2: **no proven need — don't build.**
+
+Also, per an explicit user request to re-verify the whole session rather than trust the prior
+entries at face value: re-fetched the ThoughtWorks article `v0.68.122` cited and found its own
+central claim mischaracterized. The article's "deterministic test harnesses that validate design
+constraints" line is real, but it's the article's cautionary example inside its "a spec precise
+enough to constrain an agent is basically code" argument — not its recommendation, which is that
+human judgment stays load-bearing. Fixed `CLAUDE.md`'s v0.68.122 bullet in place (this repo's
+established convention for a same-day drill-down correction — see v0.68.116 doing the same to
+v0.68.115) rather than only noting it here; check 52 itself is unaffected — the ratchet's value
+never depended on the article endorsing it, only on the real, independently-verified duplication
+gap it closes. Also independently re-verified, via direct `git show`/`git cat-file`, the two commit
+hashes v0.68.123 hung its argument on: `c452102` (2026-06-27 23:42, "reset: rebuild from scratch")
+and `a518ad1` (2026-06-30 18:15, the separate v0.6.0 simplification) — both confirmed accurate, and
+`24d7663` confirmed as a real commit, 19 minutes before `c452102`, matching its stated role as the
+recovery anchor.
+
 ## [0.68.123] — 2026-08-01
 
 Closed the standing item named-but-not-touched at the end of v0.68.122: the `204-test
