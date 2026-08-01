@@ -46,6 +46,20 @@ skill, caught by the user, not by this checklist. (A hand-pinned HEAD hash is st
 to re-stale; the path is the stable anchor — run `git rev-parse HEAD` there when you need the
 current commit.)
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `wasikarn/kbg-harness` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary kept as-is. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — root `CONTEXT.md` + `docs/adr/` (neither exists yet; created lazily by `/domain-modeling`). See `docs/agents/domain.md`.
+
 ## Research: check qmd before web search
 
 Before starting primary-source research — fact-checking a claim, investigating a library/API,
