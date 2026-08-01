@@ -77,7 +77,15 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
           ($u.cache_write_tokens / 1e6 * $r.cw) + ($u.cache_read_tokens / 1e6 * $r.cr) |
           (. * 1e6 | round) / 1e6
         ) }
-    ' 2>/dev/null) && [[ -n "$rows" ]] && printf '%s\n' "$rows" >> "$metrics_dir/costs.jsonl"
+    ' 2>/dev/null)
+    metrics_file="$metrics_dir/costs.jsonl"
+    # Refuse to append through a symlink — caveman (JuliusBrussee/caveman,
+    # src/hooks/caveman-config.js) hardens this exact predictable-path-append
+    # pattern against a same-user local attacker swapping the target for a
+    # symlink into an arbitrary writable file. Narrower threat here (data
+    # corruption, not privilege escalation — the attacker already needs
+    # same-user write access to plant the symlink) but the guard is one line.
+    [[ -n "$rows" && ! -L "$metrics_file" ]] && printf '%s\n' "$rows" >> "$metrics_file"
   fi
 fi
 

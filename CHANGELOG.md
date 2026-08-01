@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.129] — 2026-08-01
+
+A second full drill-down of the local `caveman` clone (this time every file, not just the 6 skills
++ 3 agents from the earlier pass) surfaced one real, previously-unread gap: `hooks/stop/cost-tracker.sh`
+appended to `~/.local/share/kbg/metrics/costs.jsonl` with a plain `>>` redirect and no symlink check.
+Caveman hardens this exact predictable-path-append pattern in `src/hooks/caveman-config.js`
+(`safeWriteFlag`/`readFlag` — O_NOFOLLOW, ownership verification, a dedicated `test_symlink_flag.js`
+suite, tied to a real tracked issue, #207) — enough independent engineering investment in one
+narrow defensive pattern to take seriously. Threat model, stated plainly: a same-user local process
+plants a symlink at `costs.jsonl`'s path; the next Stop event silently appends JSONL noise into
+whatever that symlink points at. That already requires same-user code execution to set up, so it's
+a bounded data-corruption/DoS primitive, not privilege escalation — not urgent, but real, and the
+fix is one line (`[[ ! -L "$metrics_file" ]]` before the append). Verified both directions live in a
+throwaway scratch dir: a normal target still appends correctly; a symlinked target is refused and
+the decoy file it pointed at stays untouched. Everything else this pass turned up was a confirmed
+non-gap: `docs/HONEST-NUMBERS.md`'s benchmark-honesty pattern is already matched (arguably exceeded —
+dated incident notes, `rate_verified`/`model_scoped` caveats) by `commands/cost-report.md`;
+`evals/measure.py`'s median/stdev-vs-control-arm methodology is already `skill-creator`'s job;
+`detect.py`'s Dockerfile/Makefile-misclassification guard doesn't apply since `compress-docs` is
+never handed arbitrary user-supplied paths the way `caveman-compress` is; and the mode-persistence
+flag-file machinery (`caveman-mode-tracker.js`, `caveman-activate.js`) protects state kbg doesn't
+have, since doctrine/ponytail re-inject fresh every `SessionStart` rather than persisting a
+cross-session mode. `harness-audit` + full gauntlet green.
+
 ## [0.68.128] — 2026-08-01
 
 New skill `compress-docs`: closes the gap a fresh audit of the earlier caveman/i-have-adhd work
