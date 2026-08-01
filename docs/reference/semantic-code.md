@@ -34,7 +34,7 @@ Install: `brew install sem-cli` (already present at `/opt/homebrew/bin/sem`)
 <file_path>::<type>::<name>
 ```
 
-Example: `hooks/gates/secret-read-guard.sh::function::is_secret_path`
+Example: `hooks/gates/worktree-guard.py::function::classify`
 
 ## Token-budgeted context
 
