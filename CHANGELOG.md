@@ -5,6 +5,62 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.130] — 2026-08-01
+
+New source: `thedotmack/claude-mem` — a hosted multi-tenant memory service (Cloudflare Workers
+sync-hub, Postgres/SQLite, Chroma vector DB, billing/auth, a React viewer UI, cross-IDE installers).
+~800 of its 946 files are that infrastructure, scoped out by category rather than read file-by-file
+— none of it applies to a stateless local plugin with no server component. What's left — the
+prompt/skill layer — got the same treatment as caveman: read directly first (README,
+`docs/public/context-engineering.mdx`, `docs/public/progressive-disclosure.mdx`,
+`docs/merge-rubric.md`), then a background sweep of the remaining 18 skills, the anti-pattern
+detection tooling, and ~25 more docs once the scope was confirmed too large to read inline without
+burning the session's own context.
+
+Shipped: `docs/merge-rubric.md` — a rubric (audited against 100 real PRs) for catching a `fix:`
+commit that's actually failure-tolerance machinery wearing a fix's clothes: guards, fallbacks,
+retries, fail-open modes, self-healing watchdogs, truncation, or a whole "second system" (new
+background process, state file, escape-hatch env var). No existing kbg review surface checked this
+specific thing — `silent-failure-hunter` is adjacent (swallowed errors) but doesn't ask whether a
+diff labeled a fix actually fixes the root cause. Added as a sixth lens, **Fix-Authenticity**, to
+`agents/code-reviewer.md` — conditional (only fires on a diff whose commit message/PR title is
+labeled `fix:`), rewritten in kbg's own voice rather than copied, HIGH severity by default
+(escalate to CRITICAL if the masked bug is itself Security/DB-mutation).
+
+Confirmed non-gaps from the direct read: `docs/public/progressive-disclosure.mdx`'s two-tier
+index→detail argument is already how `MEMORY.md` + individual memory files work today, just built
+by hand rather than named — the one piece it's missing (per-entry retrieval-cost visibility) has no
+incident behind it yet, not pursued. `docs/public/context-engineering.mdx` turned out to be an
+explicit distillation of Anthropic's own public "Effective context engineering" post, not
+claude-mem's own IP — nothing to attribute from borrowing it at one remove.
+
+Confirmed non-gaps from the background sweep (18 skills + anti-pattern tooling + ~25 docs, full
+report in the session transcript): `pathfinder`'s dedup hunt looked justified by two memory entries
+about skill-description overlap until the check clarified those were description-level collisions,
+already caught by harness-audit check 52 — pathfinder's actual mechanism is source-code-level
+duplication, a different concern with no evidenced need. `anti-pattern-czar` +
+`detect-error-handling-antipatterns.ts` (a TS-only regex scanner, CI-gated, mandatory
+`[ANTI-PATTERN IGNORED]: reason` override) is superseded by `silent-failure-hunter` (more languages,
+LLM review) for the idiom catalog and by `ponytail-debt` + harness-audit check 30 for the
+mandatory-reason pattern; the deterministic-CI-gate angle has no home since this repo is
+bash/markdown, not TS. `oh-my-issues` (multi-reporter issue clustering) and `design-is` (UI design
+audit) both fail proven-need for a single-developer, no-UI harness. `babysit`, `do`/`make-plan`, and
+`version-bump` are already covered compositionally by `loop`+`address-review`, `code-architect`+
+`code-implementer`+`plan-reviewer`, and `ship-release` respectively.
+
+Also checked and explicitly declined outside claude-mem: `ginobefun/deep-reading-analyst-skill` (a
+tiered multi-framework article/paper analysis skill — SCQA, 5W2H, critical thinking, inversion,
+mental models, first principles, systems thinking, six hats). Its framework content substantially
+overlaps kbg's existing 39-model `docs/reference/thinking-skills/` library (3 direct matches) and
+`thinking-model-router` already solves the same "which model do I reach for" problem, just routed
+by domain+problem-type instead of content-type+time-budget. The one genuinely uncovered piece — a
+workflow for deep-analyzing a specific piece of external content ending in forced action items,
+which `kbg:summarizer` explicitly can't do (its guardrails forbid synthesizing anything beyond the
+source) — has no incident behind it and is a scope departure from kbg's engineering-harness focus.
+Skipped on the user's own call, not built.
+
+Full gauntlet green.
+
 ## [0.68.129] — 2026-08-01
 
 A second full drill-down of the local `caveman` clone (this time every file, not just the 6 skills
