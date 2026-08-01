@@ -69,7 +69,7 @@ bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: f
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
 ```
 
-Critical-hooks behavioral suite and eval gate are pending rebuild (see `CLAUDE.md`) — not currently runnable, omitted above.
+The `run-gauntlet.sh` shortcut above already runs the 8-file hook behavioral suite (`hooks/tests/*.sh` + `skills/harness-audit/tests/test-harness-audit.sh`) as its own layer. The old critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`) — see `CLAUDE.md`'s Validation section for current coverage.
 
 ## Update the plugin after surface changes
 

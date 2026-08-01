@@ -10,8 +10,9 @@ The 2026-06-12 audit caught a 44→105-agent failure mode where a
 soft cap on a work-list was silently doubled by an audit + verify
 layer (see `memory/bounded-agent-spawning.md` and
 `memory/whole-repo-dig-2026-06-16.md`). There is no eval/regression
-fixture for this — `eval/` does not exist in this repo (CLAUDE.md:
-"eval gate [is] pending rebuild"). What is actually code-enforced
+fixture for this — `eval/` does not exist in this repo (the eval
+dataset gate was deleted, not rebuilt, in the 2026-06-27 reset;
+see `CLAUDE.md`'s Validation section). What is actually code-enforced
 is narrower than a fixture would claim: the F8.5 hard cap in
 `skills/orchestrate/SKILL.md` clamps any single wave's work-list
 to ≤5 before spawning ("the clamp is the JS work-list slice

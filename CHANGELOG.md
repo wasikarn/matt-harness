@@ -5,6 +5,43 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.123] — 2026-08-01
+
+Closed the standing item named-but-not-touched at the end of v0.68.122: the `204-test
+critical-hooks suite` + `eval dataset gate` had carried a "pending rebuild" label across 6+ files
+for 60+ versions. Verdict, after tracing the history: **retire the language, don't rebuild the
+thing.** Commit `c452102` ("reset: rebuild from scratch", 2026-06-27) was an explicit,
+owner-authorized deletion of the entire prior doctrine/skills/agents/commands/hooks/tests(120
+files)/eval(~300+ files) apparatus — not an accidental regression. Most of what the old suite
+tested was the L3/L4/L5 bounded-autonomy machinery ADR 0006 later retired with an explicit "do
+NOT re-arm" instruction, so rebuilding it would have resurrected exactly the thing that decision
+closed. And current coverage already exceeds what "pending rebuild" implied was missing:
+`scripts/run-gauntlet.sh` already wires 8 hook-behavioral test files (`hooks/tests/test-gates.sh`,
+`test-worktree-guard.sh`, `test-flow-nudge.sh`, `test-jira-route-nudge.sh`, `test-session-stop.sh`,
+`test-learn-nudge.sh`, `test-plan-review-nudge.sh`, plus
+`skills/harness-audit/tests/test-harness-audit.sh`) — CLAUDE.md's own Validation section had only
+ever named 3 of them, understating what was actually shipped. Fixed the doc-accuracy gap and the
+stale language together in the 5 files that carried it: `CLAUDE.md` (Validation section now names
+all 8 test files and states the retirement + reason + `24d7663` recovery anchor, instead of
+"pending rebuild"), `commands/kbg-help.md` (the "not currently runnable" claim was actively false
+— the suite runs one line above it via `run-gauntlet.sh`), `commands/ideate/references/
+provenance.md` (updated a citation of CLAUDE.md's old wording so the argument it supports —
+`eval/` genuinely doesn't exist — still holds), and `skills/inventory/scripts/
+inventory-boundary.sh` (the BOUNDARY.md generator; also caught and fixed a real misattribution
+bug here — it blamed the removal on "the v0.6.0 reset," but that's the separate, later
+Matt-Pocock-first simplification commit `a518ad1` (2026-06-30); the actual deletion was `c452102`,
+three days earlier). Went one step further than prose in `git-hooks/pre-commit`: its Layer 3
+(`run_eval_layer`) referenced `eval/run-eval.py` and `scripts/select-affected-fixtures.py`, and
+neither file exists — confirmed by direct `ls`. It already self-described as a "graceful no-op,"
+but per this session's retire-not-rebuild decision that no-op was never going to become live
+again, so the ~40 lines of dead machinery (the function, `eval_staged` tracking, `PID_EVAL`
+wiring) were removed outright rather than left running a pointless existence-check on every
+commit forever. Verified: `bash -n` + `shellcheck --severity=warning` clean on the edited
+pre-commit; `git diff BOUNDARY.md` shows exactly the 2 intended content lines plus the
+auto-generated timestamp footer. Deliberately not opened in this pass, per `advisor()`'s guidance:
+whether a *persisted* regression-eval suite (vs. ad hoc `/review-fixtures` loops) has proven need
+— that's a separate question with its own evidence bar, not a rebuild of what was deleted.
+
 ## [0.68.122] — 2026-08-01
 
 Added `harness-audit` check 52 — a ratchet for the fleet's own de-facto anti-duplication
