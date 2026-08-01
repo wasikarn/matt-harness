@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.126] — 2026-08-01
+
+Compared a candidate plugin (`ayghri/i-have-adhd`, an ADHD-shaped-output skill+hook) against
+`output-styles/staff-eng.md` on request, rule-by-rule against its 10 rules plus its "when to break
+the rules" and "pre-send check" sections. Confirmed the plugin has no functional surfaces beyond
+output shaping (one skill, one opt-in SessionStart hook — no agents, no other skills), so the
+comparison reduced to a single-dimension diff. Most of its rules were already covered
+(lead-with-action, numbered steps, matter-of-fact errors, no preamble/closer); three were genuine
+gaps with no staff-eng equivalent, confirmed by re-reading the file rather than assumed from the
+plugin's README: (1) no rule mandated using the `TaskCreate`/`TaskUpdate` tools already available
+in-harness to restate progress across turns on multi-step work — added as a `Format` table row
+rather than a `Voice` bullet, matching how the table already handles other situational triggers;
+(2) no rule paired `advisor()`'s existing "when stuck" trigger with a reply-shape rule for what to
+say once stuck — added a debug-spiral bullet (three failed turns → name the assumption, don't repeat
+the fix); (3) "practical and concise for success" (line 27) covered tone but not content — added a
+bullet requiring the resulting capability be stated concretely, not just that work finished.
+Deliberately left out: the plugin's blanket 5-item list cap (conflicts with staff-eng's own
+"Calibrate to stakes" escape valve and with CHANGELOG/MEMORY.md's intentionally dense entries) and
+its minutes-based time estimates (no direct unit translation for an agent loop — would need to
+become token/cost/effort-size, a separate design question, not asked for here).
+
 ## [0.68.125] — 2026-08-01
 
 Ran `/kbg:compliance-audit` (first use since it shipped) against the only formal plan this session
