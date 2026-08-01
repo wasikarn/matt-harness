@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.127] — 2026-08-01
+
+Follow-up to the `ayghri/caveman` comparison, shipping only what survived an `advisor()` pressure
+test of the prior turn's findings. The first pass had read the README's marketing table for
+`cavecrew`/`caveman-review` instead of the actual `SKILL.md`/agent files, and made one real
+analytical error along the way: crediting kbg's own subagents with caveman-equivalent output
+discipline by citing the Workflow tool's "final text IS the return value → raw data" contract —
+that governs `agent()` calls inside Workflow scripts, not the interactive Agent-tool subagents kbg
+actually dispatches most of the time. Re-read all 6 skills and 3 `cavecrew-*` agent definitions in
+full before shipping anything. Two changes landed: (1) `output-styles/staff-eng.md`'s existing
+"dense symbols aren't a readability virtue" rule (line 33) gained a tokenizer-fact justification —
+a BPE tokenizer encodes `→`/`≠` and invented shorthand as their own token(s), so the "compression"
+saves nothing even on its own terms, not just a style preference; (2) a new `docs/agent-authoring-
+conventions.md` §8 documents `cavecrew-builder`'s closed-vocabulary terminal-first-token status
+codes (`too-big.` / `needs-confirm.` / `ambiguous.` / `regressed.`) as a convention for new agent
+`Output Format` sections, upgraded from "nice pattern" to a proven-need addition on the strength of
+a real prior incident: v0.68.77 found `review-pr`'s `rehunt` state-file field, never
+schema-constrained, had drifted into 15+ distinct shapes against 4 documented canonical values
+across 105 production files, 20 missing it entirely. Deliberately NOT built: the caveman-shrink
+MCP-compression idea (Rule 2, no proven need beyond an existing audit-only tool) and a haiku
+model-tier pin for mechanical-lookup-shaped agent dispatches (real open question, but needs a look
+at actual `costs.jsonl` data before it's a confirmed recommendation, not just a plausible one — left
+open, not shipped). No harness-audit check added for §8 — matches this doc's own stated
+"prose guidance, not a gate" posture; retrofitting the existing fleet's `Output Format` sections is
+also explicitly out of scope until a second agent (not just the one state-file incident) proves the
+same drift.
+
 ## [0.68.126] — 2026-08-01
 
 Compared a candidate plugin (`ayghri/i-have-adhd`, an ADHD-shaped-output skill+hook) against

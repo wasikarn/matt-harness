@@ -122,6 +122,25 @@ neighbor.
 specialists is real maintenance cost (routing ambiguity, description-token load on every Task
 spawn) for a benefit that has to be earned per agent, not assumed.
 
+## 8. Closed-vocabulary status codes for branchable output
+
+When an agent's job includes returning a status its caller must branch on — refuse,
+need-confirmation, ambiguous-scope, regressed-after-edit — express it as a small, fixed set of
+terminal first-token codes (e.g. `too-big.` / `needs-confirm.` / `ambiguous.` / `regressed.`), not
+a free-text sentence the caller has to re-parse. Document the closed set in the agent's `## Output
+Format` so both the agent and its caller can validate against it. No agent in the current fleet
+does this yet — this is a convention for new/revised `Output Format` sections, not a retrofit
+requirement.
+
+**Why:** kbg has already paid for the alternative once, in a state file rather than an agent
+return value, but the same discipline gap. The `rehunt` field in `review-pr`'s state file — a
+semi-structured status written by whichever session ran the review, never schema-enforced — drifted
+into 15+ distinct shapes against 4 documented canonical values, with 20/105 real production files
+missing it entirely (v0.68.77, `CHANGELOG.md`; `state-file-contract-drift-mine-before-dispatch`
+memory). An unconstrained status left to free text drifts across independent writers; a closed
+vocabulary fixed at authoring time prevents that class of drift before it happens, instead of
+mining production data to discover it after.
+
 ## When authoring a new agent — quick checklist
 
 1. Name the concrete, currently-uncovered task. Check the orchestrate routing table first.
@@ -131,8 +150,10 @@ spawn) for a benefit that has to be earned per agent, not assumed.
 4. Pin `model: opus` only if the value is judgment quality, not by default.
 5. If the agent grades/verifies other work: fresh-context, advisory-only, never self-gating.
 6. If the agent reports findings: state a confidence bar; zero findings is a valid output.
-7. Add the agent to `skills/orchestrate/reference.md`'s routing table.
-8. Run `bash skills/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/45 all touch new
+7. If the agent returns a branchable status (not just findings prose): define it as a closed
+   set of terminal first-token codes in `## Output Format`.
+8. Add the agent to `skills/orchestrate/reference.md`'s routing table.
+9. Run `bash skills/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/45 all touch new
    agents directly.
 
 ## Cross-references
