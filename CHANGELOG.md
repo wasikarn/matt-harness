@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.128] — 2026-08-01
+
+New skill `compress-docs`: closes the gap a fresh audit of the earlier caveman/i-have-adhd work
+found still outstanding — `caveman-compress` has no equivalent in kbg, and the installed
+third-party `markdown-token-optimizer` (Azure SDK tools) doesn't close it either (confirmed by
+reading its actual `SKILL.md`: suggest-only, no auto-apply). Proven need: this repo's own
+`CHANGELOG.md` documents 15+ manual token-optimizer passes doing the same job by hand. Explored the
+local `caveman` clone in full (not just the GitHub API view used earlier) before building —
+`skills/caveman-compress/scripts/{validate,detect,compress,cli}.py` surfaced real implementation
+detail the SKILL.md alone didn't: a proper line-based CommonMark fence parser (not naive regex), a
+documented failure mode where the compression LLM touches YAML frontmatter despite being told not
+to (worked around by splitting it off pre-compression and re-prepending verbatim), and a
+sensitive-path refuse-check before ever reading file content bound for an external API. Adopted the
+first two (upgraded `verify-preserved.py`'s fence/heading/frontmatter checks, tested live against 5
+constructed PASS/FAIL scenarios in an isolated throwaway git repo before shipping) and adapted the
+third (a scoped-down sensitive-filename refuse-check, since compress-docs itself never calls an
+external API — I do the compression directly via `Edit`, one fewer moving part than the source's
+subprocess-to-`claude` design). Deliberately NOT ported: the caveman-grammar compression technique
+itself (dropping articles, fragments) — directly conflicts with `staff-eng.md`'s "don't sacrifice
+grammar for brevity" rule, and a doctrine file read repeatedly by fresh-context sessions is a worse
+place for fragment-ambiguity than a single live chat reply. Also skipped: the `.original.md` backup
+file mechanism (git already provides byte-exact recovery inside this repo — a git-clean precondition
+substitutes for it) and the 500KB file-size guard (no file in this repo's real corpus approaches
+that size). `harness-audit`: 0 CRIT (once cache syncs post-restart), 0 WARN, 5 INFO — fleet count
+synced to 31 skills via `sync-fleet-counts.sh`, `BOUNDARY.md` regenerated. Full gauntlet green.
+
 ## [0.68.127] — 2026-08-01
 
 Follow-up to the `ayghri/caveman` comparison, shipping only what survived an `advisor()` pressure
