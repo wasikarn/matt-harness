@@ -24,13 +24,23 @@ codes (`too-big.` / `needs-confirm.` / `ambiguous.` / `regressed.`) as a convent
 a real prior incident: v0.68.77 found `review-pr`'s `rehunt` state-file field, never
 schema-constrained, had drifted into 15+ distinct shapes against 4 documented canonical values
 across 105 production files, 20 missing it entirely. Deliberately NOT built: the caveman-shrink
-MCP-compression idea (Rule 2, no proven need beyond an existing audit-only tool) and a haiku
-model-tier pin for mechanical-lookup-shaped agent dispatches (real open question, but needs a look
-at actual `costs.jsonl` data before it's a confirmed recommendation, not just a plausible one — left
-open, not shipped). No harness-audit check added for §8 — matches this doc's own stated
-"prose guidance, not a gate" posture; retrofitting the existing fleet's `Output Format` sections is
-also explicitly out of scope until a second agent (not just the one state-file incident) proves the
-same drift.
+MCP-compression idea (Rule 2, no proven need beyond an existing audit-only tool). No harness-audit
+check added for §8 — matches this doc's own stated "prose guidance, not a gate" posture;
+retrofitting the existing fleet's `Output Format` sections is also explicitly out of scope until a
+second agent (not just the one state-file incident) proves the same drift.
+
+Same-day follow-up closes the other item this entry originally left open — a haiku model-tier pin
+for mechanical-lookup-shaped agent dispatches. First check hit the wrong file
+(`~/.claude/metrics/costs.jsonl`, an unrelated tool's leftover data — 2 stale rows, different
+project, non-Claude model) and produced a false "no data exists" read. The real file
+`cost-tracker.sh` writes, `~/.local/share/kbg/metrics/costs.jsonl`, holds 6,837 live rows —
+`claude-sonnet-5`/`claude-opus-4-8`/`claude-opus-5` only, no `haiku` ever recorded, consistent with
+the earlier `agents/*.md` grep. But the schema is session-level only (no per-agent-dispatch or
+task-type field), so even with real volume it can't isolate which dispatch was mechanical-lookup-
+shaped without mining each row's linked transcript individually — the same production-data-mining
+effort as v0.68.77's `rehunt` investigation, but with no incident behind it to justify the cost.
+Closed, not pursued: data exists, the question doesn't currently earn the mining effort to answer
+it.
 
 ## [0.68.126] — 2026-08-01
 
