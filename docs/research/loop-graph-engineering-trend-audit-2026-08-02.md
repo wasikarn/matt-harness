@@ -180,10 +180,21 @@ mechanism changes:
     loop-engineering trend's central fix applied to the one place in kbg's own architecture that
     still lacks it.
 
-Not yet done: this is a real candidate, not an implemented fix. It still needs the unresolved
-`pipeline()`-vs-sequential question above answered against real usage, and it's a change to a
-load-bearing skill — plan mode before touching `orchestrate/SKILL.md`, same as any multi-file
-architectural change.
+Not yet done, at the time this was written: this was a real candidate, not an implemented fix.
+
+**Superseded 2026-08-03 — kept for the reasoning trail, not current.** Option (c) above did not
+ship. A further `advisor()` pass caught a constraint this section missed: Builder and Fixer are
+`AskUserQuestion`-gated because they hold Edit/Write/Bash, and a `Workflow` script runs detached —
+it cannot pause for that gate. Migrating Phase 4's dispatch into a `Workflow` script either breaks
+that gate or requires stripping it, so `SKILL.md`'s "no agent in this fleet is granted Workflow"
+line (quoted earlier in this section) was correct as originally written and needed no edit. The
+`pipeline()`-vs-sequential question this paragraph called unresolved is consequently moot —
+orchestrate stayed on sequential `Agent`-tool dispatches. What actually shipped (v0.68.135): the
+structured-verdict *shape* (`pass`/`findings`/`confidence`, fail-closed disposition) ported onto
+the existing `Agent`-tool dispatches, without moving primitives. See the summary table at the
+bottom of this document for the final state; §3.1 immediately below still holds as prior-art
+research — it's the *conclusion drawn from it* (adopting the Workflow-script mechanism) that
+didn't survive.
 
 ### 3.1 Cross-repo validation: a sibling harness already shipped this exact design
 

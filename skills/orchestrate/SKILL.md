@@ -117,11 +117,14 @@ The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the nat
 ### Worked example (compressed)
 
 `GET /health` as a 4-task chain: **T1 Builder** implements the endpoint, spawned gated
-(`AskUserQuestion` — holds Edit/Write/Bash) → **T2 Validator** reviews, writes a verdict to
+(`AskUserQuestion` — holds Edit/Write/Bash) → **T2 Validator** reviews, writes a structured verdict
+(`pass`/`findings`/`confidence` — see "Structured verdict" below) to
 `.scratch/health-review/verdict.md`, spawned ungated (read-only by allowlist — see "Validator
-safety" below) → **T3 Fixer** addresses T2's findings, only spawned if T2 says `fail`, gated →
-**T4 Re-validator** runs a security scan on the final diff, ungated. Lead checks each task's
-done-when before advancing to the next. Full spawn prompts for all 4 tasks: `reference.md`.
+safety" below) → **T3 Fixer** addresses T2's findings, only spawned if T2's verdict is
+`pass: false`, gated → **T4 Re-validator** runs a security scan on the final diff, returning the
+same structured shape, ungated. Lead checks each task's done-when before advancing to the next —
+a missing or unparseable verdict is never read as `pass`. Full spawn prompts for all 4 tasks:
+`reference.md`.
 
 ### Gating rules
 
@@ -139,7 +142,7 @@ done-when before advancing to the next. Full spawn prompts for all 4 tasks: `ref
 `gate:task:complete-separation` already makes **who** can advance the chain computational — a subagent can't mark its own task `completed`, only the main session can. What it reads to make that call has, until now, had no shape: free prose in `.scratch/<task>/verdict.md`, graded by the lead's own reading. That's the maker's judge returning a vibe instead of a score a machine can branch on — the same crux CLAUDE.md's verifier-separation principle names everywhere else in this harness. Close the shape gap:
 
 - **Required fields**, written as a fenced JSON block in the same `.scratch/<task>/verdict.md` location (no new file, no new tooling): `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0, a narrative signal for the lead — not a threshold this step branches on; see the scope note below for why).
-- **Fail-closed disposition:** verdict file missing, unparseable, or `pass` absent → **not verified**. The lead does not advance the DAG edge — re-dispatch the Validator or escalate to the user. A missing or malformed verdict is never read as `pass` (mirrors `review-pr` Phase 4 step 4: "an agent that returns nothing... is not a clean pass").
+- **Fail-closed disposition:** verdict file missing, unparseable, `pass` absent, `pass` present but not a literal boolean, `findings` not an array, or `pass: true` alongside a non-empty `findings` array (self-contradictory) → **not verified**. The lead does not advance the DAG edge — re-dispatch the Validator or escalate to the user. A missing or malformed verdict is never read as `pass` (mirrors `review-pr` Phase 4 step 4: "an agent that returns nothing... is not a clean pass"). This is a shape check the lead applies before trusting the verdict at all, not a list to pattern-match exhaustively — the standing rule is: any verdict that doesn't cleanly assert `pass: true` with no contradicting field is not verified.
 - **Scope, stated honestly:** this closes the *shape* gap (a machine can parse the verdict) — not the *truth* gap (a structured `pass` can still be wrong). Unlike `review-pr` Phase 5 step 3.5, the Validator/Re-validator here are **first-order** checks — the first and only look at the Builder's artifact, already independent by virtue of being a separate fresh-agent dispatch. There's no prior finding to refute, so step 3.5's confidence-gated demotion doesn't transfer — porting it here would add a check this chain doesn't need (Rule 2).
 
 ### Upstream contract propagation
