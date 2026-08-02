@@ -99,7 +99,7 @@ ownership, missing upstream contracts): `reference.md`.
 
 ## Validation chain (builder → validator → fix → re-validator)
 
-The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch. The board makes the ordering observable and resumable across sessions.
+The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch — **non-trivial** reuses `review-pr`'s own trivial-diff threshold: ≥2 files changed OR ≥1 test file touched. Below that, run a single dispatch; the chain's coordination overhead isn't worth it (Rule 2). The board makes the ordering observable and resumable across sessions.
 
 This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol earlier in this skill. `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
 
@@ -133,6 +133,14 @@ done-when before advancing to the next. Full spawn prompts for all 4 tasks: `ref
 | Re-validator (D) | **No** | Read-only; no AskUserQuestion |
 
 **Validator safety:** Validators are ungated and hold `Bash`, so read-only is enforced by allowlist (no Edit/Write) plus prompt doctrine, not a runtime backstop. This carve-out applies only inside the 4-step chain, reviewing a Builder's already-produced artifact. A standalone/first-pass review with nothing yet produced — e.g. auditing existing, untouched-in-a-year code with no preceding Builder step — is **Gated** under the general Step 4 rule regardless of agent; the same agent (`security-reviewer`) can be either, depending on whether it's reviewing new output or auditing standing code. (A prior runtime Bash-stripping backstop was removed in the v0.6.0 reset and not rebuilt — `docs/agent-tool-patterns.md` §4.)
+
+### Structured verdict — Validator/Re-validator output contract
+
+`gate:task:complete-separation` already makes **who** can advance the chain computational — a subagent can't mark its own task `completed`, only the main session can. What it reads to make that call has, until now, had no shape: free prose in `.scratch/<task>/verdict.md`, graded by the lead's own reading. That's the maker's judge returning a vibe instead of a score a machine can branch on — the same crux CLAUDE.md's verifier-separation principle names everywhere else in this harness. Close the shape gap:
+
+- **Required fields**, written as a fenced JSON block in the same `.scratch/<task>/verdict.md` location (no new file, no new tooling): `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0, a narrative signal for the lead — not a threshold this step branches on; see the scope note below for why).
+- **Fail-closed disposition:** verdict file missing, unparseable, or `pass` absent → **not verified**. The lead does not advance the DAG edge — re-dispatch the Validator or escalate to the user. A missing or malformed verdict is never read as `pass` (mirrors `review-pr` Phase 4 step 4: "an agent that returns nothing... is not a clean pass").
+- **Scope, stated honestly:** this closes the *shape* gap (a machine can parse the verdict) — not the *truth* gap (a structured `pass` can still be wrong). Unlike `review-pr` Phase 5 step 3.5, the Validator/Re-validator here are **first-order** checks — the first and only look at the Builder's artifact, already independent by virtue of being a separate fresh-agent dispatch. There's no prior finding to refute, so step 3.5's confidence-gated demotion doesn't transfer — porting it here would add a check this chain doesn't need (Rule 2).
 
 ### Upstream contract propagation
 

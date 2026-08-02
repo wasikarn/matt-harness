@@ -138,18 +138,102 @@ skill decides to invoke on its own, and no agent in this fleet is granted it." T
 own parameter list has no `schema` field — there is nothing to add it to.
 
 This means the fix identified in this section does not apply to `orchestrate` as currently
-designed. Two real paths forward, not one:
-- **(a) Migrate the Builder→Validator→Fixer→Re-validator chain to a `Workflow` script.** This
-  closes the mechanical-enforcement gap for real, but it's a materially bigger change than "add a
-  param" — and it collides with `orchestrate` being a skill the model reaches for inline, since
-  `Workflow` needs the user's own per-invocation opt-in (the "ultracode" keyword or an explicit
-  ask), not something `orchestrate` can trigger on the user's behalf mid-dispatch.
-- **(b) Leave the gap open.** The Agent tool has no schema-enforcement primitive today, so within
-  its current architecture there's no low-cost mechanical fix — validator output stays
-  prose-graded by the lead, same as now.
+designed. At the time of that correction, two paths forward were named, both unappealing: migrate
+the whole chain to a `Workflow` script (bigger change, opt-in conflict), or leave the gap open.
 
-Neither is "add schema to `agent()` calls." This is a scope decision for the user, not something
-to resolve by picking the smaller-sounding option — see the summary table below.
+**Third option found via follow-up deep research (2026-08-03), verified against Anthropic's live
+docs, not just a secondary source.** A blog post in the llm-wiki vault (`claudefa.st`, "Claude Code
+Workflows: Build Deterministic Agent Runs," a day-1 preview writeup) claimed a *saved* workflow
+becomes a plain `/<name>` slash command in later sessions — no `ultracode` keyword needed to run
+it. That claim is 2 months old and self-described as "a research preview that is one day old," so
+it was fetched fresh against `code.claude.com/docs/en/workflows` rather than trusted as-is. It
+holds: *"Press Enter to save. The workflow runs as `/<name>` in future sessions... Workflows you
+save yourself become commands the same way and appear in `/` autocomplete alongside the bundled
+ones."*
+
+That single fact dissolves the opt-in conflict. This session's own `Workflow` tool contract lists
+five valid opt-in triggers, and the fourth is exactly this shape: *"The user invoked a skill or
+slash command whose instructions tell you to call Workflow."* `orchestrate` is already a skill the
+user invokes by pattern match — nothing about its trigger changes. Only Phase 4's dispatch
+mechanism changes:
+
+- **(c) Keep `orchestrate` exactly as it is today** — Phases 1–3 (gather, classify, the
+  `AskUserQuestion` allocation gate) untouched. Phase 4 calls a saved, git-committed `Workflow`
+  script (`Workflow({name: "orchestrate-chain", args: {...}})`) instead of individual `Agent` tool
+  calls for the Builder→Validator→Fixer→Re-validator chain. The script's `agent()` calls carry
+  `schema` params — closing the mechanical-enforcement gap for real, the way (a) would have,
+  without (a)'s architecture change or its opt-in collision.
+  - **Fits the size guideline as-is**: this session is configured `small` (<5 agents); the 4-stage
+    chain is comfortably under that, so this isn't reaching for scale the chain doesn't need —
+    same proportionality conclusion as before, just now achievable.
+  - **Named friction, not fatal**: launching a saved workflow shows its own approval prompt
+    (`Yes, run it` / `Yes, and don't ask again for <name> in <path>` / `View raw script` / `No`),
+    layered on top of `orchestrate`'s existing `AskUserQuestion` gate — two gates instead of one on
+    first run. The "don't ask again for this workflow in this project" option means this is a
+    one-time cost per project, not a per-dispatch tax.
+  - **This is also the loop-engineering corpus's own crux, not just a graph-vocabulary fix**: the
+    vault's own synthesis page on this exact question (`agent-loop-verifier-crux.md`, written
+    2026-06-30, independent of this session) names *"the verifier must emit a score, not a
+    feeling"* as the single insight the entire loop-engineering lineage reduces to. `orchestrate`'s
+    validator today returns prose the lead grades by judgment — a feeling. A schema-checked
+    `agent()` call returns a structurally validated pass/fail — a score. Option (c) is the
+    loop-engineering trend's central fix applied to the one place in kbg's own architecture that
+    still lacks it.
+
+Not yet done: this is a real candidate, not an implemented fix. It still needs the unresolved
+`pipeline()`-vs-sequential question above answered against real usage, and it's a change to a
+load-bearing skill — plan mode before touching `orchestrate/SKILL.md`, same as any multi-file
+architectural change.
+
+### 3.1 Cross-repo validation: a sibling harness already shipped this exact design
+
+Per the user's request to deep-research beyond the article batch, two sibling composer-source
+repos (`superpowers`, `ECC` — both already named in this repo's own composer-not-creator doctrine)
+were fully explored for prior art on this exact question. Two findings change the shape of what
+option (c) above should actually look like.
+
+**ECC's `workflows/orch-review.workflow.js` is a working reference implementation of option (c),
+already shipped, not hypothetical.** It runs a Review→Dedup→Verify chain natively on the `Workflow`
+tool: reviewer agents emit findings against a `FINDINGS_SCHEMA` (`verdict` enum, `findings[]` with
+required `evidence`/`proof` on Critical/High severity), and an independent verifier emits against a
+`VERDICT_SCHEMA` (`isReal`, `confidence`, `reasoning`) — both schemas enforced at the `agent()`
+tool-call layer, exactly as this session's `Workflow` tool describes. The fail-closed rule it
+enforces —  `REFUTE_MIN_CONFIDENCE = 0.8`; low-confidence "not real" stays blocking rather than
+clearing — is **the same rule already in `skills/review-pr/SKILL.md` Phase 5 step 3.5**
+(`isReal: false` with `confidence < 0.8` → stays at its tier), independently arrived at. This is
+the strongest form of validation available: not a second article agreeing, but a second, unrelated
+codebase converging on kbg's own existing design *and* on the fix this section proposes for
+`orchestrate`. ECC's own README names the same boundary this section already drew: *"The gated
+outer loop... stays in the main conversation — native workflows run autonomously in the background
+and cannot pause for interactive approval. This script owns only the segment between the gates."*
+— i.e. keep the `AskUserQuestion` gate in the skill, hand only the deterministic middle to
+`Workflow`, same split as option (c) above.
+
+**Superpowers independently rejected the "separate Fixer agent" half of the design — a real
+critique of `orchestrate`'s current worked example, orthogonal to the schema question.**
+`subagent-driven-development`'s own design history (`docs/superpowers/specs/2026-07-15-sdd-fix-loop-
+redesign-design.md`) tried a dedicated Fixer role and reverted it: *"Fresh 'fix subagents' rebuild
+context per finding and lack the task frame"* — the extra round-trip added latency without adding
+value. Their converged shape is Builder → Validator → **resume-Builder-as-Fixer** → Re-validator,
+not four independent agents. `orchestrate/SKILL.md`'s own worked example (`## Reference: 4-Task
+Worked Example`) currently spawns T3 as a fresh Fixer agent, not a resumed T1 — the same shape
+superpowers measured and moved away from. Important scope limit on this finding: superpowers kept
+the *independent validator* fully separate in both cases (never collapsed into the Builder) — this
+critique is narrowly about the Fixer step, not about validator independence, which every source in
+this research (kbg's own doctrine, ECC, superpowers, the article batch) agrees must stay separate.
+Whether "resume in place" is even achievable depends on which dispatch primitive `orchestrate` uses
+— an `Agent` tool call is a fresh, isolated context by design, so resuming may only be practical
+inside a `Workflow` script that keeps state in a variable. This interacts with, rather than settles,
+the (c) question above — worth raising in the same plan, not a separate one.
+
+**A smaller, concretely portable finding: ECC's `skills/orch-pipeline/SKILL.md` right-sizing
+classifier — "ceremony scales to blast radius."** A trivial change runs a short phase subset; only
+a change touching a security trigger or open design question earns the full chain. `orchestrate`
+has no equivalent today — its worked example runs the full 4-stage chain unconditionally.
+`review-pr` already has this discipline (Phase 3's trivial-diff skip, Phase 5 step 3.6's
+skip-on-trivial-diff) — `orchestrate` adopting the same right-sizing rule for its own chain would be
+a small, low-risk, independently-actionable improvement, addressable in the same plan or a smaller
+one.
 
 ## 4. New gap, not previously named: the quarantine pattern
 
@@ -291,9 +375,12 @@ gap-focused sections above read as the whole picture.
 | Finding | Status |
 |---|---|
 | ADR 0006 reconsideration | Closed — reconfirmed 4 ways, no action |
-| `orchestrate` typed-edge enforcement (schema on `agent()` handoffs) | **Blocked as scoped** — `orchestrate` is Agent-tool-only by its own SKILL.md; the Agent tool has no `schema` param. Real fork: migrate the chain to a `Workflow` script (bigger, opt-in conflict) or leave the gap open. Needs a user scope decision, not a plan yet |
+| `orchestrate` typed-edge enforcement (schema on `agent()` handoffs) | **Done (2026-08-03), v0.68.135.** The `Workflow`-script migration proposed above was itself dropped on a further advisor pass: Builder/Fixer are gated behind `AskUserQuestion` (they hold Edit/Write/Bash), and a `Workflow` script runs detached — it can't pause for that gate. `SKILL.md:161`'s "no agent in this fleet is granted Workflow" stands as originally written, no edit needed. Real fix stayed on the `Agent` tool: ported `review-pr`'s structured-verdict shape (`pass`/`findings`/`confidence`, fenced JSON) + fail-closed disposition into orchestrate's Validator/Re-validator steps. `gate:task:complete-separation` already made *who* advances the chain computational; this makes *what it reads* to decide have a shape. Full sweep (below) also confirms nowhere else in the fleet needed the same fix |
+| `orchestrate`'s Fixer as a fresh agent vs. resume-in-place | **Checked, mostly a non-issue.** superpowers' reverted-Fixer finding doesn't apply — orchestrate's Task 3 was already framed as the same builder role addressing its own T2 findings, not a disconnected persona. One real compliance gap fixed: Task 3's upstream contract now explicitly includes Task 1's files-touched list, per SKILL.md's own already-stated propagation rule it wasn't following |
+| `orchestrate` lacks a right-sizing/ceremony-scaling rule | **Done.** "Non-trivial" (the chain's trigger condition) was undefined — now defined as `review-pr`'s own threshold (≥2 files OR ≥1 test file), reused rather than invented |
 | Full graph runtime (`validate()`, checkpoint/resume, visit caps) for `orchestrate` | Likely NOT warranted at current chain size — named and set aside, not queued |
-| `pipeline()` vs sequential `agent()` calls in `orchestrate` | Moot unless the Workflow-migration fork above is chosen — needs real usage data either way |
+| Whole-fleet sweep: does the same verdict-shape gap exist elsewhere? | **Checked, 2026-08-03 — no.** Discriminator: does a verdict mechanically steer another automated step, or is it evidence for a human? `ship-merge` (weighted state file), `recursive-improve` (`audit.sh` exit code), `review-pr` 3.5/3.6 (structured, fail-closed) all already comply. `plan-reviewer`/`blind-spot-hunter` self-document as human-facing evidence, not automation-steering — correctly out of scope. `orchestrate`'s Validator/Re-validator was the only real gap in the fleet |
+| `pipeline()` vs sequential `agent()` calls in `orchestrate` | **Moot** — no longer relevant once the Workflow-migration idea was dropped; orchestrate stays on sequential `Agent`-tool dispatches |
 | Quarantine pattern (reader/actor separation for untrusted content) | **Done.** Ground-truthed: 2 of 3 named surfaces were false leads (`wiki-ingest`) or out of scope (`jira-acli`); `review-pr`'s reader/actor split already existed (`requirement-analyst`). Fixed the one real thin gap — `review-pr/SKILL.md` Phase 4 step 3.5's data-not-instructions framing |
 | Cross-family judge in `review-pr` | Confirmed low-risk win, now with a working reference implementation to study |
 | External ground-truth anchor | Still open, no fix proposed anywhere in this batch — stays a named gap |
