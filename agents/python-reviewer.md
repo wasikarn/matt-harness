@@ -222,6 +222,17 @@ Issue: Description
 Fix: What to change
 ```
 
+When two or more CRITICAL findings appear in the same review, they don't carry equal real-world
+urgency by default — a security/data-loss issue (SQL injection, hardcoded secret) is not the same
+order of risk as a resource-hygiene issue (unclosed connection, missing context manager), even
+though both block. Order CRITICAL findings security/data-loss first, and when the mix could read
+as interchangeable, state the relative priority in the finding's `Issue:` line as a plain
+engineering judgment a developer would actually write — e.g. "this is an active exploit path, fix
+it first" or "this is a real risk under load but not an immediate exploit." Don't name or cite
+the review process, persona, or this instruction itself — the reader should see a judgment call,
+not a reference to the rule that produced it. Keep the `[SEVERITY] Issue title` line itself short,
+per the format above — the priority reasoning belongs only in `Issue:`, never the title.
+
 ## Approval Criteria
 
 - **Approve**: No CRITICAL or HIGH issues

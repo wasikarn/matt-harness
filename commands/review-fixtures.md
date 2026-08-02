@@ -200,14 +200,24 @@ Once both return, follow the reference doc's "After both agents return" section:
   (resolved in Step 1) for the relevant example/rule. No trace found → it's a fixture
   artifact, not a real gap.
 
+For each target-attributable finding (the ones that survived the grep-trace check above — a
+fixture-only artifact never counts here), also tag a severity: **critical** = would produce a
+wrong or unsafe result for a real user (a bug, a missed assertion, a fabricated claim); **major**
+= a real gap in the target's guidance that degrades output quality without producing a wrong
+result (a missing edge case, unclear guidance that lets the model improvise badly); **minor** =
+stylistic or marginal, the current text isn't wrong. This is a different scale from
+`harness-audit`'s CRIT/WARN/INFO — same repo, different axis — don't conflate the two.
+
 Write the reconciled findings to `<iteration-path>/feedback.json` in this shape (matches
 what `skill-creator`'s own eval-viewer feedback file looks like, so it drops into the same
-place in the loop):
+place in the loop; the `target_attributable` tally is additive on top of that shape — existing
+consumers reading `feedback`/`run_id`/`timestamp`/`status` are unaffected):
 
 ```json
 {
   "reviews": [
-    {"run_id": "<eval-name>-<config>", "feedback": "<reconciled paragraph>", "timestamp": "<today, ISO date>"}
+    {"run_id": "<eval-name>-<config>", "feedback": "<reconciled paragraph>", "timestamp": "<today, ISO date>",
+     "target_attributable": {"critical": 0, "major": 0, "minor": 0}}
   ],
   "status": "complete"
 }
