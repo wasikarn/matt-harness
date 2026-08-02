@@ -45,18 +45,22 @@ on fixtures that already exist, it does not create the first set.
 
 Read `<iteration-path>/feedback.json`.
 
-- **Doesn't exist:** tell the user to run `/review-fixtures <name>` first. This command builds on
-  top of that one — it does not reimplement reviewer dispatch.
+- **This iteration has fixtures but no `feedback.json` at all:** check this case first — it's more
+  specific than "doesn't exist" below, and both match on the same missing-file condition. This is
+  not "never reviewed" — it's the signature of an earlier `/iterate-skill` run that Acted but was
+  interrupted before Verify finished. The `candidate.diff` that produced these fixtures is NOT at
+  `<iteration-path>/candidate.diff` — Step 5 writes `candidate.diff` to the iteration that was
+  current *before* Act created this one. If `<iteration-path>` resolved to `iteration-<N>`, check
+  `iteration-<N-1>/candidate.diff` instead. If present, diff it against the live target file: if
+  the file's current content already matches, an unverified change from an earlier session is
+  already live. Tell the user this explicitly and offer to run Verify (Step 6) now, rather than
+  silently restarting at Propose — restarting would hide that the target file already changed.
+- **Doesn't exist, and this iteration has no fixture output either:** tell the user to run
+  `/review-fixtures <name>` first. This command builds on top of that one — it does not
+  reimplement reviewer dispatch.
 - **Exists but has no `target_attributable` key:** it predates this feature. Say so plainly and
   offer to re-run `/review-fixtures <name>` to backfill a tallied baseline. Never guess a tally —
   an invented number defeats the entire point of a grounded-ish signal.
-- **The iteration has fixtures but no `feedback.json` at all:** this is not "never reviewed" — it's
-  the signature of an earlier `/iterate-skill` run that Acted but was interrupted before Verify
-  finished. Check for `<iteration-path>/candidate.diff` (written by Step 5 below before every
-  Act). If present, diff it against the live target file: if the file's current content already
-  matches, an unverified change from an earlier session is already live. Tell the user this
-  explicitly and offer to run Verify (Step 7) now, rather than silently restarting at Propose —
-  restarting would hide that the target file already changed.
 - **A tallied baseline exists:** that's the starting point for Step 3.
 
 **Success criterion:** either a tallied baseline to improve on, or a clear, explicit reason why
