@@ -52,14 +52,20 @@ case where real values end up pasted into prose.
 
 **Remove:**
 - Sentences that restate a point already made elsewhere in the same file
-- Redundant examples — keep the clearest one, cut near-duplicates
+- Redundant examples — keep the clearest one, cut near-duplicates. **Exception:** a byte-identical
+  duplicate *inside a fenced code block* can't actually be removed — the verify script counts
+  fenced-block occurrences exactly, so dropping one copy of an identical pair always fails
+  verification even though no information is lost. Trim the surrounding prose instead and leave
+  both copies of an identical code block in place.
 - Filler phrases carrying no information ("it's worth noting that," "in order to" → "to")
 - Connective throat-clearing ("However," "Furthermore") where the logical link is already clear
 
 **Preserve exactly — byte-for-byte, checked by the verify script:**
 - Fenced code blocks (proper open/close fence matching, not just a naive scan)
-- Inline code spans (occurrence-counted — losing 1 of 2 mentions of the same span still fails)
-- Markdown link URLs
+- Inline code spans (occurrence-counted — losing 1 of 2 mentions of the same span still fails),
+  single- or double-backtick delimited
+- Markdown link URLs — inline (`[text](url)`, with or without a title attribute) and
+  reference-style (`[text][ref]`, via its `[ref]: url` definition line) alike
 - Headings (count, level, and text)
 - YAML frontmatter block, whole — **known failure mode, not a hypothetical:** even an LLM
   explicitly told to preserve frontmatter sometimes touches it anyway during a compression pass
@@ -68,8 +74,10 @@ case where real values end up pasted into prose.
   skill/agent/command file opens with frontmatter, treat this as a first-class check, not an
   afterthought — don't even attempt to compress inside the `---`...`---` block.
 
-**Preserve in full:** grammar and sentence structure. No dropped articles, no fragments — this is
-where this skill diverges from its source. Preserve bullet/numbered-list nesting and tables.
+**Preserve in full, but not machine-verified:** grammar and sentence structure. No dropped
+articles, no fragments. Unlike every rule above, the verify script has no grammar or fragment
+check at all — reread the compressed prose yourself before calling it done, since nothing else
+will catch a clipped sentence. Preserve bullet/numbered-list nesting and tables.
 
 **Structural option, not a requirement:** if a section is detailed-but-rarely-needed, moving it to
 a `reference.md` (directory-form, see `docs/command-authoring-conventions.md`) is a valid

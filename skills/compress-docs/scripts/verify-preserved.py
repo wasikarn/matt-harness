@@ -3,10 +3,13 @@
 
 Compares the on-disk file against the last-committed (`git show HEAD:<path>`)
 version: fenced code blocks (proper CommonMark fence matching, not a naive
-regex), headings (count + text/order), and inline code spans (occurrence-
-counted, fences stripped first so a backtick inside a code block never reads
-as inline code). Exits 0 if all protected regions are unchanged, 1 otherwise
-(with a report of what drifted).
+regex), headings (count + text/order), inline code spans — both single- and
+multi-backtick-delimited, occurrence-counted, fences stripped first so a
+backtick inside a code block never reads as inline code — and link URLs,
+both inline (`[text](url)`, with or without a title attribute) and
+reference-style (`[text][ref]`, tracked via its `[ref]: url` definition
+line). Exits 0 if all protected regions are unchanged, 1 otherwise (with a
+report of what drifted).
 """
 import re
 import subprocess
@@ -15,7 +18,17 @@ from collections import Counter
 
 FENCE_OPEN_RE = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)", re.MULTILINE)
-LINK_URL_RE = re.compile(r"\]\(([^)\s]+)\)")
+# Captures the URL in `[text](url)` and `[text](url "title")` alike — the
+# optional group swallows a trailing quoted title before the closing paren.
+LINK_URL_RE = re.compile(r"\]\(([^)\s]+)(?:\s+[\"'][^\"']*[\"'])?\)")
+# Reference-style links (`[text][ref]`) carry no URL themselves — the URL
+# lives on a separate `[ref]: url` definition line, which this tracks.
+REFERENCE_LINK_DEF_RE = re.compile(r"^[ \t]{0,3}\[[^\]\n]+\]:[ \t]*(\S+)", re.MULTILINE)
+# Double-backtick-delimited spans (used when the code itself contains a
+# literal backtick, e.g. `` `rm -rf` `` ) — a separate pattern from the
+# single-backtick one below, since a `(?<!`)...(?!`)` lookaround can't also
+# match a longer, self-delimiting run without conflating the two.
+DOUBLE_BACKTICK_RE = re.compile(r"``((?:[^`\n]|`(?!`))+)``")
 FRONTMATTER_RE = re.compile(r"\A(---\r?\n.*?\r?\n---\r?\n)", re.DOTALL)
 
 
@@ -69,7 +82,10 @@ def strip_code_blocks(text):
 
 
 def extract_inline_code(text):
-    return re.findall(r"(?<!`)`([^`\n]+)`(?!`)", strip_code_blocks(text))
+    text = strip_code_blocks(text)
+    single = re.findall(r"(?<!`)`([^`\n]+)`(?!`)", text)
+    double = DOUBLE_BACKTICK_RE.findall(text)
+    return single + double
 
 
 def extract_headings(text):
@@ -77,7 +93,7 @@ def extract_headings(text):
 
 
 def extract_link_urls(text):
-    return LINK_URL_RE.findall(text)
+    return LINK_URL_RE.findall(text) + REFERENCE_LINK_DEF_RE.findall(text)
 
 
 def diff_counts(before, after):
