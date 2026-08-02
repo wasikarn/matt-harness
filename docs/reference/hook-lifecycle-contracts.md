@@ -1,6 +1,6 @@
 # Hook Lifecycle Contracts
 
-Per-event **behavior contract** for the 6 hook events / 16 hooks kbg registers, separated
+Per-event **behavior contract** for the 6 hook events / 17 hooks kbg registers, separated
 from **execution** (`hooks/hooks.json` dispatch → which script fires on which event/matcher).
 This is the contract layer ECC separates as `memory-persistence/` (lifecycle definitions)
 from `hooks.json` (execution): this file is the *behavior* contract — what each event
@@ -42,6 +42,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 | PreToolUse (Write\|Edit) | `verifier-protect.sh` | FF / computational | `ask` edits to BOTH non-model verifiers — `hooks/gates/**` + `hooks/hooks.json` (the deny-gates + wiring) AND `skills/harness-audit/scripts/audit.sh` + `checks/**` (the audit grader). Tamper-resistance: the model cannot edit the code that judges it. Both verifiers guarded — a half-protected perimeter is worse than none. `--health` reporter (`harness-health.py`/`health.sh`) is NOT a grader, stays unguarded. Also denies hardcoded `/Users/<name>` paths in `.sh`/`.py` content (folded in from the former standalone `path-hardcode.sh`, deleted 2026-07-03). No env-var bypass. |
 | PreToolUse (TaskUpdate) | `task-complete-separation.sh` | FF / computational | Deny `TaskUpdate(status="completed")` when `agent_type` is present (any subagent) — maker≠checker: a subagent cannot mark its own task completed. The main session (no `agent_type`) owns completion; validator subagents return verdicts to main. Enforces the orchestrate validation chain's B-pass-before-completion computationally. Exit 2 + stderr; fail-safe allow on parse error. Uses `PreToolUse` on `TaskUpdate` rather than the native `TaskCompleted` event; `TaskCompleted` also ships its own decision control (exit 2 blocks completion) and would likely fit this gate too — the choice was implementation history, not a documented limitation of `TaskCompleted`, and isn't planned to change without a concrete reason. |
 | PostToolUse (ExitPlanMode) | `plan-review-nudge.sh` | FF / inferential | Advisory: after a plan is approved, nudge dispatching `kbg:plan-reviewer` for consequential plans before implementing. Never blocks. |
+| PostToolUse (Bash) | `compliance-audit-nudge.sh` | FF / inferential | Advisory: after a `git commit`, if a plan was approved earlier this session (bash grep-prefilter on the transcript, then a precise python structural check for an `ExitPlanMode` tool_use with a non-empty plan — "grep gates, python confirms", avoids a python spawn on the common non-commit case), remind the model to tell the user `/kbg:compliance-audit` exists. `compliance-audit` is `disable-model-invocation: true`, so the nudge text instructs relay-to-user, never self-dispatch — confirmed against `commands/compliance-audit.md`'s own frontmatter, not assumed. Never blocks. |
 | Stop | `cost-tracker.sh` | FB / computational | Track cumulative token/cost metrics per session; append to `~/.local/share/kbg/metrics/costs.jsonl`. Async; no enforcement. |
 | SessionEnd | `learn-nudge.sh` | FB / computational (volume proxy, not content judgment) | Advisory: remind the operator `kbg:learn` exists when the transcript's `"type":"user"` turn count (includes tool-result turns) is ≥3 (`KBG_LEARN_NUDGE_MIN_TURNS` override). Skips `reason: resume` (docs: "Session switched via interactive `/resume`" — the session ended because the user left it for a possibly-different one, not that this session is pausing to continue later) and `reason: clear` (frequent mid-work housekeeping — nudging every `/clear` is nag-fatigue noise, not signal). Emits to **stderr** — SessionEnd stdout is discarded by Claude Code and SessionEnd has no `additionalContext`/decision-control mechanism at all (unlike SessionStart), so stderr is the only channel that reaches the user (confirmed against the hooks reference: `SessionEnd` → "Shows stderr to user only"). Not the retired learn-capture/learn-drain-nudge design (no queue, no state file, no confidence scoring, no python) — it judges nothing about content, only whether the session had enough activity to plausibly be worth a look. |
 
@@ -50,7 +51,9 @@ and the SessionEnd inferential-FB sensors (`inferential-structural-judge`, `veri
 `fabrication-verdict-log`) were removed in the v0.6.0 cut; the `PostToolUse` `observe.sh`
 sensor (retired-L4 residue that wrote `observations.jsonl` for the removed `/learn` command) was removed in
 v0.6.7 — but `PostToolUse` itself was re-wired 2026-07-22 (v0.68.3) with `plan-review-nudge.sh` (above), a
-different, unrelated advisory hook; **one PostToolUse hook is currently live.** The maker≠checker
+different, unrelated advisory hook; a second, `compliance-audit-nudge.sh` (v0.68.138, above), joined it on
+the same event with a different matcher (`Bash` vs. `ExitPlanMode`) — **two PostToolUse hooks are
+currently live.** The maker≠checker
 enforcement the F7 gate failed to provide is now carried by
 `gate:task:complete-separation` on `PreToolUse:TaskUpdate` (above) — a deterministic shell gate, not a
 model-as-gate, so it does not re-arm the autonomy invariant the v0.6.0 cut retired. `SessionEnd` itself

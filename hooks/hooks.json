@@ -171,6 +171,18 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/plan-review-nudge.sh"]
           }
         ]
+      },
+      {
+        "id": "advisory:compliance-audit-nudge",
+        "matcher": "Bash",
+        "description": "Advisory: after a git commit, if a plan was approved earlier this session, remind the model to tell the user they can run /kbg:compliance-audit themselves (disable-model-invocation:true — never dispatch it). Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/compliance-audit-nudge.sh"]
+          }
+        ]
       }
     ],
     "Stop": [
