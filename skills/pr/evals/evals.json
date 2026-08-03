@@ -1,0 +1,49 @@
+{
+  "skill_name": "pr",
+  "evals": [
+    {
+      "id": 1,
+      "name": "standard-feature-pr",
+      "prompt": "I finished the CSV export feature on this branch, can you open a PR for it?",
+      "expected_output": "A PR title/body following the kbg template (Summary, Changes, Files Changed, Testing, Related Issues), title using conventional-commit 'feat:' prefix, base branch resolved to main (no repo PR template present), user shown the body and asked to confirm before any create/push call fires.",
+      "working_directory": "fixtures/standard-feature-pr/repo",
+      "files": [],
+      "assertions": [
+        "PR title uses conventional-commit format with a 'feat:' prefix (not a generic or verbatim commit message)",
+        "Body includes all five required sections: Summary, Changes, Files Changed, Testing, Related Issues",
+        "Base branch is resolved to 'main' (the repo's actual default), not left unresolved or wrong",
+        "Files Changed section is a categorized one-line summary (e.g. '1 source file, 1 test file, 1 doc file'), not a per-file bullet list",
+        "Output does not claim a PR was actually created or fabricate a PR number/URL -- it stops before the create step and reports what it would submit",
+        "Output states that user confirmation happens before creation (the preview/confirm gate), even if auto-confirmed for this sandboxed test"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "hotfix-missing-base-guard",
+      "prompt": "we just found a session token leak in prod, I already pushed the fix to this branch, can you open a PR for it",
+      "expected_output": "Because the branch matches hotfix/* and no base was given, the skill should STOP and ask which base branch to target instead of silently using the resolved default (develop) -- the branch was actually cut from main. Should not build/confirm/create a PR body without first resolving the base.",
+      "working_directory": "fixtures/hotfix-missing-base-guard/repo",
+      "files": [],
+      "assertions": [
+        "Output explicitly recognizes the branch matches the hotfix/* pattern",
+        "Output does NOT silently default to 'develop' (the git-resolved default branch) as the PR base",
+        "Output stops and asks the user for the base branch instead of building and confirming a full PR body",
+        "Output does not fabricate or guess a base branch on the user's behalf"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "repo-template-merge",
+      "prompt": "open a PR for the dashboard filter branch",
+      "expected_output": "The repo's own .github/PULL_REQUEST_TEMPLATE.md (What changed? / Why? / Screenshots) should be detected and merged with the kbg body structure -- not silently discarded and not silently ignored in favor of kbg's own structure. Since the repo template has no Testing section, that section should be appended from the kbg structure.",
+      "working_directory": "fixtures/repo-template-merge/repo",
+      "files": [],
+      "assertions": [
+        "Output detects the existing .github/PULL_REQUEST_TEMPLATE.md",
+        "Output preserves the repo template's own sections (What changed?, Why?, Screenshots) rather than discarding them for the kbg structure",
+        "Output adds a Testing section (present in the kbg structure, missing from the repo template) rather than dropping it silently",
+        "Body content is filled in from commit/file analysis, not left as empty template placeholders"
+      ]
+    }
+  ]
+}

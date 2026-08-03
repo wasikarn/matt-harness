@@ -30,15 +30,26 @@ and Phase 6 reported the number + URL + CI state.
 - Extract any recognized flags (`--draft`).
 - Treat remaining non-flag text as the base branch name.
 - **Hotfix guard:** if the current branch matches `hotfix/*` and no base branch was given —
-  STOP and ask for the base. A hotfix PR targets the **production branch** it was cut from
-  (usually `main`); the repo default branch is often the integration branch (`develop`) or a
-  stale legacy branch, so a silent default misroutes the fix.
+  STOP and ask for the base **before doing anything else** (don't proceed into Phase 2 to
+  build a title/body/command and present the missing base as a footnote on an
+  otherwise-finished recommendation — a fully-built, ready-to-fire PR anchors a skimming user
+  toward agreeing with whatever base you guessed, which defeats the point of asking). A
+  hotfix PR targets the **production branch** it was cut from (usually `main`); the repo
+  default branch is often the integration branch (`develop`) or a stale legacy branch, so a
+  silent default misroutes the fix just as effectively as a persuasive wrong guess does.
 - If no base branch given (non-hotfix), resolve the repo's actual default branch (don't
   assume `main`):
   ```bash
   gh repo view --json defaultBranchRef -q .defaultBranchRefName 2>/dev/null \
     || git remote show origin | awk '/HEAD branch/ {print $NF}'
   ```
+  If both return nothing usable (`(unknown)`, empty, or a branch name that doesn't actually
+  exist — a stale or dangling remote `HEAD` symref, which happens on a freshly-mirrored or
+  partially-configured remote), don't guess: list what actually exists (`git branch -a`) and
+  use `git merge-base` between the current branch and each candidate to find which one it
+  really forked from. If more than one candidate is still plausible after that, ask the user
+  rather than picking one silently — a wrong default here is exactly as costly as the hotfix
+  guard's wrong default above, it's just rarer.
 
 ---
 
@@ -78,7 +89,12 @@ Search for a repo PR template in order:
 If a repo template is found, **merge** it with the kbg body structure below — don't silently
 defer to it and don't discard it. Fill the repo template's sections from the commit/file
 analysis; if it's missing a section the kbg structure has (e.g. **Testing**), append that
-section. (Reason: a `gh pr create --body` call overrides GitHub's auto-inserted template
+section. If a repo section already covers the same ground as a kbg section (e.g. a repo
+"Why?" vs kbg's Summary, or "What changed?" vs Changes), fold the kbg content into the
+repo's section rather than keeping both — that still counts as "merge," not deletion; Phase
+4's "preserve every section" rule means don't drop a kbg section that has no repo-template
+equivalent, not that every kbg heading must appear verbatim alongside a repo heading covering
+the same thing. (Reason: a `gh pr create --body` call overrides GitHub's auto-inserted template
 entirely, so "just let the repo template apply" loses the structure for model-created PRs.)
 
 ### Commit Analysis
@@ -133,7 +149,9 @@ This is the format-enforcement gate. Build the body, show it, get one confirmati
 ### 1. Build the body
 
 Fill this structure (or the merged repo template from Phase 2) from the Phase 2 analysis.
-Preserve every section — leave a section as `N/A` rather than deleting it.
+Preserve every section — leave a section as `N/A` rather than deleting it. (A kbg section
+already folded into an equivalent repo-template section per Phase 2 isn't "deleted" — see
+Phase 2's merge guidance.)
 
 ```markdown
 ## Summary
@@ -147,7 +165,9 @@ Preserve every section — leave a section as `N/A` rather than deleting it.
 ## Files Changed
 
 <one-line summary categorized by area, e.g. "3 migrations, 2 config files, 1 test file" —
-not a per-file list; GitHub's own "Files changed" tab already shows that>
+not a per-file list; GitHub's own "Files changed" tab already shows that. At exactly one
+changed file, the category count and the file name carry the same information — either form
+is fine there.>
 
 ## Testing
 
@@ -171,12 +191,34 @@ On "Edit", apply the user's change and re-render once; on "Cancel", stop.
 
 ### 3. Create
 
+Write the confirmed body to a temp file and pass it via `--body-file` — don't inline it with
+`--body "<text>"`. Bash double quotes don't stop backtick or `$()` expansion, and a PR body
+describing code almost always contains backtick-wrapped inline code (standard markdown); an
+inlined `--body` breaks or executes shell content straight out of the diff/commit text, on
+completely ordinary input, no adversarial commit message required. The same risk applies to
+the title (it's a commit subject, and commit subjects can contain the same characters) — lower
+odds since conventional-commit titles are short and rarely carry backticks, but the fix costs
+nothing, so capture it into a variable through the same quoted-heredoc technique instead of
+inlining it either.
+
 ```bash
+body_file="$(mktemp)"
+cat > "$body_file" <<'PR_BODY_EOF'
+<confirmed PR body>
+PR_BODY_EOF
+
+title="$(cat <<'PR_TITLE_EOF'
+<PR title>
+PR_TITLE_EOF
+)"
+
 gh pr create \
-  --title "<PR title>" \
+  --title "$title" \
   --base <base-branch> \
-  --body "<confirmed PR body>"
+  --body-file "$body_file"
   # Add --draft if the --draft flag was parsed from the request
+
+rm -f "$body_file"
 ```
 
 ---
