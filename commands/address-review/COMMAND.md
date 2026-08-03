@@ -149,7 +149,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 **Actions**:
 1. Push all Phase 4 commits if not already pushed: `git push`.
 2. If the PR was draft (state changed during work) → `gh pr ready <n>`.
-3. If the previous review was dismissed-on-push, re-request from the same reviewer: `gh pr edit <n> --add-reviewer @<user>` (or `gh api ... requested_reviewers`).
+3. Re-request from the same reviewer — `gh pr edit <n> --add-reviewer <user>` (or `gh api ... requested_reviewers`) — in either of two cases: the previous review was dismissed-on-push, or zero commits were pushed this session but every thread got a substantive reply (wontfix/clarify rationale) and a **required** reviewer's review state is still `CHANGES_REQUESTED`. Posting inline replies doesn't change a reviewer's review state on GitHub — only a re-request or a new review submission does — so a pushback-heavy, zero-commit session still needs this step to put the PR back on a required reviewer's radar. (A non-required reviewer's stale `CHANGES_REQUESTED` doesn't block merge, so re-requesting isn't the actionable lever there — a reply is enough.)
 4. Check CI: `gh pr checks <n>`. If failures, surface to user before declaring done.
 5. Output:
    - PR number + URL
@@ -176,7 +176,8 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
      - Reviewer approves on push        → /ship-merge
      - Another pass wanted before merge → kbg:review-pr
      - wontfix-heavy and abandoned      → `gh pr close <n>`
-     - Pushback posted, nothing to push, a required reviewer's block still stands → await their response to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
+     - Pushback posted, nothing to push, a required reviewer's block still stands → Phase 6 step 3 already re-requested their review — now await their response to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
+     - Pushback posted, nothing to push, no required reviewer's block stands (only a non-required reviewer's `CHANGES_REQUESTED` is stale) → nothing further to do; a non-required reviewer's stale review doesn't block merge, and the reply already posted is sufficient.
 
 ---
 
