@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.148] — 2026-08-03
+
+`harness-audit` check 02 (skill-symlink integrity) didn't skip `*-workspace/` directories the way
+it already skips `_*`-prefixed scaffolds — a skill-creator eval workspace
+(`skills/pr-workspace/`, gitignored under `.gitignore`'s own "Session / skill workspaces" section)
+tripped a false CRIT ("not loadable by Claude Code") and blocked an unrelated commit's pre-commit
+gate. Added the same `*-workspace` exclusion, mirroring the existing `_*` pattern.
+
 ## [0.68.143] — 2026-08-03
 
 Closed the loop `/kbg:iterate-skill add-surface` was built for: re-verified v0.68.142's
