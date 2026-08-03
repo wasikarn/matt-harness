@@ -253,17 +253,21 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    read it, via the bundled script — never hand-author the JSON:
    ```bash
    bash "${CLAUDE_SKILL_DIR}/scripts/write-review-state.sh" \
-     "${CRITICAL_COUNT:-0}" "${REHUNT_STATUS:-n/a}" "${DISPATCH_FAILURES:-}" "$HEAD_SHA" "${WT:-}"
+     "${CRITICAL_COUNT:-0}" "${REHUNT_STATUS:-n/a}" "${DISPATCH_FAILURES:-}" "$HEAD_SHA" "${WT:-}" \
+     "${IMPORTANT_COUNT:-0}" "${MINOR_COUNT:-0}"
    ```
    Positional, not inherited env, on purpose: pass the actual values you're holding at this point
-   in the phase (`CRITICAL_COUNT` from Phase 5, `REHUNT_STATUS` from step 3.6, `DISPATCH_FAILURES`
-   from Phase 4 step 4, `HEAD_SHA`/`WT` from Phase 2) as literal arguments — an inherited-but-
-   unexported shell variable fails silently across the nested bash invocation this script call is.
-   Prints the written state-file path on success. On failure, don't proceed to step 4's worktree
-   cleanup — but a non-zero exit doesn't always mean nothing was written: the worktree-escape trap
-   catches a bad `REVIEW_PR_STATE_DIR` only after the file is already written to the
-   (about-to-be-deleted) wrong path. Fix the state dir and re-run rather than assuming the write
-   never happened.
+   in the phase (`CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` from Phase 5, `REHUNT_STATUS` from
+   step 3.6, `DISPATCH_FAILURES` from Phase 4 step 4, `HEAD_SHA`/`WT` from Phase 2) as literal
+   arguments — an inherited-but-unexported shell variable fails silently across the nested bash
+   invocation this script call is.
+   Prints the written state-file path on success, then a second stdout line —
+   `round=N prev_critical=X prev_important=X prev_minor=X stalled=true|false` — that step 2's
+   round-aware footer renders from directly; don't re-derive these by re-reading the state file back.
+   On failure, don't proceed to step 4's worktree cleanup — but a non-zero exit doesn't always mean
+   nothing was written: the worktree-escape trap catches a bad `REVIEW_PR_STATE_DIR` only after the
+   file is already written to the (about-to-be-deleted) wrong path. Fix the state dir and re-run
+   rather than assuming the write never happened.
 
    **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
    7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
@@ -275,7 +279,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    script (canonicalization rule, keying scheme, the worktree-escape safety check, and the incident
    history behind each): `scripts/write-review-state.sh`.
 
-   `CRITICAL_COUNT` = number of Critical findings from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
+   `CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` = number of Critical/Important/Minor findings
+   from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
 2. Summarize:
    - PR # and URL (if applicable)
    - Review window: `BASE_SHA..HEAD_SHA`
@@ -285,7 +290,14 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **Suggested next steps** (pick what applies):
      - Wants clarity polish after fixes → run the native `/simplify` (clarity-only, behavior-preserving) as follow-up (NOT part of kbg:review-pr itself)
      - At PR-ready → `/ship-merge` (or push for review)
-     - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA window)
+     - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA
+       window). Render this round-aware from step 1's second stdout line, not a flat suggestion:
+       - `round == 1`: unchanged wording above (nothing to compare against yet).
+       - `round >= 2` and `stalled == false`: `Round {round} on PR #{n} — Critical {prev}→{now},
+         Important {prev}→{now} → re-run kbg:review-pr` (name only the tiers that actually moved).
+       - `stalled == true`: drop the re-run suggestion — say instead `{round} rounds on PR #{n},
+         counts not moving — this isn't converging on its own. Needs a human call (accept as-is /
+         wontfix the remainder / escalate), not another automatic pass.`
      - Reviewer comments came back externally → `/address-review`
      - Reviewer flow (PR #N), review posted → done; ping the author / await their `/address-review`
 3. **Submit the review to GitHub** (gated — never auto-submit; posting a review is outward-facing). Posts findings as **individual line-level review comments** so the author sees each issue in context — not just a single top-level summary.

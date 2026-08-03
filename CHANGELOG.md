@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.139] — 2026-08-03
+
+Session-history analysis across ~2,660 real transcripts (tathep + kbg-harness + others) found
+`/kbg:review-pr` re-invoked on the **same PR number**, within the same session, in 6 of 8 sampled
+tathep sessions — one PR went review-pr → ship-merge → review-pr → review-pr → ship-merge →
+review-pr → ship-merge across 5 hours. 52 of 140 tathep sessions (37%) repeat `/kbg:review-pr` at
+least once. This is a real, proven-need loop — review-pr vs. itself on the same PR, fixed inline and
+re-run — not the review-pr↔`/address-review` handoff a prior proposal assumed (`address-review`
+only showed up in 2 of the 8 sampled loop sessions, and carries `disable-model-invocation: true`
+besides).
+
+Shipped: `skills/review-pr/scripts/write-review-state.sh` now carries the prior round's Critical/
+Important/Minor counts forward from the same state file (own-branch resets on a branch change; PR-
+by-number never resets since the file is already keyed per PR) and computes a `stalled` flag — 3+
+rounds in, still not clean, and no tier improved since the prior round. Phase 7's "re-run
+kbg:review-pr" suggestion in `skills/review-pr/SKILL.md` is now round-aware: it reports the
+Critical/Important delta from round 2 on, and once `stalled`, replaces the re-run suggestion with a
+call for a human decision instead of another automatic pass. `/address-review` is explicitly out of
+scope for this change — the data doesn't support building anything there.
+
 ## [0.68.130] — 2026-08-01
 
 New source: `thedotmack/claude-mem` — a hosted multi-tenant memory service (Cloudflare Workers
