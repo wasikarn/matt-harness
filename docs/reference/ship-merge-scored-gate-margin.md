@@ -7,8 +7,10 @@ itself.
 ## Background
 
 Phase 1 step 6's automation-bias guard scores the Critical-findings criterion **0** (but keeps
-its 30 weight in the denominator, not renormalized away) whenever a sensitive-path diff was
-reviewed `own-branch` instead of `pr-by-number`. That criterion is also exempt from the 40-point
+its 30 weight in the denominator, not renormalized away) whenever a sensitive-path diff's review
+isn't verifiably `pr-by-number` — this is a deny-list check (v0.68.151), so it fires on an
+explicit `own-branch` review just as much as on a missing/malformed `review_mode` field or a
+review found at the unkeyed `review-last.json` path. That criterion is also exempt from the 40-point
 fatal-weakness floor — the sole exemption in the gate — so the merge doesn't STOP purely because
 of the deliberate zero; it has to fail the weighted 70-point threshold on its own merits instead.
 
