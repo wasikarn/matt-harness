@@ -275,7 +275,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    production state files: sessions that skip the script and narrate their own richer summary
    routinely rename or drop these exact keys — silently breaking the downstream gate even though
    the review itself was fine. **Adding extra fields alongside the required 7 is fine** (a `note`,
-   `important_count`/`minor_count` for a human audit trail) — just never rename or omit the 7. Full
+   or the `important_count`/`minor_count`/`round`/`stalled` fields this script now writes and step 2
+   below reads back to render the round-aware footer) — just never rename or omit the 7. Full
    script (canonicalization rule, keying scheme, the worktree-escape safety check, and the incident
    history behind each): `scripts/write-review-state.sh`.
 

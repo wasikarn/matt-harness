@@ -97,6 +97,18 @@ print("%s|%s|%s|%s|%s" % (
     PREV_MINOR="${PREV_MINOR_READ:-n/a}"
   fi
 fi
+
+# A predecessor file can carry hand-authored non-numeric values (same incident
+# class ship-merge.md documents auditing: ~19% of 105 sampled state files held
+# free-text instead of the canonical tokens their field expects). Treat
+# anything that isn't a plain non-negative integer as absent, not as data —
+# feeding a non-numeric PREV_* into the `-ge` checks below or the round
+# arithmetic would either silently skip the STALLED check or crash the script.
+case "$PREV_ROUND" in ''|*[!0-9]*) PREV_ROUND=0 ;; esac
+case "$PREV_CRITICAL" in ''|*[!0-9]*) PREV_CRITICAL="n/a" ;; esac
+case "$PREV_IMPORTANT" in ''|*[!0-9]*) PREV_IMPORTANT="n/a" ;; esac
+case "$PREV_MINOR" in ''|*[!0-9]*) PREV_MINOR="n/a" ;; esac
+
 ROUND=$((PREV_ROUND + 1))
 
 # Non-convergence signal: 3+ rounds in, still not clean, and no tier improved

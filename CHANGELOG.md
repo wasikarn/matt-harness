@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.141] — 2026-08-03
+
+Fresh-context `kbg:code-reviewer` verification pass on v0.68.139's round-aware `review-pr` footer
+(dispatched deliberately outside the authoring session, per this repo's checker-not-maker doctrine)
+found one HIGH finding: `write-review-state.sh`'s prior-round read checked only `!= "n/a"` before
+trusting a predecessor file's `critical_count`/`important_count`/`minor_count`, not that the value
+was actually numeric. Reproduced directly — a hand-authored predecessor value (e.g.
+`"critical_count":"two"`, the same incident class `ship-merge.md` documents at ~19% of 105 audited
+state files) passed the string check, reached the `-ge` comparisons and the printf unguarded, and
+wrote invalid JSON to the state file (self-healing on the next run, but a `/ship-merge` read in that
+window would hit unparseable JSON on the file it depends on). Fixed: all three `PREV_*` fields, plus
+`PREV_ROUND` (same risk, worse failure mode — feeds a `$(( ))` arithmetic context that would hard-crash
+the script rather than just corrupt output), now normalize to their absent-sentinel (`n/a` / `0`) via
+a plain-integer `case` guard before anything reads them. Also closed a stale doc line in
+`skills/review-pr/SKILL.md` that still described `important_count`/`minor_count` as optional
+audit-trail decoration after v0.68.139 made them load-bearing footer inputs.
+
 ## [0.68.140] — 2026-08-03
 
 `/ask-kbg` was a static narrative map — "Display this map. One-shot, read-only" — deliberately
