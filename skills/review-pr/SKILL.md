@@ -172,6 +172,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 
 **Goal**: Show tier-grouped findings, then branch on the review target (set in Phase 1): **own current branch** → fix decision (fixes land in the working tree); **PR by number** → the submit decision. For a reviewer, choosing how to submit the review *is* acting on the findings — there is no "fix later", and in-place fixes in the throwaway worktree are discarded at Phase 7 cleanup unless pushed. This is the **single submit gate**; Phase 7 executes the choice, it does not re-ask.
 
+**This gate requires an actual answer from the user — it is not a formality to self-answer when no one is available to respond.** If there is no way to get a real answer (no interactive session, `AskUserQuestion` genuinely unavailable, unattended/headless invocation), do not pick an action-taking option yourself and let Phase 7 execute it on the user's behalf. Default to the non-mutating choice for the active branch instead — `Fix later` on branch A, `Skip — I'll post manually` on branch B — and say plainly that the decision was deferred for lack of confirmation, not made for the user. Confirmed failure mode: an unattended run picked "fix Critical + Important now" as its own default and then actually committed the fixes, off a request that only asked for a review.
+
 **Actions**:
 1. **If `JIRA_KEY` was set (Phase 1.5 ran), present the ticket-quality report first, as its own section before the code findings — never blended into the Critical/Important/Minor tiers below** (same "don't blend across agents" principle as Phase 5 step 1; this is a report on the *ticket*, the tiers below are about the *code*):
 
