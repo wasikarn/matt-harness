@@ -13,6 +13,20 @@ it already skips `_*`-prefixed scaffolds — a skill-creator eval workspace
 tripped a false CRIT ("not loadable by Claude Code") and blocked an unrelated commit's pre-commit
 gate. Added the same `*-workspace` exclusion, mirroring the existing `_*` pattern.
 
+## [0.68.149] — 2026-08-03
+
+Readability pass on `commands/ship-merge.md` Phase 1 step 6 (the scored merge gate) — no gate
+logic changed, verified by diffing every backticked token and numeral between the old and new
+content. Restructured three dense single-paragraph guards (verified-N/A handling, incomplete-review
+guard, automation-bias guard) into headed bullets, and extracted the automation-bias guard's
+margin-invariant arithmetic proof (worked examples + breakpoint derivation + known gap) into a new
+`docs/reference/ship-merge-scored-gate-margin.md`, leaving a pointer in its place. Considered but
+rejected converting `ship-merge.md` to directory-form (`commands/ship-merge/COMMAND.md` +
+`references/`, the pattern `ship`/`ideate` use): `harness-audit` check 44 — the fleet's only CRIT
+guard on this command's `disable-model-invocation` flag — hardcodes the flat path and would have
+silently stopped checking it. The file was also still under the 20K-char size-outlier threshold, so
+`command-authoring-conventions.md`'s "flat file by default" rule argued against the move anyway.
+
 ## [0.68.143] — 2026-08-03
 
 Closed the loop `/kbg:iterate-skill add-surface` was built for: re-verified v0.68.142's
