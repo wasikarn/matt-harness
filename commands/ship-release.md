@@ -25,7 +25,15 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 
 **Actions**:
 1. Parse `$ARGUMENTS` for version bump type (`major` / `minor` / `patch`) or specific version.
+   Also sanity-check any branch name implied by the request against what the repo actually has
+   (e.g. a task mentioning "develop" when the repo only has `main`) — release off the branch
+   that actually contains the commits, and say so if it differs from what was assumed.
 2. If no version specified, compute next version from current tags: `git describe --tags --abbrev=0` → bump per semver.
+   **If this fails because no tags exist yet (first release), that's not a semver diff — it's an
+   initial-version choice.** Default to `0.1.0` unless the project has already committed to a
+   stable public API (published package, external consumers, a versioned contract) — in which
+   case `1.0.0` is the more honest starting point. State which case applies and why, rather than
+   picking silently.
 3. Pin release commit: `RELEASE_SHA=$(git rev-parse HEAD)`.
 4. Generate changelog draft from commits since last tag:
    - `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
@@ -61,11 +69,20 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 
 ## Phase 3: Final Review
 
-**Goal**: One last review-pr on the release branch.
+**Goal**: One last review before tagging — on whichever branch is actually being released.
+Phase 1/2 never create a dedicated release branch, so don't assume one exists unless your
+project's own convention calls for it; in a trunk-based repo, "the release branch" is just
+the branch you're releasing from.
 
 **Actions**:
-1. Tell user: "Run `review-pr` on the release branch for a final sanity check."
-2. Wait for `review-pr` to complete.
+1. If a dedicated release branch exists (project convention, not this command's default): tell
+   user "Run `review-pr` on the release branch for a final sanity check," then wait for it.
+2. If there's no separate release branch (trunk-based, releasing directly off `main`/`develop`):
+   there's no PR to run `review-pr` against — do a final manual read-through of the diff since
+   the previous release instead (the previous tag if one exists, or the repository's first
+   commit if this is the first release — Phase 1 Action 2 already determined which case
+   applies), and say explicitly that this is the trunk-based path, not a silently-skipped
+   review.
 3. Accept only Critical findings. Minor/Important can ship if user agrees.
 
 **Gate**: Zero Critical findings before tagging.
@@ -79,8 +96,11 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 **Goal**: Create and push the version tag.
 
 **Actions**:
-1. Create annotated tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
-2. Verify tag points to correct commit: `git rev-parse vX.Y.Z^{commit}`.
+1. Create annotated tag on the Phase 2 bump commit — not the pre-bump `RELEASE_SHA` pinned in
+   Phase 1, which still has the old version string; the bump commit is the one that actually
+   contains `vX.Y.Z`: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
+2. Verify the tag lands on that same bump commit: `git rev-parse vX.Y.Z^{commit}` should match
+   the bump commit's SHA, not `RELEASE_SHA`.
 3. Push tag: `git push origin vX.Y.Z`.
 4. If GitHub Releases is used, draft release notes from changelog.
 
@@ -92,10 +112,14 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 
 ## Phase 5: Merge / Deploy
 
-**Goal**: Land the release in the target branch.
+**Goal**: Land the release where it needs to be. What this means depends on which path Phase 3
+took — state explicitly which case applies rather than silently assuming one.
 
 **Actions**:
-1. Merge release branch into main/stable branch (via PR or direct merge per project convention).
+1. Dedicated release branch (from Phase 3): merge it into main/stable now (via PR or direct
+   merge per project convention).
+   Trunk-based, no separate release branch: this step is a no-op — the release already lives on
+   main/stable by definition, nothing to merge. Say so rather than skipping the step silently.
 2. If deploy is separate from merge, trigger deploy pipeline.
 3. Verify CI/CD passes post-merge.
 
