@@ -1,15 +1,28 @@
 ---
 name: ask-kbg
-description: "Narrative flow map of kbg's own fleet — what chains to what, and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt)."
+description: "Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt)."
 disable-model-invocation: true
-disable-model-invocation-reason: explicit discovery aid mirroring mattpocock-skills:ask-matt's posture — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want the narrative map
+disable-model-invocation-reason: explicit discovery aid — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want a live recommendation or the narrative map
 ---
 
 # Ask KBG
 
-Display this map. One-shot, read-only. Do not change mode, write files, or persist anything.
+Read-only. Do not change mode, write files, or persist anything.
 
 You don't remember every surface, so ask.
+
+## Right now
+
+Before showing the reference map, look at this actual session — the request in play, files touched, branch/PR state, errors, what the last few turns were doing — and answer in this shape:
+
+1. **What's happening** — one line naming the concrete evidence (the ask, the file, the state). Thin or fresh session, no real signal yet → say so and ask what they're working on. Don't guess a recommendation from nothing.
+2. **Do this** — one literal string to type or run, not a menu of candidates.
+3. **Why this one, not X** — name the nearest adjacent surface from the map below and the one fact that separates them. This is the judgment call `/kbg-help`'s stage table and `kbg:inventory`'s listing can't make — it's the reason this command exists instead of just pointing at those two.
+4. **Then what** — the next hop in the chain per the map below (e.g. after `/ideate` comes `/ship`; after `kbg:review-pr` comes `/address-review` or `/ship-merge`).
+
+If step 2 lands on a `disable-model-invocation` surface (`/ship-merge`, `kbg:recursive-improve`, `kbg:score-decision`, this file itself, etc.), print the literal string for the user to type and stop — never imply you'll run it once they confirm.
+
+## Reference: the full map
 
 kbg's shape differs from matt's: matt's flow is many small skills you chain yourself (`mattpocock-skills:grilling` → `mattpocock-skills:to-spec` → `mattpocock-skills:to-tickets` → `mattpocock-skills:implement`). kbg's is a trunk command — `/ship` runs Explore → Clarify → Define-done → Implement → Test → Review → Fix-loop → Merge as one gated pipeline (full phase table: `/ship`). Most of what you'd chain by hand in matt's world, `/ship` already chains internally. What's left to narrate is what feeds *into* it and what happens *after* it.
 
@@ -63,7 +76,7 @@ Framework/language pattern skills, invoked when you're working in that stack, se
 
 - **`kbg:inventory`** — mechanical, full listing of every loadable surface. Grep it when you know roughly what you need and want the exact name.
 - **`/kbg-help`** — flat stage table (DEFINE/PLAN/BUILD/VERIFY/REVIEW/SHIP → entry points). Fast lookup when you know the stage.
-- **`/ask-kbg`** (this file) — the narrative in between: what feeds what, and why you'd branch. Reach for it when the stage table doesn't tell you which on-ramp fits, or the phase connections aren't obvious.
+- **`/ask-kbg`** (this file) — reads the current session and leads with a live recommendation, then the narrative map for browsing. Reach for it when the stage table doesn't tell you which on-ramp fits, or you want a pointed answer instead of a browse.
 
 ## Crossing sessions
 

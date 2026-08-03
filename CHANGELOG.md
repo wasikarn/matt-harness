@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.140] — 2026-08-03
+
+`/ask-kbg` was a static narrative map — "Display this map. One-shot, read-only" — deliberately
+mirroring `mattpocock-skills:ask-matt`'s own posture (also a static router, confirmed by reading
+its `SKILL.md`). User feedback: running it produced no tool recommendation at all, regardless of
+what the session was actually doing. That's a real gap the static-map design doesn't cover — `ask-
+matt`'s own users chain skills by hand turn to turn, so a static map fits; kbg's trunk-command shape
+means the useful question is usually "which on-ramp, right now," not "show me everything."
+
+Shipped: a new "Right now" section, read first, before the reference map. Forces four things in the
+output — the concrete evidence from the session (or an explicit refusal to guess on a thin/fresh
+session), one literal string to type, the nearest adjacent surface plus the fact that separates them
+(the judgment call `/kbg-help`'s stage table and `kbg:inventory`'s listing can't make), and the next
+hop in the chain. A `disable-model-invocation` landing spot in step 2 still only gets printed as a
+string to type, never run on confirmation. Verified pre-ship with a subagent test against two
+synthetic sessions (mid-task with real signal; brand-new with none) — both produced the intended
+shape, not a hedge. The old map is unchanged, just demoted under "## Reference: the full map".
+
 ## [0.68.139] — 2026-08-03
 
 Session-history analysis across ~2,660 real transcripts (tathep + kbg-harness + others) found
