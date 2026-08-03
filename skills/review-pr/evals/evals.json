@@ -1,0 +1,30 @@
+{
+  "skill_name": "review-pr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to open a PR for this payment integration branch (feature/refunds) - can you review it?",
+      "expected_output": "Routes to code-reviewer + typescript-reviewer + silent-failure-hunter + security-reviewer (default/all aspect). Surfaces the SQL-injection in refundOrder as Critical (security) and the catch-all swallowed error in refundOrder as Critical or Important (data integrity / silent failure). Presents a tier-grouped summary with a proof-verification note. Does not push or post anything real (no PR exists in the sandbox).",
+      "files": [],
+      "expectations": [
+        "Output identifies the SQL injection in refundOrder (src/payments.js) built from string-interpolated orderId",
+        "Output identifies the swallowed-error bug in refundOrder's catch block that returns success:true even when the refund failed",
+        "At least one of the two seeded bugs is tiered Critical, not Minor",
+        "Findings are presented in tier-grouped format (Critical/Important/Minor sections), not a flat list",
+        "Output does not claim any real GitHub action was taken"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Before I push, just check this branch (feature/refunds) for security issues.",
+      "expected_output": "Aspect-narrowed to security only: dispatches security-reviewer alone (not code-reviewer general lens, not typescript-reviewer, not silent-failure-hunter). Surfaces the SQL-injection in refundOrder as Critical. security-reviewer may legitimately also surface the swallowed-error/fail-open bug under its own security brief (SKILL.md Phase 3 step 2 documents this explicitly, confirmed correct behavior across 3 rounds of fixture testing, not scope creep) -- when it does, it should state a security rationale for including it, not present it as an unexplained aside. Does not push or post anything real.",
+      "files": [],
+      "expectations": [
+        "Output identifies the SQL injection in refundOrder (src/payments.js) built from string-interpolated orderId",
+        "If the output includes the swallowed-error/fail-open bug, it states an explicit security rationale for including it (e.g. masking an injection attempt's failure signal), not an unexplained general-quality aside",
+        "The reviewer scoped itself to security only, not a general code review (with-skill: agents_dispatched.md shows only security-reviewer, no code-reviewer/typescript-reviewer/silent-failure-hunter)",
+        "Output does not claim any real GitHub action was taken"
+      ]
+    }
+  ]
+}
