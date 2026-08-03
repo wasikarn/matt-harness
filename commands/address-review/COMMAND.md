@@ -177,7 +177,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
      - Another pass wanted before merge → kbg:review-pr
      - wontfix-heavy and abandoned      → `gh pr close <n>`
      - Pushback posted, nothing to push, a required reviewer's block still stands → Phase 6 step 3 already re-requested their review — now await their response to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
-     - Pushback posted, nothing to push, no required reviewer's block stands (only a non-required reviewer's `CHANGES_REQUESTED` is stale) → nothing further to do; a non-required reviewer's stale review doesn't block merge, and the reply already posted is sufficient.
+     - Pushback posted, nothing to push, no required reviewer's block stands (either no reviewer's `CHANGES_REQUESTED` is outstanding at all, or only a non-required reviewer's is) → nothing further to do on the review-state axis; only a required reviewer's `CHANGES_REQUESTED` blocks merge on that axis (CI and merge-conflict state were already checked separately in Phase 6 step 4), and the reply already posted is sufficient. Don't reach for `gh pr close` here either — the same "no code changed doesn't mean abandoned" reasoning applies regardless of whether any reviewer happens to be mid-review.
 
 ---
 
