@@ -5,6 +5,66 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.143] — 2026-08-03
+
+Closed the loop `/kbg:iterate-skill add-surface` was built for: re-verified v0.68.142's
+fleet-count/routing-table fix against fresh fixtures (confirmed clean, both reviewers), then fixed
+the second finding from the original review — the orphaned-shared-test-helper gap in the
+hook-removal guidance — through two full Propose→Act→Verify cycles. First candidate (add "check
+whether that section was the only caller of any shared test helper") **regressed**: fresh fixtures
+showed the `with_skill` run for `eval-remove-hook` left `test_allow_env` behind as dead code
+(scoped to helpers *inside* the deleted section, missing one defined in the shared helper block)
+and its own summary then falsely claimed "zero orphaned dead code left behind" — a fabricated
+claim, confirmed independently by both reviewers, critical-severity per `review-fixtures`' own
+rubric. Second candidate inverted the search ("grep the ENTIRE test file... not just the section
+you just deleted") — confirmed fixed by both reviewers on a fresh fixture pair: the helper is fully
+removed, no over-correction (all other shared helpers still have real callers), and the run's
+completion claim is now accurate. Net result vs. the v0.68.142 baseline this session started from:
+critical 0→0, major 1→1 (unchanged — see below), minor 2→0. Full iteration record (dispatch
+prompts, fixture outputs, grading, reconciled findings, both candidate diffs) in
+`add-surface-workspace/iteration-{1,2,3}/` (gitignored, local-only).
+
+**Left open, out of scope for this fix:** iteration-2's reviewers independently found a third,
+new gap — the `BOUNDARY.md` regen instruction has no step telling the reader to verify the
+regenerated file actually looks complete before trusting it. All three `with_skill` fixture runs
+in iteration-2 hit the same known `inventory-boundary.sh` git-less-fallback bug and handled it
+three different ways, one of them shipping a silently-truncated file. Real, double-confirmed,
+target-attributable (major severity) — deliberately not fixed in this round; the user chose to
+stop here rather than spend iteration 3 of 3 on a scope expansion beyond what was asked. The
+`inventory-boundary.sh` bug itself remains unfixed and dormant in the real repo (only surfaces in
+a git-less sandbox), same status as noted in the v0.68.142 entry below.
+
+## [0.68.142] — 2026-08-03
+
+Fixed a real content gap in `skills/add-surface/SKILL.md`, found via its own first-ever
+`skill-creator`-style fixture-generation + `/kbg:review-fixtures` pass (2-agent independent
+review, both reviewers converged independently): the skill's checklist never told the reader to
+sync the "N skills · M agents · P commands" fleet-count triple, or hand-update the two prose-only
+spots `sync-fleet-counts.sh` doesn't touch (`skills/orchestrate/reference.md`'s named routing
+table + agent-count phrase, and `docs/agent-voice-extension.md`'s agent-count phrase) when adding
+a new agent. Confirmed via the `without_skill` baseline run outperforming the `with_skill` run on
+this exact eval — the baseline ran `harness-audit` unprompted and fixed the staleness spots, the
+skill-guided run stopped at its own (incomplete) 4-step recipe. All three fixes already have
+dedicated tooling in this repo (`skills/inventory/scripts/sync-fleet-counts.sh` for the numeric
+triple, `harness-audit` checks 12 + 48 to catch anything left stale) — the skill just never told
+the reader to run them or named the two files the script can't reach on its own. Added one step to
+the checklist (run `sync-fleet-counts.sh`, hand-edit the two prose-only files for an agent
+addition, then `harness-audit` after validation, before commit) plus matching notes in the
+completion criterion and failure modes. **Not yet re-verified against a fresh fixture run** —
+`review-fixtures`' own suggested next step is to re-run fixtures after a fix to measure whether it
+actually closes the gap, and that re-run hasn't happened; this is a content fix judged correct by
+inspection, not (yet) empirically confirmed against a new `with_skill` fixture output. Full
+fixture-review record (dispatch prompts, 6 fixture outputs with grading, reconciled
+findings) in `add-surface-workspace/iteration-1/` (gitignored, local-only). A second,
+lower-severity finding from the same pass — a hook-removal test's now-orphaned shared helper
+(`test_allow_env`) left as dead code — was reported but not fixed in this round, out of scope
+for this fix. A separate, more severe finding from the same pass — `skills/inventory/scripts/
+inventory-boundary.sh`'s git-less fallback path silently truncating `BOUNDARY.md` to a stub, and
+`harness-audit` check 16 failing to catch it because it re-invokes the same buggy script
+internally — is unrelated to `add-surface`'s own content and was not fixed here; it's currently
+unreachable in the real repo since `.git` is always present there, only surfacing in this
+fixture's intentionally git-less sandbox.
+
 ## [0.68.141] — 2026-08-03
 
 Fresh-context `kbg:code-reviewer` verification pass on v0.68.139's round-aware `review-pr` footer
