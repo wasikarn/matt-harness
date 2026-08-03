@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Gate: ask on tathep-db MCP calls (mcp__tathep-db__execute_sql_*) unless the
-# statement is provably a simple read.
+# Gate: ask on any MCP execute_sql-shaped call (mcp__<server>__execute_sql*) unless the
+# statement is provably a simple read. Generic — matches any server, no config needed.
 #
 # THIS HOOK IS A BEST-EFFORT NUDGE, NOT THE SECURITY BOUNDARY. Classifying
 # arbitrary SQL as read-vs-write from the string is not something a hand-rolled
@@ -9,9 +9,9 @@
 # bypass in the previous "block the write verbs" design: string-literal-blind
 # comment stripping, /*! executable-comment mis-scan, the -- needs-whitespace
 # lexer rule, and writes reachable by verbs/indirection off the list (LOAD,
-# PREPARE/EXECUTE, SELECT ... INTO OUTFILE). The real write-protection for
-# tathep-db must live where it can be deterministic: a READ-ONLY DB grant /
-# connection for staging + anpr-staging (production is already dbhub readonly).
+# PREPARE/EXECUTE, SELECT ... INTO OUTFILE). The real write-protection for any DB an
+# MCP server exposes must live where it can be deterministic: a READ-ONLY DB grant /
+# connection for any non-production environment (production should already be readonly).
 # The database refusing a write is a real gate; a regex guessing at SQL is not.
 #
 # Given that, this gate is inverted to fail SAFE: it ALLOWS only statements it
@@ -126,7 +126,7 @@ def emit_ask(target, preview):
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
             "permissionDecisionReason": (
-                "db-write-gate: statement on tathep-db server <" + target +
+                "db-write-gate: statement on MCP SQL server <" + target +
                 "> is not a proven read (" + preview + "...). State the exact "
                 "statement and target DB, get explicit approval, then run."
             ),
@@ -138,7 +138,7 @@ try:
     tool = d.get("tool_name", "") or ""
     ti = d.get("tool_input", {}) or {}
 
-    if not re.match(r"^mcp__tathep-db__execute_sql", tool):
+    if not re.match(r"^mcp__.+__execute_sql", tool):
         sys.exit(0)
 
     statement = ti.get("query") or ti.get("sql") or ti.get("statement") or ti.get("text") or ""
@@ -161,5 +161,5 @@ try:
     emit_ask(target, preview)
 except Exception:
     # Cannot confirm this statement is a safe read -- fail toward asking.
-    emit_ask("tathep-db", "<unparsed tool input>")
+    emit_ask("mcp-sql", "<unparsed tool input>")
 '

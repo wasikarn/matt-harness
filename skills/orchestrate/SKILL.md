@@ -256,7 +256,7 @@ a visible, costed action, not silent background work.
 processed on a third-party cloud (Ollama's infrastructure, running a Zhipu/Moonshot model —
 neither is Anthropic nor this user's own infra). Two different tiers, not one:
 
-- **`github.com/100-Stars-Co/*` repos (tathep and siblings) — hard no, not user-overridable.**
+- **`github.com/100-Stars-Co/*` repos — hard no, not user-overridable.**
   The user's own `autoMode` `hard_deny` config (`~/.claude/settings.json`) already blocks sending
   proprietary code from these repos to any third-party LLM API, "via any path" — Ollama-cloud
   delegation is exactly that path (it redirects to a Zhipu/Moonshot backend, not Anthropic), and

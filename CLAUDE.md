@@ -66,7 +66,7 @@ Before starting primary-source research — fact-checking a claim, investigating
 verifying a citation — search the local `qmd` collections first, then query `context7` for any
 library/framework doc lookup, before reaching for `WebSearch`. Relevant collections: `kbg-research`
 (this repo's own `docs/research/`), `kbg-memory` (this repo's own memory store), `llm-wiki` (the
-operator's personal knowledge vault, 1,600+ docs spanning every project), plus the tathep/dotfiles
+operator's personal knowledge vault, 1,600+ docs spanning every project), plus other project-specific
 collections. Run `qmd status` (or the `status` MCP tool) for the full current list; scope a query
 to the relevant collections rather than searching all of them blind.
 
@@ -117,7 +117,7 @@ When creating or editing a skill under `skills/`, follow matt-pocock's `writing-
 
 Single branch: `develop` only. No feature branches. Commit and push direct.
 
-**Computationally enforced** by the `git worktree add -b` block in `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel — present in the kbg-harness repo, absent from tathep/ECC/scratch repos (which keep their existing `gate:write:worktree-guard` redirect). Detached `review-pr-<N>` worktrees in `$TMPDIR` are explicitly allowlisted so the Phase 2 PR-by-number review path keeps working.
+**Computationally enforced** by the `git worktree add -b` block in `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel — present in the kbg-harness repo, absent from other client/ECC/scratch repos (which keep their existing `gate:write:worktree-guard` redirect). Detached `review-pr-<N>` worktrees in `$TMPDIR` are explicitly allowlisted so the Phase 2 PR-by-number review path keeps working.
 
 A prior companion gate on the native `WorktreeCreate`/`WorktreeRemove` events (`gate:worktree:develop-only`, `hooks/gates/worktree-create-block.sh`) was removed 2026-07-31 — confirmed against raw Claude Code doc HTML that those events never send `tool_name`/`tool_input` at all, so its deny logic was dead code, and independent of that bug, registering any hook on `WorktreeCreate` replaces Claude Code's default worktree creation and requires the hook to emit the resulting path on success, which this one never did — so it was silently breaking every legitimate `WorktreeCreate`-triggered worktree (`isolation: "worktree"` agents/workflows, `claude --worktree`, background sessions) in every repo running this plugin, not just this one. The Bash-side check above is unaffected — `WorktreeCreate` never fires for Bash-invoked `git worktree add` in the first place. Full writeup: `docs/research/official-docs-audit-2026-07-31.md`.
 

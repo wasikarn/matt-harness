@@ -34,7 +34,7 @@
 # ponytail: bash-greps the raw JSON before paying the python3 cold-start
 # (~20ms) on every mcp__* call in every project loading this plugin --
 # "mcp__.*" also matches mongodb/code-review-graph/qmd/playwright/figma/
-# tathep-db, none of which this gate cares about. The grep is a permissive
+# any SQL-server MCP, none of which this gate cares about. The grep is a permissive
 # pre-filter (a superset of real matches, re-checked properly in python
 # against tool_name alone) -- it can only skip work that would exit 0 anyway,
 # never suppress a real block.
@@ -53,9 +53,9 @@
 # relying on this for anything higher-stakes than the current cold-start nudge.
 #
 # Escape hatch: KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 (precedent:
-# worktree-guard.py's TATHEP_ALLOW_MAIN_EDIT=1) -- cheap insurance if the
+# worktree-guard.py's KBG_ALLOW_MAIN_EDIT=1) -- cheap insurance if the
 # marker ever misfires; not documented in docs/reference/env-vars.md, same
-# as TATHEP_ALLOW_MAIN_EDIT isn't -- both are one-off manual overrides, not
+# as KBG_ALLOW_MAIN_EDIT isn't -- both are one-off manual overrides, not
 # operator-tunable knobs.
 set -uo pipefail
 

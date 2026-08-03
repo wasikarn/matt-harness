@@ -6,7 +6,7 @@
 
 A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get a fleet of specialist agents, workflow skills, and slash commands (see [What You Get](#what-you-get) for current counts), plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
-Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the Tathep platform stack demands it.
+Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the underlying backend stack demands it.
 
 ---
 
@@ -242,9 +242,9 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 | `task-prep-checker` | Fresh-context verifier for a `task-prep` handoff prompt — runs the golden-rule colleague test |
 
-### Tathep Platform
+### Backend Stack Patterns
 
-Tathep-scoped stack-pattern skills, kbg-native.
+Stack-specific pattern skills, kbg-native.
 
 | Skill | When to reach for it |
 |---|---|

@@ -219,7 +219,7 @@ EOF
 # Ticket + implementation-intent combo -> requirement-grounding reminder.
 # TICKET_KEY is a deliberate, labeled duplicate of jira-route-nudge.sh's TP-*
 # detection (kept in sync by hand -- see that file if this needs updating).
-# The pattern is frozen (TP-* is a fixed, tathep-only convention per
+# The pattern is frozen (TP-* is a fixed, client-specific convention per
 # CLAUDE.md), so duplicating THIS is lower-risk than duplicating this file's
 # own IMPL/THAI_IMPL verb regexes into jira-route-nudge.sh instead, which
 # have churned constantly (v0.35.7 through v0.36.0, several false-positive

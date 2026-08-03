@@ -21,6 +21,7 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 | Key class | Settable where | Why |
 |---|---|---|
 | **Tuning** (`KBG_IDEATE_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
+| **Safety-gate config** (`KBG_GUARDED_WORKSPACE`) | User-global `env` is the *only* placement that reliably reaches every session — a multi-repo client workspace typically has no per-sub-repo `.claude/settings.json` of its own, so a project-scoped setting at the workspace root is never read when a session opens directly in a sub-repo. | Unset = the gate is a total no-op (the shipped default for every user of this public plugin). This is deliberately NOT documented as a value in this repo — it names a real path outside the plugin's own source. |
 
 ## Autonomy flags — RETIRED 2026-06-26 (ADR 0006)
 
@@ -29,6 +30,21 @@ The `KBG_AUTONOMY` arming key, the `KBG_REVIEW_DONE` Gate-2 override, and the ol
 enforced maker-checker ship-gate. The harness denies the irrecoverable set computationally (the
 PreToolUse gates in `hooks/gates/`, no operator flag) and advises on the rest; the operator is the
 authority at every irreversible boundary. Do not re-arm.
+
+## Worktree-guard cluster (opt-in, off by default)
+
+Read by `hooks/gates/worktree-guard.py` (redirects Edit/Write off a protected main
+checkout into a session worktree) and the `bash -c` early-exit wrapper around it in
+`hooks/hooks.json`. This gate ships generic — no client name or workspace path in this
+repo's source — and is a **total no-op for every user of this public plugin** unless
+`KBG_GUARDED_WORKSPACE` is explicitly set.
+
+| Var | Default | Effect |
+|---|---|---|
+| `KBG_GUARDED_WORKSPACE` | **none — gate is off when unset** | Absolute path to the workspace root to protect. Must be absolute: the gate's own kill-switch (`classify()` in `worktree-guard.py`) treats an unset or non-absolute value as "off", not "guard the current directory" — a relative/empty value resolving via `realpath` to the current working tree was the exact bug this guards against. |
+| `KBG_WORKTREE_ROOT` | `~/.worktrees` | Where auto-created session worktrees live. Generic default, never client-specific. |
+| `KBG_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
+| `KBG_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
 ## Ideate cluster (model-honored)
 

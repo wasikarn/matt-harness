@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Behavioral tests for the worktree-guard gate (tathep-scoped PreToolUse redirect).
-# Uses the TATHEP_WORKSPACE / TATHEP_WT_ROOT env seams to run against throwaway repos —
-# never touches the real ~/Codes/Works/tathep or ~/.worktrees.
+# Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect).
+# Uses the KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT env seams to run against throwaway
+# repos — never touches any real workspace or ~/.worktrees.
 # Run standalone: bash hooks/tests/test-worktree-guard.sh
 set -uo pipefail
 
@@ -33,10 +33,10 @@ d.update({"session_id":sys.argv[2]} if len(sys.argv)>2 else {}); print(json.dump
 
 run_guard() { # run_guard <payload> [extra env as K=V ...]
   local p="$1"; shift
-  # TATHEP_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
+  # KBG_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
   # dev's own shell profile) can't silently no-op every deny/redirect assertion
   # below; env's last-wins semantics let "$@" still opt back in when a test wants it.
-  echo "$p" | env TATHEP_WORKSPACE="$WS" TATHEP_WT_ROOT="$WT" TATHEP_ALLOW_MAIN_EDIT= "$@" python3 "$GUARD"
+  echo "$p" | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= "$@" python3 "$GUARD"
 }
 
 check() { # check <desc> <ok:0|1>
@@ -68,9 +68,9 @@ ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "outside workspace: exit 0, no output" "$ok"
 
 # Escape hatch
-out=$(run_guard "$(payload "$WS/repo1/f.txt" sess1234)" TATHEP_ALLOW_MAIN_EDIT=1 2>/dev/null); rc=$?
+out=$(run_guard "$(payload "$WS/repo1/f.txt" sess1234)" KBG_ALLOW_MAIN_EDIT=1 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "TATHEP_ALLOW_MAIN_EDIT=1: exit 0, no output" "$ok"
+check "KBG_ALLOW_MAIN_EDIT=1: exit 0, no output" "$ok"
 
 # Workspace-root repo exempt
 out=$(run_guard "$(payload "$WS/notes.md" sess1234)" 2>/dev/null); rc=$?
@@ -98,19 +98,65 @@ out=$(run_guard "$(payload "$WT/repo1-wip-sessabcd/f.txt" sessabcd)" 2>/dev/null
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "edit inside the auto-worktree: no re-redirect" "$ok"
 
-# TATHEP_BASE=main → worktree based on origin/main, not the develop checkout
-out=$(run_guard "$(payload "$WS/repo2/f.txt" sessbase)" TATHEP_BASE=main 2>/dev/null); rc=$?
+# KBG_WORKTREE_BASE=main → worktree based on origin/main, not the develop checkout
+out=$(run_guard "$(payload "$WS/repo2/f.txt" sessbase)" KBG_WORKTREE_BASE=main 2>/dev/null); rc=$?
 got=$(git -C "$WT/repo2-wip-sessbase" rev-parse HEAD 2>/dev/null)
 ok=1
 [ "$rc" -eq 0 ] && [ "$got" = "$MAIN_SHA" ] && echo "$out" | /usr/bin/grep -q 'base origin/main' && ok=0
-check "TATHEP_BASE=main: worktree HEAD == origin/main tip, message names base" "$ok"
+check "KBG_WORKTREE_BASE=main: worktree HEAD == origin/main tip, message names base" "$ok"
 
-# Bogus TATHEP_BASE → fetch fails → fail-open to HEAD (still redirects)
-out=$(run_guard "$(payload "$WS/repo1/g.txt" sessbogus)" TATHEP_BASE=no-such-branch 2>/dev/null); rc=$?
+# Bogus KBG_WORKTREE_BASE → fetch fails → fail-open to HEAD (still redirects)
+out=$(run_guard "$(payload "$WS/repo1/g.txt" sessbogus)" KBG_WORKTREE_BASE=no-such-branch 2>/dev/null); rc=$?
 ok=1
 [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"updatedInput"' \
   && echo "$out" | /usr/bin/grep -q 'base current HEAD' && ok=0
-check "bogus TATHEP_BASE: fail-open to current HEAD, still redirects" "$ok"
+check "bogus KBG_WORKTREE_BASE: fail-open to current HEAD, still redirects" "$ok"
+
+# Kill-switch discriminator: CWD == the fake workspace root itself, but
+# KBG_GUARDED_WORKSPACE is unset. Without the "if not WORKSPACE or not isabs(...): return
+# None" guard in classify(), under(fp, "") resolves against CWD and would wrongly protect
+# repo1 (on develop, a protected branch) even though nothing is configured. With the
+# guard: total no-op regardless of CWD. This is the real regression witness for that
+# line — a python-side _selftest() assertion can't discriminate it (traced: a nonexistent
+# path returns None earlier via the "not a git repo" branch, and a path at the repo root
+# hits the pre-existing workspace-root exemption either way).
+out=$(cd "$WS" && echo "$(payload "$WS/repo1/f.txt" sesskill)" \
+  | env -u KBG_GUARDED_WORKSPACE -u KBG_WORKTREE_ROOT -u KBG_WORKTREE_BASE -u KBG_ALLOW_MAIN_EDIT \
+  python3 "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "KBG_GUARDED_WORKSPACE unset, cwd==fake workspace root: still exit 0 (kill-switch, not cwd-guard)" "$ok"
+
+# Unset in the ordinary case (no adversarial cwd either) -> total no-op.
+out=$(echo "$(payload "$TMP/elsewhere2.txt" sessnorm)" \
+  | env -u KBG_GUARDED_WORKSPACE python3 "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "KBG_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
+
+# Wrapper-string test: this is the only exercise the actual hooks.json bash -c string
+# ever gets (shellcheck never lints an embedded JSON string value). Extract it exactly
+# as shipped and run it in isolated subshells so env changes don't leak into the rest of
+# this script.
+WRAPPER_CMD=$(python3 -c "
+import json
+d = json.load(open('$ROOT/hooks/hooks.json'))
+for blk in d['hooks']['PreToolUse']:
+    if blk.get('id') == 'gate:bash:worktree-guard':
+        print(blk['hooks'][0]['command'])
+        break
+")
+ok=1; [ -n "$WRAPPER_CMD" ] && ok=0
+check "wrapper command string extracted from hooks.json" "$ok"
+
+out=$( (unset KBG_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR CLAUDE_PLUGIN_ROOT
+  echo '{}' | eval "$WRAPPER_CMD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "wrapper string: var unset -> exit 0, no output (python never spawned)" "$ok"
+
+bashpayload=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "echo x >> $WS/repo1/f.txt")
+out=$( (export KBG_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE_PLUGIN_ROOT="$ROOT"
+  echo "$bashpayload" | eval "$WRAPPER_CMD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "wrapper string: var set + Bash write to protected checkout -> deny exit 2" "$ok"
 
 echo ""
 total=$((pass + fail))

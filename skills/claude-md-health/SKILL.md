@@ -5,7 +5,7 @@ description: "Scan a CLAUDE.md/doctrine file against 3 health checks (readable-b
 
 # CLAUDE.md Health Audit
 
-Source: the Harness Handbook paper (behavior localization + BGPD funnel), applied to kbg-harness's own CLAUDE.md, the global `~/.claude/CLAUDE.md`, and the tathep monorepo root CLAUDE.md across a 2026-07-18 session — three manual runs, real findings every time. This skill is that manual process made repeatable.
+Source: the Harness Handbook paper (behavior localization + BGPD funnel), applied to kbg-harness's own CLAUDE.md, the global `~/.claude/CLAUDE.md`, and a client monorepo root CLAUDE.md across a 2026-07-18 session — three manual runs, real findings every time. This skill is that manual process made repeatable.
 
 Applies to any CLAUDE.md-shaped governance file: a repo's own CLAUDE.md, the global one, a monorepo root navigator, or a doc one of those cites as canonical.
 

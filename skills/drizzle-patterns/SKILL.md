@@ -3,9 +3,6 @@ name: drizzle-patterns
 description: "Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM."
 metadata:
   origin: kbg
-  tathep_projects:
-    - tathep-anpr-service
-    - tathep-video-processing
 ---
 
 # Drizzle ORM Patterns

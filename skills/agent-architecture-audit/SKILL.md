@@ -100,7 +100,7 @@ grep -r "fallback\|retry.*llm\|repair.*prompt\|rewrite.*response" --include="*.p
 
 Do not lead with summaries or compliments. If the system is broken, say so directly.
 
-## tathep-ai-agent-python application
+## LangGraph agent application
 
 Apply Layers 1–8 for LangGraph agents:
 - **Layer 6–7** — verify every `interrupt()` placement is code-enforced, not just described in a comment

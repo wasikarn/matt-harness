@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-# ponytail: tathep worktree guard (moved from dotfiles 2026-07-02). Redirects Edit/Write on
+# ponytail: generic worktree guard (moved from dotfiles 2026-07-02). Redirects Edit/Write on
 # a SUB-repo's main checkout so parallel terminals can't clobber one shared working tree.
 # Branch alone can't fix this — one repo dir = one working tree regardless of branch; the
 # worktree is the isolation. Auto-creates a session-scoped worktree under WT_ROOT and
 # transparently redirects the edit there via PreToolUse updatedInput.
 # ponytail: branch name is `wip/<session-id>` — session_id is the only stable identifier
-# this hook has. Rename the branch to TP-XXX before opening a PR.
-# Base selection: TATHEP_BASE=<branch> fetches origin/<branch> and bases the auto-worktree
-# there (hotfix sessions: TATHEP_BASE=main — see tathep CLAUDE.md § Branching). Unset =
-# current HEAD of the main checkout, which can lag origin; prefer an explicit worktree for
-# hotfix work. Fetch failure falls back to HEAD — never blocks editing on network.
-# Exempt: workspace-root repo (docs/standups/plans) and anything outside the tathep
-# workspace — this gate is a NO-OP for every other project the plugin loads in.
-# Fails OPEN on any error. Escape: TATHEP_ALLOW_MAIN_EDIT=1.
-# Test seams: TATHEP_WORKSPACE / TATHEP_WT_ROOT override the default roots.
+# this hook has. Rename the branch to your ticket key before opening a PR.
+# Base selection: KBG_WORKTREE_BASE=<branch> fetches origin/<branch> and bases the
+# auto-worktree there (hotfix sessions: KBG_WORKTREE_BASE=main). Unset = current HEAD of
+# the main checkout, which can lag origin; prefer an explicit worktree for hotfix work.
+# Fetch failure falls back to HEAD — never blocks editing on network.
+# Guarded workspace is opt-in and unset by default: KBG_GUARDED_WORKSPACE has NO default,
+# so this gate is a total NO-OP for every project unless the operator sets it (this is a
+# public plugin — no client/workspace path ships in this file). Exempt even when set: the
+# workspace-root repo itself (docs/standups/plans).
+# Fails OPEN on any error. Escape: KBG_ALLOW_MAIN_EDIT=1.
+# Test seams: KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT override the default roots.
 # Bash coverage (2026-07-16): the Write/Edit/NotebookEdit matcher never sees a
 # Bash-mediated write (echo >>, sed -i, tee, cp/mv) to a protected checkout —
 # the same blind spot verifier-protect.sh closed for the verifier surfaces on
@@ -24,8 +26,8 @@
 # unconditional redirect, or the gap this fix closes reopens on the Bash side.
 import json, os, re, shlex, subprocess, sys
 
-WORKSPACE = os.path.expanduser(os.environ.get("TATHEP_WORKSPACE", "~/Codes/Works/tathep"))
-WT_ROOT = os.path.expanduser(os.environ.get("TATHEP_WT_ROOT", "~/.worktrees"))
+WORKSPACE = os.path.expanduser(os.environ.get("KBG_GUARDED_WORKSPACE", ""))
+WT_ROOT = os.path.expanduser(os.environ.get("KBG_WORKTREE_ROOT", "~/.worktrees"))
 PROTECTED = {"main", "master", "develop"}
 
 
@@ -174,11 +176,13 @@ def bash_write_targets(cmd):
 
 def classify(fp):
     """fp is an already-abspath'd candidate file path. Returns
-    (repo, top, why, branch) if it sits on a protected tathep main checkout
-    or protected branch, else None (out of scope or already safe — a real
-    worktree on a non-protected branch). Shared by both the Write/Edit path
-    and the Bash path so they can't drift into two different definitions of
-    "protected"."""
+    (repo, top, why, branch) if it sits on a protected main checkout
+    or protected branch inside the configured guarded workspace, else None
+    (out of scope or already safe — a real worktree on a non-protected
+    branch). Shared by both the Write/Edit path and the Bash path so they
+    can't drift into two different definitions of "protected"."""
+    if not WORKSPACE or not os.path.isabs(WORKSPACE):
+        return None  # unset/relative KBG_GUARDED_WORKSPACE -> gate is off, not "guard cwd"
     if not under(fp, WORKSPACE):
         return None  # other projects untouched
     cwd = nearest_dir(fp)
@@ -203,17 +207,17 @@ def classify(fp):
 def deny(repo, top, why):
     print(
         f"⛔ {repo}: editing on {why}. Parallel terminals here clobber one working tree.\n"
-        f"Create a worktree first (all tathep worktrees live under {WT_ROOT}/):\n"
-        f"  git -C {top} worktree add {WT_ROOT}/{repo}-TP-XXX -b feature/TP-XXX-slug\n"
-        f"  cd {WT_ROOT}/{repo}-TP-XXX\n"
-        f"then re-run the edit there. One-off override: TATHEP_ALLOW_MAIN_EDIT=1",
+        f"Create a worktree first (all worktrees live under {WT_ROOT}/):\n"
+        f"  git -C {top} worktree add {WT_ROOT}/{repo}-<ticket> -b feature/<ticket>-slug\n"
+        f"  cd {WT_ROOT}/{repo}-<ticket>\n"
+        f"then re-run the edit there. One-off override: KBG_ALLOW_MAIN_EDIT=1",
         file=sys.stderr,
     )
     return 2
 
 
 def main():
-    if os.environ.get("TATHEP_ALLOW_MAIN_EDIT") == "1":
+    if os.environ.get("KBG_ALLOW_MAIN_EDIT") == "1":
         return 0
     try:
         data = json.load(sys.stdin)
@@ -251,7 +255,7 @@ def main():
     slug = session[:8]
     wt_dir = os.path.join(WT_ROOT, f"{repo}-wip-{slug}")
     branch_name = f"wip/{slug}"
-    base = os.environ.get("TATHEP_BASE", "").strip()
+    base = os.environ.get("KBG_WORKTREE_BASE", "").strip()
     start = ""
     if base and git_ok(["fetch", "origin", base], top):
         start = f"origin/{base}"
@@ -288,7 +292,7 @@ def main():
         "systemMessage": (
             f"{repo}: redirected edit off {why} -> {os.path.basename(wt_dir)} "
             f"(branch {branch_name}, base {based_on}). For hotfix work base must be the "
-            f"production branch — set TATHEP_BASE=main (or create the hotfix worktree explicitly). "
+            f"production branch — set KBG_WORKTREE_BASE=main (or create the hotfix worktree explicitly). "
             f"Rename the branch before opening a PR."
         ),
     }))

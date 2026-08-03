@@ -89,9 +89,9 @@
         ]
       },
       {
-        "id": "gate:db:tathep-write",
-        "matcher": "mcp__tathep-db__execute_sql.*",
-        "description": "Gate: ask on non-SELECT tathep-db MCP calls (execute_sql_production/_staging/_anpr_staging). Restores coverage lost when hooks/db-write-gate.sh was deleted in the v0.6.0 reset. No-op when tathep-db isn't configured (matcher never fires).",
+        "id": "gate:db:sql-write",
+        "matcher": "mcp__.*__execute_sql.*",
+        "description": "Gate: ask on non-SELECT execute_sql-shaped MCP calls, on any server. Restores coverage lost when hooks/db-write-gate.sh was deleted in the v0.6.0 reset. No-op when no such MCP server is configured (matcher never fires).",
         "hooks": [
           {
             "type": "command",
@@ -139,22 +139,22 @@
       {
         "id": "gate:write:worktree-guard",
         "matcher": "Write|Edit|NotebookEdit",
-        "description": "Gate: tathep-scoped — redirect Edit/Write on a tathep sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via TATHEP_BASE, e.g. =main for hotfix). No-op outside the tathep workspace. Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when CLAUDE_PROJECT_DIR is known and outside the tathep workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the tathep path spawns python.",
+        "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via KBG_WORKTREE_BASE, e.g. =main for hotfix). Opt-in and off by default: no-op everywhere unless KBG_GUARDED_WORKSPACE is set (this is a public plugin — no workspace path ships in code). Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when the var is unset or CLAUDE_PROJECT_DIR is known and outside the guarded workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the guarded path spawns python.",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'w=\"${TATHEP_WORKSPACE:-$HOME/Codes/Works/tathep}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
+            "command": "bash -c 'w=\"${KBG_GUARDED_WORKSPACE:-}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -z \"$w\" || ( \"$w\" == /* && -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ) ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
           }
         ]
       },
       {
         "id": "gate:bash:worktree-guard",
         "matcher": "Bash",
-        "description": "Gate: tathep-scoped — deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a tathep sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. No-op outside the tathep workspace.",
+        "description": "Gate: deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a guarded sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default: no-op everywhere unless KBG_GUARDED_WORKSPACE is set.",
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'w=\"${TATHEP_WORKSPACE:-$HOME/Codes/Works/tathep}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
+            "command": "bash -c 'w=\"${KBG_GUARDED_WORKSPACE:-}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -z \"$w\" || ( \"$w\" == /* && -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ) ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
           }
         ]
       }
