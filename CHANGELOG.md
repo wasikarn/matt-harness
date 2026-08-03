@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.151] — 2026-08-03
+
+`/kbg:iterate-skill ship-merge` loop 1: closed 3 target-attributable findings from a
+`/kbg:review-fixtures ship-merge` 2-reviewer pass against `commands/ship-merge.md`'s Phase 1
+scored gate. Critical: the automation-bias guard checked `review_mode is "own-branch"` as a
+positive match, so a missing/malformed field silently bypassed the guard instead of tripping it
+on a sensitive-path diff — changed to a deny-list check (only `"pr-by-number"` is trusted).
+Major: no guidance for a self-contradictory review-state file (`clean: false` with
+`rehunt: "clean"`) — now treated the same as an incomplete review. Minor: no validation for a
+malformed `critical_count` (negative/non-numeric/absent) — now scored 0, same as an unreadable
+file. A follow-up fixture round surfaced a second gap in the automation-bias fix itself: a
+missing `review_mode` field could still be inferred from the review-state file's own path (the
+unkeyed `review-last.json` convention), a bridge a resourceful reader could make but the guard's
+wording never stated — added an explicit clause so the guard doesn't depend on the reader making
+that connection unprompted. This second gap also means the fixture built to test the fail-open
+case (`eval-automation-bias-malformed-review-mode`) can't discriminate old vs. new wording via a
+tally delta — both a careful pre-patch reader and the patched text reach the same correct
+verdict, just one via an unstated inferential leap and the other by explicit instruction; the
+case for the fix is textual-precision, not a measured regression fixed. Full analysis in
+`ship-merge-workspace/iteration-3/README.md` (gitignored, local-only).
+
 ## [0.68.148] — 2026-08-03
 
 `harness-audit` check 02 (skill-symlink integrity) didn't skip `*-workspace/` directories the way
