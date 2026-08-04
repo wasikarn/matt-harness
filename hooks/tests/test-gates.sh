@@ -486,10 +486,19 @@ test_allow "$DB_WRITE_GATE" "EXPLAIN ANALYZE of a read stays allowed" \
 test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
   "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
 # Generalization proof: the matcher/regex is server-name-agnostic now
-# (^mcp__.+__execute_sql) — a completely different server name must still ask
+# (^mcp__.*__execute_sql) — a completely different server name must still ask
 # on a write, with zero config. This is the whole point of the de-clienting.
 test_ask   "$DB_WRITE_GATE" "a different server name entirely still gates a write (generic match)" \
   "$(mcp_sql_payload 'mcp__postgres__execute_sql' 'DELETE FROM users')"
+# hooks.json's matcher ("mcp__.*__execute_sql.*") is zero-or-more on the server
+# segment; the script's own check must match that scope exactly, or a
+# degenerate empty-server tool name that trips the outer trigger would fall
+# through the inner check unclassified -> silent exit 0, no ask (a real
+# never-silently-allow violation, even though no live MCP server ever emits
+# an empty name). Confirmed live-fire during the compliance audit: `^mcp__.+`
+# left this asking nothing; `^mcp__.*` closes it.
+test_ask   "$DB_WRITE_GATE" "empty server-name segment still gates a write (outer/inner scope parity)" \
+  "$(mcp_sql_payload 'mcp____execute_sql' 'DELETE FROM users')"
 test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \
   '{not valid json'
 

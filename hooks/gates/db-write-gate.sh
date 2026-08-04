@@ -138,7 +138,7 @@ try:
     tool = d.get("tool_name", "") or ""
     ti = d.get("tool_input", {}) or {}
 
-    if not re.match(r"^mcp__.+__execute_sql", tool):
+    if not re.match(r"^mcp__.*__execute_sql", tool):
         sys.exit(0)
 
     statement = ti.get("query") or ti.get("sql") or ti.get("statement") or ti.get("text") or ""
