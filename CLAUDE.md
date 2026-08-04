@@ -123,6 +123,14 @@ A prior companion gate on the native `WorktreeCreate`/`WorktreeRemove` events (`
 
 **Never run `mattpocock-skills:git-guardrails-claude-code`'s setup in this repo.** That skill wires a PreToolUse hook blocking *all* `git push` unconditionally (not just `--force`) — direct conflict with this section's "commit and push direct" workflow. Not currently installed here (verified 2026-08-01: no `.claude/settings.json` in this repo, no match in the global one) — this is a standing caveat against ever running it here, not a fix for an active problem.
 
+### Concurrent sessions
+
+The single-branch, no-worktree design above means concurrent Claude Code sessions on this repo share one working tree — there's no isolation to fall back on, so discipline has to substitute for it:
+
+- **Stage by explicit path only**, never `git add -A`/`git add .` (already required by the "Stage by name" rule below) — before staging, run `git status --porcelain` and confirm every listed file is one you actually touched this session. A file you don't recognize is probably another session's in-progress work, not junk.
+- **Re-read `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` immediately before writing a commit message that references the version** — another session may have bumped it since you last checked, and a stale version number in a commit message is worse than no version number.
+- **A scratch/workspace dir reappearing after you thought it was cleaned up** (e.g. a fixture workspace, `skills/pr-workspace/`) is a signal another session owns it right now — leave it alone rather than deleting or restaging over it.
+
 ## Non-obvious gotchas
 
 Grouped by behavior area (not a flat bucket — find the group first, then the line).
