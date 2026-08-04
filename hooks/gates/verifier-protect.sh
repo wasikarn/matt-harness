@@ -126,6 +126,25 @@ def _newlines_to_seps(cmd):
     cmd = cmd.replace("\n", "\n; ")
     return cmd.replace(placeholder, "\\\n")
 
+
+def _diff_targets(path):
+    # Read a diff/patch file and yield the real write targets named in its
+    # +++ b/<path> headers -- a patch/git-apply/am command argv never names
+    # the file it actually writes; that lives inside the diff content.
+    # Best-effort: an unreadable path (nonexistent, a stray redirect-operator
+    # token, a binary diff) is silently skipped.
+    try:
+        with open(path, "r", errors="ignore") as f:
+            for line in f:
+                if line.startswith("+++ "):
+                    p = line[4:].strip()
+                    if p.startswith("b/"):
+                        p = p[2:]
+                    if p and p != "/dev/null":
+                        yield p
+    except OSError:
+        pass
+
 def emit_ask(fp, reason=None):
     print(json.dumps({
         "hookSpecificOutput": {
@@ -277,33 +296,44 @@ def bash_write_targets(cmd):
                 yield nonflag[-1]
         elif argv0 == "tar":
             # Extract mode writes files into -C/--directory when present. When
-            # absent (tar xf a.tar, the common case -- writes into cwd) this
-            # branch yields NOTHING, so is_verifier_path is never even called
-            # on that case -- a real gap, not covered by anything else here.
-            # Confirmed 2026-08-04 (silent-failure-hunter round 4): an earlier
-            # version of this comment claimed cwd was covered elsewhere; it
-            # was not. Old-style bare mode clusters (tar xf a.tar) and
-            # dash-prefixed ones (-xf) both put the mode letters in the first
-            # arg after argv0.
+            # absent (tar xf a.tar, the common case -- writes into cwd), yield
+            # cwd itself via ".". Known residual gap even with this fallback:
+            # is_verifier_path checks a substring/endswith pattern against
+            # the resolved path, and "." rarely spells out a protected
+            # pattern on its own -- closing that fully would need a
+            # different check shape, tracked separately, not attempted here
+            # (confirmed 2026-08-04, silent-failure-hunter round 4).
             mode_str = rest[0] if rest and not rest[0].startswith("--") else ""
             has_extract = ("x" in mode_str.lstrip("-")) or ("--extract" in rest)
             if has_extract:
+                yielded_dir = False
                 for j, t in enumerate(rest):
                     if t in ("-C", "--directory") and j + 1 < len(rest):
                         yield rest[j + 1]
+                        yielded_dir = True
                         break
                     if t.startswith("--directory="):
                         yield t[len("--directory="):]
+                        yielded_dir = True
                         break
+                if not yielded_dir:
+                    yield "."
         elif argv0 == "patch":
-            # patch <file> < diff rewrites <file> in place; -o/--output
-            # redirects elsewhere. Target is a plain nonflag arg either way.
+            # patch <file> < diff rewrites <file> in place -- already handled
+            # by the plain nonflag yield below. The common multi-file form
+            # (patch -pN < diff.patch, or a patch-file arg instead of stdin)
+            # names its real targets inside the diff +++ b/<path> headers,
+            # never in argv -- confirmed exploitable 2026-08-04 (silent-
+            # failure-hunter round 4): a diff-content scan on every nonflag
+            # token closes it, the same technique already used below for git
+            # apply/am.
             for j, t in enumerate(rest):
                 if t in ("-o", "--output") and j + 1 < len(rest):
                     yield rest[j + 1]
             for t in nonflag:
                 yield t
-        elif argv0 == "git" and rest and rest[0] in ("apply", "am"):
+                yield from _diff_targets(t)
+        elif argv0 == "git":
             # The real target of git apply or git am lives inside the diff
             # +++ b/path lines, not argv -- the natural way to silently rewrite
             # a gate file in one command (found in the v0.36.0-fix follow-up
@@ -312,21 +342,25 @@ def bash_write_targets(cmd):
             # readable, scan it for the paths it actually touches. A diff piped
             # via stdin (git apply < x.diff) or an obfuscated target inside the
             # diff is outside this bounded idiom set -- not an adversarial
-            # sandbox.
-            diff_args = [t for t in rest[1:] if not t.startswith("-")]
-            for t in diff_args:
-                yield t
-                try:
-                    with open(t, "r", errors="ignore") as f:
-                        for line in f:
-                            if line.startswith("+++ "):
-                                p = line[4:].strip()
-                                if p.startswith("b/"):
-                                    p = p[2:]
-                                if p != "/dev/null":
-                                    yield p
-                except OSError:
-                    pass
+            # sandbox. git -C <dir> apply/am puts the real subcommand one slot
+            # later than a bare "git apply" -- missing this dispatch left the
+            # whole -C form invisible to this generator (confirmed 2026-08-04,
+            # silent-failure-hunter round 4, folded into the same fix pass
+            # since it is the identical apply/am gap one token over). -C also
+            # relocates where a relative in-diff target resolves, same as
+            # patch -d/--directory above -- found the hard way: an earlier
+            # version of this fix dispatched into the branch correctly but
+            # still resolved the diff relative path against the cwd the hook
+            # runs in, missing the actual -C directory entirely.
+            sub_idx, directory = 0, None
+            if len(rest) > 1 and rest[0] == "-C":
+                sub_idx, directory = 2, rest[1]
+            if len(rest) > sub_idx and rest[sub_idx] in ("apply", "am"):
+                diff_args = [t for t in rest[sub_idx + 1:] if not t.startswith("-")]
+                for t in diff_args:
+                    yield t
+                    for target in _diff_targets(t):
+                        yield os.path.join(directory, target) if directory else target
         elif argv0 == "dd":
             # dd of=<path> writes to <path>. /dev/ raw-device writes are
             # denied by irrecoverable.sh; here we surface non-/dev of= targets

@@ -74,6 +74,48 @@ for row in "${BATTERY[@]}"; do
   check "battery: $desc" "$ok"
 done
 
+# Round-4 regression tests (found 2026-08-04 by a subagent_type:kbg:silent-failure-hunter
+# dispatch covering both worktree-guard.py and verifier-protect.sh together -- a different
+# idiom family than the same-day preprocessing fixes above: git apply/am and patch never
+# scanned diff CONTENT for the real +++ b/<path> target, and bare tar extraction (no -C)
+# yielded no candidate at all. All 3 were already disclosed as deferred follow-ups in this
+# repo's own v0.68.171 CHANGELOG entry; closed here as their own scoped piece of work.
+DIFF_FILE="${TMPDIR:-/tmp}/kbg-vp-round4-evil.diff"
+printf -- '--- a/hooks/gates/irrecoverable.sh\n+++ b/hooks/gates/irrecoverable.sh\n@@ -1,1 +1,1 @@\n-x\n+evil\n' > "$DIFF_FILE"
+BENIGN_DIFF="${TMPDIR:-/tmp}/kbg-vp-round4-benign.diff"
+printf -- '--- a/README.md\n+++ b/README.md\n@@ -1,1 +1,1 @@\n-x\n+y\n' > "$BENIGN_DIFF"
+
+out=$(payload_bash "git apply $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "git apply: real target lives in diff content, not argv -> ask" "$ok"
+
+out=$(payload_bash "git apply $BENIGN_DIFF" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "git apply against a diff touching nothing protected -> exit 0, no false ask" "$ok"
+
+# -C relocates where a relative in-diff target resolves. The first version of this fix
+# dispatched into apply/am correctly for -C but still resolved the diff's relative target
+# against the hook's own cwd -- confirmed the hard way while building this round's fix.
+out=$(payload_bash "git -C $ROOT apply $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -> ask" "$ok"
+
+out=$(payload_bash "patch -p1 < $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "patch, stdin-piped: real target lives in diff content, not argv -> ask" "$ok"
+
+out=$(payload_bash "patch --directory=$ROOT -p1 < $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "patch --directory=: real target resolves against it, not bare cwd -> ask" "$ok"
+
+out=$( (cd "$ROOT/hooks/gates" && payload_bash "tar xf archive.tar" | bash "$GUARD") 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "tar xf, no -C, cwd itself is inside hooks/gates -> ask" "$ok"
+
+out=$(payload_bash "tar xf archive.tar" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "tar xf, no -C, cwd is repo root (documented residual gap, not a regression) -> exit 0" "$ok"
+
 # path-hardcode block still wins over ask (folded gate, pre-existing, sanity only).
 # Built via concatenation, not a literal contiguous string, so this test file itself
 # does not trip the very gate it is testing when this test file is written/edited.

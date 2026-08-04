@@ -31,6 +31,10 @@ payload() { # payload <file_path> [session_id]
 d.update({"session_id":sys.argv[2]} if len(sys.argv)>2 else {}); print(json.dumps(d))' "$@"
 }
 
+payload_bash() { # payload_bash <command>
+  python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$1"
+}
+
 run_guard() { # run_guard <payload> [extra env as K=V ...]
   local p="$1"; shift
   # KBG_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
@@ -311,6 +315,51 @@ while IFS=$'\t' read -r status desc detail; do
   ok=1; [ "$status" = "PASS" ] && ok=0
   check "battery: $desc ($detail)" "$ok"
 done <<< "$BATTERY_OUT"
+
+# Round-4 regression tests (found 2026-08-04 by a subagent_type:kbg:silent-failure-hunter
+# dispatch covering both worktree-guard.py and verifier-protect.sh together -- a different
+# idiom family than rounds 1-3: git apply/am and patch never scanned diff CONTENT for the
+# real +++ b/<path> target, and bare tar extraction (no -C) yielded no candidate at all.
+# All 3 were already disclosed as deferred follow-ups in this repo's own v0.68.171
+# CHANGELOG entry; closed here as their own scoped piece of work per explicit user choice.
+DIFF_FILE="$TMP/evil.diff"
+printf -- '--- a/f.txt\n+++ b/f.txt\n@@ -1,1 +1,1 @@\n-x\n+evil\n' > "$DIFF_FILE"
+
+out=$( (cd "$WS/repo1" && echo "$(payload_bash "git apply $DIFF_FILE")" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git apply: real target lives in diff content (+++ b/f.txt), not argv -> deny exit 2" "$ok"
+
+# The first version of this fix dispatched into git apply/am correctly for -C but still
+# resolved the diff's relative target against the hook's own cwd instead of the -C value --
+# confirmed the hard way while building this round's fix, not assumed clean. Run from $WS
+# itself (the exempt workspace root) so a naive cwd-relative resolution would silently pass.
+out=$( (cd "$WS" && echo "$(payload_bash "git -C $WS/repo1 apply $DIFF_FILE")" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -> deny exit 2" "$ok"
+
+# patch's -d/--directory relocates where a relative in-diff target resolves, same class of
+# bug as git -C above. Run from $TMP (neutral, outside any repo) so a naive cwd-relative
+# resolution would silently pass.
+out=$( (cd "$TMP" && echo "$(payload_bash "patch --directory=$WS/repo1 -p1 < $DIFF_FILE")" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "patch --directory=: real target resolves against it, not bare cwd -> deny exit 2" "$ok"
+
+# tar xf with no -C writes into cwd; the branch used to yield nothing at all for this form.
+out=$( (cd "$WS/repo1" && echo "$(payload_bash "tar xf archive.tar")" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "tar xf, no -C: cwd itself is the implicit target -> deny exit 2" "$ok"
+
+# Negative: git apply against a diff that does not touch a protected path must not false-deny.
+BENIGN_DIFF="$TMP/benign.diff"
+printf -- '--- a/README.md\n+++ b/README.md\n@@ -1,1 +1,1 @@\n-old\n+new\n' > "$BENIGN_DIFF"
+out=$( (cd "$TMP" && echo "$(payload_bash "git apply $BENIGN_DIFF")" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "git apply against a diff outside the workspace: exit 0, no false deny" "$ok"
 
 echo ""
 total=$((pass + fail))

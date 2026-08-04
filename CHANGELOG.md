@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.176] — 2026-08-04
+
+Closes the 3 findings v0.68.175 tracked as follow-ups rather than fixed same-turn, per an
+explicit user choice to make it its own scoped piece of work (reversing the initial
+defer-them decision one turn later). All 3 land in both `worktree-guard.py` and
+`verifier-protect.sh`, sharing a new `_diff_targets()` helper in each file:
+
+1. **`git apply`/`git am` and `patch` never scanned diff CONTENT** for the real
+   `+++ b/<path>` target — a command's own argv never names what it actually writes for
+   either idiom, only the diff/patch file's location. `worktree-guard.py` never had this
+   scan at all; `verifier-protect.sh` had it for `git apply`/`am` only (from an earlier,
+   pre-today fix) but never extended it to `patch`.
+2. **`-C <dir>` (git) / `-d`/`--directory=` (patch) relocate where a relative in-diff
+   target resolves**, and neither file accounted for it. Found the hard way while
+   building this fix, not assumed clean: an earlier draft correctly dispatched into the
+   `git -C <dir> apply` form but still resolved the diff's target against the hook's own
+   cwd instead of the `-C` value — caught by a test written to run from the exempt
+   workspace root specifically, so a naive cwd-relative resolution would have silently
+   passed.
+3. **Bare `tar xf` (no `-C`) yielded no candidate at all** — extraction into cwd went
+   completely unchecked in both files. Fixed by yielding `.` as the implicit target.
+   `worktree-guard.py`'s existing cwd-relative `classify()` resolution catches this
+   correctly; `verifier-protect.sh`'s substring-based `is_verifier_path()` does not, since
+   `.` alone rarely spells out a protected pattern — a known, explicitly documented
+   residual gap, not silently glossed over.
+
+10 new regression tests total (5 per file), test-honesty verified against each file's
+pre-round-4 code: `worktree-guard.py` 34/38 → 38/38 (exactly the 4 fix-relevant
+assertions failing pre-fix); `verifier-protect.sh` 16/20 → 20/20 (4 of 5 new assertions
+distinguish — the base `git apply` case already worked in that file before today, so it
+correctly passes both ways, not a test-design gap). Full gauntlet green.
+
 ## [0.68.175] — 2026-08-04
 
 Round-4 `subagent_type: kbg:silent-failure-hunter` re-verification, dispatched against
