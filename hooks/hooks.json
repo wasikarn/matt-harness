@@ -198,18 +198,6 @@
             "timeout": 10
           }
         ]
-      },
-      {
-        "id": "stop:thai-summary-gate",
-        "description": "Stop: block a substantial reply (>=400 chars) from ending until it carries Thai script, mechanically enforcing global CLAUDE.md's Task Completion Summary rule. Blocks at most once per turn (stop_hook_active gate); fails safe (allows stop) on missing jq or malformed input.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/thai-summary-gate.sh"],
-            "timeout": 10
-          }
-        ]
       }
     ],
     "SessionEnd": [

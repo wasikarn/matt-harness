@@ -107,7 +107,7 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 **Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
 
-When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking + turn-completion format gate — the one Stop hook, `thai-summary-gate.sh`, that blocks; kept in stop/ rather than gates/ since it's a response-format check, not an irrecoverable-action deny).
+When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
 
 ## Skill authoring doctrine (matt-pocock)
 

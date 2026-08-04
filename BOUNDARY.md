@@ -102,14 +102,13 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. Output goes to stdout → CC injects it as system context for the session. |
 | cost-tracker.sh | Stop: log cumulative per-model token usage to ~/.local/share/kbg/metrics/costs.jsonl |
-| thai-summary-gate.sh | Stop: gate a substantial reply on carrying a short Thai closing summary. |
 | test-compliance-audit-nudge.sh | compliance-audit-nudge unit tests: simulates PostToolUse/Bash JSON payloads (with a real fixture transcript file for the ExitPlanMode-detection cases) and asserts stdout output (JSON with additionalContext) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash hooks/tests/test-compliance-audit-nudge.sh |
 | test-flow-nudge.sh | Flow-nudge unit tests: simulates UserPromptSubmit JSON payloads and asserts stdout output (nudge fired) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash hooks/tests/test-flow-nudge.sh |
 | test-gates.sh | Gate unit tests: simulates PreToolUse JSON payloads and asserts allow/deny/ask. Each test_deny call expects exit 2; test_allow expects exit 0 + empty stdout; test_ask expects exit 0 + a permissionDecision: ask JSON on stdout. Run standalone: bash hooks/tests/test-gates.sh |
 | test-jira-route-nudge.sh | jira-route-nudge unit tests: simulates UserPromptSubmit JSON payloads and asserts stdout output (nudge fired) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash hooks/tests/test-jira-route-nudge.sh |
 | test-learn-nudge.sh | learn-nudge unit tests: simulates SessionEnd JSON payloads pointing at a fixture transcript, asserts stderr output (nudge fired) vs silence (nudge skipped) and that stdout is ALWAYS empty (SessionEnd stdout is discarded — a hook that wrote a nudge there would be dead-at-birth). The hook never blocks (SessionEnd has no decision control), so all tests expect exit 0. Run standalone: bash hooks/tests/test-learn-nudge.sh |
 | test-plan-review-nudge.sh | plan-review-nudge unit tests: simulates PostToolUse/ExitPlanMode JSON payloads and asserts stdout output (JSON with additionalContext) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash hooks/tests/test-plan-review-nudge.sh |
-| test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), command-root-anchor (SessionStart), cost-tracker (Stop), thai-summary-gate (Stop). doctrine-bootstrap/command-root-anchor/cost-tracker never block (no decision field) — tests assert exit 0 + expected side effect (stdout injection / env-file append / metrics-file append), and that each fails safe (exit 0, no side effect) when its required env var is unset. thai-summary-gate DOES block (decision:"block") when a substantial reply lacks a Thai closing summary — its tests assert the block fires only on that one condition and fails safe (exit 0, no block) on every other input. Run standalone: bash hooks/tests/test-session-stop.sh |
+| test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), command-root-anchor (SessionStart), cost-tracker (Stop). These hooks never block (no permissionDecision) — tests assert exit 0 + expected side effect (stdout injection / env-file append / metrics-file append), and that each fails safe (exit 0, no side effect) when its required env var is unset. Run standalone: bash hooks/tests/test-session-stop.sh |
 | test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect). Uses the KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT env seams to run against throwaway repos — never touches any real workspace or ~/.worktrees. Run standalone: bash hooks/tests/test-worktree-guard.sh |
 
 ## Output styles — Repo
@@ -118,7 +117,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-04T08:49:30Z_
+_Generated: 2026-08-04T08:26:58Z_
 
 ---
 
