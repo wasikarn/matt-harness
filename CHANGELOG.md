@@ -5,6 +5,50 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.164] — 2026-08-04
+
+`/kbg:iterate-skill summarizer` loop: closed 3 target-attributable findings from a
+`/kbg:review-fixtures summarizer` 2-reviewer pass against `agents/summarizer.md`. Major: no
+guidance to cross-check embedded timestamps/intervals against each other, so a source's own
+internal arithmetic contradiction (a "two minutes after X" claim that was actually seven minutes)
+got silently smoothed into a clean timeline instead of flagged — added an explicit Phase 6
+cross-check clause. Major: the "several unrelated throughlines" Output Format template had no
+cross-thread ordering rule at all, so multi-topic summaries defaulted to source/agenda order and
+buried a thread carrying an unowned risk behind closed items — added an action-first ordering
+clause. Major: a stated range ("4h10m to 5h45m") collapsed into just its upper endpoint — added a
+Phase 3 rule that a range or scope qualifier is itself a fact, not free to round away. Verified via
+fresh fixture regeneration + re-review: target-attributable tally dropped from 0 critical / 3
+major / 2 minor (iteration-1) to 0/1/1 (iteration-2), a real, measured improvement.
+
+A third iteration attempted to close the 2 residual findings and its fixture rerun looked worse
+(both tiers converged on the same wrong reading; a previously-fixed "whole run"/"every run"
+phrasing reappeared) — reverted by hand back to iteration-2's exact text. A fourth pass re-added
+one of the two changes (numeric cross-check: weigh stated precision before flagging an approximate
+figure as a contradiction — this one has independent 2-reviewer confirmation) and replaced the
+other. The original tl;dr/summary-agreement rule assumed `tl;dr` is "almost always" the wrong tier
+when the two disagree; a fresh fixture run on the same eval case showed `summary` as the wrong tier
+instead, directly refuting that assumption, so it's rewritten symmetric — check each tier against
+the *source*, not against each other, and fix whichever one drifted.
+
+That same fixture run also surfaced a measurement problem, not a target-file gap: the eval's source
+sentence ("intermittently failing... 4h10m to 5h45m" against a stated 4-hour window) is internally
+ambiguous — every value in the range exceeds the window, so "ran over on all 5 nights" is as
+defensible a reading as "intermittently." No iteration's output — including iteration-2's, scored
+as the improvement — flagged that tension via `flagged_ambiguity`, which is what Phase 6 actually
+calls for here; "did the output keep the word intermittently" was never a valid rubric on this
+sentence. Separately, the "whole run"/"every run" CPU-scope phrasing flipped across iterations
+without that specific rule ever being touched, and even flipped between iteration-3's baseline (no
+agent guidance at all) and its with-run output — evidence of single-sample generation variance, not
+a rule effect. Net: this residual major finding is left open, unmeasured by this fixture rather
+than claimed fixed — closing it for real needs either an unambiguous source sentence, multiple
+samples per cell, or both, which is future work, not this loop's.
+
+Final kept state on `agents/summarizer.md`: iteration-2's 3 fixes + the symmetric tiers-check
+rewrite + the precision-weighting clause + a `tl;dr` output-template note that compression must not
+drop a frequency/consistency qualifier. Full record in `summarizer-workspace/` (gitignored,
+local-only): `iteration-1/` through `iteration-4/` (fixtures, `candidate.diff`s, `feedback.json`s,
+`dispatch-prompts.md`), including the reverted iteration-3 candidate kept for the record.
+
 ## [0.68.151] — 2026-08-03
 
 `/kbg:iterate-skill ship-merge` loop 1: closed 3 target-attributable findings from a

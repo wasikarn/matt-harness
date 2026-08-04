@@ -95,6 +95,12 @@ state of the world, not verbal padding — deleting it because it "reads like a 
 summary's accuracy. Distinguish *stylistic* hedging (padding: "it seems like it might possibly be
 the case that...") from *substantive* qualification (a real unresolved state) before cutting.
 
+**A range is a fact, not an endpoint to round to.** A source that states "4 to 6 hours" or "3 of
+the 5 runs" is telling you something a single number can't — that the situation is variable, not
+uniformly bad or good. Collapsing "4h10m to 5h45m" into "up to 5h45m," or widening "checked during
+this run" into "checked every night," both destroy that signal — the first drops a fact, the
+second states one the source never gave. Preserve the stated range and the stated scope exactly.
+
 ### Phase 4: Word-level compression pass
 
 Once the load-bearing content is identified, cut style without touching substance:
@@ -130,9 +136,24 @@ Match the output shape to what the content actually is — not a default:
 Before finalizing, verify:
 - **No invented facts, numbers, or conclusions.** If the source is ambiguous or contradicts
   itself, name that in the output — don't quietly pick the reading that made your summary cleaner.
+- **Cross-check embedded numbers against each other, not just against the source text.** A
+  timestamp, duration, or interval that's stated once looks correct in isolation — the error only
+  surfaces when two of them are read together (a "two minutes after X" claim where X and the
+  referenced time are actually seven minutes apart). Do this arithmetic check before finalizing; a
+  mismatch is a self-contradiction under the rule above, not a detail to smooth over. Weigh the
+  stated precision before flagging one, though — an approximate figure ("about 90 seconds,"
+  "roughly") checked against a coarser anchor (minute-level timestamps) isn't a contradiction just
+  because the arithmetic doesn't land exactly; flag it only when no reasonable rounding explains
+  the gap.
 - **No new certainty.** If the source hedges ("might," "we think"), the summary keeps that same
   epistemic status — collapsing "we think X caused it" into "X caused it" is a fabrication, not a
   compression.
+- **If `tl;dr` and `summary` disagree, check each one against the source — don't just make them
+  match.** When a check here catches the two tiers describing the same fact differently, one of
+  them drifted from what the source actually says; go back to the source to find out which one,
+  then fix that one. Don't resolve the disagreement by picking whichever reading is easier to make
+  both tiers say, or by weakening the tier that happens to be right — matching tiers on the wrong
+  reading is not a fix, it's the same bug with the disagreement hidden.
 - **Language matches the source, not the dispatch prompt.** Don't translate Thai input into an
   English summary (or vice versa) just because the request happened to be phrased in a different
   language — only switch output language if the request explicitly asks for one. Match the
@@ -154,7 +175,11 @@ is a fork you take before the template starts, not a footnote you apply after th
 **One throughline:**
 
 ```
-tl;dr: <the single most important takeaway or decision, one sentence>
+tl;dr: <the single most important takeaway or decision, one sentence. Compress freely, but never
+let compression change a frequency or consistency claim — "intermittently," "usually," "about,"
+"roughly" are not filler to trim for a tighter sentence. Dropping one turns a variable or
+approximate claim into an absolute one, which is a fabrication (Guardrail 1), not a shorter
+version of the same fact.>
 
 summary:
 <Per Phase 5 — prose for a causal/narrative throughline, tight bullets for parallel independent
@@ -175,6 +200,11 @@ if the source was clean, or if the caveat is already stated plainly in `summary`
 it covers — each thread's `summary:` runs Phase 5's structure choice independently against that
 thread's own content, so a source with one causal thread and one comparison thread mixes prose
 for one block with a table for another rather than defaulting every thread to the same shape.
+Order the threads by what the reader needs to act on first, not by the order the source raised
+them — the same BLUF instinct Guardrail 3 applies within a single throughline applies across
+them too. A thread carrying an unresolved risk or a pending decision outranks one that's already
+closed (budget approved, a reschedule with nothing further to do), regardless of which one the
+source mentioned first.
 Never collapse them into one synthetic `tl;dr` — a single sentence trying to unify
 unrelated topics (e.g. "no action needed today" standing in for a budget decision, a hiring
 update, and an unowned technical risk in the same source) is exactly the failure this section
