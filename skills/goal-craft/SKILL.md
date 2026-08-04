@@ -26,9 +26,10 @@ Compact a freeform task description into a single, paste-ready completion-condit
    - Done when: either one targeted question is asked, or a stated default is chosen and intake proceeds.
 
 3. **Compact into Goal / Done-when / Never-touch**
-   - Compact goal-spec's discipline (Goal, Done-when, Never-touch) into inline clauses — no file is written. Every Done-when clause needs: (a) a measurable end state, (b) a stated check phrased so Claude will actually run it and paste real output — the evaluator reads only the transcript, so a check that was never run produces nothing for it to read, (c) explicit Never-touch constraints naming files/dirs/surfaces that must not change.
+   - Compact goal-spec's discipline (Goal, Done-when, Never-touch) into inline clauses — no file is written. Every Done-when clause needs: (a) a measurable end state, (b) a stated check phrased so Claude will actually run it and paste real output — the evaluator reads only the transcript, so a check that was never run produces nothing for it to read, (c) explicit Never-touch constraints naming a real path or directory `git status` can be run against — never a prose description of the change. If the task doesn't name an exact implementation path, name the narrowest concrete scope you can infer (the file/endpoint already mentioned in the task, or the directory it clearly lives in) rather than a description that can't be mechanically checked.
    - Use the table below to convert soft criteria into checkable ones.
    - Failure mode to avoid: writing a clause that asserts a feeling instead of naming a check — Rule 14's "score, not feel" failure, and the exact rubber-stamp risk the evaluator can't catch on its own.
+   - Failure mode to avoid: adapting the table's repro-based pattern ("re-run and confirmed") when the task names a bug but supplies no repro steps — that produces a clause that reads as checkable but is actually unfalsifiable by the tool-less evaluator, since nothing forces the loop to have measured anything before claiming "confirmed." When no repro exists, name a regression test instead (fails before the fix, passes after) or fall back to a general test-suite check.
    - Done when: every clause in the draft names a command or artifact Claude will produce real output for — never a feeling.
 
 4. **One-way-door screen**
@@ -36,8 +37,8 @@ Compact a freeform task description into a single, paste-ready completion-condit
    - Strip and flag by default — every one-way-door fragment gets its own excluded note; never bake it into the loop, never silently drop it either.
    - Scope limit, state it plainly: this screen only sees verbs named in the condition text — it stops the loop from *declaring* an irreversible goal, not from *reaching* one instrumentally (e.g. a `git reset --hard` on the way to "make CI green," verb never in the condition). Claude Code's own per-tool-call permission prompt covers that case in the default permission mode; auto mode turns that prompt off, and auto mode is exactly what `/goal` is meant to be paired with for unattended runs. Don't pair a goal whose instrumental path could plausibly reach a destructive action with auto mode.
    - Failure mode to avoid: stripping a verb that's the task's own subject matter, not an action the loop would take — "fix the delete-account bug" names a bug, it does not ask the loop to delete anything. Only strip when the sentence's grammatical action is the irreversible verb.
-   - Edge case: if stripping would empty the condition (the whole task was the one-way-door action, e.g. "deploy to prod"), do not print a bare `/goal` — tell the user this task is entirely a manual action and there is nothing left to loop on.
-   - Done when: every stripped fragment has a matching excluded note, and the remaining condition still has a real loop to run — or you've told the user there isn't one.
+   - Edge case: if stripping would empty the condition (the whole task was the one-way-door action, e.g. "deploy to prod"), do not print a bare `/goal` — use the "Nothing left to loop on" shape in the Output Format section below. If step 6's gate would also apply to this same input (no clause was nameable even before this screen ran), this edge case still takes precedence — the one-way-door reason is more informative to the user than a generic "nothing checkable" note.
+   - Done when: every stripped fragment has a matching excluded note, and the remaining condition still has a real loop to run — or you've told the user there isn't one, in the format below.
 
 5. **Append the bound clause**
    - Always end with an explicit stop condition. Default: `or stop after 15 turns`; adjust down (~10) for a one-file fix or up (~20-25) for a multi-file feature. State the number, don't ask — the user edits it in the paste if it's wrong.
@@ -47,10 +48,10 @@ Compact a freeform task description into a single, paste-ready completion-condit
 
 6. **Assemble and gate the output**
    - Concatenate done-when clauses + never-touch constraints + bound clause into one compacted `/goal <condition>` string, ≤4000 chars (`/goal`'s own limit) — trim prose before trimming the check or the bound.
-   - Gate: if step 3 could not produce even one clause with a real, nameable check, do not emit a rubber-stampable condition — stop, and either ask the step-2 clarifying question or hand back a short rework note naming what's missing.
+   - Gate: if step 3 could not produce even one clause with a real, nameable check, do not emit a rubber-stampable condition — use the "Nothing left to loop on" shape in the Output Format section below, naming what's missing (or ask the step-2 clarifying question instead, if that's still live).
    - Failure mode to avoid: passing a vague condition through anyway — that's the fake-done shortcut the evaluator will rubber-stamp (arXiv 2606.09863, "confident closing language" as a false proxy for verified completion).
-   - Render the Output Format below.
-   - Done when: the printed `/goal` line is self-contained — pasteable with no more context — and every excluded fragment has its own flagged note.
+   - Render the Output Format below, fenced exactly as shown there — the fencing is part of the format, not decoration, since a paste-ready string that isn't cleanly delimited defeats the point.
+   - Done when: the printed `/goal` line is self-contained — pasteable with no more context — every excluded fragment has its own flagged note, and both are wrapped in fenced code blocks.
 
 ## Writing verifiable Done-when clauses
 
@@ -59,7 +60,8 @@ Each clause must be mechanically checkable by something Claude will actually run
 | Weak (fake-done risk) | Strong (drop-in for a `/goal` condition) |
 |---|---|
 | "the code is good" / "it works well" | "`npm test` exits 0 in `src/auth`" |
-| "the bug is fixed" | "the repro steps in the report no longer trigger the error, re-run and confirmed" |
+| "the bug is fixed" (repro given) | "the repro steps in the report no longer trigger the error, re-run and confirmed" |
+| "the bug is fixed" (no repro given) | "a new regression test reproduces the bug (fails before the fix) then passes after it" |
 | "docs are updated" | "`docs/api.md` contains a `## Endpoints` section" |
 | "nothing else broke" | "`git status` is clean outside `src/auth`" (pairs with Never-touch) |
 | "tests pass" | "`cargo test 2>&1 \| grep 'test result: ok'`" |
@@ -78,6 +80,18 @@ Print exactly two parts, no preamble:
 
 ```
 ⚠ excluded: "<fragment>" — one-way door, approve manually after the goal completes
+```
+
+### "Nothing left to loop on" shape
+
+Used when step 4's edge case or step 6's gate fires (see those steps for which applies). No `/goal` line at all — state plainly, then list excluded notes if any:
+
+```
+This task is [entirely a manual action / too vague to name a mechanical check] — there's nothing left to loop on.
+```
+
+```
+⚠ excluded: "<fragment>" — one-way door, do this step manually
 ```
 
 ### Worked example

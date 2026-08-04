@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.167] — 2026-08-04
+
+`skills/goal-craft/SKILL.md`: closed 4 target-attributable findings from a `kbg:review-fixtures` +
+`/iterate-skill` pass (2 independent reviewers, iteration-1 tally critical:1/major:4 → iteration-2
+critical:0/major:1/minor:2, verdict IMPROVED, kept as the new baseline). Fixes: (1) **critical** —
+step 3's weak/strong table split "the bug is fixed" into a repro-given row (unchanged) and a new
+no-repro row requiring a regression test (fails before the fix, passes after), plus a failure-mode
+bullet against reusing the repro-based "re-run and confirmed" pattern when no repro was ever given
+— the original bug produced an unfalsifiable done-when clause for a memory-leak task with no repro
+steps in the input, exactly the fake-done risk the skill's own arXiv-cited discipline exists to
+prevent. (2) Step 3(c)'s Never-touch guidance now requires a real path/directory, with a fallback
+for when the task names no exact implementation path — confirmed only a partial fix in iteration-2
+(still not literally `git status`-checkable on the no-path case; open as a residual major finding,
+not fixed further this run per user decision to stop at iteration 1). (3) Step 6 now states fencing
+as an explicit Done-when checklist item, not just a shown-by-example convention — the original bug
+was 2 of 3 with-skill runs printing bare unfenced text; confirmed 3/3 fixed in iteration-2. (4) A
+new "Nothing left to loop on" Output Format template covers step 4's edge case and step 6's gate,
+with step 4 stated to take precedence when both fire on the same input — the original gap left
+excluded-note phrasing improvised per-run, including a semantically broken "approve manually after
+the goal completes" when no goal loop existed to complete; confirmed fixed with correctly
+differentiated phrasing in iteration-2. Full review artifacts (dispatch prompts, reconciled
+feedback, tallies) in `skills/goal-craft-workspace/iteration-1/` and `iteration-2/`.
+
 ## [0.68.166] — 2026-08-04
 
 `agents/requirement-analyst.md`: added a pre-flag check ahead of Phase 3/4/7 output — before an
