@@ -218,6 +218,100 @@ out=$( (cd "$WS" && echo "$bashpayload_hyphenhd" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "hyphenated heredoc delimiter + write statement after it -> deny exit 2 (not silently eaten)" "$ok"
 
+# Round-3 regression tests (found 2026-08-04 by a genuine subagent_type:kbg:silent-failure-hunter
+# re-verification dispatch after the round-2 fix landed -- one of the two is a regression in
+# round-2's OWN fix, the same failure shape as round-2 finding a regression in round-1's fix).
+
+# Finding 1: round-2's _newlines_to_seps replaced EVERY '\n' with ' ; ', which left no real
+# newline anywhere in the command -- shlex's default commenters='#' handling calls readline()
+# to skip a comment, which stops at the next '\n' in the stream, so with no '\n' left a '#'
+# anywhere in the command swallowed everything after it as one giant comment, hiding any write
+# statement that came after. A comment on an earlier line followed by a real write on a later
+# line is the minimal repro.
+COMMENT_CMD=$(printf 'echo hi # just a note\nsed -i "" "s/x/y/" repo1/f.txt')
+bashpayload_comment=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$COMMENT_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_comment" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "write on a line after a '#' comment -> deny exit 2 (not swallowed as one giant comment)" "$ok"
+
+# Companion: a comment plus a benign command that writes nowhere near the workspace must NOT
+# false-deny -- guards against an overcorrection (e.g. disabling commenters entirely, which the
+# round-3 dispatch explicitly tested and rejected: it leaks comment text into unrelated targets).
+BENIGN_COMMENT_CMD="ls -la # see repo1/notes.txt for details"
+bashpayload_benign=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$BENIGN_COMMENT_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_benign" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "comment mentioning a workspace-looking path, no real write -> exit 0 (not a false deny)" "$ok"
+
+# Finding 2: an unquoted \$VAR or ~ redirect target was never expanded before os.path.abspath() --
+# '\$' isn't in shlex's default wordchars (splits '\$HOME/x' into '\$' + 'HOME/x') and even a
+# whole-token target never ran through expandvars/expanduser, so a write that really lands
+# inside the guarded workspace via an env var or ~ silently bypassed the gate. MYVAR is used
+# instead of overriding HOME broadly, to keep this test isolated from the rest of the suite.
+VARWRITE_CMD='echo x >> $MYVAR/repo1/f.txt'
+bashpayload_var=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$VARWRITE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_var" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= MYVAR="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "unquoted \$VAR redirect target resolving into the workspace -> deny exit 2" "$ok"
+
+TILDEWRITE_CMD='echo x >> ~/repo1/f.txt'
+bashpayload_tilde=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$TILDEWRITE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_tilde" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= HOME="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "unquoted ~ redirect target resolving into the workspace -> deny exit 2" "$ok"
+
+# Table-driven battery against bash_write_targets() directly (unit level, not through the full
+# main()/classify() pipeline) -- this is the shape that actually caught round 3's findings: the
+# re-verification dispatch found them by running ~25 probe commands directly against the
+# extracted function, not by walking the deny/allow surface one case at a time. Promoted here
+# (instead of thrown away as a one-off probe script, which is what happened after rounds 1 and 2)
+# so it persists as the regression net for round 4 and beyond. Positive cases assert the real
+# target is present (extra pre-existing quirky yields, e.g. sed's own expression argument, are
+# out of scope for this battery); negative cases assert exact equality -- any unexpected token at
+# all is itself the failure mode being guarded against (comment content or a fake redirect symbol
+# leaking into a "target").
+BATTERY_OUT=$(WTG_PATH="$GUARD" python3 <<'PYEOF'
+import importlib.util, os, sys
+
+spec = importlib.util.spec_from_file_location("wtg", os.environ["WTG_PATH"])
+wtg = importlib.util.module_from_spec(spec)
+try:
+    spec.loader.exec_module(wtg)
+except SystemExit:
+    pass
+
+CASES = [
+    ("baseline write", "cp secret.txt repo1/target.txt", {"repo1/target.txt"}, None),
+    ("comment-then-write", "echo hi # comment\ncp secret.txt repo1/target.txt", {"repo1/target.txt"}, None),
+    ("write-then-trailing-comment", "cp secret.txt repo1/target.txt # note", {"repo1/target.txt"}, None),
+    ("comment-first-line", "# leading note\ncp secret.txt repo1/target.txt", {"repo1/target.txt"}, None),
+    ("unquoted $VAR target tokenized whole", "cp secret.txt $HOME/repo1/target.txt", {"$HOME/repo1/target.txt"}, None),
+    ("unquoted ~ target tokenized whole", "cp secret.txt ~/repo1/target.txt", {"~/repo1/target.txt"}, None),
+    ("comment mentions unrelated sensitive path", "cp a.sh b.sh # update hooks/gates/x.sh", None, {"b.sh"}),
+    ("comment contains fake redirect symbol", "ls -la # see > repo1/notes.txt for details", None, set()),
+    ("# inside quotes is not a comment", 'echo "value#tag" > repo1/out.txt', {"repo1/out.txt"}, None),
+    ("benign no-write command", "git status && ls repo1/", None, set()),
+]
+
+fails = 0
+for desc, cmd, must_include, must_equal in CASES:
+    got = set(wtg.bash_write_targets(cmd))
+    ok = (must_include is None or must_include.issubset(got)) and (must_equal is None or got == must_equal)
+    print(f"{'PASS' if ok else 'FAIL'}\t{desc}\tgot={sorted(got)}")
+    fails += 0 if ok else 1
+sys.exit(1 if fails else 0)
+PYEOF
+)
+while IFS=$'\t' read -r status desc detail; do
+  [ -z "$status" ] && continue
+  ok=1; [ "$status" = "PASS" ] && ok=0
+  check "battery: $desc ($detail)" "$ok"
+done <<< "$BATTERY_OUT"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

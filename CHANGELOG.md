@@ -5,6 +5,51 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.173] — 2026-08-04
+
+Round-3 fix to `hooks/gates/worktree-guard.py`, same day as v0.68.171/172. After v0.68.172
+landed and the plugin was reinstalled, a third `subagent_type: kbg:silent-failure-hunter`
+re-verification dispatch — deliberately told not to assume the file was clean just because
+two prior rounds of fixes had already landed — found 2 more CRITICAL bugs, again confirmed
+via live reproduction, not just static reading:
+
+1. **A real regression in v0.68.172's own fix.** `_newlines_to_seps` replaced every `\n`
+   with `" ; "`, which left no real newline anywhere in the tokenized command. `shlex`'s
+   default `commenters = "#"` handling calls `readline()` to skip a comment, stopping at
+   the next `\n` in the stream — with none left, a `#` anywhere in the command swallowed
+   **everything after it as one giant comment**, hiding any write statement that came
+   later. Fixed by inserting `; ` *after* each real newline instead of replacing it, so
+   comments still terminate at the correct line boundary while statement separation still
+   works. An alternative fix (`lex.commenters = ""`) was tested and rejected: it leaks
+   comment text into unrelated commands' target detection (e.g. `cp a.sh b.sh # update
+   hooks/gates/x.sh` would wrongly treat the comment's path as a candidate).
+2. **A pre-existing gap, not introduced by round 2.** `$` isn't in `shlex`'s default
+   wordchars, so an unquoted redirect target like `$HOME/foo` tokenized as two separate
+   tokens (`$` and `HOME/foo`) instead of one — and even when a target was captured whole
+   (quoted, or a `~/...` path), it was never run through `os.path.expandvars`/
+   `os.path.expanduser` before `os.path.abspath()`. A write that really lands inside the
+   guarded workspace via an env var or `~` silently bypassed the gate. Fixed by adding `$`
+   to `lex.wordchars` and expanding every yielded candidate before resolving it.
+
+Both confirmed via direct reproduction and now covered by regression tests in
+`hooks/tests/test-worktree-guard.sh` (33/33 passing, all previously-added tests still
+green — no regression in rounds 1 or 2's fixes). This round also promotes a permanent
+table-driven battery against `bash_write_targets()` directly (10 cases, positive and
+negative) instead of the previous pattern of writing a one-off probe script per round and
+throwing it away — this is the same shape that found round 3's bugs in the first place (a
+subagent probing the extracted function directly, not walking the deny/allow surface one
+case at a time), and it now persists as the regression net for future rounds. Test-honesty
+verified: 27/33 against pre-fix code, with exactly the 6 fix-relevant assertions failing.
+
+`hooks/gates/verifier-protect.sh` — a sibling, always-on gate (no opt-in condition, unlike
+`worktree-guard.py`) that the round-3 dispatch confirmed carries all three bug families
+found across this session's three rounds, despite `worktree-guard.py`'s own header comment
+claiming its generator is "a straight port" of that gate's — was deliberately **not**
+touched this round. Given the demonstrated 2-for-2 regression track record on this exact
+preprocessing stack, its unconditional blast radius across every repo running this plugin,
+and zero false-positive test coverage for it, porting a fix there is being held for an
+explicit go-ahead rather than folded into this commit.
+
 ## [0.68.172] — 2026-08-04
 
 Round-2 fix to `hooks/gates/worktree-guard.py`, same day as v0.68.171. After that fix

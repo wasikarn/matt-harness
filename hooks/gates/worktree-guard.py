@@ -116,15 +116,23 @@ def _newlines_to_seps(cmd):
     shlex's whitespace set includes \\n, so it's swallowed as ordinary
     inter-token whitespace and never lands in SEPS below -- a write-only
     statement on any line but the first is invisible to every argv0-dispatch
-    branch. Convert non-continuation newlines to ';' before tokenizing. A
-    backslash immediately before the newline is a real bash line continuation
-    (same logical statement, not a separator) -- left alone for shlex's own
-    (slightly quirky but harmless for target-detection purposes) handling.
-    Confirmed exploitable (2026-08-04): a write statement on a later line of a
-    multi-statement command bypassed this gate silently (exit 0)."""
+    branch. Insert ';' AFTER each non-continuation newline (not in place of
+    it) before tokenizing -- keeping the real newline matters because shlex's
+    default commenters='#' handling calls readline() to skip a comment, which
+    stops at the next '\\n' in the stream; replacing every newline with ' ; '
+    left no '\\n' anywhere, so a '#' anywhere in the command swallowed
+    everything after it as one giant comment, silently hiding any write
+    statement past the first '#' (confirmed exploitable 2026-08-04, shipped
+    in v0.68.172 -- the very fix for the sibling bug below introduced this
+    one). A backslash immediately before the newline is a real bash line
+    continuation (same logical statement, not a separator) -- left alone for
+    shlex's own (slightly quirky but harmless for target-detection purposes)
+    handling. Confirmed exploitable (2026-08-04): a write statement on a
+    later line of a multi-statement command bypassed this gate silently
+    (exit 0)."""
     placeholder = "\x00"
     cmd = _LINE_CONT_RE.sub(placeholder, cmd)
-    cmd = cmd.replace("\n", " ; ")
+    cmd = cmd.replace("\n", "\n; ")
     return cmd.replace(placeholder, "\\\n")
 
 
@@ -147,6 +155,12 @@ def bash_write_targets(cmd):
     cmd = _newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd)))
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+        # '$' isn't in shlex's default wordchars, so an unquoted redirect
+        # target like $HOME/foo splits into two tokens ('$', 'HOME/foo')
+        # instead of one -- the caller below then abspath()s the fragment
+        # 'HOME/foo' against cwd, never the real expanded path. Confirmed
+        # via direct shlex probe (2026-08-04).
+        lex.wordchars += "$"
         tokens = list(lex)
     except ValueError:
         tokens = cmd.split()
@@ -310,7 +324,14 @@ def main():
         for p in bash_write_targets(cmd):
             if not p:
                 continue
-            result = classify(os.path.abspath(p))
+            # A candidate can still carry a literal '~' or '$VAR' here --
+            # tokenization alone doesn't expand it, and os.path.abspath()
+            # never does either (it prepends cwd to the literal string
+            # instead). Expand both before resolving, or a target that
+            # really points inside the guarded workspace never matches
+            # classify()'s WORKSPACE check (confirmed 2026-08-04).
+            expanded = os.path.expandvars(os.path.expanduser(p))
+            result = classify(os.path.abspath(expanded))
             if result is not None:
                 repo, top, why, _branch = result
                 return deny(repo, top, why)
