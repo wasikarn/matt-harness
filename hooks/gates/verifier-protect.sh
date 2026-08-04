@@ -276,10 +276,15 @@ def bash_write_targets(cmd):
             if nonflag:
                 yield nonflag[-1]
         elif argv0 == "tar":
-            # Extract mode writes files into -C/--directory (or CWD, already
-            # covered by the is_verifier_path relative-path handling). Old-style
-            # bare mode clusters (tar xf a.tar) and dash-prefixed ones (-xf)
-            # both put the mode letters in the first arg after argv0.
+            # Extract mode writes files into -C/--directory when present. When
+            # absent (tar xf a.tar, the common case -- writes into cwd) this
+            # branch yields NOTHING, so is_verifier_path is never even called
+            # on that case -- a real gap, not covered by anything else here.
+            # Confirmed 2026-08-04 (silent-failure-hunter round 4): an earlier
+            # version of this comment claimed cwd was covered elsewhere; it
+            # was not. Old-style bare mode clusters (tar xf a.tar) and
+            # dash-prefixed ones (-xf) both put the mode letters in the first
+            # arg after argv0.
             mode_str = rest[0] if rest and not rest[0].startswith("--") else ""
             has_extract = ("x" in mode_str.lstrip("-")) or ("--extract" in rest)
             if has_extract:

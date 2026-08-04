@@ -5,6 +5,39 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.175] — 2026-08-04
+
+Round-4 `subagent_type: kbg:silent-failure-hunter` re-verification, dispatched against
+both `worktree-guard.py` and `verifier-protect.sh` together after v0.68.174 landed and
+the plugin was reinstalled — the first dispatch to cover `verifier-protect.sh` at all.
+Two results, evidence-based rather than assumed:
+
+1. **The preprocessing area rounds 1–3 fixed (heredoc stripping, ANSI-C quote
+   normalization, newline-to-separator conversion, `$VAR`/`~` expansion) came back
+   clean** across 15 adversarial interaction cases in both files (unclosed heredocs,
+   heredoc bodies containing a fake `$'` opener, comments after heredocs, escaped
+   quotes inside ANSI-C strings, and more) — a genuine negative result, not just an
+   absence of new findings. That loop is closed by evidence.
+2. **3 CRITICAL findings, all in a different idiom family**: `git apply`/`git am` never
+   scan the diff content for its real `+++ b/<path>` target; `patch` has the same gap
+   for the stdin-piped form; bare `tar xf` (no `-C`) yields no candidate at all. All 3
+   were already named as disclosed, deliberately-deferred follow-ups in this repo's own
+   v0.68.171 CHANGELOG entry, written before rounds 2–3 even happened — re-confirmed
+   with concrete repro detail by round 4, not newly discovered. Left as tracked
+   follow-ups rather than folded into another same-day patch series: a fix set that
+   arrives pre-labeled by its own author as having known-insufficient tails in both
+   files (worktree-guard.py's `classify()` resolves against the hook's own cwd, not
+   wherever `patch -d`/`--directory=` actually points; `verifier-protect.sh`'s proposed
+   `tar` fallback target does not match any of `is_verifier_path()`'s checks) is a plan
+   to review on its own terms, not a same-turn patch.
+
+One thing from round 4 didn't fit the "already disclosed, defer" bucket and was fixed
+immediately regardless: `verifier-protect.sh`'s `tar` branch carried a comment claiming
+the no-`-C` case was "already covered by the is_verifier_path relative-path handling" —
+verifiably false, since that branch yields no candidate at all in that case, so
+`is_verifier_path` is never even called. A misleading comment costs nothing to correct
+and everything to leave, since it tells the next reader a gap is closed when it is not.
+
 ## [0.68.174] — 2026-08-04
 
 Ports v0.68.173's `worktree-guard.py` fixes into `hooks/gates/verifier-protect.sh` — a
