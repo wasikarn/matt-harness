@@ -204,7 +204,7 @@ bloat, which is a different, lower-risk action than re-cutting existing dense te
 ## Two oversized bodies (orchestrate, review-pr) — separate small batch, in-place only
 
 Explore agent 2 found only ~8-13% of each file is safely relocatable to `reference.md` — the bulk
-(orchestrate's `--permission-mode plan` warning + tathep privacy tier; review-pr's Scrutinize Gate +
+(orchestrate's `--permission-mode plan` warning + client privacy tier; review-pr's Scrutinize Gate +
 submit-gating + `review-last.json` contract) is load-bearing safety/procedure content that must
 stay inline. This is NOT a relocation job. Runs as its own batch, **A1b** below — a separate
 session from A1's 4-skill full loop, in-place prose-tightening only — do not chase the 20K-char

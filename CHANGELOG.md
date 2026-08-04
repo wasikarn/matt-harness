@@ -145,10 +145,10 @@ shape, not a hedge. The old map is unchanged, just demoted under "## Reference: 
 
 ## [0.68.139] — 2026-08-03
 
-Session-history analysis across ~2,660 real transcripts (tathep + kbg-harness + others) found
+Session-history analysis across ~2,660 real transcripts (client + kbg-harness + others) found
 `/kbg:review-pr` re-invoked on the **same PR number**, within the same session, in 6 of 8 sampled
-tathep sessions — one PR went review-pr → ship-merge → review-pr → review-pr → ship-merge →
-review-pr → ship-merge across 5 hours. 52 of 140 tathep sessions (37%) repeat `/kbg:review-pr` at
+client sessions — one PR went review-pr → ship-merge → review-pr → review-pr → ship-merge →
+review-pr → ship-merge across 5 hours. 52 of 140 client sessions (37%) repeat `/kbg:review-pr` at
 least once. This is a real, proven-need loop — review-pr vs. itself on the same PR, fixed inline and
 re-run — not the review-pr↔`/address-review` handoff a prior proposal assumed (`address-review`
 only showed up in 2 of the 8 sampled loop sessions, and carries `disable-model-invocation: true`
@@ -2422,7 +2422,7 @@ gate-vs-advisory-sensor split as an explicit node/typed-edge/anchor model
 (`docs/reference/graph-model.md`) — no new mechanism built (Rule 2, no proven need). Two
 follow-on "if necessary, build X" prompts (RAG, then new anchors) were both checked against
 real repo state rather than built reflexively; both came back "not necessary" (qmd already
-covers RAG's use case; the one real anchor gap, `db-write-gate.sh`, has its fix in tathep's
+covers RAG's use case; the one real anchor gap, `db-write-gate.sh`, has its fix in the client's
 infra, not this repo). A subsequent spot-check for the "conflicting loops" failure mode
 (30 skills, 20 agents, 17 commands) found none — the near-universal "Don't use for X, use Y
 instead" clauses are functioning as a working guard without any formal detector — but did
@@ -2879,10 +2879,10 @@ other live surface cited it. Skill count 29 → 28.
 
 ## [0.68.51] — 2026-07-26
 
-Removed 7 Tathep-scoped framework-pattern skills per user request: `adonisjs-patterns`,
+Removed 7 client-scoped framework-pattern skills per user request: `adonisjs-patterns`,
 `dart-flutter-patterns`, `effect-ts-patterns`, `fastapi-patterns`, `hono-patterns`,
 `langchain-langgraph-patterns`, `tauri-v2-patterns`. Deleted each skill directory and swept every
-live-surface reference: README.md's Tathep Platform table plus 3 skill-count callouts (36 → 29),
+live-surface reference: README.md's client-stack table plus 3 skill-count callouts (36 → 29),
 `agents/backend-architect.md`'s `*-patterns` citation lists (2 spots), `agents/code-implementer.md`'s
 stack-detection table (7 rows removed, multi-match example reworded off Hono), `agents/python-reviewer.md`'s
 now-vacuous FastAPI framework-pattern pointer (removed — no other kbg Python-framework skill to
@@ -3805,7 +3805,7 @@ declaring the marathon done: the pattern-tier "currency check" the plan's own re
 against context7 / real library docs) never actually ran during C1–C3 — each skill was reread
 against training knowledge instead, which is the maker grading its own work. Ran it for real via
 context7 against the 3 highest-drift candidates (`effect-ts-patterns`, `tauri-v2-patterns`,
-`adonisjs-patterns`) plus a check against the actual pinned dependency versions in the real tathep
+`adonisjs-patterns`) plus a check against the actual pinned dependency versions in the real client
 target repos.
 
 Found one real gap: `adonisjs-patterns`' "VineJS Validation" section taught `@vinejs/vine`, but
@@ -4065,7 +4065,7 @@ check flagged both stale against the fleet after the description edits.
 
 Left two categories of finding unfixed, on purpose: `orchestrate` (33K chars) and `review-pr` (46K
 chars) both trip the audit's 20K-char SKILL.md-body heuristic, but a chunk of what's inline in
-`orchestrate` is load-bearing safety content (the `--permission-mode plan` warning, the tathep
+`orchestrate` is load-bearing safety content (the `--permission-mode plan` warning, the client
 hard-deny privacy tier) that shouldn't move to a reference file a session might not read before
 delegating — moving it just to satisfy a char-count heuristic would trade a real safety property
 for a cosmetic pass. The cumulative skill+command description budget (9297 chars against a
@@ -4456,7 +4456,7 @@ files," a frozen, dated description of a past pass, not a live count.
 ## [0.66.0] — 2026-07-22
 
 User-requested: make "critical thinking on every incoming requirement" a default
-reflex for anyone who installs the plugin, not just tathep/Jira users. Plan-mode
+reflex for anyone who installs the plugin, not just this client's Jira users. Plan-mode
 design (approved via `AskUserQuestion` on which layer should carry it — user picked
 both doctrine + nudge). The capability already existed (`agents/requirement-analyst.md`
 — ambiguity/gap/edge-case/testability sweep, source-agnostic) but was routed almost
@@ -4764,7 +4764,7 @@ behavior under auto mode) matched the live page verbatim.
 **Not independently reproducible with proportionate effort:** `v0.61.5`'s (`kbg:decide`) specific
 transcript-count statistics (1407 transcripts, `/ship-merge`×103, `kbg:review-pr`×124, `/ship`
 Phase 2×2, `kbg:decide` autonomous×0) — the original measurement used a specific
-Tathep/superset-only, post-`/ship`-unification date scope this pass didn't have on hand to
+client/superset-only, post-`/ship`-unification date scope this pass didn't have on hand to
 reconstruct exactly. A broad, unscoped, all-time count run this pass (`/kbg:ship-merge`×2526,
 `/kbg:review-pr`×3267) sits in a roughly similar ratio to the original claim, a weak plausibility
 signal, not a confirmation. Separately, "0 autonomous invocations" specifically requires
@@ -4973,7 +4973,7 @@ evidence mostly confirmed it — the on-demand narrowing (v0.21.4), the five-mod
 grounding in real frameworks (Decision Quality, Rumelt, Lafley-Martin, Tetlock), the
 `score-decision` separation, and the `orchestrate` boundary all held up. One genuinely new
 finding, from a fresh empirical re-check (not a re-read of the 2026-07-02 corpus): grepped
-1407 real Tathep/superset session transcripts dated after the `/ship` unification, using
+1407 real client/superset session transcripts dated after the `/ship` unification, using
 the precise `Skill` tool_use JSON shape, validated against a known-nonzero baseline to rule
 out the `xargs -a` silent-failure trap the original measurement hit. `kbg:decide` still
 fired autonomously **0** times post-narrowing — but `/kbg:ship:COMMAND` (`decide`'s one
@@ -5270,8 +5270,8 @@ Two follow-ups to `code-implementer` (v0.58.8), both requested same-session:
   Failure-Modes entry: no `any`/unsafe `as` casts/`@ts-ignore`/bare `except:`, model invariants
   as types before reaching for a runtime check, generalized across every stack with a type
   system (TS/Dart/Rust/Go compiler-enforced, Python via type hints + mypy/pyright). Reuses
-  CLAUDE.md's existing Tathep-scoped type-safety wording, extended here to a cross-project
-  agent rather than tathep-only.
+  CLAUDE.md's existing client-scoped type-safety wording, extended here to a cross-project
+  agent rather than client-only.
 
 ## [0.58.8] — 2026-07-17
 
@@ -5366,7 +5366,7 @@ project, not just this one.
 ask before it could ship as a clean "works everywhere" close-out: the
 privacy section's "confirm to override" language is only true for some
 private repos, not all. Checked the user's actual `autoMode` config —
-`github.com/100-Stars-Co/*` (tathep and siblings, the user's primary work
+`github.com/100-Stars-Co/*` (the client and siblings, the user's primary work
 repos) is `hard_deny` with **no per-call override** ("Only the Claude Code
 runtime itself originating its own Anthropic model calls is exempt" —
 Ollama-cloud delegation redirects to a Zhipu/Moonshot backend, so it isn't
@@ -5690,7 +5690,7 @@ own documented fallback list legitimately calls the same MCP). Escape hatch:
 
 ## [0.51.6] — 2026-07-15
 
-Closed a real incident: in a tathep session (not this repo), the model proposed
+Closed a real incident: in a client session (not this repo), the model proposed
 "route through `kbg:ship-merge`" as a to-do item, got a chat "go", then called
 the Skill tool and hit `disable-model-invocation` — `ship-merge` is a *command*
 correctly flagged irreversible-external (merges a PR server-side), so the block
@@ -6419,7 +6419,7 @@ duplication-pattern memory): no existing surface checks a diff against a
 Owner-approved scope expansion of `hooks/gates/db-write-gate.sh`, decided via
 `AskUserQuestion` after the compliance audit's adversarial pass flagged it as
 a gate-mission question rather than a bug (see the audit report for the
-framing). Confirmed both idioms are real on MySQL/MariaDB, tathep's actual
+framing). Confirmed both idioms are real on MySQL/MariaDB, the client's actual
 target engine (`DO $$...$$`, also flagged by the audit, is Postgres-only
 syntax and was correctly left out — doesn't apply to this stack).
 
@@ -6890,7 +6890,7 @@ Verified: gauntlet 5/5 green (hook-tests invoke scripts directly, unaffected by 
 
 ## [0.32.0] — 2026-07-04
 
-Performance-correctness knowledge synthesis — 19 inline distillations across 7 performance surfaces (5 skills + 2 agents). Mined from llm-wiki algorithm/resource-efficiency docs via a 5-phase audit workflow (discover → read → map → adversarial-verify → synthesize; 39 gaps → 29 candidates → 20 verified → 19 edits, 9 killed as decorative), then synthesized as kbg-native, opinionated, tathep/backend-shaped decision text — NO llm-wiki paths, NO verbatim copies (value-add reframing, not a sync-seam). Each addition is 1-3 sentences colocated with the footgun it prevents; earns its place by naming a specific wrong call it changes.
+Performance-correctness knowledge synthesis — 19 inline distillations across 7 performance surfaces (5 skills + 2 agents). Mined from llm-wiki algorithm/resource-efficiency docs via a 5-phase audit workflow (discover → read → map → adversarial-verify → synthesize; 39 gaps → 29 candidates → 20 verified → 19 edits, 9 killed as decorative), then synthesized as kbg-native, opinionated, client/backend-shaped decision text — NO llm-wiki paths, NO verbatim copies (value-add reframing, not a sync-seam). Each addition is 1-3 sentences colocated with the footgun it prevents; earns its place by naming a specific wrong call it changes.
 
 Clusters: cache-failure-modes (stampede/single-flight/invalidation), retry-correctness (jitter/idempotency), hot-path-complexity (O(n²) sizing), resource-retention (unbounded Map/emitter retention), zero-alloc-gc, mysql-indexing (covering/sargable/isolation/buffer-pool/pool-bound/parallel-apply), prompt-cache-economics, queue-backpressure.
 
@@ -6921,7 +6921,7 @@ Lesson of record: v0.31.0 shipped a perf claim ("shellcheck is the long-pole") t
 Performance refactor driven by a 4-dimension deep-research workflow (hook latency, token-load, shell efficiency, body bloat) with adversarial verify, plus a CC-hook-execution-model finding that reshaped the plan. **Key finding:** Claude Code runs same-matcher PreToolUse hooks in parallel, so felt latency per tool call = `max(slowest hook)`, not the spawn-cost sum. The real felt-latency lever is eliminating the python3 cold-start in a matcher's bottleneck hook — not consolidating hooks (which serializes parallel work). Bash felt floor stays at irrecoverable (~32ms, needs shlex); Write floor stays at verifier-protect (~29ms, needs python realpath for symlink-bypass tamper-proofing). Those two python gates are load-bearing and kept.
 
 - `hooks/advisory/flow-nudge.sh` — pure-bash rewrite (drop python3 prompt extraction, grep raw JSON stdin). The only felt-latency win: ~29ms → ~15ms per UserPromptSubmit (sole hook on its matcher). Advisory-only, no block.
-- `hooks/hooks.json` + `hooks/gates/worktree-guard.py` — bash early-exit: when CLAUDE_PROJECT_DIR is known and outside the tathep workspace, skip the python3 cold-start entirely (worktree-guard is a no-op there). Non-tathep repos (kbg-harness itself, ECC, scratch) drop ~27ms → ~8ms per Write/Edit. tathep path unchanged (fail-safe fall-through to python). CPU win (felt Write floor is verifier-protect, not worktree-guard).
+- `hooks/hooks.json` + `hooks/gates/worktree-guard.py` — bash early-exit: when CLAUDE_PROJECT_DIR is known and outside the guarded workspace, skip the python3 cold-start entirely (worktree-guard is a no-op there). Non-client repos (kbg-harness itself, ECC, scratch) drop ~27ms → ~8ms per Write/Edit. Client path unchanged (fail-safe fall-through to python). CPU win (felt Write floor is verifier-protect, not worktree-guard).
 - `hooks/gates/verifier-protect.sh` + `hooks/gates/path-hardcode.sh` — folded the path-hardcode deny (block hardcoded `/Users/<name>` in `.sh`/`.py`) into verifier-protect's Write branch, deny-before-ask (block wins over ask, matching the prior parallel behavior). Deleted `path-hardcode.sh` + its hooks.json entry. One fewer python3 spawn per Write/Edit. Preserves the case-insensitive `.sh`/`.py` gate, MultiEdit `edits[]` accumulation, and tamper-perimeter realpath matching.
 - `scripts/run-gauntlet.sh` — batch shellcheck into one invocation (whitespace-safe `mapfile` arg expansion). Shell-lint layer: ~1.0s saved (~1960ms → ~940ms over 65 .sh files). Not the gauntlet long-pole (harness-audit is, ~8.4s — corrected in v0.31.1 after profiling).
 - `skills/_lib/frontmatter-helpers.sh` + `skills/harness-audit/scripts/audit.sh` — frontmatter cache: fm_get reads a pre-built per-(file,key,flags) cache (inherited by `$(...)` subshells via fork-copy) and falls back to awk on miss. Built once in audit.sh's main shell. ~390ms / ~4.5% off standalone audit (the pre-commit long-pole; awk spawns are ~0.7ms here so the win is smaller than the verifier's ~1.5–2.5s estimate, but real and net-positive). No check files changed (transparent to call sites); no parser reimplementation (no sync-seam).
@@ -7003,7 +7003,7 @@ Misdirection/under-use audit.
 
 ## [0.25.0] — 2026-07-01
 
-Adopted tathep worktree-guard as plugin gate + defined hotfix production-branch rule.
+Adopted the client's worktree-guard as plugin gate + defined hotfix production-branch rule.
 
 ## [0.24.0] — 2026-07-02
 
