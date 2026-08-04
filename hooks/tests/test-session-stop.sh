@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
-# command-root-anchor (SessionStart), cost-tracker (Stop). These hooks never
-# block (no permissionDecision) — tests assert exit 0 + expected side effect
-# (stdout injection / env-file append / metrics-file append), and that each
-# fails safe (exit 0, no side effect) when its required env var is unset.
+# command-root-anchor (SessionStart), cost-tracker (Stop), thai-summary-gate (Stop).
+# doctrine-bootstrap/command-root-anchor/cost-tracker never block (no decision field)
+# — tests assert exit 0 + expected side effect (stdout injection / env-file append /
+# metrics-file append), and that each fails safe (exit 0, no side effect) when its
+# required env var is unset. thai-summary-gate DOES block (decision:"block") when a
+# substantial reply lacks a Thai closing summary — its tests assert the block fires
+# only on that one condition and fails safe (exit 0, no block) on every other input.
 # Run standalone: bash hooks/tests/test-session-stop.sh
 set -uo pipefail
 
@@ -11,6 +14,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DOCTRINE="$ROOT/hooks/session/doctrine-bootstrap.sh"
 ROOT_ANCHOR="$ROOT/hooks/session/command-root-anchor.sh"
 COST_TRACKER="$ROOT/hooks/stop/cost-tracker.sh"
+THAI_GATE="$ROOT/hooks/stop/thai-summary-gate.sh"
 
 pass=0
 fail=0
@@ -195,6 +199,52 @@ sonnet_row=$(/usr/bin/grep '"model":"claude-sonnet-5"' "$metrics_file" 2>/dev/nu
   && printf '%s' "$sonnet_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "multi-model transcript writes one model_scoped row per model with that model's own tokens" "$ok"
 rm -rf "$fake_home" "$transcript"
+
+echo ""
+echo "=== thai-summary-gate hook (Stop) ==="
+
+long_en=$(python3 -c "print('This is a long English-only completion summary. ' * 10)")
+long_th=$(python3 -c "print('This is a long completion summary. ' * 10 + ' สรุป: งานเสร็จแล้วครับ')")
+
+payload=$(jq -n --arg m "$long_en" '{stop_hook_active:false, last_assistant_message:$m}')
+out=$(printf '%s' "$payload" | bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && printf '%s' "$out" | /usr/bin/grep -q '"decision": *"block"' && ok=1 || ok=0
+assert "blocks a substantial (>=400 char) reply with no Thai script" "$ok"
+
+payload=$(jq -n --arg m "$long_th" '{stop_hook_active:false, last_assistant_message:$m}')
+out=$(printf '%s' "$payload" | bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "allows a substantial reply that already contains Thai script" "$ok"
+
+payload=$(jq -n '{stop_hook_active:false, last_assistant_message:"OK, done."}')
+out=$(printf '%s' "$payload" | bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "allows a short reply below the length floor (no closing recap needed)" "$ok"
+
+# Blocks at most once per turn: stop_hook_active:true means this Stop IS the forced
+# retry — must always allow rather than re-checking and potentially re-blocking.
+payload=$(jq -n --arg m "$long_en" '{stop_hook_active:true, last_assistant_message:$m}')
+out=$(printf '%s' "$payload" | bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "allows on the forced retry (stop_hook_active:true) even with no Thai — blocks once, not repeatedly" "$ok"
+
+out=$(printf 'not json at all' | bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, no block) on malformed stdin" "$ok"
+
+# A hook that errors into a block on every turn would hang every session using this
+# plugin — missing jq must fail safe (allow stop), not fail closed (block forever).
+# /bin/bash by absolute path: PATH="/nonexistent" would also break resolving "bash"
+# itself, not just "jq" — this isolates the missing-dependency case to jq alone.
+out=$(printf '%s' "$payload" | PATH="/nonexistent" /bin/bash "$THAI_GATE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, no block) when jq is unavailable" "$ok"
 
 echo ""
 total=$((pass + fail))
