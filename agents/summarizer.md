@@ -72,6 +72,11 @@ Before compressing, answer (from context, or state your assumption if not given)
   approve a change reads differently than one for someone who needs the technical detail to
   implement it. If the audience isn't stated, default to the least specialized plausible reader —
   it's easier for an expert to skip detail they don't need than for a non-expert to fill a gap.
+  For that reader, a technical term carrying real risk or consequence ("a bucket with public read
+  access," "an unpatched CVE") needs the consequence stated alongside it, not just the term carried
+  over from the source unglossed — "a bucket with public read access" becomes "a storage bucket
+  anyone on the internet can read without credentials." A reader who can't parse the term gets
+  nothing from repeating it back to them.
 - **Does the source have one throughline, or several unrelated ones?** A design doc has one point.
   A meeting transcript covering four agenda items has four. Forcing a single TL;DR onto
   unrelated content produces a false synthesis — summarize each thread separately instead.
@@ -154,6 +159,11 @@ Before finalizing, verify:
   then fix that one. Don't resolve the disagreement by picking whichever reading is easier to make
   both tiers say, or by weakening the tier that happens to be right — matching tiers on the wrong
   reading is not a fix, it's the same bug with the disagreement hidden.
+  **Drift runs both directions.** A source stating "we're confident this is the cause" needs
+  `tl;dr` and `summary` to hold that same confidence in both places — a `summary` that downgrades
+  it to "the team attributes this to..." is adding a hedge the source never gave, the same class
+  of error as a `tl;dr` that flattens a real hedge into false certainty. Neither tier is "usually"
+  the one that drifts; check both against the source every time.
 - **Language matches the source, not the dispatch prompt.** Don't translate Thai input into an
   English summary (or vice versa) just because the request happened to be phrased in a different
   language — only switch output language if the request explicitly asks for one. Match the

@@ -5,6 +5,47 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.170] — 2026-08-04
+
+`agents/summarizer.md`: closed 2 target-attributable findings from a `kbg:review-fixtures` +
+`/iterate-skill` pass (2 independent reviewers, iteration-5 tally critical:0/major:2/minor:1 →
+iteration-7 critical:0/major:1/minor:1, verdict IMPROVED, kept as the new baseline). Fixes: (1)
+Phase 2 now requires a technical term carrying real risk/consequence to be unpacked into
+consequence language for a non-specialist reader (e.g. "a bucket with public read access" →
+"a storage bucket anyone on the internet can read without credentials"), not just carried over
+from the source unglossed — confirmed both to fire and to differentiate from an unexposed
+baseline. (2) a new "drift runs both directions" rule: when a source states something with
+confidence, `tl;dr` and `summary` must hold that same confidence in both places — downgrading to
+a hedge in one tier is the same class of bug as flattening a real hedge into false certainty in
+the other; confirmed closed on the finding that surfaced it (a vendor-rate-limit root cause that
+`tl;dr` stated flatly while `summary` hedged).
+
+iteration-6 (this same run) was voided, not counted: its `with_agent` arm carried an unprompted
+Thai closing block on 3/3 outputs while baseline stayed clean, a confound unrelated to content.
+Root cause, confirmed via controlled dispatch tests: `agents/summarizer.md` pins `model: opus`,
+and opus adheres to the ambient `~/.claude/CLAUDE.md` Task-Completion-Summary imperative more
+literally than the Sonnet model `general-purpose`/baseline dispatches inherit — specific to
+summary-shaped tasks (opus stayed clean on a non-summarization control task). Separately, both
+iteration-5 and iteration-6's `with_agent` fixtures were dispatched via `subagent_type:
+kbg:summarizer`, a name-based reference that silently served the stale plugin-cached copy of this
+file (confirmed via diff against the installed cache) — so iteration-5's tally, while a correct
+verify of the prior `f1eac0c` diff, had zero exposure to this run's candidate diff. iteration-7
+fixed both: fixtures dispatched via `general-purpose` with the live file path handed directly in
+the prompt (no name-based resolution, no model override — matches baseline's model). Full trace:
+`summarizer-workspace/iteration-5/` through `iteration-7/`.
+
+A new, pre-existing (not diff-caused) major surfaced during iteration-7 and was NOT fixed this
+run: a preserved numeric range can get re-labeled with a different meaning than the source gave
+it (e.g. "4h10m to 5h45m" — the source's *total completion time* — restated as "...late," which
+reads as *time past deadline*, roughly doubling the implied severity). Filed for a future pass,
+not blocking this diff.
+
+Separately: `~/.claude/CLAUDE.md`'s Task Completion Summary rule was restructured (in the
+`dotfiles` repo, not this one) — the subagent-dispatch exemption moved from a trailing paragraph
+into the imperative's own opening clause, since a trailing exception wasn't reliably overriding a
+model that adheres closely to the main instruction. This is what made iteration-7's verify pass
+trustworthy in the first place.
+
 ## [0.68.167] — 2026-08-04
 
 `skills/goal-craft/SKILL.md`: closed 4 target-attributable findings from a `kbg:review-fixtures` +
