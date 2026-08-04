@@ -54,6 +54,78 @@ PROTECTED_REASON = (
     "the code that judges it without your approval."
 )
 
+# No literal single-quote character appears anywhere below (the whole script
+# body is wrapped in a bash single-quoted string, which cannot contain one at
+# all). SQ builds one at runtime wherever a regex or replacement needs to
+# match or emit a quote character.
+SQ = chr(39)
+
+# Ported from worktree-guard.py 2026-08-04, after a subagent_type
+# kbg:silent-failure-hunter re-verification dispatch confirmed this generator
+# — despite the header comment above claiming a straight port in the other
+# direction — never received three fixes worktree-guard.py needed across two
+# earlier rounds the same day: heredoc-body mistokenization, ANSI-C quote
+# mistokenization, and newline-as-statement-separator blindness. Confirmed
+# exploitable here too by direct reproduction before porting, not assumed
+# from the code shape alone. Delimiter is any run of non-whitespace,
+# non-quote characters — bash allows hyphens/dots/etc (e.g. <<MY-EOF), not
+# just word characters.
+_HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
+_ANSI_C_QUOTE_RE = re.compile(r"\$" + SQ + r"((?:[^" + SQ + r"\\]|\\.)*)" + SQ)
+_LINE_CONT_RE = re.compile(r"\\\n")
+
+
+def _strip_heredocs(cmd):
+    # shlex has no concept of heredoc syntax and mis-tokenizes on any quote
+    # character inside body text — heredoc bodies are literal data until the
+    # closing delimiter line, not shell syntax subject to quoting rules.
+    lines = cmd.split("\n")
+    out, i = [], 0
+    while i < len(lines):
+        out.append(lines[i])
+        m = _HEREDOC_RE.search(lines[i])
+        i += 1
+        if not m:
+            continue
+        strip_tabs, delim = bool(m.group(1)), m.group(3)
+        body_start, found = i, False
+        while i < len(lines):
+            body_line = lines[i].lstrip("\t") if strip_tabs else lines[i]
+            i += 1
+            if body_line == delim:
+                found = True
+                break
+        if not found:
+            # Closing delimiter never matched. Put the scanned lines BACK
+            # instead of discarding them — silently eating a real write
+            # statement that followed an unmatched heredoc open is worse
+            # than never stripping at all.
+            out.extend(lines[body_start:i])
+    return "\n".join(out)
+
+
+def _normalize_ansi_c_quotes(cmd):
+    # shlex does not understand ANSI-C quoting ($SQ...SQ) — it splits on the
+    # bare $ instead of treating the whole span as one token. Rewriting to a
+    # plain quoted token fixes token BOUNDARIES, which is all this generator
+    # needs (not a full backslash-escape reimplementation).
+    return _ANSI_C_QUOTE_RE.sub(lambda m: SQ + m.group(1) + SQ, cmd)
+
+
+def _newlines_to_seps(cmd):
+    # A bare newline separates Bash statements exactly like semicolon does,
+    # but shlex treats \n as ordinary whitespace, so a write-only statement
+    # on any line but the first is invisible to every argv0-dispatch branch
+    # below. Insert a separator AFTER each non-continuation newline (never in
+    # place of it) — keeping the real newline matters because the default
+    # comment handling stops consuming at the next literal newline; replacing
+    # every newline outright would let a single # anywhere swallow the rest
+    # of the command as one comment.
+    placeholder = "\x00"
+    cmd = _LINE_CONT_RE.sub(placeholder, cmd)
+    cmd = cmd.replace("\n", "\n; ")
+    return cmd.replace(placeholder, "\\\n")
+
 def emit_ask(fp, reason=None):
     print(json.dumps({
         "hookSpecificOutput": {
@@ -99,8 +171,13 @@ def bash_write_targets(cmd):
     """Yield candidate file paths the Bash command writes to. Bounded idiom
     set: redirects, tee, sed -i, perl -i, cp/mv/install, dd, rsync, tar -x,
     patch, git apply/am. Not an adversarial sandbox."""
+    cmd = _newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd)))
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+        # $ is not in shlex default wordchars, so an unquoted redirect target
+        # like $HOME/foo splits into two tokens ($ and HOME/foo) instead of
+        # one.
+        lex.wordchars += "$"
         tokens = list(lex)
     except ValueError:
         tokens = cmd.split()
@@ -263,8 +340,13 @@ try:
     if tool == "Bash":
         cmd = ti.get("command", "") or ""
         for p in bash_write_targets(cmd):
-            if is_verifier_path(p):
-                emit_ask(p, "Bash write to a verifier surface (" + p + ") — " + PROTECTED_REASON)
+            # A candidate can still carry a literal ~ or $VAR here —
+            # tokenization alone does not expand it, and is_verifier_path
+            # never did either. Expand both, or a target that really
+            # resolves into a protected path never matches.
+            expanded = os.path.expandvars(os.path.expanduser(p))
+            if is_verifier_path(expanded):
+                emit_ask(expanded, "Bash write to a verifier surface (" + expanded + ") — " + PROTECTED_REASON)
                 break
         sys.exit(0)
 

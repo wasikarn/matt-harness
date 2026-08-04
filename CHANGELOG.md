@@ -5,6 +5,50 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.174] — 2026-08-04
+
+Ports v0.68.173's `worktree-guard.py` fixes into `hooks/gates/verifier-protect.sh` — a
+sibling, **always-on** gate (no opt-in condition, unlike `worktree-guard.py`; fires on
+every Bash/Write/Edit call in every repo running this plugin) that protects the harness's
+own tamper-resistance perimeter (`hooks/gates/**`, `hooks/hooks.json`,
+`skills/harness-audit/scripts/**`). Held back from v0.68.173 deliberately, per an explicit
+user check-in, given the wide blast radius and this exact preprocessing stack's 2-for-2
+regression track record across the day's three earlier rounds.
+
+Before touching the file, its three gaps were confirmed exploitable by direct live
+reproduction against the unmodified gate (not assumed from code-shape similarity alone):
+a write on the second line of a newline-joined Bash command, a heredoc body containing an
+ordinary English contraction followed by a real write, and an unquoted `$VAR` redirect
+target all silently produced no output (bypass) instead of the expected `ask` prompt.
+`worktree-guard.py`'s own header comment claims its generator is "a straight port" of this
+file's — the three fixes made to that copy earlier today were never ported back.
+
+Ported (adapted for this file's constraint of zero literal single-quote characters
+anywhere in its body — the whole generator is embedded in a bash single-quoted string,
+which cannot contain one at all; new quote-matching regexes build the character at runtime
+via `chr(39)` instead): `_strip_heredocs`, `_normalize_ansi_c_quotes`, `_newlines_to_seps`
+(using the already-corrected `"\n; "` form, not the shipped-then-regressed `" ; "` form),
+`$` added to `shlex`'s wordchars, and `expandvars`/`expanduser` applied to every Bash-path
+candidate before the protected-path check.
+
+`hooks/tests/test-verifier-protect.sh` is new — this gate had **zero** automated coverage
+before today, despite being always-on. 13 cases: 3 baseline sanity, a 9-row positive/
+negative battery covering all three ported fixes plus 3 negative (must-not-false-trigger)
+cases, and 1 sanity check for the pre-existing path-hardcode fold-in. Test-honesty
+verified against the pre-fix file: 7/13, with exactly the 6 fix-relevant assertions
+failing (13/13 post-fix). One battery case (`~` expansion) needed a redesign mid-build:
+the literal token `~/hooks/gates/evil4.sh` accidentally passed pre-fix too, because
+`os.path.realpath` never strips an unresolved `~` path component, so the substring
+`/hooks/gates/` still appeared later in the malformed path regardless of whether real
+expansion had happened — the fix was to route the protected substring through `$HOME`
+instead of spelling it into the command literal, so only genuine expansion reveals it.
+Wired into `scripts/run-gauntlet.sh` (now a 10-file hook suite, was 9) and both
+`CLAUDE.md` and the `inventory-boundary.sh` generator's hardcoded count text updated to
+match; `BOUNDARY.md` regenerated via its own documented `--repo-only` invocation (missing
+that flag on the first attempt truncated the file to the wrong schema — caught immediately
+by `git diff --stat` showing a 254-line deletion, restored via `git show`, not a blind
+`git checkout` on a dirty tree).
+
 ## [0.68.173] — 2026-08-04
 
 Round-3 fix to `hooks/gates/worktree-guard.py`, same day as v0.68.171/172. After v0.68.172
