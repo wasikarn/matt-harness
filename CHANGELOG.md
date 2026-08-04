@@ -5,6 +5,55 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.172] — 2026-08-04
+
+Round-2 fix to `hooks/gates/worktree-guard.py`, same day as v0.68.171. After that fix
+landed and the plugin was reinstalled, a genuine `subagent_type: kbg:silent-failure-hunter`
+re-verification dispatch (the one thing v0.68.171's own verification couldn't do, since the
+plugin cache was stale at the time) found 2 more CRITICAL bugs in the same
+`bash_write_targets()` neighborhood, both confirmed via live end-to-end reproduction against
+a real fixture repo, not just static reading:
+
+1. **A real regression in v0.68.171's own fix.** `_HEREDOC_RE` matched only `\w+` for the
+   heredoc delimiter, but bash allows hyphens/dots/etc in a delimiter (`<<MY-EOF` is
+   ordinary, common syntax). On a delimiter the regex couldn't match, `_strip_heredocs`'s
+   body-scanning loop never found a closing line and silently consumed **every remaining
+   line of the command** as "heredoc body" — including any real write statement that
+   followed. This is strictly worse than v0.68.171's original bug (mis-tokenizing one
+   target vs. erasing an arbitrary amount of trailing content). Fixed two ways: broadened
+   the delimiter match to any non-whitespace, non-quote run, and — more importantly — made
+   the "closing delimiter never found" case fail safe: the scanned lines are put back
+   instead of discarded, so an unrecognized future heredoc form degrades to the known,
+   already-handled `shlex` `ValueError` fallback instead of silently eating content.
+2. **A pre-existing gap, not introduced by the round-1 fix.** `shlex`'s whitespace set
+   includes `\n`, and `SEPS` (the statement-separator set used to window a multi-statement
+   Bash command) never included it — so two statements joined only by a line break (not
+   `;`/`&&`/`||`) collapsed into one window, and a write-only statement on any line but the
+   first was invisible to every `argv0`-dispatch branch. Fixed with a pre-pass that
+   converts non-continuation newlines to `;` before tokenizing (a `\` immediately before
+   the newline is a real bash line continuation, left alone).
+
+Both confirmed via direct reproduction: a 2-line command with a write on the second line,
+and a `<<MY-EOF ... MY-EOF` heredoc followed by a write statement, both previously returned
+exit 0 (silent allow) against the real gate; both now correctly return exit 2 (deny). 2 new
+regression tests added to `hooks/tests/test-worktree-guard.sh` (19/19 passing), each
+confirmed to fail against the round-1-only code (17/19) per this repo's test-honesty
+discipline — round-1's own 2 regression tests remain green throughout, confirming this
+round didn't regress that fix.
+
+Process note, since it's the reason this round exists at all: `/iterate-skill`'s own
+content-improve verification for `silent-failure-hunter` (v0.68.171) had to use a
+`general-purpose` agent told to read the doctrine file directly, because the real
+`subagent_type: kbg:silent-failure-hunter` dispatch resolves from the installed plugin
+cache, which doesn't reflect an uncommitted same-session edit. That workaround is lower-
+fidelity than a genuine dispatch — confirmed empirically this round, not just theorized:
+the real dispatch, run after the fix was committed and the plugin reinstalled, found two
+CRITICAL bugs in 24 tool calls that two rounds of the workaround method (4 fixture-
+generation dispatches plus 4 independent reviewer dispatches, in the v0.68.171 work) never
+surfaced. Worth remembering next time a same-session content-improve loop needs this
+workaround: budget a real post-reinstall re-verification dispatch as a standard follow-up
+step, not an optional extra.
+
 ## [0.68.171] — 2026-08-04
 
 `agents/silent-failure-hunter.md`: closed 2 target-attributable MAJOR findings from a

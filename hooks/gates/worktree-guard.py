@@ -62,7 +62,10 @@ def under(path, root):
         return False  # different drives / relative mismatch
 
 
-_HEREDOC_RE = re.compile(r"<<(-)?\s*(['\"]?)(\w+)\2")
+# Delimiter is any run of non-whitespace, non-quote characters -- bash allows
+# hyphens/dots/etc (e.g. <<MY-EOF), not just \w. A too-narrow match here is
+# worse than not stripping at all: see the "not found" branch below for why.
+_HEREDOC_RE = re.compile(r"<<(-)?\s*(['\"]?)([^\s'\"]+)\2")
 _ANSI_C_QUOTE_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'")
 
 
@@ -84,12 +87,45 @@ def _strip_heredocs(cmd):
         if not m:
             continue
         strip_tabs, delim = bool(m.group(1)), m.group(3)
+        body_start, found = i, False
         while i < len(lines):
             body_line = lines[i].lstrip("\t") if strip_tabs else lines[i]
             i += 1
             if body_line == delim:
+                found = True
                 break
+        if not found:
+            # Closing delimiter never matched (a still-unhandled bash quoting
+            # form, or the command is truncated). Put the lines we scanned
+            # BACK instead of silently discarding them -- confirmed the hard
+            # way (2026-08-04): an earlier version of this function ate every
+            # remaining line as "body" on a no-match, including a real write
+            # statement that followed, which is strictly worse than never
+            # stripping at all. Worst case here, shlex sees literal heredoc
+            # body text and trips its existing ValueError fallback -- a known,
+            # already-handled shape, not a silent content loss.
+            out.extend(lines[body_start:i])
     return "\n".join(out)
+
+
+_LINE_CONT_RE = re.compile(r"\\\n")
+
+
+def _newlines_to_seps(cmd):
+    """A bare newline separates Bash statements exactly like ';' does, but
+    shlex's whitespace set includes \\n, so it's swallowed as ordinary
+    inter-token whitespace and never lands in SEPS below -- a write-only
+    statement on any line but the first is invisible to every argv0-dispatch
+    branch. Convert non-continuation newlines to ';' before tokenizing. A
+    backslash immediately before the newline is a real bash line continuation
+    (same logical statement, not a separator) -- left alone for shlex's own
+    (slightly quirky but harmless for target-detection purposes) handling.
+    Confirmed exploitable (2026-08-04): a write statement on a later line of a
+    multi-statement command bypassed this gate silently (exit 0)."""
+    placeholder = "\x00"
+    cmd = _LINE_CONT_RE.sub(placeholder, cmd)
+    cmd = cmd.replace("\n", " ; ")
+    return cmd.replace(placeholder, "\\\n")
 
 
 def _normalize_ansi_c_quotes(cmd):
@@ -108,7 +144,7 @@ def bash_write_targets(cmd):
     verifier-protect.sh's generator of the same name (bounded idiom set:
     redirects, tee, sed -i, cp/mv/install, rsync, tar -x, patch, git apply/am,
     dd of=; not an adversarial sandbox)."""
-    cmd = _normalize_ansi_c_quotes(_strip_heredocs(cmd))
+    cmd = _newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd)))
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
         tokens = list(lex)

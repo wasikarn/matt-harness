@@ -191,6 +191,33 @@ out=$( (cd "$WS" && echo "$bashpayload_ansic" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "ANSI-C \$'...' quoted target -> deny exit 2 (not a silent bypass)" "$ok"
 
+# Regression test (found + fixed 2026-08-04, round 2 -- caught by a genuine
+# subagent_type:kbg:silent-failure-hunter re-verification dispatch after the
+# round-1 fix landed): shlex treats a bare newline as ordinary whitespace, and
+# SEPS never included '\n' -- so a write-only statement on any line but the
+# first of a multi-statement Bash command was invisible to every argv0-dispatch
+# branch. Two statements joined only by a newline (no ';'/'&&'), write on the
+# second line.
+NEWLINE_CMD=$(printf 'echo hello\nsed -i "" "s/x/y/" repo1/f.txt')
+bashpayload_newline=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$NEWLINE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_newline" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "write on 2nd line of a newline-joined command -> deny exit 2 (not a silent bypass)" "$ok"
+
+# Same round-2 dispatch, a regression in round-1's OWN fix: the heredoc
+# delimiter regex only matched \w+ (word characters), so a delimiter with a
+# hyphen (a real, common bash pattern -- <<MY-EOF) never matched the closing
+# line, and _strip_heredocs silently consumed every remaining line as "body",
+# including a real write statement that followed -- worse than round-1's bug,
+# since it ate content instead of just mis-tokenizing it.
+HYPHEN_HEREDOC_CMD=$(printf 'cat <<MY-EOF\nsome content\nMY-EOF\nsed -i "" "s/x/y/" repo1/f.txt')
+bashpayload_hyphenhd=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$HYPHEN_HEREDOC_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_hyphenhd" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "hyphenated heredoc delimiter + write statement after it -> deny exit 2 (not silently eaten)" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
