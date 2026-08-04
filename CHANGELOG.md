@@ -22,17 +22,27 @@ the other; confirmed closed on the finding that surfaced it (a vendor-rate-limit
 
 iteration-6 (this same run) was voided, not counted: its `with_agent` arm carried an unprompted
 Thai closing block on 3/3 outputs while baseline stayed clean, a confound unrelated to content.
-Root cause, confirmed via controlled dispatch tests: `agents/summarizer.md` pins `model: opus`,
-and opus adheres to the ambient `~/.claude/CLAUDE.md` Task-Completion-Summary imperative more
-literally than the Sonnet model `general-purpose`/baseline dispatches inherit — specific to
-summary-shaped tasks (opus stayed clean on a non-summarization control task). Separately, both
-iteration-5 and iteration-6's `with_agent` fixtures were dispatched via `subagent_type:
-kbg:summarizer`, a name-based reference that silently served the stale plugin-cached copy of this
-file (confirmed via diff against the installed cache) — so iteration-5's tally, while a correct
-verify of the prior `f1eac0c` diff, had zero exposure to this run's candidate diff. iteration-7
-fixed both: fixtures dispatched via `general-purpose` with the live file path handed directly in
-the prompt (no name-based resolution, no model override — matches baseline's model). Full trace:
-`summarizer-workspace/iteration-5/` through `iteration-7/`.
+Correlation, not a confirmed mechanism: `agents/summarizer.md` pins `model: opus`, and opus-model
+dispatches leaked the Thai block in 7/7 trials on summary-shaped tasks (across `kbg:summarizer`
+and a `general-purpose`+opus-override control, including 3/3 after a scope-exemption paragraph
+was added to CLAUDE.md), against Sonnet's 1/6. A single non-summarization control task on opus
+stayed clean, which is suggestive but not conclusive at n=1 — "opus adheres to instructions more
+literally than Sonnet" is this session's working explanation, not an established or independently
+verified property of either model; a proper discriminating test (model × task-shape, n≥5/cell)
+hasn't been run. The one thing confirmed operationally, independent of mechanism: a trailing
+scope-exemption paragraph did not suppress the leak (0/3 effective). Separately — and less firmly
+than the historical framing below might suggest, since the same undetected staleness bug covers
+this whole window too — both iteration-5 and iteration-6's `with_agent` fixtures are believed to
+have been dispatched via `subagent_type: kbg:summarizer`, a name-based reference that would
+silently serve the stale plugin-cached copy of this file (a diff against the installed cache
+confirms the cache lacked this diff's content; the dispatch method itself isn't recorded on disk
+for those two iterations, only inferred from output behavior and session history) — so
+iteration-5's tally, while a plausible verify of the prior `f1eac0c` diff, likely had zero
+exposure to this run's candidate diff. iteration-7 fixed the practical problem regardless of
+mechanism: fixtures dispatched via `general-purpose` with the live file path handed directly in
+the prompt (no name-based resolution, no model override — matches baseline's model), and all 6
+outputs confirmed Thai-free before review. Full trace: `summarizer-workspace/iteration-5/`
+through `iteration-7/`.
 
 A new, pre-existing (not diff-caused) major surfaced during iteration-7 and was NOT fixed this
 run: a preserved numeric range can get re-labeled with a different meaning than the source gave
