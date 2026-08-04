@@ -5,6 +5,67 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.171] — 2026-08-04
+
+`agents/silent-failure-hunter.md`: closed 2 target-attributable MAJOR findings from a
+`kbg:review-fixtures` + `/iterate-skill` pass against 2 real, unedited substrate files
+(`hooks/gates/worktree-guard.py`, `scripts/autotrigger/events.py` — deliberately not
+hand-planted fixtures, per this repo's own confirmed "planting a bug measures your
+planting, not the hunter" failure mode). Iteration-1 tally critical:0/major:3/minor:1 →
+iteration-2 critical:0/major:0/minor:0, verdict IMPROVED, kept as the new baseline. Fixes:
+(1) new Evidence Gate item 5, "sweep sibling branches before finalizing" — the agent found
+one strong, well-evidenced bug in one branch of a multi-way classifier (`elif`/`switch`
+chain) and stopped, missing sibling bugs of the identical category nearby; confirmed twice
+independently (an unguided baseline caught 2 more bypasses in the same
+`bash_write_targets()` function the agent's own CRITICAL finding was in; both reviewers
+independently caught 2 more real bugs in the same 252-line `events.py` file). (2) new Hunt
+Target 6, "concurrency-dependent silent failures" — zero prior coverage for a
+fallback/swallow whose safety assumption depends on single-caller execution, despite
+`worktree-guard.py`'s entire purpose being concurrent-session safety; both reviewers
+converged on this gap independently. Verification for iteration-2 required dispatching a
+`general-purpose` agent told to read the doctrine file directly rather than
+`subagent_type: kbg:silent-failure-hunter` (which would've resolved from the stale
+pre-bump plugin cache, not this session's uncommitted edit) — iteration-1's original
+CRITICAL finding was absent from iteration-2's output, but a controlled re-test (identical
+dispatch method, pre-fix doctrine) also missed it, conclusively isolating the gap to that
+verification-method's fidelity rather than the doctrine change.
+
+That same iteration-1 CRITICAL finding was a real, live bug, not a fixture artifact:
+`hooks/gates/worktree-guard.py`'s `bash_write_targets()` used `shlex` to detect Bash-
+mediated writes to a protected checkout, but `shlex` has no concept of heredoc syntax —
+an ordinary heredoc whose body contains an unbalanced quote (an English contraction like
+"it's" is enough) trips `shlex`'s global quote-balance check, and the `except ValueError:
+tokens = cmd.split()` fallback then quote-blindly mangles a quoted, space-containing write
+target, whose garbage fragment's nearest existing directory ancestor climbs all the way up
+to the guarded workspace root itself — tripping the workspace-root exemption and letting
+the write through completely undetected (confirmed via 2 independent live reproductions
+against a real fixture repo, run through the actual gate end-to-end). A second, related
+gap: bash's ANSI-C `$'...'` quoting isn't a form `shlex` understands at all — it doesn't
+raise, it just tokenizes wrong, yielding the literal string `'$'` as the "target" instead
+of the real filename. Fixed by stripping heredoc bodies (data, not shell syntax) and
+normalizing `$'...'` to a plain quoted token before `shlex` ever sees the command — closes
+both mechanisms at the source rather than patching `nearest_dir`'s climb-to-existing-
+ancestor behavior after the fact. 2 new regression tests added to
+`hooks/tests/test-worktree-guard.sh` (17/17 passing); both confirmed to fail against the
+pre-fix code (2/17 failures) per this repo's test-honesty "distinguishes-or-it-doesn't"
+check — an earlier draft of these tests accidentally passed against the unfixed code too,
+because `cd`-ing into the sub-repo first made any mangled fragment resolve under the
+sub-repo regardless of tokenization correctness; fixed by running from the workspace root
+with a `repo1/`-relative target, matching the actual exploited mechanism.
+
+Not fixed in this pass, left as known follow-ups surfaced by the same exercise (all
+independently verified real, not scored against `silent-failure-hunter`'s doctrine since
+they're `bash_write_targets()` coverage gaps, not agent-content gaps): the `>|`
+clobber-redirect operator mis-parses to a bare `'|'`; a `cd`-chained command
+(`cd dir && echo x > f`) resolves its target against the hook's own cwd, not the `cd`'d
+directory; `git apply`/`git am` never open the diff to find its real `+++ b/<path>`
+targets (a confirmed regression against `verifier-protect.sh`, the file this script's
+header claims to be "a straight port of"); bare `tar -xf` (no `-C`) and stdin-piped
+`patch -p1 < diff` extract/write to cwd with no candidate yielded at all, despite both
+being named as covered in the function's own docstring; a `git rev-parse --abbrev-ref HEAD`
+failure collapses `branch` to `""`, which reads as "not protected" rather than
+"indeterminate."
+
 ## [0.68.170] — 2026-08-04
 
 `agents/summarizer.md`: closed 2 target-attributable findings from a `kbg:review-fixtures` +

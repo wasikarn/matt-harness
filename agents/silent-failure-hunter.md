@@ -130,6 +130,26 @@ not a silent failure — there's no error anywhere in that flow for this agent t
 Unchecked bulk writes are common and usually benign; flagging them here is exactly the
 false-positive flood this agent exists to avoid.
 
+### 6. Concurrency-Dependent Silent Failures
+
+A fallback, swallowed exception, or fail-open path can be genuinely safe under a single-caller
+assumption and silently unsafe once multiple callers/sessions can race on the same resource —
+check whether the code's safety argument (a comment, a design doc, the fallback's own logic)
+actually depends on running alone, and whether that assumption holds where this code runs.
+
+- a caught exception whose fallback is documented safe for "this can't really happen" reasons,
+  where a concurrent caller racing on the same file/lock/resource is exactly how it happens
+- a check-then-act sequence (file exists, then create; read a value, then increment) with no
+  lock or atomic primitive — safe serially, a lost update or duplicate creation under real
+  concurrent access
+- a retry or fallback whose safety implicitly assumes the failure it's recovering from is
+  transient and isolated, when the actual trigger could be sustained contention from a sibling
+  process doing the same thing at the same time
+
+Only applies where concurrent execution is plausible — a single-user CLI script processing one
+file at a time doesn't need this lens; a gate, lock, or shared-resource script firing from
+multiple callers or sessions does.
+
 ## Evidence Gate
 
 Before writing a finding, confirm all of the following — a pattern match alone ("this looks
@@ -146,6 +166,14 @@ like an empty catch") is not sufficient:
    function's name before treating it as unhandled — many apparent silent failures are
    logged/surfaced by a wrapper the local diff doesn't show, but "I didn't see one" and "I
    looked and found none" are different confidence levels worth having.
+
+5. **Sweep sibling branches before finalizing.** If a finding traces to one branch of a
+   multi-way classifier — an `elif`/`switch`/`match` chain, or a set of structurally parallel
+   functions each handling one case of the same category — check the other branches for the
+   same class of mistake before writing up the review. A bug isolated to one branch is a strong
+   prior the others share it; stopping at the first strong, well-evidenced finding produces a
+   false-negative flood, the mirror image of the false-positive flood this agent's opening line
+   already guards against.
 
 **Returning zero findings on a clean file is a valid, expected outcome.** A codebase with
 consistent error propagation and no swallowed exceptions gets a clean report — don't manufacture

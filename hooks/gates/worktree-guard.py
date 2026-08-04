@@ -62,11 +62,53 @@ def under(path, root):
         return False  # different drives / relative mismatch
 
 
+_HEREDOC_RE = re.compile(r"<<(-)?\s*(['\"]?)(\w+)\2")
+_ANSI_C_QUOTE_RE = re.compile(r"\$'((?:[^'\\]|\\.)*)'")
+
+
+def _strip_heredocs(cmd):
+    """Remove heredoc bodies before shlex tokenization. shlex has no concept of
+    heredoc syntax and mis-tokenizes on any quote character inside body text --
+    heredoc bodies are literal data until the closing delimiter line, not shell
+    syntax subject to quoting rules. Confirmed exploitable: an ordinary heredoc
+    whose body contains an English contraction (e.g. "it's") trips shlex's
+    global quote-balance check, which then falls back to a quote-blind
+    cmd.split() that mangles a quoted, space-containing write target -- letting
+    a Bash-mediated write silently bypass this gate (2026-08-04)."""
+    lines = cmd.split("\n")
+    out, i = [], 0
+    while i < len(lines):
+        out.append(lines[i])
+        m = _HEREDOC_RE.search(lines[i])
+        i += 1
+        if not m:
+            continue
+        strip_tabs, delim = bool(m.group(1)), m.group(3)
+        while i < len(lines):
+            body_line = lines[i].lstrip("\t") if strip_tabs else lines[i]
+            i += 1
+            if body_line == delim:
+                break
+    return "\n".join(out)
+
+
+def _normalize_ansi_c_quotes(cmd):
+    """shlex doesn't understand bash's ANSI-C quoting ($'...') -- it splits on
+    the bare `$` instead of treating the whole span as one token, so a target
+    like $'weird\\tname.txt' yields the literal string '$' as the "target"
+    instead of the real filename. Rewriting $'...' to a plain '...' token fixes
+    token BOUNDARIES (what this gate needs) even though it doesn't reproduce
+    bash's own backslash-escape interpretation inside the quotes (out of scope
+    -- this generator is explicitly "not an adversarial sandbox")."""
+    return _ANSI_C_QUOTE_RE.sub(lambda m: "'" + m.group(1) + "'", cmd)
+
+
 def bash_write_targets(cmd):
     """Yield candidate file paths a Bash command writes to. Ported from
     verifier-protect.sh's generator of the same name (bounded idiom set:
     redirects, tee, sed -i, cp/mv/install, rsync, tar -x, patch, git apply/am,
     dd of=; not an adversarial sandbox)."""
+    cmd = _normalize_ansi_c_quotes(_strip_heredocs(cmd))
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
         tokens = list(lex)

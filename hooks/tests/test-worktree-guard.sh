@@ -158,6 +158,39 @@ out=$( (export KBG_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "wrapper string: var set + Bash write to protected checkout -> deny exit 2" "$ok"
 
+# Regression test (found + fixed 2026-08-04): a heredoc whose BODY contains an
+# unbalanced quote (an ordinary English contraction is enough) used to trip
+# shlex's global quote-balance check, falling back to a quote-blind cmd.split()
+# that mangled a quoted, space-containing write target into a fragment with a
+# stray leading quote and no ".txt" -- and critically, run from $WS (the
+# guarded workspace root) targeting the sub-repo via a relative "repo1/..."
+# path, that mangled fragment's nearest EXISTING directory ancestor climbs
+# all the way back up to $WS itself, which trips the workspace-root exemption
+# ("the file this comment is protecting" is exempt by design) -- letting the
+# write through the gate silently (exit 0, no denial) instead of being denied
+# as a sub-repo main-checkout write. Must run from $WS, not from inside
+# repo1 -- cd'ing into repo1 first makes ANY mangled fragment resolve under
+# repo1 regardless of tokenization correctness, which doesn't exercise the
+# actual bug (confirmed: an earlier draft of this test passed against the
+# unfixed code for exactly this reason).
+HEREDOC_CMD=$(printf 'cat <<%s > "repo1/notes file.txt"\nit%ss here\nEOF' "'EOF'" "'")
+bashpayload_heredoc=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$HEREDOC_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_heredoc" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "heredoc body w/ unbalanced quote + quoted spaced target -> deny exit 2 (not a silent bypass)" "$ok"
+
+# Same class, ANSI-C quoting: shlex doesn't raise on \$'...', it just splits on
+# the bare \$ and yields the wrong token ('\$' itself) instead of the real
+# name -- which, run from \$WS the same way, also climbs to the exempt
+# workspace root.
+ANSIC_CMD="echo x > \$'repo1/notes file.txt'"
+bashpayload_ansic=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$ANSIC_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_ansic" \
+  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "ANSI-C \$'...' quoted target -> deny exit 2 (not a silent bypass)" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
