@@ -101,7 +101,7 @@ Initial report: $ARGUMENTS
 
 **Actions**:
 1. Two shapes:
-   - **Surgical (default)** — minimal change exactly where the bug is. No nearby cleanup, no opportunistic refactor.
+   - **Surgical (default)** — minimal change exactly where the bug is. No nearby cleanup, no opportunistic refactor. **Exception**: a workaround elsewhere that exists *because of the same root-cause defect* the fix resolves upstream isn't nearby cleanup — it's a second instance of the identical bug. Leaving it produces code and comments that are now silently wrong about why they exist. Consolidating it into the fix is part of confirming the fix's blast radius, not scope creep — the test is "does this code exist for a reason my fix just invalidated," not "is this code physically near the bug."
    - **Structural** — only if the bug is a symptom of a missing seam or wrong abstraction, AND the user agrees the refactor is in scope. For structural fixes, delegate to the `refactor-cleaner` agent (via `/refactor-clean`) instead of doing it inline.
 2. Present chosen strategy to the user — surgical change at <file:line> doing X, OR structural change with refactor scope Y.
 3. **Analyze**: scope of buggy code (single function vs cross-module), presence of missing seam/abstraction, regression-test feasibility. **Recommend** the shape with lowest blast radius that still fixes the root cause.
@@ -161,7 +161,7 @@ Update todos as you progress.
    - **Error-handling** (new/modified try-catch, fallbacks, exception flow) → `silent-failure-hunter`
    - **Tests added/modified** → `code-reviewer` (behavioral test-coverage lens)
    - **Auth / secrets / external input** → `security-reviewer`
-   - **Comments added/modified** → `code-reviewer` (comment-accuracy lens)
+   - **Comments added/modified, or a shared function's behavior changed** (check other callers of the touched function for comments describing the old behavior, even in files the fix didn't edit — a comma-strip workaround's own comment going stale after the fix lands upstream is exactly this case) → `code-reviewer` (comment-accuracy lens)
    - If the fix touched none of the above (rare for non-trivial bugs) → route to `code-reviewer` agent for a general correctness pass against Phase 4 strategy.
 2. Consolidate findings into severity tiers + present to user. For each finding, assign a tier by asking *"if this ships as-is, what's the worst that could happen?"* — production breaks / a 2am page / silent data corruption / users see errors → **Critical**; a real but contained issue → **Important**; only "the code is slightly less clean" → **Minor**:
    - **Critical** — must fix before merge (security, data integrity, broken functionality)

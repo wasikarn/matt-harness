@@ -5,6 +5,102 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.166] — 2026-08-04
+
+`agents/requirement-analyst.md`: added a pre-flag check ahead of Phase 3/4/7 output — before an
+item lands in `ambiguities`, `edge_cases_missing`, or `open_questions`, it must pass a
+**decision-vs-fact** test (is this something the ticket owner must actually decide, or an
+implementation-feasibility fact almost certainly resolvable by reading the existing system — e.g.
+"does the client already hold this value") and a **groundedness** test (does it trace to the
+ticket's actual text, not a generic checklist item imported because it's common for this class of
+feature). Phase 4 gained an **asymmetric-specification** edge case: a detail stated for one branch
+(a success toast's duration) but silently missing from its direct counterpart (the failure toast).
+Phase 6's testable/not-testable line is sharpened: an assumption that *narrows* an already-implied
+behavior (ticket says "export a file," assume CSV) is fine to phrase in the candidate GWT with the
+assumption flagged; one that *invents* a net-new specific with no ticket basis (ticket says "log
+the event," assume a specific field list) must not appear in the Then-clause at all — reclassify as
+not-testable and let the missing specific become the `open_question`. Added a **self-consistency
+pass** before Output Format renders: term-consistency across the draft, per-clause sweep coverage
+for anything `bundled_requirements` split out, a Then-clause audit against each row's `assumption`
+field, and a groundedness/exclusion recheck for every `ambiguities`/`edge_cases_missing` entry.
+
+`commands/fix-bug.md`: the surgical-fix default gained an exception — a workaround elsewhere that
+exists *because of the same root-cause defect* the fix resolves upstream is a second instance of
+the same bug, not nearby cleanup, and belongs in the same fix. The review-dispatch table's
+comment-accuracy trigger was widened from "comments added/modified" to also fire when a shared
+function's behavior changed, checking other callers for now-stale comments even in files the fix
+didn't touch.
+
+## [0.68.165] — 2026-08-04
+
+`/kbg:iterate-skill post-mortem` loop, 3 rounds (cap reached): closed 1 major + 1 minor
+target-attributable finding from an initial `/kbg:review-fixtures post-mortem` pass (the
+command's first-ever fixture-generation run) against `commands/post-mortem.md`. Major: Phase 4's
+"verify every code identifier exists" step only checked existence, not accuracy — a draft cited
+a harness-audit check as covering matcher-scope validation when it actually validates a different
+file and, in this repo's flat plugin layout, never even runs — fixed by requiring claims *about*
+a cited identifier to be verified, not just the identifier's existence, plus a parallel rule for
+absence-of-evidence claims stated as settled fact. Iteration-2 tally: 0 critical / 1 major / 2
+minor -> 0/0/3 (major cleared). A second round closed the one finding both review-fixtures
+reviewers converged on: a draft declared a follow-up "resolved" after checking only 1 of 3
+occurrences of the relevant term in the target file — added a Phase 4 step requiring a full-file
+grep before declaring a broader concern closed, not just one location. Iteration-3 tally: 0/0/3
+-> 0/0/1.
+
+Disclosed, not fully closed: iteration-3's own review found the new full-file-scope check itself
+produced an incomplete citation on a second try (correctly concluded no bug existed in a sibling
+gate script, but the supporting citation named the wrong filter as the scope-narrowing mechanism)
+— the citation-completeness class is diminishing across 3 rounds of patches, not eliminated.
+Separately, the rule works reliably when a draft renders it as an explicit numbered checklist
+(confirmed in one eval) but less reliably when folded into informal prose (the other eval) —
+nothing in the command's structure currently forces the checklist to be visible; would need a
+template-level fix, out of scope for this capped 3-iteration loop. Two of iteration-3's six
+fixture dispatches were contaminated (one by a dispatcher hint naming the exact prior miss, one
+by a fixture agent finding `eval_metadata.json` — including its answer-key block — sitting in
+its own workspace's parent directory, copied there before dispatch instead of after); both
+contaminated findings were independently corroborated by uncontaminated sibling runs, so the
+substance holds, but future iterations on any target should defer copying `eval_metadata.json`
+into a new iteration directory until after all fixture outputs are written.
+
+A 4th round, past the formal cap, targeted the two items above directly: Phase 4 step 3 extended
+to require tracing the *full* cited code path (not just the first matching check) before accepting
+an equivalence/no-asymmetry claim between two mechanisms, and a new Phase 4 step 8 requiring the
+review checklist to be rendered explicitly in the output rather than folded into other sections'
+prose. Both reviewers independently confirmed the checklist-rendering fix worked — the checklist
+now appears reliably and in the right place across every with_command output, closing that
+disclosed gap. The citation-tracing fix partly worked: it correctly caught and correctly scoped a
+real residual gap in `db-write-gate.sh` (two more early-exit points beyond the fixed line, kept out
+of the "now matches hooks.json" claim). But the same underlying pattern recurred one level deeper
+in the same output — a citation confused the deleted 204-test critical-hooks suite's CI-timing
+rationale with the live 158-test suite's, and a "full early-exit chain" claim undercounted two more
+exit points, both inside the same checklist item that claims to guard against exactly this. Iteration-4
+tally: 0/0/1, same as iteration-3 — flat, not improved. Read as evidence the citation-completeness
+pattern has hit a same-session self-verification ceiling a prose rule alone can't fully close, not as
+a new gap in the rule's wording (the rule already names this exact failure class). User chose to keep
+iteration-4's changes as the new baseline rather than revert or retry.
+
+A 5th round, 2 rounds past the formal cap, targeted iteration-4's exact residual with two new
+mechanisms instead of more warning prose: require quoting (not paraphrasing) any comment/doc cited
+as evidence, and require a stated, checkable count whenever a draft claims to have traced "the full"
+extent of something — plus a Phase 1 domain-plausibility pre-check and a Phase 2 CHANGELOG check.
+Both reviewers independently confirmed this fixed iteration-4's exact two failures (the CI-suite
+citation now quotes the right source; the early-exit-chain count is now correct and verified). But
+the same round's new count-stating requirement opened new failure surface elsewhere: a miscounted
+commit count in the new Phase 1 check (claimed 16, both reviewers independently got 14), a checklist
+item falsely certifying a paraphrase as a verbatim quote (violating the round's own new rule), a
+miscounted diff-stat, and — the more consequential one — a draft that verified a follow-up's *wording*
+changed but not that the fix *mechanism* actually closes the original risk (the real fix is
+conditional, not a default check; baseline caught this, with_command didn't). Iteration-5 tally:
+0 critical / 1 major / 2 minor — a **regression** from iteration-4's 0/0/1, not an improvement. Net
+read: adding more explicit verification-reporting instructions to an already-loaded Phase 4 doesn't
+converge the citation-completeness pattern, it relocates the error surface — each new "state X
+explicitly" requirement creates a new place for X to be stated wrong. This is the strongest evidence
+yet that this specific residual has hit a real ceiling for prose-rule iteration. **Reverted** — all
+5 of round 5's additions (Phase 1 plausibility check, Phase 2 CHANGELOG check, Phase 4 quote-not-
+paraphrase, Phase 4 stated-count-for-"full"-claims, Phase 4 occurrences-wording clarification) were
+removed by hand, restoring `commands/post-mortem.md` to iteration-4's exact text. Loop closed at
+iteration-4's 0/0/1, the best tally this loop reached across 5 rounds (2 past the formal cap).
+
 ## [0.68.164] — 2026-08-04
 
 `/kbg:iterate-skill summarizer` loop: closed 3 target-attributable findings from a

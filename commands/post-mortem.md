@@ -116,9 +116,12 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 **Actions**:
 1. Check for banned phrases: "appears to," "may have," "we believe," "probably," "likely caused by." Replace with facts or explicit unknowns.
 2. Check for blame: "Alice forgot," "the team missed," "reviewer approved." Replace with system-focused language: "the check was missing," "the test matrix didn't cover," "the policy was undocumented."
-3. Verify every code identifier (function, file, SHA) exists: quick `git show <sha>` or `grep -r <function>` sanity check.
-4. Verify links (PR numbers, issue keys) are real.
-5. Ensure Section 4 (Symptom Linkage) actually connects Section 3 → Section 2. If it doesn't, the mechanism isn't fully understood.
+3. Verify every code identifier (function, file, SHA) exists: quick `git show <sha>` or `grep -r <function>` sanity check. Existence isn't accuracy — if the draft also claims what that identifier *does* or *covers* ("this check validates X," "no check catches this drift"), verify the claim itself, not just that the identifier exists. A check that exists but never actually runs against this repo's real path resolution, or that validates a different file than claimed, is a real citation error even though the identifier is real. When the claim is that two mechanisms are *equivalent* or that no gap/asymmetry exists between them ("this filter covers the same scope as that matcher," "no asymmetry found"), read the full cited code path, not just the first matching line — a second check or guard immediately after the first one can narrow, widen, or invalidate the equivalence. Citing only the first match and calling it settled is the same citation error as above, one level deeper.
+4. Verify any claim stated as settled fact but resting on absence of evidence rather than a positive check (e.g., "no live server emits X," "this has never happened before"). Either back it with what was actually checked, or restate it as the narrower claim that's actually true ("no configured server currently does this, as far as a grep of Y confirms").
+5. When declaring a broader concern "resolved," "closed," or "already addressed" — as opposed to verifying one specific identifier — grep the affected file(s) for every other occurrence of the relevant term before asserting closure. One corrected instance doesn't prove every instance was updated. State what was actually checked ("all N occurrences of X in file Y reflect the fix") rather than a blanket "verified against the diff" that implies full-file coverage it didn't do.
+6. Verify links (PR numbers, issue keys) are real.
+7. Ensure Section 4 (Symptom Linkage) actually connects Section 3 → Section 2. If it doesn't, the mechanism isn't fully understood.
+8. Render this checklist explicitly in your response — one line per action above, noting what was checked and the result — before presenting the final draft. Don't fold Phase 4's verification into another section's prose (e.g., a stray Section 9 bullet); a visible checklist is what makes the checks re-verifiable later instead of just asserted, and resists silently skipping a step under compression.
 
 ---
 
