@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.177] — 2026-08-04
+
+Promotes a user-flagged bug-fix discipline from memory-only to doctrine. User raised a real
+concern: a standing behavioral rule saved only in auto-memory is subject to that store's own
+fold rule (entries get merged/dropped as the file nears its byte cap) and isn't the "IMPORTANT:
+OVERRIDE default behavior" framing CLAUDE.md-tracked doctrine carries. Added a "Bug fixes:
+failing test first" paragraph to `docs/METHODOLOGY.md` Rule 4 — write/run a test that reproduces
+the bug and confirm it fails for the right reason before writing the fix, then confirm the same
+test passes after. `docs/METHODOLOGY.md` is injected verbatim into every session by
+`hooks/session/doctrine-bootstrap.sh` (a SessionStart hook, fires wherever `kbg@kobig` is
+enabled — not scoped to this repo's cwd like CLAUDE.md is), so this reaches every project once
+reinstalled, without needing a mirror in the operator's global `~/.claude/CLAUDE.md`. Requires
+`claude plugin update` (or the uninstall-trash-reinstall dance if that reports a stale no-op)
++ restart to take effect — same-version edits are silent no-ops.
+
 ## [0.68.176] — 2026-08-04
 
 Closes the 3 findings v0.68.175 tracked as follow-ups rather than fixed same-turn, per an

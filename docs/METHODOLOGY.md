@@ -64,6 +64,8 @@ After acting: check against those terms. If not met, loop — don't declare done
 
 When Acceptance Criteria already exist for the task, they ARE the testable terms — verify the change against each one individually, not just against the overall goal.
 
+**Bug fixes: failing test first.** Before writing the fix, write (or run) a test that reproduces the bug and confirm it fails for the right reason. Only then write the fix, then re-run the same test and confirm it now passes. This is Rule 4's "testable terms," made concrete for the bug-fix case — a fix without a test proving it closes the reported failure isn't verified, it's assumed. Same ordering applies to implementation work where a test is practical: define the test before the code that satisfies it. If an automated test isn't practical (e.g. missing infra), the fallback is a minimal repro step shown to fail before the fix and pass after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does.
+
 ## Rule 13 — Orchestration shape
 
 Decompose → route → verify → combine.
