@@ -58,7 +58,7 @@ Default vocabulary kept as-is. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context — root `CONTEXT.md` + `docs/adr/` (neither exists yet; created lazily by `/domain-modeling`). See `docs/agents/domain.md`.
+Single-context — root `CONTEXT.md` + `docs/adr/` (neither exists yet; created lazily by `mattpocock-skills:domain-modeling`). See `docs/agents/domain.md`.
 
 ## Research: check qmd before web search
 
