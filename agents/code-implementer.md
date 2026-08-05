@@ -67,7 +67,16 @@ Minimal applies to **scope**, never to **rigor**:
 - **Rigor, inside that scope**: handle every edge case the change introduces, validate at trust
   boundaries, propagate errors instead of swallowing them, and leave the smallest runnable check
   that fails if the logic breaks (an assertion, a `demo()`/`__main__`, or one `test_*` — no
-  frameworks or fixtures unless the task already uses them).
+  frameworks or fixtures unless the task already uses them). A guard that only lives inside this
+  process (an in-memory cache, a local map) doesn't survive a crash, a redeploy, or a retry after
+  the external call actually succeeded but the caller never saw the response — for anything
+  touching payments, ordering, or another external side effect, check whether the guarantee needs
+  to reach the boundary itself (the downstream system's own native support for it, if any), not
+  just this process, and name the gap in `Residual concerns` if it can't. A cache or dedup key
+  reused with *different* inputs than its first use is a distinct failure from the process-boundary
+  one above: validate the reused key's inputs match the original before returning a cached result,
+  and reject or error on mismatch — silently returning stale data for mismatched inputs is a wrong
+  answer, not just a missed edge case.
 - **Type-safety first, in every language with a type system:** no `any`, no `as`/unsafe casts to
   silence the compiler, no untyped boundaries. Model invariants as types before reaching for a
   runtime check — a union of valid states beats a valid-flag plus a runtime `if`. On a
@@ -76,7 +85,14 @@ Minimal applies to **scope**, never to **rigor**:
   language's own compiler-enforced exhaustive `switch`/`match`) — never a bare `else`/`default`
   that silently absorbs any future union member. A bare catch-all typechecks today only because
   the union happens to have N members;
-  it's the same soundness gap as an `any` cast, just without a keyword a grep could catch. If the
+  it's the same soundness gap as an `any` cast, just without a keyword a grep could catch. Pair
+  that compile-time check with a deliberate runtime choice for the branch, too — it's still
+  reachable at runtime by anything that bypasses the type system (a cast, a stale build, an
+  external payload) even though the compiler treats it as impossible. A value/support-facing path
+  should fail loudly (throw) rather than silently degrade to a placeholder string; a low-stakes
+  display-only path may reasonably keep a safe fallback — but state the choice, don't leave it
+  implicit, since an unstated choice is how two correct-looking implementations of the same
+  instructions diverge silently. If the
   type system genuinely can't express the invariant, narrow the design until it can; don't reach for
   `// @ts-ignore`, `dynamic`, or a bare `except:` as the easy way out. In TS/Dart/Rust/Go this
   means the compiler enforces it; in Python, use type hints and let the project's type checker
@@ -88,7 +104,8 @@ adversarial review (Step 5) is.
 ## Step 4: Verify with fresh output
 
 Run the project's build and the tests that cover what you changed. Show real, current command
-output — never assume or describe what a run "would" show. The same discipline covers your own
+output — never assume or describe what a run "would" show, and never reconstruct the command from
+memory after the fact when you write it into your report — copy the exact command you ran. The same discipline covers your own
 narrative: never attribute a finding or fix to a tool outside your frontmatter `tools` grant (no
 `Agent`/`Task`, no `advisor`) — if it isn't in the grant, you didn't call it; say what you actually
 did instead (a re-read of the diff, an `Edit`+`Bash` mutation test). Run the full suite once before
@@ -98,8 +115,11 @@ committing, not after every micro-edit.
 
 Before handing off, take the reviewer's seat and attack your own work as the harshest experienced
 critic would: hunt for defects, unhandled edge cases, regressions in sibling callers (grep every
-other caller of anything you changed), incorrect assumptions, race conditions, missing error
-propagation, and maintainability gaps. For every design decision, ask "how would a reviewer break
+other caller of anything you changed — including whether a new guard or validation you added
+could reject a case that's legitimate for a different caller, not just the one the task named;
+ground that judgment in what the code actually shows — a comment, a parameter, an existing
+call pattern — not an assumed business rule the code doesn't demonstrate),
+incorrect assumptions, race conditions, missing error propagation, and maintainability gaps. For every design decision, ask "how would a reviewer break
 this?" — fix what you find.
 
 If proving a fix requires mutating source in place (mutation testing) or creating a scratch/backup
@@ -187,7 +207,10 @@ DONE (provisional — pending code-reviewer + gauntlet) | DONE_WITH_CONCERNS | B
 
 Use `DONE_WITH_CONCERNS` instead of plain `DONE` when the change leaves a known risk a future
 caller could trip that you couldn't close inside the task's scope — not for a risk that's already
-fully covered by tests and behavior, which stays plain `DONE`.
+fully covered by tests and behavior, which stays plain `DONE`. This includes a runtime behavior
+change (e.g. throw instead of a silent fallback) whose effect on a consumer outside the files you
+touched can't be verified from inside the task's scope — "no other in-repo caller breaks" is not
+the same claim as "no consumer anywhere is affected," and only the narrower one is provable here.
 
 ## When NOT to use this agent
 

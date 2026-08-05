@@ -5,6 +5,31 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.181] — 2026-08-05
+
+`/kbg:iterate-skill code-implementer` — no prior fixture workspace existed, so built one from
+scratch (2 eval cases: a shared-payment-function idempotency fix testing sibling-caller-grep
+discipline, and a discriminated-union exhaustiveness fix) before running the 3-iteration improve
+loop (cap reached). `kbg:review-fixtures`' 2-agent adversarial pass, re-run each iteration, found
+target-attributable gaps in `agents/code-implementer.md`'s Step 3/Step 4/Step 5 and the Report
+format's `DONE_WITH_CONCERNS` criterion: (1) a process-local-only guard (an in-memory cache/map)
+doesn't survive a crash, redeploy, or a retry after the external call actually succeeded but the
+response was lost — for payments/ordering/external side effects, check whether the guarantee
+needs to reach the boundary itself, and name the gap in `Residual concerns` if it can't; (2) a
+discriminated-union exhaustiveness check must pair with a deliberate, *stated* runtime choice
+(throw vs. safe fallback) for the still-reachable branch, not an implicit pick; (3) "grep every
+other caller" now explicitly includes checking whether a new guard/validation could reject a case
+legitimate for a different caller — grounded in what the code actually shows, not an assumed
+business rule; (4) the verification command shown in a report must be the exact command run, not
+reconstructed from memory afterward; (5) a cache/dedup key reused with different inputs than its
+first use must be validated against the original, rejecting a mismatch rather than silently
+returning stale data; (6) `DONE_WITH_CONCERNS` now also covers a runtime behavior change whose
+effect on a consumer outside the touched files can't be verified from inside the task's scope.
+Verified via 3 rounds of fixture regeneration + independent reviewer re-verification each round:
+major-severity findings dropped from 2 to 0 across the loop; one new finding (a report making a
+durability claim contradicted by its own Residual Concerns section two lines later) surfaced in
+the final round and is left open, per the iteration cap.
+
 ## [0.68.180] — 2026-08-05
 
 Removed `disable-model-invocation` from `fix-bug` — a live `/kbg:address-review` run stalled mid-workflow
