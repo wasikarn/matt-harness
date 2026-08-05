@@ -58,7 +58,7 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 
 | Check | Catches |
 |---|---|
-| **Dangling links** | `[[target]]` resolving to no memory (by filename stem or `name:` slug; strips `[[t\|alias]]`) |
+| **Dangling links** | `[[target]]` resolving to no memory (by filename stem or `name:` slug; strips `[[t\|alias]]`) — suggests a close-name match (stdlib `difflib`, cutoff 0.6) when one exists, to catch typos |
 | **Orphans** | indexed in MEMORY.md but no `[[links]]` in or out — disconnected from the wikilink graph |
 | **Index drift** | MEMORY.md ↔ files, **both** directions (unindexed file + stale pointer) |
 | **Load budget** | MEMORY.md within the official 200-line / 25KB session-load cap (warn ≥80%, fail if over — trailing entries silently never load) |

@@ -13,7 +13,8 @@ Usage:
   memory-lint.py [MEMORY_DIR] --json              # machine-readable output
 
 Detector checks (default mode):
-  - dangling [[links]]   — target resolves to no memory (by filename stem or name: slug)
+  - dangling [[links]]   — target resolves to no memory (by filename stem or name: slug);
+                            suggests a close-name match (difflib, cutoff 0.6) if one exists
   - orphans              — a memory with no outbound and no inbound [[links]]
   - index drift          — MEMORY.md pointer ↔ file, both directions
   - load budget          — 200-line / 25KB cap on MEMORY.md
@@ -35,6 +36,7 @@ Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memo
 All mutations use `mv` (never `rm`); confirm prompt is shown by default; --yes skips confirm.
 """
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -125,10 +127,13 @@ def detector_findings(state):
     idx_path = state["index_path"]
 
     # 1. dangling links
+    candidates = state["stems"] | state["slug_set"]
     for f, targets in links_out.items():
         for t in targets:
             if t not in state["stems"] and t not in state["slug_set"]:
-                findings.append(f"DANGLING: {f} → [[{t}]] (no such memory)")
+                match = difflib.get_close_matches(t, candidates, n=1, cutoff=0.6)
+                hint = f" — did you mean [[{match[0]}]]?" if match else ""
+                findings.append(f"DANGLING: {f} → [[{t}]] (no such memory){hint}")
 
     if not os.path.isfile(idx_path):
         findings.append("MISSING: MEMORY.md index not found")

@@ -5,6 +5,17 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.196] — 2026-08-05
+
+`memory-lint`'s dangling-`[[link]]` check was exact-string-match only (by
+filename stem or `name:` slug) — a typo'd link got reported as dangling with
+no hint toward the intended target. Added a "did you mean" suggestion using
+stdlib `difflib.get_close_matches` (cutoff 0.6) against the set of valid
+stems/slugs; suggestion-only, no auto-rewrite. Live run against this repo's
+own memory store immediately surfaced a real typo'd link (missing a date
+suffix) with the correct suggestion. Added `scripts/test_memory_lint.py`
+(2 asserts: typo gets a suggestion, an unrelated dangling target doesn't).
+
 ## [0.68.195] — 2026-08-05
 
 Ran the `deep-research` workflow (2 invocations, 90+98 agents, adversarial 3-vote claim
