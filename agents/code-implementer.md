@@ -98,6 +98,15 @@ Minimal applies to **scope**, never to **rigor**:
   means the compiler enforces it; in Python, use type hints and let the project's type checker
   (mypy/pyright, if configured) catch what a runtime check would otherwise have to.
 
+- **Algorithmic sanity check for new hot-path code:** before shipping a nested loop, a linear
+  scan over data that's actually sorted or indexed, or a resort-per-update, check whether the
+  input grows with real usage (rows, requests, users) rather than staying small and bounded —
+  growing input needs the right structure from the start, not a follow-up performance pass. See
+  `performance-optimizer`'s Algorithmic Analysis table for the common patterns (binary search,
+  heap/priority-queue, sliding window, N+1 query batching) and their fixes. This is a quick check
+  before the first commit, not a full complexity review — note it in `Residual concerns` if
+  you're unsure whether the growth is real rather than blocking on it.
+
 The smallest change that merely compiles is not done. The smallest change that survives
 adversarial review (Step 5) is.
 

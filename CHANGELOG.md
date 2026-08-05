@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.186] — 2026-08-05
+
+Closed the `code-implementer` gap flagged (and deliberately deferred) during v0.68.184's fleet
+sweep. The agent had zero algorithmic/complexity content and its "When NOT to use this agent"
+section already delegates *optimizing an existing slow path* to `performance-optimizer` — but
+that leaves a gap on the *originating* side: nothing nudges toward the right data structure
+when writing NEW hot-path code in the first place, before it ships and needs a follow-up
+performance-review round-trip. Added one bullet to Step 3 ("Implement — smallest scope, maximal
+rigor"): a quick algorithmic sanity check for new code with a nested loop, a linear scan over
+sorted/indexed data, or a resort-per-update — check whether the input actually grows with real
+usage before shipping the naive version, pointing to `performance-optimizer`'s Algorithmic
+Analysis table for the concrete patterns. Deliberately lightweight (a note in `Residual
+concerns`, not a blocker) to match the rest of Step 3's proportional weight — not a duplicate of
+performance-optimizer's own table, just the originating-side pointer to it. No fixture-loop
+verification run for this one (user-requested immediate fix, not queued through the same
+process as v0.68.185's batch).
+
 ## [0.68.185] — 2026-08-05
 
 Ran `/kbg:iterate-skill` fixture-loop verification against all 5 files touched in v0.68.184's
