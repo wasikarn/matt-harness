@@ -133,6 +133,13 @@ const usersWithPosts = await db.query.usersTable.findMany({
 })
 ```
 
+**Why `with` matters — avoiding N+1:** fetching users, then querying `postsTable` per user in a
+loop (`for (const u of users) { u.posts = await db.select().from(postsTable).where(eq(postsTable.userId, u.id)) }`)
+issues one query per row — N+1 round trips for N users. The relational query API above resolves
+the same data as a bounded set of queries planned up front (one per relation depth, not per row).
+Prefer `with` (or a `leftJoin`) over a manual per-row loop whenever fetching a parent and its
+children together.
+
 ## Transactions
 
 ```typescript
@@ -220,6 +227,7 @@ await migrate(db, { migrationsFolder: './drizzle' })
 - **Returning clause required for insert result** — `db.insert(...).values(...).returning()` returns an array. Without `.returning()`, insert returns no rows.
 - **`.$inferSelect` vs `.$inferInsert`** — infer types from schema, not manually. `$inferInsert` makes all fields with defaults optional.
 - **Drizzle Studio port** — defaults to port 4983. Don't confuse with the app dev server.
+- **N+1 queries from a manual loop** — `for (const u of users) { await db.select()...where(eq(t.userId, u.id)) }` issues one query per row. Use `with` (relational queries) or a single `leftJoin` instead.
 
 ## Verify before use
 

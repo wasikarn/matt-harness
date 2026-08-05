@@ -43,10 +43,14 @@ Then measure each segment separately.
 2. Cache stable reads with freshness metadata — and guard the re-warm: a hot key's TTL expiry triggers a thundering herd where every concurrent miss rebuilds the same value. Gate the recompute with a single-flight lock (`SETNX`/`nx` mutex) so only one request rebuilds, or use probabilistic early refresh (XFetch) to spread rebuilds and shrink the herd without a lock; unguarded cache-aside rots p99 on every TTL tick.
 3. Batch small calls and writes.
 4. Move compute closer to the data or the user.
-5. Split hot and cold paths.
-6. Apply backpressure before queues grow unbounded.
-7. Use streaming only when it improves freshness or user experience.
-8. Add canaries for stale data, degraded providers, and bad cache state.
+5. Once the hot path is localized to in-process computation (not I/O), check whether the
+   algorithm or data structure itself is the bottleneck — a resort-per-update, a linear scan over
+   sorted data, or a brute-force search often costs more than every round trip combined. See
+   `performance-optimizer`'s Algorithmic Analysis table for the common patterns and fixes.
+6. Split hot and cold paths.
+7. Apply backpressure before queues grow unbounded.
+8. Use streaming only when it improves freshness or user experience.
+9. Add canaries for stale data, degraded providers, and bad cache state.
 
 ## Verification
 

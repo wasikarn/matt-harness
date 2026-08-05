@@ -23,6 +23,13 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
    - **Collection access:** Scan for unguarded dict/collection lookups (`users_db[user_id]`, `data['field']`) without prior membership checks (`in`, `.get()`). These are silent crash vectors and potential DoS.
    - **File verification:** If a file is provided in scope, read it at the exact path. Do NOT claim a file is "missing" without first attempting to read it. If `Read` returns an error, retry with `Bash ls` to verify before concluding absence. Severity for "missing config" must not exceed the severity of the actual vulnerability it would have revealed.
    - **Dependency manifest severity:** When auditing dependency manifests (requirements.txt, package.json, etc.), check whether vulnerable versions are pinned or floating. If a manifest specifies a vulnerable floor version (e.g., `^4.17.15`) with no lockfile, the vulnerable version is installable — treat as Critical if the CVE is exploitable. If a lockfile pins a patched version, downgrade severity accordingly but still flag the manifest floor. For runtime dependencies in payment/auth systems, never assume the registry resolves the safe version.
+   - **Regex/resource-exhaustion DoS (CWE-1333, CWE-400):** Scan for regexes with nested or
+     overlapping quantifiers (`(a+)+`, `(a|a)*`, `(.*)+`) applied to user-controlled input —
+     catastrophic backtracking turns one request into an exponential-time CPU-pinning DoS (the
+     mechanism behind Cloudflare's July 2019 global outage). Also check request-body size, array
+     length, and recursion depth are bounded before processing. Classify under A04 (Insecure
+     Design) if the pattern is unsafe by construction, or A05 (Security Misconfiguration) if a
+     size/depth limit is simply missing.
 
 3. **Consolidate Findings** — Deduplicate. Classify by OWASP:
    - A01: Broken Access Control

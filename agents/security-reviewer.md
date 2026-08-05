@@ -66,6 +66,10 @@ doesn't excuse the rest of the sweep.
 9. **Known Vulnerabilities** (CWE-1104) — Dependencies up to date? npm audit clean?
 10. **Insufficient Logging** (CWE-778) — Security events logged? Alerts configured?
 11. **SSRF** (CWE-918) — Server-side requests to a user-supplied or user-influenced URL? See dedicated section below.
+12. **Uncontrolled Resource Consumption / ReDoS** (CWE-1333, CWE-400) — Any regex built from or
+    applied to user-controlled input checked for catastrophic backtracking (nested/overlapping
+    quantifiers like `(a+)+`, `(a|a)*`, `(.*)+`)? Request body size, array length, and
+    recursion/pagination depth bounded before processing?
 
 ### 3. Code Pattern Review
 Flag these patterns immediately:
@@ -83,6 +87,7 @@ Flag these patterns immediately:
 | Balance check without lock | CWE-362 | CRITICAL | Use `FOR UPDATE` in transaction |
 | No rate limiting | CWE-799 | HIGH | Add `express-rate-limit` |
 | Logging passwords/secrets | CWE-532 | MEDIUM | Sanitize log output |
+| Regex with nested quantifiers on user input | CWE-1333 | HIGH | Rewrite to avoid backtracking, or use a linear-time engine (RE2) |
 
 ### 3b. Concrete Patterns (BAD → GOOD)
 
@@ -172,6 +177,22 @@ if (['localhost', '127.0.0.1', '169.254.169.254'].includes(url.hostname) || isPr
 }
 const result = await fetch(url, { redirect: 'error' }); // also block redirect-based bypass
 ```
+
+**ReDoS — catastrophic backtracking on user input (CWE-1333):** a regex with nested or
+overlapping quantifiers can take exponential time on a crafted input, turning one request into a
+CPU-pinning denial of service — the mechanism behind Cloudflare's July 2019 global outage (a
+single backtracking regex in the WAF ruleset).
+```javascript
+// BAD: nested quantifier — backtracking blows up on an input like "a".repeat(40) + "!"
+const isValid = /^([a-zA-Z0-9]+)+@/.test(userEmail);
+
+// GOOD: no nested quantifier — same intent, linear time
+const isValid = /^[a-zA-Z0-9]+@/.test(userEmail);
+```
+Rewriting the regex is the real fix; a timeout or the RE2 engine (which guarantees linear time by
+construction) is the fallback for a pattern too complex to verify by inspection. Node's built-in
+regex engine has no default execution timeout — a catastrophic-backtracking pattern blocks the
+entire event loop, not just the one request.
 
 ### 3c. Attack Chains — Vulnerabilities Rarely Live Alone
 

@@ -5,6 +5,40 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.184] — 2026-08-05
+
+Swept the fleet for the same content-gap shape found in `code-implementer` (v0.68.183's
+discussion): a code-writing/reviewing surface with zero algorithm/complexity-decision content and
+no explicit delegation elsewhere. Checked ~21 plausible candidates (agents/skills that write,
+design, or review code); most were legitimately out of scope (clean delegation boundaries already
+exist, e.g. `nextjs-reviewer`→`typescript-reviewer`/`code-reviewer` for perf) or already covered
+under domain-specific vocabulary (`mysql-patterns`' indexing/scan-vs-seek content,
+`typescript-reviewer`'s existing O(n·m)→Set bullet). 4 real gaps, all user-confirmed before
+fixing:
+
+- `agents/security-reviewer.md` + `skills/security-auditor/SKILL.md`: added CWE-1333
+  (ReDoS/catastrophic-backtracking regex DoS) — OWASP list item, pattern-table row, and a
+  BAD/GOOD code example citing Cloudflare's July 2019 global outage. Neither security surface had
+  any coverage of per-request computational blowup from attacker-controlled input; both already
+  covered request-frequency rate-limiting (a different concern) but not this.
+- `skills/drizzle-patterns/SKILL.md`: added an explicit N+1-queries callout after the existing
+  `with`-relations example (why `with`/`leftJoin` beats a manual per-row loop) plus a Common
+  Pitfalls bullet — a classic, high-frequency ORM pitfall with zero prior mention.
+- `skills/production-audit/SKILL.md`: added a 6th Risk Lens, "Performance And Scalability" — the
+  existing 5 (Security, Data Integrity, Payments, Operations, UX) had no scalability/load
+  question at all for a pre-launch readiness check. Also added `performance-optimizer` /
+  `latency-critical-systems` to its See Also list.
+- `skills/latency-critical-systems/SKILL.md`: added a step to its 8-step Optimization Order
+  (renumbered to 9) pointing at `performance-optimizer`'s Algorithmic Analysis table once a hot
+  path is localized to in-process computation — everything else in that list was I/O/caching/
+  batching-level, never "is the algorithm itself the bottleneck."
+
+Not fixture-loop-verified the way `performance-optimizer`'s v0.68.183 critical fix was — these
+are pattern-following content additions in each file's existing format (a new checklist row, a
+new lens section, a new list step), not new judgment machinery, so the full 2-iteration adversarial
+loop would have been disproportionate ceremony. Verified via `claude plugin validate --strict`
+plus a manual re-read of the full diff.
+
 ## [0.68.183] — 2026-08-05
 
 `agents/performance-optimizer.md`: deep-read all 13 algorithm pages in `~/llm-wiki/wiki/algorithms/`

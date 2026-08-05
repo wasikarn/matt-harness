@@ -110,6 +110,18 @@ and avoid credentialed actions unless the user supplies a safe test account.
 - Are deploy, rollback, and incident-owner paths documented?
 - Are logs useful without leaking secrets or personal data?
 
+### Performance And Scalability
+
+- Do the launch-critical paths have a hot loop or query whose cost grows with
+  data size (a nested scan, an N+1 query, a full re-sort per request) instead
+  of the current small test dataset?
+- Are DB queries on launch-critical paths backed by an index, not a full
+  table scan, at the data volume expected on day one?
+- Is there a load test or a stated traffic estimate the launch-critical path
+  was actually measured against, not just "should be fine"?
+- Does any per-request cost scale with a value the user or an attacker
+  controls (payload size, list length, recursion depth) with no bound?
+
 ### User Experience
 
 - Are the launch-critical paths covered on desktop and mobile?
@@ -201,5 +213,6 @@ Next action: Want me to patch webhook idempotency first?
 ## See Also
 
 - Skill: `kbg:security-auditor` (comprehensive audit) / `security-reviewer` agent (line-level, mid-implementation)
+- Agent: `performance-optimizer` (algorithmic/complexity fixes) — Skill: `kbg:latency-critical-systems` (system-level latency diagnosis)
 - Skill: `mattpocock-skills:tdd`
 - Skill: `kbg:eval-harness`
