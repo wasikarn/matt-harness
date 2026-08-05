@@ -160,6 +160,7 @@ Update todos as you progress.
    - **Tests added/modified** → `code-reviewer` (behavioral test-coverage lens)
    - **Auth / secrets / external input** → `security-reviewer`
    - **Comments added/modified, or a shared function's behavior changed** (check other callers of the touched function for comments describing the old behavior, even in files the fix didn't edit — a comma-strip workaround's own comment going stale after the fix lands upstream is exactly this case) → `code-reviewer` (comment-accuracy lens)
+   - **Performance-shaped root cause** (Phase 3's confirmed hypothesis was an algorithm, data-structure, or query-pattern issue — an O(n²) loop, N+1 queries, a resort-per-update, or similar — not a plain logic error; Phase 1's own failure-signal list already includes "perf number" as a valid repro target) → `performance-optimizer`, to confirm the fix actually changes the complexity class rather than patching the symptom at the same asymptotic cost.
    - If the fix touched none of the above (rare for non-trivial bugs) → route to `code-reviewer` agent for a general correctness pass against Phase 4 strategy.
 2. Consolidate findings into severity tiers + present to user. For each finding, assign a tier by asking *"if this ships as-is, what's the worst that could happen?"* — production breaks / a 2am page / silent data corruption / users see errors → **Critical**; a real but contained issue → **Important**; only "the code is slightly less clean" → **Minor**:
    - **Critical** — must fix before merge (security, data integrity, broken functionality)
@@ -185,7 +186,7 @@ Update todos as you progress.
   - Use standalone `diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
   - Use standalone `tdd` for greenfield TDD on new features, not bug fixes.
 - **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/path-hardcode.sh` (hardcoded `/Users/` paths) run automatically. Don't bypass.
-- **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP).
+- **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP), performance-optimizer (algorithm/query-pattern root causes).
 
 ---
 

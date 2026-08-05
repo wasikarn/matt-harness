@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.187] — 2026-08-05
+
+Found while double-checking whether `commands/fix-bug.md` needed anything from the
+algorithm-content sweep — it didn't (it's an orchestration workflow, not a code-writing
+surface), but reading it turned up a different, real gap: Phase 1's own failure-signal list
+already treats a performance regression as a valid bug type ("error, wrong output, stack
+trace, **perf number**"), but Phase 7's conditional reviewer-routing table had no row sending
+a performance-shaped fix to `performance-optimizer`, unlike the existing rows for
+error-handling → `silent-failure-hunter`, tests → `code-reviewer`, auth/secrets →
+`security-reviewer`, comments → `code-reviewer`. Added the missing row (Phase 7's routing
+list + the Integration Notes agent-routing reference line): a fix whose Phase 3 confirmed
+hypothesis was an algorithm/data-structure/query-pattern issue now routes to
+`performance-optimizer` to confirm the fix actually changed the complexity class rather than
+patching the symptom at the same asymptotic cost. `fix-bug` wasn't part of v0.68.184's fleet
+sweep (that pass scoped to code-writing/reviewing agents and skills; this is a command/
+workflow, a different surface shape) — this is a genuinely new finding, not a re-check.
+
 ## [0.68.186] — 2026-08-05
 
 Closed the `code-implementer` gap flagged (and deliberately deferred) during v0.68.184's fleet
