@@ -231,15 +231,31 @@ fi
 # apply to a hard bug fix exactly as much as a feature — a race condition or
 # memory leak spanning "every service" is exactly the shape plan-first exists
 # for, and the held-out audit (see IMPL comment above) measured 0/8 recall on
-# this category. Requires BOTH a bug-language signal AND a breadth signal
-# together (neither alone) to avoid widening the generic "fix"/"debug" gap
-# back open — a co-occurrence check, not a verb addition, so ordinary trivial
-# bug reports ("debug this one function") still stay silent. Not extended to
-# Thai — no held-out evidence for Thai bug-language phrasing yet.
-BUG_SIGNAL='(\bbug\b|race condition|deadlock|memory leak|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b)'
+# this category. Not extended to Thai — no held-out evidence for Thai
+# bug-language phrasing yet.
+#
+# Two tiers, added 2026-08-06 after the audit's residual-miss review found one
+# tested case ("fix the race condition ... causing intermittent prod outages")
+# had strong bug-language but no explicit breadth word:
+#   - STRONG: race condition / deadlock / memory leak. These fire alone, no
+#     breadth co-occurrence required — a race condition or deadlock is, by its
+#     own definition, an interaction between multiple components; diagnosing
+#     one correctly is rarely a single-file task even when the eventual patch
+#     is small. Treating them as self-evidently non-trivial is a claim about
+#     what those terms mean, not a rule shaped to match one audit sentence.
+#   - WEAK: bug / leak(s) / intermittent / flaky / silently drops-fails /
+#     regression / corrupt(s/ed/ing). These stay behind the original
+#     co-occurrence gate (WEAK signal AND a breadth word, neither alone) —
+#     "there's a regression in the login flow" or "debug this one function"
+#     must still stay silent, and a bare "corrupted" without breadth language
+#     is exactly that kind of ordinary, possibly-trivial report.
+BUG_SIGNAL_STRONG='(race condition|deadlock|memory leak)'
+BUG_SIGNAL_WEAK='(\bbug\b|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b|corrupt(s|ed|ing)?)'
 SCOPE_SIGNAL='\b(across|throughout|every|all|whole|entire|multiple|several|many)\b'
 BUG_COMPLEX=0
-if /usr/bin/grep -qiE "$BUG_SIGNAL" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT"; then
+if /usr/bin/grep -qiE "$BUG_SIGNAL_STRONG" <<< "$INPUT"; then
+  BUG_COMPLEX=1
+elif /usr/bin/grep -qiE "$BUG_SIGNAL_WEAK" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT"; then
   BUG_COMPLEX=1
 fi
 

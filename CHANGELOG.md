@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.201] — 2026-08-06
+
+Follow-up to the v0.68.199 plan-mode-nudge audit: asked whether target-category recall (83.3%)
+could clear 90%. Split the complex-bug-fix carve-in's bug-language check into a strong tier
+(`race condition`/`deadlock`/`memory leak` — fire alone, no breadth-word co-occurrence needed,
+since those terms describe multi-component interaction bugs by definition) and the original
+weak tier (`bug`/`leak`/`intermittent`/`flaky`/`regression`, now also `corrupt(s/ed/ing)` —
+still requires a breadth word alongside it, unchanged gate). Declined 2 of the 4 remaining
+misses rather than force them: `redo` (still too collision-prone) and generalizing to
+`conflict`/"fighting each other" language (would collide with "merge conflict," an ordinary,
+often-trivial Git term — a real precision cost for one fixture's recall). Target-category
+recall: 83.3% → 91.7%. Overall precision/F1 improved again (66.7%, 0.746). 113/113 regression
+tests pass (5 new guards). Updated decision score: 94.35/100. Full "Round 2" writeup:
+`docs/research/plan-mode-nudge-audit-2026-08-05.md`.
+
 ## [0.68.200] — 2026-08-05
 
 Perf pass on `hooks/gates/worktree-guard.py`'s `classify()` — the check that

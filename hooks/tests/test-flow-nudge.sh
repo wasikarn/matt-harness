@@ -398,6 +398,24 @@ test_silent "trivial debug, no breadth signal, no impl verb (must stay silent)" 
   "debug this one function"
 
 echo ""
+echo "--- strong bug-signal tier, no breadth co-occurrence needed (2026-08-06, target-category recall 83.3%->91.7%) ---"
+# race condition / deadlock / memory leak fire alone -- these terms describe
+# multi-component interaction bugs by definition, unlike a bare "bug"/"leak"/
+# "regression" which stays behind the co-occurrence gate below.
+test_nudge  "race condition alone, no breadth word (strong signal fires alone)" \
+  "fix the race condition in the connection pool that's causing intermittent prod outages"
+test_nudge  "deadlock alone, no breadth word (strong signal fires alone)" \
+  "there's a deadlock between the scheduler and the job runner"
+test_nudge  "memory leak alone, no breadth word (strong signal fires alone)" \
+  "diagnose the memory leak in the worker process"
+# corrupt(s/ed/ing) added to the weak tier -- still requires breadth co-occurrence,
+# same gate as bug/leak/regression above.
+test_nudge  "corrupt + breadth signal (weak tier, co-occurrence still required)" \
+  "figure out why deploys sometimes corrupt state in the shared config store, across every environment"
+test_silent "corrupt alone, no breadth signal (weak tier must NOT fire alone)" \
+  "the migration script corrupted one row in the test database"
+
+echo ""
 echo "--- gerund forms (2026-08-05 audit: 5/5 tested gerund prompts missed pre-fix) ---"
 test_nudge  "splitting (gerund, no bare 'split')" \
   "we're splitting the monolith into two services"
