@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.188] — 2026-08-05
+
+Checked `commands/refactor-clean.md` + `agents/refactor-cleaner.md` and
+`commands/address-review/COMMAND.md` against the same algorithm-content gap shape, on request.
+`refactor-cleaner` is genuinely not applicable — it deletes dead code, it doesn't write new
+algorithmic code, so the core gap shape doesn't transfer; a weaker alternate angle (its
+"consolidate duplicates" step picks the surviving implementation by "most complete, best
+tested" with no complexity criterion) was considered and explicitly not acted on — it's a
+speculative edge case, not something found in evidence, unlike the finding below.
+
+`address-review` had the exact same shape of gap `fix-bug` did (v0.68.187), found the same way
+— direct read, not inference. Phase 4 step 5 routes **inline-edit** clusters (fixes NOT
+delegated to `/fix-bug`) to a reviewer agent by what the comment flagged: error handling →
+`silent-failure-hunter`, auth/secrets → `security-reviewer`, general correctness →
+`code-reviewer` — no row for a performance/algorithm-shaped review comment. Since the line right
+above that table says bug-shaped clusters get their routing from `/fix-bug`'s own Phase 7
+("don't double-route"), inline-edit clusters are explicitly this table's own responsibility —
+and a "this loop is O(n²), tighten it" review comment is exactly the shape that classifies as
+`inline-edit` (a complexity suggestion, not observable wrong behavior), so it had nowhere to
+route. Added the missing row, plus a one-line note distinguishing it from the bug-shaped path
+so the two routing tables (this one and `fix-bug`'s Phase 7) don't collide.
+
 ## [0.68.187] — 2026-08-05
 
 Found while double-checking whether `commands/fix-bug.md` needed anything from the
