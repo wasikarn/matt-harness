@@ -18,8 +18,10 @@
 # 3 files on first run of this check: skills/harness-audit, skills/incident,
 # commands/ship). Same shape as check 37/38's own false-positive guards:
 # don't nag on a clean, explicitly-historical pattern.
-_known_kbg=$(mktemp)
-{
+# Set built once; lookups below are pure-bash array membership (was: one
+# `grep -qx` re-scan of this list per referenced name).
+declare -A _known_kbg=()
+while IFS= read -r _k; do [ -n "$_k" ] && _known_kbg["$_k"]=1; done < <({
   if [ -d "$CLAUDE_DIR/skills" ]; then
     for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
   fi
@@ -30,7 +32,7 @@ _known_kbg=$(mktemp)
     for f in "$CLAUDE_DIR/commands"/*.md; do [ -f "$f" ] && basename "$f" .md; done
     for d in "$CLAUDE_DIR/commands"/*/; do [ -f "${d}COMMAND.md" ] && basename "$d"; done
   fi
-} | sort -u > "$_known_kbg"
+} | sort -u)
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
           "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
           "$CLAUDE_DIR"/agents/*.md \
@@ -40,9 +42,8 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
   [ -f "$_f" ] || continue
   while IFS= read -r _name; do
     [ -z "$_name" ] && continue
-    grep -qx "$_name" "$_known_kbg" || \
+    [ -n "${_known_kbg[$_name]:-}" ] || \
       warn "dead kbg:-reference in ${_f#"$CLAUDE_DIR"/}: 'kbg:$_name' resolves to no skill/agent/command in the fleet (doc-rot)"
   done < <(grep -viE 'former' "$_f" 2>/dev/null | grep -hoE 'kbg:[a-zA-Z][a-zA-Z0-9_-]*' | sed 's/^kbg://' | sort -u)
 done
-rm -f "$_known_kbg"
 unset _f _name _known_kbg

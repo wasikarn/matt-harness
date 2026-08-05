@@ -20,17 +20,20 @@
 # skill can share a name with a command retired long ago — confirmed live:
 # docs/reference/hook-lifecycle-contracts.md's "the removed `/learn` command").
 # WARN, not CRIT — advisory, matching 37/38/40.
-_known_skills50=$(mktemp)
-_known_commands50=$(mktemp)
+# Sets built once; lookups below are pure-bash array membership (was: two
+# `grep -qx` re-scans per cited name).
+declare -A _known_skills50=()
 if [ -d "$CLAUDE_DIR/skills" ]; then
-  for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done | sort -u > "$_known_skills50"
+  while IFS= read -r _k; do [ -n "$_k" ] && _known_skills50["$_k"]=1; done < <(
+    for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done | sort -u)
 fi
-{
+declare -A _known_commands50=()
+while IFS= read -r _k; do [ -n "$_k" ] && _known_commands50["$_k"]=1; done < <({
   if [ -d "$CLAUDE_DIR/commands" ]; then
     for f in "$CLAUDE_DIR/commands"/*.md; do [ -f "$f" ] && basename "$f" .md; done
     for d in "$CLAUDE_DIR/commands"/*/; do [ -f "${d}COMMAND.md" ] && basename "$d"; done
   fi
-} | sort -u > "$_known_commands50"
+} | sort -u)
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
           "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
           "$CLAUDE_DIR"/agents/*.md \
@@ -40,10 +43,9 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
   [ -f "$_f" ] || continue
   while IFS= read -r _name; do
     [ -z "$_name" ] && continue
-    grep -qx "$_name" "$_known_skills50" || continue
-    grep -qx "$_name" "$_known_commands50" && continue
+    [ -n "${_known_skills50[$_name]:-}" ] || continue
+    [ -n "${_known_commands50[$_name]:-}" ] && continue
     warn "skill cited in slash form in ${_f#"$CLAUDE_DIR"/}: '/$_name' should be 'kbg:$_name' — '$_name' is a skill, not a command (doc-rot, misleads readers)"
   done < <(grep -viE 'former|removed' "$_f" 2>/dev/null | grep -hoE '`/[a-zA-Z][a-zA-Z0-9_-]*`' | tr -d '`/' | sort -u)
 done
-rm -f "$_known_skills50" "$_known_commands50"
 unset _f _name _known_skills50 _known_commands50

@@ -234,7 +234,7 @@ fi
 # >/dev/null suppresses stdout; the write to _FM_CACHE persists because this
 # runs in the main shell, not a $(...) subshell.
 for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md \
-            "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!]*/COMMAND.md; do
+            "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!_]*/COMMAND.md; do
   [ -f "$_fmf" ] || continue
   fm_get "$_fmf" name --block >/dev/null
   fm_get "$_fmf" description --block >/dev/null

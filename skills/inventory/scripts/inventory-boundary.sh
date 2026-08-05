@@ -167,7 +167,7 @@ else
   # Live-merged view: structural overview + project-local + global ~/.claude
   bash "$SCRIPT_DIR/inventory.sh"
 
-  GIT_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)
+  # $GIT_ROOT already resolved above (same $SCRIPT_DIR -> same result; no need to re-spawn git).
   if [ -n "$GIT_ROOT" ] && [ -d "$GIT_ROOT/.claude" ]; then
     print_boundary "Project-local" "$GIT_ROOT/.claude"
   fi

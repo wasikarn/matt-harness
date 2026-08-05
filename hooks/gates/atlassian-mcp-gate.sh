@@ -61,7 +61,7 @@ set -uo pipefail
 
 INPUT=$(cat)
 
-if ! grep -qE '"tool_name": ?"Skill"' <<< "$INPUT" && ! grep -qiE 'atlassian|rovo' <<< "$INPUT"; then
+if ! grep -qiE '"tool_name": ?"Skill"|atlassian|rovo' <<< "$INPUT"; then
   exit 0
 fi
 

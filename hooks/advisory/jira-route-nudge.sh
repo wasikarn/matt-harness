@@ -49,8 +49,7 @@ elif /usr/bin/grep -qiE '\b(jira|confluence)\b' <<< "$INPUT"; then
     exit 0
   fi
   # require a work verb (EN + TH); bare mention without one is not work intent.
-  if ! /usr/bin/grep -qiE '\b(create|file|open|log|report|raise|write|edit|update|comment|transition|publish|search|view|find|list|query|export|check|post|move|bulk)\b' <<< "$INPUT" \
-     && ! /usr/bin/grep -qE 'สร้าง|แก้|อัปเดต|ย้าย|คอมเมนต์|เปิด|เขียน|ค้น|หา|ดู|เช็ค|โพสต์|เพิ่ม' <<< "$INPUT"; then
+  if ! /usr/bin/grep -qiE '\b(create|file|open|log|report|raise|write|edit|update|comment|transition|publish|search|view|find|list|query|export|check|post|move|bulk)\b|สร้าง|แก้|อัปเดต|ย้าย|คอมเมนต์|เปิด|เขียน|ค้น|หา|ดู|เช็ค|โพสต์|เพิ่ม' <<< "$INPUT"; then
     exit 0
   fi
 else

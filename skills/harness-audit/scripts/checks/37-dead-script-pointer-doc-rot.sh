@@ -12,6 +12,14 @@
 # is deliberately not matched: the match requires an interpreter token before
 # the path. WARN, not CRIT — advisory, matching the operating model (sensors
 # journal; the CRIT set is reserved for the irrecoverable/tamper class).
+# Build the set of every script basename that actually exists, once (was:
+# one full-tree `find` per reference -- 22 traversals where 1 + array lookups do).
+declare -A _known_scripts37=()
+while IFS= read -r _path; do
+  _known_scripts37["$(basename "$_path")"]=1
+done < <(find "$CLAUDE_DIR" -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' \) \
+            -not -path '*/.git/*' -not -path '*/.scratch/*' 2>/dev/null)
+
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
           "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
           "$CLAUDE_DIR"/agents/*.md \
@@ -35,12 +43,12 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
     _ref=$(printf '%s\n' "$_line" | grep -oE 'scripts/[A-Za-z0-9_./${}-]+\.(sh|py|js)')
     [ -z "$_ref" ] && continue
     _base=$(basename "$_ref")
-    # Resolve against the whole fleet (a wrapper may live in any skill's scripts/).
-    # Exclude .git and .scratch (transient/untracked). Existence anywhere = live.
-    if ! find "$CLAUDE_DIR" -name "$_base" -not -path '*/.git/*' -not -path '*/.scratch/*' 2>/dev/null | grep -q .; then
+    # Resolve against the pre-built whole-fleet set (a wrapper may live in any
+    # skill's scripts/). Exclude .git/.scratch already applied when building it.
+    if [ -z "${_known_scripts37[$_base]:-}" ]; then
       warn "dead script-pointer in ${_f#"$CLAUDE_DIR"/}: invokes '$_ref' but no '$_base' exists in the fleet (doc-rot — crashes on invoke)"
     fi
   done < <(grep -hoE '(bash|sh|python3|python|node|exec)[[:space:]]+[^|;&]*scripts/[A-Za-z0-9_./${}-]+\.(sh|py|js)' "$_f" 2>/dev/null \
              | sort -u)
 done
-unset _f _ref _base
+unset _f _ref _base _known_scripts37

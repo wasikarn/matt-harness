@@ -5,6 +5,60 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.202] — 2026-08-06
+
+Perf/algorithm pass across `.sh` files (companion to the ponytail-review
+complexity sweep). Verified each finding before applying — `advisor()`
+flagged 3 review claims as unsafe or lower-value than they looked, all
+declined:
+
+- **Declined:** an early-exit guard for `verifier-protect.sh` that would
+  skip its python3 write-target analysis on commands absent from a fixed
+  token list — the finding itself noted git-heavy traffic still pays full
+  cost, so the payoff is small against a new silent-bypass failure class
+  on the repo's widest-blast-radius gate. The existing 20-assertion battery
+  can't verify a fix like that (it checks known idioms, not the unknown
+  ones a token list would miss).
+- **Declined:** batching `test-gates.sh`'s per-payload python3 spawns —
+  biggest measured number (82+37 calls) but a manual/CI test runtime, not
+  a hot path; index-by-position batching also makes failure messages
+  fragile and the payloads contain quotes json.dumps is escaping today.
+- **Declined:** `inventory-boundary.sh`'s 3-awk-per-skill / 2-awk-per-agent
+  spawns and the merged-view branch's inventory.sh+print_boundary overlap
+  — the first needs a genuinely new multi-key extractor (no proven
+  cross-file need yet), the second changes visible output and is a UX call,
+  not a mechanical perf fix.
+
+Applied, each verified byte-identical against a pre-edit baseline (not
+just exit code):
+
+- `skills/harness-audit/scripts/checks/{12,37}` — replaced O(N·M) per-item
+  `grep`/`find` re-scans with a set built once (bash associative array),
+  then pure-bash lookups. Check 12: 19 re-scans → 1 pass. Check 37: 22
+  full-tree `find` traversals → 1.
+- `skills/harness-audit/scripts/checks/{40,50}` — same pattern, swapped
+  `grep -qx <name> <tmpfile>` per referenced name for array-membership
+  lookups (verified safe: extracted names are regex-metacharacter-free by
+  construction, so literal-vs-regex semantics don't diverge).
+- `skills/harness-audit/scripts/audit.sh:237` — fixed `commands/[!]*/` typo
+  to `commands/[!_]*/` (missing underscore meant this cache-priming glob
+  matched zero directory-form commands; harmless beyond a few missed
+  cache hits, but a real bug, not just a style nit).
+- `hooks/gates/atlassian-mcp-gate.sh`, `hooks/advisory/jira-route-nudge.sh`
+  — merged two `grep`-based prefilter checks into one alternation each
+  (verified the composition is `!A && !B` in both, i.e. skip iff neither
+  matches; confirmed case-insensitivity only widens, never narrows, what
+  each already matched).
+- `hooks/stop/cost-tracker.sh` — merged two `jq` spawns reading the same
+  payload into one `@tsv`-emitting call (verified identical output across
+  valid/missing-field/malformed-JSON payloads).
+- `skills/inventory/scripts/inventory-boundary.sh` — removed one redundant
+  `git rev-parse --show-toplevel` spawn (same `$SCRIPT_DIR`, already
+  computed once earlier in the same run).
+
+Net: +43/-27 lines. Full gauntlet green (plugin-validate, shell-lint,
+json-lint, harness-audit, hook-tests).
+
 ## [0.68.201] — 2026-08-06
 
 Follow-up to the v0.68.199 plan-mode-nudge audit: asked whether target-category recall (83.3%)

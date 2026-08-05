@@ -14,8 +14,9 @@ set -uo pipefail
 
 payload=$(cat)
 
-transcript=$(printf '%s' "$payload" | jq -r '.transcript_path // empty' 2>/dev/null)
-session_id=$(printf '%s' "$payload" | jq -r '.session_id // "default"' 2>/dev/null)
+IFS=$'\t' read -r transcript session_id < <(
+  printf '%s' "$payload" | jq -r '[(.transcript_path // ""), (.session_id // "default")] | @tsv' 2>/dev/null
+)
 
 metrics_dir="$HOME/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
