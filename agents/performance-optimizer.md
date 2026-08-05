@@ -89,7 +89,8 @@ npx lighthouse https://your-app.com --only-categories=performance
 | Sorting inside loop | O(n² log n) | Sort once outside loop |
 | String concatenation in loop | O(n²) | Use array.join() |
 | Deep cloning large objects | O(n) each time | `immer`'s `produce()` (structural sharing, still safe for nested mutation) — **not** a plain shallow copy (`{...obj}`/`Object.assign`), which only copies top-level keys. Verified live: `const copy = {...original}; copy.user.prefs.theme = 'light'` also mutates `original.user.prefs.theme`, because `copy.user` is the same nested object reference, not a new one. Shallow copy is only a safe substitute when nothing downstream mutates a nested field — check that before recommending it as the fix. |
-| Recursion without memoization | O(2^n) | Add memoization (top-down) or tabulation (bottom-up) — dynamic programming |
+| Recursion without memoization | O(2^n) | Add memoization (top-down — still recurses, can stack-overflow on large/unbounded n) or tabulation (bottom-up — iterative, no recursion-depth risk; prefer it once n isn't small and bounded) — dynamic programming |
+| Brute-force pairwise interval-overlap check (booking/calendar conflicts, merging time ranges) | O(n²) | Sort by start time, then linear sweep-merge — O(n log n) |
 | Repeated linear scan for existence/lookup on sorted data | O(n) per search | Binary search — O(log n) |
 | Brute-force substring/pattern search | O(n·m) | KMP — O(n+m) guaranteed; Rabin-Karp — O(n+m) average, still O(n·m) worst case on hash collisions |
 | Re-sorting or full rescan to get current min/max after each update | O(n log n) per update | Heap/priority queue — O(log n) push/pop |

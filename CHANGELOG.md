@@ -5,6 +5,30 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.194] — 2026-08-05
+
+Followed up on the wiki cross-check with live web research on the remaining coverage gaps in
+`performance-optimizer.md`'s Algorithmic Analysis table. Two additions, both backed by
+real-world evidence, not speculative:
+
+- **Interval merging** — new row: brute-force pairwise interval-overlap checking (booking/
+  calendar conflicts, merging time ranges) is O(n²); sort-by-start + linear sweep-merge is
+  O(n log n). Confirmed as a documented production pattern in calendar/scheduling/resource-
+  booking systems — plausible for this fleet's actual domains.
+- **Memoization stack-overflow risk** — the existing "recursion without memoization → add
+  memoization or tabulation" row treated both as interchangeable. Added a caveat: top-down
+  memoization still recurses and can `StackOverflowError` in production on large/unbounded n;
+  bottom-up tabulation has no recursion-depth risk and should be preferred once n isn't small
+  and bounded. Backed by a documented real incident, not a theoretical nitpick.
+
+Explicitly did NOT add graph traversal (BFS/DFS/Dijkstra) despite it being a full section in
+the wiki — a second, more targeted search for real-world "unmemoized graph traversal" incidents
+returned mostly academic/patent noise, not app-code bugs. The one real pattern that does show up
+(dependency resolution, package managers) is a specialized domain, not a common footgun in this
+fleet's actual stack (Next.js/Node, MySQL/Drizzle, React, gRPC). Also confirmed N+1 tree/graph
+traversal is already covered — it's the same N+1 pattern already in the file's Database & Query
+Optimization section, not a distinct algorithmic gap.
+
 ## [0.68.193] — 2026-08-05
 
 Deep-read all 13 curated algorithm pages in `~/llm-wiki`'s `wiki/algorithms/` hub (Big-O,
