@@ -18,16 +18,18 @@
 # Verified against the test in hooks/tests/test-flow-nudge.sh.
 set -uo pipefail
 
-# ponytail: grep the raw JSON stdin directly instead of spawning python3 to
-# extract .prompt first. English flow verbs are alphabetic, and Thai verbs
-# match via bare alternation on raw UTF-8 bytes (CC emits `prompt` as real
-# UTF-8, not \u-escaped) — so JSON escaping never mangles either, and this
-# hook is advisory-only (never blocks, always exit 0).
-# Tradeoff (accepted): raw grep scans every JSON field, so a cwd or
-# transcript_path containing a verb (e.g. a clone named refactor-cleaner)
-# over-triggers a spurious nudge line — low stakes. Restrict to the prompt
-# value with a bash regex if the over-nudge proves annoying. Saves the
-# python3 cold-start (~21ms) on every user prompt.
+# Matching runs against the extracted `.prompt` field only, via jq (already a
+# repo dependency — see hooks/stop/cost-tracker.sh), NOT the raw JSON. Used to
+# be raw-stdin grep (skip a python3 spawn) with an accepted tradeoff: a cwd or
+# transcript_path containing a verb over-triggers a spurious nudge — low
+# stakes when the verb set was implement/refactor/redesign/migrate. That
+# stopped being low-stakes once split/move/replace/extract/consolidate were
+# added (2026-08-05 audit, see below): those are common substrings of real
+# repo/service directory names (a clone at .../pdf-extract-service or
+# .../order-move-service fired the nudge on a bare "fix typo in README" via
+# transcript_path/cwd alone — confirmed empirically, not hypothetical). jq's
+# cold start (~single-digit ms, C binary) is cheap enough that scoping to the
+# actual prompt text is worth it over the python3-avoidance saving.
 # Whole-word boundaries; case-insensitive; extended regex (BSD grep -E, no
 # -P lookahead — BSD grep). IMPL includes bare `build` (the v0.35.9 narrowing
 # to `build (a|an|the|out)` cost recall: 8/8 natural phrasings — build this /
@@ -35,15 +37,44 @@ set -uo pipefail
 # were silent, defeating the plan-first nudge on exactly the work the owner
 # reported). Precision is reclaimed by the CI-failure carve-out below instead
 # of a determiner-restricted alternation.
-IMPL='implement|build|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
-# IMPL without `build` — used by the carve-out to tell a build-failure report
-# (only `build` matched) from a real impl prompt (another verb matched too).
-IMPL_NO_BUILD='implement|create|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
-# IMPL without `create` — used by the PR-intent carve-out below to tell a pure
-# "create a PR" ask (route to kbg:pr) from an impl-heavy prompt that also happens
-# to mention a PR ("build X then open a PR" → still wants the plan-first nudge).
-# `create` is dropped because it's the one IMPL verb that overlaps PR_INTENT.
-IMPL_NO_PR_CREATE='implement|build|add|set ?up|wire|integrate|optimize|refactor|rewrite|redesign|migrate|architect|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship'
+# Structural-verb set (split/swap out/restructure/move/replace/consolidate/
+# extract/overhaul/rework/rethink) added after a held-out 49-prompt audit
+# (2026-08-05, docs/research/plan-mode-nudge-audit-2026-08-05.md) measured the
+# "clear architecture work" category at 1/8 recall — natural architecture
+# phrasings ("split the monolith", "swap out the ORM", "move the whole app
+# off REST") used none of the previously-covered verbs. `architect` widened to
+# `(re)?architect(ure)?` for the same reason ("architecture"/"rearchitecture"
+# as nouns didn't match the bare-verb form). Same recall/precision trade-off
+# already accepted for `build`/`add`/`create` above: `move`/`replace`/`extract`/
+# `split`/`consolidate` also fire on trivial single-file uses (measured, not
+# hypothetical — see the audit doc's G1-G5 cases) — accepted for the same
+# reason: the nudge is advisory and low-cost, the model judges. `redo` was
+# tried and dropped: only one held-out case needed it, and it collides with
+# too much everyday non-code usage ("redo the commit message") to be worth it.
+# Gerund forms (-ing) added 2026-08-05 after empirical testing found the
+# whole verb set — old and newly-widened alike — silent on natural
+# in-progress phrasing ("we're splitting the monolith", "I'm moving the
+# billing logic out"): 5/5 tested gerund prompts missed before this pass, 0/5
+# after. `swap ?out`/`set ?up` get their gerund form spelled out separately
+# (phrasal verbs inflect on the first word: "swapping out", "setting up", not
+# a suffix on the tail word). Past tense (-ed) is a related, still-open gap
+# ("we migrated the database" misses) — deliberately NOT covered this pass:
+# plan-mode's nudge is about work still ahead of you, and a completed-action
+# report is retrospective by definition; the forward-looking remainder of
+# such a prompt usually carries its own present/future verb anyway. Revisit
+# if a real missed past-tense-only prompt is observed, not from more testing
+# against self-authored fixtures.
+IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
+# IMPL without `build`/`building` — used by the carve-out to tell a
+# build-failure report (only `build` matched) from a real impl prompt
+# (another verb matched too).
+IMPL_NO_BUILD='implement(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
+# IMPL without `create`/`creating` — used by the PR-intent carve-out below to
+# tell a pure "create a PR" ask (route to kbg:pr) from an impl-heavy prompt
+# that also happens to mention a PR ("build X then open a PR" → still wants
+# the plan-first nudge). `create` is dropped because it's the one IMPL verb
+# that overlaps PR_INTENT.
+IMPL_NO_PR_CREATE='implement(ing)?|build(ing)?|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
 # Thai impl-verb detection. Bare substring alternation, NO \b and NO -i: Thai
 # has no ASCII word-boundary characters (\b never matches Thai script) and is
 # caseless. Proven pattern copied from jira-route-nudge.sh:51. `ทำ` (do/make)
@@ -86,13 +117,16 @@ EOF
   exit 0
 }
 
-# Read stdin ONCE into a variable. The greps below all read stdin; if they
-# shared the live pipe, the first grep would consume it and the rest would
-# see EOF and never match — silently defeating the carve-out (found v0.36.0
-# when adding the 2nd/3rd grep: the build-failure check ran on empty stdin).
-# Still raw-grep (no python3 cold-start); here-strings feed each grep from
-# the captured text without re-spawning a pipe.
-INPUT=$(cat)
+# Read stdin ONCE into a variable, then extract just the prompt text via jq.
+# The greps below all read from $INPUT/$INPUT_TH; if they shared the live
+# pipe, the first grep would consume it and the rest would see EOF and never
+# match — silently defeating the carve-out (found v0.36.0 when adding the
+# 2nd/3rd grep: the build-failure check ran on empty stdin). here-strings feed
+# each grep from the captured text without re-spawning a pipe. On malformed or
+# empty stdin, jq fails and INPUT stays empty — every check below then misses
+# and the hook falls through to the silent exit, matching this file's
+# documented "errors silently swallowed" contract.
+INPUT=$(printf '%s' "$(cat)" | jq -r '.prompt // empty' 2>/dev/null)
 # เพิ่มเติม ("additionally" / "more") is a bare superstring of the THAI_IMPL
 # verb เพิ่ม ("add") — POSIX ERE has no lookahead to exclude it inline, so it
 # is stripped from a separate copy of the input before any THAI_IMPL match.
@@ -190,7 +224,27 @@ if /usr/bin/grep -qE "แก้ตามรีวิว" <<< "$INPUT_TH" \
   emit_address_review_nudge
 fi
 
-if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH"; then
+# Complex-bug-fix carve-in: `fix`/`debug`/`diagnose` are deliberately absent
+# from IMPL (a trivial "fix typo" must stay silent — decision-doctrine-map.md's
+# "Bug report -> fix" row explicitly defers a bug-report-specific nudge). But
+# Rule 1's plan-mode criteria (multi-file / unfamiliar subsystem / architectural)
+# apply to a hard bug fix exactly as much as a feature — a race condition or
+# memory leak spanning "every service" is exactly the shape plan-first exists
+# for, and the held-out audit (see IMPL comment above) measured 0/8 recall on
+# this category. Requires BOTH a bug-language signal AND a breadth signal
+# together (neither alone) to avoid widening the generic "fix"/"debug" gap
+# back open — a co-occurrence check, not a verb addition, so ordinary trivial
+# bug reports ("debug this one function") still stay silent. Not extended to
+# Thai — no held-out evidence for Thai bug-language phrasing yet.
+BUG_SIGNAL='(\bbug\b|race condition|deadlock|memory leak|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b)'
+SCOPE_SIGNAL='\b(across|throughout|every|all|whole|entire|multiple|several|many)\b'
+BUG_COMPLEX=0
+if /usr/bin/grep -qiE "$BUG_SIGNAL" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT"; then
+  BUG_COMPLEX=1
+fi
+
+if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH" \
+   && [[ "$BUG_COMPLEX" -eq 0 ]]; then
   exit 0
 fi
 # CI-failure carve-out: "build failed, help me debug the CI" is a DEBUG task,

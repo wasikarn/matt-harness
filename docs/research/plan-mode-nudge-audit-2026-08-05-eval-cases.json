@@ -1,0 +1,58 @@
+[
+  {"id": "A1", "category": "trivial-mechanical", "expected": false, "prompt": "rename the variable usr to user in auth.py"},
+  {"id": "A2", "category": "trivial-mechanical", "expected": false, "prompt": "bump the version number in package.json to 1.2.3"},
+  {"id": "A3", "category": "trivial-mechanical", "expected": false, "prompt": "fix the indentation in this file"},
+  {"id": "A4", "category": "trivial-mechanical", "expected": false, "prompt": "update the comment on line 12 to match the new behavior"},
+  {"id": "A5", "category": "trivial-mechanical", "expected": false, "prompt": "delete this unused import from utils.ts"},
+  {"id": "A6", "category": "trivial-mechanical", "expected": false, "prompt": "correct the spelling of recieve to receive in the error message"},
+  {"id": "A7", "category": "trivial-mechanical", "expected": false, "prompt": "adjust the log level from debug to info in this one file"},
+  {"id": "A8", "category": "trivial-mechanical", "expected": false, "prompt": "swap this magic number for the existing MAX_RETRIES constant"},
+
+  {"id": "B1", "category": "clear-architecture", "expected": true, "prompt": "we need to split the monolith service into two independently deployable services"},
+  {"id": "B2", "category": "clear-architecture", "expected": true, "prompt": "swap out the ORM for a different one across the whole codebase"},
+  {"id": "B3", "category": "clear-architecture", "expected": true, "prompt": "redesign our caching layer to support multi-region invalidation"},
+  {"id": "B4", "category": "clear-architecture", "expected": true, "prompt": "restructure the plugin loader to support hot-reload"},
+  {"id": "B5", "category": "clear-architecture", "expected": true, "prompt": "move the whole app from REST to GraphQL"},
+  {"id": "B6", "category": "clear-architecture", "expected": true, "prompt": "replace the current auth provider with a new SSO vendor across every service"},
+  {"id": "B7", "category": "clear-architecture", "expected": true, "prompt": "consolidate the three duplicated notification pipelines into one shared module"},
+  {"id": "B8", "category": "clear-architecture", "expected": true, "prompt": "extract the billing logic out of the monolith into its own service"},
+
+  {"id": "C1", "category": "nominalized-no-verb", "expected": true, "prompt": "the caching layer needs a full overhaul across every service"},
+  {"id": "C2", "category": "nominalized-no-verb", "expected": true, "prompt": "a rework of the billing pipeline is needed before we can support metered plans"},
+  {"id": "C3", "category": "nominalized-no-verb", "expected": true, "prompt": "what's the right architecture for a plugin system that supports hot reload across five languages"},
+  {"id": "C4", "category": "nominalized-no-verb", "expected": true, "prompt": "our data model needs a rethink now that we support multi-tenant orgs"},
+  {"id": "C5", "category": "nominalized-no-verb", "expected": true, "prompt": "the notification system could use a rearchitecture, it's grown organically for two years"},
+  {"id": "C6", "category": "nominalized-no-verb", "expected": true, "prompt": "time for an overhaul of how we handle background jobs"},
+  {"id": "C7", "category": "nominalized-no-verb", "expected": true, "prompt": "the deployment pipeline is a mess and needs a proper redo, not another patch"},
+  {"id": "C8", "category": "nominalized-no-verb", "expected": true, "prompt": "our permission model needs a fundamental rethink to support org-level roles"},
+
+  {"id": "D1", "category": "complex-bugfix", "expected": true, "prompt": "fix the race condition in the connection pool that's causing intermittent prod outages"},
+  {"id": "D2", "category": "complex-bugfix", "expected": true, "prompt": "there's a bug where sessions leak across requests under load, needs a deep dive across the whole request pipeline"},
+  {"id": "D3", "category": "complex-bugfix", "expected": true, "prompt": "debug why the payment webhook silently drops events under high traffic across three services"},
+  {"id": "D4", "category": "complex-bugfix", "expected": true, "prompt": "track down why the cache and the database disagree intermittently across every read path"},
+  {"id": "D5", "category": "complex-bugfix", "expected": true, "prompt": "the retry logic and the idempotency layer are fighting each other somewhere across the queue consumers, figure out why"},
+  {"id": "D6", "category": "complex-bugfix", "expected": true, "prompt": "diagnose the memory leak that only shows up after 48 hours in production, spans the whole worker pool"},
+  {"id": "D7", "category": "complex-bugfix", "expected": true, "prompt": "figure out why deploys sometimes corrupt state in the shared config store, across every environment"},
+  {"id": "D8", "category": "complex-bugfix", "expected": true, "prompt": "resolve the deadlock between the scheduler and the job runner, it happens under specific load across many workers"},
+
+  {"id": "E1", "category": "trivial-with-impl-verb", "expected": false, "prompt": "add a missing null check on line 40"},
+  {"id": "E2", "category": "trivial-with-impl-verb", "expected": false, "prompt": "add a one-line comment explaining this regex"},
+  {"id": "E3", "category": "trivial-with-impl-verb", "expected": false, "prompt": "create a new test case for the existing edge-case function"},
+  {"id": "E4", "category": "trivial-with-impl-verb", "expected": false, "prompt": "set up a git alias for this common command"},
+  {"id": "E5", "category": "trivial-with-impl-verb", "expected": false, "prompt": "add a console.log to debug this one function"},
+  {"id": "E6", "category": "trivial-with-impl-verb", "expected": false, "prompt": "create a .gitignore entry for the build folder"},
+
+  {"id": "F1", "category": "discussion-question", "expected": false, "prompt": "what does the flow-nudge hook do?"},
+  {"id": "F2", "category": "discussion-question", "expected": false, "prompt": "can you explain how the plan mode heuristic works?"},
+  {"id": "F3", "category": "discussion-question", "expected": false, "prompt": "why did this test fail?"},
+  {"id": "F4", "category": "discussion-question", "expected": false, "prompt": "what's the difference between advisory and gate hooks here?"},
+
+  {"id": "I1", "category": "non-english-ceiling", "expected": true, "prompt": "hay que reescribir el sistema de autenticacion completo"},
+  {"id": "I2", "category": "non-english-ceiling", "expected": true, "prompt": "il faut refactoriser completement le pipeline de paiement"},
+
+  {"id": "G1", "category": "trivial-new-verb-risk", "expected": false, "prompt": "move this function into utils.ts"},
+  {"id": "G2", "category": "trivial-new-verb-risk", "expected": false, "prompt": "replace this variable name with a clearer one"},
+  {"id": "G3", "category": "trivial-new-verb-risk", "expected": false, "prompt": "extract this block into a small helper function"},
+  {"id": "G4", "category": "trivial-new-verb-risk", "expected": false, "prompt": "split this long line into two for readability"},
+  {"id": "G5", "category": "trivial-new-verb-risk", "expected": false, "prompt": "consolidate these two near-identical test cases into one"}
+]

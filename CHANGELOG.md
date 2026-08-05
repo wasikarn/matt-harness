@@ -5,6 +5,61 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.200] — 2026-08-05
+
+Perf pass on `hooks/gates/worktree-guard.py`'s `classify()` — the check that
+runs on every `Edit`/`Write`/`Bash` tool call in repos that opt into
+`KBG_GUARDED_WORKSPACE` (a no-op elsewhere — the file's own default). It made
+4 separate `git rev-parse` subprocess spawns per call (`--show-toplevel`,
+`--absolute-git-dir`, `--git-common-dir`, `--abbrev-ref HEAD`). Confirmed
+`git rev-parse` accepts all four flags in one invocation and prints one line
+per flag in argument order; a later flag can fail independently while
+earlier ones already produced output (tested against a commit-less repo),
+but if the first flag fails (bare repo, non-worktree cwd), git emits nothing
+for any flag — which the code already short-circuits on before the other
+three are used, so both failure shapes reach the same outcome combined or
+separate. Collapsing to one subprocess call is a pure spawn-count win with
+no behavior change. Verified via `--selftest`, the full
+`hooks/tests/test-worktree-guard.sh` suite (38/38 pass — though an
+independent adversarial review confirmed that suite doesn't discriminate
+between the old and new `classify()`, since none of its fixtures exercise a
+bare repo or commit-less repo; the empirical git-behavior tests above are
+the actual evidence for this change, not the suite), and a byte-identical
+before/after check on real data for the separately-landed memory-lint.py
+changes below. Swept the rest of the repo's `.py` files for comparable
+algorithmic/subprocess hot-path issues — none found.
+
+An initial commit attempt for this change (`8abe027`) landed empty — a
+race against a concurrent session's `git reset` on this repo's shared,
+worktree-less working tree wiped the staged index between `git add` and
+`git commit` without erroring. Caught by an independent adversarial review
+(`kbg:code-reviewer` dispatched fresh-context, per this repo's own
+"verify adversarially before nothing" practice) that diffed the commit
+against its parent instead of trusting the commit message. The working-tree
+edit itself was untouched — re-staged and re-committed here.
+
+## [0.68.199] — 2026-08-05
+
+Audited the plan-mode entry criteria (`METHODOLOGY.md` Rule 1 + its operational form,
+`hooks/advisory/flow-nudge.sh`) against a 49-prompt held-out eval, not the hook's own tuning
+suite. Baseline: 4% recall on the "should this nudge plan-first" question, and only 12%
+accuracy on natural architecture-work phrasings ("split the monolith", "swap out the ORM",
+"move the whole app off REST") — none of those verbs were in the trigger list. Widened the
+verb set (`split`/`swap out`/`restructure`/`move`/`replace`/`consolidate`/`extract`/
+`overhaul`/`rework`/`rethink`, `architect` → `(re)?architect(ure)?`) and added a narrow
+complex-bug-fix carve-in (bug-language + breadth-language co-occurrence, e.g. "race condition
+... across every service") that fires the existing generic nudge without adding the
+bug-report-specific route `decision-doctrine-map.md` already defers. An independent
+`advisor()` pass then caught two real defects the eval couldn't see: raw-stdin grep let a
+`cwd`/`transcript_path` path substring (e.g. a repo named `pdf-extract-service`) spuriously
+fire the nudge on a trivial prompt (fixed via `jq`-scoped `.prompt` extraction — cwd/transcript
+can no longer leak into matching), and gerund forms ("we're splitting the monolith") missed
+entirely across the whole verb set, old and new alike (fixed by adding inflected forms).
+Measured after: recall on the 3 targeted categories 4.2% → 83.3%, overall precision also up
+(14.3% → 64.5%), all pre-existing regression tests still pass, 20 new regression guards added
+(108/108 total). Full methodology, before/after numbers, the adversarial-pass writeup, and a
+Rule-14 decision score (93.0/100): `docs/research/plan-mode-nudge-audit-2026-08-05.md`.
+
 ## [0.68.197] — 2026-08-05
 
 `ponytail-review` swept every `.py` file in the repo for over-engineering.

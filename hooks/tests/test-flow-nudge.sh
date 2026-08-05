@@ -364,6 +364,90 @@ fi
 test_silent "ticket key, no impl verb (status question)" "what's the status of TP-919?"
 
 echo ""
+echo "--- verb-widening + complex-bug-fix carve-in (2026-08-05 audit, docs/research/plan-mode-nudge-audit-2026-08-05.md) ---"
+# Held-out audit measured the pre-widening verb list at 12% accuracy on natural
+# "clear architecture work" phrasings — none of split/swap out/move/replace/
+# consolidate/extract/restructure/overhaul/rework/rethink were covered.
+test_nudge  "split (structural verb, not previously covered)" \
+  "we need to split the monolith service into two independently deployable services"
+test_nudge  "swap out (structural verb, not previously covered)" \
+  "swap out the ORM for a different one across the whole codebase"
+test_nudge  "consolidate (structural verb, not previously covered)" \
+  "consolidate the three duplicated notification pipelines into one shared module"
+test_nudge  "overhaul (nominalized, no verb form previously matched)" \
+  "the caching layer needs a full overhaul across every service"
+test_nudge  "rethink (nominalized, no verb form previously matched)" \
+  "our permission model needs a fundamental rethink to support org-level roles"
+test_nudge  "architecture as a noun (architect widened to (re)?architect(ure)?)" \
+  "what's the right architecture for a plugin system that supports hot reload across five languages"
+test_nudge  "rearchitecture (re-prefixed noun form)" \
+  "the notification system could use a rearchitecture, it's grown organically for two years"
+
+# Complex-bug-fix carve-in: fix/debug/diagnose stay OUT of the verb list on
+# purpose (a trivial "fix typo" must stay silent) -- this only fires on
+# bug-language AND a breadth signal BOTH present, never either alone.
+test_nudge  "bug-language + breadth signal (carve-in fires)" \
+  "debug why the payment webhook silently drops events under high traffic across three services"
+test_nudge  "race condition + breadth signal (carve-in fires)" \
+  "there's a bug where sessions leak across requests under load, needs a deep dive across the whole request pipeline"
+test_silent "bug-language alone, no breadth signal (carve-in must NOT fire on either alone)" \
+  "there's a regression in the login flow"
+test_silent "breadth signal alone, no bug-language (carve-in must NOT fire on either alone)" \
+  "this happens across every environment"
+test_silent "trivial debug, no breadth signal, no impl verb (must stay silent)" \
+  "debug this one function"
+
+echo ""
+echo "--- gerund forms (2026-08-05 audit: 5/5 tested gerund prompts missed pre-fix) ---"
+test_nudge  "splitting (gerund, no bare 'split')" \
+  "we're splitting the monolith into two services"
+test_nudge  "moving (gerund, no bare 'move')" \
+  "I'm thinking about moving the billing logic out into its own service"
+test_nudge  "replacing (gerund, no bare 'replace')" \
+  "replacing the auth provider with a new SSO vendor across every service"
+test_nudge  "extracting (gerund, no bare 'extract')" \
+  "we've been extracting the billing logic out of the monolith piece by piece"
+test_nudge  "setting up (phrasal gerund, not 'set uping')" \
+  "setting up auth with JWT and refresh tokens"
+
+echo ""
+echo "--- prompt-only scoping via jq (2026-08-05 audit: cwd/transcript_path leaked into matching before this fix) ---"
+# Real UserPromptSubmit payloads carry cwd/transcript_path alongside prompt.
+# Confirmed empirically pre-fix: a repo path containing one of the widened
+# verbs as a hyphen-delimited token (pdf-extract-service, order-move-service)
+# fired the nudge on a bare "fix typo in README" purely from the path -- the
+# widened verb list made this a real risk, not the low-stakes tradeoff it was
+# when only implement/refactor/redesign were checked. Paths are built under
+# $HOME, not hardcoded, per this repo's own path-hardcode gate.
+path_leak_out=$(echo "{\"session_id\":\"abc\",\"transcript_path\":\"$HOME/.claude/projects/pdf-extract-service/y.jsonl\",\"cwd\":\"$HOME/Codes/pdf-extract-service\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"fix typo in README\"}" | bash "$HOOK" 2>/dev/null)
+if [[ -z "$path_leak_out" ]]; then
+  echo "  ✅ SILENT: verb-shaped substring in cwd/transcript_path does not leak into matching (extract-service)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ SILENT EXPECTED: path-leak regression, cwd/transcript_path substring fired the nudge: <$(printf '%s' "$path_leak_out" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+path_leak_out2=$(echo "{\"session_id\":\"abc\",\"transcript_path\":\"$HOME/.claude/projects/order-move-service/y.jsonl\",\"cwd\":\"$HOME/Codes/order-move-service\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"fix typo in README\"}" | bash "$HOOK" 2>/dev/null)
+if [[ -z "$path_leak_out2" ]]; then
+  echo "  ✅ SILENT: verb-shaped substring in cwd/transcript_path does not leak into matching (move-service)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ SILENT EXPECTED: path-leak regression, cwd/transcript_path substring fired the nudge: <$(printf '%s' "$path_leak_out2" | head -c 120)>" >&2
+  fail=$((fail + 1))
+fi
+# A real impl-verb prompt still fires even with a full realistic payload shape
+# (cwd/transcript_path present but clean) -- guards against jq extraction
+# itself going silent on the whole payload, not just the leaked fields.
+real_payload_out=$(echo "{\"session_id\":\"abc\",\"transcript_path\":\"$HOME/.claude/projects/kbg-harness/y.jsonl\",\"cwd\":\"$HOME/Codes/kbg-harness\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"move the whole app from REST to GraphQL\"}" | bash "$HOOK" 2>/dev/null)
+if [[ -n "$real_payload_out" ]]; then
+  echo "  ✅ NUDGE: real impl verb still fires against a full realistic payload shape"
+  pass=$((pass + 1))
+else
+  echo "  ❌ NUDGE EXPECTED: jq extraction silenced a real impl-verb prompt" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"
 # Empty stdin (no JSON) → silent. Test by piping empty input directly.
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)
