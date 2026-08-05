@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.195] — 2026-08-05
+
+Ran the `deep-research` workflow (2 invocations, 90+98 agents, adversarial 3-vote claim
+verification) against the two non-`performance-optimizer.md` files from this session's sweep
+that carried an independent, falsifiable algorithm-adjacent claim of their own — everything
+else was pure delegation-pointer text with nothing to fact-check:
+
+- **ReDoS/CWE-1333 claims** (`security-reviewer.md`, `security-auditor/SKILL.md`) — all
+  confirmed accurate: exponential-time (O(2^n)) is the correct characterization for the exact
+  nested-quantifier patterns cited, Cloudflare's July 2019 outage postmortem does confirm
+  catastrophic backtracking as the mechanism. One minor, left as-is: the `(CWE-1333, CWE-400)`
+  pairing is industry-standard (NVD/GitHub Advisories/CodeQL all co-tag it) but not MITRE's own
+  stated CWE-1333 parent (that's CWE-407) — low stakes, not worth the wording churn.
+- **Drizzle `with` vs `leftJoin` N+1 claims** (`drizzle-patterns/SKILL.md`) — found and fixed a
+  real inaccuracy: the file claimed the relational query API resolves to "a bounded set of
+  queries planned up front (one per relation depth, not per row)." Confirmed against Drizzle's
+  own docs and source (`relations.ts`): it's always exactly **one** SQL query total, regardless
+  of relation depth — compiled to `LEFT JOIN LATERAL` + JSON aggregation (Postgres/MySQL) or
+  subquery-selects (SQLite/PlanetScale/TiDB), never scaling with nesting depth. The `leftJoin`
+  row-duplication comparison fixed earlier this session was independently re-confirmed correct
+  by the same research pass.
+
 ## [0.68.194] — 2026-08-05
 
 Followed up on the wiki cross-check with live web research on the remaining coverage gaps in

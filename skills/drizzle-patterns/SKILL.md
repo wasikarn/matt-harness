@@ -136,8 +136,11 @@ const usersWithPosts = await db.query.usersTable.findMany({
 **Why `with` matters — avoiding N+1:** fetching users, then querying `postsTable` per user in a
 loop (`for (const u of users) { u.posts = await db.select().from(postsTable).where(eq(postsTable.userId, u.id)) }`)
 issues one query per row — N+1 round trips for N users. The relational query API above resolves
-the same data as a bounded set of queries planned up front (one per relation depth, not per row).
-Prefer `with` over a manual per-row loop whenever fetching a parent and its children together —
+the same data as exactly one SQL query total, no matter how deep the `with` nesting goes — Drizzle
+compiles it into a `LEFT JOIN LATERAL` with JSON aggregation (Postgres, standard MySQL) or
+correlated subquery-selects (SQLite, PlanetScale MySQL, TiDB — dialects without `LATERAL`), never
+one query per relation depth. Prefer `with` over a manual per-row loop whenever fetching a parent
+and its children together —
 a plain `leftJoin` also avoids N+1, but returns one duplicated parent row per child, so it still
 needs an app-side group-by to reassemble the nested shape `with` gives you directly.
 
