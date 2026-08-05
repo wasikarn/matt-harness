@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.180] — 2026-08-05
+
+Removed `disable-model-invocation` from `fix-bug` — a live `/kbg:address-review` run stalled mid-workflow
+when its own Phase 4 tried the documented delegation to `/fix-bug` (full ceremony: stall detection,
+Phase 6 regression-verify, Phase 7 reviewer routing) and hit the Skill-tool block. Re-audited against
+this repo's own criterion (`disable-model-invocation-criterion` memory): `fix-bug` has a real in-flow
+gate before any mutation (Phase 4 `AskUserQuestion`, "DO NOT START WITHOUT USER APPROVAL"), and its
+stated reason quoted the pre-2026-06-19 retired "spawns agents and mutates" rule — it was ported
+2026-06-27, 8 days after that rule was superseded, so the flag was never re-screened against the
+current criterion. Distinct from the 2026-07-01 precedent (which named `fix-bug` and kept it): that
+precedent's reasoning covers ambient-chat prose-triggering (`"merge pr"` firing `ship-merge`), not a
+documented command-to-command delegation from an already user-invoked parent. `address-review` stays
+flagged (external GitHub write, no in-flow undo). Updated `CLAUDE.md`'s carrier count (2 skills + 10
+commands, was 11) and the `disable-model-invocation-criterion` memory.
+
 ## [0.68.179] — 2026-08-05
 
 `/kbg:iterate-skill security-reviewer` — no prior fixture workspace existed, so built one from

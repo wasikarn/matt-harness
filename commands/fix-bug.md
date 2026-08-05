@@ -2,8 +2,6 @@
 name: fix-bug
 description: "Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean)."
 argument-hint: Optional bug description or repro steps
-disable-model-invocation: true
-disable-model-invocation-reason: spawns agents and mutates — a fix the user commits to
 metadata:
   origin: ECC
   ecc_commit: 2bc924faf2f8e893bfe0af86b1931283693c30ae
