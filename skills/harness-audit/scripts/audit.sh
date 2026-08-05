@@ -39,7 +39,7 @@ SETTINGS="$CLAUDE_DIR/settings.json"
 # MEMORY_DIR is the per-project memory dir derived from REPO_ROOT; reserved for
 # future hooks that need to write audit findings into session memory.
 # shellcheck disable=SC2034
-MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/$(echo "$REPO_ROOT" | sed 's|/|_|g')/memory"
+MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/${REPO_ROOT//\//_}/memory"
 
 # AUDIT-2: --only <id> — run exactly ONE check by id against the resolved scope
 # (so tests/harness-audit/tests/test-harness-audit.sh can prove a known-bad
@@ -97,17 +97,13 @@ if [ -z "$PLUGIN_CACHE_ARG" ]; then
     # subdirectory matching X.Y.Z or vX.Y.Z, so a version bump (0.1.0 -> 0.1.1
     # -> 0.1.2) never silently disables F1 plugin-aware bypass. The `v` prefix
     # matches what `claude plugin install` writes to the cache.
-    _LATEST=""
-    for _entry in "$_KBG_CACHE_DIR"/*/; do
+    _LATEST=$(for _entry in "$_KBG_CACHE_DIR"/*/; do
       [ -d "$_entry" ] || continue
       _ver=$(basename "$_entry")
       _norm="${_ver#v}"   # strip optional 'v' prefix for comparison
       [[ "$_norm" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
-      if [ -z "$_LATEST" ] || \
-         [ "$(printf '%s\n%s\n' "$_LATEST" "$_ver" | sort -V | tail -1)" = "$_ver" ]; then
-        _LATEST="$_ver"
-      fi
-    done
+      echo "$_ver"
+    done | sort -V | tail -1)
     if [ -n "$_LATEST" ]; then
       PLUGIN_CACHE="$_KBG_CACHE_DIR/$_LATEST"
     else
@@ -160,7 +156,7 @@ crit() { CRIT_COUNT=$((CRIT_COUNT + 1)); echo "  CRIT F${CRIT_COUNT}: $1"; }
 warn() { WARN_COUNT=$((WARN_COUNT + 1)); echo "  WARN W${WARN_COUNT}: $1"; }
 info() { INFO_COUNT=$((INFO_COUNT + 1)); echo "  INFO I${INFO_COUNT}: $1"; }
 
-# ── helpers (fm_get / fm_has / SKIP_SCAFFOLD_GLOB come from _lib/frontmatter-helpers.sh) ──
+# ── helpers (fm_get / fm_has come from _lib/frontmatter-helpers.sh) ──
 
 # Run a find-like command and return its match count; if the starting directory
 # is missing (find exits 1) we still get "0" instead of tripping set -e/pipefail.

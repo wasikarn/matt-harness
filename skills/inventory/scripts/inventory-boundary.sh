@@ -242,13 +242,11 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `task-prep-checker` | none (read-only) | no | Fresh-context verifier for a task-prep prompt (Read/Glob/Grep only — no Bash) |
 
 XREF3
-fi
 
 # Cross-references to repo-level conventions. Added in Phase 3 (F6).
 # These point at docs/ that don't fit the regenerator's "fleet inventory"
 # model (they're convention references, not loadable artifacts) but are
 # referenced from BOUNDARY.md readers.
-if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF'
 
 ---
@@ -259,14 +257,12 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 - **[@0xCodez 14-step harness roadmap](https://x.com/0xCodez/article/2066867539305459732)** — external framing (2026-06-16): harness → loop → self-improving system. Useful for onboarding; kbg keeps the 3-floor vocabulary but rejects the article's L3/L4 unattended-loop conclusion per the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture). Keep/discard analysis is in [[0xcodez-harness-roadmap]] memory.
 - **[Sydney Runkle — The Art of Loop Engineering](https://x.com/sydneyrunkle/article/2066928783534289358)** — LangChain's 4-loop stack: agent loop, verification loop, event-driven loop, hill-climbing loop (2026-06-16). Good vocabulary for L1/L2 + human-in-the-loop; kbg rejects the L3/L4 unattended conclusion per the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture). Keep/discard analysis is in [[sydney-runkle-loop-engineering]] memory.
 XREF
-fi
 
 # Repo context block (D4 closure, 2026-06-12; team framing shed 2026-06-26).
 # Module Boundaries + Quick Context + Verification so any reader (or a freshly
 # spawned subagent) loads the same module map + verification recipe. Lives
 # here, OUTSIDE the regenerator's scope, so the next `inventory-boundary.sh
 # --repo-only` regen preserves it. Pattern mirrors F6's Cross-references block.
-if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF2'
 
 ---
@@ -296,11 +292,9 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
 - `bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 10-file hook suite)
 XREF2
-fi
 
 # Trigger phrases for harness use cases (added 2026-06-12).
 # Maps common user requests to the correct command/skill/agent.
-if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF4'
 
 ---
@@ -339,13 +333,11 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "save my session", "hand off" | `handoff` | Session state capture |
 
 XREF4
-fi
 
 # Reference docs cross-link (added 2026-06-18).
 # Points at the non-loadable reasoning-models catalog and its vendored
 # thinking-skills library so BOUNDARY.md readers can find the L3 reference
 # surface without adding a new invokable skill.
-if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   cat <<'XREF5'
 
 ---

@@ -11,8 +11,8 @@ set -euo pipefail
 
 # ── helpers ──────────────────────────────────────────────────────────
 #
-# fm_get / fm_has / fm_in_fm_section / fm_hook_desc / SKIP_SCAFFOLD_GLOB
-# come from claude/skills/_lib/frontmatter-helpers.sh (shared with audit.sh and
+# fm_get / fm_has / fm_hook_desc come from
+# claude/skills/_lib/frontmatter-helpers.sh (shared with audit.sh and
 # inventory-boundary.sh). Call sites below use fm_get "$f" description for
 # the single-line description value, and fm_hook_desc for hook comments
 # (not YAML frontmatter — different shape, kept separate in the lib).
@@ -22,23 +22,6 @@ set -euo pipefail
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/frontmatter-helpers.sh"
 # shellcheck source=../../_lib/err.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
-
-# ── per-section printer ──────────────────────────────────────────────
-
-find_git_root() {
-  local dir="$PWD"
-  while [ "$dir" != "/" ] && [ -n "$dir" ]; do
-    [ -d "$dir/.git" ] && { echo "$dir"; return 0; }
-    dir=$(dirname "$dir")
-  done
-  return 1
-}
-
-item_marker() {
-  # P0: retired symlink-farm model (2026-06-11). All components are now
-  # plugin-delivered; marker is cosmetic only.
-  echo "◇"
-}
 
 # ── per-section printer ──────────────────────────────────────────────
 
@@ -60,8 +43,7 @@ print_section() {
   echo ""
   echo "### $heading (${#items[@]})"
   for item in "${items[@]}"; do
-    local name desc marker
-    marker=$(item_marker "$item")
+    local name desc marker="◇"
     case "$mode" in
       skill-dir)  name=$(basename "$item");      desc=$(fm_get "$item/SKILL.md" description) ;;
       md-file)    name=$(basename "$item" .md); [ "$name" = "COMMAND" ] && name=$(basename "$(dirname "$item")"); desc=$(fm_get "$item" description) ;;
@@ -123,7 +105,7 @@ if [ -n "${1:-}" ]; then
 fi
 
 # Dynamic mode — scan project-local + global
-GIT_ROOT=$(find_git_root 2>/dev/null || true)
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
 if [ -n "$GIT_ROOT" ]; then
   print_source "Project-local — \`$(basename "$GIT_ROOT")/.claude\`" "$GIT_ROOT/.claude"
 fi

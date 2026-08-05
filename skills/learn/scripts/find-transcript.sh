@@ -9,7 +9,7 @@
 set -uo pipefail
 
 CWD="${1:-$PWD}"
-SLUG=$(printf '%s' "$CWD" | sed 's|/|-|g')
+SLUG="${CWD//\//-}"
 DIR="$HOME/.claude/projects/$SLUG"
 
 [ -d "$DIR" ] || { echo "find-transcript: no transcript dir for $CWD ($DIR)" >&2; exit 1; }

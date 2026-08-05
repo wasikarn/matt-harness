@@ -72,11 +72,15 @@ test_deny() {
 
 # Expect the gate to ALLOW (exit 0 + empty stdout — no permissionDecision JSON).
 test_allow() {
-  local gate="$1" desc="$2" payload="$3"
+  local gate="$1" desc="$2" payload="$3" envvar="${4:-}"
   local rc
-  rc=$(echo "$payload" | bash "$gate" 2>/dev/null; echo $?)
+  if [ -n "$envvar" ]; then
+    rc=$(echo "$payload" | env "$envvar" bash "$gate" 2>/dev/null; echo $?)
+  else
+    rc=$(echo "$payload" | bash "$gate" 2>/dev/null; echo $?)
+  fi
   if [[ "$rc" == "0" ]]; then
-    echo "  ✅ ALLOW: $desc"
+    echo "  ✅ ALLOW${envvar:+ (env)}: $desc"
     pass=$((pass + 1))
   else
     echo "  ❌ ALLOW EXPECTED but got exit $rc: $desc" >&2
@@ -94,21 +98,6 @@ test_ask() {
     pass=$((pass + 1))
   else
     echo "  ❌ ASK EXPECTED but got exit $rc out='$out': $desc" >&2
-    fail=$((fail + 1))
-  fi
-}
-
-# Expect the gate to ALLOW with an extra env var set for the gate subprocess
-# (e.g. an escape-hatch override).
-test_allow_env() {
-  local gate="$1" desc="$2" payload="$3" envvar="$4"
-  local rc
-  rc=$(echo "$payload" | env "$envvar" bash "$gate" 2>/dev/null; echo $?)
-  if [[ "$rc" == "0" ]]; then
-    echo "  ✅ ALLOW (env): $desc"
-    pass=$((pass + 1))
-  else
-    echo "  ❌ ALLOW EXPECTED but got exit $rc: $desc" >&2
     fail=$((fail + 1))
   fi
 }
@@ -544,7 +533,7 @@ test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (code-review-graph) out of scop
   "$(mcp_session_payload 'mcp__code-review-graph__query_graph_tool' "$AG_COLD")"
 test_allow "$ATLASSIAN_GATE" "malformed stdin (fail-safe allow)" \
   '{not valid json'
-test_allow_env "$ATLASSIAN_GATE" "escape hatch KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
+test_allow "$ATLASSIAN_GATE" "escape hatch KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ESCAPE")" \
   "KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1"
 

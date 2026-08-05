@@ -43,10 +43,15 @@ print(json.dumps({
 }
 
 # Expect the hook to FIRE (stderr non-empty, stdout empty, exit 0).
+# Optional 3rd arg: "VAR=val" to set for the hook subprocess (e.g. a threshold override).
 test_nudge() {
-  local desc="$1" payload="$2"
+  local desc="$1" payload="$2" envvar="${3:-}"
   local out err rc
-  out=$(echo "$payload" | bash "$HOOK" 2>"$TMP/stderr")
+  if [ -n "$envvar" ]; then
+    out=$(echo "$payload" | env "$envvar" bash "$HOOK" 2>"$TMP/stderr")
+  else
+    out=$(echo "$payload" | bash "$HOOK" 2>"$TMP/stderr")
+  fi
   rc=$?
   err=$(cat "$TMP/stderr")
   if [[ "$rc" == "0" && -z "$out" && -n "$err" ]]; then
@@ -93,16 +98,7 @@ test_nudge "20 user turns (well past threshold)" "$(session_end_payload "$TMP/t2
 
 echo ""
 echo "--- malformed / missing input (must stay silent + exit 0) ---"
-empty_out=$(echo "" | bash "$HOOK" 2>"$TMP/stderr")
-empty_rc=$?
-empty_err=$(cat "$TMP/stderr")
-if [[ "$empty_rc" == "0" && -z "$empty_out" && -z "$empty_err" ]]; then
-  echo "  ✅ SILENT: empty stdin"
-  pass=$((pass + 1))
-else
-  echo "  ❌ SILENT EXPECTED but rc=$empty_rc stdout=<$empty_out> stderr=<$empty_err>: empty stdin" >&2
-  fail=$((fail + 1))
-fi
+test_silent "empty stdin" ""
 
 test_silent "no transcript_path field in payload" '{"session_id":"x","hook_event_name":"SessionEnd","reason":"other"}'
 test_silent "transcript_path points to nonexistent file" "$(session_end_payload "$TMP/does-not-exist.jsonl")"
@@ -120,16 +116,7 @@ test_nudge "reason=logout, 20 user turns (real close-out, must still fire)" \
 echo ""
 echo "--- KBG_LEARN_NUDGE_MIN_TURNS override ---"
 make_transcript "$TMP/t1.jsonl" 1
-out=$(echo "$(session_end_payload "$TMP/t1.jsonl")" | KBG_LEARN_NUDGE_MIN_TURNS=1 bash "$HOOK" 2>"$TMP/stderr")
-rc=$?
-err=$(cat "$TMP/stderr")
-if [[ "$rc" == "0" && -z "$out" && -n "$err" ]]; then
-  echo "  ✅ NUDGE: 1 user turn with MIN_TURNS=1 override"
-  pass=$((pass + 1))
-else
-  echo "  ❌ NUDGE EXPECTED but rc=$rc stdout=<$out> stderr=<$err>: 1 user turn with MIN_TURNS=1 override" >&2
-  fail=$((fail + 1))
-fi
+test_nudge "1 user turn with MIN_TURNS=1 override" "$(session_end_payload "$TMP/t1.jsonl")" "KBG_LEARN_NUDGE_MIN_TURNS=1"
 
 echo ""
 total=$((pass + fail))

@@ -21,35 +21,11 @@
 #       Exit 0 if <key> appears as a top-level key in the first frontmatter
 #       block, 1 otherwise. Empty value still counts as present.
 #
-#   fm_in_fm_section <file>
-#       Exit 0 if <file> has any frontmatter (first two `---` markers both
-#       present), 1 otherwise.
-#
 #   fm_hook_desc <file>
 #       Print the first non-shebang, non-license-prefixed `# ...` comment
 #       line from a hook script. NOT a YAML frontmatter parser — hook files
 #       are .sh/.py, not markdown, so the "description" is a code comment.
 #       Kept separate from fm_get so the frontmatter contract stays clean.
-#
-# Constants:
-#   SKIP_SCAFFOLD_GLOB
-#       The `[!_]*/` glob that excludes _-prefixed scaffolds (_template,
-#       _archive) from per-skill directory walks. The convention lives in
-#       install.sh and is repeated in audit.sh / inventory.sh /
-#       inventory-boundary.sh. Exporting the constant lets each call site
-#       write the same glob without re-deriving it.
-
-# SKIP_SCAFFOLD_GLOB — exclude _-prefixed scaffolds from skill directory walks.
-# See install.sh for the canonical definition; this export lets every
-# caller share the same glob without re-deriving it inline.
-#
-# Note: bash treats variable expansion as a literal string, not a glob
-# pattern. The constant is exported for documentation / grep-anchoring
-# purposes — the inline literal `[!_]*/` is still required in the few
-# `for d in "$path"/[!_]*/` call sites. A future caller that wants to
-# avoid the inline literal can switch to a case-statement filter.
-SKIP_SCAFFOLD_GLOB='[!_]*/'
-export SKIP_SCAFFOLD_GLOB
 
 # _FM_CACHE — per-(file,key,flags) frontmatter memoization for audit/inventory.
 # Populated once in the caller's MAIN shell (audit.sh builds it before its checks
@@ -133,19 +109,6 @@ fm_has() {
     /^---[[:space:]]*$/ { in_fm = !in_fm; if (!in_fm) exit; next }
     in_fm && $0 ~ "^"k":" { found = 1; exit }
     END { exit (found ? 0 : 1) }
-  ' "$file"
-}
-
-# fm_in_fm_section — does the file have any frontmatter at all?
-# Returns 0 if two `---` markers are seen, 1 otherwise. Reads from the
-# top of the file (no early-exit on no-frontmatter to keep the awk minimal).
-fm_in_fm_section() {
-  local file="$1"
-  [ -f "$file" ] || return 1
-  awk '
-    /^---[[:space:]]*$/ { count++ }
-    count >= 2 { exit 0 }
-    END { exit (count >= 2 ? 0 : 1) }
   ' "$file"
 }
 

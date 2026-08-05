@@ -26,6 +26,14 @@ assert() {
   fi
 }
 
+# make_transcript_line <model> <input_tokens> <output_tokens>
+# One assistant-turn JSONL line, cache fields zeroed (no fixture needs them non-zero).
+make_transcript_line() {
+  python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "message": {"model": sys.argv[1],
+    "usage": {"input_tokens": int(sys.argv[2]), "output_tokens": int(sys.argv[3]),
+              "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}))' "$1" "$2" "$3"
+}
+
 echo "=== doctrine-bootstrap hook (SessionStart) ==="
 
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DOCTRINE" 2>/dev/null)
@@ -76,13 +84,7 @@ echo "=== cost-tracker hook (Stop) ==="
 
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
-python3 -c '
-import json
-line = {"type": "assistant", "message": {"model": "claude-sonnet-5",
-  "usage": {"input_tokens": 100, "output_tokens": 50,
-            "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
-print(json.dumps(line))
-' > "$transcript"
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
 payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-session"}))' "$transcript")
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
 rc=$?
@@ -140,14 +142,7 @@ rm -rf "$fake_home" "$transcript"
 # compact JSONL row with summed tokens, not one row per line.
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
-python3 -c '
-import json
-for tok_in, tok_out in [(100, 50), (200, 80)]:
-    line = {"type": "assistant", "message": {"model": "claude-sonnet-5",
-      "usage": {"input_tokens": tok_in, "output_tokens": tok_out,
-                "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
-    print(json.dumps(line))
-' > "$transcript"
+{ make_transcript_line claude-sonnet-5 100 50; make_transcript_line claude-sonnet-5 200 80; } > "$transcript"
 payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "multi"}))' "$transcript")
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
 rc=$?
@@ -169,14 +164,7 @@ rm -rf "$fake_home" "$transcript"
 # (the pre-fix behavior this rewrite replaced).
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
-python3 -c '
-import json
-for model, tok_in, tok_out in [("claude-opus-4-8", 100, 50), ("claude-sonnet-5", 200, 80)]:
-    line = {"type": "assistant", "message": {"model": model,
-      "usage": {"input_tokens": tok_in, "output_tokens": tok_out,
-                "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}
-    print(json.dumps(line))
-' > "$transcript"
+{ make_transcript_line claude-opus-4-8 100 50; make_transcript_line claude-sonnet-5 200 80; } > "$transcript"
 payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "multi-model"}))' "$transcript")
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
 rc=$?

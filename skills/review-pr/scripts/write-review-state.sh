@@ -26,6 +26,9 @@
 # of having to re-read the file back out — a skipped re-read would silently degrade the footer.
 set -euo pipefail
 
+# shellcheck source=../../_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+
 CRITICAL_COUNT="${1:?critical_count required}"
 REHUNT_RAW="${2:?rehunt required}"
 DISPATCH_FAILURES="${3:-}"
@@ -79,12 +82,8 @@ PREV_MINOR="n/a"
 if [ -s "$STATE_FILE" ]; then
   PREV_DATA=$(python3 -c '
 import json, sys
-try:
-    with open(sys.argv[1]) as f:
-        d = json.load(f)
-except Exception:
-    print("|||||")
-    sys.exit(0)
+try: d = json.load(open(sys.argv[1]))
+except Exception: d = {}
 print("%s|%s|%s|%s|%s" % (
     d.get("branch", ""), d.get("round", 0),
     d.get("critical_count", "n/a"), d.get("important_count", "n/a"), d.get("minor_count", "n/a")))
@@ -143,13 +142,12 @@ if [ -n "$WT" ]; then
   WT_REAL=$(cd -- "$WT" && pwd -P)
   case "$STATE_FILE_DIR" in
     "$WT_REAL"|"$WT_REAL"/*)
-      echo "ERROR: state file $STATE_FILE resolves INSIDE $WT — it will be deleted by cleanup. Fix REVIEW_PR_STATE_DIR and re-run before proceeding." >&2
-      exit 1
+      err_die "state file $STATE_FILE resolves INSIDE $WT — it will be deleted by cleanup. Fix REVIEW_PR_STATE_DIR and re-run before proceeding."
       ;;
   esac
 fi
 
-test -s "$STATE_FILE" || { echo "ERROR: state file $STATE_FILE is missing/empty after write" >&2; exit 1; }
+test -s "$STATE_FILE" || err_die "state file $STATE_FILE is missing/empty after write"
 
 echo "$STATE_FILE"
 echo "round=$ROUND prev_critical=$PREV_CRITICAL prev_important=$PREV_IMPORTANT prev_minor=$PREV_MINOR stalled=$STALLED"
