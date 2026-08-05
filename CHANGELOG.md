@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.191] — 2026-08-05
+
+Checked 4 more files on request: `agents/python-reviewer.md`, `agents/nextjs-reviewer.md`,
+`agents/code-architect.md`, `agents/code-reviewer.md`. Two came back genuinely clean:
+`nextjs-reviewer` already has an explicit scope-delegation table routing render
+performance/generic memoization to `typescript-reviewer`/`code-reviewer` (which now reaches
+`performance-optimizer` transitively per v0.68.189); `code-architect` operates at
+interface/contract level only and explicitly hands off implementation to `code-implementer`
+(which already has the algorithmic check from v0.68.186) — its own design-phase content is
+about abstraction-layer decisions (rule of three, YAGNI), a different altitude than
+data-structure/algorithm choice.
+
+`python-reviewer` and `code-reviewer` got the same weak "missing pointer" fix as
+`typescript-reviewer` (v0.68.189) — both already have solid inline performance content
+(N+1/GIL/blocking-call patterns for python-reviewer; a well-calibrated O(n^2)-with-realistic-n
+bullet plus N+1/caching/React for code-reviewer) but no delegation pointer to
+`performance-optimizer` for the deeper patterns beyond what's covered inline. Added a small
+new Reference section to `python-reviewer` (it had none); added an inline bullet to
+`code-reviewer`'s existing Performance(MEDIUM) list (it has no meta/reference section across
+its 500+ lines).
+
 ## [0.68.190] — 2026-08-05
 
 Checked `agents/performance-optimizer.md` itself on request — the weakest finding in this

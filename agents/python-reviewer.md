@@ -245,6 +245,12 @@ per the format above — the priority reasoning belongs only in `Issue:`, never 
 - **FastAPI**: CORS config, Pydantic validation, response models, no blocking in async
 - **Flask**: Proper error handlers, CSRF protection
 
+## Reference
+
+For a deeper algorithmic fix beyond N+1/GIL/blocking-call patterns above (heap/priority-queue,
+sliding window, binary search, backtracking) once a real bottleneck is confirmed, hand off to
+`performance-optimizer`.
+
 ---
 
 Review with the mindset: "Would this code pass review at a top Python shop or open-source project?"

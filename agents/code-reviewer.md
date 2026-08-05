@@ -424,6 +424,9 @@ never assumed present.
 - **Caching auth/permission/session lookups is a correctness bug, not a perf win** — a Redis/memo cache on a permission or session read without a verified write-through invalidation path ships a stale-authz bypass. If anything permission-adjacent is cached, require that every mutating write invalidates the entry (or version-bumps the key) before approving; this is where MEDIUM perf filings hide CRITICAL authz misses.
 - **Unoptimized images** — Large images without compression or lazy loading
 - **Synchronous I/O** — Blocking operations in async contexts
+- **Deeper algorithmic fix beyond the O(n^2) flag above** (heap/priority-queue, sliding window,
+  binary search, backtracking) once a real bottleneck is confirmed → hand off to
+  `performance-optimizer` rather than prescribing the specific data-structure rewrite here.
 
 ### Best Practices (LOW)
 
