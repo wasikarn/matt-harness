@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.197] — 2026-08-05
+
+`ponytail-review` swept every `.py` file in the repo for over-engineering.
+`memory-lint.py`: three functions hand-rolled the same
+`re.search(r"\]\(([^)]+\.md)\)", line)` regex that a module-level `POINTER_RE`
+constant already covered — now they call it. The Class C ledger-fallback
+logic (pick `project_external_evals_ledger`, else any surviving file with
+`ledger` in its stem) was duplicated verbatim in two branches of
+`class_c_dangling_link_rewrite` — extracted into `_pick_ledger_target()`.
+The Class A plan's `pointer_rewrite` dict field was written at plan-build
+time and again at apply time but never read anywhere — deleted. Also
+trashed two gitignored one-off scratch scripts (`.scratch/`) that had
+already been run and had nothing left referencing them. Self-tests and a
+dry-run against the real memory store both pass post-fix.
+
 ## [0.68.196] — 2026-08-05
 
 `memory-lint`'s dangling-`[[link]]` check was exact-string-match only (by

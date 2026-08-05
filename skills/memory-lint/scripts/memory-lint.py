@@ -173,7 +173,7 @@ def superseded_stems(state):
     for line in state["idx"].splitlines():
         if not SUPERSEDED_RE.search(line):
             continue
-        m = re.search(r"\]\(([^)]+\.md)\)", line)
+        m = POINTER_RE.search(line)
         if m:
             stems.add(m.group(1)[:-3])
     return stems
@@ -286,7 +286,7 @@ def class_a_stale_superseded(state):
         if not m:
             continue
         # The OLD topic = the file the markdown link points to on this line
-        link_m = re.search(r"\]\(([^)]+\.md)\)", line)
+        link_m = POINTER_RE.search(line)
         if not link_m:
             continue
         target_file = link_m.group(1)
@@ -305,10 +305,6 @@ def class_a_stale_superseded(state):
             "to_archive_subdir": time.strftime(SUPERSEDED_ARCHIVE_DATE_FMT),
             "old_pointer_line": line,
             "successor": successor,
-            "pointer_rewrite": {
-                "from": line,
-                "to": None,  # filled in later
-            },
         })
     return plan
 
@@ -361,6 +357,18 @@ def class_b_near_budget_collapse(state):
     return plan
 
 
+def _pick_ledger_target(state):
+    """Default rewrite target for a link with no clear resolution: the
+    external-evals ledger if it survives, else any surviving file with
+    'ledger' in its stem, else None (caller falls back to manual)."""
+    ledger = "project_external_evals_ledger"
+    if ledger in state["stems"]:
+        return ledger
+    ledgers = [s for s in sorted(state["stems"])
+               if "ledger" in s and s in state["files"]]
+    return ledgers[0] if ledgers else None
+
+
 def class_c_dangling_link_rewrite(state):
     """Class C: surviving top-level file has a [[wikilink]] that resolves to nothing,
     OR to a target in _archive/ where the source has a known supersedence target."""
@@ -374,7 +382,7 @@ def class_c_dangling_link_rewrite(state):
         if not m:
             continue
         # Find filename in same line
-        pm = re.search(r"\]\(([^)]+\.md)\)", line)
+        pm = POINTER_RE.search(line)
         if not pm:
             continue
         old_fname = pm.group(1)
@@ -392,15 +400,7 @@ def class_c_dangling_link_rewrite(state):
             # Dangling: target resolves to nothing
             if t not in archive_stems:
                 # No clear ledger — record as a candidate; agent decides rewrite target
-                # Default rewrite target = external-evals-ledger if it exists, else no-op flag
-                ledger = "project_external_evals_ledger"
-                if ledger in state["stems"]:
-                    new_target = ledger
-                else:
-                    # Pick any surviving ledger; if none, mark as manual
-                    ledgers = [s for s in sorted(state["stems"])
-                               if "ledger" in s and s in state["files"]]
-                    new_target = ledgers[0] if ledgers else None
+                new_target = _pick_ledger_target(state)
                 plan.append({
                     "action": "rewrite_wikilink",
                     "file": f,
@@ -421,13 +421,7 @@ def class_c_dangling_link_rewrite(state):
                     })
                 else:
                     # Archived but no clear supersedence — point to nearest ledger
-                    ledger = "project_external_evals_ledger"
-                    if ledger in state["stems"]:
-                        new_target = ledger
-                    else:
-                        ledgers = [s for s in sorted(state["stems"])
-                                   if "ledger" in s and s in state["files"]]
-                        new_target = ledgers[0] if ledgers else None
+                    new_target = _pick_ledger_target(state)
                     plan.append({
                         "action": "rewrite_wikilink",
                         "file": f,
@@ -487,7 +481,6 @@ def apply_action_plan(state, plan):
         if old_line in new_idx:
             new_idx = new_idx.replace(old_line, new_line)
             bytes_saved += len(old_line.encode("utf-8")) - len(new_line.encode("utf-8"))
-        entry["pointer_rewrite"]["to"] = new_line
 
     # Class B — pointer rewrites
     for entry in plan["B"]:
