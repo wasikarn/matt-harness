@@ -23,7 +23,7 @@ When invoked:
    - If the PR shows merge conflicts or a non-mergeable state, stop and report that conflicts must be resolved first.
    - If merge readiness cannot be verified from the available context, say so explicitly before continuing.
 3. Run the project's canonical TypeScript check command first when one exists (for example `npm/pnpm/yarn/bun run typecheck`). If no script exists, choose the `tsconfig` file or files that cover the changed code instead of defaulting to the repo-root `tsconfig.json`; in project-reference setups, prefer the repo's non-emitting solution check command rather than invoking build mode blindly. Otherwise use `tsc --noEmit -p <relevant-config>`. Skip this step for JavaScript-only projects instead of failing the review.
-4. Run `eslint .` (flat config / ESLint 9+) or `eslint . --ext .ts,.tsx,.js,.jsx` (legacy eslintrc) if available — if linting or TypeScript checking fails, stop and report. If either check cannot execute at all (`tsc`/`eslint` binary missing, `node_modules` missing, no ESLint config present), disclose that as a coverage caveat and continue with the manual review in steps 6–7 instead of aborting review execution.
+4. Run `eslint .` (flat config / ESLint 9+) or `eslint . --ext .ts,.tsx,.js,.jsx` (legacy eslintrc) if available. If either check cannot execute at all (`tsc`/`eslint` binary missing, `node_modules` missing, no ESLint config present), disclose that as a coverage caveat. If either check runs and reports errors, treat them as findings — type errors under Type Safety, lint failures under the matching category — rather than a reason to stop. Either way, continue with the rest of the review; nothing in this step should abort it.
 5. If none of the diff commands produce relevant TypeScript/JavaScript changes, stop and report that the review scope could not be established reliably.
 6. Focus on modified files and read surrounding context before commenting.
 7. Begin review
@@ -118,9 +118,11 @@ Only report issues with >80% confidence. Flag correctness-affecting gaps; treat 
 
 ## Approval Criteria
 
-- **Approve**: No CRITICAL, HIGH, or MEDIUM issues
-- **Warning**: MEDIUM issues only (can merge with caution)
-- **Block**: CRITICAL or HIGH issues found
+These tiers key off what you actually report after Noise Control's filters above — not every issue you happened to notice while reading.
+
+- **Approve**: No CRITICAL, HIGH, or MEDIUM issues reported
+- **Warning**: MEDIUM issues reported, nothing higher (can merge with caution)
+- **Block**: CRITICAL or HIGH issues reported
 
 ## Reference
 

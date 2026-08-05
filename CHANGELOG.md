@@ -5,6 +5,14 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.182] — 2026-08-05
+
+Actually ships the `agents/typescript-reviewer.md` fix documented below in `[0.68.178]`. That
+entry's text landed in commit `8b7057d1` (tagged v0.68.179), but the code edit itself was never
+staged alongside it — it sat as an uncommitted working-tree change through v0.68.179, v0.68.180,
+and v0.68.181 while the CHANGELOG claimed it had already shipped. Caught via `git status` before
+a routine commit. No content change beyond what `[0.68.178]` already describes.
+
 ## [0.68.181] — 2026-08-05
 
 `/kbg:iterate-skill code-implementer` — no prior fixture workspace existed, so built one from
