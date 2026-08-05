@@ -343,17 +343,28 @@ def classify(fp):
     if not under(fp, WORKSPACE):
         return None  # other projects untouched
     cwd = nearest_dir(fp)
-    top = git(["rev-parse", "--show-toplevel"], cwd)
+    # One subprocess instead of four -- `git rev-parse` accepts multiple query
+    # flags and prints one line per flag, in argument order. A LATER flag can
+    # fail independently while earlier ones still produced output (confirmed:
+    # --abbrev-ref HEAD on a commit-less repo still emits a "HEAD" line while
+    # exiting non-zero) -- identical to calling each separately. If instead
+    # the FIRST flag fails (bare repo, non-worktree cwd -- confirmed via
+    # `--show-toplevel` there), git emits nothing for ANY flag: `lines` comes
+    # back empty, `top` is "", and the `if not top` check below already
+    # short-circuits before `gd`/`common`/`branch` are used -- so that failure
+    # mode reaches the same outcome either way, combined or separate. Hook
+    # spawn overhead dominates over git's own compute cost here.
+    out = git(["rev-parse", "--show-toplevel", "--absolute-git-dir",
+               "--git-common-dir", "--abbrev-ref", "HEAD"], cwd)
+    lines = out.split("\n") if out else []
+    top, gd, common, branch = (lines + ["", "", "", ""])[:4]
     if not top:
         return None  # not a git repo
     if os.path.realpath(top) == os.path.realpath(WORKSPACE):
         return None  # workspace-root docs repo
-    gd = git(["rev-parse", "--absolute-git-dir"], cwd)
-    common = git(["rev-parse", "--git-common-dir"], cwd)
     if common and not os.path.isabs(common):
         common = os.path.join(cwd, common)
     in_worktree = bool(gd) and bool(common) and os.path.realpath(gd) != os.path.realpath(common)
-    branch = git(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
     repo = os.path.basename(top)
     if in_worktree and branch not in PROTECTED:
         return None
