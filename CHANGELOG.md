@@ -5,6 +5,27 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.193] — 2026-08-05
+
+Deep-read all 13 curated algorithm pages in `~/llm-wiki`'s `wiki/algorithms/` hub (Big-O,
+sorting, search, pattern-matching, graphs, sliding window, two pointers, backtracking, DP,
+KNN, heap/priority-queue) and cross-verified every complexity claim in
+`agents/performance-optimizer.md`'s Algorithmic Analysis table plus every other file touched
+in the v0.68.183–192 sweep. Found and fixed 2 issues in `performance-optimizer.md`:
+
+- **Real error:** the "Brute-force pair/triplet search on sorted array" row claimed two
+  pointers gets triplet search (3-sum) down to O(n) — wrong. 2-sum via two pointers is O(n),
+  but 3-sum needs an outer loop around the two-pointer scan → O(n²), never linear (confirmed
+  against the wiki's own `two-pointers.md`: "3-sum: Sort + opposite-ends inside loop →
+  O(N²)"). Split into two separate rows with correct complexities.
+- **Precision gap:** the Rabin-Karp/KMP row stated both as unconditionally O(n+m). KMP is
+  O(n+m) worst-case guaranteed; Rabin-Karp is O(n+m) average only and degrades back to
+  O(n·m) on hash collisions. Added the worst-case caveat.
+
+Everything else in the table (nested loops, sort-in-loop, memoization/DP, binary search, heap
+push/pop, sliding window's exact "subtract-leaving/add-entering" phrasing, backtracking's
+"same worst case" framing, hidden-constants section) checked out exactly against the wiki.
+
 ## [0.68.192] — 2026-08-05
 
 Checked 6 more surfaces on request (`skills/review-pr`, `skills/typescript-patterns`,
