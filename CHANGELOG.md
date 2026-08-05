@@ -5,6 +5,50 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.203] — 2026-08-06
+
+Adversarial re-verification of v0.68.202 (dispatched `kbg:code-reviewer` with
+fresh context, told to construct new adversarial inputs rather than trust the
+prior session's own baseline diffs — self-verification in the same context
+that made the change shares its blind spots). Found 3 real divergences the
+existing test suites didn't cover; fixed all 3:
+
+- **`hooks/stop/cost-tracker.sh` — reverted the jq merge entirely.** `IFS=$'\t'
+  read` treats tab as IFS whitespace regardless of `IFS` being set to tab
+  alone, so it can't represent an empty *leading* TSV field — a payload with
+  no `transcript_path` (`jq` emits `\tdefault`) parsed into
+  `transcript=default session_id=""`, fields swapped. No demonstrated
+  production impact today (`session_id` is always a Claude-Code-internal UUID,
+  never a real file path, so the swapped `transcript` still fails the same
+  `-f` existence check either way) — but it's a landmine, and two `jq` calls
+  in an already-`async: true` stop hook had no measurable perf case to defend
+  in the first place. Back to the original two independent `jq -r` calls.
+- **`checks/12-routing-table-coverage-orchestrate-refer.sh` — fixed a
+  tokenization mismatch.** Pre-extracting non-overlapping backtick-delimited
+  tokens (`` `[^`]+` ``) can't represent an adjacent-backtick construct like
+  `` `ab`agent` `` the same way the original raw substring search
+  (`grep -hq "\`$agent\`"`) could — the token extraction would never emit
+  "agent" as a standalone match there. Dormant (no such construct exists in
+  this repo's real content today) and one-directional (only a spurious WARN,
+  never a missed real reference) — but still a real semantics change. Fixed
+  by collecting agent names first and searching for all of them in **one**
+  alternated `grep` pattern instead of pre-tokenizing — same substring-match
+  semantics as the original, still one spawn instead of 19.
+- **`checks/37-dead-script-pointer-doc-rot.sh` — dropped an accidental
+  `-type f`.** The rewrite's upfront `find` narrowed matches to regular files;
+  the original per-reference `find -name` had no `-type` filter at all, so a
+  symlinked script (resolves and executes fine) would have counted as
+  existing under the original and been wrongly flagged as a dead pointer
+  under the rewrite. No symlinked `.sh`/`.py`/`.js` currently exists in this
+  repo, so also dormant. Removed `-type f` to match the original's
+  "existence anywhere, any type" contract exactly.
+
+The other 6 changes from v0.68.202 (checks 40/50's array-lookup swap, the
+`audit.sh` glob typo fix, the `atlassian-mcp-gate.sh` and
+`jira-route-nudge.sh` prefilter merges, and the `inventory-boundary.sh`
+`GIT_ROOT` reuse) were independently re-derived and confirmed safe — no
+changes needed there. Full gauntlet green.
+
 ## [0.68.202] — 2026-08-06
 
 Perf/algorithm pass across `.sh` files (companion to the ponytail-review

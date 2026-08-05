@@ -14,10 +14,12 @@
 # journal; the CRIT set is reserved for the irrecoverable/tamper class).
 # Build the set of every script basename that actually exists, once (was:
 # one full-tree `find` per reference -- 22 traversals where 1 + array lookups do).
+# No -type filter, matching the original per-reference find exactly -- a
+# symlinked script resolves and executes fine, so it counts as existing too.
 declare -A _known_scripts37=()
 while IFS= read -r _path; do
   _known_scripts37["$(basename "$_path")"]=1
-done < <(find "$CLAUDE_DIR" -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' \) \
+done < <(find "$CLAUDE_DIR" \( -name '*.sh' -o -name '*.py' -o -name '*.js' \) \
             -not -path '*/.git/*' -not -path '*/.scratch/*' 2>/dev/null)
 
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
