@@ -5,6 +5,66 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.179] — 2026-08-05
+
+`/kbg:iterate-skill security-reviewer` — no prior fixture workspace existed, so built one from
+scratch (3 eval cases: real-world multi-vuln diff, a clean/false-positive-trap diff, and a
+JWT-algorithm-confusion-specific diff) before running the improve loop. `kbg:review-fixtures`'
+2-agent adversarial pass found 3 target-attributable findings in `agents/security-reviewer.md`:
+(1 CRITICAL) the JWT algorithm-confusion paragraph claimed a correctly-configured PEM key stays
+vulnerable to RS256→HS256 confusion without an explicit `algorithms` pin — both reviewers
+empirically disproved this against real `jsonwebtoken@9.0.2` behavior (a well-formed key's own
+`createPublicKey` shape-inference already rejects the forged token); rewrote to correctly scope
+the danger to a malformed/placeholder key value only. (2 MAJOR, 2 occurrences) a correctly-narrated
+attack-chain or bundled-finding escalation wasn't landing in the actual severity tag (SQL injection
+scored HIGH instead of CRITICAL when bundled with a lesser tenant-scoping issue); added a new
+"3d. Severity-Label Discipline" section after 3c (Attack Chains). (1 MAJOR) a hedged conditional
+finding ("MEDIUM if X") was listed as blocking a clean-diff verdict; the same 3d section now
+instructs scoring conditional findings at the confirmed floor, not as a blocker. Regenerated all 6
+fixtures into iteration-2 — with_agent runs read the live edited `agents/security-reviewer.md`
+directly rather than via a name-based agent reference, sidestepping the stale-plugin-cache trap
+this repo has hit before on same-session content edits. Both reviewers re-verified from scratch
+(one reinstalled `jsonwebtoken@9.0.2` fresh rather than trusting the prior pass); all 3 findings
+confirmed fixed, no regressions. Verdict: IMPROVED (critical 1→0, major 3→0, minor 2→3 — the
+3 remaining minor items are debatable judgment calls, not confirmed defects). User chose to stop
+after iteration 1 rather than chase the minor items into iteration 2.
+
+## [0.68.178] — 2026-08-05
+
+`/kbg:iterate-skill typescript-reviewer` found no `typescript-reviewer-workspace/` to resume
+(gitignored, cleaned off disk since the last real loop at v0.68.40) — user chose the cheaper
+fresh-context whole-file re-review over rebuilding a fixture set from zero, since no specific
+complaint was driving the request (Rule 2).
+
+A fresh-context agent (no prior exposure to the file) found 2 real gaps in
+`agents/typescript-reviewer.md`, both confirmed against the raw text before fixing:
+
+1. **HIGH — step 4's "stop and report" never defined what happens when `tsc`/`eslint` actually
+   run and find real errors** (as opposed to failing to execute at all, the branch v0.68.40
+   already fixed). Read consistently with steps 2 and 5's identical "stop and report" phrasing
+   (both mean "abort the whole review"), any diff with a real type error or lint failure — the
+   single most common trigger — aborted before the actual code review (steps 6–7) ever ran.
+   Fixed: tool-reported errors are now treated as findings (fed into Type Safety / the matching
+   category) rather than an abort condition; nothing in step 4 aborts the review anymore.
+2. **HIGH — Approval Criteria was keyed on issues "found," but Noise Control tells the agent to
+   withhold some found issues from the report** (>80%-confidence filter, unchanged-code CRITICAL-
+   only filter) — same ambiguity shape as an Approve/Warning collision already fixed elsewhere in
+   this file, just a different rule pair. Fixed: added a preface line anchoring the tiers to "what
+   you actually report after Noise Control's filters," and reworded all three tier bullets from
+   "issues found" to "issues reported."
+
+A third MEDIUM finding (step 5's scope-check running after steps 3–4's diagnostics, so an
+out-of-scope diff could hit a stray repo-wide error before the clean "scope could not be
+established" message) turned out to be a side effect of finding 1 — fixing the abort bug removes
+the misleading-message risk, leaving only a minor wasted-diagnostic-run cost not worth a
+reordering diff. A fourth LOW finding (step 2 treating "failing or pending" CI the same) was
+rejected on inspection — "pending" genuinely isn't green CI yet, so waiting is correct, not a bug.
+
+A required fresh-context re-review after applying the fix (this repo's confirmed "a fix can ship
+a new contradiction" pattern) caught one wrinkle in the fix's own wording: naming "steps 6–7" by
+number read as skipping step 5's independent abort gate. Fixed by dropping the step numbers
+entirely ("continue with the rest of the review").
+
 ## [0.68.177] — 2026-08-04
 
 Promotes a user-flagged bug-fix discipline from memory-only to doctrine. User raised a real

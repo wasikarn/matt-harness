@@ -131,15 +131,21 @@ jwt.verify(token, secretOrPublicKey);
 jwt.verify(token, secretOrPublicKey, { algorithms: ['RS256'] });
 ```
 
-**The pin is load-bearing, not defense-in-depth.** Newer `jsonwebtoken` versions narrow the
-default algorithm set by inferring an allowed family from the shape of `secretOrPublicKey` (PEM
-header detection) — but that inference only holds for a well-formed key. Verified live: with an
-unpinned call and a misconfigured key value (a truncated PEM, a placeholder left over from a
-bad deploy — e.g. a literal `your_public_key_here` string), a forged HS256 token using that key
-string as the HMAC secret still verifies successfully on the current jsonwebtoken major version.
-Don't credit "modern jsonwebtoken defaults are safer" as a mitigating factor when scoring this
-finding — the explicit `algorithms` pin is what closes the gap unconditionally regardless of
-whether the key is configured correctly.
+**The pin matters even though modern `jsonwebtoken` narrows defaults by key shape.** Newer
+`jsonwebtoken` versions infer an allowed algorithm family from the shape of `secretOrPublicKey`
+(PEM header detection) — for a well-formed PEM key, this correctly locks the allowlist to the
+RSA/EC family and rejects a forged HS256 token even with no explicit pin; don't claim an unpinned
+call is already broken for a verified well-formed key, that overstates the bug. The gap opens
+specifically when the key value is malformed or a placeholder (a truncated PEM, a leftover
+default like a literal `your_public_key_here` string): the shape inference falls through to
+treating the value as an HMAC secret, and a forged HS256 token signed with that same string
+verifies successfully. Verified live on the current jsonwebtoken major version. Score this
+CRITICAL whenever the key's well-formedness can't be confirmed from the code (a fallback literal,
+an unvalidated env var, no startup check) — that's a realistic misconfiguration, not a rare edge
+case. Still recommend the explicit `algorithms` pin regardless of whether the key looks correctly
+configured today — it removes the dependency on key-shape inference entirely, so it's the fix
+that survives the key being swapped or misconfigured later — but frame that as "pin it so this
+class of bug can't reopen," not "the unpinned call is currently exploitable no matter what."
 
 **Mass assignment (CWE-915):** spreading a request body straight into a DB write lets the
 client set fields it was never meant to control.
@@ -183,6 +189,26 @@ compose before scoring them independently:
   request, not just an unexpected field write.
 - **SSRF (CWE-918) + cloud deployment** → often escalates straight to instance-metadata
   credential theft (CWE-918 → CWE-522), not "just" an internal port scan.
+
+### 3d. Severity-Label Discipline
+
+Two failure modes let an otherwise-correct writeup still mis-score in the summary table:
+
+- **Escalation must land in the tag, not just the prose.** A writeup that correctly narrates why
+  two findings compound into something worse — an attack chain per 3c above, or two problems
+  folded into one section (e.g. a string-concatenated-SQL injection bundled into a broader
+  "data leak" writeup with a missing-tenant-scoping issue) — still needs the actual severity
+  tag/summary-table row to reflect that escalation. Don't let a finding that independently earns
+  CRITICAL per the pattern table in §3 get diluted to HIGH because it shares a paragraph with a
+  lesser issue, and don't leave a correctly-narrated attack-chain compounding un-escalated in the
+  label just because the prose already explains it.
+- **Score conditional findings at the confirmed floor, not the hedged ceiling.** A finding whose
+  severity depends on something unconfirmed ("HIGH if this signing key is shared with other token
+  types," "CRITICAL if this table is reachable from the public API") should carry the severity
+  that's actually confirmed, with the escalation stated as a note to verify before merge — not as
+  an already-earned tag, and not listed alongside genuinely blocking findings. A hedge folded into
+  the severity itself reads as certainty to anyone scanning just the summary table or a "blocking"
+  list, and can turn an otherwise-clean review into a false blocker.
 
 ## Key Principles
 
