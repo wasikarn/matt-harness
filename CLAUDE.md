@@ -97,6 +97,22 @@ question, unprompted — the mirror rule above reaches a foreign session as desi
 the one part of the design that couldn't be verified by grep or script (a prompt-only routing
 rule either triggers in the wild or it doesn't); it does.
 
+**Verify technical claims before shipping them into agent/skill content, not just when asked to
+"research."** A confidently-worded complexity, security-mechanism, or framework-behavior claim
+added to an agent/skill file can read as correct and still be wrong — plausibility isn't
+verification. Before treating that kind of addition as done: deep-read the relevant `qmd`/
+`llm-wiki` content first, then `WebSearch` (or the `deep-research` workflow for a claim worth a
+multi-source adversarial pass — historical-incident attribution, a specific library's internal
+mechanism, a taxonomy relationship) for anything not already covered locally. Confirmed
+load-bearing 2026-08-05: this exact discipline caught 3 real errors in this repo's own content
+that had already shipped and read as plausible — `performance-optimizer.md` claiming two
+pointers gets 3-sum (triplet search) to O(n) (it's O(n²), the pair case doesn't generalize),
+`drizzle-patterns/SKILL.md` claiming Drizzle's relational query API resolves nested `with`
+fetches as "one query per relation depth" (it's always exactly one query total, regardless of
+depth), and a CWE-1333/CWE-400 classification pairing that's industry-standard but not what
+MITRE's own page states. None of these looked wrong on read — each needed an actual source
+check to catch.
+
 ## Architecture
 
 The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
