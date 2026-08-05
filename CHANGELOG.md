@@ -5,6 +5,18 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.190] — 2026-08-05
+
+Checked `agents/performance-optimizer.md` itself on request — the weakest finding in this
+whole sweep. The Guardrails section already correctly identifies architectural-scale changes
+(data-layer redesign, framework swap) as a stop-and-escalate trigger, but named no specific
+handoff target, just "the user" — asymmetric with `backend-architect`, which already names
+`performance-optimizer` as its own downstream tactical-fix delegate ("tactical fix once a
+scalability bottleneck is identified here"). Added the reciprocal clause. This is a naming
+omission on an already-correct trigger condition, not a missing capability — flagged as the
+weakest finding of the sweep before the user approved it, given this file already went
+through a full 2-iteration adversarial fixture-loop earlier this session (v0.68.183).
+
 ## [0.68.189] — 2026-08-05
 
 Checked `agents/backend-architect.md` and `agents/typescript-reviewer.md` on request, same
