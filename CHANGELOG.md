@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.185] — 2026-08-05
+
+Ran `/kbg:iterate-skill` fixture-loop verification against all 5 files touched in v0.68.184's
+fleet sweep, closing the gap that CHANGELOG entry explicitly flagged as unverified. Built
+targeted eval cases + fixture repos for the 4 files with no existing workspace, plus a new
+ReDoS-specific eval added to `security-reviewer`'s existing workspace, then ran full
+with_X/baseline/2-independent-reviewer review-fixtures passes against each:
+
+- `skills/security-auditor/SKILL.md`, `skills/production-audit/SKILL.md`,
+  `skills/latency-critical-systems/SKILL.md`: all came back clean — 0 target-attributable
+  findings. The new content in each performed as intended (security-auditor's audit procedure
+  discipline outperformed baseline on severity calibration and CWE citation; production-audit's
+  Performance lens correctly reasoned about the O(n²)-across-a-launch-window mechanism and
+  pre-empted the "just add caching" wrong answer; latency-critical-systems' new algorithmic-check
+  step correctly structured the diagnosis and accurately cited its own text).
+- `agents/security-reviewer.md`: the ReDoS content itself was clean, but 2 independent reviewers
+  converged on a real, pre-existing gap unrelated to ReDoS — no coverage of type-coercion
+  validation bypasses (`RegExp.test()` silently coercing `undefined`/`null` via `ToString()`).
+  Added a CWE-20 pattern-table row for this. A second finding (missing try/catch around async DB
+  calls) was confirmed real but deliberately left to `silent-failure-hunter` rather than added
+  here — genuine fleet-scope overlap, not this agent's job.
+- `skills/drizzle-patterns/SKILL.md`: the N+1 content added in v0.68.184 presented `leftJoin` as
+  an equal peer to `with`/`inArray`, when a plain `leftJoin` on a 1-to-many relation actually
+  still needs the same app-side group-by step those alternatives avoid. Corrected in both places
+  it appeared (the explanatory paragraph and the Common Pitfalls bullet).
+
+Both fixes re-verified via a second fixture round after applying: drizzle-patterns' fix confirmed
+holding (1 major → 0); security-reviewer's fix confirmed holding on the finding it targeted (type
+coercion now correctly caught, verified empirically by both reviewers) — one new single-sourced,
+minor severity-calibration nit surfaced (a HIGH tag on a finding the pattern table itself scores
+MEDIUM, no escalation argument given) and was left unaddressed as not worth another fixture round.
+
 ## [0.68.184] — 2026-08-05
 
 Swept the fleet for the same content-gap shape found in `code-implementer` (v0.68.183's

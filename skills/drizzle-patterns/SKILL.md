@@ -137,8 +137,9 @@ const usersWithPosts = await db.query.usersTable.findMany({
 loop (`for (const u of users) { u.posts = await db.select().from(postsTable).where(eq(postsTable.userId, u.id)) }`)
 issues one query per row — N+1 round trips for N users. The relational query API above resolves
 the same data as a bounded set of queries planned up front (one per relation depth, not per row).
-Prefer `with` (or a `leftJoin`) over a manual per-row loop whenever fetching a parent and its
-children together.
+Prefer `with` over a manual per-row loop whenever fetching a parent and its children together —
+a plain `leftJoin` also avoids N+1, but returns one duplicated parent row per child, so it still
+needs an app-side group-by to reassemble the nested shape `with` gives you directly.
 
 ## Transactions
 
@@ -227,7 +228,7 @@ await migrate(db, { migrationsFolder: './drizzle' })
 - **Returning clause required for insert result** — `db.insert(...).values(...).returning()` returns an array. Without `.returning()`, insert returns no rows.
 - **`.$inferSelect` vs `.$inferInsert`** — infer types from schema, not manually. `$inferInsert` makes all fields with defaults optional.
 - **Drizzle Studio port** — defaults to port 4983. Don't confuse with the app dev server.
-- **N+1 queries from a manual loop** — `for (const u of users) { await db.select()...where(eq(t.userId, u.id)) }` issues one query per row. Use `with` (relational queries) or a single `leftJoin` instead.
+- **N+1 queries from a manual loop** — `for (const u of users) { await db.select()...where(eq(t.userId, u.id)) }` issues one query per row. Use `with` (relational queries), or batch with `inArray(t.userId, ids)` + an app-side group-by; a `leftJoin` also avoids N+1 but duplicates the parent row per child, so it needs that same app-side grouping step.
 
 ## Verify before use
 

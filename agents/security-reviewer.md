@@ -88,6 +88,7 @@ Flag these patterns immediately:
 | No rate limiting | CWE-799 | HIGH | Add `express-rate-limit` |
 | Logging passwords/secrets | CWE-532 | MEDIUM | Sanitize log output |
 | Regex with nested quantifiers on user input | CWE-1333 | HIGH | Rewrite to avoid backtracking, or use a linear-time engine (RE2) |
+| Format/regex validator called on unchecked input type | CWE-20 | MEDIUM | Add a `typeof x === 'string'` (or equivalent) guard before any `.test()`/format check — `RegExp.test()` and similar coerce non-string arguments via `ToString()`, so `undefined`/`null`/objects can silently pass a character-class check that was meant to validate a string |
 
 ### 3b. Concrete Patterns (BAD → GOOD)
 
