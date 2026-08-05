@@ -89,7 +89,15 @@ npx lighthouse https://your-app.com --only-categories=performance
 | Sorting inside loop | O(n² log n) | Sort once outside loop |
 | String concatenation in loop | O(n²) | Use array.join() |
 | Deep cloning large objects | O(n) each time | `immer`'s `produce()` (structural sharing, still safe for nested mutation) — **not** a plain shallow copy (`{...obj}`/`Object.assign`), which only copies top-level keys. Verified live: `const copy = {...original}; copy.user.prefs.theme = 'light'` also mutates `original.user.prefs.theme`, because `copy.user` is the same nested object reference, not a new one. Shallow copy is only a safe substitute when nothing downstream mutates a nested field — check that before recommending it as the fix. |
-| Recursion without memoization | O(2^n) | Add memoization |
+| Recursion without memoization | O(2^n) | Add memoization (top-down) or tabulation (bottom-up) — dynamic programming |
+| Repeated linear scan for existence/lookup on sorted data | O(n) per search | Binary search — O(log n) |
+| Brute-force substring/pattern search | O(n·m) | Rolling hash (Rabin-Karp) or KMP — O(n+m) |
+| Re-sorting or full rescan to get current min/max after each update | O(n log n) per update | Heap/priority queue — O(log n) push/pop |
+| Brute-force contiguous subarray/substring scan | O(n·k) | Sliding window (subtract-leaving, add-entering) — O(n) |
+| Brute-force pair/triplet search on sorted array | O(n²) | Two pointers (opposite-ends) — O(n) |
+| Exhaustive enumeration with no early exit (permutations/subsets/constraint search) | O(branching^depth) | Backtracking — same worst case, prunes invalid branches before completing them |
+
+**Hidden constants matter — don't flag on asymptotics alone.** Insertion sort beats mergesort below ~30 elements; a Fibonacci heap has better asymptotic decrease-key than a binary heap but usually loses in practice on constants. Same rule as the bundle/LCP budgets above: benchmark before recommending a swap on a hot path with small or bounded n. Also count the recursion stack in space analysis — a solution that recurses n deep is O(n) space, not O(1), even with no explicit array.
 
 ### 3. React Performance Checklist
 
@@ -170,6 +178,8 @@ Stop and ask the user if:
 - The **same bottleneck persists after 3 optimization attempts** (likely an architectural issue, not a local fix)
 - The fix requires **architectural changes** (data-layer redesign, framework swap) — not a local optimization
 - You can't **measure** the claimed improvement (no before/after benchmark, profiler trace, or bundle-size delta) — report the finding without applying an unverified fix
+- **The applied fix must match the numbers you report.** If you ship a smaller-diff approximation instead of the table's named "Better Alternative" (e.g. a sorted-insert array instead of a full heap), your complexity and "Estimated impact" figures must describe what you actually applied — not the table's asymptotic entry for a technique you didn't build. Trace or simulate the shipped code's real operation count before quoting a multiplier.
+- A benchmark number is one noisy measurement, not a stable constant — round to reflect that (e.g. "~85–100x" from repeated runs, not a single run's "84.4x" quoted to four figures) unless you've actually run it more than once.
 
 ## Performance Report Format
 

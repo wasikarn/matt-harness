@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.183] — 2026-08-05
+
+`agents/performance-optimizer.md`: deep-read all 13 algorithm pages in `~/llm-wiki/wiki/algorithms/`
+(the vault's own `index.md` only listed 6 — the real set, confirmed via `find`) and folded the
+decision-content genuinely missing from this repo's fleet into `performance-optimizer`'s existing
+"Algorithmic Analysis" table, rather than building a new agent/skill — `code-reviewer` and
+`performance-optimizer` already owned a complexity-review lens, so a dedicated surface would have
+duplicated ground per Rule 2. Added 6 new table rows (binary search, Rabin-Karp/KMP, heap,
+sliding window, two pointers, backtracking) + a hidden-constants caveat. Ran a full 2-iteration
+`/kbg:iterate-skill` improve loop against it (3 targeted eval cases, `2N+2` dispatches per
+iteration, 2-agent adversarial `review-fixtures` reconciliation each round): iteration 1 found 1
+critical target-attributable defect (the fixture agent quoted heap-level complexity numbers for a
+fix that shipped a sorted-insert array instead, heap only in a deferred unapplied comment — a
+fabricated claim) + 2 minor (benchmark precision overstated; a missed empty-array guard). Added 2
+Guardrails bullets closing the critical + 1 minor (numbers must match the fix actually applied,
+not the table's named ideal; benchmark multipliers must reflect real repeated runs, not
+false-precision single-run decimals). Iteration 2 verified IMPROVED (critical 1→0) by both
+reviewers independently re-executing the fixture agent's own benchmark/fuzz scripts, not just
+reading prose — confirmed a real binary min-heap now ships (fuzz-tested against a stable-sort
+oracle) with numbers that reproduce within a few percent. One honest caveat recorded, not scored
+as a current defect: the fixture agent's first pass still reproduced the original defect shape
+before self-correcting via an in-task `advisor()` call — the new guardrail text alone isn't
+proven to pre-empt the mistake, only to supply the standard the self-correction converged on.
+Stopped at iteration 2 (1 minor deliberately left out of scope — no clean, tightly-scoped fix
+location without creeping into general code-quality review).
+
 ## [0.68.182] — 2026-08-05
 
 Actually ships the `agents/typescript-reviewer.md` fix documented below in `[0.68.178]`. That
