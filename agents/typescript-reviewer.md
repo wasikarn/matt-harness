@@ -129,7 +129,9 @@ These tiers key off what you actually report after Noise Control's filters above
 For write-time TypeScript language idioms and version-compatible `tsconfig.json` choices, use
 `kbg:typescript-patterns`. For API/DB architecture on a plain Node/Express/Next.js backend, use
 `kbg:backend-patterns`. This agent reviews the diff after the fact —
-it does not load either skill itself.
+it does not load either skill itself. For a deeper algorithmic fix beyond the common patterns
+above (heap/priority-queue, sliding window, binary search, backtracking) once a real bottleneck
+is confirmed, hand off to `performance-optimizer`.
 
 ---
 

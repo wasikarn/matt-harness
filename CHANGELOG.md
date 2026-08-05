@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.189] — 2026-08-05
+
+Checked `agents/backend-architect.md` and `agents/typescript-reviewer.md` on request, same
+algorithm-content gap shape. `backend-architect` is genuinely clean — it already has an
+architecture-level N+1 check in its systems-design table and an explicit "tactical fix once a
+scalability bottleneck is identified here: `performance-optimizer`" delegation line; it also
+never writes implementation code, so the code-implementer-style "originating check" angle
+doesn't transfer. No edit made.
+
+`typescript-reviewer` is a different, weaker case than the prior findings — it already has
+substantial performance content (render perf, N+1, memoization, bundle size, the O(n·m)→Set
+bullet the v0.68.184 sweep entry referenced, a resource-leak bullet), not a zero-coverage gap.
+What it lacked was a delegation pointer to `performance-optimizer` for the deeper algorithmic
+patterns beyond what's covered inline (heap/priority-queue, sliding window, binary search,
+backtracking) — added as one line in the Reference section, rounding out the pointer pattern
+already used for `backend-architect`/`latency-critical-systems`/`security-auditor` this session.
+Weaker evidence than the fix-bug/address-review findings (a consistency improvement, not a
+confirmed structural asymmetry) — flagged as such before the user approved it.
+
 ## [0.68.188] — 2026-08-05
 
 Checked `commands/refactor-clean.md` + `agents/refactor-cleaner.md` and
