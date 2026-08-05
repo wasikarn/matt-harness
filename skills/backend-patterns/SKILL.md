@@ -161,6 +161,11 @@ Redis/BullMQ here than heap growth alone.
 **Remember**: Backend patterns enable scalable, maintainable server-side applications.
 Choose patterns that fit your complexity level.
 
+## Related
+
+- Agent: `performance-optimizer` - once a bottleneck beyond N+1/indexing/pool-sizing is
+  confirmed, for the deeper algorithmic fix (heap, sliding window, binary search) around it
+
 ## Verify before use
 
 1. Before adopting any pattern, verify it against your system's real load and failure modes.

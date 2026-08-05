@@ -158,6 +158,11 @@ own focusable elements, or use a library (Radix, Headless UI) that already does.
 **Remember**: Modern frontend patterns enable maintainable, performant user interfaces.
 Choose patterns that fit your project complexity.
 
+## Related
+
+- Agent: `performance-optimizer` - once a client-side computation (not just rendering) is
+  the confirmed bottleneck, for the algorithmic fix underneath it
+
 ## Verify before use
 
 1. A pattern that reads correct on paper can still hit an edge this file doesn't cover.

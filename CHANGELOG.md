@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.192] — 2026-08-05
+
+Checked 6 more surfaces on request (`skills/review-pr`, `skills/typescript-patterns`,
+`skills/mysql-patterns`, `skills/backend-patterns`, `skills/agent-architecture-audit`,
+`skills/frontend-patterns`). Three genuinely don't apply: `review-pr` deliberately routes
+performance concerns through `code-reviewer`'s always-on general lens rather than a forced
+dedicated dispatch on every PR (a design choice, not a gap — code-reviewer already got the
+pointer in v0.68.191); `typescript-patterns` is scoped to type-system modeling, a different
+concern from runtime algorithm choice; `agent-architecture-audit` is a harness-health
+meta-tool, explicitly out of the code-review domain by its own description.
+
+`mysql-patterns`, `backend-patterns`, and `frontend-patterns` got the same pointer fix as the
+prior rounds: `mysql-patterns` had a `## Related` section but no `performance-optimizer` entry
+in it; `backend-patterns` had solid N+1/indexing content but no Related section at all;
+`frontend-patterns` had complete write-time React performance content (memoization,
+code-splitting, virtualization — the actual correct fix for that domain, not something needing
+a further pointer) but no delegation section either. Flagged frontend-patterns as the weakest
+of the 3 before the user approved it — it only helps the narrower case of a client-side
+computation (not rendering) being the real bottleneck.
+
 ## [0.68.191] — 2026-08-05
 
 Checked 4 more files on request: `agents/python-reviewer.md`, `agents/nextjs-reviewer.md`,
