@@ -5,6 +5,53 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.206] — 2026-08-06
+
+Discovered live while committing v0.68.205: `irrecoverable.sh` has no
+heredoc-body awareness at all, so a HEREDOC-authored commit message (the
+documented commit convention in this repo) that merely *mentions* a
+destructive command in prose gets tokenized as if it were real shell syntax
+and falsely denied. Three fixes landed together, in the order each was
+found:
+
+- **The false positive.** Ported `verifier-protect.sh`'s existing
+  `_strip_heredocs` (itself already ported from `worktree-guard.py`,
+  2026-08-04) into `irrecoverable.sh`, so heredoc body lines stop being
+  scanned as literal shell commands.
+- **The regression the fix itself introduced.** A negative-control test
+  written specifically to probe the first fix caught it within minutes: a
+  heredoc feeding a real interpreter (`bash <<EOF ... EOF`) was now stripped
+  unconditionally too, meaning a genuinely dangerous command hidden inside
+  such a body would silently skip every check in the file. Fixed by adding
+  an interpreter check — only strip a heredoc body when the command it feeds
+  is not a known shell/interpreter (`bash`, `sh`, `python3`, etc.); an
+  interpreter-fed heredoc stays scannable line-by-line, same as before.
+- **The same bypass, live in a second file.** `verifier-protect.sh` carries
+  the identical unconditional strip its own `_strip_heredocs` has had since
+  2026-08-04. Probed directly before assuming it applied: with the strip
+  disabled, `bash <<EOF / echo x > <protected path> / EOF` correctly
+  resolved to `ask`, confirming the write-detection logic itself was sound
+  and only the strip was hiding it. With the strip left unconditional, the
+  same command resolved to a silent, clean allow — a real bypass of the
+  gate whose entire purpose is tamper-resistance for the verifier surfaces
+  themselves. Fixed with the same interpreter-check predicate, paired with
+  a negative case (an interpreter heredoc with no write inside must not
+  start over-asking).
+
+`worktree-guard.py` — the original source both `_strip_heredocs` ports trace
+back to — carries the same unconditional-strip gap and was not touched this
+round: it is opt-in via `KBG_GUARDED_WORKSPACE` and a no-op in this repo, so
+there is no live exposure here. Left as a known, deferred item so a future
+sweep does not re-report it as new.
+
+Added 4 regression tests (2 in `hooks/tests/test-gates.sh`, 2 in
+`hooks/tests/test-verifier-protect.sh`) covering the false positive, the
+interpreter-heredoc regression, the `verifier-protect.sh` bypass, and its
+paired no-over-ask negative case — this exact bug class (heredoc bodies
+mistaken for live shell syntax) has now recurred across three separate
+files in this repo, so the reproduction scripts that caught it move into
+the permanent suite rather than staying in scratch files.
+
 ## [0.68.205] — 2026-08-06
 
 Fixed 4 CRITICAL findings from a 5-agent blind-spot sweep (repo-wide, requested

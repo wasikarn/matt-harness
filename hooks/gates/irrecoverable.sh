@@ -19,7 +19,58 @@ if not isinstance(d, dict) or not isinstance(d.get("tool_input"), dict):
     print("[kbg:gate] BLOCKED: malformed PreToolUse payload — failing closed", file=sys.stderr)
     sys.exit(2)
 
-cmd = d["tool_input"].get("command", "")
+SQ = chr(39)
+_HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
+# A heredoc feeding an interpreter is executable code, not inert data -- do
+# not strip it (checked against the segment of the line BEFORE "<<", i.e.
+# the command the heredoc is stdin for, not the body that follows).
+_INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
+
+def _strip_heredocs(cmd):
+    # Heredoc bodies are literal data until the closing delimiter line, not
+    # shell syntax to scan for dangerous subcommands -- UNLESS the heredoc
+    # is stdin for an interpreter (bash <<EOF, python3 <<EOF, ...), in which
+    # case the body IS executable code and must stay scannable. Without the
+    # first half of this, a commit message authored via a quoted HEREDOC
+    # (the documented commit convention in this repo) that merely MENTIONS
+    # "git checkout X Y" or "rm -rf" in prose gets tokenized as a real
+    # command and falsely denied -- reproduced live 2026-08-06. Without the
+    # second half, "bash <<EOF\nrm -rf /\nEOF" silently bypasses every check
+    # below -- also reproduced live 2026-08-06, by a negative-control test
+    # written specifically to probe the first fix for this exact regression.
+    # Ported from verifier-protect.sh (function of the same name), itself
+    # ported from worktree-guard.py 2026-08-04; neither sibling makes the
+    # interpreter distinction because their threat model (detecting writes
+    # to specific files) does not need it the way a "catch any dangerous
+    # command" gate does.
+    lines = cmd.split("\n")
+    out, i = [], 0
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        m = _HEREDOC_RE.search(line)
+        i += 1
+        if not m:
+            continue
+        if _INTERPRETER_RE.search(line[:m.start()]):
+            continue
+        strip_tabs, delim = bool(m.group(1)), m.group(3)
+        body_start, found = i, False
+        while i < len(lines):
+            body_line = lines[i].lstrip("\t") if strip_tabs else lines[i]
+            i += 1
+            if body_line == delim:
+                found = True
+                break
+        if not found:
+            # Closing delimiter never matched. Put the scanned lines BACK
+            # instead of discarding them — silently eating a real write
+            # statement that followed an unmatched heredoc open is worse
+            # than never stripping at all.
+            out.extend(lines[body_start:i])
+    return "\n".join(out)
+
+cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
 def deny(reason):
     print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)

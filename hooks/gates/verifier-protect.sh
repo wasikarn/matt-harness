@@ -78,19 +78,30 @@ SQ = chr(39)
 _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
 _ANSI_C_QUOTE_RE = re.compile(r"\$" + SQ + r"((?:[^" + SQ + r"\\]|\\.)*)" + SQ)
 _LINE_CONT_RE = re.compile(r"\\\n")
+# A heredoc feeding an interpreter (bash <<EOF, python3 <<EOF, ...) is
+# executable code, not inert data -- stripping it would let a write inside
+# the body silently skip bash_write_targets below. Checked against the
+# segment of the line before "<<", i.e. the command the heredoc is stdin
+# for. Confirmed exploitable 2026-08-06: "bash <<EOF\necho x > <verifier
+# path>\nEOF" reached this gate as a clean allow before this check existed.
+_INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
 
 
 def _strip_heredocs(cmd):
     # shlex has no concept of heredoc syntax and mis-tokenizes on any quote
     # character inside body text — heredoc bodies are literal data until the
-    # closing delimiter line, not shell syntax subject to quoting rules.
+    # closing delimiter line, not shell syntax subject to quoting rules --
+    # UNLESS the heredoc feeds an interpreter, see _INTERPRETER_RE above.
     lines = cmd.split("\n")
     out, i = [], 0
     while i < len(lines):
-        out.append(lines[i])
-        m = _HEREDOC_RE.search(lines[i])
+        line = lines[i]
+        out.append(line)
+        m = _HEREDOC_RE.search(line)
         i += 1
         if not m:
+            continue
+        if _INTERPRETER_RE.search(line[:m.start()]):
             continue
         strip_tabs, delim = bool(m.group(1)), m.group(3)
         body_start, found = i, False

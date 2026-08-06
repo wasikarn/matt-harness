@@ -116,6 +116,25 @@ out=$(payload_bash "tar xf archive.tar" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "tar xf, no -C, cwd is repo root (documented residual gap, not a regression) -> exit 0" "$ok"
 
+# Round-5 (2026-08-06): the heredoc-stripping fix ported into irrecoverable.sh
+# for a false-positive it caused there uncovered the same unconditional strip
+# already present in this gate -- with it disabled entirely, a write hidden
+# inside a heredoc fed to an interpreter (bash <<EOF, python3 <<EOF) reached
+# bash_write_targets and was correctly caught, proving the strip itself is
+# what hides the write, not a gap in bash_write_targets. Reproduced live
+# against the unmodified gate before writing the fix (a real Bash write to a
+# protected path silently resolved to a clean allow). Fixed by skipping the
+# strip when the heredoc feeds a known interpreter -- same predicate as
+# irrecoverable.sh, paired here with a negative case so an interpreter
+# heredoc with no write inside does not start over-asking.
+out=$(payload_bash $'bash <<EOF\necho x > hooks/gates/evil7.sh\nEOF' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "write hidden inside a heredoc fed to bash is no longer a silent bypass" "$ok"
+
+out=$(payload_bash $'python3 <<EOF\nprint(1)\nEOF' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "interpreter heredoc with no write inside does not over-ask" "$ok"
+
 # path-hardcode block still wins over ask (folded gate, pre-existing, sanity only).
 # Built via concatenation, not a literal contiguous string, so this test file itself
 # does not trip the very gate it is testing when this test file is written/edited.

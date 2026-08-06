@@ -148,6 +148,17 @@ test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
   "$(bash_payload 'git checkout -b new-branch')"
+# 2026-08-06: a HEREDOC-authored commit message (this repo's own documented
+# convention) that merely mentions "git checkout X Y" in prose was tokenized
+# as a real command and falsely denied -- reproduced live during this
+# repo's own commit for v0.68.205. The first fix (strip quoted-delimiter
+# heredoc bodies before scanning) introduced its own regression, caught by
+# the second test below: a heredoc feeding an interpreter (bash <<EOF) is
+# executable code, not inert prose, and must stay scannable.
+test_allow "$IRRECOVERABLE" "quoted-delimiter heredoc body mentioning checkout no longer false-blocks" \
+  "$(bash_payload $'git commit -m "$(cat <<\'EOF\'\nthis mentions git checkout old new extra in prose\nEOF\n)"')"
+test_deny "$IRRECOVERABLE" "dangerous cmd inside a heredoc feeding an interpreter still blocked" \
+  "$(bash_payload $'bash <<EOF\nrm -rf /tmp/danger\nEOF')"
 # 2026-07-03 audit: newline and '&' are command separators in bash but shlex
 # ate newline as whitespace and '&' wasn't in OPERATORS — a dangerous command
 # after either hid inside the first command's window. Also --force-with-lease
