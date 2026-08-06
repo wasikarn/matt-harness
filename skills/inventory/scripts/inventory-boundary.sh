@@ -101,8 +101,18 @@ print_boundary() {
   # table also lists hook-behavioral tests under tests/hooks/ (post-2026-08-06
   # consolidation): same fm_hook_desc contract, kept in the Hooks table because
   # they are test harnesses for hooks, not standalone tests.
-  if { [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; } || \
-     { [ -d "$base/tests/hooks" ] && [ -n "$(ls -A "$base/tests/hooks" 2>/dev/null)" ]; }; then
+  # Two independent guards (vs the prior brace-group ||): each branch
+  # checks its own dir presence + non-empty before contributing. If one
+  # tree is absent, that branch contributes nothing instead of silently
+  # no-op'ing the entire Hooks table.
+  local _hooks_dirs=()
+  if [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; then
+    _hooks_dirs+=("$base/hooks")
+  fi
+  if [ -d "$base/tests/hooks" ] && [ -n "$(ls -A "$base/tests/hooks" 2>/dev/null)" ]; then
+    _hooks_dirs+=("$base/tests/hooks")
+  fi
+  if [ "${#_hooks_dirs[@]}" -gt 0 ]; then
     echo ""
     echo "## Hooks — $label"
     echo "| Hook | Purpose |"
@@ -113,7 +123,7 @@ print_boundary() {
       name=$(basename "$f")
       purpose=$(fm_hook_desc "$f")
       printf "| %s | %s |\n" "$name" "${purpose:-—}"
-    done < <(find "$base/hooks" "$base/tests/hooks" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null | sort)
+    done < <(find "${_hooks_dirs[@]}" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null | sort)
   fi
 
   # Output styles — registered via /output-style <name>; same frontmatter

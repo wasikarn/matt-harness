@@ -5,6 +5,10 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.208] — 2026-08-06
+
+Fix the Hooks table's empty-dir guard in `skills/inventory/scripts/inventory-boundary.sh`. The post-0.207 brace-group `{ [ -d hooks ] && ls -A non-empty } || { [ -d tests/hooks ] && ls -A non-empty }` short-circuited the entire table when either branch's `ls -A` returned empty — meaning an absent `tests/hooks/` tree would silently skip the real `hooks/` subtree's rows too. Replaced with two independent `if` blocks that contribute their dirs to a local array; the table renders if any branch contributed. Trap pre-dated 0.207 but the move doubled the surface where it could trip. Surfaced by the two-axis code review of 0.207 (`mattpocock-skills:code-review`).
+
 ## [0.68.207] — 2026-08-06
 
 Consolidate tests + scripts under `tests/` and `scripts/_lib/` at the repo
