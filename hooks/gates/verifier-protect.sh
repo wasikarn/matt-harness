@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
-# write (redirect, tee, sed -i, perl -i, cp, mv) — to the verifier surfaces:
-# hooks/gates/**, hooks/hooks.json, AND the non-model audit verifier
-# (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot
-# neuter the deny-gates OR weaken the audit checks that judge it without an
-# in-session human approval (the tamper-resistance principle: the agent cannot
-# edit the code that judges it). A gate/check the model can silently disable is
-# not a computational deny — and a half-protected perimeter is worse than none,
-# so BOTH deterministic verifiers (the gates AND the audit) are guarded.
+# write (redirect, tee, sed -i, perl -i, cp, mv, rm, trash) — to the verifier
+# surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, AND the
+# non-model audit verifier (skills/harness-audit/scripts/audit.sh + checks/**)
+# — so the model cannot neuter the deny-gates, silently turn an advisory
+# sensor into something that emits permissionDecision, OR weaken the audit
+# checks that judge it without an in-session human approval (the
+# tamper-resistance principle: the agent cannot edit the code that judges
+# it). hooks/advisory/** added 2026-08-06: previously unprotected, meaning a
+# sensor could be edited into a real gate with zero prompt (found by a
+# blind-spot sweep). A gate/check the model can silently disable is not a
+# computational deny — and a half-protected perimeter is worse than none, so
+# ALL THREE deterministic verifier classes (gates, advisory sensors, audit)
+# are guarded.
 #
 # Bash mode (tool_name == Bash): the Write/Edit matchers above do not see Bash,
 # so `echo x > hooks/gates/irrecoverable.sh`, `sed -i …`, `tee`, `cp`/`mv` could
@@ -171,6 +176,8 @@ def is_verifier_path(fp):
     rl = rel.lower()
     if "/hooks/gates/" in nl or nl.endswith("/hooks/gates"):
         return True
+    if "/hooks/advisory/" in nl or nl.endswith("/hooks/advisory"):
+        return True
     if nl.endswith("/hooks/hooks.json"):
         return True
     if nl.endswith("/skills/harness-audit/scripts/audit.sh"):
@@ -178,7 +185,8 @@ def is_verifier_path(fp):
     if "/skills/harness-audit/scripts/checks/" in nl or \
        nl.endswith("/skills/harness-audit/scripts/checks"):
         return True
-    if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/"):
+    if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/") or \
+       rl.startswith("hooks/advisory/"):
         return True
     if rl == "skills/harness-audit/scripts/audit.sh" or \
        rl.startswith("skills/harness-audit/scripts/checks/") or \
@@ -187,9 +195,10 @@ def is_verifier_path(fp):
     return False
 
 def bash_write_targets(cmd):
-    """Yield candidate file paths the Bash command writes to. Bounded idiom
-    set: redirects, tee, sed -i, perl -i, cp/mv/install, dd, rsync, tar -x,
-    patch, git apply/am. Not an adversarial sandbox."""
+    """Yield candidate file paths the Bash command writes to or deletes.
+    Bounded idiom set: redirects, tee, rm, trash, sed -i, perl -i,
+    cp/mv/install, dd, rsync, tar -x, patch, git apply/am. Not an
+    adversarial sandbox."""
     cmd = _newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd)))
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
@@ -234,6 +243,16 @@ def bash_write_targets(cmd):
         # write-command idioms
         nonflag = [t for t in rest if not t.startswith("-")]
         if argv0 == "tee":
+            for t in nonflag:
+                yield t
+        elif argv0 in ("rm", "trash"):
+            # Deleting a verifier surface neuters it as completely as
+            # editing it, and a plain `rm <file>` on a regular file needs
+            # neither -r nor -f -- irrecoverable.sh only denies rm when
+            # BOTH flags are present, so a bare rm never reaches that
+            # check at all. trash is a common local alias for rm (this
+            # very repo has one) and had zero coverage anywhere (found
+            # 2026-08-06).
             for t in nonflag:
                 yield t
         elif argv0 in ("sed", "perl"):
@@ -374,7 +393,18 @@ def bash_write_targets(cmd):
 try:
     d = json.load(sys.stdin)
     tool = d.get("tool_name", "")
-    ti = d.get("tool_input", {}) or {}
+    ti = d.get("tool_input")
+    if not isinstance(ti, dict):
+        # A present-but-non-dict tool_input (e.g. JSON null) previously
+        # collapsed via "or {}" into a clean allow, silently defeating the
+        # never-resolve-to-a-silent-allow invariant documented above
+        # (found 2026-08-06).
+        emit_ask("<missing/malformed tool_input>", (
+            "verifier-protect received a PreToolUse payload with no usable "
+            "tool_input and cannot confirm this write is safe. Fail-safe: "
+            "approve manually or deny."
+        ))
+        sys.exit(0)
 
     if tool == "Bash":
         cmd = ti.get("command", "") or ""

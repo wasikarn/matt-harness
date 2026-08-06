@@ -13,4 +13,6 @@ _ST=$(find "$CLAUDE_DIR/commands/ship" -name "COMMAND.md" 2>/dev/null | head -1 
 if [ -f "$_ST" ]; then
   /usr/bin/grep -qi 'verif' "$_ST" 2>/dev/null \
     || warn "commands/ship/COMMAND.md: no verify step found — task-completion command without a verification phase is the primary fake-done entry point (arXiv 2606.09863, 'confident closing language')"
+else
+  warn "commands/ship/COMMAND.md not found — cannot verify the fake-done verify-step contract holds"
 fi

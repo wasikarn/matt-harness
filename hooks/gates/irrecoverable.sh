@@ -9,9 +9,17 @@ import json, os, re, shlex, sys
 
 try:
     d = json.load(sys.stdin)
-    cmd = d.get("tool_input", {}).get("command", "")
 except Exception:
-    cmd = ""
+    d = None
+
+# A malformed/absent payload must fail closed, not silently become "no
+# command to check" — that collapse let empty stdin, truncated JSON, and
+# tool_input:null bypass every check below (found 2026-08-06).
+if not isinstance(d, dict) or not isinstance(d.get("tool_input"), dict):
+    print("[kbg:gate] BLOCKED: malformed PreToolUse payload — failing closed", file=sys.stderr)
+    sys.exit(2)
+
+cmd = d["tool_input"].get("command", "")
 
 def deny(reason):
     print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)

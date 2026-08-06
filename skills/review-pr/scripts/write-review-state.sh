@@ -124,15 +124,42 @@ if [ "$ROUND" -ge 3 ] && [ "$CLEAN" = "false" ] \
   STALLED=true
 fi
 
-printf '{"clean":%s,"critical_count":%s,"rehunt":"%s","last_sha":"%s","branch":"%s","review_mode":"%s","ts":"%s","round":%s,"important_count":%s,"minor_count":%s,"prev_critical_count":%s,"prev_important_count":%s,"prev_minor_count":%s,"stalled":%s}\n' \
-  "$CLEAN" "$CRITICAL_COUNT" "$REHUNT" "$HEAD_SHA" "$BRANCH" "$REVIEW_MODE" \
+# json.dumps via argv, not printf %s splicing — a branch name containing a
+# literal " (git permits it; only ":" and a handful of other characters are
+# disallowed) previously broke the hand-built JSON string (found 2026-08-06).
+# Every field goes through argv, not just the one that was flagged, since a
+# printf %s field is unsafe by construction regardless of which value is
+# realistically attacker-influenceable today.
+python3 -c '
+import json, sys
+
+def _numeric_or_na(s):
+    return s if s == "n/a" else int(s)
+
+d = {
+    "clean": sys.argv[1] == "true",
+    "critical_count": int(sys.argv[2]),
+    "rehunt": sys.argv[3],
+    "last_sha": sys.argv[4],
+    "branch": sys.argv[5],
+    "review_mode": sys.argv[6],
+    "ts": sys.argv[7],
+    "round": int(sys.argv[8]),
+    "important_count": int(sys.argv[9]),
+    "minor_count": int(sys.argv[10]),
+    "prev_critical_count": _numeric_or_na(sys.argv[11]),
+    "prev_important_count": _numeric_or_na(sys.argv[12]),
+    "prev_minor_count": _numeric_or_na(sys.argv[13]),
+    "stalled": sys.argv[14] == "true",
+}
+with open(sys.argv[15], "w") as f:
+    json.dump(d, f)
+    f.write("\n")
+' "$CLEAN" "$CRITICAL_COUNT" "$REHUNT" "$HEAD_SHA" "$BRANCH" "$REVIEW_MODE" \
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   "$ROUND" "$IMPORTANT_COUNT" "$MINOR_COUNT" \
-  "$([ "$PREV_CRITICAL" = "n/a" ] && echo '"n/a"' || echo "$PREV_CRITICAL")" \
-  "$([ "$PREV_IMPORTANT" = "n/a" ] && echo '"n/a"' || echo "$PREV_IMPORTANT")" \
-  "$([ "$PREV_MINOR" = "n/a" ] && echo '"n/a"' || echo "$PREV_MINOR")" \
-  "$STALLED" \
-  > "$STATE_FILE"
+  "$PREV_CRITICAL" "$PREV_IMPORTANT" "$PREV_MINOR" \
+  "$STALLED" "$STATE_FILE"
 
 # The state file MUST land outside $WT so worktree cleanup can't delete it
 # (production incident: PR #2619's state file was written to $WT/.scratch/

@@ -66,8 +66,8 @@
       },
       {
         "id": "gate:write:verifier-protect",
-        "matcher": "Write|Edit",
-        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/hooks.json (deny-gates + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit.",
+        "matcher": "Write|Edit|NotebookEdit",
+        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06 (the script already read notebook_path; the matcher just never granted it), matching gate:write:worktree-guard's coverage.",
         "hooks": [
           {
             "type": "command",

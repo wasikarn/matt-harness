@@ -5,6 +5,98 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.205] — 2026-08-06
+
+Fixed 4 CRITICAL findings from a 5-agent blind-spot sweep (repo-wide, requested
+after applying the loop-graph article's ideas surfaced the `scope_ok` gap
+above) — all four are verifier-tamper-resistance or gate-bypass bugs, the
+class CLAUDE.md's "Architecture" section names as the harness's core design
+crux (the gate is the verifier, the model is the maker, the maker cannot
+grade its own work):
+
+- `hooks/gates/irrecoverable.sh` — a bare `except Exception: cmd = ""` around
+  the PreToolUse JSON parse meant any malformed payload (empty stdin,
+  truncated JSON, `tool_input:null`, non-object top level) silently fell
+  through to `sys.exit(0)` (allow), bypassing every deny check in the file —
+  including the ones blocking `rm -rf`, `git push --force`, `--no-verify`, and
+  `DROP TABLE`. Reproduced live by two independently-dispatched agents.
+  Narrowed the catch so any unparseable/malformed payload now fails closed
+  (`exit 2`) with an explicit `[kbg:gate] BLOCKED` message instead of silently
+  becoming "nothing to check."
+- `skills/harness-audit/scripts/checks/47-cumulative-description-budget.sh` —
+  two independent code-injection vectors, both reproduced live: (1)
+  `skillListingBudgetFraction` from `settings.json` was spliced unsanitized
+  into a `python3 -c` source string (arbitrary code execution via a crafted
+  config value); (2) `SLASH_COMMAND_TOOL_CHAR_BUDGET` (a plain env var) fed
+  unvalidated into bash `$(( ))` arithmetic, exploitable via bash's
+  array-subscript command-substitution quirk. Fixed by passing the fraction
+  via `sys.argv` instead of string interpolation, and validating the env var
+  is a plain non-negative integer before it reaches arithmetic — same guard
+  shape `write-review-state.sh` already used for `PREV_ROUND`, just not
+  applied here.
+- `hooks/gates/verifier-protect.sh` — a present-but-non-dict `tool_input`
+  (e.g. JSON `null`) previously collapsed through `d.get("tool_input", {}) or
+  {}` into a clean, silent allow — the same "malformed payload defeats the
+  gate" bug class as `irrecoverable.sh` above, this time on the gate that
+  protects the gates. Now emits an explicit `ask` instead of resolving to a
+  silent allow on a payload it can't parse.
+- `hooks/gates/verifier-protect.sh` — `hooks/advisory/**` was entirely
+  unprotected: the model could edit an advisory sensor into a real
+  `permissionDecision`-emitting gate with zero prompt (found by the
+  blind-spot sweep). Also closed an `rm`/`trash` gap in the Bash-mediated-
+  write path — a bare `rm <file>` needs neither `-r` nor `-f`, so it never
+  reached `irrecoverable.sh`'s `rm -rf` check, and `trash` (this repo's own
+  preferred deletion command) had zero coverage anywhere. `hooks/hooks.json`'s
+  matcher widened `Write|Edit` → `Write|Edit|NotebookEdit` to match, closing
+  the same blind spot `gate:write:worktree-guard` already covered.
+
+Also fixed 4 cheap/mechanical findings from the same sweep (no design
+tradeoff, safe to land without a separate decision):
+
+- `checks/44-ship-merge-disable-model-invocation.sh` and its sibling
+  `checks/34-fake-done-guard-*.sh` had no `else` branch when their target file
+  is missing — silent zero output instead of a WARN/CRIT. Check 44 is the
+  *only* CRIT guard on `ship-merge`'s `disable-model-invocation` flag, and
+  this repo has already migrated 3 sibling commands to directory form; copied
+  check 31's existing both-path-forms + missing-file-warns pattern into both.
+- `hooks/gates/task-complete-separation.sh`, `checks/15-settings-json-*.sh`,
+  and `hooks/tests/test-worktree-guard.sh` all built a `python3 -c` command by
+  string-interpolating bash variables into double-quoted source — not
+  exploitable today (no attacker-controlled values reach these three), but
+  the exact pattern behind this repo's prior apostrophe-lockout incident.
+  Converted all three to the fleet's single-quoted-source + argv-passed-value
+  convention. Also hardened `task-complete-separation.sh` itself against two
+  crash inputs a malformed PreToolUse payload can produce — a valid-JSON
+  non-object top level (e.g. a bare list) and a non-dict `tool_input` — both
+  previously raised an uncaught Python exception instead of resolving to the
+  gate's own documented fail-safe-allow.
+- `CLAUDE.md` and `docs/agent-tool-patterns.md` both understated
+  `disable-model-invocation` CRIT-guard coverage (said 1-2 guards exist,
+  actually 3 — `recursive-improve` #39, `score-decision` #49, and `ship-merge`
+  #44, the last predating even #49 and covering a command, not just skills).
+  Corrected both.
+- `skills/review-pr/scripts/write-review-state.sh` — the state file was
+  hand-built via `printf '%s'` string splicing; a branch name containing a
+  literal `"` (git permits it — only `:` and a handful of other characters
+  are disallowed) broke the JSON output that `ship-merge`'s scored review
+  gate reads. Every field now goes through `json.dumps` via `sys.argv`
+  instead of printf interpolation.
+
+Investigated and deliberately **not** changed: widening the single-branch
+gate (`gate:bash:irrecoverable`) to also block `git checkout -b` / `git
+switch -c` / `git branch <name>`, not just `git worktree add -b`.
+`hooks/tests/test-gates.sh:149` already carries a deliberate regression
+guard — `"git checkout -b new-branch (must not over-block)"`, added in a
+prior "gate hardened" pass — and `skills/incident/`'s hotfix workflow
+genuinely depends on `git switch -c` (this plugin ships globally; hotfix
+branching is a real workflow in other repos). CLAUDE.md's own
+"Computationally enforced" sentence already scopes itself to the `git
+worktree add -b` mechanism specifically — the broader "single branch, no
+feature branches" line is documented policy, not a claim of full
+computational enforcement. Widening the gate would break a tested,
+deliberate prior decision to fix a gap that was never actually a doc/code
+mismatch.
+
 ## [0.68.204] — 2026-08-06
 
 `skills/orchestrate/`: added mechanical file-scope conformance to the

@@ -39,10 +39,31 @@ except Exception:
   if [ -n "$_v" ]; then _frac="$_v"; break; fi
 done
 if [ -n "${SLASH_COMMAND_TOOL_CHAR_BUDGET:-}" ]; then
-  BUDGET_CHARS="$SLASH_COMMAND_TOOL_CHAR_BUDGET"
-  _budget_source="SLASH_COMMAND_TOOL_CHAR_BUDGET env override"
+  # Validate as a plain non-negative integer before it ever reaches
+  # $(( )) arithmetic below — an unvalidated value there is bash
+  # arithmetic-eval injection via array-subscript expansion (found
+  # 2026-08-06). Same guard shape as write-review-state.sh's PREV_ROUND.
+  case "$SLASH_COMMAND_TOOL_CHAR_BUDGET" in
+    ''|*[!0-9]*)
+      BUDGET_CHARS=8000
+      _budget_source="platform default (SLASH_COMMAND_TOOL_CHAR_BUDGET set but not a plain integer, ignored)"
+      ;;
+    *)
+      BUDGET_CHARS="$SLASH_COMMAND_TOOL_CHAR_BUDGET"
+      _budget_source="SLASH_COMMAND_TOOL_CHAR_BUDGET env override"
+      ;;
+  esac
 elif [ -n "$_frac" ]; then
-  BUDGET_CHARS=$(python3 -c "print(int(200000 * $_frac * 4))" 2>/dev/null || echo 8000)
+  # $_frac passed via argv, never spliced into the -c source string —
+  # splicing let a crafted skillListingBudgetFraction value execute
+  # arbitrary Python (found 2026-08-06).
+  BUDGET_CHARS=$(python3 -c '
+import sys
+try:
+    print(int(200000 * float(sys.argv[1]) * 4))
+except Exception:
+    print(8000)
+' "$_frac" 2>/dev/null || echo 8000)
   _budget_source="skillListingBudgetFraction=${_frac}"
 else
   BUDGET_CHARS=8000

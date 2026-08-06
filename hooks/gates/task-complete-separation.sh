@@ -19,33 +19,48 @@
 # so a maker literally cannot call TaskUpdate(completed).
 set -uo pipefail
 
-python3 -c "
+# shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
+python3 -c '
 import json, sys
 
 try:
     d = json.load(sys.stdin)
 except Exception as e:
     # Fail-safe = ALLOW. Completion is recoverable; a parse error must not
-    # stall all task completion (opposite of verifier-protect's fail-to-ask).
-    print(f'[kbg:gate] task-complete-separation: unparseable stdin, allowing ({e})', file=sys.stderr)
+    # stall all task completion (opposite of verifier-protect'"'"'s fail-to-ask).
+    print(f"[kbg:gate] task-complete-separation: unparseable stdin, allowing ({e})", file=sys.stderr)
     sys.exit(0)
 
-if d.get('tool_name') != 'TaskUpdate':
+if not isinstance(d, dict):
+    # A valid-JSON-but-non-object payload (e.g. a bare list) crashed here
+    # too, one level above the tool_input guard below (found 2026-08-06).
+    print("[kbg:gate] task-complete-separation: non-object payload, allowing", file=sys.stderr)
+    sys.exit(0)
+
+if d.get("tool_name") != "TaskUpdate":
     sys.exit(0)
 
 # status has no documented key-name alias; read it straight from tool_input.
-status = d.get('tool_input', {}).get('status')
-if status != 'completed':
+ti = d.get("tool_input")
+if not isinstance(ti, dict):
+    # Matches irrecoverable.sh and verifier-protect.sh: a malformed
+    # tool_input must not crash into an uncaught traceback (found
+    # 2026-08-06). This gate is fail-safe=ALLOW by design, so route
+    # straight to the same clean exit a missing status already takes,
+    # instead of a silent {} fallback that raised AttributeError.
+    sys.exit(0)
+status = ti.get("status")
+if status != "completed":
     sys.exit(0)
 
 # agent_type is present only when the hook fires inside a subagent (or a
 # --agent session). Absent => main session => allowed.
-agent_type = d.get('agent_type')
+agent_type = d.get("agent_type")
 if not agent_type:
     sys.exit(0)
 
-print(f'[kbg:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — '
-      f'return to main session for completion (maker≠checker)', file=sys.stderr)
+print(f"[kbg:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — "
+      f"return to main session for completion (maker≠checker)", file=sys.stderr)
 sys.exit(2)
-"
+'
 exit $?

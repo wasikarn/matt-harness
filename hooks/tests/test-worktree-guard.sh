@@ -140,14 +140,16 @@ check "KBG_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
 # ever gets (shellcheck never lints an embedded JSON string value). Extract it exactly
 # as shipped and run it in isolated subshells so env changes don't leak into the rest of
 # this script.
-WRAPPER_CMD=$(python3 -c "
-import json
-d = json.load(open('$ROOT/hooks/hooks.json'))
-for blk in d['hooks']['PreToolUse']:
-    if blk.get('id') == 'gate:bash:worktree-guard':
-        print(blk['hooks'][0]['command'])
+# $ROOT passed via argv, not spliced into the -c source string — matches
+# the fleet convention after the 2026-08-06 check-47 injection fix.
+WRAPPER_CMD=$(python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+for blk in d["hooks"]["PreToolUse"]:
+    if blk.get("id") == "gate:bash:worktree-guard":
+        print(blk["hooks"][0]["command"])
         break
-")
+' "$ROOT/hooks/hooks.json")
 ok=1; [ -n "$WRAPPER_CMD" ] && ok=0
 check "wrapper command string extracted from hooks.json" "$ok"
 

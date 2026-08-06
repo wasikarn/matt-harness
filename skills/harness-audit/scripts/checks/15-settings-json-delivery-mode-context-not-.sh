@@ -8,7 +8,13 @@
 if [ -f "$SETTINGS" ]; then
   _missing=""
   for _k in commands agents skills; do
-    python3 -c "import json,sys; d=json.load(open('$SETTINGS')); sys.exit(0 if '$_k' in d else 1)" 2>/dev/null || _missing="$_missing $_k"
+    # $SETTINGS/$_k passed via argv, not spliced into the -c source string —
+    # matches the fleet convention after the 2026-08-06 check-47 injection fix.
+    python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+sys.exit(0 if sys.argv[2] in d else 1)
+' "$SETTINGS" "$_k" 2>/dev/null || _missing="$_missing $_k"
   done
   [ -n "$_missing" ] && echo "settings.json delivery: arrays absent ($_missing ) — loaded via plugin cache / ~/.claude directly"
 fi
