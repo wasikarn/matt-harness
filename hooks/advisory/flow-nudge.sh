@@ -15,7 +15,7 @@
 #   - Empty prompt → silent.
 #   - No flow verb → silent.
 #   - Flow verb matched → emit nudge.
-# Verified against the test in hooks/tests/test-flow-nudge.sh.
+# Verified against the test in tests/hooks/test-flow-nudge.sh.
 set -uo pipefail
 
 # Matching runs against the extracted `.prompt` field only, via jq (already a

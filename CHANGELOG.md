@@ -5,6 +5,52 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.207] — 2026-08-06
+
+Consolidate tests + scripts under `tests/` and `scripts/_lib/` at the repo
+root. Convention was previously scattered across `hooks/tests/`,
+`skills/<name>/tests/` + `skills/<name>/scripts/test_*.py`,
+`skills/_lib/`, and `docs/research/...-run-eval.py` — re-grepping "where
+do tests live" required checking 4-5 directories; the new layout is a
+single `find tests/ -name 'test-*'` away.
+
+- **Tests** (13 files): `hooks/tests/*.sh` → `tests/hooks/`;
+  `skills/harness-audit/tests/{test-harness-audit.sh, known-bad/}` →
+  `tests/skills/harness-audit/`;
+  `skills/{compress-docs,memory-lint}/scripts/test_*.py` →
+  `tests/skills/<name>/`.
+- **Shared helpers** (2 files): `skills/_lib/{frontmatter-helpers.sh, err.sh}` →
+  `scripts/_lib/`. The 6 callers that `source` them (`audit.sh`,
+  `inventory{,-witness,-boundary}.sh`, `sync-fleet-counts.sh`,
+  `write-review-state.sh`) had their `../../_lib/` paths rewritten to
+  `../../../scripts/_lib/`.
+- **Research script** (1 file): `docs/research/plan-mode-nudge-audit-2026-08-05-run-eval.py`
+  → `scripts/research/`. The research writeup itself stays under `docs/research/`
+  (it's prose, not code); the documented runnable command in the writeup
+  was updated so it still works post-move.
+- **`tests/skills/harness-audit/test-harness-audit.sh`** AUDIT path
+  corrected from `$HERE/../scripts/audit.sh` to
+  `$HERE/../../../skills/harness-audit/scripts/audit.sh` (the test is
+  one extra directory deeper than its old location; the SUT stays at
+  the skill-local path because `${CLAUDE_SKILL_DIR}/scripts/audit.sh`
+  is the documented skill invocation contract — moving the SUT would
+  break `Skill(kbg:harness-audit)`).
+- **Live references rewritten**: `scripts/run-gauntlet.sh:79` (10 paths),
+  `CLAUDE.md` Validation section, `commands/kbg-help.md`,
+  `hooks/advisory/{flow,learn}-nudge.sh` comments, the 9 test docstrings,
+  `skills/harness-audit/SKILL.md` + `audit.sh` comments,
+  `skills/recursive-improve/SKILL.md`.
+- **CHANGELOG.md historical entries NOT rewritten** — they reference
+  `hooks/tests/` paths that were live at the time. After the
+  `git mv`, `git log --follow tests/hooks/test-gates.sh` still traces
+  history via rename detection (verified post-move).
+- **BOUNDARY.md regenerated** via
+  `bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md`
+  (the regen instruction at top of BOUNDARY.md).
+
+Pure structural refactor — no behavior change to any surface. Pre-push
+gauntlet (5 layers) green as the gate.
+
 ## [0.68.206] — 2026-08-06
 
 Discovered live while committing v0.68.205: `irrecoverable.sh` has no

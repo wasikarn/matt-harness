@@ -37,7 +37,7 @@ fixes (deliberately excluded from the verb list today), and non-English prompts.
 `UserPromptSubmit` JSON payload, compares fire/silent against the label, reports
 precision/recall/F1/accuracy overall and per category. Both files are persisted in this
 directory, not session-scratch-only — re-run them yourself:
-`python3 docs/research/plan-mode-nudge-audit-2026-08-05-run-eval.py hooks/advisory/flow-nudge.sh docs/research/plan-mode-nudge-audit-2026-08-05-eval-cases.json <label>`.
+`python3 scripts/research/plan-mode-nudge-audit-2026-08-05-run-eval.py hooks/advisory/flow-nudge.sh docs/research/plan-mode-nudge-audit-2026-08-05-eval-cases.json <label>`.
 
 ## Before
 

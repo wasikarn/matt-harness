@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Self-check for verify-preserved.py's extraction regexes. Run directly:
-    python3 skills/compress-docs/scripts/test_verify_preserved.py
+    python3 tests/skills/compress-docs/test_verify_preserved.py
 No framework, no fixtures — plain asserts, run top to bottom.
 """
 import importlib.util
 from pathlib import Path
 
-# hyphenated filename can't be imported by name — load it by path instead
-spec = importlib.util.spec_from_file_location("verify_preserved", Path(__file__).parent / "verify-preserved.py")
+# hyphenated filename can't be imported by name — load it by path instead.
+# SUT (verify-preserved.py) stayed at skills/compress-docs/scripts/ per the
+# no-move rule — Claude Code skill invocation contract relies on
+# ${CLAUDE_SKILL_DIR}/scripts/. 3 levels up (tests/skills/compress-docs/
+# → repo root) then into the SUT dir.
+spec = importlib.util.spec_from_file_location("verify_preserved",
+    Path(__file__).parent / ".." / ".." / ".." / "skills" / "compress-docs" / "scripts" / "verify-preserved.py")
 assert spec and spec.loader, "could not locate verify-preserved.py next to this test"
 vp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vp)

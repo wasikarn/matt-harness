@@ -5,7 +5,11 @@ import os
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = importlib.util.spec_from_file_location("memory_lint", os.path.join(HERE, "memory-lint.py"))
+# SUT (memory-lint.py) stayed at skills/memory-lint/scripts/ per the no-move
+# rule — Claude Code skill invocation contract relies on ${CLAUDE_SKILL_DIR}/scripts/.
+# 3 levels up (tests/skills/memory-lint/ → repo root) then into the SUT dir.
+spec = importlib.util.spec_from_file_location("memory_lint",
+    os.path.join(HERE, "..", "..", "..", "skills", "memory-lint", "scripts", "memory-lint.py"))
 assert spec and spec.loader
 memory_lint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(memory_lint)

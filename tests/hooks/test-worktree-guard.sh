@@ -2,7 +2,7 @@
 # Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect).
 # Uses the KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT env seams to run against throwaway
 # repos — never touches any real workspace or ~/.worktrees.
-# Run standalone: bash hooks/tests/test-worktree-guard.sh
+# Run standalone: bash tests/hooks/test-worktree-guard.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

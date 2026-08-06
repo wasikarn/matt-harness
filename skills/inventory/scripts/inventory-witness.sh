@@ -4,8 +4,8 @@
 # Usage: bash inventory-witness.sh [<output-path>]
 set -euo pipefail
 
-# shellcheck source=../../_lib/err.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/err.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT="${1:-claude/BOUNDARY.md}"

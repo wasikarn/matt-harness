@@ -19,8 +19,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${1:-$(cd -P "$SCRIPT_DIR/../../.." && pwd)}"
 
-# shellcheck source=../../_lib/err.sh
-. "$SCRIPT_DIR/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$SCRIPT_DIR/../../../scripts/_lib/err.sh"
 
 [ -f "$REPO_ROOT/.claude-plugin/plugin.json" ] || err_die "not a kbg-harness checkout (no .claude-plugin/plugin.json under $REPO_ROOT)"
 

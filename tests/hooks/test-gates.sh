@@ -3,7 +3,7 @@
 # Gate unit tests: simulates PreToolUse JSON payloads and asserts allow/deny/ask.
 # Each test_deny call expects exit 2; test_allow expects exit 0 + empty stdout;
 # test_ask expects exit 0 + a permissionDecision: ask JSON on stdout.
-# Run standalone: bash hooks/tests/test-gates.sh
+# Run standalone: bash tests/hooks/test-gates.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

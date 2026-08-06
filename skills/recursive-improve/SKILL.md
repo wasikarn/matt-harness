@@ -134,7 +134,7 @@ proceed plan-only into execution.
   check got narrower, not that the underlying defect got fixed — apply extra scrutiny (read the
   actual diff, don't trust the count alone) before calling that case "improved."
 - Run the relevant deterministic check on any code touched: `bash scripts/run-gauntlet.sh`
-  (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash hooks/tests/test-gates.sh`
+  (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash tests/hooks/test-gates.sh`
   (the 3 deny-gates), `bash -n` / `py_compile` on edited scripts.
 - **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated, not
   assumed.

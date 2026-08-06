@@ -91,7 +91,7 @@ the plugin cache at runtime, not via a symlink. The audit emits an
 `INFO` line confirming plugin-mode is active. Components that are neither
 symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
 The cache path can be overridden with `--plugin-cache <path>` (used by the
-test fixtures in `tests/harness-audit/fixtures/`, which point at fake caches so the F1
+test fixtures in `tests/skills/harness-audit/known-bad/`, which point at fake caches so the F1
 check is exercised without a live install). The live cache version is
 auto-detected via `ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1` — do not hardcode.
 

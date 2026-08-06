@@ -7,10 +7,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source the shared libraries.
-# shellcheck source=../../_lib/frontmatter-helpers.sh
-. "$SCRIPT_DIR/../../_lib/frontmatter-helpers.sh"
-# shellcheck source=../../_lib/err.sh
-. "$SCRIPT_DIR/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/frontmatter-helpers.sh
+. "$SCRIPT_DIR/../../../scripts/_lib/frontmatter-helpers.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$SCRIPT_DIR/../../../scripts/_lib/err.sh"
 
 # extract_auto_invoke is NOT a key reader — it checks for the presence of
 # `disable-model-invocation:` and inverts the result (auto = absent,
@@ -95,10 +95,14 @@ print_boundary() {
   fi
 
   # Hooks (lightweight — just name + first comment paragraph). Recursive: real
-  # hooks live under gates/advisory/session/stop/tests, not flat in hooks/ — a
+  # hooks live under gates/advisory/session/stop, not flat in hooks/ — a
   # shallow glob only ever matched hooks.json (see inventory.sh hook-file mode).
-  # .py included (worktree-guard.py) — hooks aren't all bash.
-  if [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; then
+  # .py included (worktree-guard.py) — hooks aren't all bash. The Hooks
+  # table also lists hook-behavioral tests under tests/hooks/ (post-2026-08-06
+  # consolidation): same fm_hook_desc contract, kept in the Hooks table because
+  # they are test harnesses for hooks, not standalone tests.
+  if { [ -d "$base/hooks" ] && [ -n "$(ls -A "$base/hooks" 2>/dev/null)" ]; } || \
+     { [ -d "$base/tests/hooks" ] && [ -n "$(ls -A "$base/tests/hooks" 2>/dev/null)" ]; }; then
     echo ""
     echo "## Hooks — $label"
     echo "| Hook | Purpose |"
@@ -109,7 +113,7 @@ print_boundary() {
       name=$(basename "$f")
       purpose=$(fm_hook_desc "$f")
       printf "| %s | %s |\n" "$name" "${purpose:-—}"
-    done < <(find "$base/hooks" -type f \( -name '*.sh' -o -name '*.py' \) | sort)
+    done < <(find "$base/hooks" "$base/tests/hooks" -type f \( -name '*.sh' -o -name '*.py' \) 2>/dev/null | sort)
   fi
 
   # Output styles — registered via /output-style <name>; same frontmatter

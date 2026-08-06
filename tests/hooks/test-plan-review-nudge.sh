@@ -2,7 +2,7 @@
 # plan-review-nudge unit tests: simulates PostToolUse/ExitPlanMode JSON
 # payloads and asserts stdout output (JSON with additionalContext) vs
 # silence (nudge skipped). The hook never blocks, so all tests expect exit 0.
-# Run standalone: bash hooks/tests/test-plan-review-nudge.sh
+# Run standalone: bash tests/hooks/test-plan-review-nudge.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

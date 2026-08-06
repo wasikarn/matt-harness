@@ -12,16 +12,16 @@ set -euo pipefail
 # ── helpers ──────────────────────────────────────────────────────────
 #
 # fm_get / fm_has / fm_hook_desc come from
-# claude/skills/_lib/frontmatter-helpers.sh (shared with audit.sh and
+# scripts/_lib/frontmatter-helpers.sh (shared with audit.sh and
 # inventory-boundary.sh). Call sites below use fm_get "$f" description for
 # the single-line description value, and fm_hook_desc for hook comments
 # (not YAML frontmatter — different shape, kept separate in the lib).
 
 # Source the shared libraries.
-# shellcheck source=../../_lib/frontmatter-helpers.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/frontmatter-helpers.sh"
-# shellcheck source=../../_lib/err.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/frontmatter-helpers.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/frontmatter-helpers.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/err.sh"
 
 # ── per-section printer ──────────────────────────────────────────────
 

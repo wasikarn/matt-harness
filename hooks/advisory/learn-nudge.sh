@@ -22,7 +22,7 @@
 # v0.6.0, memory: passive-capture had a queue + confidence scoring + a
 # separate SessionStart drain hook). No queue, no state file, no python —
 # it fires once per session end and says nothing about content.
-# Verified against the test in hooks/tests/test-learn-nudge.sh.
+# Verified against the test in tests/hooks/test-learn-nudge.sh.
 #
 # `reason` gate: skip `resume` (docs: "Session switched via interactive
 # /resume" — the session ended because the user left it for a possibly-

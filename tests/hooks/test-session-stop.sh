@@ -4,7 +4,7 @@
 # block (no permissionDecision) — tests assert exit 0 + expected side effect
 # (stdout injection / env-file append / metrics-file append), and that each
 # fails safe (exit 0, no side effect) when its required env var is unset.
-# Run standalone: bash hooks/tests/test-session-stop.sh
+# Run standalone: bash tests/hooks/test-session-stop.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

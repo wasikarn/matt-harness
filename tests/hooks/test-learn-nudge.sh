@@ -4,7 +4,7 @@
 # skipped) and that stdout is ALWAYS empty (SessionEnd stdout is discarded —
 # a hook that wrote a nudge there would be dead-at-birth). The hook never
 # blocks (SessionEnd has no decision control), so all tests expect exit 0.
-# Run standalone: bash hooks/tests/test-learn-nudge.sh
+# Run standalone: bash tests/hooks/test-learn-nudge.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

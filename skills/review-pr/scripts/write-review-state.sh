@@ -26,8 +26,8 @@
 # of having to re-read the file back out — a skipped re-read would silently degrade the footer.
 set -euo pipefail
 
-# shellcheck source=../../_lib/err.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/err.sh"
 
 CRITICAL_COUNT="${1:?critical_count required}"
 REHUNT_RAW="${2:?rehunt required}"

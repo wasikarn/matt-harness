@@ -3,7 +3,7 @@
 # (with a real fixture transcript file for the ExitPlanMode-detection cases)
 # and asserts stdout output (JSON with additionalContext) vs silence (nudge
 # skipped). The hook never blocks, so all tests expect exit 0.
-# Run standalone: bash hooks/tests/test-compliance-audit-nudge.sh
+# Run standalone: bash tests/hooks/test-compliance-audit-nudge.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

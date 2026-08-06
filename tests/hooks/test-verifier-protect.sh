@@ -4,7 +4,7 @@
 # this plugin). Had zero automated coverage before 2026-08-04: this file was added the
 # same day as the round-3 port of worktree-guard.py's heredoc/ANSI-C/newline/$VAR/~
 # fixes into this gate's own embedded generator, specifically to close that gap.
-# Run standalone: bash hooks/tests/test-verifier-protect.sh
+# Run standalone: bash tests/hooks/test-verifier-protect.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

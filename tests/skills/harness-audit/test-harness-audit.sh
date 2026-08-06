@@ -19,7 +19,7 @@
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
-AUDIT="$HERE/../scripts/audit.sh"
+AUDIT="$HERE/../../../skills/harness-audit/scripts/audit.sh"
 FIX="$HERE/known-bad"
 
 pass=0

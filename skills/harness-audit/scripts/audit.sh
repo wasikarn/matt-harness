@@ -42,7 +42,7 @@ SETTINGS="$CLAUDE_DIR/settings.json"
 MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/${REPO_ROOT//\//_}/memory"
 
 # AUDIT-2: --only <id> — run exactly ONE check by id against the resolved scope
-# (so tests/harness-audit/tests/test-harness-audit.sh can prove a known-bad
+# (so tests/skills/harness-audit/test-harness-audit.sh can prove a known-bad
 # fixture makes the matching check fire — the maker-grades-own-work guard on
 # the audit itself). Dispatch happens AFTER the check-fragment glob is built
 # (below), where CLAUDE_DIR / fm_get / crit / warn are all in scope. Works for
@@ -52,10 +52,10 @@ MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/${REPO_ROOT//\//_}/memory"
 # A miss (0 or >1 matches) → err_die (unsupported, not silent).
 
 # Source the shared libraries.
-# shellcheck source=../../_lib/frontmatter-helpers.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/frontmatter-helpers.sh"
-# shellcheck source=../../_lib/err.sh
-. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/frontmatter-helpers.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/frontmatter-helpers.sh"
+# shellcheck source=../../../scripts/_lib/err.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/err.sh"
 
 # Fail loud: if the resolved root holds none of the fleet dirs, root
 # resolution failed — error out instead of a false-clean "0 artifacts" pass. A
@@ -86,7 +86,7 @@ fi
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on kbg-harness).
-# --plugin-cache <path> overrides the default for testing (see tests/harness-audit/fixtures/).
+# --plugin-cache <path> overrides the default for testing (see tests/skills/harness-audit/known-bad/).
 # Resolve to the latest installed version of the kbg plugin in the cache,
 # so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable
 # F1 plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
@@ -156,7 +156,7 @@ crit() { CRIT_COUNT=$((CRIT_COUNT + 1)); echo "  CRIT F${CRIT_COUNT}: $1"; }
 warn() { WARN_COUNT=$((WARN_COUNT + 1)); echo "  WARN W${WARN_COUNT}: $1"; }
 info() { INFO_COUNT=$((INFO_COUNT + 1)); echo "  INFO I${INFO_COUNT}: $1"; }
 
-# ── helpers (fm_get / fm_has come from _lib/frontmatter-helpers.sh) ──
+# ── helpers (fm_get / fm_has come from scripts/_lib/frontmatter-helpers.sh) ──
 
 # Run a find-like command and return its match count; if the starting directory
 # is missing (find exits 1) we still get "0" instead of tripping set -e/pipefail.

@@ -3,7 +3,7 @@
 # jira-route-nudge unit tests: simulates UserPromptSubmit JSON payloads and
 # asserts stdout output (nudge fired) vs silence (nudge skipped). The hook
 # never blocks, so all tests expect exit 0.
-# Run standalone: bash hooks/tests/test-jira-route-nudge.sh
+# Run standalone: bash tests/hooks/test-jira-route-nudge.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
