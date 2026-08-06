@@ -170,7 +170,7 @@ Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
 
 **Task 2 — Validator: review PR** (same template shape as Task 1, abbreviated here)
 
-What: review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md`, a fenced JSON block matching SKILL.md's structured-verdict contract — `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0). Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, parses as valid JSON with `pass` present, every finding cites file:line, no file was edited.
+What: first run `git diff --name-only` and compare against `tasks["T1"].files` (Task 1's declared `FILES YOU OWN`) to set `scope_ok`/`unexpected_files`; only then review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md`, a fenced JSON block matching SKILL.md's structured-verdict contract — `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0), `scope_ok` (bool), `unexpected_files` (array, empty when `scope_ok: true`). Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, parses as valid JSON with `pass` present, every finding cites file:line, no file was edited.
 
 Spawn **ungated** — validators are read-only by allowlist (see SKILL.md's "Validator safety" note, under Gating rules, for why there's no runtime backstop beyond the allowlist). If the lead can't parse the verdict or `pass` is absent, treat it as **not verified** — re-dispatch, don't advance to Task 3/4 on a guess.
 
@@ -182,7 +182,7 @@ Spawn with `AskUserQuestion` (gated — fixer holds Edit/Write/Bash).
 
 **Task 4 — Re-validator: OWASP scan**
 
-What: security scan on the final `src/api/routes/health.py`. Deliverable: verdict file matching the same structured-verdict contract as Task 2 (`pass`, `findings`, `confidence`). Upstream contracts: the final diff from Task 3 (lead runs `git diff` after Task 3 and pastes it in) plus Task 1's file (verify the final code doesn't re-introduce old patterns). Done-when: verdict file exists, parses with `pass: true`, no file was edited.
+What: check `scope_ok` against Task 1's `FILES YOU OWN` first (catches Fixer drift too, since Task 3 is bounded to the same file set), then run a security scan on the final `src/api/routes/health.py`. Deliverable: verdict file matching the same structured-verdict contract as Task 2 (`pass`, `findings`, `confidence`, `scope_ok`, `unexpected_files`). Upstream contracts: the final diff from Task 3 (lead runs `git diff` after Task 3 and pastes it in) plus Task 1's file (verify the final code doesn't re-introduce old patterns). Done-when: verdict file exists, parses with `pass: true`, no file was edited.
 
 Spawn **ungated** — re-validators are read-only. Same fail-closed rule as Task 2: a missing or unparseable verdict is **not verified**, never read as `pass`.
 

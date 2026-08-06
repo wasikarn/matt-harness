@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.204] — 2026-08-06
+
+`skills/orchestrate/`: added mechanical file-scope conformance to the
+Structured Verdict contract. Found by comparing kbg's own doctrine against an
+external article on supervisory agent-loop design (`docs/research/loop-graph-
+engineering-trend-audit-2026-08-02.md`, "Article 11" update) — the Builder's
+`FILES YOU OWN` declaration was only ever self-reported in its done-when
+checklist, never independently checked against the actual diff. The
+Validator/Re-validator now runs `git diff --name-only` against the upstream
+task's declared scope *before* the behavioral review and records `scope_ok`
+(bool) + `unexpected_files` (array) alongside the existing `pass`/`findings`/
+`confidence` fields; an out-of-scope edit forces `pass: false` regardless of
+code quality. Same fail-closed shape-checking discipline as the rest of the
+verdict contract, just extended to cover a field that was previously trusted
+on the maker's own word.
+
 ## [0.68.203] — 2026-08-06
 
 Adversarial re-verification of v0.68.202 (dispatched `kbg:code-reviewer` with
