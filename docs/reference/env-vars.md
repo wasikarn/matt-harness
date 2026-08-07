@@ -46,16 +46,6 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 | `KBG_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
 | `KBG_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
-## Ideate cluster (model-honored)
-
-Honored by the `ideate` skill when running local-embedding convergence/memory capture. The
-convergence-capture hook that previously read the threshold/timeout knobs was deleted in v0.6.0.
-
-| Var | Default | Effect |
-|---|---|---|
-| `KBG_IDEATE_OLLAMA_HOST` | `http://localhost:11434` | Ollama endpoint for local embeddings. |
-| `KBG_IDEATE_EMBEDDING_MODEL` | `all-minilm:latest` | Embedding model name. |
-
 ## Token-optimization settings (set in `~/.claude/settings.json` → `env`)
 
 Recommended values for context/cost efficiency, sourced from ECC token-optimization guide:

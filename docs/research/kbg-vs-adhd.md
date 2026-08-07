@@ -138,11 +138,6 @@ so future agents do not re-derive the same gaps.
   `hooks/session/ideate-budget-capture.sh` + the SessionStart budget
   advisory. The daily threshold defaults to 10 and is adjustable via
   `KBG_IDEATE_DAILY_THRESHOLD`.
-- **Embedding-based convergence detection.** Resolved by
-  `hooks/session/ideate-convergence-capture.sh` using the local Ollama
-  API (`all-minilm:latest` by default). Same-day cosine similarity
-  ≥ 0.85 emits an advisory warning; absence of Ollama degrades to
-  `unknown`.
 - **Frame rotation across sessions.** Resolved by
   `hooks/session/ideate-rotate.sh`, which writes
   `~/.claude/state/ideate-rotation.json` and emits a deterministic

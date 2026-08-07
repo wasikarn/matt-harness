@@ -5,6 +5,15 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.216] — 2026-08-07
+
+Removed Ollama, at operator request. Two unrelated surfaces existed; both removed after confirming scope with the operator (both selected):
+
+- **`orchestrate`'s external-model delegation feature** — a real, live capability: `skills/orchestrate/scripts/ollama-delegate.sh` deleted, along with the "External-model delegation — propose-only" section in `SKILL.md` (~105 lines) and its "verification detail" companion section in `reference.md` (~40 lines, the final section in the file).
+- **`ideate`'s local-embeddings-via-Ollama mention** — already-dead documentation, not live code: `docs/reference/env-vars.md`'s "Ideate cluster" section removed (its own text already said the hook reading those vars was deleted in v0.6.0); `docs/research/kbg-vs-adhd.md`'s tombstone-list bullet for "Embedding-based convergence detection" removed (the hook it names, `hooks/session/ideate-convergence-capture.sh`, doesn't exist in the repo).
+
+`CHANGELOG.md`'s own historical entries mentioning Ollama (v0.58.4 and others) are untouched — append-only record, not currently-active doctrine. Flagged but not fixed: the two sibling bullets in `kbg-vs-adhd.md`'s tombstone list (budget-capture, frame-rotation) also name hooks that no longer exist in the repo — a broader staleness issue unrelated to Ollama, left for a separate pass.
+
 ## [0.68.215] — 2026-08-07
 
 Bug found by actually running the just-shipped `/cost-report` against real production data instead of trusting the synthetic-fixture tests alone: the "By agent type" section printed `$38403.9248  (unknown)` — almost the entire $38,630 total — reading as "most subagent spend has no recorded type," which was false. Root cause: the report's `by()` aggregation helper always iterates the full `latest` row set regardless of which key function is passed; it never pre-filters to what the caller actually wants grouped. The pre-existing "By stream" section already knew this and skips its own `"(unknown)"` bucket when printing (`if(k==="(unknown)")continue`); the new "By agent type" section, shipped in v0.68.214, copied the aggregation call but not that guard, so every non-subagent-typed row in the entire dataset (every orchestrator row, every legacy row) landed in one misleading line. Fixed with the same one-line guard. New regression test in `tests/commands/test-cost-report.sh` pins a large untyped orchestrator row ($1000) plus a small typed subagent row ($2) and asserts the section shows only the $2, never the $1000, and never prints a bare `(unknown)` line — mutation-tested by hand (removing the guard in a scratch copy reproduces the exact `$1000.0000  (unknown)` leak). Lesson: a synthetic fixture proving the code *can* produce the right number is not the same as running it against real data and reading the actual output — this bug had 4/4 green tests and would have shipped invisibly if the report hadn't actually been run.
