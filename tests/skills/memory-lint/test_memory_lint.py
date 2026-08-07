@@ -45,6 +45,66 @@ def test_unrelated_dangling_link_gets_no_suggestion():
         assert "did you mean" not in dangling[0], f"expected no suggestion, got: {dangling[0]}"
 
 
+def test_markdown_style_dangling_link_is_detected():
+    # Regression test for the 2026-08-07 gap: DANGLING used to only scan
+    # [[wikilinks]], so a same-store markdown-style [text](file.md) link to a
+    # nonexistent memory was invisible to the detector.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "baz.md"), "w") as f:
+            f.write("---\nname: baz\n---\nsee [ghost](ghost-topic.md) for detail\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [baz](baz.md) — x\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _ = memory_lint.detector_findings(state)
+        dangling = [f for f in findings if "DANGLING" in f and "ghost-topic" in f]
+        assert len(dangling) == 1, f"expected a dangling finding for the markdown-style link, got {findings}"
+
+
+def test_markdown_style_link_in_backticks_is_not_a_real_reference():
+    # Regression test: prose can quote link syntax as an example of a bug found
+    # in another repo (confirmed live in plugin-install-portability.md, which
+    # cites `[reference.md](reference.md)` as a fixed-elsewhere example). That
+    # must not be treated as a same-store cross-link.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "baz.md"), "w") as f:
+            f.write("---\nname: baz\n---\nsaw `[reference.md](reference.md)` used elsewhere\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [baz](baz.md) — x\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _ = memory_lint.detector_findings(state)
+        assert not any("reference" in f for f in findings), (
+            f"backtick-quoted link syntax must not be scanned as a real reference: {findings}")
+
+
+def test_markdown_style_link_with_path_is_treated_as_external_not_dangling():
+    # This store's memories live flat (no subdirectories except _archive/), so
+    # a target containing "/" is a citation into another repo, not a same-store
+    # link — confirmed live in plugin-install-portability.md's
+    # ../../docs/reference/reasoning-models.md citation.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "baz.md"), "w") as f:
+            f.write("---\nname: baz\n---\nsee [x](../../docs/reference/reasoning-models.md)\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [baz](baz.md) — x\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _ = memory_lint.detector_findings(state)
+        assert not any("reasoning-models" in f for f in findings), (
+            f"a path-qualified markdown target must not be scanned as a same-store link: {findings}")
+
+
+def test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan():
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "foo_bar.md"), "w") as f:
+            f.write("---\nname: foo-bar\n---\nsome memory content\n")
+        with open(os.path.join(d, "baz.md"), "w") as f:
+            f.write("---\nname: baz\n---\nsee [foo bar](foo_bar.md) for detail\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [baz](baz.md) — x\n- [foo_bar](foo_bar.md) — y\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _ = memory_lint.detector_findings(state)
+        assert not any("DANGLING" in f or "ORPHAN" in f for f in findings), findings
+
+
 def _write_memory(d, filename, type_, description, body):
     with open(os.path.join(d, filename), "w") as f:
         f.write(f'---\nname: {filename[:-3]}\ndescription: "{description}"\n'
@@ -133,6 +193,10 @@ def test_contradiction_candidates_shared_link_is_context_not_an_independent_trig
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
+    test_markdown_style_dangling_link_is_detected()
+    test_markdown_style_link_in_backticks_is_not_a_real_reference()
+    test_markdown_style_link_with_path_is_treated_as_external_not_dangling()
+    test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan()
     test_template_compliance_flags_feedback_memory_missing_both_fields()
     test_contradiction_candidates_requires_matching_type()
     test_contradiction_candidates_pairs_high_overlap_same_type()

@@ -13,11 +13,16 @@ Usage:
   memory-lint.py [MEMORY_DIR] --json              # machine-readable output
 
 Detector checks (default mode):
-  - dangling [[links]]   — target resolves to no memory (by filename stem or name: slug);
-                            suggests a close-name match (difflib, cutoff 0.6) if one exists
-  - orphans              — a memory with no outbound and no inbound [[links]]
-  - index drift          — MEMORY.md pointer ↔ file, both directions
-  - load budget          — 200-line / 25KB cap on MEMORY.md
+  - dangling links       — [[wikilink]] or same-store markdown [text](file.md) target
+                            resolves to no memory (by filename stem or name: slug);
+                            suggests a close-name match (difflib, cutoff 0.6) if one exists.
+                            Code-span-masked first (backtick prose quoting link syntax as
+                            an example isn't a real cross-reference); a markdown target
+                            containing "/" is treated as an external-repo citation, not a
+                            same-store link, since memories live flat.
+  - orphans               — a memory with no outbound and no inbound links (either syntax)
+  - index drift           — MEMORY.md pointer ↔ file, both directions
+  - load budget           — 200-line / 25KB cap on MEMORY.md
 Exit code = finding count (0 = clean). Fails loud if MEMORY_DIR is missing.
 
 Staleness (advisory, printed separately — does NOT count toward exit code):
@@ -49,6 +54,8 @@ import time
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+)$")
 POINTER_RE = re.compile(r"\]\(([^)]+\.md)\)")  # markdown link ](file.md), not prose "(x.md)"
+FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
+INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 SUPERSEDED_RE = re.compile(r"\*\*SUPERSEDED[^*]*\*\*\s*by\s*\[\[([^\]]+)\]\]")
 POINTER_LINE_RE = re.compile(r"^- \[[^\]]+\]\(([^)]+\.md)\)(.*)$", re.MULTILINE)
 TYPE_RE = re.compile(r"(?m)^\s*type:\s*(\w+)")
@@ -90,6 +97,33 @@ def link_target(raw):
     return t[:-3] if t.endswith(".md") else t
 
 
+def strip_code_spans(text):
+    """Mask fenced/inline code spans before link-scanning body text.
+
+    A memory can legitimately quote link syntax as an example (prose describing
+    another repo's `[[link]]` or `[x](y.md)` bug), not a real cross-reference.
+    Confirmed live in this store twice: a backtick-wrapped `[[branching-model]]`
+    and a backtick-wrapped `[reference.md](reference.md)` describing a fix made
+    in a different repo. Length-preserving space substitution keeps offsets
+    stable for any future line-based tooling.
+    """
+    text = FENCED_CODE_RE.sub(lambda m: " " * len(m.group(0)), text)
+    return INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def md_link_target(raw):
+    """Markdown-link target → bare stem, or None if not a same-store cross-reference.
+
+    This store's memories live flat (no subdirectories except _archive/), so a
+    target containing "/" is a path into another repo (e.g. a doc cited as
+    prose), not a same-store link — treating it as one would misfire DANGLING
+    on legitimate external citations.
+    """
+    if "/" in raw:
+        return None
+    return raw[:-3] if raw.endswith(".md") else raw
+
+
 # ── Detector mode ─────────────────────────────────────────────────────────
 
 def collect_state(d):
@@ -104,7 +138,10 @@ def collect_state(d):
         txt = open(os.path.join(d, f), encoding="utf-8").read()
         m = NAME_RE.search(txt)
         slugs[f] = m.group(1).strip() if m else None
-        links_out[f] = [link_target(x) for x in WIKILINK.findall(txt)]
+        scan_txt = strip_code_spans(txt)
+        wiki_targets = [link_target(x) for x in WIKILINK.findall(scan_txt)]
+        md_targets = [t for t in (md_link_target(x) for x in POINTER_RE.findall(scan_txt)) if t]
+        links_out[f] = wiki_targets + md_targets
 
     slug_set = {v for v in slugs.values() if v}
     inbound = set()
@@ -143,7 +180,7 @@ def detector_findings(state):
             if t not in state["stems"] and t not in state["slug_set"]:
                 match = difflib.get_close_matches(t, candidates, n=1, cutoff=0.6)
                 hint = f" — did you mean [[{match[0]}]]?" if match else ""
-                findings.append(f"DANGLING: {f} → [[{t}]] (no such memory){hint}")
+                findings.append(f"DANGLING: {f} → {t} (no such memory){hint}")
 
     if not os.path.isfile(idx_path):
         findings.append("MISSING: MEMORY.md index not found")
@@ -153,7 +190,7 @@ def detector_findings(state):
             has_out = bool(links_out[f])
             has_in = (f[:-3] in inbound) or (slugs[f] in inbound)
             if f in referenced and not has_out and not has_in:
-                findings.append(f"ORPHAN: {f} (no [[links]] in or out)")
+                findings.append(f"ORPHAN: {f} (no links in or out)")
 
         # 3. index drift
         for f in files:
