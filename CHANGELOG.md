@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.219] — 2026-08-07
+
+Follow-up to v0.68.218: user asked to retry gap 1 (mid-draft self-check) and gap 3 (multiSelect
+half-boundary) with a narrower trigger, after both regressed the control scenario when bundled
+together in the v0.68.218 eval. This time each candidate was tested in isolation against a freshly
+re-run baseline (the current, already-fixed doctrine — v0.68.218's baseline predates the gap-2/gap-4
+clauses now live, so it wasn't a valid reference point anymore), plus a new harder scenario (S7)
+modeled more closely on the real 2026-07-02 incident's actual texture (4 options, most eliminated
+by explicit stated constraints, one survivor) since S1/S2 turned out too easy to discriminate
+anything in the first eval.
+
+Gap 3's narrower wording ("at exactly half, treat it the same as comparable: mark none") cleared
+the pre-declared bar cleanly: cross-trial consistency on the half-boundary scenario went 2/3→3/3,
+with all 3 trials landing on the intended treatment (mark nothing), and the control scenario's
+ask-rate held at 3/3 in both conditions — no regression. Shipped as written.
+
+Gap 1's narrower wording ("if every option but one is ruled out by a fact you already have ...
+the survivor is the default; a trade-off where more than one option still has a real, undismissed
+advantage isn't this case") eliminated the v0.68.218 regression — the control scenario's ask-rate
+held at 3/3 in both conditions this time, unlike the bundled version which dropped it to 2/3 — but
+still produced zero discrimination from baseline on the 3 scenarios built to test it (S1/S2/S7 all
+sat at 3/3 ceiling in both conditions, even the new harder S7). Working theory, stated plainly as a
+theory: the real incident's failure mode is catching yourself mid-draft after already starting to
+build a menu, a state a stateless single-turn eval can't reproduce since the model decides fresh
+each time. Shipped anyway on "safe (no regression, unlike last time) + real incident history (2
+confirmed recurrences)" grounds, explicitly not on "this eval proved it works" grounds — the user
+was presented both readings and chose to ship both. Full round-2 methodology, both candidate
+wordings, 18 raw generation transcripts, and the blind grading transcript are appended to
+`docs/research/askuserquestion-recommended-criterion-eval-2026-08-07.md`.
+
 ## [0.68.218] — 2026-08-07
 
 User asked for an intensive audit of the `(Recommended)`-marker doctrine in
