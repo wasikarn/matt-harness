@@ -2,7 +2,9 @@
 """Self-check for the dangling-link did-you-mean suggestion. Run directly: python3 test_memory_lint.py"""
 import importlib.util
 import os
+import subprocess
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # SUT (memory-lint.py) stayed at skills/memory-lint/scripts/ per the no-move
@@ -170,6 +172,25 @@ def _write_memory(d, filename, type_, description, body):
                  f"metadata:\n  type: {type_}\n---\n{body}\n")
 
 
+def _git(d, *args):
+    subprocess.run(["git", "-C", d, *args], check=True, capture_output=True, text=True)
+
+
+def _init_git_repo(d):
+    # Deterministic, non-interactive commits for a disposable test fixture repo —
+    # unrelated to the "don't bypass the user's real signing policy" rule, which
+    # governs this repo's own history, not a temp dir created and discarded by a test.
+    _git(d, "init", "-q")
+    _git(d, "config", "user.email", "test@example.com")
+    _git(d, "config", "user.name", "Test")
+    _git(d, "config", "commit.gpgsign", "false")
+
+
+def _git_commit(d, message):
+    _git(d, "add", "-A")
+    _git(d, "commit", "-q", "-m", message)
+
+
 def test_template_compliance_flags_feedback_memory_missing_both_fields():
     with tempfile.TemporaryDirectory() as d:
         _write_memory(d, "no-template.md", "feedback", "a lesson",
@@ -249,6 +270,100 @@ def test_contradiction_candidates_shared_link_is_context_not_an_independent_trig
             f"a shared link alone must not surface a pair with near-zero token overlap: {candidates}")
 
 
+def test_classify_unindexed_confirms_git_fold():
+    # Regression fixture for the corrected Adopt-1 design (see
+    # docs/research/claude-mem-architecture-study-2026-08-07.md): a file that
+    # WAS pointed to and got deliberately removed by a fold commit must be
+    # classified folded-confirmed, never treated as a candidate to re-add.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        _write_memory(d, "folded-target.md", "project", "a finished audit", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [folded-target](folded-target.md) — a finished audit\n")
+        _git_commit(d, "add folded-target pointer")
+
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")  # fold: pointer removed, backing file kept
+        _git_commit(d, "fold rule: drop stale index entry")
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "folded-target.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "folded-confirmed", match[0]
+        assert match[0]["commit"] and match[0]["commit"]["sha"], match[0]
+
+
+def test_classify_unindexed_flags_never_indexed_after_baseline():
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")  # baseline commit predates the target file entirely
+        _git_commit(d, "baseline")
+
+        _write_memory(d, "new-target.md", "project", "written after baseline", "n/a")
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "new-target.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "never-indexed", match[0]
+        assert match[0]["commit"] is None
+
+
+def test_classify_unindexed_flags_ambiguous_when_pre_baseline():
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "old-target.md", "project", "written before the repo existed", "n/a")
+
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "baseline")  # baseline snapshot includes old-target.md
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "old-target.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "ambiguous-pre-baseline", match[0]
+
+
+def test_classify_unindexed_pre_baseline_file_edited_later_stays_ambiguous():
+    # Regression test for a bug caught by advisor() before shipping: an
+    # mtime-based check (mtime >= baseline_epoch) would misclassify a
+    # pre-baseline file as never-indexed the first time anyone edits it after
+    # tracking starts, since mtime resets on every save. Tree membership at
+    # the baseline commit is the correct signal — it's a fixed fact about
+    # history, immune to later edits.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "old-but-edited.md", "project", "existed before tracking started", "n/a")
+
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "baseline")  # baseline snapshot includes old-but-edited.md
+
+        future = time.time() + 10_000
+        os.utime(os.path.join(d, "old-but-edited.md"), (future, future))
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "old-but-edited.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "ambiguous-pre-baseline", match[0]
+
+
+def test_classify_unindexed_handles_no_git_repo():
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "plain-target.md", "project", "no git here", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "plain-target.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "no-git-history", match[0]
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -262,4 +377,9 @@ if __name__ == "__main__":
     test_contradiction_candidates_requires_matching_type()
     test_contradiction_candidates_pairs_high_overlap_same_type()
     test_contradiction_candidates_shared_link_is_context_not_an_independent_trigger()
+    test_classify_unindexed_confirms_git_fold()
+    test_classify_unindexed_flags_never_indexed_after_baseline()
+    test_classify_unindexed_flags_ambiguous_when_pre_baseline()
+    test_classify_unindexed_pre_baseline_file_edited_later_stays_ambiguous()
+    test_classify_unindexed_handles_no_git_repo()
     print("OK")

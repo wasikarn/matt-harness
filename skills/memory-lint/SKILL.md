@@ -26,6 +26,9 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --auto-archive --yes
 # Contradiction pre-filter (manual, one-off — see "Contradiction pre-filter" below)
 python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --find-contradictions
 python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --find-contradictions --min-overlap 0.5
+
+# UNINDEXED fold-vs-forgotten triage (manual, read-only — see below)
+python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --classify-unindexed
 ```
 
 Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean. Two advisory sections print below the findings and never affect the exit code: staleness (mtime-based — tune with `--stale-days N`, default 90) and template compliance (`**Why:**`/`**How to apply:**` coverage for `feedback`/`project` memories) — see Checks table for both.
@@ -37,6 +40,19 @@ A deterministic, manual-only candidate surfacer — never a scheduled job, never
 **Why never a trigger on its own:** the first hand-run against this store (2026-08-07) used "shared link OR high overlap" and returned 296 candidates on 178 files — almost all of them pairs that merely cite one common well-known memory (e.g. `verify-adversarially-before-nothing`), not anything resembling a contradiction. Token-overlap alone, same threshold: 4 candidates. That run's own spot-check found 0/4 were real contradictions (two were a SUPERSEDED feature and its own already-cross-linked history note; two were sequential phase-log entries of one project) — a negative result, and a useful one: it confirms the store had no detectable internal contradiction at that point, and it's the evidence this stays a manual, occasional tool rather than something scheduled. Per Article 1 (`docs/research/agent-memory-engineering-2026-08-07.md`): "a memory system that runs against three notes will hallucinate connections that are not there and train you to ignore it, so prove each pass by hand, then automate" — this only earns a schedule if a future hand-run's precision says otherwise.
 
 **Never auto-resolves.** Two memories can both be right in different contexts — every candidate is for a human (or a separately-dispatched, adversarial LLM pass) to read and judge. An extraction step that both writes memories and unilaterally decides which one is now false is the same maker-grades-itself failure this harness already rejects everywhere else (CLAUDE.md's operating model: an LLM can't grade its own output).
+
+## UNINDEXED fold-vs-forgotten triage (`--classify-unindexed`)
+
+UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one label: an authoring oversight, or the fold rule's own documented correct end-state ("merge/drop stale entries... just stop indexing it, never delete the backing file"). Blind-appending every UNINDEXED file back into MEMORY.md would silently undo real prior fold decisions. This mode classifies instead of auto-fixing, using git history on MEMORY.md — see `docs/research/claude-mem-architecture-study-2026-08-07.md` (Adopt-1) for the full design rationale, including the first draft (blind auto-append) that adversarial review caught before it shipped.
+
+| Bucket | Meaning | Action |
+|---|---|---|
+| **folded-confirmed** | `git log -S<filename> -- MEMORY.md` finds a commit where this file's occurrence count changed | Already deliberately removed — NOT a candidate to re-add |
+| **never-indexed** | File's mtime is after the memory dir's first git commit (its whole life is inside tracked history) and no fold commit was found | Real candidate to add |
+| **ambiguous-pre-baseline** | File predates the memory dir's first commit — git has no opinion either way | Needs a human to read the content |
+| **no-git-history** | Memory dir isn't a git repo (or has 0 commits) | Same ambiguity as ambiguous-pre-baseline, for everything |
+
+Live-run confirmed 2026-08-07 against the real store (69 UNINDEXED at the time): 27 folded-confirmed (all citing the same fold-rule compaction commit, `ce2c21f`), 0 never-indexed, 42 ambiguous-pre-baseline (the memory dir's git tracking only started 2026-08-07 — see `docs/research/claude-mem-architecture-study-2026-08-07.md`, Adopt-1 — so most of the existing backlog predates it). Read-only — never appends anything to MEMORY.md.
 
 ## Action mode (`--auto-archive`)
 
@@ -78,6 +94,7 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 | **Staleness** *(advisory only)* | A memory file's mtime past `--stale-days` (default 90) — surfaced for a human to re-check, not a defect; excluded if already marked `**SUPERSEDED**`. Doesn't count toward exit code. |
 | **Template compliance** *(advisory only)* | `**Why:**`/`**How to apply:**` coverage for `type: feedback`/`type: project` memories — the fields that separate a fact/skill from a raw log line. Reports a count + worst-offender sample; never gates (a presence-only check has twice trained authors to paste filler elsewhere in this fleet — visibility only). |
 | **Contradiction candidates** *(manual, `--find-contradictions` only)* | Same-`type:` pairs above a token-overlap threshold — a pre-filter for human review, never a verdict and never scheduled. See "Contradiction pre-filter" above. |
+| **UNINDEXED triage** *(manual, `--classify-unindexed` only)* | Splits UNINDEXED findings into folded-confirmed / never-indexed / ambiguous-pre-baseline / no-git-history using git history on MEMORY.md — never auto-appends. See "UNINDEXED fold-vs-forgotten triage" above. |
 
 mtime is a proxy for "untouched," not "unverified" — editing a file resets the clock even if the edit didn't re-check the underlying claim, and a file can be genuinely still-true well past the threshold. Claude Code 2.1.214 added a native `modified:` frontmatter timestamp (already populated on memories in this store), but it doesn't close this gap — it's stamped on any edit, the same "touched" signal as mtime, not a `last_verified` field. kbg still has no per-memory `last_verified` field distinct from "last edited" (retrofitting one means migrating the whole store — not worth it for a lint-surface add-on); mtime (or the now-native `modified:` field, equivalent for this purpose) remains the cheapest signal available without a schema change. Confirmed proven need, not speculative: this session hit repeated real staleness incidents (`disable-model-invocation-criterion` drift, fleet-count drift, folded version counts going stale) that a check like this would have surfaced for review.
 

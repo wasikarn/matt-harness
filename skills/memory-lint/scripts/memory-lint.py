@@ -11,6 +11,7 @@ Usage:
   memory-lint.py [MEMORY_DIR] --auto-archive --dry-run
   memory-lint.py [MEMORY_DIR] --auto-archive --yes  # apply (no confirm prompt)
   memory-lint.py [MEMORY_DIR] --json              # machine-readable output
+  memory-lint.py [MEMORY_DIR] --classify-unindexed  # fold-vs-forgotten triage, see below
 
 Detector checks (default mode):
   - dangling links       — [[wikilink]] or same-store markdown [text](file.md) target
@@ -32,6 +33,30 @@ Staleness (advisory, printed separately — does NOT count toward exit code):
     --stale-days is surfaced for a human to re-check, not treated as a defect —
     an old memory can still be true. Files already marked **SUPERSEDED** in
     MEMORY.md are excluded (already flagged through a different signal).
+
+Fold-vs-forgotten triage (--classify-unindexed, manual, read-only):
+  UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one label: an
+  authoring oversight, or the fold rule's own documented correct end-state ("stop indexing it,
+  don't delete it"). Blind-appending every UNINDEXED file back into MEMORY.md would silently
+  undo real prior fold decisions. This mode classifies instead of fixing, using git history on
+  MEMORY.md (see docs/research/claude-mem-architecture-study-2026-08-07.md, Adopt-1 — the first
+  draft of this feature proposed the blind-append version and was caught by adversarial review
+  before shipping):
+    folded-confirmed        — `git log -S<filename> -- MEMORY.md` finds a commit where this
+                               file's occurrence count changed. NOT a candidate to re-add.
+    never-indexed            — file is absent from the tree at the memory dir's first commit
+                               (its whole life is inside tracked history) and no fold commit was
+                               found — a real candidate to add. Tree membership at that commit,
+                               not mtime — mtime resets on every edit and would misclassify a
+                               fixed pre-baseline file back to "never-indexed" the next time
+                               anyone touches it.
+    ambiguous-pre-baseline   — file is present in the tree at the memory dir's first commit, so
+                               it predates tracking; git has no opinion either way (a pre-baseline
+                               fold looks identical to "never indexed" from git alone). Needs a
+                               human to read the content.
+    no-git-history           — the memory dir isn't a git repo (or has 0 commits) — same
+                               ambiguity as ambiguous-pre-baseline, for every file, always.
+  Never auto-appends anything to MEMORY.md — output is a classified list for a human to triage.
 
 Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memory_trim_session_2026_06_04.md):
   Class A — stale-superseded:   MEMORY.md pointer has **SUPERSEDED** marker + topic has 0 surviving inbound
@@ -56,6 +81,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -382,6 +408,175 @@ def run_find_contradictions(state, as_json, min_overlap):
     for c in candidates:
         link_note = f", shared links: {', '.join(c['shared_links'])}" if c["shared_links"] else ""
         print(f"  [{c['type']}] {c['a']}  <->  {c['b']}  (overlap: {c['token_overlap']}{link_note})")
+    return 0
+
+
+def _git_first_commit(d):
+    """(sha, epoch) of the memory dir's first commit, or (None, None) if it isn't
+    a git repo (or has 0 commits)."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", d, "log", "--reverse", "--format=%H|%ct"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None, None
+    if out.returncode != 0:
+        return None, None
+    lines = out.stdout.strip().splitlines()
+    if not lines:
+        return None, None
+    sha, _, epoch = lines[0].partition("|")
+    return sha, int(epoch)
+
+
+def _existed_at_commit(d, sha, filename):
+    """True if `filename` was present in the tree at commit `sha`.
+
+    This, not mtime, is the right "was this file's whole life inside tracked
+    history" test — mtime resets on every edit, so a pre-baseline file that
+    gets touched later would otherwise flip from ambiguous to (wrongly)
+    never-indexed the moment anyone edits it. Tree membership at the baseline
+    commit is a fixed fact about history, immune to later edits.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", d, "ls-tree", "--name-only", sha, "--", filename],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return out.returncode == 0 and bool(out.stdout.strip())
+
+
+def _git_fold_commit(d, filename):
+    """Most recent commit where `filename`'s occurrence count changed inside
+    MEMORY.md's tracked history (git log -S pickaxe search, scoped to MEMORY.md
+    only — unscoped would false-positive on the filename merely being *mentioned*
+    in another memory's prose, which isn't the same as it having been a pointer).
+    Returns {"sha": ..., "subject": ...} or None."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", d, "log", "-S", filename, "--format=%h|%s", "--", "MEMORY.md"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if out.returncode != 0 or not out.stdout.strip():
+        return None
+    sha, _, subject = out.stdout.strip().splitlines()[0].partition("|")
+    return {"sha": sha, "subject": subject}
+
+
+def classify_unindexed(state):
+    """Bucket every UNINDEXED file (see detector_findings's index-drift check)
+    into fold-vs-forgotten instead of treating them all the same.
+
+    UNINDEXED is two different states sharing one label: a memory that was
+    never pointed to (an authoring oversight) and a memory that WAS pointed to
+    and got deliberately removed by a prior fold pass (MEMORY.md's own fold
+    rule: "merge/drop stale entries... never delete the backing .md unless
+    genuinely dead — just stop indexing it"). A blind auto-append would
+    silently undo real prior fold decisions — see
+    docs/research/claude-mem-architecture-study-2026-08-07.md, Adopt-1.
+
+    Buckets, in order of confidence:
+      folded-confirmed        — git log -S (scoped to MEMORY.md) finds a commit
+                                 where this filename's occurrence count changed.
+                                 NOT a candidate to re-add — a prior fold already
+                                 made this call.
+      never-indexed            — file is ABSENT from the tree at the memory
+                                 dir's first commit (didn't exist yet when
+                                 tracking started), and no fold commit was
+                                 found — its whole life is inside git history
+                                 and git never saw a pointer. Real candidate.
+      ambiguous-pre-baseline   — file is PRESENT in the tree at the first
+                                 commit, so it predates tracking and git has no
+                                 opinion either way (a pre-baseline fold looks
+                                 identical to "never indexed" from git alone).
+                                 Needs a human to read the content. This is a
+                                 tree-membership check, not an mtime check — an
+                                 mtime-based version would misclassify a
+                                 pre-baseline file as never-indexed the first
+                                 time anyone edits it, since mtime resets on
+                                 every save but tree membership at a past
+                                 commit never changes.
+      no-git-history           — the memory dir isn't a git repo at all (or has
+                                 0 commits) — same ambiguity as above, always.
+    """
+    d = state["d"]
+    referenced = state["referenced"]
+    unindexed = sorted(f for f in state["files"] if f not in referenced)
+
+    baseline_sha, _baseline_epoch = _git_first_commit(d)
+    results = []
+    for f in unindexed:
+        txt = open(os.path.join(d, f), encoding="utf-8").read()
+        frontmatter = txt.split("---", 2)[1] if txt.startswith("---") else ""
+        dm = DESCRIPTION_RE.search(frontmatter)
+        description = dm.group(1) if dm else None
+
+        if baseline_sha is None:
+            results.append({"file": f, "bucket": "no-git-history", "commit": None, "description": description})
+            continue
+
+        fold = _git_fold_commit(d, f)
+        if fold:
+            results.append({"file": f, "bucket": "folded-confirmed", "commit": fold, "description": description})
+            continue
+
+        bucket = "ambiguous-pre-baseline" if _existed_at_commit(d, baseline_sha, f) else "never-indexed"
+        results.append({"file": f, "bucket": bucket, "commit": None, "description": description})
+    return results
+
+
+def run_classify_unindexed(state, as_json):
+    results = classify_unindexed(state)
+    order = ["folded-confirmed", "never-indexed", "ambiguous-pre-baseline", "no-git-history"]
+    buckets = {b: [r for r in results if r["bucket"] == b] for b in order}
+
+    if as_json:
+        print(json.dumps({
+            "mode": "classify-unindexed",
+            "memory_dir": state["d"],
+            "total_unindexed": len(results),
+            "buckets": buckets,
+        }, indent=2))
+        return 0
+
+    print(f"=== memory-lint --classify-unindexed: {state['d']} ===")
+    print(f"total UNINDEXED: {len(results)}")
+    print("Classification only — never auto-appends. A blind re-add would undo real prior")
+    print("fold decisions; see docs/research/claude-mem-architecture-study-2026-08-07.md.")
+    print()
+
+    print(f"folded-confirmed ({len(buckets['folded-confirmed'])}) — already deliberately removed, NOT a candidate to re-add:")
+    for r in buckets["folded-confirmed"]:
+        print(f"  {r['file']}  (commit {r['commit']['sha']}: {r['commit']['subject']})")
+    if not buckets["folded-confirmed"]:
+        print("  none")
+    print()
+
+    print(f"never-indexed ({len(buckets['never-indexed'])}) — created after the git baseline, no fold found; real candidates to add:")
+    for r in buckets["never-indexed"]:
+        desc = f" — {r['description']}" if r["description"] else ""
+        print(f"  {r['file']}{desc}")
+    if not buckets["never-indexed"]:
+        print("  none")
+    print()
+
+    print(f"ambiguous-pre-baseline ({len(buckets['ambiguous-pre-baseline'])}) — predates git tracking, can't tell fold vs forgotten; needs manual read:")
+    for r in buckets["ambiguous-pre-baseline"]:
+        desc = f" — {r['description']}" if r["description"] else ""
+        print(f"  {r['file']}{desc}")
+    if not buckets["ambiguous-pre-baseline"]:
+        print("  none")
+
+    if buckets["no-git-history"]:
+        print()
+        print(f"no-git-history ({len(buckets['no-git-history'])}) — memory dir isn't a git repo (or has 0 commits); same ambiguity as ambiguous-pre-baseline for all of these:")
+        for r in buckets["no-git-history"]:
+            print(f"  {r['file']}")
     return 0
 
 
@@ -947,6 +1142,10 @@ def main():
                          "Never auto-resolves.")
     ap.add_argument("--min-overlap", type=float, default=0.35,
                     help="Token-overlap threshold for --find-contradictions (default: 0.35)")
+    ap.add_argument("--classify-unindexed", action="store_true",
+                    help="Classify UNINDEXED findings as folded-confirmed / never-indexed / "
+                         "ambiguous-pre-baseline using git history on MEMORY.md. "
+                         "Read-only — never appends anything.")
     args = ap.parse_args()
 
     d = memory_dir(args.memory_dir)
@@ -956,6 +1155,8 @@ def main():
 
     if args.find_contradictions:
         sys.exit(run_find_contradictions(state, args.json, args.min_overlap))
+    elif args.classify_unindexed:
+        sys.exit(run_classify_unindexed(state, args.json))
     elif args.auto_archive:
         sys.exit(run_action_mode(state, args))
     else:
