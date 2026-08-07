@@ -48,11 +48,15 @@ UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one
 | Bucket | Meaning | Action |
 |---|---|---|
 | **folded-confirmed** | `git log -S<filename> -- MEMORY.md` finds a commit where this file's occurrence count changed | Already deliberately removed — NOT a candidate to re-add |
-| **never-indexed** | File's mtime is after the memory dir's first git commit (its whole life is inside tracked history) and no fold commit was found | Real candidate to add |
-| **ambiguous-pre-baseline** | File predates the memory dir's first commit — git has no opinion either way | Needs a human to read the content |
+| **never-indexed** | File is absent from the tree at the memory dir's first commit (its whole life is inside tracked history) and no fold commit was found | Real candidate to add |
+| **ambiguous-pre-baseline** | File is present in the tree at the memory dir's first commit — it predates tracking, so git has no opinion either way | Needs a human to read the content |
 | **no-git-history** | Memory dir isn't a git repo (or has 0 commits) | Same ambiguity as ambiguous-pre-baseline, for everything |
 
+`never-indexed`/`ambiguous-pre-baseline` are decided by tree membership at the first commit, not file mtime — an mtime-based version was caught by `advisor()` before shipping (v0.68.228): mtime resets on every edit, so it would misclassify an already-correct pre-baseline file as a false "add this" candidate the moment anyone touched it. Tree membership at a past commit is a fixed historical fact, immune to later edits.
+
 Live-run confirmed 2026-08-07 against the real store (69 UNINDEXED at the time): 27 folded-confirmed (all citing the same fold-rule compaction commit, `ce2c21f`), 0 never-indexed, 42 ambiguous-pre-baseline (the memory dir's git tracking only started 2026-08-07 — see `docs/research/claude-mem-architecture-study-2026-08-07.md`, Adopt-1 — so most of the existing backlog predates it). Read-only — never appends anything to MEMORY.md.
+
+**Wired into the SessionStart nudge (v0.68.228).** `hooks/session/memory-health-nudge.sh` already surfaces raw UNINDEXED findings whenever the store changes; it now additionally runs `--classify-unindexed` (only when the fired findings include an UNINDEXED entry, to skip the extra `git log -S` scan otherwise) and adds one line — "N of the UNINDEXED file(s) above look like real candidates" — only when `never-indexed` is nonzero. Silent when every UNINDEXED finding is folded-confirmed or ambiguous-pre-baseline, matching the "silent when clean" convention every other nudge in this fleet follows. Tested in `tests/hooks/test-memory-health-nudge.sh`.
 
 ## Action mode (`--auto-archive`)
 
@@ -100,7 +104,7 @@ mtime is a proxy for "untouched," not "unverified" — editing a file resets the
 
 `[[ ]]` is memory↔memory only. Reference skills/doctrine (`decommission`, METHODOLOGY) in prose with backticks, not `[[links]]` — those resolve to no memory and surface as dangling.
 
-**Author links by filename stem** (the file name minus `.md`), not the `name:` slug. A link resolves by filename-stem OR `name:`, but `name:` fields are inconsistent storewide (hyphen vs underscore, prefixed or not — 81/110 differed from their filename as of 2026-06-08), so the filename stem is the one identifier guaranteed to resolve. The SessionStart `memory-health-nudge` hook (`hooks/session/memory-health-nudge.sh`) surfaces danglers each session — advisory, silent when clean. It replaces the earlier `memory-lint-check` hook (`hooks/maintenance/memory-lint-check.sh`), deleted in the 2026-06-27 "reset: rebuild from scratch" (`c452102`) and undocumented-as-gone for ~6 weeks; see `docs/research/agent-memory-engineering-2026-08-07.md` proposal A1 for the incident writeup and rebuild rationale.
+**Author links by filename stem** (the file name minus `.md`), not the `name:` slug. A link resolves by filename-stem OR `name:`, but `name:` fields are inconsistent storewide (hyphen vs underscore, prefixed or not — 81/110 differed from their filename as of 2026-06-08), so the filename stem is the one identifier guaranteed to resolve. The SessionStart `memory-health-nudge` hook (`hooks/session/memory-health-nudge.sh`) surfaces danglers each session — advisory, silent when clean — and also runs the UNINDEXED fold-vs-forgotten triage below when applicable. It replaces the earlier `memory-lint-check` hook (`hooks/maintenance/memory-lint-check.sh`), deleted in the 2026-06-27 "reset: rebuild from scratch" (`c452102`) and undocumented-as-gone for ~6 weeks; see `docs/research/agent-memory-engineering-2026-08-07.md` proposal A1 for the incident writeup and rebuild rationale.
 
 ## METHODOLOGY
 

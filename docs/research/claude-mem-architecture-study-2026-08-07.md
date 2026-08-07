@@ -147,6 +147,16 @@ right output is a classified list for a human to triage," not an automated fix a
 new work is the `git log -S` classification pass plus a hand-run validation, in the same shape as
 A1-A5.
 
+**Wired into the SessionStart nudge — SHIPPED v0.68.228.** `hooks/session/memory-health-nudge.sh`
+now runs `--classify-unindexed` whenever the fired findings include a raw UNINDEXED entry, and adds
+one line only when `never-indexed` is nonzero — silent otherwise, matching every other nudge in this
+fleet. Ships with a second `advisor()` catch: the first implementation classified `never-indexed` vs
+`ambiguous-pre-baseline` by file mtime (`mtime >= baseline_epoch`), which resets on every edit — it
+would have flipped an already-correct ambiguous-pre-baseline file to a false "add this" candidate
+the next time anyone touched it, the exact mistake this whole feature exists to prevent. Fixed by
+checking tree membership at the memory dir's first commit instead (`git ls-tree --name-only
+<baseline-sha> -- <filename>`), which is a fixed fact about history and immune to later edits.
+
 ### Adopt-2 (LOW confidence, Tier B): explicit low-value-event skip-list
 
 claude-mem hard-codes a `SKIP_TOOLS` blocklist (`TodoWrite`, `AskUserQuestion`,

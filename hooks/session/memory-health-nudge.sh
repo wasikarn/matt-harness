@@ -61,4 +61,20 @@ printf '%s\n' \
   "$OUT" \
   "Run \`kbg:memory-lint\` for detail, or fix inline. Advisory only — not a gate."
 
+# UNINDEXED findings conflate two states: an authoring oversight vs. the fold
+# rule's own correct end-state (pointer removed, file kept — see
+# skills/memory-lint/SKILL.md "UNINDEXED fold-vs-forgotten triage"). Only pay
+# for the extra git-history scan (one `git log -S` per UNINDEXED file) when
+# the findings above actually include one, and only speak up when there's a
+# genuinely new candidate — folded-confirmed / ambiguous-pre-baseline files
+# need no action and would just be noise every time the store changes.
+if printf '%s' "$OUT" | command grep -q 'UNINDEXED:'; then
+  CLASSIFY=$(python3 "$LINT" --classify-unindexed 2>/dev/null) || true
+  NEVER_COUNT=$(printf '%s' "$CLASSIFY" | command grep -oE '^never-indexed \([0-9]+\)' | command grep -oE '[0-9]+')
+  if [ -n "$NEVER_COUNT" ] && [ "$NEVER_COUNT" -gt 0 ]; then
+    printf '%s\n' \
+      "[memory-lint] UNINDEXED triage: $NEVER_COUNT of the UNINDEXED file(s) above look like real candidates (never-indexed, not a prior fold). Run \`memory-lint.py --classify-unindexed\` for the full breakdown before adding anything."
+  fi
+fi
+
 exit 0

@@ -79,7 +79,7 @@ run_audit() {
 # Graceful-skip if absent.
 run_hook_tests() {
   local rc=0 t
-  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh" "$ROOT/tests/commands/test-cost-report.sh"; do
+  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/hooks/test-memory-health-nudge.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh" "$ROOT/tests/commands/test-cost-report.sh"; do
     [ -f "$t" ] || continue
     bash "$t" 2>&1 || rc=1
   done

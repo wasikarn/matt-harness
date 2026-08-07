@@ -33,7 +33,7 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/memory-health-nudge.sh"]
           }
         ],
-        "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset"
+        "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start, plus an UNINDEXED fold-vs-forgotten triage when applicable — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset"
       }
     ],
     "UserPromptSubmit": [
