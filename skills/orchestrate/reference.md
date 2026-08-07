@@ -80,7 +80,14 @@ tool has no work-list: each dispatch is one sequential, human-visible tool call,
 this rule guards against (an LLM-sized worklist silently overshooting before a human ever sees it)
 structurally can't happen when every dispatch is its own visible call. "You are the clamp" on that
 path means the operator sees and can stop each dispatch, not that the cap is unenforced — scoped
-to an attentive operator, not a rubber-stamped batch approval.
+to an attentive operator, not a rubber-stamped batch approval. **That scoped gap used to have a
+thin platform-side backstop: Claude Code 2.1.212 added a 200-subagent-per-session cap (Anthropic's
+own changelog — this repo's incident record predates that cap and never relied on it). Confirmed
+2026-08-07 against `code.claude.com/docs/en/sub-agents`, that cap was removed in 2.1.224 and its
+override var is no longer documented — a rubber-stamped batch on the Agent tool can now run
+further before hitting any platform ceiling (the 20-concurrent cap still rate-limits, it just
+doesn't total-limit). The hard cap of 5 plus Step 4's gate is the only thing standing there now,
+not one layer of two.**
 
 **This is doctrine, not preference (Workflow tool).** The code-level clamp isn't a style choice —
 without it as a hard number in code, the next Workflow author writes the same soft "don't
