@@ -50,6 +50,22 @@ These agents are invoked directly by a skill body, not by the user via `kbg:orch
 
 - `task-prep-checker` — Fresh-context verifier for `kbg:task-prep`. Grades an assembled task prompt against the 9-field handoff template (`docs/reference/task-handoff-template.md`) and runs the golden-rule colleague test, so the skill that assembled the prompt never grades its own work. Invoked by `skills/task-prep/SKILL.md` Step 9. Read-only (Read/Glob/Grep); returns a structured `ready|gaps` verdict per `agents/task-prep-checker.md`.
 
+### Full triage example
+
+Supplementary detail for `SKILL.md § Example`.
+
+Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants a signups CSV; should we move to pnpm; a contractor asked about a dark-mode toggle, no rush"
+
+| Task | Quadrant | Route | Agent | Done-when | Status |
+|---|---|---|---|---|---|
+| prod 500s | Q1 urgent + important, specialized | sequential: Builder fixes → Validator confirms | `build-error-resolver`/`code-implementer` (Builder, gated) → `code-reviewer` (Validator, ungated) | root cause fixed, committed, and validator confirms errors gone (verdict on record) | dispatched (pending confirm) |
+| auth refactor | Q2 + touches auth | sequential: `security-reviewer` first (security precedence) → then a write-capable agent (clarity-only scope) | `security-reviewer` → `code-implementer`/`refactor-cleaner` — both gated | security-reviewer verdict on record + refactor merged, tests green | deferred (confirm before each) |
+| signups CSV | Q3 urgent, not important | inline — trivial query; orchestrating costs more (guardrail) | lead (direct, no agent) | CSV delivered | dispatched |
+| pnpm move | Q2 important, not urgent | parallel: research via `mattpocock-skills:research` — compare + report, don't migrate | `mattpocock-skills:research` | trade-off brief filed (staged: the actual reversible-choice call routes to `kbg:decide` once the data exists, not back through this matrix) | deferred |
+| dark-mode toggle | Q4 neither urgent nor important | drop | none | n/a | dropped — mark `wontfix`; outside current roadmap |
+
+Every *write-capable* leg dispatched here (Builder/Fixer roles — holds Bash or Edit/Write) needs the single AskUserQuestion gate before the batch goes out; prod-500s' Validator confirm step (`code-reviewer`) is ungated per SKILL.md's Gating rules table and doesn't need a separate ask. CSV inline. Dark-mode dropped.
+
 ## Bounded fan-out — cap history & rationale
 
 Supplementary detail for `SKILL.md § Bounded fan-out — hard cap (F8.5)`.
@@ -146,8 +162,8 @@ Supplementary detail for `SKILL.md § Spawn-prompt template (gates F3)`.
 
 ## Validation chain — worked example
 
-Concrete 4-task chain for implementing `GET /health` (the compressed version lives in SKILL.md §
-Validation chain, "Worked example"; full spawn prompts below).
+Concrete 4-task chain for implementing `GET /health` — SKILL.md § Validation chain, "Worked
+example" summarizes the roles and gating and points here for the full spawn prompts below.
 
 **Task 1 — Builder: implement endpoint**
 
