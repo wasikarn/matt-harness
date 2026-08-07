@@ -68,7 +68,7 @@ mtime is a proxy for "untouched," not "unverified" — editing a file resets the
 
 `[[ ]]` is memory↔memory only. Reference skills/doctrine (`decommission`, METHODOLOGY) in prose with backticks, not `[[links]]` — those resolve to no memory and surface as dangling.
 
-**Author links by filename stem** (the file name minus `.md`), not the `name:` slug. A link resolves by filename-stem OR `name:`, but `name:` fields are inconsistent storewide (hyphen vs underscore, prefixed or not — 81/110 differed from their filename as of 2026-06-08), so the filename stem is the one identifier guaranteed to resolve. The SessionStart `memory-lint-check` hook surfaces danglers each session (advisory; silent when clean).
+**Author links by filename stem** (the file name minus `.md`), not the `name:` slug. A link resolves by filename-stem OR `name:`, but `name:` fields are inconsistent storewide (hyphen vs underscore, prefixed or not — 81/110 differed from their filename as of 2026-06-08), so the filename stem is the one identifier guaranteed to resolve. **No SessionStart hook currently surfaces this automatically.** `hooks/maintenance/memory-lint-check.sh` was deleted in the 2026-06-27 "reset: rebuild from scratch" (`c452102`) and never rebuilt — this line previously claimed it still ran each session, which was false (confirmed 2026-08-07: `hooks/hooks.json`'s SessionStart array carries only `command-root-anchor.sh` and `doctrine-bootstrap.sh`). Run this script by hand, or see `docs/research/agent-memory-engineering-2026-08-07.md` proposal A1 for the restore plan.
 
 ## METHODOLOGY
 

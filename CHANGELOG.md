@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.220] — 2026-08-07
+
+Fixed doc/reality drift in `skills/memory-lint/SKILL.md`: it claimed a SessionStart
+`memory-lint-check` hook surfaces dangling-link/orphan findings each session. That hook
+(`hooks/maintenance/memory-lint-check.sh`) was deleted in the 2026-06-27 "reset: rebuild from
+scratch" (`c452102`) and never rebuilt — confirmed via `hooks/hooks.json`'s current SessionStart
+array (only `command-root-anchor.sh` + `doctrine-bootstrap.sh`). Caught while researching
+`docs/research/agent-memory-engineering-2026-08-07.md` (a deep-drill comparison of two agent-memory
+articles against this repo's live memory store): running the detector by hand against the live
+178-entry store surfaced 87 findings (75 unindexed, 10 orphan, 2 dangling) that had accumulated
+silently with zero automated surfacing since the reset. The doc now states the true current state
+and points at that report's proposal A1 (restore-the-nudge plan) instead of asserting a safety net
+that hasn't existed for ~6 weeks.
+
 ## [0.68.219] — 2026-08-07
 
 Follow-up to v0.68.218: user asked to retry gap 1 (mid-draft self-check) and gap 3 (multiSelect
