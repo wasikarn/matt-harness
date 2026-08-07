@@ -5,6 +5,10 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.217] — 2026-08-07
+
+`hooks/stop/cost-tracker.sh` now only tracks `claude-*` models, at operator request — a follow-up to v0.68.216's Ollama removal, after confirming scope: this repo has no non-Claude-model *feature* left, but the tracker's model-agnostic pricing fallback was still writing real rows for non-Claude spend (a session can run other models via a proxy swapping `ANTHROPIC_BASE_URL`; production data showed real spend on `minimax-m3` ($8,746), `glm-5.2` ($8,329), `kimi-k2.7-code` ($981), `nemotron-3-super` ($0.42)). Added a `select(.message.model | test("^claude"))` filter before grouping in `emit_rows`, so non-Claude turns are dropped, not priced-at-a-guess or folded into an "unknown" row. TDD: 2 new cases in `tests/hooks/test-session-stop.sh` written failing first (mixed-vendor transcript keeps only the Claude row with its own tokens; an all-non-Claude transcript writes no row at all), then verified against a real production transcript mixing `claude-opus-4-8`/`claude-sonnet-5` with `minimax-m3` — only the Claude rows landed. `commands/cost-report.md` updated: new paragraph explaining the filter, and the 2026-07-28 verification citation (which named `glm-5.2` as one of 3 models in a real test transcript, predating this filter) annotated so it doesn't read as a claim the hook still tracks that model. Historical `costs.jsonl` rows for non-Claude models are untouched — this only changes what future stops write, not the operator's existing local metrics file.
+
 ## [0.68.216] — 2026-08-07
 
 Removed Ollama, at operator request. Two unrelated surfaces existed; both removed after confirming scope with the operator (both selected):

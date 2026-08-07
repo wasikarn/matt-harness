@@ -26,7 +26,9 @@ bug this fixed, below. The hook's per-model
 token computation was verified against a real 3-model production transcript
 (`claude-opus-4-8`, `claude-sonnet-5`, `glm-5.2`) by running the actual hook end-to-end
 and confirming each model's cost matched a hand computation from the raw token counts,
-2026-07-28. The report's own aggregation of `model_scoped` rows is only regression-gated
+2026-07-28 — this predates the claude-only filter added 2026-08-07 (below); the third
+model in that transcript is cited only as evidence the grouping math handles more than
+one model correctly, not as a claim the hook still tracks it today. The report's own aggregation of `model_scoped` rows is only regression-gated
 against a single-row synthetic case so far (zero `model_scoped` rows exist in production
 data as of this writing — the installed plugin hook won't write them until this version
 ships and a session stops under it) — treat the multi-row aggregation path as untested
@@ -96,6 +98,16 @@ The dedup key widens to (`session_id`, `stream`, `model`, `agent_type`) for the 
 reason `stream` was added to it: two agent types spending on the same model inside one
 session are two different rows, not duplicates of each other — without `agent_type` in
 the key, one collides into the other and its spend is silently dropped.
+
+**Claude-only, at operator request (2026-08-07).** A session can run non-Claude models
+— a proxy that swaps `ANTHROPIC_BASE_URL` — and production data confirmed real spend
+this way (`minimax-m3`, `glm-5.2`, `kimi-k2.7-code`, `nemotron-3-super`). The hook now
+drops any assistant turn whose `.message.model` doesn't match `claude-*` before
+grouping — not priced at a guessed rate, not folded into an `"unknown"` row, simply not
+written. A transcript with no Claude turns at all writes no row. Historical rows
+already in `costs.jsonl` for non-Claude models are untouched by this change — it only
+affects what future stops write; the report still sums whatever `model_scoped` rows
+already exist, Claude or not.
 
 `turns` is the assistant-turn count behind the row, and `cache_read_per_turn` is
 `cache_read_tokens ÷ turns` **for that row's own model** — the hook groups by model

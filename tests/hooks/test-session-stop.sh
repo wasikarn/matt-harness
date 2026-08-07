@@ -291,6 +291,40 @@ sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
 assert "subagent transcript with no .meta.json sibling falls back to agent_type:\"unknown\" (fails safe, no crash)" "$ok"
 rm -rf "$fake_home" "$sess_dir"
 
+# Claude-only tracking (2026-08-07, operator request): a session can run non-Claude
+# models (e.g. via a proxy that swaps ANTHROPIC_BASE_URL — confirmed real in
+# production data: minimax-m3, glm-5.2, kimi-k2.7-code, nemotron-3-super all showed
+# real spend). The tracker must write a row ONLY for turns whose `.message.model`
+# matches claude-*, and silently drop non-Claude turns — not error, not fold them
+# into an "unknown" row, not let them inflate any Claude row's totals.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_transcript_line claude-sonnet-5 100 50; make_transcript_line minimax-m3 999 999; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "mixed-vendor"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
+  && /usr/bin/grep -q '"model":"claude-sonnet-5"' "$metrics_file" \
+  && /usr/bin/grep -q '"input_tokens":100' "$metrics_file" \
+  && ! /usr/bin/grep -qi 'minimax' "$metrics_file" && ok=1 || ok=0
+assert "non-Claude model turns (minimax-m3) are silently dropped — only the claude-sonnet-5 row is written, with its own tokens, not inflated by the dropped turn" "$ok"
+rm -rf "$fake_home" "$transcript"
+
+# A transcript with ONLY non-Claude turns must write no row at all (not a crash, not
+# an empty/garbage row) — the existing "no usage → no row" fail-safe path.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line glm-5.2 50 20 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "all-foreign"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "an all-non-Claude transcript (glm-5.2 only) writes no metrics row at all" "$ok"
+rm -rf "$fake_home" "$transcript"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

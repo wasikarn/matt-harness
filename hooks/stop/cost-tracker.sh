@@ -59,6 +59,12 @@ build_type_map() {
 # are what make the orchestrator's carried-context cost readable: cache_read is
 # re-billed on every turn, so per-turn is the rent rate, not the one-off bill —
 # docs/research/orchestrator-tax-gap-analysis-2026-08-07.md.
+#
+# Claude-only, at operator request (2026-08-07): a session can run non-Claude models
+# (a proxy swapping ANTHROPIC_BASE_URL) — confirmed real in production data
+# (minimax-m3, glm-5.2, kimi-k2.7-code, nemotron-3-super all showed real spend). Those
+# turns are dropped before grouping, not priced at a guessed rate — this hook only
+# tracks claude-* spend.
 emit_rows() {
   local stream="$1" typemap="$2"; shift 2
   (( $# )) || return 0
@@ -67,6 +73,7 @@ emit_rows() {
     [ inputs | try fromjson |
       select(.type == "assistant") |
       select((.message // {}).usage != null) |
+      select((.message.model // "") | ascii_downcase | test("^claude")) |
       { in: (.message.usage.input_tokens // 0),
         out: (.message.usage.output_tokens // 0),
         cw: (.message.usage.cache_creation_input_tokens // 0),
