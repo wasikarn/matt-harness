@@ -214,12 +214,26 @@ first agent that gets it, before adding it to the rest. Do not assume the change
 **Status as of v0.68.209 (shipped 2026-08-07):** `typescript-reviewer` gets
 `kbg:typescript-patterns`, `nextjs-reviewer` gets `kbg:frontend-patterns`. Both pass
 `plugin validate --strict` and audit check 25, and neither preloaded skill carries
-`disable-model-invocation: true` (which would make it ineligible). **Injection itself is
-unverified** — schema validation and name resolution do not prove the content reaches a
-spawned subagent's context, and the installed plugin cache was still v0.68.208 at ship time,
-so any name-based dispatch would have tested stale content. Verify after
-`claude plugin update` + restart: spawn `typescript-reviewer` on a TS diff and confirm it
-applies `kbg:typescript-patterns` guidance it was given no path to.
+`disable-model-invocation: true` (which would make it ineligible).
+
+**Injection verified 2026-08-07**, after `claude plugin update` + restart landed
+v0.68.210 in the installed cache (confirmed: `installed_plugins.json`'s `gitCommitSha`
+matched local `HEAD`). Two live dispatches of `typescript-reviewer` (no `Skill` tool
+grant, so it cannot self-load the skill; no path to it in either prompt):
+
+1. A review task surfaced findings matching the skill's own worked examples (the
+   exhaustiveness-check fix used the exact variable name `exhaustive` from the skill's
+   `satisfies`/discriminated-union example) — suggestive but not conclusive on its own,
+   since the agent's own body text already names `baseUrl`/`node10` in passing.
+2. A pure factual probe ("what does `npx tsc --version` resolve to today, is
+   `@typescript/native-preview` worth depending on?") returned, with **zero tool
+   calls**, the skill's exact dated claims: the "Corsa" rewrite codename,
+   `typescript@7.0.2`/`7.1.0`-nightly, and `@typescript/native-preview`'s last publish
+   date of `2026-07-07`. None of this exists in the agent's own body text (confirmed
+   by grep — no hits for `TypeScript 7`, `tsgo`, `native-preview`, `Corsa`, or `GA`),
+   nowhere else in this repo, and could not be produced with zero tool calls unless it
+   was already sitting in context at spawn. This is decisive: the `skills:` field
+   injects real content into the subagent's system prompt, as documented.
 
 ---
 
