@@ -47,6 +47,16 @@ find skills -name SKILL.md | xargs wc -l | sort -rn | head -20
 
 # CLAUDE.md chain — flag combined total >300 lines
 wc -l ~/.claude/CLAUDE.md CLAUDE.md .claude/CLAUDE.md 2>/dev/null
+
+# Memory index — the ONE piece of native auto-memory overhead this repo can
+# actually measure. MEMORY.md loads whole into every session (no scoped/
+# on-demand loading exists — see docs/research/agent-memory-engineering-2026-08-07.md
+# Part 4, Tier C: that's a Claude Code platform decision, not something a
+# hook can filter). No prior instrument reported this at all before
+# 2026-08-07 — flag over its own documented ~17KB soft target (200L/25,600B
+# hard cap enforced separately by memory-lint).
+MEMDIR="$HOME/.claude/projects/$(pwd -P | sed 's|/|-|g')/memory"
+[ -f "$MEMDIR/MEMORY.md" ] && wc -lc "$MEMDIR/MEMORY.md"
 ```
 
 ## Phase 2 — Classify each component
@@ -83,6 +93,7 @@ Component Breakdown:
   Skills          N files    ~X,XXX tokens
   MCP tools       N tools    ~XX,XXX tokens   ← usually the dominant line
   CLAUDE.md       N lines    ~X,XXX tokens
+  Memory index    N bytes    ~X,XXX tokens (est.)  — MEMORY.md, loaded whole every session; N% of its 25,600B hard cap
 
 Findings (ranked by savings):
   1. [action] → saves ~X,XXX tokens

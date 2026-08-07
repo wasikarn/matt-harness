@@ -51,6 +51,16 @@ NAME_RE = re.compile(r"(?m)^name:\s*(.+)$")
 POINTER_RE = re.compile(r"\]\(([^)]+\.md)\)")  # markdown link ](file.md), not prose "(x.md)"
 SUPERSEDED_RE = re.compile(r"\*\*SUPERSEDED[^*]*\*\*\s*by\s*\[\[([^\]]+)\]\]")
 POINTER_LINE_RE = re.compile(r"^- \[[^\]]+\]\(([^)]+\.md)\)(.*)$", re.MULTILINE)
+TYPE_RE = re.compile(r"(?m)^\s*type:\s*(\w+)")
+DESCRIPTION_RE = re.compile(r'(?m)^description:\s*"?(.*?)"?\s*$')
+WHY_RE = re.compile(r"\*\*Why:\*\*")
+HOW_RE = re.compile(r"\*\*How to apply:\*\*")
+TEMPLATE_SCOPED_TYPES = ("feedback", "project")
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "is", "was",
+    "are", "be", "this", "that", "with", "by", "from", "as", "it", "its",
+    "not", "never", "always", "but", "if", "when", "than", "then", "so",
+}
 
 LINE_CAP = 200
 BYTE_CAP = 25 * 1024
@@ -203,9 +213,134 @@ def staleness_findings(state, stale_days):
     return stale
 
 
+def template_compliance_findings(state):
+    """Advisory only, always computed, never counted toward exit code — same
+    tier as staleness_findings above.
+
+    feedback/project memories are documented (this SKILL.md's own authoring
+    format) to carry **Why:** and **How to apply:** — the two fields that
+    separate a fact/skill (judge by utility, not size) from a raw log line.
+    Missing them doesn't make a memory wrong, just undercooked; this surfaces
+    a count + the worst offenders (neither field present) for a human to fix
+    opportunistically. Deliberately never gates: a presence-only check has
+    twice trained authors to paste filler elsewhere in this fleet (retired
+    `type: command`; near-miss on `disable-model-invocation-reason`) —
+    visibility is the whole point here, not enforcement.
+    """
+    d = state["d"]
+    scoped_total = 0
+    missing_why = missing_how = 0
+    missing_both = []
+    for f in sorted(state["files"]):
+        txt = open(os.path.join(d, f), encoding="utf-8").read()
+        frontmatter = txt.split("---", 2)[1] if txt.startswith("---") else ""
+        m = TYPE_RE.search(frontmatter)
+        if not m or m.group(1) not in TEMPLATE_SCOPED_TYPES:
+            continue
+        scoped_total += 1
+        has_why, has_how = bool(WHY_RE.search(txt)), bool(HOW_RE.search(txt))
+        if not has_why:
+            missing_why += 1
+        if not has_how:
+            missing_how += 1
+        if not has_why and not has_how:
+            missing_both.append(f)
+    return {
+        "scoped_total": scoped_total,
+        "missing_why": missing_why,
+        "missing_how": missing_how,
+        "missing_both": missing_both,
+    }
+
+
+def _tokenize(text):
+    return {w for w in re.findall(r"[a-z0-9]+", text.lower())
+            if w not in STOPWORDS and len(w) > 2}
+
+
+def contradiction_candidates(state, min_overlap):
+    """Deterministic candidate-pair pre-filter for --find-contradictions.
+
+    NEVER auto-resolves — only surfaces candidates for a human (or a
+    separately-invoked, adversarial LLM pass) to review. An extraction
+    pipeline that both writes facts and unilaterally invalidates them is a
+    maker-grades-itself failure (see
+    docs/research/agent-memory-engineering-2026-08-07.md Part 2). This is a
+    one-off, run-by-hand tool, not a scheduled job — a heuristic pre-filter
+    over a handful of notes will both over- and under-match, which is exactly
+    why it stays manual until a hand-run proves the signal is real.
+
+    Signal: same `type:` frontmatter AND filename+description token-overlap
+    ratio >= min_overlap. A shared outbound [[link]] is reported alongside a
+    qualifying pair as context, never as an independent trigger — the first
+    real hand-run against this store (2026-08-07) found "shares at least one
+    link" alone produces 296 near-useless candidates on a 178-file store
+    (most driven by both memories citing one common well-known prior finding,
+    e.g. verify-adversarially-before-nothing), while token-overlap alone at
+    the same threshold gives 4. That's the evidence this threshold and
+    signal choice are built on, not a guess.
+    """
+    d = state["d"]
+    files = sorted(state["files"])
+    meta = {}
+    for f in files:
+        txt = open(os.path.join(d, f), encoding="utf-8").read()
+        frontmatter = txt.split("---", 2)[1] if txt.startswith("---") else ""
+        tm = TYPE_RE.search(frontmatter)
+        dm = DESCRIPTION_RE.search(frontmatter)
+        meta[f] = {
+            "type": tm.group(1) if tm else None,
+            "tokens": _tokenize(f[:-3].replace("-", " ") + " " + (dm.group(1) if dm else "")),
+            "links": set(state["links_out"].get(f, [])),
+        }
+
+    candidates = []
+    for i, a in enumerate(files):
+        for b in files[i + 1:]:
+            ma, mb = meta[a], meta[b]
+            if not ma["type"] or ma["type"] != mb["type"]:
+                continue
+            union = ma["tokens"] | mb["tokens"]
+            overlap = len(ma["tokens"] & mb["tokens"]) / len(union) if union else 0.0
+            if overlap >= min_overlap:
+                shared_links = sorted(ma["links"] & mb["links"])
+                candidates.append({
+                    "a": a, "b": b, "type": ma["type"],
+                    "token_overlap": round(overlap, 2),
+                    "shared_links": shared_links,
+                })
+    candidates.sort(key=lambda c: -c["token_overlap"])
+    return candidates
+
+
+def run_find_contradictions(state, as_json, min_overlap):
+    candidates = contradiction_candidates(state, min_overlap)
+    if as_json:
+        print(json.dumps({
+            "mode": "find-contradictions",
+            "memory_dir": state["d"],
+            "min_overlap": min_overlap,
+            "candidates": candidates,
+        }, indent=2))
+        return 0
+
+    print(f"=== memory-lint --find-contradictions: {state['d']} ===")
+    print(f"min-overlap: {min_overlap} | candidate pairs: {len(candidates)}")
+    print("Advisory pre-filter only — NOT a contradiction verdict. Read each pair by hand;")
+    print("never auto-merge (two memories can both be right in different contexts).")
+    print()
+    if not candidates:
+        print("  none — no same-type pairs cleared the overlap/shared-link threshold")
+    for c in candidates:
+        link_note = f", shared links: {', '.join(c['shared_links'])}" if c["shared_links"] else ""
+        print(f"  [{c['type']}] {c['a']}  <->  {c['b']}  (overlap: {c['token_overlap']}{link_note})")
+    return 0
+
+
 def run_detector(state, as_json, stale_days):
     findings, total_links, linked_count = detector_findings(state)
     stale = staleness_findings(state, stale_days)
+    template = template_compliance_findings(state)
     if as_json:
         print(json.dumps({
             "mode": "detector",
@@ -216,6 +351,7 @@ def run_detector(state, as_json, stale_days):
             "findings": findings,
             "stale": stale,
             "stale_days_threshold": stale_days,
+            "template_compliance": template,
         }, indent=2))
         sys.exit(0 if not findings else len(findings))
 
@@ -240,6 +376,19 @@ def run_detector(state, as_json, stale_days):
         print(f"  {len(stale)} file(s) worth a re-check; not a defect, just old")
     else:
         print(f"  none — every memory touched within {stale_days}d")
+
+    print()
+    print("--- Template compliance (advisory, not counted in exit code — feedback/project only) ---")
+    if template["scoped_total"]:
+        why_pct = int(100 * (template["scoped_total"] - template["missing_why"]) / template["scoped_total"])
+        how_pct = int(100 * (template["scoped_total"] - template["missing_how"]) / template["scoped_total"])
+        print(f"  **Why:** present: {template['scoped_total'] - template['missing_why']}/{template['scoped_total']} ({why_pct}%)")
+        print(f"  **How to apply:** present: {template['scoped_total'] - template['missing_how']}/{template['scoped_total']} ({how_pct}%)")
+        if template["missing_both"]:
+            print(f"  missing BOTH fields ({len(template['missing_both'])}): " + ", ".join(template["missing_both"][:10])
+                  + (", ..." if len(template["missing_both"]) > 10 else ""))
+    else:
+        print("  no feedback/project-typed memories in this store")
 
     sys.exit(len(findings))
 
@@ -671,6 +820,12 @@ def main():
     ap.add_argument("--json", action="store_true", help="Machine-readable output")
     ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT,
                     help=f"Advisory staleness threshold in days (default: {STALE_DAYS_DEFAULT})")
+    ap.add_argument("--find-contradictions", action="store_true",
+                    help="Advisory, one-off: surface candidate contradiction pairs "
+                         "(same type + token-overlap or shared link) for manual review. "
+                         "Never auto-resolves.")
+    ap.add_argument("--min-overlap", type=float, default=0.35,
+                    help="Token-overlap threshold for --find-contradictions (default: 0.35)")
     args = ap.parse_args()
 
     d = memory_dir(args.memory_dir)
@@ -678,7 +833,9 @@ def main():
         sys.exit(f"FATAL: memory dir not found: {d}")
     state = collect_state(d)
 
-    if args.auto_archive:
+    if args.find_contradictions:
+        sys.exit(run_find_contradictions(state, args.json, args.min_overlap))
+    elif args.auto_archive:
         sys.exit(run_action_mode(state, args))
     else:
         run_detector(state, args.json, args.stale_days)

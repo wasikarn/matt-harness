@@ -5,6 +5,36 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.223] — 2026-08-07
+
+Shipped the remaining Tier A proposals from `docs/research/agent-memory-engineering-2026-08-07.md`
+(A2, A3, A5 — A1/A4 shipped in v0.68.222). B1 (Tier B, requires editing the dotfiles-owned
+`~/.claude/CLAUDE.md`) stays deferred per the report's own reasoning.
+
+- **A2** — `template_compliance_findings()` in `memory-lint.py`: always-on advisory section
+  reporting `**Why:**`/`**How to apply:**` coverage for `feedback`/`project` memories (74/154 and
+  106/154 on the live store, matching the report's original baseline exactly). Shipped without the
+  flag the proposal specified — `staleness_findings()` already establishes that advisory sections
+  in this tool are additive and never gate, so the flag would have added a surface to forget, not
+  real safety.
+- **A3** — `--find-contradictions` in `memory-lint.py`: deterministic, manual-only candidate-pair
+  pre-filter, never auto-resolves. **The design changed mid-implementation**: the first hand-run
+  against the live store used "same type + (token-overlap OR shared link)" and returned 296
+  near-useless candidates (mostly pairs that just cite one common memory); dropping the
+  shared-link OR-trigger cut that to 4, of which 0 were genuine contradictions on spot-check (two
+  were a SUPERSEDED feature and its own history note; two were sequential project phase-logs) — a
+  real negative result confirming the store has no detectable contradiction right now, and the
+  evidence this stays manual rather than scheduled. 4 new tests, including a regression test for
+  the shared-links bug specifically.
+- **A5** — `context-budget/SKILL.md` gained an inventory line + report row for MEMORY.md's byte
+  size vs. its documented caps. Correction from the original proposal: `context-budget` has no
+  scripts at all (pure prompt-driven skill, origin ECC) — this shipped as an instruction + report
+  template row, not code. The byte→token figure is explicitly labeled an estimate and reuses the
+  skill's existing "prose files: word count × 1.3" rule.
+
+7 new/changed tests total (`tests/skills/memory-lint/test_memory_lint.py` 2→6), full gauntlet
+green.
+
 ## [0.68.222] — 2026-08-07
 
 Shipped proposals A1 and A4 from `docs/research/agent-memory-engineering-2026-08-07.md`:

@@ -32,6 +32,15 @@ repo can't write through — named, not assumed editable); **Tier C** is a platf
 (Claude Code owns what auto-loads at session start) with no real fix, stated plainly instead of
 invented.
 
+**Status (2026-08-07): all five Tier A items shipped** (v0.68.220 doc-drift fix, v0.68.222 A1+A4,
+v0.68.223 A2+A3+A5) — Tier B (B1) stays deferred per Part 6's own reasoning, unchanged by
+anything A1-A5 surfaced. Two findings emerged only from actually building and running the tools,
+not from the original proposal: `pwd -P` vs `$PWD` broke A1's directory check on macOS symlinked
+paths (caught in fixture testing, fixed before shipping); A3's original heuristic (token-overlap
+OR shared-link) returned 296 near-useless candidates on the live store, fixed to token-overlap
+only (4 candidates, 0 genuine contradictions on spot-check) — see A3's own section for the full
+account. Both are exactly the kind of thing "prove it by hand first" is supposed to catch.
+
 ## Sources
 
 - `llm-wiki/raw/How to be a Memory Engineer, from the perspective of Stanford, Microsoft,
@@ -241,7 +250,14 @@ the detector, confirm the count drops and the nudge updates on the next session.
 
 ---
 
-#### A2. Template-compliance visibility (`**Why:**` / `**How to apply:**`)
+#### A2. Template-compliance visibility (`**Why:**` / `**How to apply:**`) — **SHIPPED v0.68.223**
+
+Implemented as `template_compliance_findings()` in `memory-lint.py`, printed as an always-on
+advisory section (no flag — matches the existing `staleness_findings()` precedent: advisory
+sections in this tool are additive and never gate, so a flag added no real safety and only added
+a surface to forget). Live run confirms the report's own baseline exactly: 74/154 (48%) `**Why:**`,
+106/154 (69%→68% under `int()` truncation, matching the codebase's existing rounding convention)
+`**How to apply:**`. 2 new tests in `tests/skills/memory-lint/test_memory_lint.py`.
 
 **Current implementation.** `memory-lint.py` checks link/index/budget health but never checks
 whether `feedback`/`project` memories follow their own documented template. Baseline: 74/154
@@ -281,7 +297,31 @@ Confirm exit code is unaffected when the flag is omitted — regression guard fo
 
 ---
 
-#### A3. Manual-trigger contradiction detection (never scheduled, never auto-resolves)
+#### A3. Manual-trigger contradiction detection (never scheduled, never auto-resolves) — **SHIPPED v0.68.223**
+
+Implemented as `--find-contradictions` in `memory-lint.py`. **The proposal design changed during
+implementation, based on the first real hand-run** — this is worth recording precisely because it's
+exactly the "prove it by hand first" discipline the proposal itself argued for, catching a real
+design flaw before it shipped:
+
+- First implementation used "same `type:` AND (token-overlap ≥ threshold OR shared outbound
+  `[[link]]`)" — run once against the live 178-file store, it returned **296 candidates**, almost
+  all triggered purely by two memories citing one common well-known prior finding (e.g.
+  `verify-adversarially-before-nothing`), independent of any real topical overlap.
+- Removing the `OR shared_links` clause (making token-overlap the sole trigger, shared links
+  reported as context only) dropped the same run to **4 candidates** — a genuinely reviewable
+  number.
+- Spot-checking those 4 by hand: **0/4 were real contradictions.** Two were a `SUPERSEDED` feature
+  and its own already-cross-linked history note (`armed-push-review-path.md` /
+  `l4-l5-autonomy-build.md` / `l3-bounded-autonomy-build.md` — all about the retired L2-L5
+  autonomy ladder, ADR 0006); two were sequential phase-log entries of one project
+  (`ecc-provenance-merge-phase3-2026-06-27.md` / `...-phase4-...`).
+
+**This is a real, honest negative result, not a wasted effort**: 0/4 precision on the one hand-run
+means this store currently has no detectable internal contradiction — exactly the confirmation
+needed to justify NOT scheduling this tool, which was always the intended outcome of running it
+once. The tool ships as a manual-only command; 4 new tests cover both the fixed heuristic and a
+regression test for the shared-links-alone bug specifically.
 
 **Current implementation.** None exists, not even manual. `memory-lint.py`'s own docstring
 disclaims this scope ("semantic checks... are a separate LLM pass") but that pass was never
@@ -366,7 +406,14 @@ other memory file.
 
 ---
 
-#### A5. Visibility for MEMORY.md's recurring session-start cost
+#### A5. Visibility for MEMORY.md's recurring session-start cost — **SHIPPED v0.68.223**
+
+Implemented as a Phase 1 inventory line + a Phase 4 report row in `skills/context-budget/SKILL.md`.
+One correction from the original proposal: `context-budget` turned out to have no scripts at
+all — it's a pure prompt-driven skill (origin: ECC), not a runnable tool. "Extending" it means
+adding an instruction + report-template row the model follows, not a code change. The byte→token
+figure is explicitly labeled `(est.)` and reuses the skill's own pre-existing "prose files: word
+count × 1.3" estimation rule — no new, unstated conversion assumption was introduced.
 
 **Current implementation.** No tool reports MEMORY.md's byte/token contribution to every session
 start. `harness-audit --health` is aggregate per-session model cost from the ledger, not
@@ -454,31 +501,31 @@ its loading mechanism. Revisit only if Claude Code ships scoped/topic-filtered m
 
 ## Part 6 — Prioritization: Impact × Effort
 
-| Item | Impact (1-5) | Effort (1-5, lower = less) | Ratio | Notes |
-|---|---|---|---|---|
-| A2 — template-compliance visibility | 3 | 1 | 3.0 | Cheapest; extends existing script, flag-gated, zero regression risk |
-| A1 — restore SessionStart nudge + fix doc drift | 5 | 2 | 2.5 | Highest absolute impact; also the delivery mechanism A2/A3's findings need to actually get seen |
-| A4 — git audit trail | 4 | 2 | 2.0 | Near-zero technical cost (git already everywhere); coordination cost is the one-time `git init` go-ahead |
-| A5 — MEMORY.md cost visibility | 2 | 1 | 2.0 | Trivial addition; low absolute impact (visibility only, no behavior change) |
-| A3 — manual contradiction pass | 3 | 2 | 1.5 | Value genuinely unproven until run once — Article 1's own framing, not a reason to skip, a reason to bound scope |
-| B1 — relation vocabulary | 2 | 3 | 0.67 | Cross-repo (dotfiles) coordination + real adoption risk; lowest ROI in the set |
+| Item | Impact (1-5) | Effort (1-5, lower = less) | Ratio | Status | Notes |
+|---|---|---|---|---|---|
+| A2 — template-compliance visibility | 3 | 1 | 3.0 | **Shipped v0.68.223** | Extends existing script, always-on (not flag-gated — see A2's own note), zero regression risk |
+| A1 — restore SessionStart nudge + fix doc drift | 5 | 2 | 2.5 | **Shipped v0.68.222** | Highest absolute impact; also the delivery mechanism A2/A3's findings need to actually get seen |
+| A4 — git audit trail | 4 | 2 | 2.0 | **Shipped v0.68.222** | Live store `git init`'d + baseline commit; auto-commit + `git revert` rollback verified end-to-end |
+| A5 — MEMORY.md cost visibility | 2 | 1 | 2.0 | **Shipped v0.68.223** | `context-budget` turned out script-less (pure prompt skill) — shipped as instruction + report row, not code |
+| A3 — manual contradiction pass | 3 | 2 | 1.5 | **Shipped v0.68.223** | Design changed mid-implementation after the first hand-run found the original heuristic too noisy — see A3's own note |
+| B1 — relation vocabulary | 2 | 3 | 0.67 | **Deferred** | Cross-repo (dotfiles) coordination + real adoption risk; lowest ROI in the set — no new evidence from A1-A5 changed that call |
 
-**Recommended implementation order** (impact-weighted, then Article 1's own build order — index
-integrity and control first, forgetting/quality signals next, contradiction detection as a bounded
-one-off, cost visibility last, speculative structure deferred):
+**Implementation order actually followed** (impact-weighted, then Article 1's own build order —
+index integrity and control first, forgetting/quality signals next, contradiction detection as a
+bounded one-off, cost visibility last, speculative structure deferred). All five Tier A items
+shipped across two sessions (v0.68.220 doc-drift fix → v0.68.222 A1+A4 → v0.68.223 A2+A3+A5),
+matching this order exactly:
 
-1. **A1** — restore the surfacing loop + fix the doc lie. Everything else's value depends on
-   findings actually being seen.
-2. **A4** — git-backed audit trail. Independent of A1, closes a distinct and currently-total gap
-   (zero version control), cheap enough to batch with A1 in the same session.
-3. **A2** — template-compliance visibility. Extends the same script A1 just touched; cheapest
-   remaining item.
-4. **A5** — MEMORY.md cost-visibility line. Batch with A2 (same `context-budget`/`memory-lint`
-   touch session, both trivial).
-5. **A3** — run the manual contradiction pass once, by hand, and record precision before deciding
-   whether it ever earns automation (it should not be scheduled based on this report alone).
-6. **B1** — defer. Revisit only if A3's or organic `SUPERSEDED` usage suggests relation-typing
-   would have caught something A1-A4 didn't.
+1. **A1** (shipped) — restore the surfacing loop + fix the doc lie.
+2. **A4** (shipped) — git-backed audit trail; live store `git init`'d, rollback verified end-to-end.
+3. **A2** (shipped) — template-compliance visibility, extending the same script.
+4. **A5** (shipped) — MEMORY.md cost-visibility line, batched with A2 in the same session.
+5. **A3** (shipped) — the manual contradiction pass was run once, by hand, against the real store
+   before shipping — see A3's own note for the negative result (0/4 precision) that came out of
+   that run and the design fix it drove.
+6. **B1** — still deferred. Nothing in A1-A5's real output changed the original call: no evidence
+   surfaced (from A3's run or organic `SUPERSEDED` usage) that relation-typing would have caught
+   something the other four items didn't.
 
 ---
 
@@ -488,6 +535,6 @@ one-off, cost visibility last, speculative structure deferred):
 |---|---|
 | 87 findings (75/10/2), 178 entries, MEMORY.md 97L/19,402B, template compliance 74/106 of 154, 5/341 typed links, no git in the memory dir, SessionStart hook deleted at `c452102` | **Measured**, this session, against the live store — reproducible by re-running the cited commands |
 | ~4,850 tokens for MEMORY.md's session-start load | **Estimated**, not measured — stated bytes-per-token assumption (~4B/token), no tokenizer invoked |
-| A3's real-world contradiction rate / precision | **No instrument exists** — explicitly not estimated, per the task's own instruction to say so rather than invent a number |
+| A3's real-world contradiction rate / precision | **Measured, one hand-run, 2026-08-07** (was "no instrument exists" until A3 shipped): 296 candidates under the original shared-links-OR heuristic, 4 under the fixed token-overlap-only version, 0/4 spot-checked as genuine contradictions. One data point, not a trend — re-run and re-check precision before ever considering automation |
 | B1's adoption/value if shipped | **Low confidence** — adoption-dependent, no current usage signal beyond the 5 existing `SUPERSEDED` instances |
 | Native auto-memory shipped ~CLI v2.1.59, autoMemoryEnabled | **Sourced** from `skills/learn/SKILL.md`'s own prior verification against `code.claude.com/docs/en/memory`, not re-verified independently in this session |
