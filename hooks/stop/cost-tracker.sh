@@ -31,29 +31,52 @@ else
   sonnet_rate='{"i":3.0,"o":15.0,"cw":3.75,"cr":0.30}'
 fi
 
-# emit_rows <stream-label> <transcript-file>...
-# Aggregates every named JSONL transcript into one priced row per model, tagged
-# with the stream it came from. `jq -Rs` slurps all file arguments into a single
-# string before parsing, so a whole subagents/ directory aggregates in one pass.
-# `turns` and `cache_read_per_turn` are what make the orchestrator's carried-context
-# cost readable: cache_read is re-billed on every turn, so per-turn is the rent rate,
-# not the one-off bill — docs/research/orchestrator-tax-gap-analysis-2026-08-07.md.
+# build_type_map <transcript-file>...
+# Maps each subagent transcript to the `agentType` from its sibling
+# agent-<id>.meta.json (Claude Code writes one alongside every agent-<id>.jsonl,
+# carrying the real Agent-tool subagent_type — confirmed shape against a real
+# transcript, 2026-08-07). Missing/unreadable meta.json falls back to "unknown"
+# rather than dropping the row — a type gap shouldn't cost the spend data. The
+# orchestrator's own transcript has no such sibling, so it's never passed here;
+# emit_rows treats a file absent from the map as agent_type:null.
+build_type_map() {
+  local out='{}' f meta t
+  for f in "$@"; do
+    meta="${f%.jsonl}.meta.json"
+    t=$([[ -f "$meta" ]] && jq -r '.agentType // empty' "$meta" 2>/dev/null)
+    [[ -z "$t" ]] && t="unknown"
+    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" '. + {($f): $t}' 2>/dev/null) || out='{}'
+  done
+  printf '%s' "$out"
+}
+
+# emit_rows <stream-label> <type-map-json> <transcript-file>...
+# Aggregates every named JSONL transcript into one priced row per (model, agent_type)
+# pair, tagged with the stream it came from. Reads files un-slurped (`-nR` + `inputs`,
+# not `-Rs`) so `input_filename` can key into the type map per line — a whole
+# subagents/ directory still aggregates in one jq pass, but two agent types spending
+# on the same model no longer collapse into one row. `turns` and `cache_read_per_turn`
+# are what make the orchestrator's carried-context cost readable: cache_read is
+# re-billed on every turn, so per-turn is the rent rate, not the one-off bill —
+# docs/research/orchestrator-tax-gap-analysis-2026-08-07.md.
 emit_rows() {
-  local stream="$1"; shift
+  local stream="$1" typemap="$2"; shift 2
   (( $# )) || return 0
   local usages
-  usages=$(jq -Rsc '
-    [ split("\n")[] | select(. != "") | try fromjson |
+  usages=$(jq -nRc --argjson typemap "$typemap" '
+    [ inputs | try fromjson |
       select(.type == "assistant") |
       select((.message // {}).usage != null) |
       { in: (.message.usage.input_tokens // 0),
         out: (.message.usage.output_tokens // 0),
         cw: (.message.usage.cache_creation_input_tokens // 0),
         cr: (.message.usage.cache_read_input_tokens // 0),
-        m: (.message.model // "unknown") } ]
-    | group_by(.m)
+        m: (.message.model // "unknown"),
+        t: ($typemap[input_filename] // null) } ]
+    | group_by([.m, .t])
     | map({
         model: .[0].m,
+        agent_type: .[0].t,
         turns: length,
         input_tokens: ((map(.in) | add) // 0),
         output_tokens: ((map(.out) | add) // 0),
@@ -80,7 +103,7 @@ emit_rows() {
       else ($sonnet_rate + {v:false}) end;
     .[] | . as $u | ($u | rate) as $r |
     { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
-      model_scoped: true, stream: $stream, turns: $u.turns,
+      model_scoped: true, stream: $stream, agent_type: $u.agent_type, turns: $u.turns,
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
       cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
       cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),
@@ -94,7 +117,7 @@ emit_rows() {
 }
 
 if [[ -n "$transcript" && -f "$transcript" ]]; then
-  rows=$(emit_rows orchestrator "$transcript")
+  rows=$(emit_rows orchestrator '{}' "$transcript")
 
   # Claude Code writes each subagent to its own file under a sibling
   # <session-id>/subagents/ directory — NOT into the main transcript, which never
@@ -107,7 +130,8 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
     sub_files=("$sub_dir"/*.jsonl)
     shopt -u nullglob
     if (( ${#sub_files[@]} )); then
-      sub_rows=$(emit_rows subagent "${sub_files[@]}")
+      sub_typemap=$(build_type_map "${sub_files[@]}")
+      sub_rows=$(emit_rows subagent "$sub_typemap" "${sub_files[@]}")
       [[ -n "$sub_rows" ]] && rows="${rows:+$rows$'\n'}$sub_rows"
     fi
   fi

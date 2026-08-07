@@ -13,14 +13,16 @@ log that ECC's `stop:cost-tracker` hook writes.
 
 The tracker appends one or more JSON objects per session-stop to
 `~/.local/share/kbg/metrics/costs.jsonl`, one per **model actually used in that
-session so far**. Every stop re-derives cumulative totals from the full transcript
-(stateless — no separate counter file), groups assistant turns by `.message.model`,
-and writes each model's own true cumulative `input_tokens`/`output_tokens`/
-`estimated_cost_usd`, priced at that model's own rate. These rows carry
-`model_scoped: true`. **The report takes the latest row per (`session_id`, `stream`, `model`)
-triple among `model_scoped` rows and sums across a session's triples** — a streamless row
-(written before 2026-08-07, when `stream` shipped) is treated as `stream: "orchestrator"`
-for this key, not as a fourth bucket; see the double-counting bug this fixed, below. The hook's per-model
+session so far, split further by `agent_type` for subagent spend**. Every stop
+re-derives cumulative totals from the full transcript (stateless — no separate counter
+file), groups assistant turns by `.message.model` (and, within the subagent stream, by
+`agent_type`), and writes each model's own true cumulative `input_tokens`/
+`output_tokens`/`estimated_cost_usd`, priced at that model's own rate. These rows carry
+`model_scoped: true`. **The report takes the latest row per (`session_id`, `stream`,
+`model`, `agent_type`) key among `model_scoped` rows and sums across a session's keys**
+— a streamless row (written before 2026-08-07, when `stream` shipped) is treated as
+`stream: "orchestrator"` for this key, not as a fourth bucket; see the double-counting
+bug this fixed, below. The hook's per-model
 token computation was verified against a real 3-model production transcript
 (`claude-opus-4-8`, `claude-sonnet-5`, `glm-5.2`) by running the actual hook end-to-end
 and confirming each model's cost matched a hand computation from the raw token counts,
@@ -67,7 +69,7 @@ model is the only signal of this; take any total as "correctly summed," not
 "correctly priced," until every model in the rate table is a real, verified rate.
 
 Row schema:
-`{ timestamp, session_id, transcript_path, model, model_scoped, stream, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
 
 `model_scoped` is `true` on rows written by the per-model design; absent (falsy) on
 rows written by the old whole-session design — see above for how the report treats
@@ -84,6 +86,16 @@ Because both streams can carry the same `model` inside one session, the
 (`session_id`, `model`) dedup key is now (`session_id`, `stream`, `model`) — without
 `stream` in the key the two rows collide and one is silently dropped, which is the
 same undercount the split was added to fix.
+
+`agent_type` is the Agent tool's `subagent_type` value (`"general-purpose"`,
+`"Explore"`, `"kbg:code-reviewer"`, …), read from the `agentType` field in each
+subagent's `agent-<id>.meta.json` sibling — added 2026-08-07. `null` on every
+orchestrator row (the main thread has no subagent type); `"unknown"` on a subagent row
+whose meta.json was missing or unreadable, so a lookup gap never silently drops spend.
+The dedup key widens to (`session_id`, `stream`, `model`, `agent_type`) for the same
+reason `stream` was added to it: two agent types spending on the same model inside one
+session are two different rows, not duplicates of each other — without `agent_type` in
+the key, one collides into the other and its spend is silently dropped.
 
 `turns` is the assistant-turn count behind the row, and `cache_read_per_turn` is
 `cache_read_tokens ÷ turns` **for that row's own model** — the hook groups by model
@@ -122,8 +134,9 @@ remote/headless session), the buckets will follow that environment's zone instea
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
 2. For each session: if it has any `model_scoped` row, reduce to the latest row per
-   (`session_id`, `stream`, `model`) triple and sum across them; otherwise reduce to the
-   single latest row per `session_id` (ignoring `model`). Aggregate across sessions.
+   (`session_id`, `stream`, `model`, `agent_type`) key and sum across them; otherwise
+   reduce to the single latest row per `session_id` (ignoring `model`). Aggregate
+   across sessions.
 3. Present a compact report, or export recent rows as CSV when the argument is `csv`.
 
 `node` is used instead of `sqlite3`/`jq` so this works identically on macOS,
@@ -144,7 +157,7 @@ for(const rs of bySession.values()){
   const scoped=rs.filter(r=>r.model_scoped===true);
   if(scoped.length){
     const byModel=new Map();
-    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"")+" "+(r.agent_type||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
     latest.push(...byModel.values());
   }else{
     let best=null;
@@ -176,6 +189,11 @@ if(tagged.length){
   const cr=orch.reduce((s,r)=>s+(Number(r.cache_read_tokens)||0),0);
   if(turns)console.log("\norchestrator context carried per turn: "+Math.round(cr/turns).toLocaleString()+" tokens  (re-read every turn — the rent meter)");
 }
+const typed=latest.filter(r=>r.stream==="subagent"&&r.agent_type);
+if(typed.length){
+  console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+) ===");
+  for(const [k,v] of by(r=>r.agent_type))console.log(f4(v).padStart(12)+"  "+k);
+}
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}
 [...days.entries()].sort((a,b)=>b[0]<a[0]?-1:1).slice(0,7).forEach(([k,v])=>console.log(k+"  "+f4(v)));
@@ -190,8 +208,8 @@ const fs=require("fs"),os=require("os"),path=require("path");
 const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
-console.log("timestamp,session_id,model,model_scoped,stream,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
-for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
+console.log("timestamp,session_id,model,model_scoped,stream,agent_type,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
+for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
 '
 ```
 
@@ -201,7 +219,9 @@ for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped
 2. By model: models ranked by total cost.
 3. By stream: orchestrator vs subagent, plus the orchestrator's context-carried-per-turn.
    Omitted entirely when no row carries `stream` (all data predates 2026-08-07).
-4. Last seven days: date and cost.
+4. By agent type: subagent spend only, ranked by `agent_type`. Omitted entirely when
+   no subagent row carries `agent_type` (all data predates 2026-08-07).
+5. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.

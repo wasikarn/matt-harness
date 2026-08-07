@@ -240,6 +240,57 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 assert "no subagents/ dir → one orchestrator row, no empty subagent row" "$ok"
 rm -rf "$fake_home" "$sess_dir"
 
+# Per-agent-type breakdown. Claude Code writes an agent-<id>.meta.json sibling next to
+# every agent-<id>.jsonl carrying the real `agentType` (the Agent tool's subagent_type
+# param) — confirmed shape against a real transcript, 2026-08-07. Two subagent files on
+# the SAME model but DIFFERENT agentType must produce two rows, not collapse into one:
+# a kbg:code-reviewer dispatch and an Explore dispatch on the same model are different
+# populations of work, exactly the reasoning behind the earlier stream split.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/types.jsonl"
+mkdir -p "$sess_dir/types/subagents"
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/types/subagents/agent-aaa.jsonl"
+printf '{"agentType":"kbg:code-reviewer","description":"x","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/types/subagents/agent-aaa.meta.json"
+make_transcript_line claude-sonnet-5 20 8 > "$sess_dir/types/subagents/agent-bbb.jsonl"
+printf '{"agentType":"Explore","description":"y","toolUseId":"t2","spawnDepth":1}' > "$sess_dir/types/subagents/agent-bbb.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "types"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+reviewer_row=$(/usr/bin/grep '"agent_type":"kbg:code-reviewer"' "$metrics_file" 2>/dev/null)
+explore_row=$(/usr/bin/grep '"agent_type":"Explore"' "$metrics_file" 2>/dev/null)
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "3" ]] \
+  && printf '%s' "$reviewer_row" | /usr/bin/grep -q '"input_tokens":10' \
+  && printf '%s' "$explore_row" | /usr/bin/grep -q '"input_tokens":20' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"agent_type":null' \
+  && printf '%s' "$reviewer_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
+  && printf '%s' "$explore_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "subagent rows split by agent_type (from meta.json sibling) even on the same model; orchestrator row carries agent_type:null" "$ok"
+rm -rf "$fake_home" "$sess_dir"
+
+# Missing meta.json sibling (older sessions, or a subagent that never got one) must
+# fail safe to agent_type:"unknown" — never drop the row, never crash.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/nometa.jsonl"
+mkdir -p "$sess_dir/nometa/subagents"
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/nometa/subagents/agent-ccc.jsonl"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "nometa"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"agent_type":"unknown"' \
+  && printf '%s' "$sub_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "subagent transcript with no .meta.json sibling falls back to agent_type:\"unknown\" (fails safe, no crash)" "$ok"
+rm -rf "$fake_home" "$sess_dir"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

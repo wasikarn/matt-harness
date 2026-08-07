@@ -24,6 +24,11 @@
 # a wrong total instead of a crash. That's not automated here (it would require
 # checking out and mutating the file under test, which this suite intentionally
 # doesn't do); re-run it by hand if this test's fixtures are ever revised.
+# Extended 2026-08-07 for the agent_type breakdown (docs/research/
+# orchestrator-tax-gap-analysis-2026-08-07.md, "Re-read audit" G1 follow-up): the
+# dedup key widened again, from (session_id, stream, model) to (session_id, stream,
+# model, agent_type), for the identical reason `stream` was added to it earlier the
+# same day — two agent types spending on the same model would otherwise collide.
 # Run standalone: bash tests/commands/test-cost-report.sh
 set -uo pipefail
 
@@ -94,6 +99,29 @@ rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "5.0000" ]] && ok=1 || ok=0
 assert "orchestrator + subagent rows (same session+model, DIFFERENT stream) both survive dedup and sum (got total=\$${total:-?}, want \$5.0000)" "$ok"
+rm -rf "$fake_home"
+
+# Adversarial case (2026-08-07, agent_type breakdown): two subagent rows, same
+# session+model+stream, DIFFERENT agent_type. Must NOT collide — a kbg:code-reviewer
+# dispatch and an Explore dispatch on the same model are different populations of
+# work, same reasoning as the stream split above. Differing costs ($4/$6) so only
+# "both survive, sum to $10" passes — a buggy dedup key that ignores agent_type
+# would drop one and land on $4 or $6 instead.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-08-07T00:00:00Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"kbg:code-reviewer","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":4.0}
+{"timestamp":"2026-08-07T00:00:01Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":4,"input_tokens":50,"output_tokens":25,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":6.0}
+EOF
+out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
+rc=$?
+total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
+[[ "$rc" == "0" && "$total" == "10.0000" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q 'By agent type' \
+  && printf '%s' "$out" | /usr/bin/grep -q 'kbg:code-reviewer' \
+  && printf '%s' "$out" | /usr/bin/grep -q 'Explore' && ok=1 || ok=0
+assert "two subagent rows (same session+model+stream, DIFFERENT agent_type) both survive dedup, sum to \$10, and appear in the By agent type section (got total=\$${total:-?})" "$ok"
 rm -rf "$fake_home"
 
 echo ""
