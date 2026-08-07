@@ -37,8 +37,17 @@ Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memo
   Class A — stale-superseded:   MEMORY.md pointer has **SUPERSEDED** marker + topic has 0 surviving inbound
   Class B — near-budget-collapse: pointer ≥250 chars + topic >5KB + pointer carries detail
   Class C — dangling-link-rewrite: surviving file has [[wikilink]] that resolves to nothing or to _archive/
+  Class D — count-fold: fallback valve for A/B/C = 0 candidates but index still >=80% of cap
+                         (this store's actual growth shape: many small terse entries, not a
+                         few verbose outliers — confirmed empirically 2026-08-07, A/B found 0
+                         candidates at 84% of cap). Deindexes (never deletes) the OLDEST pointer
+                         lines by topic-file mtime, any type, until back under 65% of cap. Not
+                         type-restricted — project-only would have covered ~half the bytes a
+                         real fold needed; the existing dry-run/--yes confirm gate is the review
+                         point, not a type filter.
 
-All mutations use `mv` (never `rm`); confirm prompt is shown by default; --yes skips confirm.
+All mutations use `mv` (never `rm`) or deindex-only (Class D); confirm prompt is shown by
+default; --yes skips confirm.
 """
 import argparse
 import difflib
@@ -72,6 +81,8 @@ STOPWORDS = {
 LINE_CAP = 200
 BYTE_CAP = 25 * 1024
 STALE_DAYS_DEFAULT = 90
+FOLD_TRIGGER_PCT = 0.80  # matches the existing NEAR-BUDGET trigger (class_b uses the same cut)
+FOLD_TARGET_PCT = 0.65   # Class D folds until back under this fraction of the caps
 SUPERSEDED_ARCHIVE_DATE_FMT = "%Y-%m-%d"
 STUB_TEMPLATE = "- [{}](_archive/{}/{}) — archived on-demand"
 # The link target is the archived path so future grep/audit can find the file.
@@ -618,6 +629,52 @@ def class_c_dangling_link_rewrite(state):
     return plan
 
 
+def class_d_count_fold(state, exclude_files):
+    """Class D: pure count-pressure fallback valve. Only produces entries when the
+    index is still >= FOLD_TRIGGER_PCT of cap — A/B/C's per-entry heuristics don't
+    catch pure entry-count accumulation (many small terse pointer lines, no single
+    verbose outlier to collapse). Deindexes (never deletes) the OLDEST pointer
+    lines by topic-file mtime, any type, until back under FOLD_TARGET_PCT of cap.
+    exclude_files = filenames already claimed by plan A/B, so nothing double-counts.
+    Self-contained byte accounting — does not participate in the shared
+    estimated_impact sum used by A/B/C, which mixes savings-sign conventions
+    across classes; D reports its own delta separately."""
+    plan = []
+    idx_bytes = len(state["idx"].encode("utf-8"))
+    idx_lines = state["idx"].count("\n") + 1
+    pct = max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP)
+    if pct < FOLD_TRIGGER_PCT:
+        return plan
+
+    target_bytes = int(BYTE_CAP * FOLD_TARGET_PCT)
+    target_lines = int(LINE_CAP * FOLD_TARGET_PCT)
+    if idx_bytes <= target_bytes and idx_lines <= target_lines:
+        return plan
+
+    candidates = []
+    for m in POINTER_LINE_RE.finditer(state["idx"]):
+        fname = m.group(1)
+        full_line = m.group(0)
+        if fname in exclude_files or fname not in state["files"]:
+            continue
+        try:
+            mtime = os.path.getmtime(os.path.join(state["d"], fname))
+        except OSError:
+            continue
+        candidates.append((mtime, fname, full_line))
+    candidates.sort(key=lambda c: c[0])  # oldest first
+
+    remaining_bytes = idx_bytes
+    remaining_lines = idx_lines
+    for _mtime, fname, full_line in candidates:
+        if remaining_bytes <= target_bytes and remaining_lines <= target_lines:
+            break
+        remaining_bytes -= len(full_line.encode("utf-8")) + 1  # +1 for the newline
+        remaining_lines -= 1
+        plan.append({"action": "deindex", "file": fname, "old_pointer_line": full_line})
+    return plan
+
+
 def atomic_write(path, content):
     """Write file atomically: stage at temp path, fsync, os.replace."""
     d = os.path.dirname(path)
@@ -635,8 +692,8 @@ def atomic_write(path, content):
 
 
 def apply_action_plan(state, plan):
-    """Execute the plan: Class A moves, B/C rewrites. Returns (bytes_saved, applied_summary)."""
-    applied = {"A": [], "B": [], "C": []}
+    """Execute the plan: Class A moves, B/C rewrites, D deindexes. Returns (bytes_saved, applied_summary)."""
+    applied = {"A": [], "B": [], "C": [], "D": []}
     bytes_saved = 0
     d = state["d"]
     idx = state["idx"]
@@ -701,6 +758,18 @@ def apply_action_plan(state, plan):
             applied["C"].append({"action": "rewrite_wikilink", "from": entry["old"], "to": entry["new"], "file": entry["file"]})
             atomic_write(path, new_txt)
 
+    # Class D — pure deindex (remove pointer line only, backing file untouched)
+    for entry in plan.get("D", []):
+        old_line = entry["old_pointer_line"]
+        if old_line + "\n" in new_idx:
+            new_idx = new_idx.replace(old_line + "\n", "", 1)
+            bytes_saved += len(old_line.encode("utf-8")) + 1
+            applied["D"].append({"action": "deindex", "file": entry["file"]})
+        elif old_line in new_idx:
+            new_idx = new_idx.replace(old_line, "", 1)
+            bytes_saved += len(old_line.encode("utf-8"))
+            applied["D"].append({"action": "deindex", "file": entry["file"]})
+
     # Atomic MEMORY.md write (only if changed)
     if new_idx != idx:
         atomic_write(state["index_path"], new_idx)
@@ -734,8 +803,16 @@ def print_plan(state, plan, estimated_impact):
         else:
             print(f"  [manual] {e['file']}: {e['old']} (no ledger target found; needs human resolution)")
     print()
-    print(f"Estimated impact: {estimated_impact:+d}B ({estimated_impact/1024:+.1f}KB)")
-    print(f"  MEMORY.md {idx_bytes}B → {new_bytes}B ({pct_now}% → {pct_after}% of {BYTE_CAP}B cap)")
+    plan_d = plan.get("D", [])
+    d_bytes_saved = sum(len(e["old_pointer_line"].encode("utf-8")) + 1 for e in plan_d)
+    print(f"Class D (count-fold): {len(plan_d)} pointer(s)")
+    for e in plan_d:
+        print(f"  [deindex] {e['file']} (backing file kept, just unindexed — still in git history + qmd)")
+    if plan_d:
+        print(f"  Class D savings (reported separately — not mixed into the estimate below): -{d_bytes_saved}B")
+    print()
+    print(f"Estimated impact (A+B+C only): {estimated_impact:+d}B ({estimated_impact/1024:+.1f}KB)")
+    print(f"  MEMORY.md {idx_bytes}B → {new_bytes}B ({pct_now}% → {pct_after}% of {BYTE_CAP}B cap, before Class D)")
 
 
 def run_action_mode(state, args):
@@ -743,7 +820,9 @@ def run_action_mode(state, args):
     plan_a = class_a_stale_superseded(state)
     plan_b = class_b_near_budget_collapse(state)
     plan_c = class_c_dangling_link_rewrite(state)
-    plan = {"A": plan_a, "B": plan_b, "C": plan_c}
+    exclude_files = {e["from"] for e in plan_a} | {e["topic_file"] for e in plan_b}
+    plan_d = class_d_count_fold(state, exclude_files)
+    plan = {"A": plan_a, "B": plan_b, "C": plan_c, "D": plan_d}
     estimated_impact = (
         sum(len(e["old_pointer_line"]) - len(STUB_TEMPLATE.format(e["from"][:-3], e["to_archive_subdir"], e["from"])) for e in plan_a)
         + sum(e["delta_bytes"] for e in plan_b)
@@ -783,6 +862,7 @@ def run_action_mode(state, args):
                 "new": e.get("new"),
                 "reason": e.get("reason"),
             })
+        d_list = [{"action": "deindex", "file": e["file"]} for e in plan_d]
         out = {
             "mode": "auto-archive-dry-run" if dry_run else "auto-archive-apply",
             "memory_dir": state["d"],
@@ -790,8 +870,11 @@ def run_action_mode(state, args):
                 "A_stale_superseded": a_list,
                 "B_near_budget_collapse": b_list,
                 "C_dangling_link_rewrite": c_list,
+                "D_count_fold": d_list,
             },
             "estimated_impact_bytes": estimated_impact,
+            "estimated_impact_bytes_note": "A+B+C only — Class D reported separately",
+            "d_count_fold_bytes_saved": sum(len(e["old_pointer_line"].encode("utf-8")) + 1 for e in plan_d),
             "apply_command": "memory-lint.py --auto-archive --yes",
         }
         print(json.dumps(out, indent=2))
@@ -839,6 +922,7 @@ def run_action_mode(state, args):
         print(f"  A: {len(applied['A'])} file(s) moved to _archive/")
         print(f"  B: {len(applied['B'])} pointer(s) collapsed")
         print(f"  C: {len(applied['C'])} wikilink(s) rewritten")
+        print(f"  D: {len(applied['D'])} pointer(s) deindexed (backing files kept)")
         print(f"  Net: {bytes_saved:+d}B saved on MEMORY.md")
     return 0
 

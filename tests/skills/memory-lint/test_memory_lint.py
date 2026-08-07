@@ -105,6 +105,65 @@ def test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan():
         assert not any("DANGLING" in f or "ORPHAN" in f for f in findings), findings
 
 
+def test_class_d_count_fold_fires_over_trigger_and_reaches_target():
+    # Regression test for the 2026-08-07 Class D addition: A/B/C only catch a
+    # few verbose outliers or explicit **SUPERSEDED** markers, so a store made
+    # of many small terse entries (this store's real shape) sails past 80% of
+    # cap with 0 candidates from either class — confirmed live against the
+    # real pre-trim MEMORY.md (21,632B/84%, A and B both found 0). Class D is
+    # the fallback valve for exactly that shape.
+    orig_line_cap, orig_byte_cap = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10_000  # keep line-cap out of the way; test byte-cap only
+        memory_lint.BYTE_CAP = 480
+        with tempfile.TemporaryDirectory() as d:
+            idx_lines = []
+            now = 2_000_000_000
+            for i in range(6):
+                stem = f"topic-{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\nsome memory content about topic {i}\n")
+                os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
+                idx_lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(idx_lines) + "\n")
+            state = memory_lint.collect_state(d)
+            idx_bytes = len(state["idx"].encode("utf-8"))
+            assert idx_bytes / memory_lint.BYTE_CAP >= 0.80, "fixture must actually cross the trigger"
+
+            plan = memory_lint.class_d_count_fold(state, exclude_files=set())
+            assert plan, "expected Class D to propose at least one deindex above the trigger"
+            # Oldest-mtime-first: topic-0 (lowest mtime) must be folded before topic-5 (highest).
+            folded = [e["file"] for e in plan]
+            assert folded[0] == "topic-0.md", f"expected oldest-mtime file first, got {folded}"
+            assert "topic-5.md" not in folded or folded.index("topic-5.md") == len(folded) - 1, (
+                f"newest-mtime file should be folded last if at all: {folded}")
+
+            freed = sum(len(e["old_pointer_line"].encode("utf-8")) + 1 for e in plan)
+            remaining = idx_bytes - freed
+            target = memory_lint.BYTE_CAP * memory_lint.FOLD_TARGET_PCT
+            assert remaining <= target, (
+                f"Class D plan must actually reach target: {remaining}B remaining vs {target}B target")
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line_cap, orig_byte_cap
+
+
+def test_class_d_count_fold_returns_nothing_under_trigger():
+    orig_byte_cap = memory_lint.BYTE_CAP
+    try:
+        memory_lint.BYTE_CAP = 1_000_000  # index nowhere near this cap
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "topic.md"), "w") as f:
+                f.write("---\nname: topic\n---\nsome memory content\n")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("- [topic](topic.md) — a short pointer hook\n")
+            state = memory_lint.collect_state(d)
+            plan = memory_lint.class_d_count_fold(state, exclude_files=set())
+            assert plan == [], f"expected no Class D candidates well under trigger, got {plan}"
+    finally:
+        memory_lint.BYTE_CAP = orig_byte_cap
+
+
 def _write_memory(d, filename, type_, description, body):
     with open(os.path.join(d, filename), "w") as f:
         f.write(f'---\nname: {filename[:-3]}\ndescription: "{description}"\n'
@@ -197,6 +256,8 @@ if __name__ == "__main__":
     test_markdown_style_link_in_backticks_is_not_a_real_reference()
     test_markdown_style_link_with_path_is_treated_as_external_not_dangling()
     test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan()
+    test_class_d_count_fold_fires_over_trigger_and_reaches_target()
+    test_class_d_count_fold_returns_nothing_under_trigger()
     test_template_compliance_flags_feedback_memory_missing_both_fields()
     test_contradiction_candidates_requires_matching_type()
     test_contradiction_candidates_pairs_high_overlap_same_type()
