@@ -430,42 +430,62 @@ def _git_first_commit(d):
     return sha, int(epoch)
 
 
-def _existed_at_commit(d, sha, filename):
-    """True if `filename` was present in the tree at commit `sha`.
+def _baseline_tree_files(d, sha):
+    """Every filename tracked at the memory dir's first commit, or None if the
+    git call itself failed (distinct from a genuinely empty tree).
 
-    This, not mtime, is the right "was this file's whole life inside tracked
-    history" test — mtime resets on every edit, so a pre-baseline file that
-    gets touched later would otherwise flip from ambiguous to (wrongly)
-    never-indexed the moment anyone edits it. Tree membership at the baseline
-    commit is a fixed fact about history, immune to later edits.
+    One call for the whole baseline tree, not one `ls-tree` per file — same
+    tree-membership test as before (immune to later edits, unlike mtime), now
+    O(1) subprocess calls instead of O(N).
     """
     try:
         out = subprocess.run(
-            ["git", "-C", d, "ls-tree", "--name-only", sha, "--", filename],
+            ["git", "-C", d, "ls-tree", "--name-only", sha],
             capture_output=True, text=True, timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return False
-    return out.returncode == 0 and bool(out.stdout.strip())
+        return None
+    if out.returncode != 0:
+        return None
+    return set(out.stdout.splitlines())
 
 
-def _git_fold_commit(d, filename):
-    """Most recent commit where `filename`'s occurrence count changed inside
-    MEMORY.md's tracked history (git log -S pickaxe search, scoped to MEMORY.md
-    only — unscoped would false-positive on the filename merely being *mentioned*
-    in another memory's prose, which isn't the same as it having been a pointer).
-    Returns {"sha": ..., "subject": ...} or None."""
+def _git_fold_commits(d):
+    """Single-pass parse of MEMORY.md's own commit history: for every commit,
+    every real markdown pointer-link (POINTER_RE) it removed. Returns
+    (folds, ok) — folds maps filename -> the most recent {"sha", "subject"}
+    whose diff removed a `](filename)` link; ok is False only if the git call
+    itself failed, distinct from "ran fine, found nothing".
+
+    Exact pointer-link match, not `git log -S<filename>` substring search:
+    -S matches the filename anywhere in MEMORY.md's TEXT, including a bare
+    mention in another entry's prose that was never a real link — editing that
+    unrelated prose later would then look like a fold. Scanning only diff
+    lines through POINTER_RE requires real `](file.md)` syntax, closing that
+    as a side effect of batching everything into one call.
+    """
+    sep = "\x01"
     try:
         out = subprocess.run(
-            ["git", "-C", d, "log", "-S", filename, "--format=%h|%s", "--", "MEMORY.md"],
+            ["git", "-C", d, "log", f"--format=COMMIT{sep}%h{sep}%s", "-p", "--", "MEMORY.md"],
             capture_output=True, text=True, timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return None
-    if out.returncode != 0 or not out.stdout.strip():
-        return None
-    sha, _, subject = out.stdout.strip().splitlines()[0].partition("|")
-    return {"sha": sha, "subject": subject}
+        return {}, False
+    if out.returncode != 0:
+        return {}, False
+
+    folds = {}
+    sha = subject = None
+    for line in out.stdout.splitlines():
+        if line.startswith(f"COMMIT{sep}"):
+            _, sha, subject = line.split(sep, 2)
+            continue
+        if sha is None or not line.startswith("-") or line.startswith("---"):
+            continue
+        for target in POINTER_RE.findall(line):
+            folds.setdefault(target, {"sha": sha, "subject": subject})
+    return folds, True
 
 
 def classify_unindexed(state):
@@ -481,8 +501,8 @@ def classify_unindexed(state):
     docs/research/claude-mem-architecture-study-2026-08-07.md, Adopt-1.
 
     Buckets, in order of confidence:
-      folded-confirmed        — git log -S (scoped to MEMORY.md) finds a commit
-                                 where this filename's occurrence count changed.
+      folded-confirmed        — a real `](file.md)` pointer link to this file
+                                 was removed from MEMORY.md at some past commit.
                                  NOT a candidate to re-add — a prior fold already
                                  made this call.
       never-indexed            — file is ABSENT from the tree at the memory
@@ -503,36 +523,46 @@ def classify_unindexed(state):
                                  commit never changes.
       no-git-history           — the memory dir isn't a git repo at all (or has
                                  0 commits) — same ambiguity as above, always.
+      git-query-failed          — the dir IS a git repo, but a git call failed
+                                 mid-scan (lock contention, timeout, corrupted
+                                 history). Distinct from no-git-history so a
+                                 human can tell "no repo" from "transient
+                                 failure" — and distinct from silently falling
+                                 through to never-indexed, which would assert
+                                 the wrong bucket with full confidence.
     """
     d = state["d"]
     referenced = state["referenced"]
     unindexed = sorted(f for f in state["files"] if f not in referenced)
 
     baseline_sha, _baseline_epoch = _git_first_commit(d)
+    folds, folds_ok, baseline_files = {}, True, None
+    if baseline_sha is not None:
+        folds, folds_ok = _git_fold_commits(d)
+        baseline_files = _baseline_tree_files(d, baseline_sha)
+
     results = []
     for f in unindexed:
-        txt = open(os.path.join(d, f), encoding="utf-8").read()
+        txt = open(os.path.join(d, f), encoding="utf-8", errors="replace").read()
         frontmatter = txt.split("---", 2)[1] if txt.startswith("---") else ""
         dm = DESCRIPTION_RE.search(frontmatter)
         description = dm.group(1) if dm else None
 
         if baseline_sha is None:
-            results.append({"file": f, "bucket": "no-git-history", "commit": None, "description": description})
-            continue
-
-        fold = _git_fold_commit(d, f)
-        if fold:
-            results.append({"file": f, "bucket": "folded-confirmed", "commit": fold, "description": description})
-            continue
-
-        bucket = "ambiguous-pre-baseline" if _existed_at_commit(d, baseline_sha, f) else "never-indexed"
-        results.append({"file": f, "bucket": bucket, "commit": None, "description": description})
+            bucket, commit = "no-git-history", None
+        elif not folds_ok or baseline_files is None:
+            bucket, commit = "git-query-failed", None
+        elif f in folds:
+            bucket, commit = "folded-confirmed", folds[f]
+        else:
+            bucket, commit = ("ambiguous-pre-baseline" if f in baseline_files else "never-indexed"), None
+        results.append({"file": f, "bucket": bucket, "commit": commit, "description": description})
     return results
 
 
 def run_classify_unindexed(state, as_json):
     results = classify_unindexed(state)
-    order = ["folded-confirmed", "never-indexed", "ambiguous-pre-baseline", "no-git-history"]
+    order = ["folded-confirmed", "never-indexed", "ambiguous-pre-baseline", "no-git-history", "git-query-failed"]
     buckets = {b: [r for r in results if r["bucket"] == b] for b in order}
 
     if as_json:
@@ -576,6 +606,12 @@ def run_classify_unindexed(state, as_json):
         print()
         print(f"no-git-history ({len(buckets['no-git-history'])}) — memory dir isn't a git repo (or has 0 commits); same ambiguity as ambiguous-pre-baseline for all of these:")
         for r in buckets["no-git-history"]:
+            print(f"  {r['file']}")
+
+    if buckets["git-query-failed"]:
+        print()
+        print(f"git-query-failed ({len(buckets['git-query-failed'])}) — a git command failed mid-scan (lock contention, timeout, corrupted history); can't safely tell fold vs forgotten, needs manual read:")
+        for r in buckets["git-query-failed"]:
             print(f"  {r['file']}")
     return 0
 

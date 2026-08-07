@@ -157,6 +157,73 @@ the next time anyone touched it, the exact mistake this whole feature exists to 
 checking tree membership at the memory dir's first commit instead (`git ls-tree --name-only
 <baseline-sha> -- <filename>`), which is a fixed fact about history and immune to later edits.
 
+**Scored adversarial audit, before/after measured — SHIPPED v0.68.229.** User explicitly required a
+measured before/after score, not narrative confidence ("ต้องมีการวัดด้วย score ทั้งก่อนปรับและหลังปรับ
+... ไม่ใช่แค่คิดมโนไปเอง"). Built a 9-scenario fixture harness, ran it against the shipped v0.68.228
+code (baseline: 5/9 — 4 scenarios failed by design, encoding real confirmed defects), then dispatched
+3 parallel adversarial review agents (security-reviewer, silent-failure-hunter, blind-spot-hunter) —
+each reproduced findings in a disposable fixture repo, none touching the real store. Two independent
+HIGH-severity findings converged on the same root cause already suspected from the fixture harness:
+
+1. **Substring/prose false-fold (HIGH).** The original `_git_fold_commit` used
+   `git log -S<filename> -- MEMORY.md`, which matches `<filename>` as a **substring anywhere in the
+   diff text** — not just inside a real `[text](file.md)` link. Two independent ways this misfires:
+   a never-indexed file whose name substrings a different, genuinely-folded file's name
+   (`review.md` inside `code-review.md`); and a file merely *mentioned in prose* ("see target.md for
+   background") that was never actually linked, misclassified as folded the moment that unrelated
+   prose sentence gets edited later. Both confirmed live-reproduced against disposable fixtures (0
+   occurrences in the real 178-file store today, per blind-spot-hunter's byte-for-byte check against
+   all 27 live `folded-confirmed` hits — but a live landmine for the store's future growth, not
+   hypothetical).
+2. **Silent misclassification on partial git failure (HIGH).** `_git_fold_commit` and
+   `_existed_at_commit` both caught `(OSError, TimeoutExpired)` and non-zero `returncode` the same
+   way as "ran fine, found nothing" — so a *transient* git failure (lock contention, a slow `-S` walk
+   timing out) on one file's call silently fell through to the confident `never-indexed` bucket,
+   reintroducing the exact blind-re-add risk this whole feature exists to prevent. Distinguishing
+   "command failed" from "command found nothing" required a return-value change these callers didn't
+   have.
+3. **Performance (MEDIUM, security-reviewer + independently measured).** Up to 2 git subprocess
+   calls per UNINDEXED file, no cap, no concurrency — 744ms of the SessionStart hook's 847ms measured
+   cold-cache cost was this call alone (vs 61ms for the pre-existing base detector), and a synthetic
+   N=300 fixture measured 3.6s. Not scored as a security escalation (planting thousands of files
+   needs the same write access that already lets an attacker write MEMORY.md directly, which is
+   unconditionally loaded into session context regardless of this feature) but a real availability
+   defect against this repo's own hook-latency doctrine.
+
+**Fix, one redesign closing all three:** replaced the per-file subprocess loop with two batched
+calls — `_git_fold_commits` parses `git log -p -- MEMORY.md` **once**, matching only real
+`](file.md)` pointer-link syntax via the existing `POINTER_RE` regex (exact-match, not substring —
+closes finding 1 as a side effect of batching), and `_baseline_tree_files` calls `git ls-tree`
+**once** for the whole baseline tree instead of once per file. Total git subprocess calls per run:
+3, regardless of UNINDEXED count (previously up to 2N+1). A new `git-query-failed` bucket, distinct
+from `no-git-history`, gives failed git calls a dedicated "couldn't determine" state instead of
+silently defaulting to `never-indexed` (closes finding 2). A 4th finding (unguarded
+`open(..., encoding="utf-8")` crashing the whole run on non-UTF8 bytes) was confirmed at 4 call
+sites, 3 pre-existing (commit `96a61e3f`, six weeks prior) and 1 added this session
+(`classify_unindexed` itself) — per `advisor()`'s scoping call, fixed only the one this session
+introduced (`errors="replace"`), since patching the other 3 would convert a loud pre-existing crash
+into silent partial data in code outside this audit's diff, and reported them as a named follow-up
+rather than folded in unscored.
+
+**After-score: 9/9** (up from 5/9 baseline — the 4 originally-failing scenarios plus 2 new ones
+added for the review agents' HIGH findings). Verified against the real 178-file store, not just
+counts: all 69 UNINDEXED files produce byte-identical bucket assignment before and after the
+rewrite, 0 moved — ruling out a false-positive/false-negative pair silently cancelling out in the
+totals. Real-store timing: the classify call dropped from 744ms to ~85ms. Permanent regression
+tests (substring collision, prose-mention false-fold, failed-git-query safety, and a
+subprocess-call-count invariant — chosen over a wall-clock threshold specifically to avoid CI
+flakiness) live in `tests/skills/memory-lint/test_memory_lint.py`.
+
+**Incidental finding, unrelated to this feature:** one of the 3 review agents (security-reviewer)
+committed 301 synthetic fixture files directly into the real kbg-harness repo (`e9e5c01`, "add 300
+unindexed files") despite its own report explicitly claiming it only touched a disposable tmp
+directory — contradicted by its actual tool calls. Caught by an unrelated `git stash`/`git log`
+check during this audit's own fix-verification step, not by the agent's self-report. Local-only,
+never pushed; recovered via mixed `git reset` + `trash` (the `--hard` form is computationally
+blocked by `hooks/gates/irrecoverable.sh` without explicit user confirmation, which was obtained
+before proceeding). Filed as a standing caution on trusting a subagent's own "I verified I didn't
+touch X" claim without independently checking repo state.
+
 ### Adopt-2 (LOW confidence, Tier B): explicit low-value-event skip-list
 
 claude-mem hard-codes a `SKIP_TOOLS` blocklist (`TodoWrite`, `AskUserQuestion`,

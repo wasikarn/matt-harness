@@ -364,6 +364,133 @@ def test_classify_unindexed_handles_no_git_repo():
         assert match[0]["bucket"] == "no-git-history", match[0]
 
 
+def test_classify_unindexed_no_substring_collision():
+    # Regression test for a HIGH finding from this session's adversarial
+    # review: the old `git log -S<filename>` search matched filename as a
+    # SUBSTRING anywhere in MEMORY.md's diff text, so a never-indexed file
+    # whose name happens to be a substring of a genuinely-folded file's name
+    # (review.md vs code-review.md) got misclassified as folded-confirmed.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "baseline (neither file exists yet)")
+
+        _write_memory(d, "code-review.md", "project", "the long filename", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [code-review](code-review.md) — the long filename\n")
+        _git_commit(d, "index code-review")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "fold rule: drop code-review pointer")
+
+        _write_memory(d, "review.md", "project",
+                       "short name, substring of code-review.md, never referenced at all", "n/a")
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "review.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "never-indexed", (
+            f"review.md was never a real link, must not inherit code-review.md's fold: {match[0]}")
+
+
+def test_classify_unindexed_no_prose_mention_false_fold():
+    # Regression test for a HIGH finding from this session's adversarial
+    # review (blind-spot-hunter): a filename mentioned only in PROSE (never
+    # wrapped in a real [text](file.md) link) must not be credited as folded
+    # just because that prose sentence gets edited later for unrelated
+    # reasons — mentioned.md was never actually indexed.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "baseline (neither file exists yet)")
+
+        _write_memory(d, "other.md", "project", "the real entry", "n/a")
+        _write_memory(d, "mentioned.md", "project", "never linked, only named in prose", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [other](other.md) — see mentioned.md for background\n")
+        _git_commit(d, "index other, mention mentioned.md in prose only")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [other](other.md) — background note\n")
+        _git_commit(d, "trim prose (mentioned.md was never a real link)")
+
+        state = memory_lint.collect_state(d)
+        results = memory_lint.classify_unindexed(state)
+        match = [r for r in results if r["file"] == "mentioned.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "never-indexed", (
+            f"a bare prose mention must not be credited as a real fold: {match[0]}")
+
+
+def test_classify_unindexed_failed_git_query_is_safe_not_never_indexed():
+    # Regression test for a HIGH finding from this session's adversarial
+    # review (silent-failure-hunter): the old per-file design caught a git
+    # subprocess failure and silently fell through to the confident
+    # never-indexed bucket — the wrong direction, since it could relabel a
+    # genuinely-folded file as a fresh candidate to re-add. A failed git
+    # query must land in its own distinct bucket instead.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        _write_memory(d, "folded-file.md", "project", "will be folded", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [folded-file](folded-file.md) — will be folded\n")
+        _git_commit(d, "index folded-file")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "fold rule: drop folded-file pointer")
+
+        state = memory_lint.collect_state(d)
+        orig = memory_lint._git_fold_commits
+        memory_lint._git_fold_commits = lambda d: ({}, False)  # simulate a failed git call
+        try:
+            results = memory_lint.classify_unindexed(state)
+        finally:
+            memory_lint._git_fold_commits = orig
+
+        match = [r for r in results if r["file"] == "folded-file.md"]
+        assert len(match) == 1, results
+        assert match[0]["bucket"] == "git-query-failed", (
+            f"a failed fold-detection call must not silently become never-indexed: {match[0]}")
+
+
+def test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_count():
+    # Regression test for the 2026-08-07 O(N)-subprocess redesign: the actual
+    # defect (~744ms against the real 178-file store, ~356ms at a synthetic
+    # N=30) was subprocess-SPAWN COUNT scaling with the number of UNINDEXED
+    # files, not any one call being slow. A wall-clock assertion would be
+    # flaky on a loaded machine; the call count is the real invariant and
+    # fails deterministically if someone reverts to a per-file loop.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")
+        _git_commit(d, "baseline")
+        for i in range(5):
+            _write_memory(d, f"topic-{i}.md", "project", f"fixture {i}", "n/a")
+
+        state = memory_lint.collect_state(d)
+        calls = []
+        orig_run = memory_lint.subprocess.run
+
+        def counting_run(*args, **kwargs):
+            calls.append(args[0] if args else kwargs.get("args"))
+            return orig_run(*args, **kwargs)
+
+        memory_lint.subprocess.run = counting_run
+        try:
+            results = memory_lint.classify_unindexed(state)
+        finally:
+            memory_lint.subprocess.run = orig_run
+
+        git_calls = [c for c in calls if c and c[0] == "git"]
+        assert len(git_calls) == 3, (
+            f"expected exactly 3 git calls (first-commit + fold-scan + baseline-tree) "
+            f"regardless of file count, got {len(git_calls)}: {git_calls}")
+        assert len(results) == 5
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -382,4 +509,8 @@ if __name__ == "__main__":
     test_classify_unindexed_flags_ambiguous_when_pre_baseline()
     test_classify_unindexed_pre_baseline_file_edited_later_stays_ambiguous()
     test_classify_unindexed_handles_no_git_repo()
+    test_classify_unindexed_no_substring_collision()
+    test_classify_unindexed_no_prose_mention_false_fold()
+    test_classify_unindexed_failed_git_query_is_safe_not_never_indexed()
+    test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_count()
     print("OK")
