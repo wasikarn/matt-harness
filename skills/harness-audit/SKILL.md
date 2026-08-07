@@ -46,7 +46,7 @@ Produces exit code = count of findings. Zero = clean.
 | **Placeholder residue** | "Daisy" or other upstream placeholders |
 | **PyCache tracked** | `__pycache__/` or `*.pyc` accidentally git-tracked |
 | **Description length** | Skill/agent/command `description` ≤ 1536 chars (runtime truncates over-limit) |
-| **Agent model value** | `model:`, if present, is an alias (`sonnet`/`opus`/`haiku`/`inherit`) or a `claude-*` ID |
+| **Agent model value** | `model:`, if present, is an alias (`sonnet`/`opus`/`haiku`/`fable`/`inherit`) or a `claude-*` ID |
 | **Hook event name** | Each `settings.json` hook event is in the documented 31-event set |
 | **Hook handler type** | Each handler `type` is one of `command`/`http`/`mcp`/`agent`/`prompt` |
 | **Hook matcher regex** | Each `matcher` (other than `*` / `""` wildcards) compiles as a regex |

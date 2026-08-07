@@ -88,7 +88,7 @@ just not because of the linear-scaling/hard-cap math below.
 Use `/mcp` in-session to disable unused servers if you notice real context pressure. Prefer
 keeping heavy-schema MCPs (Figma, Atlassian, MongoDB) inactive unless actively needed.
 
-**Agent teams cost:** each teammate agent consumes tokens independently. `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "0"` disables agent-team spawning.
+**Agent teams cost:** each teammate agent consumes tokens independently. Agent teams are opt-in and off by default — set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` to enable them; `"0"` (or unset) keeps them off, it doesn't disable an active default.
 
 ### Strategic Compaction
 

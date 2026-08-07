@@ -134,7 +134,7 @@ deserve a human gate. kbg-harness currently has 3 gate scripts, all under
   Write/Edit; `exit 2`-blocks a literal `/Users/<name>` written into a `.sh`
   or `.py` file — `$HOME`/`~` pass through).
 - **Verifier tamper-protection** — `hooks/gates/verifier-protect.sh`
-  (PreToolUse on Write/Edit/MultiEdit; emits `permissionDecision: ask` — not
+  (PreToolUse on Write/Edit/NotebookEdit; emits `permissionDecision: ask` — not
   deny — for edits to `hooks/gates/**`, `hooks/hooks.json`,
   `skills/harness-audit/scripts/audit.sh`, and
   `skills/harness-audit/scripts/checks/**`. The class is "the model editing

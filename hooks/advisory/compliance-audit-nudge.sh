@@ -10,10 +10,11 @@
 # here). Never blocks; always exits 0.
 #
 # Why PostToolUse:Bash and not Stop: Stop fires on every turn end (this
-# hook only cares about ones that just committed), nothing in this repo or
-# in the docs confirms Stop supports hookSpecificOutput.additionalContext
-# (the channel this hook relies on -- see plan-review-nudge.sh, the sibling
-# this mirrors), the one existing Stop hook (stop/cost-tracker.sh) is wired
+# hook only cares about ones that just committed); Stop DOES support
+# hookSpecificOutput.additionalContext as of Claude Code 2.1.163 (the
+# channel this hook relies on -- see plan-review-nudge.sh, the sibling
+# this mirrors), but that alone doesn't justify the switch here -- the
+# one existing Stop hook (stop/cost-tracker.sh) is wired
 # async:true (dead for any output-based contract), and a sync Stop hook
 # emitting continuation-style output needs the stop_hook_active loop guard,
 # which has zero precedent in this repo. PostToolUse:Bash matched on a

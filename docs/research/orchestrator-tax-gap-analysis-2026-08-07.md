@@ -373,6 +373,16 @@ subagent. kbg's prose preamble at `orchestrate/SKILL.md:8–12` is belt-and-susp
 platform guarantee, not the load-bearing control it reads as. Not a defect; worth knowing before
 anyone strengthens it further.
 
+> **Correction, 2026-08-07 (independent audit, same day):** the "platform guarantee" above is
+> weaker than this row implies. Claude Code 2.1.219 raised the default nested-subagent-spawn
+> depth from 1 to 3 — `Agent` is removed only once a chain reaches depth 3, not immediately at
+> depth 1, so a first- or second-level subagent keeps `Agent` by default and structurally *can*
+> re-orchestrate if it happens to be granted the tool. For kbg's own 19-agent fleet this is
+> currently moot — none of them grant `Agent` in their `tools:` allowlist (verified 2026-08-07),
+> so the prose preamble's "don't re-orchestrate" rule is doing real, load-bearing work for this
+> fleet via tool-grant absence, not via the depth-3 platform default. Original row left as-is
+> per this repo's own convention (dated correction, not a rewrite).
+
 ---
 
 ## Suggested sequence

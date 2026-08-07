@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 22. Hook config validity — settings.json (checks C–F).
-# Verified against code.claude.com/docs/en/hooks (30-event canonical set, re-confirmed
-# 2026-07-31 via raw HTML fetch — the DOC_EVENTS set below matches the live doc
-# item-for-item). Findings are WARN not CRIT: vendor docs lag features (Rule 1), so
+# Verified against code.claude.com/docs/en/hooks (31-event canonical set, re-confirmed
+# 2026-08-07 via raw fetch — added DirectoryAdded, shipped in Claude Code 2.1.219,
+# which the 2026-07-31 set below had missed). Findings are WARN not CRIT: vendor docs
+# lag features (Rule 1), so
 # an unrecognized event/type may be real-but-undocumented — flag for a human, do
 # not fail the build. A bad regex, by contrast, genuinely never matches.
 if [ -f "$SETTINGS" ]; then
@@ -17,8 +18,8 @@ DOC_EVENTS = {
     "PostToolBatch","Notification","MessageDisplay","SubagentStart","SubagentStop",
     "TaskCreated","TaskCompleted","Stop","StopFailure","TeammateIdle",
     "InstructionsLoaded","ConfigChange","CwdChanged","FileChanged","WorktreeCreate",
-    "WorktreeRemove","PreCompact","PostCompact","Elicitation","ElicitationResult",
-    "SessionEnd",
+    "WorktreeRemove","DirectoryAdded","PreCompact","PostCompact","Elicitation",
+    "ElicitationResult","SessionEnd",
 }
 VALID_TYPES = {"command","http","mcp","agent","prompt"}
 AC_MAX = 10000

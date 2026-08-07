@@ -85,7 +85,9 @@ Context Budget Report
 
 Total estimated overhead: ~XX,XXX tokens
 Context window: 1M (Sonnet 5 default) — confirm the actual model/window in use;
-  older models or a gateway without 1M support fall back to 200K
+  older models, a gateway without 1M support, or CLAUDE_CODE_DISABLE_1M_CONTEXT
+  (Claude Code 2.1.223, holds every 1M-native model to 200K when set) all fall
+  back to 200K
 Effective available: ~XXX,XXX tokens (XX%)
 
 Component Breakdown:
