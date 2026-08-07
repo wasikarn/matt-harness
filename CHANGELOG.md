@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.222] — 2026-08-07
+
+Shipped proposals A1 and A4 from `docs/research/agent-memory-engineering-2026-08-07.md`:
+
+- **A1** — `hooks/session/memory-health-nudge.sh` (SessionStart, `session:memory-health-nudge`):
+  restores the memory-lint surfacing loop dropped at v0.68.220's root cause (`c452102`). Silent
+  when clean, one advisory line naming the finding count when the store has drift. The
+  directory-existence pre-check uses `pwd -P`, not `$PWD` — macOS symlinks `/tmp` and `/var` into
+  `/private/…`, which broke a naive substitution during this hook's own fixture testing.
+- **A4** — `hooks/stop/memory-audit-commit.sh` (Stop, `stop:memory-audit-commit`, `async: true`):
+  commits dirty changes in the current project's memory store to its own git history, but only if
+  that store is already a git repo (one-time, user-run `git init` — the hook never inits it
+  itself). The live store
+  (`~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`) had zero version control
+  before today (confirmed, not assumed) — it's now `git init`'d with a baseline commit, and the
+  auto-commit + `git revert` rollback path was verified end-to-end against the real store (a test
+  file was created, auto-committed by the real hook, then actually removed from disk via
+  `git revert`).
+
+Both hooks add 26 tests total to `tests/hooks/test-session-stop.sh` (up from 12); full gauntlet
+green.
+
 ## [0.68.220] — 2026-08-07
 
 Fixed doc/reality drift in `skills/memory-lint/SKILL.md`: it claimed a SessionStart

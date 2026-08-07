@@ -23,6 +23,17 @@
           }
         ],
         "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${KBG_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably"
+      },
+      {
+        "id": "session:memory-health-nudge",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/memory-health-nudge.sh"]
+          }
+        ],
+        "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset"
       }
     ],
     "UserPromptSubmit": [
@@ -194,6 +205,19 @@
             "type": "command",
             "command": "bash",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh"],
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "id": "stop:memory-audit-commit",
+        "description": "Stop: if the current project's memory store is already a git repo (opt-in, one-time user-run `git init` — this hook never inits it), commit any dirty changes for a real audit trail / rollback path. No-op otherwise.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh"],
             "async": true,
             "timeout": 10
           }

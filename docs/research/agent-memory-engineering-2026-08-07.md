@@ -187,7 +187,13 @@ net exists; it hasn't since the reset).
 
 ### Tier A — ships in kbg-harness, no external dependency
 
-#### A1. Restore SessionStart health surfacing + fix the SKILL.md drift
+#### A1. Restore SessionStart health surfacing + fix the SKILL.md drift — **SHIPPED v0.68.222**
+
+Implemented as `hooks/session/memory-health-nudge.sh` (wired `session:memory-health-nudge`),
+26/26 tests green in `tests/hooks/test-session-stop.sh`. One divergence from the plan below worth
+recording: the directory-existence pre-check must use `pwd -P` (physical path), not `$PWD` — on
+macOS `/tmp` and `/var` are symlinks into `/private/…`, so a naive `$PWD` substitution silently
+never matched during this hook's own fixture testing (caught before shipping, not after).
 
 **Current implementation.** `skills/memory-lint/SKILL.md` states: *"The SessionStart
 memory-lint-check hook surfaces danglers each session (advisory; silent when clean)."* That hook
@@ -310,7 +316,18 @@ Article 1's own bar — and record that number before deciding.
 
 ---
 
-#### A4. Git-backed audit trail for the memory store
+#### A4. Git-backed audit trail for the memory store — **SHIPPED v0.68.222**
+
+Implemented as `hooks/stop/memory-audit-commit.sh` (wired `stop:memory-audit-commit`, `async:
+true`, mirroring `stop:cost-tracker`'s own wiring), 26/26 tests green (same suite as A1). Design
+decision made explicit here: the hook fires on **Stop** (per-turn), not `SessionEnd` — matching
+this repo's own existing precedent for "don't lose the data" hooks (`stop:cost-tracker` uses Stop
+for the same reason), not the once-per-session `SessionEnd` `learn-nudge` uses for its
+lower-stakes advisory case. `git add`/`commit` is a no-op when the tree is already clean, so the
+extra firing frequency buys finer rollback granularity at effectively zero cost. The live memory
+store (`~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`) was `git init`'d and
+given a baseline commit as part of shipping this — see Part 3's live-evidence table for the
+"before" state (confirmed no version control existed prior).
 
 **Current implementation.** `~/.claude/projects/<enc>/memory/` is not a git repository (verified:
 `git rev-parse --is-inside-work-tree` fails). The only change signal is a single native

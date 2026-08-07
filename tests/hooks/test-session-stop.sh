@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
-# command-root-anchor (SessionStart), cost-tracker (Stop). These hooks never
-# block (no permissionDecision) — tests assert exit 0 + expected side effect
-# (stdout injection / env-file append / metrics-file append), and that each
-# fails safe (exit 0, no side effect) when its required env var is unset.
+# command-root-anchor (SessionStart), memory-health-nudge (SessionStart),
+# cost-tracker (Stop), memory-audit-commit (Stop). These hooks never block
+# (no permissionDecision) —
+# tests assert exit 0 + expected side effect (stdout injection / env-file
+# append / metrics-file append), and that each fails safe (exit 0, no side
+# effect) when its required env var is unset.
 # Run standalone: bash tests/hooks/test-session-stop.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DOCTRINE="$ROOT/hooks/session/doctrine-bootstrap.sh"
 ROOT_ANCHOR="$ROOT/hooks/session/command-root-anchor.sh"
+MEMORY_NUDGE="$ROOT/hooks/session/memory-health-nudge.sh"
 COST_TRACKER="$ROOT/hooks/stop/cost-tracker.sh"
+MEMORY_COMMIT="$ROOT/hooks/stop/memory-audit-commit.sh"
 
 pass=0
 fail=0
@@ -80,6 +84,61 @@ CLAUDE_PLUGIN_ROOT="/some/plugin/root" env -u CLAUDE_ENV_FILE bash "$ROOT_ANCHOR
 rc=$?
 [[ "$rc" == "0" ]] && ok=1 || ok=0
 assert "fails safe (exit 0) when CLAUDE_ENV_FILE is unset" "$ok"
+
+echo ""
+echo "=== memory-health-nudge hook (SessionStart) ==="
+
+# Fixture directories must be resolved with `pwd -P` (physical path) before
+# encoding, matching both memory-lint.py's os.getcwd() and the hook's own
+# `pwd -P` pre-check — on macOS /tmp and /var are symlinks into /private/…,
+# so mktemp -d fixtures diverge from a naive $DIR substitution (caught while
+# writing this hook: an earlier ad-hoc smoke test used the logical path and
+# silently never found its own fixture).
+fake_home=$(mktemp -d)
+
+clean_dir=$(mktemp -d)
+clean_enc="$(cd "$clean_dir" && pwd -P | sed 's|/|-|g')"
+mkdir -p "$fake_home/.claude/projects/$clean_enc/memory"
+printf '%s\n' "# Memory index" > "$fake_home/.claude/projects/$clean_enc/memory/MEMORY.md"
+out=$(cd "$clean_dir" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home" bash "$MEMORY_NUDGE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "silent (exit 0, no output) when the memory store has zero findings" "$ok"
+
+dirty_dir=$(mktemp -d)
+dirty_enc="$(cd "$dirty_dir" && pwd -P | sed 's|/|-|g')"
+dirty_mem="$fake_home/.claude/projects/$dirty_enc/memory"
+mkdir -p "$dirty_mem"
+cat > "$dirty_mem/orphan-note.md" <<'EOF'
+---
+name: orphan-note
+description: "test fixture"
+metadata:
+  type: feedback
+---
+Body content, no links, never referenced from MEMORY.md.
+EOF
+printf '%s\n' "# Memory index" > "$dirty_mem/MEMORY.md"
+out=$(cd "$dirty_dir" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home" bash "$MEMORY_NUDGE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '\[memory-lint\]' \
+  && printf '%s' "$out" | /usr/bin/grep -q 'UNINDEXED: orphan-note.md' \
+  && printf '%s' "$out" | /usr/bin/grep -q 'kbg:memory-lint' && ok=1 || ok=0
+assert "emits a one-line advisory naming the finding when the store has drift" "$ok"
+
+nodir=$(mktemp -d)
+out=$(cd "$nodir" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home" bash "$MEMORY_NUDGE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, silent) when the project has no memory store at all" "$ok"
+
+out=$(cd "$dirty_dir" && env -u CLAUDE_PLUGIN_ROOT HOME="$fake_home" bash "$MEMORY_NUDGE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, silent) when CLAUDE_PLUGIN_ROOT is unset" "$ok"
+
+rm -rf "$fake_home" "$clean_dir" "$dirty_dir" "$nodir"
 
 echo ""
 echo "=== cost-tracker hook (Stop) ==="
@@ -324,6 +383,55 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "an all-non-Claude transcript (glm-5.2 only) writes no metrics row at all" "$ok"
 rm -rf "$fake_home" "$transcript"
+
+echo ""
+echo "=== memory-audit-commit hook (Stop) ==="
+
+fake_home=$(mktemp -d)
+
+# Each case gets its own project dir → own encoded memory dir, so no
+# leftover state (untracked files, prior commits) from one case can leak
+# into the next.
+proj_noopt=$(mktemp -d)
+mem_noopt="$fake_home/.claude/projects/$(cd "$proj_noopt" && pwd -P | sed 's|/|-|g')/memory"
+mkdir -p "$mem_noopt"
+echo "not opted in" > "$mem_noopt/f.md"
+out=$(cd "$proj_noopt" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+rc=$?
+still_no_git="no"; [[ "$(cd "$mem_noopt" && git rev-parse --is-inside-work-tree 2>&1)" != "true" ]] && still_no_git="yes"
+[[ "$rc" == "0" && -z "$out" && "$still_no_git" == "yes" ]] && ok=1 || ok=0
+assert "no-op (exit 0, no repo created) when the memory dir isn't already a git repo" "$ok"
+
+proj=$(mktemp -d)
+mem_dir="$fake_home/.claude/projects/$(cd "$proj" && pwd -P | sed 's|/|-|g')/memory"
+mkdir -p "$mem_dir"
+echo "# Memory index" > "$mem_dir/MEMORY.md"
+(cd "$mem_dir" && git init -q && git add MEMORY.md && git -c user.email=test@test -c user.name=test commit -q -m baseline)
+
+before=$(cd "$mem_dir" && git rev-parse HEAD)
+out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+rc=$?
+after=$(cd "$mem_dir" && git rev-parse HEAD)
+[[ "$rc" == "0" && "$before" == "$after" ]] && ok=1 || ok=0
+assert "clean tree → no-op, HEAD unchanged" "$ok"
+
+echo "new memory" > "$mem_dir/new-note.md"
+out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+rc=$?
+log_count=$(cd "$mem_dir" && git log --oneline | wc -l | tr -d ' ')
+porcelain=$(cd "$mem_dir" && git status --porcelain)
+[[ "$rc" == "0" && "$log_count" == "2" && -z "$porcelain" ]] && ok=1 || ok=0
+assert "new untracked file → auto-committed, working tree clean after" "$ok"
+
+echo "edited" >> "$mem_dir/MEMORY.md"
+out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+rc=$?
+log_count2=$(cd "$mem_dir" && git log --oneline | wc -l | tr -d ' ')
+porcelain2=$(cd "$mem_dir" && git status --porcelain)
+[[ "$rc" == "0" && "$log_count2" == "3" && -z "$porcelain2" ]] && ok=1 || ok=0
+assert "edit to an already-tracked file → auto-committed, working tree clean after" "$ok"
+
+rm -rf "$fake_home" "$proj_noopt" "$proj"
 
 echo ""
 total=$((pass + fail))
