@@ -5,6 +5,10 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.212] — 2026-08-07
+
+Layer the source article's "prefer 2-4 agents per wave" onto `orchestrate/SKILL.md`'s F8.5 fan-out cap, at explicit operator request to match *The Orchestrator's Tax* + its `subagent-cost-economy.md` gist. Earlier this same day this repo's own analysis (`docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`, "Explicitly not recommended" table) argued against porting the article's number, reasoning kbg's hard cap of 5 (from a real measured incident, 44→105 agents) and the article's 2-4 (disclaimed by both sources as calibrated to their own workload) were mutually exclusive. They're not: the hard cap of 5 guards against order-of-magnitude runaway spawn; the 2-4 preference guards against a smaller, still-real over-fragmentation the hard cap alone doesn't catch. `SKILL.md` now states both — hard cap unchanged, "prefer 2-4 / treat an ungrouped 5 as a signal to consolidate" added as a softer layer above it, tied back to Step 0's cognitive-locality grouping rather than enforced as a second mechanical clamp. `reference.md`'s cap-history and anti-pattern sections updated to match. `docs/research/...`'s original "not recommended" row is struck through with a dated correction, not deleted — the reasoning was sound as far as it went, just incomplete. dotfiles `CLAUDE.md`'s pointer section updated to drop the now-resolved "these two numbers disagree" framing.
+
 ## [0.68.211] — 2026-08-07
 
 Fix two bugs in `commands/cost-report.md` found by an adversarial code-correctness review of the v0.68.209 F2 patch (three-agent verification pass, see below). Both predate this fix and shipped in 332da73.

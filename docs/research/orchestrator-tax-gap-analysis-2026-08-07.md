@@ -362,7 +362,7 @@ Three things a naive port would adopt, and shouldn't:
 
 | Tempting | Why not |
 |---|---|
-| Lower the fan-out cap from 5 to 2–4 | Both sources disclaim their numbers as calibrated to their own model + workload. kbg's 5 came from kbg's own measured incident (105 agents). Porting the number discards kbg's evidence; port the grouping criterion instead. |
+| ~~Lower the fan-out cap from 5 to 2–4~~ — **superseded 2026-08-07, by explicit operator request** | Original reasoning, still correct as far as it goes: both sources disclaim their numbers as calibrated to their own model + workload, and kbg's 5 came from kbg's own measured incident (105 agents) — a different failure mode (order-of-magnitude runaway) than granularity. What this row got wrong: it framed "port the number" and "keep kbg's evidence" as mutually exclusive. They're not — `SKILL.md`'s F8.5 now carries both, layered: the hard cap of 5 unchanged (still the runaway backstop), with "prefer 2-4, treat 5+ ungrouped as a signal to consolidate" added on top as the article's own granularity heuristic. Neither number was discarded. |
 | Add a confirm-before-spawn gate listing agents + skills | The article proposed this, then withdrew it as "another ritual" with no evidence bad spawn plans were slipping through. kbg already gates every write-capable dispatch behind `AskUserQuestion` (`SKILL.md:25`). More would be the ritual the article warns about. |
 | Trim `orchestrate/SKILL.md` for standing-instruction cost | Aims at the wrong file. Skill *bodies* load on demand — 351 lines cost only when orchestration actually happens. The recurring-cost argument aims at `CLAUDE.md` (22.9K) and `METHODOLOGY.md`, which load every single session. If F1–F7 add lines, that's the budget they come out of. |
 
