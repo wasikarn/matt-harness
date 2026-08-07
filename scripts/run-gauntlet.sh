@@ -70,13 +70,16 @@ run_audit() {
   eval "$audit_cmd" 2>&1
 }
 
-# ---- hook behavioral suite (deny-gate + advisory-sensor unit tests) ----
-# Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask.
-# This is the safety-critical net: a regression in irrecoverable.sh / verifier-protect.sh
-# (incl. the folded path-hardcode deny) fails here instead of shipping green. Graceful-skip if absent.
+# ---- behavioral test suite (hooks + slash-command scripts) ----
+# Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask;
+# also runs regression tests for embedded slash-command scripts (e.g. cost-report.md's
+# node aggregation). This is the safety-critical net: a regression in irrecoverable.sh /
+# verifier-protect.sh (incl. the folded path-hardcode deny) fails here instead of shipping
+# green — same for a shipped command that's silently syntax-broken or double-counts.
+# Graceful-skip if absent.
 run_hook_tests() {
   local rc=0 t
-  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh"; do
+  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh" "$ROOT/tests/commands/test-cost-report.sh"; do
     [ -f "$t" ] || continue
     bash "$t" 2>&1 || rc=1
   done

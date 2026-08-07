@@ -61,7 +61,11 @@ describes. Article `sub-agents-parallel-vs-sequential` and the `[[bounded-agent-
 converge on the same conclusion: clamp the work-list in code before fan-out, not in the prompt.
 
 **Cap history:** the hard cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5
-on owner request — the F8 band and the F8.5 cap now coincide at 3-5.
+on owner request — the F8 band and the F8.5 cap now coincide at 5. An advisory floor of 3
+("below 3 = under-parallelized") lived alongside the cap until 2026-08-07, when it was removed:
+it penalized the exact outcome cognitive-locality grouping (Step 0 in `SKILL.md`'s "Pick the
+matrix") is supposed to produce — a wave of 1 or 2 is not a defect
+(`docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`).
 
 **Why the Agent-tool clamp isn't a weaker guarantee than it sounds:** "Don't overspawn" is a vibe;
 `if len(worklist) > 5: worklist = worklist[:5]` is a contract — but that contract only exists where
@@ -265,7 +269,7 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 
 ### 4-mistake taxonomy
 
-1. **Over-fragmentation** — slicing work into so many agents that the merge cost exceeds the dispatch savings. Symptom: 12 agents for 4 files. Fix: cap at 3-5 parallel agents per the fan-out sweet-spot rule (F8.5); one agent owns one file or one tightly-coupled cluster.
+1. **Over-fragmentation** — slicing work into so many agents that the merge cost exceeds the dispatch savings. Symptom: 12 agents for 4 files. Fix: cap at 5 parallel agents per the fan-out sweet-spot rule (F8.5), fewer if cognitive locality groups them further — a wave of 1-2 is not itself a symptom; one agent owns one file or one tightly-coupled cluster.
 2. **Under-specification** — vague prompts ("review this code") that the model interprets broadly. Symptom: 5 different validators return 5 different slices of the same codebase, none complete. Fix: file:line scope + explicit done-when + output format (per F2 validation chain).
 3. **Resource conflicts** — parallel agents writing to the same file. Symptom: one agent's output overwrites another's; merge conflicts in code; corrupted state. Fix: serialize writes to the same file (`addBlockedBy` chain); parallelize only when files are disjoint.
 4. **Context duplication** — `CLAUDE.md` × N agents = N×context-cost at spawn time. Symptom: 8 agents holding the same doctrine each pay 30K of front-loaded tokens. Fix: layer — one orchestrator reads CLAUDE.md, sub-agents receive only the slice they need; the file:line reference goes in the spawn prompt, not the full doc.
@@ -273,7 +277,7 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 ### Named anti-patterns (orthogonal to the 4-mistake taxonomy)
 
 - **Over-parallelizing** — 2-file task split across 5 agents. The dispatch latency + context transfer > the work. Fix: inline 2-file tasks.
-- **Under-parallelizing** — 5-file task done by 1 agent serially when the files are independent. Fix: fan out, but cap at 3-5.
+- **Under-parallelizing** — a task with several genuinely independent files done by 1 agent serially, when nothing forces the serialization. Fix: fan out, up to the hard cap of 5 — but "independent" means no shared mental model per Step 0's cognitive-locality grouping, not just "different files"; files needing the same understanding belong to one agent regardless of count.
 - **Output-format-mismatch** — validator returns free-form prose; builder expects JSON. The merge step has to re-parse. Fix: assert the output format in the spawn prompt (`Return a JSON array of {file, line, severity, fix}.`).
 - **Overlapping-roles** — two agents with overlapping domain (e.g. `security-reviewer` and `silent-failure-hunter` both auditing error handling). Symptom: redundant findings, double-counted P0s. Fix: assign by primary lens, not by file ownership.
 - **F2 chain without the merge** — using `addBlockedBy` for ordering but skipping the 4-step merge after parallel fan-in. The chain is enforced; the reconciliation isn't.

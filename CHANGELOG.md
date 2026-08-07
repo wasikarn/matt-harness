@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.211] — 2026-08-07
+
+Fix two bugs in `commands/cost-report.md` found by an adversarial code-correctness review of the v0.68.209 F2 patch (three-agent verification pass, see below). Both predate this fix and shipped in 332da73.
+
+**`/cost-report` has been completely broken since v0.68.209.** The "## Report" node script carried a literal NUL byte (`const k=(r.stream||"")+"\x00"+(r.model||"")`, in place of the intended plain space) — Node throws `SyntaxError: Invalid or unexpected token` on that literal, so the command produced zero output for anyone who ran it, for as long as this shipped. The corruption was invisible to `Read` (renders identically to `""`) and to `grep`/`awk` (which flag the whole file as binary and silently skip content matching) — only a byte-level scan surfaces it. Fixed at the byte level; file is `Unicode text, UTF-8 text` again.
+
+**Once that's fixed, the dedup key itself double-counts across the v0.68.209 upgrade boundary.** `(r.stream||"")+" "+(r.model||"")` treats a pre-split legacy row (`model_scoped:true`, no `stream` field, written 2026-07-28 through 2026-08-06) and a post-fix `stream:"orchestrator"` row for the same model as separate dedup buckets, so any `session_id` spanning the upgrade gets summed instead of deduped. Confirmed live against production `costs.jsonl`: one session already straddled the boundary, overcounted by $8.07. Fixed by defaulting a missing `stream` to `"orchestrator"` in the dedup key.
+
+New regression coverage: `tests/commands/test-cost-report.sh` (written failing-first against the pre-fix code, Rule 4), wired into `scripts/run-gauntlet.sh`'s behavioral suite (now 11 files, was 10) and `CLAUDE.md`'s documented gauntlet description.
+
+Also corrected in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`: the F5 skill-injection claim said content lands in the subagent's "system prompt" — an independent adversarial fact-check agent read the actual dispatched transcript and found it's a synthetic `user`-role message (`isMeta:true`) instead, diffing byte-for-byte identical to the source skill file, with a negative control across every other agent type in the session confirming the injection is frontmatter-scoped, not global. Direct observation replacing what was previously a (correct, but weaker) inference from absence.
+
+Provenance: this entire pass — the F1 reference.md stragglers, this fix, and the F5 correction — came from a user-requested "deep-down analyst + verify" of the whole v0.68.209/210/210-confirm change set, run as 3 parallel independent verification agents (code correctness, doctrine/fleet consistency, adversarial fact-check) plus one inline fix. `skills/orchestrate/reference.md` also gained fixes for 3 stale "cap 3-5"/"advisory floor" references the doctrine-consistency agent caught, that the original 332da73 commit had missed outside `SKILL.md` itself.
+
 ## [0.68.210] — 2026-08-07
 
 Honesty + precision pass on 0.68.209, from an `advisor()` review of the shipped commit. (1) The `skills:` preload on `typescript-reviewer`/`nextjs-reviewer` was reported as done; `plugin validate --strict` and `harness-audit` check 25 only prove the schema is valid and the name resolves, not that content reaches a spawned subagent's context — and the installed cache was still v0.68.208 at ship time, so a name-based dispatch would have tested stale content anyway (`plugin-cache-same-version-stale-trap`). Both the 0.209 entry and the analysis doc now state it as declared-but-unverified, with the exact post-`plugin update` check. (2) `commands/cost-report.md`: `cache_read_per_turn` is per-row, and rows are grouped by model — so a model-switching session has one ratio per model, while the By-stream block deliberately re-derives a session-level figure by summing across models first. The schema doc said neither; now it says both.

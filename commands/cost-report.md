@@ -17,8 +17,10 @@ session so far**. Every stop re-derives cumulative totals from the full transcri
 (stateless — no separate counter file), groups assistant turns by `.message.model`,
 and writes each model's own true cumulative `input_tokens`/`output_tokens`/
 `estimated_cost_usd`, priced at that model's own rate. These rows carry
-`model_scoped: true`. **The report takes the latest row per (`session_id`, `model`)
-pair among `model_scoped` rows and sums across a session's pairs.** The hook's per-model
+`model_scoped: true`. **The report takes the latest row per (`session_id`, `stream`, `model`)
+triple among `model_scoped` rows and sums across a session's triples** — a streamless row
+(written before 2026-08-07, when `stream` shipped) is treated as `stream: "orchestrator"`
+for this key, not as a fourth bucket; see the double-counting bug this fixed, below. The hook's per-model
 token computation was verified against a real 3-model production transcript
 (`claude-opus-4-8`, `claude-sonnet-5`, `glm-5.2`) by running the actual hook end-to-end
 and confirming each model's cost matched a hand computation from the raw token counts,
@@ -142,7 +144,7 @@ for(const rs of bySession.values()){
   const scoped=rs.filter(r=>r.model_scoped===true);
   if(scoped.length){
     const byModel=new Map();
-    for(const r of scoped){const k=(r.stream||"")+" "+(r.model||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
     latest.push(...byModel.values());
   }else{
     let best=null;

@@ -126,6 +126,39 @@ whether ~202K/turn is high — against a 1M window and kbg's own session-start l
 unremarkable. That baseline comes from the patch, not from this file. Treat the numbers above as
 an existence proof that the effect is measurable, not as a kbg reference point.
 
+**Two more bugs found and fixed 2026-08-07, by an adversarial code-correctness pass on this
+same F2 patch** (`hooks/stop/cost-tracker.sh` + `commands/cost-report.md`), both more serious
+than they first looked:
+
+1. **`commands/cost-report.md` shipped with a literal NUL byte embedded in the "## Report"
+   node script** (`const k=(r.stream||"")+"\x00"+(r.model||"")` — the intended plain space
+   between the two concatenated string halves), present since the very first commit
+   (`332da73`, confirmed by `git show`). Node throws `SyntaxError: Invalid or unexpected
+   token` on that literal, so `/cost-report` produced **zero output** for anyone running it
+   normally, for as long as this shipped — not a subtle miscount, a complete break. The
+   corruption was invisible to `Read` (renders as if it were `""`) and to plain `grep`/`awk`
+   (which flag the whole file as binary and skip content matching) — only a byte-level scan
+   (`python3 -c "...count(b'\x00')..."`) surfaces it. Fixed at the byte level, verified the
+   file is `Unicode text, UTF-8 text` again post-fix.
+2. **Once the syntax error is fixed, the dedup key itself has a real bug.** `(r.stream||"")+"
+   "+(r.model||"")` treats a pre-split legacy row (`model_scoped:true`, no `stream` field —
+   written 2026-07-28 through 2026-08-06, always implicitly the orchestrator's own total) and
+   a post-fix `stream:"orchestrator"` row for the same model as two different dedup buckets.
+   A `session_id` spanning the upgrade — anything resumed with `--resume`/`--continue` across
+   it — gets both rows summed instead of deduped. Confirmed live against the operator's real
+   `costs.jsonl` (8,446 rows): exactly one `session_id` already straddled the boundary, and
+   the buggy key overcounted it by **$8.07**. Fixed by defaulting a missing `stream` to
+   `"orchestrator"` in the dedup key, so legacy rows collide with their successor instead of
+   surviving as a phantom fourth bucket.
+
+Both were caught by an independent subagent given nothing but the diff and told to find real
+bugs, not style nits — it ran the actual code and the operator's real production data rather
+than trusting the commit message. Neither bug was in the article this section is adapting;
+they're artifacts of writing this patch, caught by the same "verify, don't just assert"
+discipline the rest of this doc argues for. Regression coverage:
+`tests/commands/test-cost-report.sh` (new file, written failing-first against the pre-fix
+code per Rule 4, now wired into `scripts/run-gauntlet.sh`).
+
 ---
 
 ## F3 — Context economy: no rule anywhere in the repo
@@ -232,8 +265,26 @@ grant, so it cannot self-load the skill; no path to it in either prompt):
    date of `2026-07-07`. None of this exists in the agent's own body text (confirmed
    by grep — no hits for `TypeScript 7`, `tsgo`, `native-preview`, `Corsa`, or `GA`),
    nowhere else in this repo, and could not be produced with zero tool calls unless it
-   was already sitting in context at spawn. This is decisive: the `skills:` field
-   injects real content into the subagent's system prompt, as documented.
+   was already sitting in context at spawn.
+
+**Re-verified 2026-08-07 by an independent adversarial fact-check agent**, which went
+past the inference above to direct observation: reading the dispatched subagent's own
+raw transcript shows the skill isn't injected into a "system prompt" as this doc
+originally said — it arrives as a synthetic `user`-role message (`isMeta: true`, tagged
+`<command-name>kbg:typescript-patterns</command-name>` / `<skill-format>true</skill-format>`)
+appended right after the real dispatch prompt and before the subagent's first turn. The
+injected message's body diffs byte-for-byte identical to `skills/typescript-patterns/SKILL.md`
+(minus the stripped YAML frontmatter and one trailing newline) — direct proof, not
+circumstantial. The same agent also ran a negative control across every subagent
+transcript in the session (`kbg:plan-reviewer`, `kbg:code-reviewer`, a `general-purpose`
+dispatch): the injection marker appears exactly once per `typescript-reviewer` dispatch
+and zero times for every other agent type, ruling out a session-wide or global preload —
+injection is scoped to the dispatching agent's own `skills:` frontmatter, as intended. It
+also checked the training-data alternative explanation directly: "Project Corsa" is a
+real TypeScript rewrite reaching GA around 2026-07-08 per external search — roughly six
+months past the assistant's stated January-2026 knowledge cutoff, so the specific dated
+facts could not be training recall regardless of whether they're accurate, which is what
+makes the zero-tool-call reproduction decisive rather than merely suggestive.
 
 ---
 
