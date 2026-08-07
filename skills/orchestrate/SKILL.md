@@ -76,7 +76,11 @@ Write "none" if the task needs no skill — don't leave the slot blank.>
 ## FILES YOU OWN
 - <absolute path 1>
 - <absolute path 2>
-(Only files in this list. Anything else is out of scope — defer to the orchestrator.)
+(Only files in this list. Anything else is out of scope — defer to the orchestrator.
+Can't make ownership disjoint — two agents genuinely need the same file this wave?
+Give one of them `isolation: "worktree"` on the Agent/Workflow call instead of racing
+the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktree add`
+— unaffected by this repo's own no-manual-worktree gate, see CLAUDE.md § Branching model.)
 
 ## UPSTREAM CONTRACTS
 - From task <id>: <file:line or schema field> — <what you may rely on>

@@ -394,3 +394,25 @@ Ordered by evidence-per-line-added, not by size:
 Every item above is a content change to `orchestrate/SKILL.md`, `METHODOLOGY.md`/`CLAUDE.md`,
 `cost-tracker.sh`, or a few `agents/*.md` frontmatter blocks. **No new skill, agent, command, or
 gate is warranted** (Rule 2).
+
+---
+
+## Re-read audit, 2026-08-07
+
+A fresh, careful re-read of both articles plus the gist, checked line-by-line against the
+doctrine state after F1–F9 and the fan-out-cap layering shipped above. Six candidates surfaced;
+`advisor()` confirmed two are real, four are not — recorded here so a future pass doesn't
+re-derive the same four.
+
+| # | Candidate | Verdict | Why |
+|---|---|---|---|
+| G1 | Route mechanical subagent work to a cheaper model | **Declined** | Contradicts the Agent tool's own contract, which defaults to inheriting the main-loop model and says to override "only when highly confident." Porting this would put `orchestrate` in conflict with the tool it dispatches through — the same shape of mistake as the fan-out-cap tension. `kbg:cost-aware-llm-pipeline` already owns model routing. |
+| G2 | Isolate unavoidable file-ownership overlap with worktrees | **Shipped** | Real gap — `orchestrate/SKILL.md` had no worktree-isolation path. `isolation: "worktree"` on the Agent/Workflow call uses the native `WorktreeCreate` mechanism, confirmed independent of kbg-harness's own Bash-side `git worktree add -b` block (different code path entirely). Added to the F9 `FILES YOU OWN` slot. |
+| G3 | Context-economy threshold should cover edits, not just reads | **Shipped** | `METHODOLOGY.md` Rule 13 said "reads" only; the source scope is "file edits/reads." One-phrase fix, same bullet. |
+| G4 | Never delegate destructive/high-blast-radius ops, even with confirmation | **Declined** | kbg's existing `AskUserQuestion` gate on every write-capable dispatch is already a superset of this — it gates the broader category (any Edit/Write/Bash agent), not just a destructive subset. Adding a narrower restatement on top is the ritual the article itself warns against. |
+| G5 | Batch multiple open `advisor()` questions into one call | **Declined, re-affirmed** | Already assessed as low-value in F9 and confirmed by `advisor()` at the time. This pass produced no new evidence — re-litigating a settled call, not a fresh finding. |
+| G6 | Reason through well-documented behavior instead of executing it, reserve execution for undocumented/surprising cases | **Declined** | No named failure mode, no observed incident — Rule 2's definition of speculative. CLAUDE.md's existing "verify technical claims" rule already covers the adjacent, narrower case (claims shipped into agent/skill content). |
+
+**Standing note:** this is the seventh implementation round sourced from one article. G2 and G3
+were cheap and real. Absent a new incident, the article is fully mined — the next change to this
+area should be driven by a concrete failure, not another re-read.

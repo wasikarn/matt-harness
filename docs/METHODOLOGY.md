@@ -80,7 +80,7 @@ The scarce resource in a long session is not tokens, it's what the main thread i
 carrying. Tokens are billed once; context shapes every decision after it, and a bigger
 window doesn't help — it just lets unused material pile higher before anyone notices.
 
-- **What the main thread reads stays for the whole session; what a subagent reads doesn't.** Over ~3 files, or in territory you don't already know, send the read out with one narrow question and take back only the answer. Read directly in the main thread when you already know the file and the location.
+- **What the main thread touches stays for the whole session; what a subagent touches doesn't.** Over ~3 files — reading or editing — or in territory you don't already know, send the work out with one narrow question and take back only the answer. Work directly in the main thread when you already know the file and the location.
 - **Locate before you read.** Big file, one relevant section: grep for the line, then `Read` with `offset`/`limit`. Don't pull a whole file in to find a paragraph. Sibling files that share a shape (specs, fixtures, tests): read one in full, grep the rest.
 - **Delegate by what a task needs to understand, not by how many tasks there are.** Work sharing a subsystem, a file set, or a convention belongs to one agent — splitting it just makes each one rebuild the same picture of the code. Fewer, better-grouped agents beats more agents; there is no minimum.
 - **Big output goes to a file; return the path.** Content relayed through the orchestrator is copied twice and then carried forever.
