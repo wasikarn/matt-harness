@@ -5,6 +5,40 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.218] — 2026-08-07
+
+User asked for an intensive audit of the `(Recommended)`-marker doctrine in
+`output-styles/staff-eng.md` (touched 4x already in v0.68.6–.9, every commit noting "model
+adherence only, no deterministic gate possible") — with a scored before/after eval, not just
+reasoning about it. Audit surfaced 4 gaps: single-select has no "mark none when genuinely
+comparable" rule (multiSelect already has one); `(best when X)` templates have no rule for when
+more than one condition holds at once; the multiSelect "minority" threshold is undefined at
+exactly half; and there's no mid-draft self-check to catch a menu being drafted when the reasoning
+already picked a winner (2 confirmed real incidents, `askuserquestion-consistency-gap-2026-07-02.md`).
+
+Built a scored eval per `advisor()` guidance: 6 scenarios frozen to disk, grading rubric frozen
+*before* drafting any revision (so the rubric couldn't encode the fix), 3 independent trials per
+scenario per condition, graded by a separate blind agent that didn't know which trial-group was
+baseline. A full restructure addressing all 4 gaps was tested first and **failed its own
+pre-declared regression guard** — it fixed 2 scenarios cleanly (0/3→3/3 on a genuine-tie case,
+0/3→3/3 on an overlapping-template-condition case) but broke 2 others: the strengthened
+"look for a default" wording talked one trial into skipping a question it should have asked
+(control scenario regressed 3/3→2/3 on asking at all), and the new multiSelect half-boundary rule
+collided with that same logic, cutting cross-trial consistency on a boundary case (3/3→2/3). The
+2 scenarios built to test the evidenced gap (mid-draft self-check) never discriminated the two
+conditions at all — both sat at 3/3 ceiling, meaning that gap's real fix still doesn't have a
+validated wording.
+
+Shipped only the 2 clauses that produced clean, isolated wins with no interaction with what
+regressed: single-select now says "if the options are genuinely comparable ... mark none; don't
+fabricate a preference," and the `(best when X)` template rule now says "if more than one
+condition plausibly holds at once, say so explicitly instead of silently picking one." The gap-1
+(mid-draft self-check) and gap-3 (half-boundary) fixes are deliberately **not** included this
+release — the drafted wording measurably made things worse elsewhere in the same run; they need a
+narrower trigger condition and a fresh confirming test before shipping. Full scenario set, rubric,
+raw transcripts, and the blind grading transcript are in
+`docs/research/askuserquestion-recommended-criterion-eval-2026-08-07.md`.
+
 ## [0.68.217] — 2026-08-07
 
 `hooks/stop/cost-tracker.sh` now only tracks `claude-*` models, at operator request — a follow-up to v0.68.216's Ollama removal, after confirming scope: this repo has no non-Claude-model *feature* left, but the tracker's model-agnostic pricing fallback was still writing real rows for non-Claude spend (a session can run other models via a proxy swapping `ANTHROPIC_BASE_URL`; production data showed real spend on `minimax-m3` ($8,746), `glm-5.2` ($8,329), `kimi-k2.7-code` ($981), `nemotron-3-super` ($0.42)). Added a `select(.message.model | test("^claude"))` filter before grouping in `emit_rows`, so non-Claude turns are dropped, not priced-at-a-guess or folded into an "unknown" row. TDD: 2 new cases in `tests/hooks/test-session-stop.sh` written failing first (mixed-vendor transcript keeps only the Claude row with its own tokens; an all-non-Claude transcript writes no row at all), then verified against a real production transcript mixing `claude-opus-4-8`/`claude-sonnet-5` with `minimax-m3` — only the Claude rows landed. `commands/cost-report.md` updated: new paragraph explaining the filter, and the 2026-07-28 verification citation (which named `glm-5.2` as one of 3 models in a real test transcript, predating this filter) annotated so it doesn't read as a claim the hook still tracks that model. Historical `costs.jsonl` rows for non-Claude models are untouched — this only changes what future stops write, not the operator's existing local metrics file.
