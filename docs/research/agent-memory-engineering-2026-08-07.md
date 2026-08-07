@@ -50,6 +50,24 @@ account. Both are exactly the kind of thing "prove it by hand first" is supposed
 - Live measurement against `~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`
   via `skills/memory-lint/scripts/memory-lint.py`, run 2026-08-07 (detector mode, read-only;
   `--auto-archive` was never invoked against the live store while producing this report).
+- **Primary sources, independently verified 2026-08-07** (a second, line-by-line re-read of
+  both articles found the original pass never checked these — see Part 7 for the full account
+  and one real naming-collision caveat):
+  - Stanford — [Agent Memory: Characterization and System Implications of Stateful Long-Horizon
+    Workloads](https://arxiv.org/abs/2606.06448) (arXiv 2606.06448, Omri et al., 2026-06-04)
+  - Microsoft — [PlugMem: A Task-Agnostic Plugin Memory Module for LLM
+    Agents](https://arxiv.org/abs/2603.03296) (arXiv 2603.03296, UIUC/Tsinghua/MSR)
+  - Microsoft — [Memento: Teaching LLMs to Manage Their Own
+    Context](https://arxiv.org/pdf/2604.09852) (arXiv 2604.09852) — **not** to be confused with
+    the differently-mechanismed, identically-titled-minus-one-word [Memento: Fine-tuning LLM
+    Agents Without Fine-tuning LLMs](https://arxiv.org/abs/2508.16153) (arXiv 2508.16153)
+  - Anthropic — [Built-in memory for Claude Managed
+    Agents](https://claude.com/blog/claude-managed-agents-memory) — a product/customer-case-study
+    blog post (Rakuten's numbers), not a peer-reviewed paper; cited by Article 1 in parallel with
+    the three papers above despite the different evidentiary tier
+  - **No standalone Nvidia paper exists.** Article 1's own sources line says the hardware framing
+    comes "from the H100, vLLM and B200 setups in the Stanford and Memento papers" — "four labs"
+    is the article's rhetorical framing, not four independent sources.
 
 ---
 
@@ -66,10 +84,10 @@ account. Both are exactly the kind of thing "prove it by hand first" is supposed
 | 5 | No universal-best system; pick a cost on purpose | Raw context / flat retrieval / structured extraction / fully agentic each trade build cost, query speed, accuracy differently. Mem0-style systems answer in <0.1s but cost thousands of seconds to build; a lexical index builds instantly but is slower/blunter at query time. |
 | 6 | Store facts and skills, not logs | Microsoft's PlugMem: more raw memory can make an agent *worse* — retrieval drowns, attention burns wading through transcripts. Extract the fact/skill, discard the transcript. |
 | 7 | Judge by utility per token, not size | One general-purpose fact/skill memory beat purpose-built designs across three tasks while spending fewer tokens. Density beats volume. |
-| 8 | Model-managed context (Memento) | Reason in blocks, write a dense note, delete the raw reasoning — peak memory drops 2-3x, throughput nearly doubles. But erased reasoning leaves a "shadow": rebuilding from the note alone costs 15 accuracy points. Forgetting ≠ deletion; remembering ≠ storage. |
+| 8 | Model-managed context (Memento) | Reason in blocks, write a dense note, delete the raw reasoning — peak memory drops 2-3x, throughput nearly doubles. The article names two separate takeaways here, and the first was missed in the original pass: **first**, this is a learned skill from ordinary fine-tuning, not orchestration bolted on (confirmed against the real paper — trained on 228K annotated reasoning traces). **Second**, erased reasoning leaves a "shadow": rebuilding from the note alone costs 15 accuracy points. Forgetting ≠ deletion; remembering ≠ storage. |
 | 9 | Memory as files you can delete | Anthropic's move: filesystem-based memory, same tools the agent already uses. The value is everything files make possible — export, inspection, programmatic control. |
 | 10 | Scope, audit, roll back | A wrong memory persists into every future session that reads it, so control is the design, not a layer on top. Org (read-only) vs. per-user (read-write) scoping + an audit log (who/session/what/when) that supports export/rollback/redaction. Teams doing this cut first-pass errors 97% and sped verification ~33%. |
-| 11 | Memory is a KV-cache problem underneath | Full context is quadratic cost; prefix caching inside a session collapses across sessions. The real currency is HBM bandwidth / GPU utilization / tokens-per-second / freed KV slots. |
+| 11 | Memory is a KV-cache problem underneath | Full context is quadratic cost; prefix caching inside a session collapses across sessions. The real currency is HBM bandwidth / GPU utilization / tokens-per-second / freed KV slots. On B200, the article's own cited number: Memento-on-vLLM's block-flush pattern measured 4,290 tok/s vs. 2,447 vanilla (~1.75x), same batch completing in 693s vs. 1,096s (~1.6x faster) — missed in the original pass's table, present in the article's raw text. |
 | 12 | Construction as a background job | Construction is prefill-heavy (long reads, short writes) — behaves like batch indexing. Co-locating it with live queries stalls the scheduler exactly when a user query lands; rate-limit/batch/defer it instead. |
 | 13-15 | Build order | Prove each pass by hand first (a system run against three notes hallucinates connections and trains you to ignore it). Ship: write path first (let it fill for weeks) → manual contradiction detection, schedule only if collisions surprise you → forgetting/maintenance policy before volume climbs → hardware tuning last. **Never auto-merge contradictions — two memories can both have been right in different contexts; the system surfaces, a human decides.** Growth *slope*, not starting size, is what bankrupts a long-lived agent (up to 9x footprint spread across systems at 1M tokens, none of which prune by default). |
 
@@ -485,6 +503,13 @@ plainly instead of proposing a fictional fix: the only lever kbg actually holds 
 own density (already governed by the fold rule / 200L-25,600B cap and A5's new visibility), not
 its loading mechanism. Revisit only if Claude Code ships scoped/topic-filtered memory loading.
 
+**C2. Model-native memory management via fine-tuning (Memento's actual mechanism).** Missed in the
+first pass, found on re-read: Article 1 flags this as the *first* thing to take from Memento, not
+a footnote — its context compression is a trained model behavior, not orchestration bolted on.
+That's categorically unavailable to a plugin author; kbg cannot fine-tune the underlying model.
+Named for completeness, same boundary class as C1: the ceiling on how good context-compression
+memory management can get here is Claude's own general capability, not a lever this repo can pull.
+
 ---
 
 ## Part 5 — Considered and rejected
@@ -538,3 +563,6 @@ matching this order exactly:
 | A3's real-world contradiction rate / precision | **Measured, one hand-run, 2026-08-07** (was "no instrument exists" until A3 shipped): 296 candidates under the original shared-links-OR heuristic, 4 under the fixed token-overlap-only version, 0/4 spot-checked as genuine contradictions. One data point, not a trend — re-run and re-check precision before ever considering automation |
 | B1's adoption/value if shipped | **Low confidence** — adoption-dependent, no current usage signal beyond the 5 existing `SUPERSEDED` instances |
 | Native auto-memory shipped ~CLI v2.1.59, autoMemoryEnabled | **Sourced** from `skills/learn/SKILL.md`'s own prior verification against `code.claude.com/docs/en/memory`, not re-verified independently in this session |
+| Named primary sources exist and are real (Stanford, PlugMem, Memento, Anthropic) | **Verified 2026-08-07**, second pass — the original report cited these from the secondary-source article only, never independently checked. All four are real and findable (arXiv 2606.06448, 2603.03296, 2604.09852; claude.com/blog/claude-managed-agents-memory). One real risk found: a second, unrelated paper is also titled "Memento" (arXiv 2508.16153, opposite mechanism — non-fine-tuned case-based reasoning) — anyone re-verifying must match on content, not title. The Anthropic source is a product/customer-case-study blog post (Rakuten), not a peer-reviewed paper — a different evidentiary tier than the other three, despite Article 1 citing all four in parallel. |
+| Headline numbers cross-checked against the found primary/secondary sources | 97% first-pass-error reduction and "~33%" faster verification: **match** the Anthropic source (97% / 34% lower latency) — the source also states 27% lower cost, which Article 1 doesn't mention (an omission in the article, not an error in this report). Stanford's "construction dominates cost" and PlugMem's "beat purpose-built designs across three tasks": **match** each paper's own stated findings. B200 throughput/latency numbers (4,290 vs 2,447 tok/s, 693s vs 1,096s): **plausible and consistent** with the Memento paper's described vLLM benchmarking setup, not independently re-derived from the paper's own tables — would need a full read of arXiv 2604.09852 to confirm exactly; not done here, stated as a scope limit, not a doubt. |
+| "Four labs" framing (Stanford/Microsoft/Anthropic/Nvidia) | **Partially unsupported by the article's own sourcing.** No standalone Nvidia paper exists — Article 1's own Sources line says the hardware framing comes "from the H100, vLLM and B200 setups in the Stanford and Memento papers." Three papers plus one product blog post, not four independent sources. Doesn't invalidate the underlying hardware claims, but the framing this report inherited overstates source count by one. |
