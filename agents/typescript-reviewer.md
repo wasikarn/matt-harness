@@ -3,6 +3,8 @@ name: typescript-reviewer
 description: "Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
+skills:
+  - kbg:typescript-patterns
 ---
 
 ## Prompt Defense Baseline

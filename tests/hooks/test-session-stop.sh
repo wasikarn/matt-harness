@@ -26,12 +26,14 @@ assert() {
   fi
 }
 
-# make_transcript_line <model> <input_tokens> <output_tokens>
-# One assistant-turn JSONL line, cache fields zeroed (no fixture needs them non-zero).
+# make_transcript_line <model> <input_tokens> <output_tokens> [cache_read_tokens]
+# One assistant-turn JSONL line. cache_creation is always 0; cache_read defaults to 0
+# and is settable because the orchestrator-tax split reports cache_read_per_turn.
 make_transcript_line() {
   python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "message": {"model": sys.argv[1],
     "usage": {"input_tokens": int(sys.argv[2]), "output_tokens": int(sys.argv[3]),
-              "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}}))' "$1" "$2" "$3"
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": int(sys.argv[4]) if len(sys.argv) > 4 else 0}}}))' "$1" "$2" "$3" ${4:+"$4"}
 }
 
 echo "=== doctrine-bootstrap hook (SessionStart) ==="
@@ -183,6 +185,60 @@ sonnet_row=$(/usr/bin/grep '"model":"claude-sonnet-5"' "$metrics_file" 2>/dev/nu
   && printf '%s' "$sonnet_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "multi-model transcript writes one model_scoped row per model with that model's own tokens" "$ok"
 rm -rf "$fake_home" "$transcript"
+
+# Orchestrator-tax split. Claude Code writes the main session to
+# <project>/<session-id>.jsonl and each subagent to its own file under the sibling
+# <project>/<session-id>/subagents/agent-*.jsonl. cost-tracker read only the main
+# file, so every subagent's spend was invisible to /cost-report (verified against a
+# real 15-subagent session, 2026-08-07: 0 rows with isSidechain:true ever land in the
+# main transcript). Assert both halves are now counted, tagged by `stream`, and that
+# each row carries the turn count + cache_read-per-turn that make the orchestrator's
+# carried-context cost readable — docs/research/orchestrator-tax-gap-analysis-2026-08-07.md.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/sess.jsonl"
+mkdir -p "$sess_dir/sess/subagents"
+# main: 2 turns, cache_read 1000 each → cache_read_per_turn 1000
+{ make_transcript_line claude-sonnet-5 100 50 1000; make_transcript_line claude-sonnet-5 100 50 1000; } > "$transcript"
+# subagents: 2 files × 1 turn each, same model → one aggregated subagent row, 2 turns
+make_transcript_line claude-sonnet-5 7 3 40 > "$sess_dir/sess/subagents/agent-aaa.jsonl"
+make_transcript_line claude-sonnet-5 7 3 40 > "$sess_dir/sess/subagents/agent-bbb.jsonl"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "tax"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "2" ]] \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"input_tokens":200' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"cache_read_tokens":2000' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"turns":2' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"cache_read_per_turn":1000' \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"input_tokens":14' \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"cache_read_tokens":80' \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"turns":2' \
+  && printf '%s' "$orch_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
+  && printf '%s' "$sub_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "counts subagent transcripts and tags each row with stream + turns + cache_read_per_turn" "$ok"
+rm -rf "$fake_home" "$sess_dir"
+
+# Fails safe when there is no subagents/ dir at all (the common single-agent session):
+# one orchestrator row, no empty subagent row, no crash from the empty glob.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/solo.jsonl"
+make_transcript_line claude-sonnet-5 100 50 1000 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "solo"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
+  && /usr/bin/grep -q '"stream":"orchestrator"' "$metrics_file" \
+  && ! /usr/bin/grep -q '"stream":"subagent"' "$metrics_file" && ok=1 || ok=0
+assert "no subagents/ dir → one orchestrator row, no empty subagent row" "$ok"
+rm -rf "$fake_home" "$sess_dir"
 
 echo ""
 total=$((pass + fail))

@@ -65,11 +65,31 @@ model is the only signal of this; take any total as "correctly summed," not
 "correctly priced," until every model in the rate table is a real, verified rate.
 
 Row schema:
-`{ timestamp, session_id, transcript_path, model, model_scoped, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, stream, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
 
 `model_scoped` is `true` on rows written by the per-model design; absent (falsy) on
 rows written by the old whole-session design — see above for how the report treats
 each.
+
+`stream` is `"orchestrator"` (the main thread, `.transcript_path`) or `"subagent"`
+(every file under the sibling `<session-id>/subagents/` directory), added 2026-08-07.
+Absent on all rows written before that — those are orchestrator-only totals, because
+the hook never read the subagent directory at all, so subagent spend was missing from
+every historical row rather than folded into it. **Do not compare a pre-2026-08-07
+session's total against a later one and read the difference as a spending change.**
+
+Because both streams can carry the same `model` inside one session, the
+(`session_id`, `model`) dedup key is now (`session_id`, `stream`, `model`) — without
+`stream` in the key the two rows collide and one is silently dropped, which is the
+same undercount the split was added to fix.
+
+`turns` is the assistant-turn count behind the row, and `cache_read_per_turn` is
+`cache_read_tokens ÷ turns`. On the orchestrator row that ratio is the useful one: it
+measures how much context the main thread carries into *every* turn, re-billed each
+time, which is the cost the article "The Orchestrator's Tax" names and the reason for
+this split — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`. A rising
+`cache_read_per_turn` across sessions means the main thread is accumulating more than
+it needs; that number, not the dollar total, is the one to watch.
 
 `rate_verified` is `false` when `model` didn't match a known pricing tier
 (`haiku`/`opus`/`sonnet`) — the cost was estimated at the Sonnet rate as a
@@ -95,8 +115,8 @@ remote/headless session), the buckets will follow that environment's zone instea
    user the tracker is not set up yet (it populates after the first session ends
    with the `stop:cost-tracker` hook enabled).
 2. For each session: if it has any `model_scoped` row, reduce to the latest row per
-   (`session_id`, `model`) pair and sum across pairs; otherwise reduce to the single
-   latest row per `session_id` (ignoring `model`). Aggregate across sessions.
+   (`session_id`, `stream`, `model`) triple and sum across them; otherwise reduce to the
+   single latest row per `session_id` (ignoring `model`). Aggregate across sessions.
 3. Present a compact report, or export recent rows as CSV when the argument is `csv`.
 
 `node` is used instead of `sqlite3`/`jq` so this works identically on macOS,
@@ -117,7 +137,7 @@ for(const rs of bySession.values()){
   const scoped=rs.filter(r=>r.model_scoped===true);
   if(scoped.length){
     const byModel=new Map();
-    for(const r of scoped){const k=r.model||"";const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    for(const r of scoped){const k=(r.stream||"")+" "+(r.model||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
     latest.push(...byModel.values());
   }else{
     let best=null;
@@ -140,6 +160,15 @@ console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
 const by=(key)=>{const m=new Map();for(const r of latest){const k=key(r)||"(unknown)";m.set(k,(m.get(k)||0)+cost(r));}return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
 const unverified=new Set(latest.filter(r=>r.rate_verified===false).map(r=>r.model||"(unknown)"));
 console.log("\n=== By model ===");for(const [k,v] of by(r=>r.model))console.log(f4(v).padStart(12)+"  "+k+(unverified.has(k)?"  (rate unverified)":""));
+const tagged=latest.filter(r=>r.stream);
+if(tagged.length){
+  console.log("\n=== By stream (rows tagged 2026-08-07+; older rows are orchestrator-only and excluded) ===");
+  for(const [k,v] of by(r=>r.stream)){if(k==="(unknown)")continue;console.log(f4(v).padStart(12)+"  "+k);}
+  const orch=tagged.filter(r=>r.stream==="orchestrator");
+  const turns=orch.reduce((s,r)=>s+(Number(r.turns)||0),0);
+  const cr=orch.reduce((s,r)=>s+(Number(r.cache_read_tokens)||0),0);
+  if(turns)console.log("\norchestrator context carried per turn: "+Math.round(cr/turns).toLocaleString()+" tokens  (re-read every turn — the rent meter)");
+}
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}
 [...days.entries()].sort((a,b)=>b[0]<a[0]?-1:1).slice(0,7).forEach(([k,v])=>console.log(k+"  "+f4(v)));
@@ -154,8 +183,8 @@ const fs=require("fs"),os=require("os"),path=require("path");
 const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
-console.log("timestamp,session_id,model,model_scoped,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,estimated_cost_usd");
-for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.estimated_cost_usd].join(","));
+console.log("timestamp,session_id,model,model_scoped,stream,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
+for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
 '
 ```
 
@@ -163,7 +192,9 @@ for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped
 
 1. Summary: today, yesterday, total, session count.
 2. By model: models ranked by total cost.
-3. Last seven days: date and cost.
+3. By stream: orchestrator vs subagent, plus the orchestrator's context-carried-per-turn.
+   Omitted entirely when no row carries `stream` (all data predates 2026-08-07).
+4. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.

@@ -74,6 +74,23 @@ Decompose → route → verify → combine.
 - A dispatched sub-agent must not re-orchestrate — return scoped output to the parent.
 - Phase gates are non-negotiable (Quality never ships; Orchestration never implements).
 
+### Context economy — protect the main thread
+
+The scarce resource in a long session is not tokens, it's what the main thread is still
+carrying. Tokens are billed once; context shapes every decision after it, and a bigger
+window doesn't help — it just lets unused material pile higher before anyone notices.
+
+- **What the main thread reads stays for the whole session; what a subagent reads doesn't.** Over ~3 files, or in territory you don't already know, send the read out with one narrow question and take back only the answer. Read directly in the main thread when you already know the file and the location.
+- **Locate before you read.** Big file, one relevant section: grep for the line, then `Read` with `offset`/`limit`. Don't pull a whole file in to find a paragraph. Sibling files that share a shape (specs, fixtures, tests): read one in full, grep the rest.
+- **Delegate by what a task needs to understand, not by how many tasks there are.** Work sharing a subsystem, a file set, or a convention belongs to one agent — splitting it just makes each one rebuild the same picture of the code. Fewer, better-grouped agents beats more agents; there is no minimum.
+- **Big output goes to a file; return the path.** Content relayed through the orchestrator is copied twice and then carried forever.
+- **Never pull a raw agent transcript back into the main thread.** Answer status from what you already know; `Read` the artifact when you need the result.
+
+This is the point of subagents — not that they run in parallel, but that they keep
+disposable reasoning disposable. Parallelism is a side effect, not the objective.
+(Source: *The Orchestrator's Tax*, martinfowler.com 2026-07-16 — gap analysis and kbg's
+own measurements in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.)
+
 ## Rule 14 — Decision scoring (explainable decisions)
 
 Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence. **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under §Architecture) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
