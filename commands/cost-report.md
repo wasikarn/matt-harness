@@ -84,7 +84,12 @@ Because both streams can carry the same `model` inside one session, the
 same undercount the split was added to fix.
 
 `turns` is the assistant-turn count behind the row, and `cache_read_per_turn` is
-`cache_read_tokens ÷ turns`. On the orchestrator row that ratio is the useful one: it
+`cache_read_tokens ÷ turns` **for that row's own model** — the hook groups by model
+before counting turns, so a session that switched models has one such ratio per model,
+not one for the session. The By-stream block below re-derives a session-level figure by
+summing tokens and turns across every orchestrator row first, then dividing; that
+deliberately mixes models, because the question there is how much context the main
+thread carried, not which model it was talking to. On the orchestrator row that ratio is the useful one: it
 measures how much context the main thread carries into *every* turn, re-billed each
 time, which is the cost the article "The Orchestrator's Tax" names and the reason for
 this split — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`. A rising

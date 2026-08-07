@@ -211,6 +211,16 @@ hold it.** Three verified facts about kbg's fleet:
 repo — run `claude plugin validate . --strict` (the repo's primary gate, per CLAUDE.md) on the
 first agent that gets it, before adding it to the rest. Do not assume the change is free.
 
+**Status as of v0.68.209 (shipped 2026-08-07):** `typescript-reviewer` gets
+`kbg:typescript-patterns`, `nextjs-reviewer` gets `kbg:frontend-patterns`. Both pass
+`plugin validate --strict` and audit check 25, and neither preloaded skill carries
+`disable-model-invocation: true` (which would make it ineligible). **Injection itself is
+unverified** — schema validation and name resolution do not prove the content reaches a
+spawned subagent's context, and the installed plugin cache was still v0.68.208 at ship time,
+so any name-based dispatch would have tested stale content. Verify after
+`claude plugin update` + restart: spawn `typescript-reviewer` on a TS diff and confirm it
+applies `kbg:typescript-patterns` guidance it was given no path to.
+
 ---
 
 ## F6 — Large subagent output should return a path, not a payload
