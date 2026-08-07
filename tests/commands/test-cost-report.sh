@@ -12,6 +12,18 @@
 # buckets, so a session_id spanning the upgrade got double-counted. Confirmed live
 # against the operator's real costs.jsonl: an $8.07 overcount on one session.
 # Fixed by defaulting the missing `stream` to `"orchestrator"` in the dedup key.
+#
+# Note on what proves what (found by a second-round adversarial review,
+# 2026-08-07): checking out the pre-fix commit (a9e4cce) and running this same
+# extraction against it does fail — but because the embedded script also carried
+# a literal NUL byte at the time and throws a JS SyntaxError before any dedup
+# logic runs, not because the dedup fixtures below exercise the bug. The actual
+# proof that these fixtures discriminate the fix from the bug is the mutation
+# test: manually reverting `(r.stream||"orchestrator")` to `(r.stream||"")` in a
+# scratch copy of cost-report.md and rerunning this file — case 1 then fails with
+# a wrong total instead of a crash. That's not automated here (it would require
+# checking out and mutating the file under test, which this suite intentionally
+# doesn't do); re-run it by hand if this test's fixtures are ever revised.
 # Run standalone: bash tests/commands/test-cost-report.sh
 set -uo pipefail
 
@@ -48,19 +60,23 @@ echo "=== cost-report.md dedup (stream-aware) ==="
 # Adversarial case: a session_id with a pre-stream legacy row (model_scoped:true,
 # no `stream` field — always meant the orchestrator total) and a post-fix
 # orchestrator row for the SAME model, newer timestamp. Must dedup to ONE row
-# (the newer one wins), not sum both.
+# (the newer one wins), not sum both. The two rows carry DIFFERENT costs ($5.0
+# vs $7.0) on purpose — if the dedup key were buggy and summed instead of
+# deduping, the total would be $12.0000; if it deduped but picked the wrong
+# (older) row, it'd be $5.0000. Only "latest wins, no summing" lands on $7.0000,
+# so the assertion pins the exact semantics, not just a plausible-looking number.
 fake_home=$(mktemp -d)
 metrics_dir="$fake_home/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-01T00:00:00Z","session_id":"upgrade-span","transcript_path":"/t","model":"claude-opus-4-8","model_scoped":true,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":5.0}
-{"timestamp":"2026-08-07T00:00:00Z","session_id":"upgrade-span","transcript_path":"/t","model":"claude-opus-4-8","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":5.0}
+{"timestamp":"2026-08-07T00:00:00Z","session_id":"upgrade-span","transcript_path":"/t","model":"claude-opus-4-8","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":7.0}
 EOF
 out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
 rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
-[[ "$rc" == "0" && "$total" == "5.0000" ]] && ok=1 || ok=0
-assert "legacy streamless row + post-fix orchestrator row (same session+model) dedup to ONE row, not summed (got total=\$${total:-?}, want \$5.0000)" "$ok"
+[[ "$rc" == "0" && "$total" == "7.0000" ]] && ok=1 || ok=0
+assert "legacy streamless row (\$5) + post-fix orchestrator row (\$7, same session+model) dedup to the NEWER row only, not summed (got total=\$${total:-?}, want \$7.0000)" "$ok"
 rm -rf "$fake_home"
 
 # Positive case: two DIFFERENT streams for the same session+model must NOT
