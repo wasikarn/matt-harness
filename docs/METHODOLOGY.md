@@ -66,13 +66,18 @@ When Acceptance Criteria already exist for the task, they ARE the testable terms
 
 **Bug fixes: failing test first.** Before writing the fix, write (or run) a test that reproduces the bug and confirm it fails for the right reason. Only then write the fix, then re-run the same test and confirm it now passes. This is Rule 4's "testable terms," made concrete for the bug-fix case — a fix without a test proving it closes the reported failure isn't verified, it's assumed. Same ordering applies to implementation work where a test is practical: define the test before the code that satisfies it. If an automated test isn't practical (e.g. missing infra), the fallback is a minimal repro step shown to fail before the fix and pass after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does.
 
+### Dispatched-agent claims need one checkable fact (prose-only — see Rule 13's citation convention)
+
+A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity CLAUDE.md's crux names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this for verdicts carrying findings (each requires `file`/`line`) and for scope conformance (`scope_ok`/`unexpected_files`) — but a clean pass (`findings: []`) has nothing to check, which is exactly the gap this line targets: a clean "nothing found," inside or outside orchestrate's chain, that nothing independently checks today.
+
 ## Rule 13 — Orchestration shape
 
 Decompose → route → verify → combine.
 
-- Orchestrators delegate; they never implement.
-- A dispatched sub-agent must not re-orchestrate — return scoped output to the parent.
-- Phase gates are non-negotiable (Quality never ships; Orchestration never implements).
+- Orchestrators delegate; they never implement (prose-only — no gate stops an orchestrator from self-implementing; the phase-gates bullet below covers the one piece of this that IS enforced).
+- A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 45 (`45-agent-tool-grant-must-not-include-agent.sh`).
+- Phase gates: a sub-agent can never self-mark a task complete (enforced by `gate:task:complete-separation.sh`); Quality never ships without passing Orchestration's review (prose-only — no check blocks a skipped review).
+- Any line in this file or CLAUDE.md that asserts a limit or gate must name its enforcing file, or say "(prose-only)" if none exists — an unenforced "non-negotiable" reads as a computational guarantee it isn't.
 
 ### Context economy — protect the main thread
 
@@ -93,7 +98,7 @@ own measurements in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.
 
 ## Rule 14 — Decision scoring (explainable decisions)
 
-Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence. **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under §Architecture) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
+Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence (prose-only — no check enforces this). **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under §Architecture) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
 
 - State the criteria and each one's weight **before** scoring.
 - Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.
