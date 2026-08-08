@@ -222,6 +222,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "id": "stop:stale-task-nudge",
+        "description": "Stop: if a task this session created via TaskCreate still shows status in_progress with no TaskUpdate call for it since, nudge the model via additionalContext before the turn ends. Synchronous (not async) — additionalContext from an async hook only lands next turn, too late to matter. Deduped to one nudge per task per session via a marker file; never fires on stop_hook_active to avoid re-triggering itself.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/stale-task-nudge.sh"]
+          }
+        ]
       }
     ],
     "SessionEnd": [

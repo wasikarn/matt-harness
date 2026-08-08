@@ -15,6 +15,7 @@ ROOT_ANCHOR="$ROOT/hooks/session/command-root-anchor.sh"
 MEMORY_NUDGE="$ROOT/hooks/session/memory-health-nudge.sh"
 COST_TRACKER="$ROOT/hooks/stop/cost-tracker.sh"
 MEMORY_COMMIT="$ROOT/hooks/stop/memory-audit-commit.sh"
+STALE_TASK_NUDGE="$ROOT/hooks/stop/stale-task-nudge.sh"
 
 pass=0
 fail=0
@@ -474,6 +475,58 @@ porcelain2=$(cd "$mem_dir" && git status --porcelain)
 assert "edit to an already-tracked file → auto-committed, working tree clean after" "$ok"
 
 rm -rf "$fake_home" "$proj_noopt" "$proj"
+
+echo ""
+echo "=== stale-task-nudge hook (Stop) ==="
+
+nudge_fix=$(mktemp -d)
+
+cat > "$nudge_fix/stale.jsonl" <<'EOF'
+{"type":"user","message":{"role":"user","content":"do the thing"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"TaskUpdate","input":{"taskId":"9","status":"in_progress"}}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Here is the final report."}]}}
+EOF
+
+cat > "$nudge_fix/clean.jsonl" <<'EOF'
+{"type":"user","message":{"role":"user","content":"do the thing"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"TaskUpdate","input":{"taskId":"9","status":"in_progress"}}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"TaskUpdate","input":{"taskId":"9","status":"completed"}}]}}
+EOF
+
+nudge_home=$(mktemp -d)
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/stale.jsonl","session_id":"s1","stop_hook_active":false}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '"additionalContext"' \
+  && echo "$out" | /usr/bin/grep -q '#9' && ok=1 || ok=0
+assert "fires additionalContext for a task last set to in_progress, untouched since" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/stale.jsonl","session_id":"s1","stop_hook_active":false}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "same session + same task, fired again → silent (per-session dedup)" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/clean.jsonl","session_id":"s2","stop_hook_active":false}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "silent when the task's last recorded status is completed" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/stale.jsonl","session_id":"s3","stop_hook_active":true}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "silent when stop_hook_active=true (anti-loop guard)" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"session_id":"s4"}') 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, silent) when transcript_path is missing" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"/nonexistent-%s.jsonl","session_id":"s5"}' "$$") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, silent) when the transcript file doesn't exist" "$ok"
+
+rm -rf "$nudge_fix" "$nudge_home"
 
 echo ""
 total=$((pass + fail))

@@ -5,6 +5,52 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.233] — 2026-08-09
+
+New `stop:stale-task-nudge` hook — closes the exact gap this session's own task
+tracker just demonstrated: task #9 was marked `in_progress`, a final report delivered
+as the turn's last output, and `TaskUpdate(completed)` never called. Caught only
+because the user happened to ask "check tasks that are still open" — nothing would
+have caught it automatically.
+
+- **Verified the mechanism before building it, not after.** The original plan was a
+  passive one-line reminder at Stop, "turn ends normally either way." Checked against
+  `hooks.md` (via a dedicated `claude-code-guide` dispatch) before writing any code:
+  `Stop` has no such lever. Every field that puts text in front of the model
+  (`decision: block`, `hookSpecificOutput.additionalContext`) forces one more visible
+  agent turn — confirmed, not assumed. Async doesn't help either: an async hook's
+  `additionalContext` is still parsed but only delivered on the *next* turn, too late
+  once the current one has ended. Surfaced this to the user as a real design fork
+  (force one extra turn vs. a weaker passive SessionStart-only check) rather than
+  silently building something different from what was approved — user picked the
+  Stop hook.
+- **`hooks/stop/stale-task-nudge.sh`** (synchronous, not async — the first Stop hook
+  in this fleet that's actually model-facing; `cost-tracker.sh`/`memory-audit-commit.sh`
+  stay async, pure journaling). Parses the transcript's `TaskUpdate` calls (which always
+  carry `taskId` directly — no `tool_use`/`tool_result` correlation needed), takes the
+  last-recorded status per task, and nudges via `additionalContext` for any task whose
+  last status is `in_progress`. Deduped to one nudge per task per session (marker file
+  under `~/.local/share/kbg/task-nudge-sessions/`) so a task legitimately left
+  `in_progress` across several real turns doesn't re-nag every Stop. Guards on
+  `stop_hook_active` to avoid re-triggering itself.
+- **Known, documented gap, not hidden:** "untouched since" is a mechanical last-write-
+  wins check, not semantic judgment — it can't tell "forgot to close" from "genuinely
+  still working across multiple turns." The per-session dedup bounds the false-positive
+  cost to one nudge, it doesn't eliminate the false positive itself.
+- Verified via 6 fixture scenarios run directly against the script (stale task fires,
+  same-session repeat is silent, cleanly-closed task is silent, `stop_hook_active`
+  blocks re-fire, missing/unreadable transcript fails safe) before wiring into
+  `hooks.json`, plus a regression test added to `tests/hooks/test-session-stop.sh`.
+- Updated `docs/reference/hook-lifecycle-contracts.md`: added this hook's contract row,
+  and fixed a pre-existing gap the verification agent caught — `memory-audit-commit.sh`
+  (already shipped, already a Stop hook) had no contract row at all, and the "no
+  enforcement" wording for async Stop hooks understated what `additionalContext`
+  actually does on them (delivered next turn, not never).
+- Noticed mid-session: `commands/deep-audit.md` shows staged-and-modified in this
+  working tree but was never touched this session — another concurrent session's
+  in-progress work, left untouched per this repo's own concurrent-session discipline.
+  Not staged, not committed, not referenced in any count here.
+
 ## [0.68.232] — 2026-08-09
 
 Independent adversarial audit of v0.68.231, not a continuation of it — reset assumptions, reproduced
