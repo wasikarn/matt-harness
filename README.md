@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.231-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.232-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -71,7 +71,10 @@ claude plugin enable kbg@kobig
 /plugin install mattpocock-skills@mattpocock
 
 # 5. Run once per repo (issue tracker, triage labels, doc layout) — the
-#    leading slash is required, this skill can't be model-invoked:
+#    leading slash is required, this skill can't be model-invoked. If step 4's
+#    install summary said "Run /reload-plugins to activate" (it can, for a
+#    plugin this size), run that first — otherwise this command resolves as
+#    unrecognized in the same session:
 /mattpocock-skills:setup-matt-pocock-skills
 
 # 6. Restart Claude Code (plugin cache loads on startup)
@@ -81,8 +84,11 @@ claude plugin enable kbg@kobig
 
 # 8. Verify the install actually took (from a terminal, no session needed):
 claude plugin list                # kbg@kobig AND mattpocock-skills@mattpocock both "enabled"
-claude plugin details kbg@kobig   # component inventory + token cost (counts here use Claude
-                                   # Code's own skill/command taxonomy, not this README's)
+claude plugin details kbg@kobig   # component inventory + token cost — folds all flat-file
+                                   # commands/*.md into one "Skills" count and doesn't list
+                                   # directory-form commands (ship/ideate/address-review) at
+                                   # all, so this won't confirm those 3 specifically; use
+                                   # step 7's smoke test for a real functional check instead
 ```
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
@@ -101,7 +107,7 @@ claude plugin details kbg@kobig   # component inventory + token cost (counts her
 > you're evaluating kbg against. To try it scoped to one repo first, use
 > `/plugin install kbg@kobig --scope project` (or `--scope local`) instead.
 
-**Uninstall:** `/plugin uninstall kbg`  
+**Uninstall:** `/plugin uninstall kbg@kobig`  
 **Disable (keep installed):** `claude plugin disable kbg@kobig`
 
 After changing any surface, follow the release cycle in [Adding a Component](#development) below (bump both manifest versions → validate → commit → push → update → restart).
@@ -114,7 +120,7 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 |---|---|---|
 | **Skills** | 31 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 19 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 21 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
+| **Commands** | 21 | `/kbg:<command>` — e.g. `/kbg:ship`, `/kbg:address-review`, `/kbg:fix-bug` (namespaced identically to skills — see Quick Start step 7) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -168,7 +174,7 @@ verification loop / event-driven loop / hill-climbing loop) and
   rejects both sources' endpoint: an L3/L4 loop that restarts itself with no human turn.
   This is the "no-model-self-start" rule (CLAUDE.md's Operating model), and it's why the
   earlier L2–L5 "bounded-autonomy ratchet" build was retired rather than finished.
-- Concretely: `/ship`'s Phase 7 fix loop is explicit that "there is no autonomous loop —
+- Concretely: `/kbg:ship`'s Phase 7 fix loop is explicit that "there is no autonomous loop —
   each iteration requires explicit user re-invocation." Rule 4 ("define done, loop until
   verified") governs the *inside* of one bounded pass, never a chain of passes that starts
   itself.
@@ -213,10 +219,10 @@ predates the term, and the doc is explicit that this is naming, not new capabili
 
 | Command | What it does |
 |---|---|
-| `/ship` | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge |
-| `/fix-bug` | Guided 7-phase bug-fix with diagnostic + test-first patterns |
-| `/security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
-| `/ship-merge` · `/ship-release` | Pre-merge gate · end-to-end release ceremony |
+| `/kbg:ship` | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge |
+| `/kbg:fix-bug` | Guided 7-phase bug-fix with diagnostic + test-first patterns |
+| `/kbg:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
+| `/kbg:ship-merge` · `/kbg:ship-release` | Pre-merge gate · end-to-end release ceremony |
 
 ### Skills
 
@@ -254,7 +260,7 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `typescript-reviewer` · `python-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
 | `summarizer` | Clarity/compression specialist — condenses long content into filler-free output for any audience |
-| `ideate-critic` | Fresh-context critic for `/ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
+| `ideate-critic` | Fresh-context critic for `/kbg:ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 | `task-prep-checker` | Fresh-context verifier for a `task-prep` handoff prompt — runs the golden-rule colleague test |
 
 ### Backend Stack Patterns

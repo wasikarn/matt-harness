@@ -82,6 +82,29 @@ rc=$?
 assert "warns when mattpocock-skills plugin cache is absent" "$ok"
 rm -rf "$fake_home_absent"
 
+fake_home_disabled=$(mktemp -d)
+mkdir -p "$fake_home_disabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
+cat > "$fake_home_disabled/.claude/settings.json" <<'EOF'
+{"enabledPlugins": {"mattpocock-skills@mattpocock": false}}
+EOF
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_disabled" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:mattpocock-preflight -->' \
+  && echo "$out" | /usr/bin/grep -qi 'installed but disabled' && ok=1 || ok=0
+assert "warns when mattpocock-skills plugin cache is present but disabled in settings.json" "$ok"
+rm -rf "$fake_home_disabled"
+
+fake_home_enabled=$(mktemp -d)
+mkdir -p "$fake_home_enabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
+cat > "$fake_home_enabled/.claude/settings.json" <<'EOF'
+{"enabledPlugins": {"mattpocock-skills@mattpocock": true}}
+EOF
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_enabled" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
+assert "stays silent when mattpocock-skills is present and explicitly enabled" "$ok"
+rm -rf "$fake_home_enabled"
+
 echo ""
 echo "=== command-root-anchor hook (SessionStart) ==="
 

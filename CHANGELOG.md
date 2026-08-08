@@ -5,6 +5,63 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.232] — 2026-08-09
+
+Independent adversarial audit of v0.68.231, not a continuation of it — reset assumptions, reproduced
+its self-reported metrics against real git state instead of trusting the commit message, and
+dispatched 3 fresh read-only agents to try to disprove the previous session's claims. Found the
+audit's own before-state claim was wrong in the *conservative* direction (real delta was bigger,
+not smaller — see below), plus one non-exhaustive fix, one incomplete cross-reference fix, and 6
+confirmed-real documentation bugs a prior pass had deliberately left alone on an unverified guess.
+Zero regressions found across 3 independent passes (git-archive reproduction, adversarial README
+walkthrough, review-pr/agent-cross-reference re-verification).
+
+- **v0.68.231's own "0C/1W/5I → 0C/0W/5I" claim doesn't reproduce.** Materialized the true
+  pre-session tree via `git archive 917aadf` and ran harness-audit against it directly: real before
+  state was `0C/5W/5I` (4 fleet-count-drift warnings + BOUNDARY.md staleness), not `0C/1W/5I` — the
+  fix closed 5 warnings, not 1. The commit undersold its own impact rather than oversold it.
+- **The "fixed the exclusion in all 4 scripts" fleet-count fix wasn't exhaustive.** Repo-wide grep
+  for the same `$CLAUDE_DIR/skills`-enumeration pattern found 2 more instances carrying the identical
+  gitignored-`*-workspace`-scratch-dir leak: `check 40` (dead-kbg-reference doc-rot) and `check 50`
+  (skill-cited-in-slash-form doc-rot). Lower severity than the original (both build an allowlist, not
+  a displayed count, so the leak could only cause a false negative, never a miscount) but the same
+  defect class, now closed in both.
+- **check-25's nullglob fix had zero regression coverage.** It shipped a real crash bug on its first
+  pass (documented in 0.68.231) and was fixed with no test proving it stays fixed. Added a fixture to
+  `tests/skills/harness-audit/test-harness-audit.sh` that runs check 25 in isolation against a `$HOME`
+  with no plugin cache — verified meaningful by reconstructing the actual pre-fix buggy intermediate
+  (glob present, no nullglob guard) and confirming the new assertion fails against it, then passes
+  against the real fix.
+- **The new mattpocock-skills preflight (`doctrine-bootstrap.sh`) checked directory presence only,**
+  not `~/.claude/settings.json`'s `enabledPlugins` state — a plugin installed-but-disabled would
+  silently pass the check while every `mattpocock-skills:<name>` route still failed, the exact
+  dead-end the preflight exists to prevent. Added the enabled-state check (grep, no new python3
+  dependency) plus 2 new fixture assertions in `tests/hooks/test-session-stop.sh` (disabled → warns,
+  explicitly-enabled → stays silent), each verified via a before/after swap to actually catch the gap.
+- **6 bare-slash README command references, deliberately left unfixed last round on an unverified
+  guess, confirmed real via 3 official-docs citations** (not inference): `/ship`, `/fix-bug`,
+  `/security-scan`, `/ship-merge`, `/ship-release`, `/ideate`, plus the Commands table's own
+  invoke-format row and the Uninstall line — all needed the `/kbg:` prefix / `kbg@kobig` form, same
+  as the already-fixed `/kbg:kbg-help` smoke test. Fixed all 6, confirmed zero bare-slash references
+  to these 6 commands remain.
+- **2 real, pre-existing installation gaps surfaced by an adversarial new-user walkthrough,**
+  neither introduced this session: (1) Quick Start step 4→5 can hit a same-session activation race —
+  `/plugin install` may print "Run `/reload-plugins` to activate" instead of activating immediately
+  for a plugin this size, and step 5's slash command silently fails to resolve if so; added a
+  one-line caveat. (2) Step 8's `claude plugin details` verification command shows zero signal for
+  the 3 directory-form commands (`ship`, `ideate`, `address-review`) — its output folds all commands
+  into one undifferentiated "Skills" count; reworded to point at step 7's smoke test instead for
+  those 3 specifically.
+- **Deferred, not fixed:** 2 of `code-reviewer.md`'s 5 new specialist cross-references were confirmed
+  still one-directional by an independent review agent (`typescript-reviewer`, `python-reviewer`,
+  `security-reviewer`, `silent-failure-hunter` don't link back — only `nextjs-reviewer` does), and
+  `nextjs-reviewer.md`'s `skills:` frontmatter removal silently dropped its `frontend-patterns`
+  reference with no replacement (asymmetric vs. the same removal in `typescript-reviewer.md`, which
+  kept a documenting rationale). Both are real but lower-priority than this round's fixes — left open.
+  Also left open: the `sync-seam` duplicated-glob-logic pattern itself (now 6 copies of the same
+  one-liner, no shared helper) and `atlassian-mcp-gate.sh`'s known lockout risk (still gate-protected,
+  still needs explicit approval).
+
 ## [0.68.231] — 2026-08-09
 
 End-to-end product/engineering pass on the plugin itself, prompted by a third-party AI-memory

@@ -96,6 +96,24 @@ else
   bad "check-49 prose-mention regression fixture did NOT fire CRIT — the frontmatter-scoping fix has regressed (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 25 — pipefail-abort regression guard. The plugin-cache glob added
+# 2026-08-09 (v0.68.231) once shipped with no directory guard: on a $HOME
+# with no ~/.claude/plugins/cache yet, the unmatched multi-level glob failed
+# its own `[ -d ]` test and, under `set -euo pipefail` in a sourced check,
+# silently aborted the whole audit mid-run (no "=== Summary ===" line at
+# all). Fixed with a scoped nullglob toggle; this fixture proves the fix by
+# running check 25 in isolation against a $HOME with zero plugin cache dirs
+# and asserting the run completes (prints a Summary) instead of aborting.
+FAKE_HOME_NO_CACHE=$(mktemp -d)
+CHECK25_OUT=$(HOME="$FAKE_HOME_NO_CACHE" bash "$AUDIT" "$HERE/../../.." --only 25 2>&1 || true)
+rm -rf "$FAKE_HOME_NO_CACHE"
+if printf '%s\n' "$CHECK25_OUT" | grep -q "=== Summary"; then
+  ok "check-25 survives a \$HOME with no plugin cache (no pipefail abort)"
+else
+  bad "check-25 aborted before printing a Summary against an empty-cache \$HOME — nullglob regression:
+$CHECK25_OUT"
+fi
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then

@@ -23,7 +23,11 @@
 declare -A _known_kbg=()
 while IFS= read -r _k; do [ -n "$_k" ] && _known_kbg["$_k"]=1; done < <({
   if [ -d "$CLAUDE_DIR/skills" ]; then
-    for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+    for d in "$CLAUDE_DIR/skills"/[!_]*/; do
+      [ -d "$d" ] || continue
+      case "$(basename "$d")" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
+      basename "$d"
+    done
   fi
   if [ -d "$CLAUDE_DIR/agents" ]; then
     for f in "$CLAUDE_DIR/agents"/*.md; do [ -f "$f" ] && basename "$f" .md; done

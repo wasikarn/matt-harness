@@ -25,7 +25,11 @@
 declare -A _known_skills50=()
 if [ -d "$CLAUDE_DIR/skills" ]; then
   while IFS= read -r _k; do [ -n "$_k" ] && _known_skills50["$_k"]=1; done < <(
-    for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done | sort -u)
+    for d in "$CLAUDE_DIR/skills"/[!_]*/; do
+      [ -d "$d" ] || continue
+      case "$(basename "$d")" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
+      basename "$d"
+    done | sort -u)
 fi
 declare -A _known_commands50=()
 while IFS= read -r _k; do [ -n "$_k" ] && _known_commands50["$_k"]=1; done < <({
