@@ -54,6 +54,7 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 | `requirement-analyst` | Senior-level requirement analysis of a Jira ticket's own body — ambiguities, missing ACs, edge cases, readiness verdict. Dispatched by Phase 1.5 when a ticket is referenced; never fetches, never touches the diff (that's the coverage lens above) |
 | `typescript-reviewer` | TS/JS type safety, async correctness, security, idiomatic patterns — routed alongside `code-reviewer` when `.ts`/`.tsx`/`.js`/`.jsx` is the dominant changed-file language |
 | `python-reviewer` | PEP 8, Pythonic idioms, type hints, security, performance — routed alongside `code-reviewer` when `.py` is the dominant changed-file language |
+| `nextjs-reviewer` | App Router rendering/caching, Server Actions, middleware — routed alongside `code-reviewer` (and `typescript-reviewer`, if still dominant) when the diff touches `app/**`, `middleware.ts`, `proxy.ts`, or `next.config.*` |
 | native `/simplify` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
 ## Phase 5 step 3.6 — standalone form
@@ -62,9 +63,9 @@ Supplementary detail for `SKILL.md § Phase 5, step 3.6 (Zero-findings adversari
 
 The standalone, dispatchable form of this exact discipline — usable outside a review-pr run, e.g.
 on a self-authored delta mid-session — is `agents/blind-spot-hunter.md`, which also carries the
-enriched hunt-shape checklist. Step 3.6 still dispatches an inline-framed `general-purpose` agent
-rather than the named agent — keep the two in sync until a follow-up single-sources them by having
-3.6 dispatch `blind-spot-hunter` directly.
+enriched hunt-shape checklist. Step 3.6 now dispatches `blind-spot-hunter` directly (fixed
+2026-08-09 — it previously dispatched an inline-framed `general-purpose` agent instead, the gap
+this note used to track).
 
 ## Integration Notes — full detail
 

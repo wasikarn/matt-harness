@@ -198,7 +198,7 @@ Write the `description` in the frontmatter to include a summary of the module's 
 
 - **This agent is fully self-sufficient.** It does not require any other agent to run first.
 - **After you run**: `Explore` will use your specs as the primary information source — checking `Last verified` freshness before trusting
-- **Future changes**: `code-architect` will add `## ADDED Requirements` blocks; the `tdd` skill will read `#### Scenario:` blocks to generate test skeletons; `code-reviewer` will grep `<!-- enforced: -->` to verify implementation still matches spec; MODIFIED Requirements will match by `<!-- id: -->`, not by name
+- The delta-ready structure (rule 7 above — `## ADDED`/`## MODIFIED`/`## REMOVED Requirements`, matched by `<!-- id: -->`) is prepared for whoever writes the next OpenSpec delta by hand; no other agent in this fleet currently consumes it automatically.
 
 ## Anti-Patterns
 

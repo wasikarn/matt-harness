@@ -26,7 +26,7 @@ REPO_ROOT="${1:-$(cd -P "$SCRIPT_DIR/../../.." && pwd)}"
 
 # Live counts — duplicates check-01's / check-48's methodology directly (3
 # short finds); not worth a shared lib for this size.
-SKILLS=$(find "$REPO_ROOT/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' | wc -l | tr -d ' ')
+SKILLS=$(find "$REPO_ROOT/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace' | wc -l | tr -d ' ')
 AGENTS=$(find "$REPO_ROOT/agents" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')
 COMMANDS=$(ls -1 "$REPO_ROOT"/commands/*.md "$REPO_ROOT"/commands/*/COMMAND.md 2>/dev/null | wc -l | tr -d ' ')
 TRIPLE="${SKILLS} skills · ${AGENTS} agents · ${COMMANDS} commands"

@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.195-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.231-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -56,11 +56,13 @@ Run these commands inside Claude Code:
 # 1. Register the marketplace source (once per machine)
 /plugin marketplace add wasikarn/kbg-harness
 
-# 2. Install
+# 2. Install (default scope is user-wide — see the scope note below before
+#    trying kbg out on just one repo)
 /plugin install kbg@kobig
 
-# 3. Enable — add to your Claude Code settings.json:
-#    "kbg@kobig": true
+# 3. Enable (from a terminal — needs Claude Code v2.1.154+; earlier versions
+#    auto-enable on install and can skip this step):
+claude plugin enable kbg@kobig
 
 # 4. Required — install matt-pocock's skills as their own plugin (kbg's hooks,
 #    commands, and remaining skills route to these by namespaced name; they
@@ -68,13 +70,19 @@ Run these commands inside Claude Code:
 /plugin marketplace add mattpocock/skills
 /plugin install mattpocock-skills@mattpocock
 
-# 5. Run once per repo (issue tracker, triage labels, doc layout):
-mattpocock-skills:setup-matt-pocock-skills
+# 5. Run once per repo (issue tracker, triage labels, doc layout) — the
+#    leading slash is required, this skill can't be model-invoked:
+/mattpocock-skills:setup-matt-pocock-skills
 
 # 6. Restart Claude Code (plugin cache loads on startup)
 
-# 7. Smoke-test
-kbg:kbg-help
+# 7. Smoke-test — plugin commands are namespaced like skills, /kbg:<name> not /<name>
+/kbg:kbg-help
+
+# 8. Verify the install actually took (from a terminal, no session needed):
+claude plugin list                # kbg@kobig AND mattpocock-skills@mattpocock both "enabled"
+claude plugin details kbg@kobig   # component inventory + token cost (counts here use Claude
+                                   # Code's own skill/command taxonomy, not this README's)
 ```
 
 > **Note:** The plugin ships with `defaultEnabled: false`. Step 3 is required.
@@ -85,9 +93,16 @@ kbg:kbg-help
 > without them. Installed as a plugin — not vendored, not `gh skill`-installed
 > (migrated off `gh skill` 2026-07-17). Re-sync with
 > `claude plugin update mattpocock-skills@mattpocock`.
+>
+> **Note — install scope:** step 2 with no `--scope` flag installs at **user
+> scope** — kbg's deny-gates (`hooks/gates/irrecoverable.sh`: blocks `rm -rf`,
+> `git add -A`/`git add .`, `--no-verify`, hardcoded `/Users/<name>` paths)
+> then apply to **every** project you open in Claude Code, not just the one
+> you're evaluating kbg against. To try it scoped to one repo first, use
+> `/plugin install kbg@kobig --scope project` (or `--scope local`) instead.
 
 **Uninstall:** `/plugin uninstall kbg`  
-**Disable (keep installed):** set `"kbg@kobig": false` in `settings.json`
+**Disable (keep installed):** `claude plugin disable kbg@kobig`
 
 After changing any surface, follow the release cycle in [Adding a Component](#development) below (bump both manifest versions → validate → commit → push → update → restart).
 
@@ -97,7 +112,7 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 33 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Skills** | 31 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 19 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 21 | `/<command>` — e.g. `/ship`, `/address-review`, `/fix-bug` |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
@@ -260,7 +275,7 @@ Stack-specific pattern skills, kbg-native.
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 19 specialist subagents (.md each)
-├── skills/               # 33 workflow skills (SKILL.md per directory)
+├── skills/               # 31 workflow skills (SKILL.md per directory)
 ├── commands/             # 21 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
@@ -285,7 +300,9 @@ kbg-harness/
 # Only live validation gate
 claude plugin validate --strict .
 
-# Full gauntlet (plugin-validate + shell-lint + JSON lint + harness-audit)
+# Full gauntlet (plugin-validate + shell-lint + JSON lint + harness-audit +
+# the 12-file hook/skill behavioral test suite — see CLAUDE.md's Validation
+# section for the full file list)
 bash scripts/run-gauntlet.sh
 ```
 
@@ -337,7 +354,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 33 skills · 19 agents · 21 commands).
+> `ls commands/` (real current fleet: 31 skills · 19 agents · 21 commands).
 
 | Source | License | Adopted |
 |---|---|---|
@@ -348,7 +365,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance-machinery rubric adapted into a new Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130) |
-| kbg-native | MIT | 33 skills · 19 agents · 21 commands |
+| kbg-native | MIT | 31 skills · 19 agents · 21 commands |
 
 ---
 

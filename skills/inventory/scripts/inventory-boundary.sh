@@ -85,6 +85,7 @@ print_boundary() {
       [ -d "$d" ] || continue
       local name desc agent invoke
       name=$(basename "$d")
+      case "$name" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
       local skill_file="$d/SKILL.md"
       [ -f "$skill_file" ] || continue
       desc=$(fm_get "$skill_file" description --block)

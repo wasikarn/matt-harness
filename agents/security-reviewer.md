@@ -232,6 +232,20 @@ Two failure modes let an otherwise-correct writeup still mis-score in the summar
   the severity itself reads as certainty to anyone scanning just the summary table or a "blocking"
   list, and can turn an otherwise-clean review into a false blocker.
 
+## Review Output Format
+
+```text
+[SEVERITY] Issue title
+File: path/to/file:42
+CWE: CWE-XXX (when the pattern tables in §2/§3 name one)
+Issue: Description
+Fix: What to change
+```
+
+Plus the summary table §3d's Severity-Label Discipline governs: counts by severity, with each row's
+tag reflecting any attack-chain escalation or confirmed-floor scoring from that section — not a
+separate format, the table this agent's own severity discipline assumes elsewhere in this file.
+
 ## Key Principles
 
 1. **Defense in Depth** — Multiple layers of security

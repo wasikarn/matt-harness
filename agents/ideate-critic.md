@@ -116,6 +116,15 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
 **Provocation:**
 - One wildcard question or reframing that opens a new direction the user can push into.
 
+**Nothing may appear before the opening `{` or after the closing `}`** — no preamble narrating your
+process ("here's my analysis," "scores incorporated"), no trailing caveat, no closing summary in
+any language. A judgment call worth explaining belongs inside the JSON itself (e.g. `provocation`
+or a sketch's own prose), not appended as free-standing text outside it. The host parses this
+output programmatically; a wrapped or annotated response is a parsing risk, not just noise — the
+same failure class `task-prep-checker` had to harden against after a confirmed real incident
+(2026-07-30: that agent produced multi-paragraph prose around its own schema on a live single-shot
+run, not a hypothetical).
+
 ## Procedure
 
 1. **Read the input envelope from stdin.**

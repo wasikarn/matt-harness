@@ -76,6 +76,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 1. Route per conditional rules — each rule fires only if BOTH (a) Phase 2's file list matches the file-type condition AND (b) Phase 1's aspect arg includes the corresponding aspect (or `all`):
    - `code` aspect (or `all`) → **always**: `code-reviewer` (general-quality lens — no file-type condition)
    - `code` aspect (or `all`) AND the dominant changed-file language (by extension plurality among Phase 2's file list) has a matching specialist → **also** dispatch the specialist alongside `code-reviewer`: `.ts`/`.tsx`/`.js`/`.jsx` → `typescript-reviewer`, `.py` → `python-reviewer`. No specialist for other languages — `code-reviewer`'s general-quality lens is the only pass. (These two agents already exist in the fleet, reachable via `kbg:orchestrate`; `review-pr` itself never routed to them before.) On a trivial diff (a single non-test file — the same predicate used at Phase 5 step 3.6 and Phase 6's proof check), only the *specialist* may be skipped as a Rule-2 economy; `code-reviewer` stays mandatory regardless. A specialist's own lens description never substitutes for it — dispatching only `typescript-reviewer`, even framed as covering "general TS quality" alongside its type-design lens, does not satisfy the rule above. `code-reviewer` must actually run, or the diff wasn't reviewed for general quality at all (confirmed failure mode: PR #2603).
+   - `code` aspect (or `all`) AND the diff touches Next.js-specific paths (`app/**`, `middleware.ts`, `proxy.ts`, `next.config.*`) → **also** dispatch `nextjs-reviewer` alongside `code-reviewer` (and `typescript-reviewer`, if TS/TSX still dominates by extension). Fires on path match, independent of the extension-plurality rule above — a Next.js diff can touch few files by extension count and still carry framework-specific risk (e.g. the Server Action IDOR pattern `nextjs-reviewer.md` documents) that the generic TS reviewer's lens doesn't cover. (Confirmed gap: `review-pr` never routed to `nextjs-reviewer` at all before this fix.)
    - `tests` aspect (or `all`) AND (test files changed **OR** the diff touches a Claude Code surface dir — `.claude/{agents,skills,commands,hooks}/` (the standard per-project convention) **or** a repo-root `{agents,skills,commands,hooks}/` (this repo's own layout — confirmed no `claude/`-prefixed dir exists here, so the old pattern never matched kbg-harness's own diffs)) → `code-reviewer` with the **behavioral test-coverage lens** (the harness's own code is the one place an untested change is highest-risk, so it defaults on for harness diffs even with no test files in the change)
    - `comments` aspect (or `all`) AND comments/docs added → `code-reviewer` with the **comment-accuracy lens**
    - `errors` aspect (or `all`) AND error handling changed → `silent-failure-hunter`
@@ -148,13 +149,14 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    Critical/Important findings remain after step 3.5's dispositions** — either none were raised, or
    every one was refuted down to Minor (the trigger is the *final* state, not what step 3 first
    produced) — AND the diff is **non-trivial** (≥2 files changed or ≥1 test file touched — same
-   threshold as Phase 6's proof check), dispatch **one** fresh `general-purpose` agent framed as an
-   **adversarial hunt, not a re-review**: instruct it to *assume a defect exists in the pinned range
-   (`$BASE_SHA..$HEAD_SHA`) and go find it* — re-reviewing with the same lens just reproduces the
-   zero; the reframe from "check this" to "there is a bug here — locate it" is what gives a shared
-   blind spot a chance to surface. The hunter returns structured findings (possibly none). (The
-   standalone dispatchable form, plus the sync note with `agents/blind-spot-hunter.md`:
-   `reference.md`.)
+   threshold as Phase 6's proof check), dispatch **`agents/blind-spot-hunter.md`** directly, framed
+   with the pinned range (`$BASE_SHA..$HEAD_SHA`) as its target diff: instruct it to *assume a
+   defect exists and go find it* — re-reviewing with the same lens just reproduces the zero; the
+   reframe from "check this" to "there is a bug here — locate it" is what gives a shared blind spot
+   a chance to surface. `blind-spot-hunter` is this step's purpose-built agent — pinned `opus`,
+   trace-to-earned-severity, a "Cleared decoys" list, fail-closed refutation already built in — not
+   a generic agent re-framed by this step's own prompt. The hunter returns structured findings
+   (possibly none). (Standalone dispatchable form: `reference.md`.)
    - **Any Critical/Important finding it raises is verified before it counts.** A hunter told "assume a bug exists" is primed to manufacture a weak one — the exact false positive step 3.5 exists to kill — so apply step 3.5's fail-closed refutation (a *fresh* refuter, same disposition) to each hunter finding once, then tier it. The re-hunt itself runs **once**: a hunter finding never triggers another step 3.6, so the pass always terminates.
    - **Returns nothing** → the zero-findings clean pass stands, now backed by an independent adversarial pass. Record that the re-hunt ran (Phase 6 surfaces it).
    - **Skip** on a trivial diff (a single non-test file) — Rule 2, not worth the *hunter* dispatch — and whenever any Critical/Important finding *survives* step 3.5 (there's already a real finding to act on; step 3.5 owns that path). **This economy is scoped to step 3.6's own dispatch only** — it is not a general license to skip or substitute agents anywhere else in the review, including Phase 3's reviewer fan-out (Phase 3's own trivial-diff rule governs what may be skipped there, and it is narrower than this one).

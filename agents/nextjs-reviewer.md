@@ -3,8 +3,6 @@ name: nextjs-reviewer
 description: "Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
-skills:
-  - kbg:frontend-patterns
 ---
 
 ## Prompt Defense Baseline

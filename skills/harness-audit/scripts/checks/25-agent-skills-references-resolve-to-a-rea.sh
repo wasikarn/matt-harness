@@ -10,11 +10,29 @@ _known_skills=$(mktemp)
   # an if so the command group ends with exit 0 even when the directory is
   # missing; with set -euo pipefail the pipeline would otherwise abort here.
   if [ -d "$CLAUDE_DIR/skills" ]; then
-    for d in "$CLAUDE_DIR/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+    for d in "$CLAUDE_DIR/skills"/[!_]*/; do
+      [ -d "$d" ] || continue
+      n=$(basename "$d")
+      case "$n" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
+      echo "$n"
+    done
   fi
   if [ -d "$HOME/.claude/skills" ]; then
     for d in "$HOME/.claude/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
   fi
+  # Plugin-delivered skills (e.g. mattpocock-skills:grilling) live under the
+  # plugin cache, not $CLAUDE_DIR/skills or $HOME/.claude/skills — without
+  # this glob, any agent referencing a plugin skill by namespaced name
+  # false-WARNs here permanently, regardless of whether the plugin is
+  # actually installed correctly. nullglob (scoped to this block, restored
+  # after) so a non-matching multi-level glob expands to zero words instead
+  # of the literal pattern string — an unguarded `[ -d ]` on that literal
+  # would fail and, under set -euo pipefail, abort the whole audit script
+  # on any machine with no plugin cache yet (checks are sourced, so a
+  # global nullglob would otherwise leak into every later check).
+  shopt -s nullglob
+  for d in "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/; do basename "$d"; done
+  shopt -u nullglob
 } | sort -u > "$_known_skills"
 while IFS= read -r ref_line; do
   warn "$ref_line"

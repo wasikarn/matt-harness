@@ -155,3 +155,9 @@ Order the implementation by dependency:
 
 Once the blueprint is approved, dispatch `code-implementer` to build it — it detects the stack,
 loads the matching `*-patterns` skill, and implements against this blueprint's build sequence.
+
+## Related
+
+- If the request is really about API contracts, service boundaries, data ownership, consistency,
+  caching, or reliability rather than file-level module design, route to `backend-architect`
+  instead — it owns the systems-design layer this agent's file-by-file blueprint sits above.

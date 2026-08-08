@@ -5,6 +5,87 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.231] — 2026-08-09
+
+End-to-end product/engineering pass on the plugin itself, prompted by a third-party AI-memory
+article (used as inspiration only — its core claim turned out already covered by native Claude
+Code memory + `kbg:memory-lint`, confirmed by a dedicated audit). 4 parallel read-only analysis
+agents (architecture/capability, UX/onboarding/product-value, memory/context-efficiency,
+reliability) plus direct verification found and fixed real, evidence-backed defects — no
+speculative features. `harness-audit`: 0 Critical / 1 Warning / 5 Info (exit 1) →
+0 Critical / 0 Warning / 5 Info (exit 0).
+
+- **Onboarding — 3 Quick Start steps were broken as literally copy-pasted, not just risky.**
+  Step 5 (`mattpocock-skills:setup-matt-pocock-skills`, marked "Required") was missing its leading
+  `/` on a `disable-model-invocation: true` skill — provably unreachable, silent no-op, no error.
+  Step 7's smoke test (`kbg:kbg-help`) had the same missing-slash bug — fixed to `/kbg:kbg-help`
+  (plugin commands are namespaced identically to plugin skills, `/<plugin>:<name>`, confirmed
+  against this repo's own `cc-plugin-skill-slash-and-allowed-tools-2026-07-07` memory; a first
+  pass at this fix wrongly shipped the bare `/kbg-help` form before a second look caught it). Step
+  3's Enable instruction showed incomplete JSON (missing the `enabledPlugins` wrapper) for a manual
+  `settings.json` edit that a real CLI command (`claude plugin enable kbg@kobig`) already avoids
+  entirely — replaced. Added a documented Step 8 (`claude plugin list` / `claude plugin details`)
+  since no install-time verification step existed before, and a scope-disclosure note: default
+  `/plugin install` is user-wide, silently applying kbg's deny-gates to every other open project.
+  Step 8's `claude plugin details` line originally claimed its component counts "match README's
+  What You Get table" — a real run shows it doesn't (Claude Code's own inventory folds all 21
+  commands into one 49-item "Skills" bucket with no separate Commands line, a different taxonomy
+  than this repo's own skill/command split) — reworded to not assert a match that isn't true.
+- **Fleet-count blind spot.** `check 01`/`check 48`/`sync-fleet-counts.sh`/`inventory-boundary.sh`
+  all counted live skills via a `find`/glob that excluded `_`-prefixed dirs but not gitignored
+  `*-workspace/` scratch dirs left behind by `iterate-skill` runs — inflating the reported skill
+  count from the true canonical 31 to 33. Fixed the exclusion in all 4, plus the same gap in
+  `check 25`'s known-skills allowlist. `check 25` separately never resolved plugin-delivered
+  skills (e.g. `mattpocock-skills:grilling`) at all — would have false-WARNed permanently the
+  moment any agent's frontmatter referenced one (currently 0 do) — added the plugin-cache glob.
+  Regenerated `BOUNDARY.md` (was stale, W1) and re-synced all count occurrences to 31/19/21.
+  That same plugin-cache glob shipped its own bug on the first pass: no `[ -d ]` guard around a
+  multi-level wildcard, so on a machine with no `~/.claude/plugins/cache` yet, the unexpanded
+  literal glob string fails its own `[ -d ]` test and, under this file's `set -euo pipefail`,
+  aborts the entire audit script mid-run with no summary line at all — silently, since checks are
+  sourced in a loop. Confirmed live (`env HOME=/tmp/nonexistent bash audit.sh` stopped dead at
+  check 25 with no `=== Summary ===`), fixed with a block-scoped `shopt -s nullglob`/`shopt -u
+  nullglob` pair (checks are sourced, so an unscoped toggle would have leaked into every later
+  check) — same env now runs clean to completion with a real, non-crash finding count.
+- **`kbg:review-pr` never routed to `nextjs-reviewer` at all**, the fleet's deepest framework
+  reviewer (Server Action IDOR pattern, per-major-version caching table) — added a path-keyed
+  routing rule (`app/**`, `middleware.ts`, `proxy.ts`, `next.config.*`), independent of the
+  existing extension-plurality rule so a Next.js diff with few `.tsx` files still triggers it.
+- **`review-pr` Phase 5 step 3.6 dispatched a generic `general-purpose` agent instead of
+  `blind-spot-hunter`**, the purpose-built agent for exactly this adversarial re-hunt —
+  `reference.md` already documented this as a known, unresolved sync gap. Closed it: step 3.6 now
+  dispatches `blind-spot-hunter` directly.
+- **No SessionStart preflight for the required `mattpocock-skills` companion plugin.** If it's
+  missing, the failure was silent at session start, then surfaced later as 3-4 unrelated cryptic
+  dead ends (a skill-not-found error here, a broken routing pointer there) with nothing tying it
+  back to the real cause. `hooks/session/doctrine-bootstrap.sh` now checks once and prints a single
+  clear warning if the plugin cache is absent — verified both branches (silent when present, fires
+  when a `$HOME` with no cache is simulated), and added both as fixture-`$HOME` assertions to
+  `tests/hooks/test-session-stop.sh` so a future regression here fails the gauntlet instead of
+  going unnoticed like the pipefail bug above did until a manual re-check caught it.
+- **`spec-miner.md` promised a `code-architect`/`code-reviewer`/`tdd`-skill OpenSpec integration
+  that doesn't exist anywhere else in the repo** (confirmed: repo-wide `grep -rl "openspec"` matches
+  only `spec-miner.md` itself) — deleted the false promise rather than build the integration nobody
+  asked for.
+- **One-directional agent cross-references and missing output contracts**, all evidence-backed by
+  direct file reads: `code-reviewer.md` never pointed back out to the specialist reviewers that
+  point into it; `code-architect.md` never routed to `backend-architect` for systems-design-shaped
+  asks (the reverse pointer already existed); `typescript-reviewer.md`/`security-reviewer.md` — the
+  two most-dispatched specialist reviewers — had no `## Output Format` section despite `review-pr`
+  aggregating their free-form output; `ideate-critic.md` had the same parse-fragile "no prose"
+  instruction `task-prep-checker.md` already had to harden after a confirmed real failure (multi-
+  paragraph prose wrapped around its own schema, 2026-07-30) — ported the same hardening across.
+  `commands/security-scan.md`'s Links section pointed at a different agent than its own stated
+  handoff (`security-reviewer` vs. `security-auditor`) — fixed. Dropped an inert, undocumented
+  `skills:` frontmatter key from 2 agents that hold no `Skill` tool and already say so in prose.
+- **Deferred, not fixed:** `hooks/gates/atlassian-mcp-gate.sh` can permanently lock out direct
+  Atlassian/Rovo MCP calls with misleading advice if `jira-acli` isn't installed — left untouched,
+  flagged for explicit approval, since it's a gate file under this repo's own
+  "never let the model edit the code that judges it" invariant. `cost-report`'s lack of
+  memory-reuse token attribution and a mid-session proactive-recall gap were both scored
+  genuine-but-not-worth-fixing-yet (Rule 2 — no proven incident driving either), per the dedicated
+  memory/context-efficiency audit.
+
 ## [0.68.223] — 2026-08-07
 
 Shipped the remaining Tier A proposals from `docs/research/agent-memory-engineering-2026-08-07.md`

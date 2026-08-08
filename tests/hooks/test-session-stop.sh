@@ -63,6 +63,25 @@ rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, silent) when plugin root path doesn't exist" "$ok"
 
+# mattpocock-skills companion-plugin preflight: fixture $HOME, independent of
+# whatever plugins happen to be installed on the machine running this test.
+fake_home_present=$(mktemp -d)
+mkdir -p "$fake_home_present/.claude/plugins/cache/mattpocock/mattpocock-skills"
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_present" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
+assert "silent when mattpocock-skills plugin cache is present" "$ok"
+rm -rf "$fake_home_present"
+
+fake_home_absent=$(mktemp -d)
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_absent" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:mattpocock-preflight -->' \
+  && echo "$out" | /usr/bin/grep -q 'mattpocock-skills@mattpocock' \
+  && echo "$out" | /usr/bin/grep -q '<!-- /kbg:mattpocock-preflight -->' && ok=1 || ok=0
+assert "warns when mattpocock-skills plugin cache is absent" "$ok"
+rm -rf "$fake_home_absent"
+
 echo ""
 echo "=== command-root-anchor hook (SessionStart) ==="
 

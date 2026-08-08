@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 1. Fleet count
 AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
-SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills')
+SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
 COMMANDS=$(safe_count ls -1 "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md)
 HOOKS=$(safe_count find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*')
 OUTPUT_STYLES=$(safe_count find "$CLAUDE_DIR/output-styles" -maxdepth 1 -name '*.md' -type f)

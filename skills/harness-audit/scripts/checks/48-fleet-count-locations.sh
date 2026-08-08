@@ -33,7 +33,7 @@ fi
 if [ "$_is_kbg" = "1" ]; then
   # Live counts — duplicates check-01's methodology directly (3 short finds);
   # not worth a shared lib for this size, matching the sync script's own copy.
-  _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills')
+  _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
   _LIVE_AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
   _LIVE_COMMANDS=$(safe_count ls -1 "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md)
   _EXPECT_TRIPLE="${_LIVE_SKILLS} skills · ${_LIVE_AGENTS} agents · ${_LIVE_COMMANDS} commands"

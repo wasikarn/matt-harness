@@ -83,7 +83,7 @@ Use AgentShield in GitHub Actions for enforced gates:
 
 ## Links
 
-- Agent: `agents/security-reviewer.md`
+- Deeper code-vulnerability pass: `kbg:security-auditor` (matches this file's own description and Output Contract step 7 — not `agents/security-reviewer.md`, a different surface)
 - Scanner: <https://github.com/affaan-m/agentshield>
 
 ## Arguments

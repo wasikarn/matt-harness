@@ -501,3 +501,13 @@ When reviewing AI-generated changes, prioritize:
 Cost-awareness check:
 - Flag workflows that escalate to higher-cost models without clear reasoning need.
 - Recommend defaulting to lower-cost tiers for deterministic refactors.
+
+## Related
+
+This is the fleet's general-quality hub — several specialists cross-reference into it, and it
+should route back out when a diff needs a deeper, narrower lens than this agent's own:
+`typescript-reviewer`/`python-reviewer` (language-specific type safety and idioms), `nextjs-reviewer`
+(App Router rendering/caching/Server Actions), `security-reviewer` (OWASP/injection/auth depth
+beyond this agent's own security-adjacent checks), `silent-failure-hunter` (swallowed errors and
+missing propagation). `kbg:review-pr` already wires this routing at the skill level — this note is
+for a direct dispatch outside that flow.
