@@ -68,6 +68,8 @@ Do not assume the current implementation is correct. Treat the entire session ou
     -   Which dimensions did not improve
     -   Any remaining risks or gaps
 
+    If a dimension's baseline score is zero, or the overall baseline is at or near zero, a percentage-improvement figure computed from it is a mathematical artifact that can read as stronger evidence than it is. In that case, report the absolute delta and say plainly that a percentage isn't meaningful — don't silently omit the percentage field, and don't publish a large ratio without that caveat.
+
 ### **Critical Rule**
 
 **Never claim that something is better merely because it looks better or feels more correct.**
@@ -77,6 +79,8 @@ An improvement is only considered valid when there is measurable evidence showin
 If the score does not improve, say so explicitly and investigate why.
 
 If you cannot measure a dimension reliably, mark it as **unverified** rather than inventing a score.
+
+A fix that produces new evidence for a claim that was false when originally made does not make the original claim retroactively true. Score claim-accuracy or narrative-integrity dimensions on whether the claim was true at the time it was made, and report new evidence as separate, current-state work — not as something that resolves the original discrepancy.
 
 ### **Final Output**
 
