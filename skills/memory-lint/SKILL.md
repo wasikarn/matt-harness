@@ -43,7 +43,7 @@ A deterministic, manual-only candidate surfacer — never a scheduled job, never
 
 ## UNINDEXED fold-vs-forgotten triage (`--classify-unindexed`)
 
-UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one label: an authoring oversight, or the fold rule's own documented correct end-state ("merge/drop stale entries... just stop indexing it, never delete the backing file"). Blind-appending every UNINDEXED file back into MEMORY.md would silently undo real prior fold decisions. This mode classifies instead of auto-fixing, using git history on MEMORY.md — see `docs/research/claude-mem-architecture-study-2026-08-07.md` (Adopt-1) for the full design rationale, including the first draft (blind auto-append) that adversarial review caught before it shipped.
+Since v0.68.241 the detector itself only fires UNINDEXED for files that are *also* unreachable from the index via `[[links]]` (reachable ones are the healthy Context layer — live-fire 2026-08-09: 62 raw UNINDEXED → 48 reachable + 14 true orphans, of which 12 were linked into hubs and 2 archived, findings now 0). This mode remains the deeper forensic view for whatever still fires. UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one label: an authoring oversight, or the fold rule's own documented correct end-state ("merge/drop stale entries... just stop indexing it, never delete the backing file"). Blind-appending every UNINDEXED file back into MEMORY.md would silently undo real prior fold decisions. This mode classifies instead of auto-fixing, using git history on MEMORY.md — see `docs/research/claude-mem-architecture-study-2026-08-07.md` (Adopt-1) for the full design rationale, including the first draft (blind auto-append) that adversarial review caught before it shipped.
 
 | Bucket | Meaning | Action |
 |---|---|---|
@@ -96,7 +96,7 @@ Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big ses
 |---|---|
 | **Dangling links** | `[[target]]` resolving to no memory (by filename stem or `name:` slug; strips `[[t\|alias]]`) — suggests a close-name match (stdlib `difflib`, cutoff 0.6) when one exists, to catch typos |
 | **Orphans** | indexed in MEMORY.md but no `[[links]]` in or out — disconnected from the wikilink graph |
-| **Index drift** | MEMORY.md ↔ files, **both** directions (unindexed file + stale pointer) |
+| **Index drift** | MEMORY.md ↔ files, **both** directions (stale pointer, plus UNINDEXED — which is **reachability-aware** since v0.68.241: a file with no pointer but `[[link]]`-reachable from an indexed root is the fold rule's Context layer, reported as an advisory `context-layer` count and never a finding; only unindexed AND unreachable files fire) |
 | **Load budget** | MEMORY.md within the official 200-line / 25KB session-load cap (warn ≥80%, fail if over — trailing entries silently never load) |
 | **Staleness** *(advisory only)* | A memory file's mtime past `--stale-days` (default 90) — surfaced for a human to re-check, not a defect; excluded if already marked `**SUPERSEDED**`. Doesn't count toward exit code. |
 | **Template compliance** *(advisory only)* | `**Why:**`/`**How to apply:**` coverage for `type: feedback`/`type: project` memories — the fields that separate a fact/skill from a raw log line. Reports a count + worst-offender sample; never gates (a presence-only check has twice trained authors to paste filler elsewhere in this fleet — visibility only). |

@@ -210,6 +210,8 @@ def detector_findings(state):
     idx = state["idx"]
     idx_path = state["index_path"]
 
+    context_layer = 0
+
     # 1. dangling links
     candidates = state["stems"] | state["slug_set"]
     for f, targets in links_out.items():
@@ -229,10 +231,32 @@ def detector_findings(state):
             if f in referenced and not has_out and not has_in:
                 findings.append(f"ORPHAN: {f} (no links in or out)")
 
-        # 3. index drift
+        # 3. index drift — UNINDEXED is reachability-aware: a file with no
+        # MEMORY.md pointer but reachable from an indexed root through
+        # [[links]] is the fold rule's documented Context layer (Index →
+        # Context → Detail, per MEMORY.md's own header), not rot — counted
+        # as context_layer (advisory), never a finding. Only a file that is
+        # unindexed AND unreachable from the index fires.
+        target_stem = {f[:-3]: f[:-3] for f in files}
+        for f in files:
+            s = slugs[f]
+            if s and s not in target_stem:
+                target_stem[s] = f[:-3]
+        reachable = {ref[:-3] for ref in referenced if ref in files}
+        frontier = list(reachable)
+        while frontier:
+            cur = frontier.pop()
+            for t in links_out.get(cur + ".md", []):
+                r = target_stem.get(t)
+                if r is not None and r not in reachable:
+                    reachable.add(r)
+                    frontier.append(r)
         for f in files:
             if f not in referenced:
-                findings.append(f"UNINDEXED: {f} not pointed to from MEMORY.md")
+                if f[:-3] in reachable:
+                    context_layer += 1
+                else:
+                    findings.append(f"UNINDEXED: {f} not pointed to from MEMORY.md and not [[link]]-reachable from any indexed memory")
         for ref in sorted(referenced):
             if ref not in files:
                 findings.append(f"STALE POINTER: MEMORY.md → ({ref}) but file missing")
@@ -247,7 +271,7 @@ def detector_findings(state):
 
     total_links = sum(len(v) for v in links_out.values())
     linked_count = len([f for f in files if links_out[f] or f[:-3] in inbound or slugs[f] in inbound])
-    return findings, total_links, linked_count
+    return findings, total_links, linked_count, context_layer
 
 
 def superseded_stems(state):
@@ -617,7 +641,7 @@ def run_classify_unindexed(state, as_json):
 
 
 def run_detector(state, as_json, stale_days):
-    findings, total_links, linked_count = detector_findings(state)
+    findings, total_links, linked_count, context_layer = detector_findings(state)
     stale = staleness_findings(state, stale_days)
     template = template_compliance_findings(state)
     if as_json:
@@ -627,6 +651,7 @@ def run_detector(state, as_json, stale_days):
             "files": len(state["files"]),
             "links": total_links,
             "linked": linked_count,
+            "context_layer": context_layer,
             "findings": findings,
             "stale": stale,
             "stale_days_threshold": stale_days,
@@ -639,12 +664,16 @@ def run_detector(state, as_json, stale_days):
     pct = int(max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP) * 100)
     print(f"=== memory-lint: {state['d']} ===")
     print(f"memories: {len(state['files'])} | links: {total_links} | "
-          f"linked: {linked_count} | MEMORY.md: {pct}% of load cap | findings: {len(findings)}")
+          f"linked: {linked_count} | MEMORY.md: {pct}% of load cap | "
+          f"findings: {len(findings)} | context-layer: {context_layer}")
     print()
     for line in findings:
         print(f"  {line}")
     if not findings:
         print("  clean — no dangling links, orphans, or index drift")
+    if context_layer:
+        print(f"  (context-layer: {context_layer} unindexed file(s) reachable from the "
+              f"index via [[links]] — healthy Layer-2 per the fold rule, not findings)")
     print(f"\nExit: {len(findings)}")
 
     print()

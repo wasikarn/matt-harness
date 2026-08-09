@@ -26,7 +26,7 @@ def test_typo_link_gets_suggestion():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n- [foo_bar](foo_bar.md) — y\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         dangling = [f for f in findings if "DANGLING" in f and "foo_br" in f]
         assert len(dangling) == 1, f"expected exactly one dangling finding for foo_br, got {dangling}"
         assert "did you mean [[foo_bar]]?" in dangling[0], f"expected suggestion, got: {dangling[0]}"
@@ -41,7 +41,7 @@ def test_unrelated_dangling_link_gets_no_suggestion():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n- [foo_bar](foo_bar.md) — y\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         dangling = [f for f in findings if "DANGLING" in f and "completely_unrelated_topic_xyz" in f]
         assert len(dangling) == 1
         assert "did you mean" not in dangling[0], f"expected no suggestion, got: {dangling[0]}"
@@ -57,7 +57,7 @@ def test_markdown_style_dangling_link_is_detected():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         dangling = [f for f in findings if "DANGLING" in f and "ghost-topic" in f]
         assert len(dangling) == 1, f"expected a dangling finding for the markdown-style link, got {findings}"
 
@@ -73,7 +73,7 @@ def test_markdown_style_link_in_backticks_is_not_a_real_reference():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         assert not any("reference" in f for f in findings), (
             f"backtick-quoted link syntax must not be scanned as a real reference: {findings}")
 
@@ -89,7 +89,7 @@ def test_markdown_style_link_with_path_is_treated_as_external_not_dangling():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         assert not any("reasoning-models" in f for f in findings), (
             f"a path-qualified markdown target must not be scanned as a same-store link: {findings}")
 
@@ -103,7 +103,7 @@ def test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan():
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n- [foo_bar](foo_bar.md) — y\n")
         state = memory_lint.collect_state(d)
-        findings, _, _ = memory_lint.detector_findings(state)
+        findings, _, _, _ = memory_lint.detector_findings(state)
         assert not any("DANGLING" in f or "ORPHAN" in f for f in findings), findings
 
 
@@ -514,3 +514,56 @@ if __name__ == "__main__":
     test_classify_unindexed_failed_git_query_is_safe_not_never_indexed()
     test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_count()
     print("OK")
+
+
+def test_unindexed_file_linked_from_indexed_memory_is_context_layer_not_a_finding():
+    """Fold rule Layer-2: unindexed but [[link]]-reachable from an indexed root
+    must NOT fire UNINDEXED — it's counted in context_layer instead."""
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "hub.md"), "w") as f:
+            f.write("---\nname: hub\n---\nindexed hub, links [[ctx_note]]\n")
+        with open(os.path.join(d, "ctx_note.md"), "w") as f:
+            f.write("---\nname: ctx-note\n---\ncontext-layer detail, no index line\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [hub](hub.md) — the indexed root\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _, context_layer = memory_lint.detector_findings(state)
+        unindexed = [x for x in findings if "UNINDEXED" in x]
+        assert unindexed == [], f"linked context file must not fire UNINDEXED, got {unindexed}"
+        assert context_layer == 1, f"expected context_layer == 1, got {context_layer}"
+
+
+def test_unindexed_and_unreachable_file_still_fires_unindexed():
+    """A file with no index pointer and no inbound path from the index is real
+    rot and must still fire exactly one UNINDEXED finding naming it."""
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "hub.md"), "w") as f:
+            f.write("---\nname: hub\n---\nindexed, links nothing\n")
+        with open(os.path.join(d, "stray.md"), "w") as f:
+            f.write("---\nname: stray\n---\nnobody points here\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [hub](hub.md) — the indexed root\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _, context_layer = memory_lint.detector_findings(state)
+        unindexed = [x for x in findings if x.startswith("UNINDEXED: stray.md")]
+        assert len(unindexed) == 1, f"expected exactly one UNINDEXED for stray.md, got {findings}"
+        assert context_layer == 0, f"unreachable file must not count as context-layer, got {context_layer}"
+
+
+def test_context_layer_reachability_is_transitive_through_unindexed_files():
+    """Index -> hub -> [[mid]] -> [[leaf]]: mid and leaf are both unindexed but
+    reachable through the chain, so neither fires and context_layer == 2."""
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "hub.md"), "w") as f:
+            f.write("---\nname: hub\n---\nlinks [[mid]]\n")
+        with open(os.path.join(d, "mid.md"), "w") as f:
+            f.write("---\nname: mid\n---\nlinks onward to [[leaf]]\n")
+        with open(os.path.join(d, "leaf.md"), "w") as f:
+            f.write("---\nname: leaf\n---\nend of the chain\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [hub](hub.md) — the indexed root\n")
+        state = memory_lint.collect_state(d)
+        findings, _, _, context_layer = memory_lint.detector_findings(state)
+        unindexed = [x for x in findings if "UNINDEXED" in x]
+        assert unindexed == [], f"transitively reachable files must not fire, got {unindexed}"
+        assert context_layer == 2, f"expected context_layer == 2 (mid+leaf), got {context_layer}"
