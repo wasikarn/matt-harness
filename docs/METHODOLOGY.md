@@ -106,6 +106,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 - A score change must be traceable: which criterion moved, and why.
 - Evidence > assumption · measurement > feeling · verification > opinion.
 - If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
+- **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`; the structured flow lives in `kbg:decide` § Precedent check.)
 
 The `kbg:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
 
