@@ -5,6 +5,59 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.235] — 2026-08-09
+
+`/kbg:deep-audit` pass over v0.68.233/v0.68.234's own stale-task-nudge work (the
+first deep-audit round only covered v0.68.231's changes; this one covers what
+shipped after it). Four real, evidence-backed findings, all fixed:
+
+- **Fleet-count drift (harness-audit W2–W4).** `commands/deep-audit.md` going
+  from frontmatter-less to a real command in v0.68.233/234 pushed the live
+  fleet to 22 commands, but neither commit updated the `21 commands` string in
+  `plugin.json`/`marketplace.json`/`README.md` — both version bumps shipped
+  with stale metadata. Fixed via the existing
+  `skills/inventory/scripts/sync-fleet-counts.sh`; harness-audit warnings
+  dropped 5→1 (the one remaining is the pre-existing, separately-tracked
+  BOUNDARY.md staleness, unrelated to this session).
+- **Unsanitized `taskId` in a filesystem path
+  (`hooks/stop/stale-task-nudge.sh`).** The per-task dedup marker path
+  concatenated the transcript-sourced `taskId` directly:
+  `$marker_dir/${session_id}-${tid}`. A path-traversal-shaped `taskId` (e.g.
+  containing `../`) couldn't actually escape the marker directory, but only by
+  accident — the `session_id-` prefix breaks a leading `..`, and `touch`
+  doesn't create missing parent directories, so `touch` silently failed and
+  the marker was never written. Net effect: a task with such an ID would
+  re-fire the nudge on *every* Stop instead of deduping once — an
+  availability bug hiding behind what looked like an unreachable security
+  concern. Fixed by sanitizing `taskId` (`${tid//[^A-Za-z0-9_-]/_}`) before
+  it's used in the marker path — the nudge text itself still shows the
+  original, unsanitized ID. Confirmed via a before/after swap: the added
+  regression test fails against the pre-fix script (dedup doesn't hold for a
+  traversal-shaped ID) and passes against the fix.
+- **Missing CHANGELOG entry for v0.68.234.** The staged-vs-working-tree
+  commit-integrity fix (see below) bumped both manifests but never added a
+  changelog line — backfilled here rather than as a separate entry, since
+  amending history is against this repo's own convention.
+- **README version badge had no check at all (new harness-audit check 53).**
+  Found while re-bumping the badge: it was still on v0.68.233, meaning it also
+  silently missed the v0.68.234 bump — a real, demonstrated blind spot, not a
+  one-off human miss, since no existing check (including check 48's
+  fleet-count-location scan) reads the shields.io badge line. Added
+  `skills/harness-audit/scripts/checks/53-readme-version-badge-drift.sh`,
+  mirroring check 48's structure: warns when the badge's version doesn't match
+  `plugin.json`. Confirmed it fires on a reverted-to-stale badge and stays
+  silent once fixed. `audit.sh`'s own fragment-count integrity guard (52→53)
+  updated to match.
+
+**Backfilled — [0.68.234] — 2026-08-09.** `commands/deep-audit.md`'s
+frontmatter fix (see v0.68.233 below) had been staged by a concurrent session
+*before* the fix was applied, and was never re-`git add`ed afterward — so
+v0.68.233's own commit wrote the pre-fix, frontmatter-less file to history
+even though its pre-commit audit ran clean against the (already-fixed)
+working tree. Caught via manual `git show`-based verification, not assumed.
+Fixed with a new commit (not an amend, per standing rule) that stages the
+real file state.
+
 ## [0.68.233] — 2026-08-09
 
 New `stop:stale-task-nudge` hook — closes the exact gap this session's own task

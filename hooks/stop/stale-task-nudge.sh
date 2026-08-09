@@ -68,7 +68,12 @@ mkdir -p "$marker_dir" 2>/dev/null
 to_nudge=()
 while IFS= read -r tid; do
   [[ -n "$tid" ]] || continue
-  marker="$marker_dir/${session_id}-${tid}"
+  # taskId comes from the transcript (model-authored tool input), not a
+  # trusted source — sanitize before it becomes part of a filesystem path,
+  # rather than relying on the "-" separator + touch's no-mkdir-p behavior
+  # to accidentally block traversal.
+  tid_safe="${tid//[^A-Za-z0-9_-]/_}"
+  marker="$marker_dir/${session_id}-${tid_safe}"
   [[ -e "$marker" ]] && continue
   touch "$marker" 2>/dev/null
   to_nudge+=("$tid")

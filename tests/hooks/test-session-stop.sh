@@ -526,6 +526,22 @@ rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, silent) when the transcript file doesn't exist" "$ok"
 
+cat > "$nudge_fix/traversal.jsonl" <<'EOF'
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"TaskUpdate","input":{"taskId":"../../../../tmp/kbg-nudge-traversal-probe","status":"in_progress"}}]}}
+EOF
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/traversal.jsonl","session_id":"s6","stop_hook_active":false}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '"additionalContext"' && ok=1 || ok=0
+assert "path-traversal-shaped taskId still fires the nudge" "$ok"
+[[ ! -e /tmp/kbg-nudge-traversal-probe ]] && ok=1 || ok=0
+assert "path-traversal-shaped taskId does not write its marker outside the marker dir" "$ok"
+
+out=$(HOME="$nudge_home" bash "$STALE_TASK_NUDGE" < <(printf '{"transcript_path":"%s/traversal.jsonl","session_id":"s6","stop_hook_active":false}' "$nudge_fix") 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
+assert "same path-traversal-shaped taskId, fired again → silent (dedup still works, not bypassed by sanitization)" "$ok"
+
 rm -rf "$nudge_fix" "$nudge_home"
 
 echo ""
