@@ -18,7 +18,17 @@ this compensate for?* Record that assumption. Examples:
 - a `decide` clarify-mode gate compensates for "the model guesses instead of asking";
 - a verbose doctrine block compensates for "the model forgets the convention";
 - a maker≠checker reviewer agent does **not** compensate for a limitation — see
-  the guard below.
+  the guard below;
+- text that defines **product behavior** — a voice/register spec
+  (`output-styles/staff-eng.md`), a templated PR/command body, a team content
+  standard — also does not compensate for a limitation: it keeps output
+  consistent for the people consuming it. Cherny drew this exact line when the
+  Claude Code team cut >80% of its own system prompt for the Claude 5
+  generation (YC Startup School 2026): the cut targets capability scaffolding;
+  consistency-defining text serves a different function and is never
+  decay-eligible on "the model got smarter" grounds. It can still die for other
+  reasons (the product changed) — just not through this lens. Claim-by-claim
+  mapping: [`docs/research/prompt-cut-80-cherny-2026-08-09.md`](research/prompt-cut-80-cherny-2026-08-09.md).
 
 When a model upgrade lands, the assumption behind a workaround may no longer
 hold. That is the trigger to re-measure.
@@ -39,14 +49,39 @@ hold. That is the trigger to re-measure.
      bundled with the plugin, so skip this lens on an external install. Its own job
      is setup/capability auditing, not decay detection — use its output as context,
      not as a decay detector.)
+   - Claude Code's own in-session `/doctor` (the CLI-side `claude doctor` is
+     install-health only; its help text names in-session `/doctor` as the full
+     checkup — verified 2026-08-09). Anthropic ships it explicitly to rightsize
+     skills and CLAUDE.md files (Thariq, 2026-07), making it a
+     candidate-surfacer for the always-on-text class. Same posture as every
+     lens here: its findings are candidates the operator reviews, not
+     auto-applied fixes.
 2. **Disable-and-measure** — disable a candidate (hook profile off, or remove
    the always-on block) and run the work it was meant to catch. If quality holds
-   without it, the limitation it compensated for is gone.
+   without it, the limitation it compensated for is gone. "Quality holds" is a
+   **score, not a recollection** (`CLAUDE.md`'s "Score, not feel"): prefer an
+   existing deterministic check as the measure — the behavioral test suite, a
+   harness-audit check, a skill's own `evals/` set — over an impression that
+   nothing broke. The Claude Code team's own >80% cut was validated as "no
+   measurable loss on our coding evaluations," not by feel. Lifespan asymmetry
+   (Cherny): behavior rules decay with the model generation that necessitated
+   them, but eval/measure sets are the one component class that *accumulates*
+   across generations — a set retires on **saturation** (the model aces every
+   case, roughly 1–3 generations), not on the upgrade cadence that retires
+   rules, and its replacement starts from what the current model still gets
+   wrong.
 3. **Delete with a witness** — if the measure says it is dead weight, remove it
    through `decommission`: sign an `ABSENT_*` witness so the orphan (stray
    symlink, cron, launchd job) is caught later, not silently resurrected.
 4. **Keep the assumption recorded** — if you keep it, note *why the limitation
    still holds*, so the next upgrade has a baseline to measure against.
+
+On a major model upgrade there is an aggressive variant of step 2 — Cherny's
+full-class ablation: strip a whole candidate class at once (he recommends users
+strip their CLAUDE.md/skills/hooks roughly every 6 months), run real work
+without guessing in advance what needs guidance, and re-add only what the model
+repeatedly fumbles. Same measure-then-keep loop, run from zero instead of from
+the accumulated state — and the same human gate on every re-add decision.
 
 This pairs with `recursive-improve` (the add/fix loop): recursive-improve closes
 the loop on what to **build**; this cadence closes it on what to **delete**.
