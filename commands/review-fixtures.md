@@ -38,6 +38,15 @@ orchestrates around it.
 
 `$1` = skill/agent/command name (strip a leading `kbg:` if present). `$2` = optional iteration path.
 
+**If dispatched via the `Skill` tool's `args` parameter rather than typed as a literal
+`/review-fixtures ...` slash command, `$2` may not populate** — a whitespace-containing
+`args` string can bind wholly to `$1` instead of splitting (confirmed on `deep-audit`,
+2026-08-09: `args: "deep-audit deep-audit-workspace/iteration-2"` left `$2` empty). If `$1`
+contains whitespace, split on the first space — everything before is the target name,
+everything after is `$2` — rather than treating the whole string as the name. This is a
+fallback, not a substitute for Step 2's auto-glob-highest-N, which already covers the more
+common case of no iteration path given at all.
+
 If `$1` is empty, show usage and stop — do not guess which target:
 ```
 Usage: /review-fixtures <skill/agent/command-name> [iteration-path]

@@ -51,12 +51,20 @@ this template helps you review.
 1. **Answer-key contamination.** Nothing that states or implies the correct fix —
    `eval_metadata.json`'s `assertions` field, `prompts.md`, ground-truth notes, even a
    task-scaffolding section bundled into the same file as the data — may sit anywhere a
-   dispatched agent's normal `ls`/`Glob`/`Read` can reach. Confirmed 3 times
-   (security-reviewer, build-error-resolver, ship-merge): a dispatched agent doing ordinary
-   orientation reads it, and an instruction to "ignore section X" doesn't work once the read
-   already happened — the whole file loads before the "ignore it" instruction can take
-   effect. Keep the answer key one level up (sibling to `with_skill`/`baseline`, not inside
-   either), or withhold the fixtures directory from filesystem access entirely and inline
+   dispatched agent's normal `ls`/`Glob`/`Read` can reach. Confirmed 4 times
+   (security-reviewer, build-error-resolver, ship-merge, deep-audit): a dispatched agent doing
+   ordinary orientation reads it, and an instruction to "ignore section X" doesn't work once
+   the read already happened — the whole file loads before the "ignore it" instruction can
+   take effect. **"Sibling to `with_skill`/`baseline`, not inside either" is not sufficient on
+   its own** — confirmed insufficient on `deep-audit` (2026-08-09): placed exactly per that
+   rule, `eval_metadata.json` still got read by a fixture-gen agent's ordinary orientation
+   pass, since a sibling file is still one `ls`/`Glob` away. The verified fix: don't write the
+   answer-key file at all until *after* every fixture-gen agent has completed and returned —
+   derive prompts/assertions from the dispatch prompts you already composed, not from a file
+   that exists on disk during the fixture-gen window. Add "do not read any file outside your
+   assigned fixture directory" to each dispatch prompt as defense in depth, but treat the
+   withhold-until-after-generation timing as the actual fix, not the instruction. Or,
+   alternatively, withhold the fixtures directory from filesystem access entirely and inline
    only the data into the dispatch prompt. Even filenames can leak the mechanism
    (`scenario-5-freshness-mismatch-data.md` names the bug before the file opens) — use
    neutral labels ("PR A," "PR B") instead of descriptive ones.
