@@ -70,6 +70,23 @@ run_audit() {
   eval "$audit_cmd" 2>&1
 }
 
+# ---- path hygiene (all tracked text files; public repo) ----
+# Second layer behind pre-commit's staged-file check: catches a literal home
+# path that got committed anyway (a clone without core.hooksPath wired, a
+# commit from another machine). $HOME expands per-machine so each machine
+# guards its own leak; /Users/<name> placeholder text passes untouched.
+run_path_hygiene() {
+  [ -z "${HOME:-}" ] && return 0  # empty pattern would match everything
+  local hits
+  hits="$(git -C "$ROOT" grep -lF "$HOME" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' 2>/dev/null)"
+  if [ -n "$hits" ]; then
+    echo "  literal home path in tracked files — use ~:" >&2
+    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+    return 1
+  fi
+  return 0
+}
+
 # ---- behavioral test suite (hooks + slash-command scripts) ----
 # Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask;
 # also runs regression tests for embedded slash-command scripts (e.g. cost-report.md's
@@ -91,6 +108,7 @@ run_validate  > "$WORK_TMP/validate.log"  2>&1 &  PID_VAL=$!
 run_shell_lint > "$WORK_TMP/lint.log"     2>&1 &  PID_LINT=$!
 run_json_lint  > "$WORK_TMP/json.log"     2>&1 &  PID_JSON=$!
 run_audit      > "$WORK_TMP/audit.log"    2>&1 &  PID_AUDIT=$!
+run_path_hygiene > "$WORK_TMP/pathhyg.log" 2>&1 & PID_PATH=$!
 run_hook_tests > "$WORK_TMP/hooktests.log" 2>&1 & PID_HOOK=$!
 
 wait_layer() {
@@ -108,6 +126,7 @@ wait_layer "plugin-validate" "$PID_VAL"   "$WORK_TMP/validate.log"
 wait_layer "shell-lint"      "$PID_LINT"  "$WORK_TMP/lint.log"
 wait_layer "json-lint"       "$PID_JSON"  "$WORK_TMP/json.log"
 wait_layer "harness-audit"   "$PID_AUDIT" "$WORK_TMP/audit.log"
+wait_layer "path-hygiene"    "$PID_PATH"  "$WORK_TMP/pathhyg.log"
 wait_layer "hook-tests"      "$PID_HOOK"  "$WORK_TMP/hooktests.log"
 
 if [ "$fail" -ne 0 ]; then
