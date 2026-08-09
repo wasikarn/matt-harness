@@ -55,6 +55,18 @@ spots along with its context. The full protocol for structuring the skeptic's ac
 lives in `kbg:review-pr`'s doubt-driven pattern — this note only covers what decide itself
 hands off.
 
+## Precedent check
+
+Before any decision-producing mode runs (`decide` / `strategize` / `critique`), query `qmd`
+(lex + vec) with the decision's scenario, scoped to the project's memory + research collections
+(`kbg-memory` + `kbg-research` in kbg-harness; other projects' own collections per `qmd status`).
+State the result in one line of the first response: the precedent found, or "no precedent
+found". A hit showing the same decision already settled, with no new evidence in the current
+ask, ends the run — cite the settled record instead of re-litigating it. If qmd is unavailable
+in this context, say the check couldn't run; don't silently skip it. (Adapted from
+semantica-agi/semantica's `find_precedents` lifecycle step — the store and the search already
+existed here; this section wires the mandated query.)
+
 ## Announce the active mode
 
 Before the analysis runs, the first line of the response states the active mode and its named principle(s) — one clause, no preamble:
@@ -266,7 +278,9 @@ Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the dec
 
 ## Completion criterion
 
-This criterion applies per mode's own output shape, not one template for all five:
+This criterion applies per mode's own output shape, not one template for all five. Every
+decision-producing mode (`decide` / `strategize` / `critique`) additionally owes the one-line
+Precedent check result (see § Precedent check) — a run that never stated it is not finished:
 
 - **`decide`** — verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions and a formal progress metric are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
 - **`strategize`** — same Output format template, mapped from its own step vocabulary: Diagnosis + Guiding policy fill the Frame section, the irreversibility map and red-team results are the tested assumptions, and Commitment's revisit trigger comes from step 6's strategy loop (progress metric = whatever the red-team/tripwire step names as the signal to watch).

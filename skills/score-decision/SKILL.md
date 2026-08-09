@@ -33,6 +33,15 @@ Propose 4–6 judging criteria, each **measurable** (you can cite the evidence t
 
 Score each 0–100 with a one-line reason anchored to evidence. **If the data is insufficient to score a criterion, do not guess** — mark that criterion `ข้อมูลไม่เพียงพอ` and block the verdict on the operator (a score with a guessed criterion is not a verdict). Reserve the block for when there's no basis to place any number at all — a criterion whose only basis is secondhand, self-reported, or uncorroborated still has a real, low position on most criteria's own scale (the default rubric's Evidence criterion measures "direct verification vs inferred" — inferred is a valid low score, not grounds to block) and should be scored there instead, letting the fatal-weakness floor (Step 4) catch it. A single point value implies more precision than most evidence supports (overconfidence/false-precision — see `judgment-ladder.md`'s "Estimate risk" rung, read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"`); where the evidence is genuinely borderline, note a range or a confidence qualifier alongside the score rather than forcing one point.
 
+**No-conflict is scored by search, not recall:** query `qmd` (lex + vec) with the decision's
+scenario, scoped to the project's memory + research collections (`kbg-memory` + `kbg-research`
+in kbg-harness; other projects' own collections per `qmd status`), and cite the hit or "no
+precedent found" as that criterion's evidence. A settled precedent with no new evidence in the
+current ask scores No-conflict below the fatal-weakness floor — the decision fails on the floor
+regardless of weighted sum. If qmd is unavailable, mark the criterion `ข้อมูลไม่เพียงพอ` per the
+rule above rather than scoring from memory. (Adapted from semantica-agi/semantica's
+`find_precedents` lifecycle step.)
+
 ### 4. Verdict
 
 Weighted sum = `Σ(weight × score) / 100`. Apply **both** gates:
