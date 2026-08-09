@@ -11,6 +11,9 @@
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
+#   4. shipped-surface files staged (the 6 per-version cached dirs) →
+#      plugin.json version must change in this commit, and both manifests'
+#      version fields must agree (same-version edits are cache no-ops).
 #
 # The heavy layers above run in parallel so the commit gate stays fast.
 # The pre-push gauntlet adds the 9-file hook behavioral suite. The old
@@ -121,6 +124,52 @@ run_audit_layer() {
   return "$rc"
 }
 
+# Decide whether the version-bump layer needs to run. Uses a full staged list
+# (no --diff-filter): deleting a shipped file invalidates the plugin cache the
+# same as editing one, so deletions must count here even though STAGED above
+# filters them out.
+version_check_needed=0
+while IFS= read -r f; do
+  case "$f" in
+    agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|.claude-plugin/*)
+      version_check_needed=1 ;;
+  esac
+done < <(git diff --cached --name-only)
+
+# ---- Layer 3: version-bump gate ----
+# Shipped-surface content staged ⇒ plugin.json version must differ from HEAD
+# (same-version edits are cache no-ops — CLAUDE.md § Plugin lifecycle), and
+# plugin.json + marketplace.json must carry the same version string.
+run_version_layer() {
+  local rc=0
+  local staged_v market_v head_v
+  staged_v="$(git show :.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
+  market_v="$(git show :.claude-plugin/marketplace.json 2>/dev/null | jq -r '.plugins[0].version')"
+  if [ -z "$staged_v" ] || [ "$staged_v" = "null" ]; then
+    echo "  cannot read staged .claude-plugin/plugin.json version" >&2
+    return 1
+  fi
+  if [ "$staged_v" != "$market_v" ]; then
+    echo "  manifest version mismatch: plugin.json $staged_v vs marketplace.json $market_v" >&2
+    rc=1
+  fi
+  local shipped=0
+  while IFS= read -r f; do
+    case "$f" in
+      agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*) shipped=1 ;;
+    esac
+  done < <(git diff --cached --name-only)
+  if [ "$shipped" -eq 1 ]; then
+    head_v="$(git show HEAD:.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
+    if [ -n "$head_v" ] && [ "$head_v" != "null" ] && [ "$staged_v" = "$head_v" ]; then
+      echo "  shipped-surface files staged but plugin version unchanged ($staged_v)" >&2
+      echo "  same-version edits are cache no-ops — bump BOTH manifests in this commit" >&2
+      rc=1
+    fi
+  fi
+  return "$rc"
+}
+
 # Start all applicable layers in parallel.
 echo "pre-commit: running staged checks in parallel..." >&2
 
@@ -130,6 +179,11 @@ PID_SYNTAX=$!
 if [ "$ecosystem_staged" -eq 1 ]; then
   run_audit_layer > "$WORK_TMP/audit.log" 2>&1 &
   PID_AUDIT=$!
+fi
+
+if [ "$version_check_needed" -eq 1 ]; then
+  run_version_layer > "$WORK_TMP/version.log" 2>&1 &
+  PID_VERSION=$!
 fi
 
 # Wait and report.
@@ -146,6 +200,7 @@ wait_layer() {
 
 wait_layer "syntax/lint" "$PID_SYNTAX" "$WORK_TMP/syntax.log"
 [ -n "${PID_AUDIT:-}" ] && wait_layer "harness-audit" "$PID_AUDIT" "$WORK_TMP/audit.log"
+[ -n "${PID_VERSION:-}" ] && wait_layer "version-bump" "$PID_VERSION" "$WORK_TMP/version.log"
 
 if [ "$fail" -ne 0 ]; then
   echo "" >&2
