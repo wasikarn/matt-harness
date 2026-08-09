@@ -23,6 +23,12 @@ Pre-`1.0.0`: breaking changes may land in any `0.x` release.
   Post-install verification path: after the next `claude plugin update`, a zero-tool dispatch
   probe of either reviewer should surface preloaded patterns content (a same-session repo edit
   can't be probe-tested — the plugin cache serves the installed version).
+  **Verified 2026-08-09, post-install on v0.68.245:** zero-tool probe of `typescript-reviewer`
+  (telemetry: `tool_uses: 0`) quoted a heading + hard-wrapped sentence from
+  `typescript-patterns` verbatim against the source (repo went public after the model's
+  knowledge cutoff, ruling out training data); negative-control probe of `python-reviewer`
+  (no `skills:` field) reported the content absent. The v0.68.231↔0.68.207 contradiction is
+  now closed with a recorded re-test, not just a restored field.
 
 ## [0.68.235] — 2026-08-09
 
