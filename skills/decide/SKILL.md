@@ -60,8 +60,10 @@ hands off.
 Before any decision-producing mode runs (`decide` / `strategize` / `critique`), query `qmd`
 (lex + vec) with the decision's scenario, scoped to the project's memory + research collections
 (`kbg-memory` + `kbg-research` in kbg-harness; other projects' own collections per `qmd status`).
-State the result in one line of the first response: the precedent found, or "no precedent
-found". A hit showing the same decision already settled, with no new evidence in the current
+State the result in one line of the first response, **citing the query string actually run**:
+the precedent found, or `no precedent found for "<query>"`. A bare "no precedent found" with no
+query cited is unverifiable self-report and doesn't satisfy this check (a "nothing found" needs
+one checkable fact). A hit showing the same decision already settled, with no new evidence in the current
 ask, ends the run — cite the settled record instead of re-litigating it. If qmd is unavailable
 in this context, say the check couldn't run; don't silently skip it. (Adapted from
 semantica-agi/semantica's `find_precedents` lifecycle step — the store and the search already

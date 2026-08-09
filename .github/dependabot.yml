@@ -1,0 +1,9 @@
+# Keeps the SHA-pinned action references in workflows/ current.
+# Pins are the security boundary (a mutable tag can be repointed); dependabot
+# is what stops them from rotting. Pattern adapted from semantica-agi/semantica.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

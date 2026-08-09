@@ -35,8 +35,9 @@ Score each 0–100 with a one-line reason anchored to evidence. **If the data is
 
 **No-conflict is scored by search, not recall:** query `qmd` (lex + vec) with the decision's
 scenario, scoped to the project's memory + research collections (`kbg-memory` + `kbg-research`
-in kbg-harness; other projects' own collections per `qmd status`), and cite the hit or "no
-precedent found" as that criterion's evidence. A settled precedent with no new evidence in the
+in kbg-harness; other projects' own collections per `qmd status`), and cite the hit — or `no
+precedent found for "<query>"`, naming the query string actually run — as that criterion's
+evidence. An uncited "no precedent found" is unverifiable self-report and doesn't count. A settled precedent with no new evidence in the
 current ask scores No-conflict below the fatal-weakness floor — the decision fails on the floor
 regardless of weighted sum. If qmd is unavailable, mark the criterion `ข้อมูลไม่เพียงพอ` per the
 rule above rather than scoring from memory. (Adapted from semantica-agi/semantica's

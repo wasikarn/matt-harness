@@ -9,6 +9,12 @@ metadata:
 
 A formal evaluation framework for Claude Code sessions, implementing eval-driven development (EDD) principles.
 
+> **Status: prose-only methodology guidance.** The dataset-driven eval gate this framework once
+> wired (`eval/run-eval.py` + its CI job) was deleted in the 2026-06-27 owner-authorized reset
+> (`c452102`) and has not been rebuilt — see root `CLAUDE.md` § Validation. Everything below is
+> design guidance you apply by hand; no CI job enforces it today. (Honest-status marker pattern
+> adapted from semantica-agi/semantica's unbuilt-module flagging.)
+
 ## When to Activate
 
 - Setting up eval-driven development (EDD) for AI-assisted workflows
