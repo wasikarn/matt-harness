@@ -3,6 +3,11 @@ name: typescript-reviewer
 description: "Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes."
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
+# Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
+# independent of the Skill tool. Do NOT remove as "inert" — check 54 CRITs on
+# removal; full story in CHANGELOG v0.68.244.
+skills:
+  - kbg:typescript-patterns
 ---
 
 ## Prompt Defense Baseline

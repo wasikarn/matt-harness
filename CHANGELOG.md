@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.244] — 2026-08-09
+
+### Fixed
+
+- **Restored the `skills:` preload on `typescript-reviewer` + `nextjs-reviewer`**, removed in
+  v0.68.231 as "an inert, undocumented `skills:` frontmatter key … on agents that hold no
+  `Skill` tool". That rationale conflated two independent mechanisms: the official `skills:`
+  agent-frontmatter field (CC ≥ 2.0.43, code.claude.com/docs/en/sub-agents § "Preload skills
+  into subagents") injects the full skill content at spawn and explicitly does not require the
+  Skill tool. The field's effect was live-verified 2026-08-07 (byte-level transcript diff +
+  negative control — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`) two days
+  before the removal; two audit passes reached opposite conclusions about the same mechanism
+  and nothing reconciled them until a fresh-context demand-side audit (2026-08-09) surfaced
+  the contradiction. New CRIT check 54 (`54-reviewer-skills-preload-crit.sh`) is the
+  regression fixture: any future removal now argues with a failing gate, not a prose comment.
+  Post-install verification path: after the next `claude plugin update`, a zero-tool dispatch
+  probe of either reviewer should surface preloaded patterns content (a same-session repo edit
+  can't be probe-tested — the plugin cache serves the installed version).
+
 ## [0.68.235] — 2026-08-09
 
 `/kbg:deep-audit` pass over v0.68.233/v0.68.234's own stale-task-nudge work (the
