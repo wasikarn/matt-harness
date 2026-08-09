@@ -178,7 +178,7 @@ Two layers, not one system:
    same drift memory-lint checks both directions of).
 
 The memory type taxonomy itself (`user` / `feedback` / `project` / `reference`, each with a
-one-line trigger description and a two-step save contract) lives in `/Users/kobig/.claude/CLAUDE.md`
+one-line trigger description and a two-step save contract) lives in `~/.claude/CLAUDE.md`
 — a symlink into the user's dotfiles repo, not a kbg-harness file, and per prior session findings
 (`global-claudemd-symlink-dotfiles` memory) the Edit tool refuses to write through it. Any
 taxonomy-level change is a Tier B item below, not a Tier A one.
@@ -468,7 +468,7 @@ MEMORY.md` exactly — a deterministic correctness check, not a judgment call.
 every relationship is effectively `RELATES_TO`.
 
 **Proposed implementation.** Extend the memory-authoring convention in
-`/Users/kobig/.claude/CLAUDE.md`'s auto-memory section with an *optional* 3-verb vocabulary,
+`~/.claude/CLAUDE.md`'s auto-memory section with an *optional* 3-verb vocabulary,
 appended via the alias slot `memory-lint.py` already parses (`[[target|verb]]`):
 `supersedes` / `contradicts` / `elaborates`. Kept to 3, under Article 2's own "start with 3-4,
 capture 80%" guidance — `supersedes` already covers the highest-value case in prose form. Add a

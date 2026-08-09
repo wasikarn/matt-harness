@@ -2,7 +2,7 @@
 
 **Status:** analysis + HIGH-band shipped
 **Date:** 2026-06-30
-**Sources:** `/Users/kobig/llm-wiki/mattpocock-skills/` (HEAD 2026-06-27 source-of-truth); kbg-harness git `develop` HEAD `5531d7f`
+**Sources:** `~/llm-wiki/mattpocock-skills/` (HEAD 2026-06-27 source-of-truth); kbg-harness git `develop` HEAD `5531d7f`
 **Owner doctrine anchor:** `docs/METHODOLOGY.md` Rule 1 (decision-sizing triad)
 
 ---
@@ -288,14 +288,14 @@ its own per-skill plan.
 
 ## 9. Sources
 
-- `/Users/kobig/llm-wiki/mattpocock-skills/_index.md` — 19-active-skill routing table, last_updated 2026-06-27
-- `/Users/kobig/llm-wiki/mattpocock-skills/_vs-superpowers.md` — phase coverage + capability matrix
-- `/Users/kobig/llm-wiki/mattpocock-skills/productivity/writing-great-skills/SKILL.md` — design doctrine (vocabulary, two-cut rule, no-op test, leading words, completion criterion, five failure modes)
-- `/Users/kobig/llm-wiki/mattpocock-skills/productivity/grilling/SKILL.md` — 19w, DMI=false
-- `/Users/kobig/llm-wiki/mattpocock-skills/productivity/grill-me/SKILL.md` — 38w, DMI=true (matt fold candidate)
-- `/Users/kobig/llm-wiki/mattpocock-skills/engineering/grill-with-docs/SKILL.md` — separate skill (matt fold candidate)
-- `/Users/kobig/llm-wiki/mattpocock-skills/engineering/implement/SKILL.md` — 16-line DMI=true (covered by kbg orch-pipeline)
-- `/Users/kobig/llm-wiki/mattpocock-skills/engineering/resolving-merge-conflicts/SKILL.md` — 11w DMI=false (M1 closed 2026-06-30: don't import, refs already gone)
+- `~/llm-wiki/mattpocock-skills/_index.md` — 19-active-skill routing table, last_updated 2026-06-27
+- `~/llm-wiki/mattpocock-skills/_vs-superpowers.md` — phase coverage + capability matrix
+- `~/llm-wiki/mattpocock-skills/productivity/writing-great-skills/SKILL.md` — design doctrine (vocabulary, two-cut rule, no-op test, leading words, completion criterion, five failure modes)
+- `~/llm-wiki/mattpocock-skills/productivity/grilling/SKILL.md` — 19w, DMI=false
+- `~/llm-wiki/mattpocock-skills/productivity/grill-me/SKILL.md` — 38w, DMI=true (matt fold candidate)
+- `~/llm-wiki/mattpocock-skills/engineering/grill-with-docs/SKILL.md` — separate skill (matt fold candidate)
+- `~/llm-wiki/mattpocock-skills/engineering/implement/SKILL.md` — 16-line DMI=true (covered by kbg orch-pipeline)
+- `~/llm-wiki/mattpocock-skills/engineering/resolving-merge-conflicts/SKILL.md` — 11w DMI=false (M1 closed 2026-06-30: don't import, refs already gone)
 - kbg memories: [[project-goal-composer-not-creator]], [[surface-consolidation-2026-06-18]], [[skill-listing-budget-mechanics]], [[disable-model-invocation-criterion]]
 
 ---

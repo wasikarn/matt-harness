@@ -18,7 +18,7 @@ Primary source, this session, in full:
   `docs/public/hooks-architecture.mdx`, `docs/public/architecture/hooks.mdx`,
   `docs/public/architecture/worker-service.mdx`, `docs/public/architecture/database.mdx`,
   `docs/public/architecture/search-architecture.mdx` (all 7 in
-  `/Users/kobig/Codes/Personals/claude-mem/`, confirmed live in the doc site's own nav —
+  `~/Codes/Personals/claude-mem/`, confirmed live in the doc site's own nav —
   `docs/public/docs.json` lines 101-111 — not stale/orphaned pages)
 - `docs/merge-rubric.md`, `docs/server-storage-boundary.md`,
   `docs/public/usage/knowledge-agents.mdx`, `docs/server-architecture-and-team-vision.md`
@@ -237,7 +237,7 @@ visible noise category) doesn't show a low-value-entry pattern to fix. This is w
 completeness, not for urgency.
 
 **Where it would land, if ever pursued.** The trigger-criteria text lives in
-`/Users/kobig/.claude/CLAUDE.md` — a dotfiles-owned symlink, not a kbg-harness file (same Tier B
+`~/.claude/CLAUDE.md` — a dotfiles-owned symlink, not a kbg-harness file (same Tier B
 constraint as B1 in the prior report). Not actionable from this repo directly; name it, don't
 build it.
 

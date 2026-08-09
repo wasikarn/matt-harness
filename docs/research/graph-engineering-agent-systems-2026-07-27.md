@@ -432,7 +432,7 @@ necessity every graph-shaped system must name itself with.
 **Where kbg-harness's existing architecture already matches established prior art:**
 
 - **The gate-vs-advisory-sensor split** (`hooks/gates/` vs `hooks/advisory/`, described in
-  `/Users/kobig/Codes/Personals/kbg-harness/CLAUDE.md` lines 55–57: "the gate is a *verifier*
+  `~/Codes/Personals/kbg-harness/CLAUDE.md` lines 55–57: "the gate is a *verifier*
   ...the model is the *maker*, and the maker can never grade its own work... an LLM judging its
   own output is circular") is the same split Anthropic's own production research system uses in
   practice — deterministic ground-truth check where a clear answer exists, LLM-judge rubric where

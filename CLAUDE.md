@@ -136,7 +136,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 
 ### Repo & commit hygiene
 
-- **Hardcoded home paths blocked:** `.sh`/`.py` files must use `$HOME` or `~`, never `/Users/<name>`. The pre-commit gate will reject the commit. This repo is **public** — use `~` in markdown/docs too (the gate doesn't check `.md`; discipline, not enforcement).
+- **Hardcoded home paths blocked:** `.sh`/`.py` files must use `$HOME` or `~`, never `/Users/<name>`. This repo is **public** — `.md` files must not carry this machine's literal home path either (use `~`; `/Users/<name>` placeholder text is fine). Both enforced by the pre-commit gate (`git-hooks/pre-commit` Layer 1). Paths that are operator-layout-specific (like the composer-source clones) are fine in operator-facing files but don't present them as universal in reader-facing docs.
 - **Never `rm -rf`:** use `trash` for deletions. Enforced by `hooks/gates/irrecoverable.sh`.
 - **Never `--no-verify`** on commits or pushes. Enforced by `hooks/gates/irrecoverable.sh`.
 - **Stage by name:** never `git add -A` or `git add .`. Enforced by `hooks/gates/irrecoverable.sh`.

@@ -7,6 +7,7 @@
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
 #      *.sh / *.py        → no hardcoded /Users/<name> home paths (use $HOME/~)
+#      *.md               → no literal $HOME path of this machine (public repo)
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
@@ -63,6 +64,17 @@ run_syntax_layer() {
         if grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" >/dev/null 2>&1; then
           echo "  hardcoded home path in $f — use \$HOME or ~:" >&2
           grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" | sed 's/^/    /' >&2
+          rc=1
+        fi
+      fi
+
+      # Markdown: this is a PUBLIC repo — no literal home path of THIS machine
+      # in committed docs (use ~; placeholder text like /Users/<name> passes,
+      # only the real expanded $HOME is the leak class).
+      if [[ "$f" == *.md ]]; then
+        if grep -nF "$HOME" "$f" >/dev/null 2>&1; then
+          echo "  literal home path in $f — public repo, use ~:" >&2
+          grep -nF "$HOME" "$f" | head -5 | sed 's/^/    /' >&2
           rc=1
         fi
       fi

@@ -11648,7 +11648,7 @@ category (Added / Changed / Fixed) within each phase.
   calls (the symlink farm no longer exists; `doctrine-edit-gate.sh` is belt-and-braces, not primary).
   Adds `CLAUDE.md §The operating model` index. Documents the `.scratch/<slug>/` convention in `issue-tracker.md`.
 - **Inventory labels dehardcoded** (`b03a556`) — `inventory-boundary.sh` no longer hardcodes
-  `/Users/kobig/...` in `print_source` and `print_boundary` (mirrors the `audit.sh` repo-root-aware
+  `/Users/<name>/...` in `print_source` and `print_boundary` (mirrors the `audit.sh` repo-root-aware
   pattern from G15). `BOUNDARY.md` regenerated; host-portable labels (`Personals/kbg-harness`,
   not absolute path). **Activates harness-audit check #16 (fleet-drift detection, advisory)** —
   deactivating by deleting `BOUNDARY.md` reverts to the W1 state.

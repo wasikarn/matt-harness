@@ -3,7 +3,7 @@
 **Status:** analysis (pre-install; install command NOT executed)
 **Date:** 2026-06-28
 **Upstream:** ECC HEAD = `2bc924faf2f8e893bfe0af86b1931283693c30ae` (same as kbg provenance anchor)
-**Source paths verified against:** `/Users/kobig/Codes/Personals/ECC/manifests/{install-profiles,install-modules,install-components}.json` and `scripts/lib/{install-manifests,install-executor}.js`
+**Source paths verified against:** `~/Codes/Personals/ECC/manifests/{install-profiles,install-modules,install-components}.json` and `scripts/lib/{install-manifests,install-executor}.js`
 
 ---
 
@@ -138,7 +138,7 @@ Plus `~/.claude/.claude-plugin/` (via `nativeRootRelativePath`, `sync-root-child
 
 ```bash
 # Install (target=claude → ~/.claude/)
-cd /Users/kobig/Codes/Personals/ECC
+cd ~/Codes/Personals/ECC
 npx ecc install --profile minimal --target claude --with capability:machine-learning
 
 # Preview without writing
