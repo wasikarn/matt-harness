@@ -5,6 +5,38 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.246] — 2026-08-10
+
+### Added
+
+- **Scored deep-tune of recommendation surfaces** (`4646705`) — every recommendation-producing
+  surface measured before/after with frozen instruments (6 behavioral fixtures × 3 fresh-context
+  trials per condition, blind paired grading, pre-declared acceptance rule). Measured wins:
+  `score-decision` F3 full-pass 0/3→3/3 (weight total + full score matrix now rendered);
+  `decide` F2/F6 and `plan-reviewer` F5 2/3→3/3 (evidence-tied `Confidence:` field, clarify-mode
+  one-question cap + settled-ask guard, data-exposure as standalone finding + `verdict_movers`) —
+  single-trial flips, labeled weak evidence. F1 control held on all leak-guard assertions.
+  5 unmeasured closures labeled as such: METHODOLOGY Rule 14 runner-up line, `orchestrate`
+  dispatch-gate anchoring + re-open conditions, `learn` gate-menu rules, `backend-architect`
+  Alternatives/Confidence sections, `address-review` inline pick + `(Recommended)` render rule.
+  Full report: `docs/research/recommendation-quality-tune-2026-08-10.md`.
+- **`docs/research/scored-eval-method.md`** — living method doc for frozen-instrument scored
+  evals (canonical checklist; future rounds follow it instead of re-deriving from dated reports).
+  Carries two new rules from the post-mortem below: report inventory cross-check against disk,
+  and byte-compare + disclosure for any post-grading edit to a measured file.
+- **`docs/post-mortems/`** (new dir) + `eval-report-inventory-claims-2026-08-10.md` (`49c124f`) —
+  the v0.68.246 eval report shipped four false self-referential inventory claims (trial count,
+  phantom artifact, narrowed rule restatement, undisclosed post-grading edit); all caught same-day
+  by `/kbg:compliance-audit`'s fresh-context verifiers, fixed in `e04c167`. Third confirmed
+  instance of the self-reported-inventory defect class; deterministic check deliberately skipped
+  (Rule 2 — build on recurrence).
+
+### Fixed
+
+- **Compliance-audit remediations to the tune report** (`e04c167`) — trial count 36→33, comparator
+  verdict written to disk with provenance, frozen acceptance-rule wording restored with the F1-A1
+  deviation named, post-grading `decide` edit disclosed, README version badge unstuck.
+
 ## [0.68.244] — 2026-08-09
 
 ### Fixed

@@ -83,11 +83,15 @@ match disk. Flagged as a gap; follow-up 1 below is the containment.
   report, verify every count, artifact path, and rule restatement against disk, and record the
   check in the report's Verification section (owner: @kobig; done when: the method's
   freeze-template/precedent doc mandates it and the next scored eval's report carries the checked
-  line).
+  line). *Status 2026-08-10: method half done — rule 8 in `docs/research/scored-eval-method.md`
+  (the living method doc, created for this). Residual: the next scored eval's report carries the
+  checked line.*
 - [ ] Add a "post-grading edit" rule to the same method: any edit to a measured file after its
   after-runs requires a byte-compare against the graded snapshot plus a disclosure bullet
-  (owner: @kobig; done when: the method doc carries the rule).
-- [ ] Decide build-or-skip on a deterministic check (e.g., a harness-audit INFO that flags
+  (owner: @kobig; done when: the method doc carries the rule). *Status 2026-08-10: method half
+  done — rule 9 in `scored-eval-method.md`. Residual: same as above — proven on the next run.*
+- [x] Decide build-or-skip on a deterministic check (e.g., a harness-audit INFO that flags
   artifact paths in eval reports that don't resolve) — Rule 2 gate: build only if the class
-  recurs after follow-up 1 lands (owner: Unowned — needs assignment; done when: an explicit
-  build/skip decision is recorded).
+  recurs after follow-up 1 lands (owner: @kobig; done when: an explicit build/skip decision is
+  recorded). *Decision 2026-08-10: **skip.** Build only if the class recurs after follow-up 1
+  lands; revisit trigger = any future post-mortem in this defect class.*
