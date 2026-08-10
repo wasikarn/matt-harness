@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.258] — 2026-08-10
+
+### Fixed
+
+- **Compliance audit remediation (`ship-merge.md` Phase 2)** — `kbg:compliance-audit` against
+  batch 8 (issue #43) + the ship-merge.md follow-up found 26/26 requirements CONFORMS, plus one
+  unflagged DEVIATED: step 4's rebase/CI-N/A carve-out (added in v0.68.257) hedged `--admin` as
+  "may still be needed," implying a conditional bypass path that step 5's question stem and step
+  6's actual merge-command block never offered (a strict binary: no protection → plain,
+  protection active → `--admin`, no third form). Reworded to state `--admin` applies
+  unconditionally once protection is active, keeping only the informational distinction about
+  *why* (unvalidated CI vs. another protection rule). Also tightened 4 ambiguous "step N"
+  references that mixed this phase's own step numbers with Phase 1's. Independently re-verified
+  against the full 8-combination truth table. Full report:
+  `docs/research/compliance-audit-issue43-batch8-2026-08-10.md`.
+
 ## [0.68.257] — 2026-08-10
 
 ### Fixed
