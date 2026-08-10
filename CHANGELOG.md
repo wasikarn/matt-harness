@@ -5,6 +5,37 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.260] — 2026-08-10
+
+### Added
+
+- **Level-B batch 9 (issue #45) — the 2 `decide/SKILL.md` gaps dropped at the #43 → batch-8
+  seam** — #43's own body listed EVIDENCE-REASON and ASK-CONSEQUENCES as "Still open," but
+  batch 8 scoped decide to its one ambiguous gap and #43 closed on file granularity ("7 of 7
+  files") — true per file, false per gap. Batch 9 (`6c59a47`): the Decision block's `Rejected:`
+  line now requires the specific fact that ruled the option out (same evidence standard as
+  `Selected`'s driven-by), and a clarify-mode fork fired via `AskUserQuestion` requires every
+  option to carry a one-line consequence (plain-text forks keep staff-eng's lighter documented
+  prose shape). Review round 1 caught the same bare-`(reason)` pattern in
+  `docs/reference/judgment-ladder.md`'s higher-stakes template — mirrored to the same standard.
+  Same-session `/kbg:compliance-audit`: 14/14 CONFORMS, fresh gauntlet green, zero remaining
+  bare-`(reason)` reproductions fleet-wide. Report:
+  `docs/research/recommendation-quality-tune-batch9-2026-08-10.md`.
+- **Scored-eval method hardening** (docs-only follow-up `d3293dc`, folded here per the
+  notable-versions convention) — closes all 4 pending method items: rule 10 (re-grade prompts
+  carry the verbatim FREEZE.md rubric with no directional steering, graders isolated,
+  contaminated runs discarded and disclosed — issue #47's contamination lesson), an
+  embed-verbatim Literal checklist (10 rules + 7 skeleton items), a mandated fresh-context
+  checklist-verifier before any report commit (decision: yes-scaled; `/kbg:compliance-audit`
+  stays user-invoked), and a recorded **skip** on an automated skeleton linter (content-level
+  defects defeat structural checks; revisit on recurrence). Compressing the checklist took 3
+  fresh-context review rounds — with an embed-verbatim design, every dropped qualifier is
+  verdict-flipping. Closes `eval-report-skeleton-gaps-2026-08-10.md`'s 3 follow-ups.
+
+### Fixed
+
+- **README version badge** — stale at v0.68.252, now tracks v0.68.260.
+
 ## [0.68.259] — 2026-08-10
 
 ### Fixed
