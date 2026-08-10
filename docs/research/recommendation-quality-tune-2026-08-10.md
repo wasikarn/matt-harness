@@ -20,9 +20,12 @@ Two instruments, honestly separated:
   reported as gaps found/closed, **never** as a scored delta (tuning adds the checked
   instructions, so a Level B "score improvement" would be true by construction).
 
-Pre-declared acceptance rule: a change ships only if revised beats baseline on its target
-fixture (aggregate full-pass across 3 trials, per the precedent's reading) AND the F1 control
-does not regress on its leak-guard assertions.
+Pre-declared acceptance rule (as frozen in FREEZE.md): a change ships only if revised beats
+baseline on its target fixture (aggregate full-pass across 3 trials, per the precedent's
+reading) AND the F1 control does not regress on **any** assertion. **The shipped call accepts
+one letter-level deviation from that second clause** — F1-A1 moved 1/3→0/3 and the batch
+shipped anyway on artifact evidence; that is a judged deviation documented in Limitations, not
+a re-reading of the frozen rule.
 
 ## Headline results (Level A, per-trial)
 
@@ -54,8 +57,12 @@ defaults — the answer was already knowable; the twice-confirmed 2026-07-02 def
 | `agents/plan-reviewer.md` | Lens 4: data-exposure surface is its own finding, never a sub-clause of encoding; `verdict_movers:` output field | F5 A1 2→3 |
 
 Char deltas: score-decision +10%, decide +6%, plan-reviewer +5% — all under the pre-declared
-20% flag threshold (no verbosity purchase; per `response-conciseness-verbosity-2026-07-16.md`,
-each fix is a directive + one worked example, no length rewards).
+20% flag threshold (no verbosity purchase, no length rewards; per
+`response-conciseness-verbosity-2026-07-16.md`). Worked examples landed where the target
+failure was behavioral — decide's clarify guard, plan-reviewer's exposure rule +
+`verdict_movers`, address-review's pick line; the remaining closures are directive/template
+only. That is a judged narrowing of the plan's "directive + one worked example per gap" bar —
+noting F3's 0/3→3/3 landed on template-only changes, so the example bar was not what moved it.
 
 ## Level B sweep — gaps found → closed (work-list, not a score)
 
@@ -94,7 +101,9 @@ Deliberately NOT closed (with reasons):
   assertion its edit targeted (a causal path exists), but by the strictest per-trial reading
   only F3 clears "beats on ≥2 of 3 trials". Reported as: F3 = confirmed; F2/F5/F6 = improved,
   weak-evidence.
-- **F1-A1 (1/3→0/3) is verbatim-reported, classified artifact+noise:** the assertion demands the
+- **F1-A1 (1/3→0/3) — a letter-level deviation from the frozen control rule, accepted by
+  judgment:** the rule as frozen forbids regression on ANY control assertion; this one
+  regressed and the batch shipped anyway. Basis: the assertion demands the
   fix on literal line 1 of the raw file; all 3 tuned-run trials open with "Quote the variable:"
   and give the correct fix on the next line (same shape as baseline t3; baseline t2 failed on a
   ```` ```bash ```` fence opener). The only diff in F1's content set is one Rule-14 line about
@@ -104,6 +113,11 @@ Deliberately NOT closed (with reasons):
 - **Simulated single-turn instrument**: runners emulate an assistant from file contents alone —
   no real tool access, no cross-turn state. Same known blind spot the precedent documented for
   gap-1-style mid-draft failures.
+- **One post-grading micro-edit to a measured file**: the code-review pass (run after grading)
+  fixed an internal contradiction in `skills/decide/SKILL.md` — the rungs-1–2 completion
+  exception now explicitly exempts the Confidence line. The graded transcripts predate that
+  clause. F2's fixture is a full-climb decision the exception cannot reach, so the measured
+  result stands; the clause itself is unmeasured.
 - **Level B is not a quality score** — it's a to-do list generator. Only Level A numbers are
   evidence of behavior change.
 
@@ -111,5 +125,10 @@ Deliberately NOT closed (with reasons):
 
 - `harness-audit` before: 0 CRIT / 0 WARN / 5 INFO — after: re-run green (see commit).
 - All 39 frozen-list paths existed at freeze time; sweep graded every one (no silent truncation).
-- Full raw transcripts (36 generation trials, 8 grading transcripts, comparator) in the session
-  scratchpad `rec-tune/` — re-gradeable by hand if any number above is questioned.
+- A `kbg:code-reviewer` pass ran on the final diff before commit: 2 HIGH (missing version bump;
+  a rungs-1–2 Confidence contradiction in decide) + 1 MEDIUM + 2 LOW (report numeric
+  corrections) — all addressed pre-commit.
+- Full raw transcripts (33 generation trials — 18 baseline + 15 tuned, F4 not re-run; 8 grading
+  transcripts; comparator verdict at `grading/comparator.md`, saved verbatim from the comparator
+  agent's inline return) in the session scratchpad `rec-tune/` — re-gradeable by hand if any
+  number above is questioned.
