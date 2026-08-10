@@ -165,11 +165,14 @@ own hardening cap is already spent.
 
 ## What was changed
 
-Nothing shipped. `content-r2.md` (the candidate edit — "Anchor the reason to a specific fact already
-in view — a stated constraint, a detail about this team or system — not a generic claim that would
-apply to any situation," appended to the "Be opinionated" bullet) exists in the scratchpad, frozen
-and disclosed, but untested by a full measured round and not applied to
-`output-styles/staff-eng.md`.
+| File | Change | Evidence |
+|---|---|---|
+| `output-styles/staff-eng.md` | **None shipped.** | `git diff` against this round's start is empty; byte count unchanged (13670). |
+
+The candidate edit — "Anchor the reason to a specific fact already in view — a stated constraint, a
+detail about this team or system — not a generic claim that would apply to any situation," appended
+to the "Be opinionated" bullet — exists only as `content-r2.md` in the scratchpad: frozen and
+disclosed, but untested by a full measured round and not applied to `output-styles/staff-eng.md`.
 
 ## Level-B
 
@@ -193,15 +196,20 @@ N/A this round — scope was exactly the single EVIDENCE-REASON gap named in iss
   structural markers is supporting evidence, not a platform-level guarantee.
 - **Scope fence held:** #38's other disclosed follow-up (the G2-A1 grading-criterion re-grade) was
   checked against the open-issue list before this round started — no tracker exists for it — and
-  deliberately left out of scope rather than folded in. Filing it is a separate action, not part of
+  deliberately left out of scope rather than folded in. Filed separately as issue #47, not part of
   this report.
+- **Method rule 9 (post-grading edit rule) is N/A, stated explicitly here rather than left silent.**
+  Nothing was shipped, so there is no post-grading edit to a measured file for rule 9 to govern.
 
 ## Verification
 
 - No runtime-loaded surface (`output-styles/`, `agents/`, `skills/`, `commands/`, `hooks/`,
   `themes/`, `docs/METHODOLOGY.md`, `docs/reference/**`) was modified — this report lives in
   `docs/research/`, outside the version-bump gate per `CLAUDE.md`'s Plugin lifecycle section. No
-  manifest version bump.
+  manifest version bump, **no harness-audit re-run required** — same disposition named explicitly in
+  `recommendation-quality-tune-2026-08-10.md`'s own Follow-up 1 for an identical docs-only,
+  no-shipped-surface case. `claude plugin validate . --strict` passed before commit as the
+  applicable check for this diff shape.
 - `content-r1.md` (baseline snapshot) confirmed byte-identical to the shipped
   `output-styles/staff-eng.md` at round start (13670 bytes, matching #38's post-round figure).
 - Inventory cross-check (method rule 8), confirmed via `ls` on the scratchpad `probe/` directory,
