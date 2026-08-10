@@ -134,7 +134,8 @@ Use this to capture the output of a ladder session:
 ## Decision
 Selected option: ...
 Rejected options:
-- ... (reason)
+- ... (reason: <the specific fact or constraint that ruled it out; a generic
+  quality adjective with no cited fact doesn't count>)
 Trade-offs accepted: ...
 Flip condition: <the one tested assumption that, resolved the other way, reverses
   the selection — distinct from what's merely uncertain (the Assumptions table's

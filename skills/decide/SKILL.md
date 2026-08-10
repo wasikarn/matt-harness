@@ -94,8 +94,13 @@ Resolve unstated scope or assumptions before any other mode runs. Analyze → re
 3. **Ask.** Only if the ambiguity is consequential enough that guessing wrong is
    expensive — use `AskUserQuestion` for a genuine fork, or a plain-text fork in the
    response if that tool isn't exposed in this context; otherwise proceed on the
-   stated default and flag it. **One question max per turn** — clarify never emits a
-   multi-question intake. Settled-ask check before asking: if the option you'd tag as
+   stated default and flag it. When the fork fires via `AskUserQuestion`, every
+   option's description carries a one-line consequence — what changes, what it
+   costs, or what breaks if picked; a menu of bare labels is not an ask. A
+   plain-text fork keeps the lighter prose shape: name each option, the
+   recommended pick, and the one-line reason it wins. **One question max per
+   turn** — clarify never emits a multi-question intake. Settled-ask check
+   before asking: if the option you'd tag as
    the recommended default is one you'd proceed with anyway absent an answer, the ask
    is decoration — state it as the working default and move on (asking a question
    whose answer you already picked is the twice-confirmed 2026-07-02 consistency
@@ -266,7 +271,9 @@ Confidence line below — a bare high/medium/low with no cited evidence doesn't 
 
 ## Decision
 Selected: ... (driven by: <the 1–3 stated facts that decided it>)
-Rejected: ... (reason)
+Rejected: ... (reason: <the specific fact or constraint that ruled it out — same
+  evidence standard as Selected's driven-by line; a generic quality adjective with
+  no cited fact doesn't count>)
 Trade-offs accepted: ...
 Confidence: high | medium | low — <the named evidence this rests on, and the
   load-bearing thing NOT verified>. Confidence is about the selected option itself,
