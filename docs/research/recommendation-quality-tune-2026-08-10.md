@@ -36,9 +36,9 @@ Full-pass = every applicable assertion PASS in that trial. Grading was paired an
 |---|---|---|---|
 | **F1 control** — plain how-to (staff-eng + METHODOLOGY) | 4/4 · 3/4 · 3/4 | 3/4 · 3/4 · 3/4 | Leak guards (no menu / no decision machinery / ≤5 lines) **3:3 ↔ 3:3 unchanged**. A1 ("fix literally on line 1") 1/3→0/3 — instrument artifact, see Limitations |
 | **F3** — ranking + floor trap (score-decision) | 4/6 · 5/6 · 4/6 — **0/3 full-pass** | 6/6 · 6/6 · 6/6 — **3/3 full-pass** | **Decisive win.** A1 weights-total 0→3, A2 full matrix 1→3; both flipped ≥2 trials |
-| **F2** — contested decision (decide) | 7/7 · 6/7 · 7/7 — 2/3 | 7/7 · 7/7 · 7/7 — 3/3 | Improved on the exact targeted assertion (A3 evidence-tied confidence 2→3). Single-trial flip = weak evidence |
-| **F5** — plan review, seeded defects (plan-reviewer) | 5/5 · 5/5 · 4/5 — 2/3 | 5/5 · 5/5 · 5/5 — 3/3 | Improved on targeted A1 (PII standalone finding 2→3); blind comparator also picked the tuned set |
-| **F6** — vague ask, clarify shape (decide + staff-eng) | 4/4 · 2/4 · 4/4 — 2/3 | 4/4 · 4/4 · 4/4 — 3/3 | Improved on both targeted assertions (A1 one-question cap, A4 no fabricated menu: 2→3 each). Single-trial flip |
+| **F2** — contested decision (decide) | 7/7 · 6/7 · 7/7 — 2/3 | 7/7 · 7/7 · 7/7 — 3/3 **(superseded → 1/3, see Follow-up)** | Improved on the exact targeted assertion (A3 evidence-tied confidence 2→3). Single-trial flip = weak evidence. **Follow-up (issue #41, same day): downgraded — see § Follow-up below** |
+| **F5** — plan review, seeded defects (plan-reviewer) | 5/5 · 5/5 · 4/5 — 2/3 | 5/5 · 5/5 · 5/5 — 3/3 **(reconfirmed 3/3, see Follow-up)** | Improved on targeted A1 (PII standalone finding 2→3); blind comparator also picked the tuned set. **Follow-up (issue #41, same day): confirmed — see § Follow-up below** |
+| **F6** — vague ask, clarify shape (decide + staff-eng) | 4/4 · 2/4 · 4/4 — 2/3 | 4/4 · 4/4 · 4/4 — 3/3 **(re-tested 2/3, see Follow-up)** | Improved on both targeted assertions (A1 one-question cap, A4 no fabricated menu: 2→3 each). Single-trial flip. **Follow-up (issue #41, same day): re-tested, weak-evidence label stands — see § Follow-up below** |
 | F4 — genuine fork, AskUserQuestion shape (staff-eng) | 5/5 · 5/5 · 5/5 | not re-run (content untouched) | **Ceiling — non-discriminating.** Consistent with the 2026-08-07 eval's already-shipped fixes; deliberately not re-litigated |
 
 Secondary blind comparator (ties allowed): F5 → tuned set wins; F2/F3/F6 → tie ("within
@@ -97,10 +97,18 @@ Deliberately NOT closed (with reasons):
 
 ## Limitations (read before trusting the numbers)
 
-- **n=3.** F2/F5/F6 improvements are single-trial flips — each flipped trial failed exactly the
-  assertion its edit targeted (a causal path exists), but by the strictest per-trial reading
-  only F3 clears "beats on ≥2 of 3 trials". Reported as: F3 = confirmed; F2/F5/F6 = improved,
-  weak-evidence.
+- **n=3.** F2/F5/F6 improvements were originally single-trial flips — each flipped trial failed
+  exactly the assertion its edit targeted (a causal path exists), but by the strictest per-trial
+  reading only F3 cleared "beats on ≥2 of 3 trials". Firmed up same-day (issue #41, 3 fresh
+  trials each against current shipped content — see § Follow-up): **F3 = confirmed** (unchanged,
+  not re-run); **F5 = confirmed**, weak-evidence label lifted (3/3 full-pass, content
+  byte-identical to what was graded); **F6 = still weak-evidence** (re-tested 2/3, ties
+  baseline's own rate — not distinguishable at n=3); **F2 = downgraded** (1/3 full-pass — the
+  targeted assertion A3 held 3/3 clean, but a non-targeted assertion, A6 falsifiability, failed
+  in 2 of 3 fresh trials; not connected to the drift below, since F2's fixture is a full-climb
+  path). **Both F2 and F6 load the drifted `decide/SKILL.md`** (see next bullet); neither's
+  rubric assertions touch the drifted clause (a Confidence-field exemption), so the drift is
+  disclosed here for both but doesn't explain either fixture's result.
 - **F1-A1 (1/3→0/3) — a letter-level deviation from the frozen control rule, accepted by
   judgment:** the rule as frozen forbids regression on ANY control assertion; this one
   regressed and the batch shipped anyway. Basis: the assertion demands the
@@ -121,6 +129,49 @@ Deliberately NOT closed (with reasons):
 - **Level B is not a quality score** — it's a to-do list generator. Only Level A numbers are
   evidence of behavior change.
 
+## Follow-up: confirmation trials for F2/F5/F6 (issue #41, same day)
+
+Issue #41, "Confirmation trials for F2/F5/F6 — firm up single-trial flips from the v0.68.246
+tune," asked to re-run n=3 fresh-context trials per fixture against current shipped content and
+report each fixture confirmed or downgraded. Per `scored-eval-method.md`, fixtures and rubric are
+reused verbatim from this round's frozen FREEZE.md — no new instruments. Pre-declared outcome rule
+(written before any trial ran): 3/3 new
+full-pass → confirmed, weak-evidence label lifted; 2/3 → ties baseline's own 2/3, not
+distinguishable at n=3, label stands; ≤1/3 → downgraded. A 2/3 result is deliberately **not**
+reported as "confirmed" even though it clears the issue's literal bar — it would be identical to
+baseline's own rate and prove nothing, the exact defect class the 2026-08-10 post-mortem exists to
+prevent.
+
+**Content byte-compare (rule 9), run first:**
+
+| File | vs. graded `content-r2/` | Used for |
+|---|---|---|
+| `skills/decide/SKILL.md` | **Differs** — the post-grading edit already disclosed above (rungs-1–2 exception now also exempts Confidence) | F2, F6 |
+| `docs/METHODOLOGY.md` | Identical | F2 |
+| `agents/plan-reviewer.md` | Identical | F5 |
+| `output-styles/staff-eng.md` | Identical | F6 |
+
+F2 and F6 trials ran against genuinely post-edit content (per issue #41's explicit ask to test
+current shipped state); F5 is a clean re-confirmation of the exact bytes that were graded.
+
+**New trials — 3 fresh-context runs per fixture, graded independently (neutral framing, no
+mention this was a confirmation run), full per-assertion tables in the session scratchpad.**
+Rule 4's blind A/B pairing doesn't apply here — there is only one condition to grade (current
+shipped content), not a baseline/tuned pair to re-litigate; the baseline numbers are already
+frozen in the original round and aren't re-run.
+
+| Fixture | New trials (full-pass per trial) | Aggregate | Verdict |
+|---|---|---|---|
+| F2 | FULL-PASS · fail A6 · fail A6 | **1/3** | **Downgraded.** Targeted assertion A3 (confidence tied to evidence) held 3/3 clean — the original causal claim about A3 stands. What sank the aggregate is A6 (falsifiability), an assertion the tuning never targeted, failing in 2 of 3 fresh trials with near-identical wording ("none of these flip the direction"). Not connected to the decide/SKILL.md drift — F2 is a full-climb path the drifted clause doesn't reach. Read as: a real, previously-undetected weak spot in decide's full-climb falsifiability output, not a false original claim. Not in this issue's scope to fix — logged here as a finding for a future round. |
+| F5 | FULL-PASS · FULL-PASS · FULL-PASS | **3/3** | **Confirmed.** Content unchanged since grading — a clean re-confirmation, not a drift artifact. Weak-evidence label lifted. |
+| F6 | FULL-PASS · FULL-PASS · fail A1 | **2/3** | **Weak-evidence label stands.** Ties baseline's own 2/3 exactly. The one failing trial tripped A1 by stacking two "say if" branches (the second an explicit two-way menu) — the same shape of slip the original tuning targeted, still surfacing on 1 of 3 fresh trials. decide/SKILL.md's drift doesn't touch this assertion (the exempted clause is about a Confidence field the F6 rubric never checks). |
+
+Runner/grading harness matched the original round's shape (read-only snapshot content, one
+runner template, an independent grading pass with a required ≤20-word quote per verdict); one
+original tuned transcript (`runs-after/F2-t1.md`) was read first to confirm the response format
+expected. Full trial transcripts and grading tables: session scratchpad
+`rec-tune-confirm/` (`content-current/`, `runs/`, `grading/`, `FOLLOWUP-FREEZE.md`).
+
 ## Verification
 
 - `harness-audit` before: 0 CRIT / 0 WARN / 5 INFO — after: re-run green (see commit).
@@ -132,3 +183,9 @@ Deliberately NOT closed (with reasons):
   transcripts; comparator verdict at `grading/comparator.md`, saved verbatim from the comparator
   agent's inline return) in the session scratchpad `rec-tune/` — re-gradeable by hand if any
   number above is questioned.
+- **Follow-up (issue #41) inventory cross-check (rule 8), run before writing this section**: 9
+  new trial files on disk in `rec-tune-confirm/runs/` (3 per fixture, matches the table above), 3
+  grading tables in `rec-tune-confirm/grading/`, 4 content snapshots in
+  `rec-tune-confirm/content-current/` matching the byte-compare table's file list, `FOLLOWUP-FREEZE.md`
+  present. No shipped surface file was edited by this follow-up (docs/research is outside the
+  runtime-loaded set) — no version bump, no harness-audit re-run required.
