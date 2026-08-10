@@ -73,7 +73,20 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
     ...
   ],
   "shortlist": ["uuid-7", "uuid-2", "uuid-5"],
+  "shortlistReasons": {
+    "uuid-7": "one-line reason this idea earned its spot"
+    // ...
+  },
   "nonObviousPick": "uuid-7",
+  "nonObviousPickReason": "one-line reason this specific idea is the non-obvious-but-viable pick",
+  "runnerUp": {
+    "ideaId": "uuid-9",
+    "reason": "one-line reason it just missed the shortlist"
+  }, // or null if fewer than topK+1 non-trapped ideas exist
+  "confidence": {
+    "level": "medium",     // high | medium | low
+    "reason": "small idea pool, one dominant frame"
+  },
   "traps": ["uuid-1", "uuid-4"],
   "deepened": [
     {
@@ -104,9 +117,13 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
 - Exclude trapped ideas
 - Sort by `total`
 - Take top `options.topK` (default 3)
+- `shortlistReasons`: one line per shortlisted id naming the actual reason it earned its spot — not a restatement of its score numbers. The host renders this verbatim instead of inventing its own justification (the host is the same model class as the generator; a fresh-context reason is the point of this agent existing).
+- `runnerUp`: the highest-`total` non-trapped idea at rank `topK + 1`, as `{ideaId, reason}` — one line on what kept it out. `null` if fewer than `topK + 1` non-trapped ideas exist. A shortlist with no stated runner-up is unfalsifiable (METHODOLOGY Rule 14).
+- `confidence`: `{level, reason}` where `level` is `high`/`medium`/`low` and `reason` is one line. A judgment on the ranking as a whole (idea-pool size, frame diversity, problem ambiguity) — not a re-statement of individual scores.
 
 **Non-obvious pick:**
 - From the shortlist, pick the idea with highest `novelty + viability*0.5`
+- `nonObviousPickReason`: one line naming what makes this specific idea non-obvious-but-viable — not a generic "highest novelty score" restatement.
 
 **Deepen rules:**
 - For each idea in `shortlist`, produce:
@@ -130,8 +147,8 @@ run, not a hypothetical).
 1. **Read the input envelope from stdin.**
 2. **Score every idea** on the 3 axes. Be adversarial: if an idea looks attractive but you can name a hidden cost, mark it as a trap. (Named bias guard — anchoring: score every idea before ranking any of them, don't let the first one scored set your scale. Confirmation: `trap` exists to force you to look for the reason an idea is wrong, not just why it's right.)
 3. **Cluster the ideas** by underlying angle, not by frame or keyword overlap.
-4. **Build the shortlist**: exclude traps, rank by `total`, take top-K.
-5. **Pick the non-obvious-but-viable** idea from the shortlist.
+4. **Build the shortlist**: exclude traps, rank by `total`, take top-K. Attach `shortlistReasons`, `runnerUp`, and `confidence`.
+5. **Pick the non-obvious-but-viable** idea from the shortlist. Attach `nonObviousPickReason`.
 6. **Deepen each shortlist idea** with sketch + risk + first step + child ideas.
 7. **Emit the JSON** exactly matching the Output Format.
 

@@ -239,10 +239,11 @@ contract above is unaffected.
 To use the critic agent, collect the Phase 1 `ideas[]` JSON and
 invoke `ideate-critic` with the Input Contract in
 `agents/ideate-critic.md`. Use its returned `scores`, `clusters`,
-`shortlist`, `nonObviousPick`, `traps`, `deepened`, and
-`provocation` to render the final output shape below. The
-deepen pass can still run as 3 parallel Agent calls on the host,
-using the critic's `shortlist` as input.
+`shortlist`, `shortlistReasons`, `nonObviousPick`,
+`nonObviousPickReason`, `runnerUp`, `confidence`, `traps`,
+`deepened`, and `provocation` to render the final output shape
+below. The deepen pass can still run as 3 parallel Agent calls on
+the host, using the critic's `shortlist` as input.
 
 Source: `references/provenance.md` §"Phase 2 critic-routing source".
 
@@ -363,9 +364,16 @@ wall of prose. The structure is the point.
    labeled by underlying angle. Each idea is one short phrase.
    Show score chips like `[N7 V8 F9]` next to each.
 3. **Converge.** A 2 to 4 idea shortlist. State why each is on
-   the list. Mark the non-obvious-but-viable pick explicitly
-   with ★. List traps separately, each with the one-line reason
-   it is a trap.
+   the list — when the critic pass ran, use its `shortlistReasons`
+   verbatim rather than inventing a new justification; when
+   scoring host-side, state the reason directly. Mark the
+   non-obvious-but-viable pick explicitly with ★, using the
+   critic's `nonObviousPickReason` when present. If the critic
+   supplied a `confidence` (level + reason), show it beside the
+   shortlist. If `runnerUp` is non-null, name it in one line so a
+   strong idea just outside the cut isn't silently dropped; if it's
+   `null`, omit the line — don't fabricate a runner-up. List traps
+   separately, each with the one-line reason it is a trap.
 4. **Focus.** The 3 deepened branches. For each: the sketch, the
    load-bearing risk, the first concrete step, and the child
    ideas.
