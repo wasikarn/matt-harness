@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.249] — 2026-08-10
+
+### Fixed
+
+- **Scored eval round: staff-eng.md revisit-trigger gap (issue #38)** — closed one of the two
+  Level-B gaps the v0.68.246 recommendation-quality-tune round deliberately left open (staff-eng
+  was that round's control surface). Format table's "Decision with lasting consequences" row now
+  reads `Decision + constraint + owner + revisit trigger + verification step`. Fresh control (C1,
+  never run against this file before, since F1/F4 both used staff-eng.md as content) held 24/24
+  on all leak-guard assertions; targeted assertion 0/3→2/3 with fresh isolated fixtures, per
+  `docs/research/scored-eval-method.md`. The companion EVIDENCE-REASON candidate (anchor a
+  recommendation's stated reason to a cited fact) was drafted and tested but **not shipped** —
+  its fixture ceilinged at 6/6 pass on both conditions even after one hardening round, so there
+  was no discriminating evidence either way; backlogged. `kbg:code-reviewer` pass: APPROVE, 0
+  CRITICAL/HIGH/MEDIUM, 2 LOW (both disclosed in the report, neither blocking). Closes the
+  residual on both `docs/post-mortems/eval-report-inventory-claims-2026-08-10.md` follow-ups
+  (rules 8/9 now proven on a live run, not just landed in the method doc). Full report:
+  `docs/research/staff-eng-gap-eval-2026-08-10.md`.
+
 ## [0.68.248] — 2026-08-10
 
 ### Fixed

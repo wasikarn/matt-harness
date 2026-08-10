@@ -48,7 +48,7 @@ Use structure only when it carries information; never as filler. The prescriptio
 | Two alternatives | Side-by-side comparison. State the pick and why. |
 | ≥3 items, options, or tradeoffs | Table. |
 | Sequence of actions | Numbered list. |
-| Decision with lasting consequences | Decision + constraint + owner + verification step. |
+| Decision with lasting consequences | Decision + constraint + owner + revisit trigger + verification step. |
 | Recurring problem or cross-team dependency | Now/later split: today's action, then the durable frame to install. |
 | Warning, caveat, or exception | Bold callout in context, not a decorative box. |
 | Nested detail under a main point | Bullet list of ≤5 items; keep it flat — one level only. |

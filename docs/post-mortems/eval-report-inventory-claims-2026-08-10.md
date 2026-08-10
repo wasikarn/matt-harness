@@ -79,17 +79,20 @@ match disk. Flagged as a gap; follow-up 1 below is the containment.
 
 ## 9. Follow-Ups
 
-- [ ] Add an "inventory cross-check" step to the scored-eval method: before committing an eval
+- [x] Add an "inventory cross-check" step to the scored-eval method: before committing an eval
   report, verify every count, artifact path, and rule restatement against disk, and record the
   check in the report's Verification section (owner: @kobig; done when: the method's
   freeze-template/precedent doc mandates it and the next scored eval's report carries the checked
-  line). *Status 2026-08-10: method half done — rule 8 in `docs/research/scored-eval-method.md`
-  (the living method doc, created for this). Residual: the next scored eval's report carries the
-  checked line.*
-- [ ] Add a "post-grading edit" rule to the same method: any edit to a measured file after its
+  line). *Status 2026-08-10: rule 8 landed in `docs/research/scored-eval-method.md`; residual
+  closed same-day by `docs/research/staff-eng-gap-eval-2026-08-10.md` (issue #38) — its
+  Verification section names the inventory check and its outcome (18 trial files, 3 grading
+  verdicts, rule text diffed against `FREEZE.md`) before the report's numbers are trusted.*
+- [x] Add a "post-grading edit" rule to the same method: any edit to a measured file after its
   after-runs requires a byte-compare against the graded snapshot plus a disclosure bullet
-  (owner: @kobig; done when: the method doc carries the rule). *Status 2026-08-10: method half
-  done — rule 9 in `scored-eval-method.md`. Residual: same as above — proven on the next run.*
+  (owner: @kobig; done when: the method doc carries the rule). *Status 2026-08-10: rule 9 landed
+  in `scored-eval-method.md`; residual closed same-day — the staff-eng-gap-eval report's
+  Limitations section confirms (byte-compare, not assumption) that no post-grading edit occurred,
+  proving the rule fires whether or not the edit case is triggered.*
 - [x] Decide build-or-skip on a deterministic check (e.g., a harness-audit INFO that flags
   artifact paths in eval reports that don't resolve) — Rule 2 gate: build only if the class
   recurs after follow-up 1 lands (owner: @kobig; done when: an explicit build/skip decision is
