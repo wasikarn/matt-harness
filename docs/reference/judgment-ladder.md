@@ -61,6 +61,7 @@ Make load-bearing beliefs explicit and seek evidence that could refute them.
 |---|---|
 | Load-bearing assumptions listed | Hidden assumptions surface as surprises later |
 | Each assumption has a disproof test | Confirmation bias |
+| One assumption named whose resolution reverses the pick | Every assumption treated as adjusting confidence/pace only — passing the "ask now?" fork test gets mistaken for "nothing could ever flip this" |
 | Facts / beliefs / guesses are separated | Assumption laundering |
 | Evidence is updated when contradicted | Anchoring on the first story |
 
@@ -135,6 +136,9 @@ Selected option: ...
 Rejected options:
 - ... (reason)
 Trade-offs accepted: ...
+Flip condition: <the one tested assumption that, resolved the other way, reverses
+  the selection — distinct from what's merely uncertain (the Assumptions table's
+  Confidence column above) or when to revisit (below)>.
 
 ## Commitment & follow-through
 - Action owner: ...

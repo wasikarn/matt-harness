@@ -36,7 +36,7 @@ Full-pass = every applicable assertion PASS in that trial. Grading was paired an
 |---|---|---|---|
 | **F1 control** — plain how-to (staff-eng + METHODOLOGY) | 4/4 · 3/4 · 3/4 | 3/4 · 3/4 · 3/4 | Leak guards (no menu / no decision machinery / ≤5 lines) **3:3 ↔ 3:3 unchanged**. A1 ("fix literally on line 1") 1/3→0/3 — instrument artifact, see Limitations |
 | **F3** — ranking + floor trap (score-decision) | 4/6 · 5/6 · 4/6 — **0/3 full-pass** | 6/6 · 6/6 · 6/6 — **3/3 full-pass** | **Decisive win.** A1 weights-total 0→3, A2 full matrix 1→3; both flipped ≥2 trials |
-| **F2** — contested decision (decide) | 7/7 · 6/7 · 7/7 — 2/3 | 7/7 · 7/7 · 7/7 — 3/3 **(superseded → 1/3, see Follow-up)** | Improved on the exact targeted assertion (A3 evidence-tied confidence 2→3). Single-trial flip = weak evidence. **Follow-up (issue #41, same day): downgraded — see § Follow-up below** |
+| **F2** — contested decision (decide) | 7/7 · 6/7 · 7/7 — 2/3 | 7/7 · 7/7 · 7/7 — 3/3 **(superseded → 1/3, then 2/3 post-fix — see Follow-up 2)** | Improved on the exact targeted assertion (A3 evidence-tied confidence 2→3). Single-trial flip = weak evidence. **Follow-up (issue #41, same day): downgraded to 1/3 on A6, an untargeted assertion — see § Follow-up. Follow-up 2 (issue #42): A6 fix shipped, re-tested at 2/3 (A6 itself 1/3→2/3) — see § Follow-up 2** |
 | **F5** — plan review, seeded defects (plan-reviewer) | 5/5 · 5/5 · 4/5 — 2/3 | 5/5 · 5/5 · 5/5 — 3/3 **(reconfirmed 3/3, see Follow-up)** | Improved on targeted A1 (PII standalone finding 2→3); blind comparator also picked the tuned set. **Follow-up (issue #41, same day): confirmed — see § Follow-up below** |
 | **F6** — vague ask, clarify shape (decide + staff-eng) | 4/4 · 2/4 · 4/4 — 2/3 | 4/4 · 4/4 · 4/4 — 3/3 **(re-tested 2/3, see Follow-up)** | Improved on both targeted assertions (A1 one-question cap, A4 no fabricated menu: 2→3 each). Single-trial flip. **Follow-up (issue #41, same day): re-tested, weak-evidence label stands — see § Follow-up below** |
 | F4 — genuine fork, AskUserQuestion shape (staff-eng) | 5/5 · 5/5 · 5/5 | not re-run (content untouched) | **Ceiling — non-discriminating.** Consistent with the 2026-08-07 eval's already-shipped fixes; deliberately not re-litigated |
@@ -106,7 +106,9 @@ Deliberately NOT closed (with reasons):
   baseline's own rate — not distinguishable at n=3); **F2 = downgraded** (1/3 full-pass — the
   targeted assertion A3 held 3/3 clean, but a non-targeted assertion, A6 falsifiability, failed
   in 2 of 3 fresh trials; not connected to the drift below, since F2's fixture is a full-climb
-  path). **Both F2 and F6 load the drifted `decide/SKILL.md`** (see next bullet); neither's
+  path; **superseded same-day by Follow-up 2 (issue #42) — A6 fixed and re-tested at 2/3, up from
+  1/3 — see § Follow-up 2, this bullet otherwise stands as the as-of-#41 historical record**).
+  **Both F2 and F6 load the drifted `decide/SKILL.md`** (see next bullet); neither's
   rubric assertions touch the drifted clause (a Confidence-field exemption), so the drift is
   disclosed here for both but doesn't explain either fixture's result. **A second, initially
   undisclosed drift**: F6 also loads `output-styles/staff-eng.md`, which changed (commit
@@ -198,3 +200,70 @@ expected. Full trial transcripts and grading tables: session scratchpad
   `rec-tune-confirm/content-current/` matching the byte-compare table's file list, `FOLLOWUP-FREEZE.md`
   present. No shipped surface file was edited by this follow-up (docs/research is outside the
   runtime-loaded set) — no version bump, no harness-audit re-run required.
+
+## Follow-up 2: A6 falsifiability fix (issue #42, same day)
+
+Issue #42 asked to close the A6 gap Follow-up 1 surfaced: 2 of 3 fresh trials denied any fact
+existed that would flip the pick, near-identically worded ("none of these flip the direction" /
+"none of them flips which option to commit to"). Root cause, found by reading both failing
+transcripts in full: Rung 3's "what evidence would refute it?" only asks about individual
+assumptions, and the mode's separate "genuine fork → `AskUserQuestion`" test (a different
+question — pause and ask now, or not) was getting reused by the model to answer the falsifiability
+question too. Trial 3 of the prior round shows the conflation directly: "No genuine two-branch
+fork survives this list ... None of them flips which option to commit to — so no
+`AskUserQuestion` here."
+
+**Fix**, per `docs/research/scored-eval-method.md`: no new fixture — F2's frozen ASK/assertions
+reused verbatim.
+
+| File | Change |
+|---|---|
+| `skills/decide/SKILL.md` | Rung 3 now states the fork test and the flip test are different questions and requires naming the one assumption that reverses the pick; Output format's Decision block gained a required `Flip condition` line, distinct from Confidence and Revisit trigger; Completion criterion's `decide` bullet (and its rungs-1–2 exception) updated to match |
+| `docs/reference/judgment-ladder.md` | Matching `Flip condition` line added to the full decision-record template and a Rung 3 checkpoint-table row, for live-usage consistency — not part of the graded content set (F2 loads only `decide-SKILL.md` + `METHODOLOGY.md`, simulated single-turn) |
+
+**Content byte-compare (rule 9):** both files are new edits made for this issue, not
+previously-graded snapshots — no drift to disclose against a prior grading pass, for F2. **F6
+disclosure**: F6 also loads `skills/decide/SKILL.md` (Follow-up 1's byte-compare table), so its
+currently-published 2/3 result (§ Follow-up) now predates this edit too. Not re-tested here — out
+of #42's scope — but the edited sections (`decide` mode's Rung 3, Output format, Completion
+criterion) are outside `clarify` mode, the only section F6's rubric (A1–A4) reads; F6's own
+Completion criterion bullet is untouched. Practical drift risk is near zero, not zero — flagged
+per rule 9 rather than silently left for the next round to discover.
+
+**Pre-declared outcome rule** (written before any trial ran, full text in
+`issue-42-f2-rerun/FREEZE.md`): 3/3 or (2/3 with A6 passing ≥2/3) → fixed; 2/3 with A6 still the
+dominant failure mode at its prior rate → not closed; ≤1/3 → not closed.
+
+**New trials — 3 fresh-context runs, independent blind grading (grader given only the 3
+transcripts + rubric, no framing that this tests a fix):**
+
+| Assertion | Trial 1 | Trial 2 | Trial 3 |
+|---|---|---|---|
+| A1–A5, A7 | PASS ×5 | PASS ×5 | PASS ×5 |
+| **A6** (flip fact named) | **PASS** — "the pick flips to Reject A" | **FAIL** — states hardening "becomes the faster thing to try first" but Commitment separately says "migration kickoff follows that check" regardless of outcome — the reversal is asserted in prose, never operationalized | **PASS** — "Option A flips to Option B (or a third path)" |
+
+**Per-trial: Trial 1 FULL-PASS (7/7). Trial 2 not full-pass (6/7, A6 only). Trial 3 FULL-PASS
+(7/7). Aggregate: 2/3.** A6 specifically: **2/3 pass**, up from **1/3** in Follow-up 1 — the
+targeted gap. Per the pre-declared rule this clears as fixed, but the honest read at n=3: this is
+a directional improvement, not a clean sweep. Trial 2's failure is qualitatively different from
+Follow-up 1's — a *stated* reversal that the plan doesn't act on, not a flat denial that any
+reversal exists — which reads as the fix working (it now produces flip language) while exposing a
+narrower follow-on gap: nothing yet checks that Commitment's actual plan honors the flip condition
+declared above it. Logged here, not fixed — a smaller, distinct issue from #42's scope.
+
+Runner/grading harness matched prior rounds' shape (read-only snapshot content, one runner
+template, an independent grading pass with a required ≤20-word quote per verdict, recomputed
+aggregate from the per-assertion table). Full transcripts and grading verdict: session scratchpad
+`issue-42-f2-rerun/` (`content-tuned/`, `runs/`, `FREEZE.md`).
+
+**Verification**
+
+- Char delta: `decide/SKILL.md` +1,214 bytes (+6.8%); `judgment-ladder.md` +391 bytes (+3.0%) —
+  both under the 20% anti-verbosity flag (rule 7).
+- `harness-audit`: 0 CRIT / 1 WARN (stale README version badge, unrelated pre-existing drift,
+  fixed in the same commit) / 5 INFO before the badge fix → 0 CRIT / 0 WARN / 5 INFO after.
+- Version bump: v0.68.250 → v0.68.251 in both `plugin.json` and `marketplace.json` (both files
+  edited are in the runtime-loaded set: `skills/**` and `docs/reference/**`).
+- Inventory cross-check (rule 8): 3 trial files on disk in `issue-42-f2-rerun/runs/` (matches n=3),
+  1 grading pass (agent-returned table, cross-footed above against the per-assertion cells, not
+  trusted from its own stated total).

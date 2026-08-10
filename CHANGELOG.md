@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.251] — 2026-08-10
+
+### Fixed
+
+- **`decide/SKILL.md` A6 falsifiability gap (issue #42)** — a confirmation re-run of the F2
+  fixture (issue #41) found that `decide` mode's full-climb output denies any fact could flip a
+  recommendation in 2 of 3 fresh trials ("none of these flip the direction"), even while listing
+  several open assumptions. Root cause: Rung 3's assumption-refutation question and the mode's
+  separate "genuine fork → `AskUserQuestion`" test (whether to pause and ask now) answer different
+  questions, but the model was reusing the fork test's "no" to also answer the falsifiability
+  question. Rung 3 now states the two are distinct and requires naming the one assumption that
+  reverses the pick; the Decision-record template gained a required `Flip condition` line, kept
+  separate from `Confidence` and `Revisit trigger`. `docs/reference/judgment-ladder.md`'s fuller
+  template got the matching field for live-usage consistency. Re-tested n=3, blind-graded: A6
+  1/3→2/3, aggregate 2/3 (up from 1/3) — a directional fix, not a clean sweep at n=3; the one
+  remaining failure is a narrower gap (a stated reversal the Commitment section doesn't act on),
+  logged for a future round. `kbg:code-reviewer` pass: 0 CRITICAL/HIGH, 2 MEDIUM (stale
+  cross-references in the report) + 3 LOW, all addressed pre-commit. Full report:
+  `docs/research/recommendation-quality-tune-2026-08-10.md` § Follow-up 2.
+
 ## [0.68.250] — 2026-08-10
 
 ### Fixed
