@@ -65,7 +65,10 @@ proceed plan-only into execution.
   not delegate to `kbg:orchestrate`). If you cannot name the boundary between two candidates, they
   are entangled — split further or sequence them.
 - Rank by impact × cost × risk. State, per candidate: what changes, who executes (inline vs
-  which agent), blast radius (low / medium / high), dependencies (none / chain).
+  which agent), blast radius (low / medium / high — cite what the candidate touches, e.g.
+  `hooks/gates/**` = high, doc-only = low), dependencies (none / chain). **If the touched surface
+  is unclear, the candidate hasn't cleared the scope guard below — treat it as "too big — route
+  to /ship" until the surface is known; don't guess a blast-radius tier to get it past the gate.**
 - **Named bias guard — anchoring.** The first finding scanned is not necessarily the highest-impact
   one; rank the full candidate set before committing to an order, don't just work top-to-bottom
   through the scan. For a numeric, traceable verdict instead of an ordinal rank, apply the
@@ -84,11 +87,17 @@ proceed plan-only into execution.
 ### 3. ASK — the gate (mandatory)
 
 - Present the ranked list, then **AskUserQuestion** single-select:
-  "[N] candidates: [ranked list]. Blast radius: [low/med/high]. Dependencies: [none/chain].
-  Recommended order: [...]. Approve?"
+  "[N] candidates: [ranked list]. Blast radius: [low/med/high, cited]. Dependencies:
+  [none/chain]. Recommended order: [...]. Approve?"
   - `Approve — execute in recommended order (best when candidates are independent and blast radius is low)`
   - `Revise — drop / add / reorder (best when scope or order is off)`
   - `Reject — keep as analysis only (best when you want the findings without acting)`
+- **This ask never collapses, even when Step 2's ranking is unambiguous.** Unlike a
+  self-consistency skip elsewhere in the fleet (e.g. `incident/SKILL.md`'s mitigation-confirm),
+  this gate is authorization, not information-gathering — an unambiguous ranking answers "what's
+  best," not "do you approve." Do not add a skip-when-obvious rule here: if the answer feels
+  settled enough to skip, that feeling is exactly what the load-bearing invariant above exists to
+  override.
 - A planning request is **not** authorization to execute. **Denial ≠ approval.** If
   `AskUserQuestion` is denied (dontAsk / headless `-p`), render the same question as numbered
   prose in the turn's own output and stop there — "waiting for an explicit reply" means ending
@@ -148,6 +157,9 @@ proceed plan-only into execution.
   failure (qmd-reindex precedent). If Verify showed flat/negative delta, present the before/after
   delta and the witness diff and **ask**: revert, tune, or accept-as-new-baseline. Capture the
   user's reason as a memory entry. Do not auto-revert and do not bury the regression.
+  **Accept-as-new-baseline is not permanent** — name the re-open condition in the same memory
+  entry (e.g. "revisit if the same `file:line` resurfaces in a later Observe pass," or "revisit
+  if the accepted regression's metric moves further in the same direction").
 - Emit the iteration report (Output Format below). Capture any durable WHY (a decision, a deferred
   candidate, a regression accepted) in memory.
 - **Iteration cap: 5 per session** (soft — the human gates each iteration anyway; this is only a

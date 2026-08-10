@@ -99,7 +99,7 @@ For each field, mark: **present** (in the draft) / **derivable** (from code or C
 
 ### Step 5 — Auto-fill where cheap (don't ask what you can find)
 
-- `<reference>`: `Glob` for an existing pattern (a sibling migration, an existing middleware, a parallel route) and **propose it** rather than asking. If Glob finds a strong candidate, mark `<reference>` derivable and cite the path.
+- `<reference>`: `Glob` for an existing pattern (a sibling migration, an existing middleware, a parallel route) and **propose it** rather than asking. If Glob finds a strong candidate, mark `<reference>` derivable and cite the path. If Glob finds multiple plausible candidates, name which one was picked and why the others were passed over (more recent, closer in the tree, better test coverage) — don't silently take the first hit.
 - `<scope>`: pull in/out from `@`-refs already in the draft.
 - `<context>` / `<constraints>`: if obvious from CLAUDE.md or the draft, mark derivable; do not ask.
 - **If Step 3.5 ran**: `<context>` derives from `business_trace`; `<edge-cases>` derives from `edge_cases_missing`; `<done-when>` candidates derive from `acceptance_criteria` entries marked `testable`/`testable_with_assumption` (state the assumption inline if present) — check these before falling through to Step 6's ask.
@@ -132,7 +132,7 @@ Ask only for **absent** fields that actually cost the user. Priority order — `
 
 **Skip** `<context>`/`<constraints>`/`<output>`/`<edge-cases>` if obvious from input or CLAUDE.md — don't pad. Listing rules Claude already follows makes them noise it learns to ignore (failure mode: over-specified constraints).
 
-**`<edge-cases>`:** if the user can't name any, offer "interview me for edge cases first" as an `AskUserQuestion` option — surfacing them before coding is cheaper than discovering them after a wrong implementation.
+**`<edge-cases>`:** if the user can't name any, offer "interview me for edge cases first" as an `AskUserQuestion` option — state the effect inline in the option text itself (e.g. "adds one short Q&A round before the prompt is assembled — catches gotchas before code, costs one extra turn"), not just as background rationale in this doc; surfacing them before coding is cheaper than discovering them after a wrong implementation.
 
 **Failure mode at this step:** padding obvious fields to seem thorough — the template's §"don't pad" rule. Empty fields are fine; a missing `<done-when>` is the one that costs.
 

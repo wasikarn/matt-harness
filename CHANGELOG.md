@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.254] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 6 (post-mortem / recursive-improve / task-prep / pr)** — closed 10 gaps across
+  `commands/post-mortem.md`, `skills/recursive-improve/SKILL.md`, `skills/task-prep/SKILL.md`,
+  `skills/pr/SKILL.md` (issue #40): explicit-pick + alternative + default-before-ask on
+  post-mortem's destination gate; honest-confidence + self-consistency + revisit-trigger on
+  recursive-improve; alternative + ask-consequences on task-prep; alternative + falsifiability on
+  pr's commit-type tie-break. Unmeasured by design, same as prior batches. A judgment call on
+  recursive-improve's CRIT-guarded Step 3 gate (harness-audit check 39) was revised mid-batch after
+  `advisor()` review: closed by hardening the gate with an explicit non-skippable rule rather than
+  rejecting the gap, avoiding a weaker fallback. A `kbg:code-reviewer` pass, briefed to check the
+  new gate bullet for any bypass path and to fact-check a Conventional Commits claim, caught 1
+  MEDIUM (an unhandled third state in recursive-improve's blast-radius field that could let a
+  candidate reach the approval gate without clearing Step 2's scope check) + 1 LOW (a forward
+  reference in pr's tie-break rule). Both fixed and independently re-verified, including a live
+  fact-check against the Conventional Commits v1.0.0 spec. Full report:
+  `docs/research/recommendation-quality-tune-batch6-2026-08-10.md`.
+
 ## [0.68.253] — 2026-08-10
 
 ### Fixed

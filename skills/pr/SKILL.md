@@ -105,7 +105,13 @@ git log origin/<base>..HEAD --format="%h %s" --reverse
 
 Determine:
 - **PR title**: conventional-commit format with a type prefix — `feat: ...`, `fix: ...`, etc.
-  - If multiple types, use the dominant one. If a single commit, use its message as-is.
+  - If multiple types, use the dominant one **by commit count** — name the runner-up type(s) and
+    the count that decided it in the body's Summary section (e.g. "3 `fix:` commits vs 1 `docs:`
+    commit — `fix` wins"). **On a tie**, don't silently pick one: state the tie in the Summary and
+    choose the type that matches what the commit subjects (from the `git log` output above) show
+    as the primary change — read the actual messages, not a section that hasn't been written yet
+    (Conventional Commits defines no fixed severity order between types).
+  - If a single commit, use its message as-is.
 - **Change summary**: group commits by type/area.
 
 ### File Analysis
