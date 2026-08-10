@@ -83,7 +83,12 @@ name; a candidate that rewrites the whole file makes Verify's delta impossible t
 
 Present: the diff, the findings it targets (with severities), the iteration count so far, and the
 dispatch cost of the next step (`2N + 2`, computed from this workspace's actual eval-case count).
-`AskUserQuestion`, single-select:
+**Recommend**: state which of the three options the diff actually earns on its own merits — e.g.
+"Apply and re-test: the diff directly targets both critical findings and doesn't touch unrelated
+sections" — not just the general principle that a good diff should be applied.
+`AskUserQuestion`, single-select. Render the stated recommendation as the literal `(Recommended)`
+tag on that option, replacing its `(best when X)` clause at render time — the list below is a
+template, not fixed text to paste verbatim:
 
 - **Apply and re-test** (best when the diff looks right and the cost is acceptable)
 - **Revise the candidate** (best when the direction is right but the specific wording isn't)

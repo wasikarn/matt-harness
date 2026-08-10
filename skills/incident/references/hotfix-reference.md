@@ -123,9 +123,9 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    ```
    A hotfix skips `kbg:pr`'s own preview-confirm gate for speed (Phase 0-3 already are the review), but
    the body shape stays the same so a hotfix PR reads like every other PR in this repo.
-4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?"
-   - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge
-   - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later
+4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?" Recommend whichever option this incident's actual severity favors — P0/P1 favors Merge now (production stays broken every minute you wait, and Phase 0 already ruled out rollback/kill-switch as sufficient); P2 favors Wait for normal CI — and render that pick as the literal `(Recommended)` tag on the matching option below, replacing its `(best when X)` clause at render time; the template below spans all severities, it isn't fixed text to paste verbatim.
+   - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge. Bypasses branch protection.
+   - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later. Production stays on the current build for however long CI + normal review takes.
 5. **Merge via GitHub CLI (server-side only):**
    ```bash
    gh pr merge <n> --admin --squash --delete-branch
@@ -142,6 +142,10 @@ here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,
 unlike ship-merge's normal path (which now conditions `--admin` on branch
 protection actually being active). If you edit the merge flags or the confirm
 prompt here, check whether ship-merge's Phase 2 needs the matching edit too.
+**Checked 2026-08-10:** ship-merge.md's Phase 2 ask still carries the same
+unresolved `(best when X)` pattern this edit fixed here — a real, separate gap,
+left unfixed because it's out of scope for the tracking issue this edit closes
+(the file list doesn't include ship-merge.md). Flagged, not silently dropped.
 
 6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from)
 7. Verify merge landed: `git log --oneline -3`

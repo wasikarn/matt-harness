@@ -121,6 +121,9 @@ Every review comment should contain:
 1. **Observation** — what you see (`file:line` reference)
 2. **Impact** — why it matters (bug? security? maintainability?)
 3. **Recommendation** — concrete fix or alternatives
+4. **Falsifying fact** (judgment calls only — skip on objective bugs) — the one fact that would
+   change this recommendation, e.g. "if this endpoint has no external caller, this isn't a
+   breaking change"
 
 ### Code citation
 - **Terminal/local review output, and line-level GitHub comments** — the `gh api …/pulls/<n>/reviews`
@@ -175,6 +178,8 @@ Fixed in `<short-sha>`: [one-line change summary].
 ```
 [Rationale in 1-3 sentences].
 This is [intentional / out of scope for this PR / addressed in <other-place>] because [reason].
+[Revisit if: <the fact or event that would reopen this — even a permanent design call names
+what would change it>].
 ```
 
 ### Clarify
@@ -194,8 +199,10 @@ The Wontfix and Clarify shapes aren't mutually exclusive with citing a sha. If a
 Fixed in `<short-sha>`: [what that commit changed].
 [Rationale in 1-3 sentences].
 This is [intentional / out of scope for this PR / addressed in <other-place>] because [reason].
+[Revisit if: <the fact or event that would reopen this>].
 ```
-(Clarify blends the same way — swap the last two lines for Clarify's `[Specific question]. I'm not sure I understand [aspect]...` line.)
+(Clarify blends the same way — swap the "This is... because..." and "Revisit if" lines for
+Clarify's `[Specific question]. I'm not sure I understand [aspect]...` line.)
 
 ### Anti-patterns (author)
 

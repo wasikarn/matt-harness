@@ -84,19 +84,26 @@ Return exactly this structure (no prose preamble, no edits to the prompt):
 verdict: ready | gaps
 done_when_shape: test | perf | repro | behavior | colleague_test | missing
 colleague_test_pass: yes | no
+confidence: high | medium | low
 gaps:
   - field: <field-name>
     why_it_costs: <one line — which golden-rule question it fails, or what goes wrong downstream>
     suggested_question_for_user: <one line — the AskUserQuestion the caller should ask>
   - field: ...
+revisit_if: <one line, only when verdict: ready — the single fact that would flip this verdict
+  back to gaps, e.g. "if <reference> turns out not to exist" or "if the artifact is paraphrased
+  rather than pasted verbatim". Omit entirely on verdict: gaps — the gaps list already states
+  what has to change>
 notes: <optional, one line — e.g. "shape mismatch: behavior task lacks distinguishes-or-it-doesn't check"; omit if none>
 ```
 
 `<field-name>` is a placeholder to fill with the bare field name — `task`, `context`, `scope`, `reference`, `artifacts`, `done-when`, `constraints`, `output`, or `edge-cases` — never the literal angle brackets. The template's own field tags in the draft use angle brackets (`<done-when>`); don't echo that syntax into `field:`'s value.
 
-If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufacture gaps to seem rigorous** — a clean prompt returns `ready` with empty gaps. Over-reporting erodes trust faster than a missed optional field (same guardrail as the `kbg:review-pr` reviewers — code-reviewer / typescript-reviewer / python-reviewer).
+`confidence` reflects how much the verdict rests on a judgment call versus a mechanical field-presence check — low when a close call drove it (an ambiguous Phase 3 golden-rule read, or a Phase 4 premise check that could plausibly go either way), high when every field classification was unambiguous. Don't default to `high` to look more certain than the judgment actually was — the same overclaiming Phase 4's premise-check guard exists to catch.
 
-**Nothing may appear before the `verdict:` line or after the last populated line** — no preamble narrating your process ("here's my analysis," "findings incorporated"), no trailing caveat, no closing summary in any language. If a judgment call is worth explaining, that explanation belongs inside `why_it_costs` or the one-line `notes:` field — cut it rather than appending it as free-standing prose. The caller parses this block programmatically; text outside the four labeled lines is dead weight at best and a parsing risk at worst. Confirmed failure mode (2026-07-30): on a contested judgment call, this agent has produced multi-paragraph justification after the schema on a `verdict: ready` (where `notes:` should have been omitted entirely) and, separately, a prose preamble plus a full second-language summary paragraph around the schema on a `verdict: gaps` — both real single-shot runs, not a hypothetical.
+If `verdict: ready`, `gaps:` is empty and `notes:` is omitted, and `revisit_if` is required. If `verdict: gaps`, omit `revisit_if` — the gap list already states what needs to change. **Do not manufacture gaps to seem rigorous** — a clean prompt returns `ready` with empty gaps. Over-reporting erodes trust faster than a missed optional field (same guardrail as the `kbg:review-pr` reviewers — code-reviewer / typescript-reviewer / python-reviewer).
+
+**Nothing may appear before the `verdict:` line or after the last populated line** — no preamble narrating your process ("here's my analysis," "findings incorporated"), no trailing caveat, no closing summary in any language. If a judgment call is worth explaining, that explanation belongs inside `why_it_costs` or the one-line `notes:` field — cut it rather than appending it as free-standing prose. The caller parses this block programmatically; text outside the labeled schema above is dead weight at best and a parsing risk at worst. Confirmed failure mode (2026-07-30): on a contested judgment call, this agent has produced multi-paragraph justification after the schema on a `verdict: ready` (where `notes:` should have been omitted entirely) and, separately, a prose preamble plus a full second-language summary paragraph around the schema on a `verdict: gaps` — both real single-shot runs, not a hypothetical.
 
 ## Guardrails
 
@@ -118,3 +125,4 @@ If `verdict: ready`, `gaps:` is empty and `notes:` is omitted. **Do not manufact
 - FAIL: "Looks good, but here are 3 minor suggestions anyway" — the over-reporting trap. If it's ready, say `ready` and stop.
 - FAIL: Appending prose before or after the structured block — a preamble explaining your reasoning, a trailing caveat, a closing summary — even when the content is accurate. It violates "exactly this structure" and risks breaking a caller that parses this output programmatically. Fold anything worth keeping into `why_it_costs` or the one-line `notes:`, or drop it.
 - FAIL: Crediting a `done-when` shape (`repro`, `behavior`) from its surface features alone — a command plus a number isn't a valid `repro` if `<context>` states the failure doesn't reproduce via that method.
+- FAIL: Marking `confidence: high` on a verdict that hinged on a close judgment call — the same overclaiming Phase 4's premise-check guard exists to catch.

@@ -145,6 +145,12 @@ verdict_movers: <the 1-2 facts that, if verified or changed, would most move thi
 # verdict up or down — the re-check condition before this review is trusted again
 # (e.g. "an app-wide auth middleware already gating /admin/* would downgrade
 # finding 1 from Critical"). Keep it to facts, not hedging.>
+
+revisit_if: <the condition that makes this whole review stale and worth re-running from
+# scratch — distinct from verdict_movers above, which is about a fact that would change
+# one finding's severity. This is about the review's shelf life, e.g. "the plan text
+# changes materially" or "the plan sits unimplemented long enough that the codebase
+# state named in a finding's failure_scenario has likely drifted".>
 ```
 
 If there are zero findings on a genuinely sound plan, say so — `findings: []`, `verdict: production-ready`. Don't manufacture findings to look thorough; a clean plan returning empty lists is correct output, not a weak pass.

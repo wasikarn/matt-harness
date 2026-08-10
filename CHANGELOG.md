@@ -5,6 +5,33 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.256] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 8 (issue #43) — 6 files, 9 gaps closed, 1 gap found already closed** — first
+  batch against the leftover backlog issue #40 never tracked (issue #43): `agents/task-prep-checker.md`
+  (HONEST-CONFIDENCE + REVISIT-TRIGGER — added `confidence` and conditional `revisit_if` fields to
+  the structured output schema), `skills/review-pr/reference.md` (REVISIT-TRIGGER + FALSIFIABILITY —
+  a `[Revisit if: ...]` line on the Wontfix reply template, propagated to its "blending a sha"
+  reproduction too; a "Falsifying fact" 4th element on the review-comment Structure template),
+  `skills/decide/SKILL.md` (HONEST-CONFIDENCE — the "Key assumptions tested" table's Confidence
+  column now carries the same evidence-anchor requirement as the Decision block's own Confidence
+  line), `agents/plan-reviewer.md` (REVISIT-TRIGGER — new `revisit_if` field distinct from the
+  existing `verdict_movers`, which is about a single finding's severity, not the whole review's
+  shelf life), `skills/incident/references/hotfix-reference.md` (EXPLICIT-PICK + ASK-CONSEQUENCES,
+  freshly graded — Phase 4's merge-authorization ask now recommends Merge-now for P0/P1 vs.
+  Wait-for-CI for P2 and states both options' costs, not just the risky one), `commands/iterate-skill.md`
+  (EXPLICIT-PICK, freshly graded — Step 4's ASK gate states which option the diff earns before
+  presenting it). `skills/score-decision/SKILL.md`'s cited REVISIT-TRIGGER gap re-graded against
+  current content and found already closed (a `Re-score when` field already exists) — issue #43's
+  own citation was stale; no edit made, per method rule 5.
+- **Post-edit review found 2 MEDIUM + 1 LOW, all fixed and independently re-verified** — a same-file
+  template/reproduction desync in `review-pr/reference.md`, an unhonored cross-file sync-seam check
+  in `hotfix-reference.md` (now documents that `ship-merge.md`'s Phase 2 has the same unresolved
+  gap, left unfixed as out of scope for issue #43), and a stale field-count reference in
+  `task-prep-checker.md`.
+
 ## [0.68.255] — 2026-08-10
 
 ### Fixed

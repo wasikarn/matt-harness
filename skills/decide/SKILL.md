@@ -261,6 +261,9 @@ Produce a decision record at the end of any `decide` or `strategize` session:
 ## Key assumptions tested
 | Assumption | Confidence | What would refute it |
 
+Each Confidence cell carries the same evidence-anchor requirement as the Decision block's
+Confidence line below — a bare high/medium/low with no cited evidence doesn't count here either.
+
 ## Decision
 Selected: ... (driven by: <the 1–3 stated facts that decided it>)
 Rejected: ... (reason)
