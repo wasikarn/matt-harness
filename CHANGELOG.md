@@ -5,6 +5,25 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.255] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 7 (orchestrate/reference.md) — issue #40 backlog closed** — closed the last 5
+  gaps in the Level-B recommendation-quality backlog: evidence-reason + alternative +
+  revisit-trigger + falsifiability on the "Full triage example" worked scenario (one new bullet
+  per table row stating the evidence behind each quadrant call, the alternative route rejected +
+  why, and the fact that would flip the pick), plus honest-confidence on the Value×Risk table (an
+  insufficient-data fallback for a genuinely unclassifiable value/risk call, narrower than
+  score-decision's own block-condition — a merely contested estimate still gets scored, not
+  blocked). Unmeasured by design, same as prior batches. A `kbg:code-reviewer` pass, briefed to
+  hunt for the specific failure mode this kind of retroactively-synthesized content risks (text
+  shaped to satisfy a rubric label without adding real information), caught 1 MEDIUM (a citation
+  overstated how broadly `score-decision`'s pattern applies) + 2 LOW (two fields restating the same
+  fact under different labels; a mislabeled field on a non-deferred row). All 3 fixed and
+  independently re-verified. All 39 files from the original sweep now have 0 open gaps — issue #40
+  is closed. Full report: `docs/research/recommendation-quality-tune-batch7-2026-08-10.md`.
+
 ## [0.68.254] — 2026-08-10
 
 ### Fixed
