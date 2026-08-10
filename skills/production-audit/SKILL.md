@@ -172,6 +172,9 @@ Then list:
 Keep strengths short. The user asked for readiness, so the useful answer is the
 remaining risk and the next action.
 
+Once the listed `Blockers` are fixed, re-run this audit before the actual launch — a fixed
+blocker changes the score band; don't treat the original score as still current.
+
 ## Example
 
 User:

@@ -20,7 +20,7 @@ Compact a freeform task description into a single, paste-ready completion-condit
    - Done when: you can state the deliverable in one sentence, or you know exactly what's missing to state it.
 
 2. **Clarify only if consequential**
-   - Analyze → recommend → ask, don't over-question (same discipline as `kbg:decide`'s `clarify` mode). Ask one question via `AskUserQuestion`, with your recommended default pre-filled, only if the ambiguity is genuinely expensive to guess wrong.
+   - Analyze → recommend → ask, don't over-question (same discipline as `kbg:decide`'s `clarify` mode). Ask one question via `AskUserQuestion`, with your recommended default pre-filled, only if the ambiguity is genuinely expensive to guess wrong. Each option states what it changes about the resulting condition (which clause, which scope, which Never-touch boundary) — not a bare label; the user is picking a consequence, not a category.
    - Otherwise state your working interpretation inline and proceed.
    - Failure mode to avoid: interrogating the user with a checklist before producing anything — the over-questioning trap `clarify` mode exists to prevent.
    - Done when: either one targeted question is asked, or a stated default is chosen and intake proceeds.

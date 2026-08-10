@@ -5,6 +5,23 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.253] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 5 (smallest skills cluster)** — closed 3 gaps across
+  `skills/production-audit/SKILL.md`, `skills/incident/SKILL.md`, `skills/goal-craft/SKILL.md`
+  (issue #40): a revisit-trigger on the production-audit score, a self-consistency skip on
+  incident response's mitigation-confirm ask, an ask-consequences requirement on goal-craft's
+  clarify step. Unmeasured by design, same as prior batches. A `kbg:code-reviewer` pass,
+  specifically briefed to scrutinize `incident/SKILL.md`'s gate given this repo's 3x-confirmed
+  self-consistency-skip defect history, caught a real MEDIUM: the skip condition's `S1`-alone
+  disjunct was unjustified (only blast-radius-expanding is backed by an existing rule) and would
+  have removed the incident commander's choice on the tightest-MTTR tier. Fixed and independently
+  re-verified. The irreversible-mitigation gate itself was confirmed intact throughout — this was
+  a scope-of-skip issue, not a repeat of the prior defect class. Full report:
+  `docs/research/recommendation-quality-tune-batch5-skills-2026-08-10.md`.
+
 ## [0.68.252] — 2026-08-10
 
 ### Fixed

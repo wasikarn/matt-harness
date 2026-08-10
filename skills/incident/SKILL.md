@@ -18,6 +18,14 @@ Run a production incident from first alert to resolution. **Incident response is
 2. **Assess** — What broke? Who's affected? When did it start? Blast radius trend? Classify severity (S1–S4). Default S2. Rank hypotheses by likelihood with a quick-test table.
 
 3. **Confirm mitigation plan** — Before executing outward-facing / irreversible actions:
+   - **Self-consistency**: if blast radius is already confirmed expanding, skip the ask and
+     escalate immediately — the "Escalate, don't absorb" rule under METHODOLOGY below already
+     answers it, and spending the ask's own time cost on a question already settled works against
+     this skill's own MTTR discipline. Severity alone, even S1, does **not** trigger this skip —
+     the ask's own options only *recommend* escalating on S1, they don't mandate it, so an S1 with
+     a confirmed, non-expanding blast radius still goes through the ask. Never skip toward
+     `Execute mitigation now` without asking — only the escalate branch is safe to auto-select; an
+     irreversible mitigation always needs the explicit confirmation.
    - **AskUserQuestion** single-select: "Severity = [S1/S2/S3/S4], blast radius = [service / subset / none], recommended mitigation = [rollback / kill-switch / circuit breaker / scale / hotfix]. Proceed?"
      - `Execute mitigation now (best when the user is the incident commander and the blast radius is confirmed)` — proceed to step 4
      - `Escalate first (best when severity is S1 or blast radius is expanding)` — stop; notify on-call or exec before acting
