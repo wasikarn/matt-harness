@@ -117,6 +117,9 @@ Order the implementation by dependency:
 ### Design Decisions
 - Decision 1: [Rationale]
 - Decision 2: [Rationale]
+- (cite what Process §1 actually found: the analog file grepped, the import-direction check, the
+  DI style detected — "fits the existing pattern" with no cited pattern is not a rationale; if no
+  analog exists, say so and cite the layer-direction and DI-style findings instead)
 
 ### Trade-offs Considered
 - Alternative considered: [approach] — rejected because [concrete reason: cost, risk, doesn't fit existing pattern, etc.]

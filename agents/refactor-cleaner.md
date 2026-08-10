@@ -110,7 +110,9 @@ before removing.
 
 ### 4. Consolidate Duplicates
 - Find duplicate components/utilities
-- Choose the best implementation (most complete, best tested)
+- Choose the best implementation (most complete, best tested) — name why each rejected
+  duplicate lost (missing test coverage, narrower feature set, known bug, stale) in the staged
+  commit message; "most complete" is a comparison, not a self-evident label
 - Update all imports, delete duplicates
 - Verify tests pass
 

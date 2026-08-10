@@ -185,7 +185,12 @@ Stop and ask the user if:
 
 ## Performance Report Format
 
-Report per finding: **file:line**, **impact** (measured delay/size), **fix** (before/after snippet). Lead with a summary line (overall score, critical-issue count) and an estimated-impact line (bundle KB saved, LCP/TTI ms improved).
+Report per finding: **file:line**, **impact** (measured delay/size), **fix** (before/after
+snippet), and **alternative** — when §2's Algorithmic Analysis table names a different "Better
+Alternative" than what you shipped, or another viable fix existed, state which one and why it
+lost (complexity, diff size, risk); if truly only one fix was viable, say so. Lead with a
+summary line (overall score, critical-issue count) and an estimated-impact line (bundle KB
+saved, LCP/TTI ms improved).
 
 ## When to Run
 

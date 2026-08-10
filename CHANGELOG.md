@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.252] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 4 (review-agent cluster)** — closed the last 3 open gaps across
+  `agents/refactor-cleaner.md`, `agents/performance-optimizer.md`, `agents/code-architect.md`
+  (issue #40): alternative-considered on duplicate consolidation, an alternative field on the
+  performance report format, and an evidence-cite requirement on architecture design decisions.
+  Unmeasured by design, same as batches 2-3. A `kbg:code-reviewer` pass caught and fixed a MEDIUM
+  (code-architect's citation rule had no escape hatch for a no-analog/greenfield case) and a LOW
+  (off-convention placeholder formatting). Also corrects the prior batch-3 progress comment's
+  "~13 gaps" estimate — the real per-file sum across the 11 remaining files is 21, now 18 after
+  this batch. Full report:
+  `docs/research/recommendation-quality-tune-batch4-agents-2026-08-10.md`.
+
 ## [0.68.251] — 2026-08-10
 
 ### Fixed
