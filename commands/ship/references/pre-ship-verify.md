@@ -63,7 +63,9 @@ Criteria: <PASS N · MANUAL N · FAIL N>
 
 **RED:** list each failure with the failing test/command and exit code. Recommend fixing before re-running Phase 5. Do NOT proceed to Phase 6.
 
-**AMBER:** list the MANUAL criteria and ask the user to confirm them before proceeding.
+**AMBER:** list the MANUAL criteria and ask the user to confirm them before proceeding — confirming
+moves to Phase 6 (Review); declining means treating the criterion as unmet, same as a FAIL: go
+back to Phase 4 or explicitly accept the risk and note it in the audit trail.
 
 **GREEN:** state the change is verified. Suggest next step:
 - Not pushed yet → push the branch, then proceed to Phase 6 (`kbg:review-pr`).
@@ -77,7 +79,7 @@ Criteria: <PASS N · MANUAL N · FAIL N>
 Append to `.scratch/<slug>/verification-log.jsonl`:
 
 ```json
-{"timestamp":"<ISO>","command":"/ship Phase 5","slug":"<slug>","tests":"pass","typecheck":"clean","criteria":{"pass":N,"manual":N,"fail":N},"result":"green|amber|red"}
+{"timestamp":"<ISO>","command":"/ship Phase 5","slug":"<slug>","tests":"pass","typecheck":"clean","criteria":{"pass":N,"manual":N,"fail":N},"result":"green|amber|red","note":"<optional — why a MANUAL criterion was accepted as risk, when applicable>"}
 ```
 
 ## Anti-patterns

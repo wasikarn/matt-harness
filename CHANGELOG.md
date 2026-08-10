@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.250] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 3 (ship-* cluster)** — closed 11 of the ~30 gaps tracked in issue #40:
+  `ship-release.md` (ask-consequences, self-consistency, revisit-trigger), `ship/COMMAND.md`
+  (evidence-reason, ask-consequences, default-before-ask), `ship/references/classify.md`
+  (honest-confidence, alternative, ask-consequences, self-consistency), and
+  `ship/references/pre-ship-verify.md` (ask-consequences). Unmeasured by design, same as batch 2.
+  A `kbg:code-reviewer` pass caught a HIGH issue — `classify.md`'s self-consistency skip named
+  downstream confirmation gates for 2 of 3 routing destinations, missing that `/refactor-clean`
+  has no pre-edit gate of its own — the **third** confirmed instance of this exact defect class
+  (a self-consistency fix that skips an ask without verifying every branch it routes to still has
+  an equivalent downstream confirmation). Fixed before commit: Refactor never skips the ask now.
+  Full report: `docs/research/recommendation-quality-tune-batch3-ship-2026-08-10.md`.
+
 ## [0.68.249] — 2026-08-10
 
 ### Fixed
