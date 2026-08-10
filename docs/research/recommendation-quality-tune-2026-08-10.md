@@ -108,7 +108,11 @@ Deliberately NOT closed (with reasons):
   in 2 of 3 fresh trials; not connected to the drift below, since F2's fixture is a full-climb
   path). **Both F2 and F6 load the drifted `decide/SKILL.md`** (see next bullet); neither's
   rubric assertions touch the drifted clause (a Confidence-field exemption), so the drift is
-  disclosed here for both but doesn't explain either fixture's result.
+  disclosed here for both but doesn't explain either fixture's result. **A second, initially
+  undisclosed drift**: F6 also loads `output-styles/staff-eng.md`, which changed (commit
+  `7790da3`) in the ~26-minute window between this round's content snapshot and this report's
+  own commit — see § Follow-up's byte-compare table for what changed and why it doesn't touch
+  F6's checked assertions. Caught by a same-day compliance audit, not by rule 8/9 at commit time.
 - **F1-A1 (1/3→0/3) — a letter-level deviation from the frozen control rule, accepted by
   judgment:** the rule as frozen forbids regression on ANY control assertion; this one
   regressed and the batch shipped anyway. Basis: the assertion demands the
@@ -149,10 +153,15 @@ prevent.
 | `skills/decide/SKILL.md` | **Differs** — the post-grading edit already disclosed above (rungs-1–2 exception now also exempts Confidence) | F2, F6 |
 | `docs/METHODOLOGY.md` | Identical | F2 |
 | `agents/plan-reviewer.md` | Identical | F5 |
-| `output-styles/staff-eng.md` | Identical | F6 |
+| `output-styles/staff-eng.md` | Identical **at the 11:22 snapshot** — a second edit (commit `7790da3`, 11:48, adding a "revisit trigger" column to the Format table's "Decision with lasting consequences" row) landed before this report's own commit (11:52); not caught by the byte-compare above because it ran before that edit existed | F6 |
 
 F2 and F6 trials ran against genuinely post-edit content (per issue #41's explicit ask to test
-current shipped state); F5 is a clean re-confirmation of the exact bytes that were graded.
+current shipped state); F5 is a clean re-confirmation of the exact bytes that were graded. The
+staff-eng.md gap above surfaced only on a later independent compliance audit (2026-08-10, same
+day) — none of F6's checked assertions (A1–A4) test for a revisit-trigger element, so it doesn't
+change F6's 2/3 result, but the byte-compare table's own "Identical" claim was stale by the time
+this report was committed and should have been re-checked before commit, not just at snapshot
+time.
 
 **New trials — 3 fresh-context runs per fixture, graded independently (neutral framing, no
 mention this was a confirmation run), full per-assertion tables in the session scratchpad.**
