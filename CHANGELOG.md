@@ -196,7 +196,11 @@ Pre-`1.0.0`: breaking changes may land in any `0.x` release.
   reads `Decision + constraint + owner + revisit trigger + verification step`. Fresh control (C1,
   never run against this file before, since F1/F4 both used staff-eng.md as content) held 24/24
   on all leak-guard assertions; targeted assertion 0/3→2/3 with fresh isolated fixtures, per
-  `docs/research/scored-eval-method.md`. The companion EVIDENCE-REASON candidate (anchor a
+  `docs/research/scored-eval-method.md`. *(2026-08-10 addendum, issue #47: a literal-frozen-text
+  re-grade later split 2–1 on this number — majority reading baseline 2/3 → tuned 3/3, minority
+  reproduces 0/3→2/3; direction holds, magnitude disputed. The change stands on the qualitative
+  signal plus METHODOLOGY.md-consistency, not the single number. See
+  `docs/research/staff-eng-g2-a1-regrade-2026-08-10.md`.)* The companion EVIDENCE-REASON candidate (anchor a
   recommendation's stated reason to a cited fact) was drafted and tested but **not shipped** —
   its fixture ceilinged at 6/6 pass on both conditions even after one hardening round, so there
   was no discriminating evidence either way; backlogged. `kbg:code-reviewer` pass: APPROVE, 0
