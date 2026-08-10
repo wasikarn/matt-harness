@@ -286,6 +286,12 @@ Flip condition: <the one fact from the tested assumptions that, resolved the oth
 - Bias guards applied: framing / anchoring / confirmation / sunk-cost
 ```
 
+`First reversible step` must be consistent with the Flip condition above it — if the step proceeds
+on the original pick regardless of how the Flip condition resolves, that's a contradiction, not a
+plan. Either the step tests the flip condition before committing further, or state explicitly why
+proceeding anyway still holds even if the flip condition resolves against the pick. A flip
+condition the plan doesn't act on is the same failure as no flip condition at all.
+
 This is the compact default. For a one-way-door or high-stakes decision, use
 `judgment-ladder.md`'s fuller template instead (adds `Consulted`, an `Evidence`
 column on the assumptions table, a `## Scenarios` probability/impact table, and a
@@ -300,8 +306,10 @@ Persist via `mattpocock-skills:domain-modeling` (owns the ADR rule) when the dec
 - `probe` output is a memo, not a decision. Do not skip to commitment from probe.
 - Match effort to stakes: trivial reversible choices need only rungs 1–2 (Recognize
   + Frame), not the full climb — see "Match depth to stakes" under Mode: decide. This
-  scales down tested assumptions, the formal progress metric, and the Flip condition
-  (see the Completion criterion's `decide` exception below); it does not scale down
+  scales down tested assumptions, the formal progress metric, and the Flip condition —
+  which also scales down the `First reversible step`/Flip-condition consistency check
+  below, since there's no Flip condition to be consistent with at that depth (see the
+  Completion criterion's `decide` exception below); it does not scale down
   the revisit trigger.
 - A decision without a revisit trigger is not finished — this applies at every depth,
   including a rungs-1–2-only response.
@@ -312,7 +320,7 @@ This criterion applies per mode's own output shape, not one template for all fiv
 decision-producing mode (`decide` / `strategize` / `critique`) additionally owes the one-line
 Precedent check result (see § Precedent check) — a run that never stated it is not finished:
 
-- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, an evidence-tied Confidence on the selected option, a Flip condition naming the one fact that reverses the pick, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions, a formal progress metric, the Confidence line, and the Flip condition are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
+- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, an evidence-tied Confidence on the selected option, a Flip condition naming the one fact that reverses the pick, and Commitment (revisit trigger + progress metric) whose `First reversible step` doesn't silently proceed regardless of how that Flip condition resolves; confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions, a formal progress metric, the Confidence line, the Flip condition, and its `First reversible step` consistency check are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
 - **`strategize`** — same Output format template, mapped from its own step vocabulary: Diagnosis + Guiding policy fill the Frame section, the irreversibility map and red-team results are the tested assumptions, and Commitment's revisit trigger comes from step 6's strategy loop (progress metric = whatever the red-team/tripwire step names as the signal to watch).
 - **`critique`** — verify the verdict (holds / holds with caveat / needs rework), the one assumption most worth re-verifying, and — when the verdict isn't a clean "holds" — what specifically would need to change are all stated. No Frame/Commitment record required; critique audits an existing plan rather than producing a new one.
 - **`clarify` / `probe`** — completion is the stated handoff itself (resolved scope + working default, or a framing memo) — these modes never produce a decision record and aren't held to the Frame/Commitment bar.

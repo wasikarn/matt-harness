@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.259] — 2026-08-10
+
+### Fixed
+
+- **decide/SKILL.md Commitment/Flip-condition consistency (issue #42 Follow-up 2 residual)** —
+  `docs/research/recommendation-quality-tune-2026-08-10.md`'s Follow-up 2 section had logged a
+  real gap and explicitly left it unfixed: a trial showed the model stating a genuine Flip
+  condition, then writing a Commitment whose `First reversible step` proceeded on the original
+  plan regardless. Never got a tracking issue. Caught while re-verifying issue #43's closure.
+  `skills/decide/SKILL.md`'s Commitment template and `docs/reference/judgment-ladder.md`'s mirror
+  now require `First reversible step` to either test the flip condition first or explicitly
+  justify proceeding anyway — a flip condition the plan doesn't act on is the same failure as no
+  flip condition at all. Master doc annotated with a dated status note per this repo's established
+  convention, original claim left intact.
+
 ## [0.68.258] — 2026-08-10
 
 ### Fixed

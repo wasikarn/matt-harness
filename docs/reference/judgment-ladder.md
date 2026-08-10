@@ -150,6 +150,13 @@ Flip condition: <the one tested assumption that, resolved the other way, reverse
 - Sunk-cost / anchoring / framing / confirmation guards: ...
 ```
 
+`First reversible step` must be consistent with the Flip condition above it — if the step proceeds
+on the original selection regardless of how the Flip condition resolves, that's a contradiction,
+not a plan. Either the step tests the flip condition before committing further, or state
+explicitly why proceeding anyway still holds even if the flip condition resolves against the
+selection. A flip condition the plan doesn't act on is the same failure as no flip condition at
+all.
+
 ## Proportionality rule
 
 Match effort to stakes and reversibility.

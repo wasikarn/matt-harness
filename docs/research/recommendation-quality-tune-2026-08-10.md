@@ -251,6 +251,13 @@ reversal exists — which reads as the fix working (it now produces flip languag
 narrower follow-on gap: nothing yet checks that Commitment's actual plan honors the flip condition
 declared above it. Logged here, not fixed — a smaller, distinct issue from #42's scope.
 
+*Status 2026-08-10: fixed, no new issue opened — caught while re-verifying #43's closure. Both
+`skills/decide/SKILL.md` (Commitment template + the `decide` Completion criterion bullet) and
+`docs/reference/judgment-ladder.md` (mirrored, per this file's own sync expectation) now require
+`First reversible step` to either test the flip condition first or explicitly justify proceeding
+anyway. Not re-tested against F2's fixture (this fix targets the Commitment section, which F2's
+existing A1–A7 rubric doesn't check) — a future round could add an A8 for this if it recurs.*
+
 Runner/grading harness matched prior rounds' shape (read-only snapshot content, one runner
 template, an independent grading pass with a required ≤20-word quote per verdict, recomputed
 aggregate from the per-assertion table). Full transcripts and grading verdict: session scratchpad
