@@ -64,7 +64,7 @@ Initial input: $ARGUMENTS
    ...
    ```
 
-3. **Analyze**: ratio of actionable vs clarify vs wontfix, presence of Critical findings, reviewer authority (maintainer vs peer), and user's past triage pattern from memory. **Recommend** the action that clears the most threads with least back-and-forth.
+3. **Analyze**: ratio of actionable vs clarify vs wontfix, presence of Critical findings, reviewer authority (maintainer vs peer), and user's past triage pattern from memory. **Recommend** the action that clears the most threads with least back-and-forth — state the pick in one line naming the analysis fact driving it (e.g. "12/14 actionable, no Critical → Approve") immediately before the ask, and resolve the matching option's `(best when …)` annotation to `(Recommended)` at render time; if more than one condition plausibly holds, say so in the recommendation line instead of silently picking.
 4. **AskUserQuestion** single-select: "Phase 2 triage: [N] threads classified ([A] actionable / [C] clarify / [W] wontfix / [O] out-of-scope). Approve these classifications and proceed to implementation?"
    - `Approve — proceed to Phase 3 (best when categories look correct and the plan clears the most threads with least back-and-forth)`
    - `Revise — specify which thread(s) are misclassified (best when a thread's category doesn't match the reviewer's intent)`

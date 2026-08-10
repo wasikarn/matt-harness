@@ -120,8 +120,14 @@ attempt now re-checks `status` after the first transaction's commit, sees `'char
 ### Risks & Mitigations
 - Risk: [concrete failure scenario] — Mitigation: [specific guard, sized to the actual requirement]
 
+### Alternatives Considered
+[The strongest rejected design and why it lost — a recommendation with no stated alternative is unfalsifiable]
+
 ### Recommended Next Steps
 1. [Ordered by blast radius if wrong, not by ease]
+
+### Confidence & Assumptions
+[Confidence in the recommended design, tied to what was actually traced vs taken on the requirements' word — plus the 1-2 assumptions that, if wrong, would change the recommendation]
 ```
 
 ## Reference

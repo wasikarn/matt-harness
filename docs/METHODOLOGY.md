@@ -104,6 +104,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 - Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.
 - A pass threshold **and** a fatal-weakness floor (no criterion below the floor) — both must hold.
 - A score change must be traceable: which criterion moved, and why.
+- A rank/recommend verdict names the runner-up and why it lost — a pick with no stated alternative is unfalsifiable.
 - Evidence > assumption · measurement > feeling · verification > opinion.
 - If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
 - **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`; the structured flow lives in `kbg:decide` § Precedent check.)

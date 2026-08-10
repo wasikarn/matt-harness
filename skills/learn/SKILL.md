@@ -95,9 +95,14 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
    - it was a trivial one-off (a typo, a simple syntax slip) with no generalizable rule behind it —
      a "no, do X instead" correction is only high-signal when X *generalizes* past this one spot.
 
-4. **Gate.** Present the surviving candidates with `AskUserQuestion` (multiSelect) — each option a
-   one-line summary + proposed `type` (user / feedback / project / reference). The operator picks
-   which to save. If none survive step 3, say so and stop — do not manufacture learnings.
+4. **Gate.** Present the surviving candidates with `AskUserQuestion` (multiSelect), ordered
+   strongest-first — each option: a one-line summary + proposed `type` (user / feedback / project /
+   reference) + what saving it changes next session (the consequence, not just the topic). Mark
+   `(Recommended)` only when the clearly-save-worthy set is a minority of the menu; when most
+   candidates survived step 3's filter (the usual case — that's what the filter is for), mark none.
+   A candidate you'd tag `(Skip — …)` usually belonged in step 3's drop pile, not the menu — don't
+   present options your own filter already refuted. The operator picks which to save. If none
+   survive step 3, say so and stop — do not manufacture learnings.
 
 5. **Write the approved ones** as `memory/<slug>.md` in the standard format (frontmatter with
    `name` / `description` / `metadata.type`; body; for feedback/project add **Why:** + **How to

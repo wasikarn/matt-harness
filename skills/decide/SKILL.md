@@ -94,7 +94,15 @@ Resolve unstated scope or assumptions before any other mode runs. Analyze → re
 3. **Ask.** Only if the ambiguity is consequential enough that guessing wrong is
    expensive — use `AskUserQuestion` for a genuine fork, or a plain-text fork in the
    response if that tool isn't exposed in this context; otherwise proceed on the
-   stated default and flag it.
+   stated default and flag it. **One question max per turn** — clarify never emits a
+   multi-question intake. Settled-ask check before asking: if the option you'd tag as
+   the recommended default is one you'd proceed with anyway absent an answer, the ask
+   is decoration — state it as the working default and move on (asking a question
+   whose answer you already picked is the twice-confirmed 2026-07-02 consistency
+   defect). Worked example: "add caching to the product API" → state the default
+   ("in-process LRU on the hot read path, TTL 60s — say if you need cross-instance
+   invalidation") and proceed; do **not** append a menu of cache backends each already
+   tagged with your own pick.
 
 **Bias to guard:** framing bias — a narrow first framing of the ask silently
 constrains every option considered downstream. Reframe test: "if the literal request
@@ -247,9 +255,12 @@ Produce a decision record at the end of any `decide` or `strategize` session:
 | Assumption | Confidence | What would refute it |
 
 ## Decision
-Selected: ...
+Selected: ... (driven by: <the 1–3 stated facts that decided it>)
 Rejected: ... (reason)
 Trade-offs accepted: ...
+Confidence: high | medium | low — <the named evidence this rests on, and the
+  load-bearing thing NOT verified>. Confidence is about the selected option itself,
+  not a sub-assumption; a bare label with nothing behind it doesn't count.
 
 ## Commitment
 - Action owner + due date:
@@ -284,7 +295,7 @@ This criterion applies per mode's own output shape, not one template for all fiv
 decision-producing mode (`decide` / `strategize` / `critique`) additionally owes the one-line
 Precedent check result (see § Precedent check) — a run that never stated it is not finished:
 
-- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions and a formal progress metric are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
+- **`decide`** — verify the decision is recorded with its Frame, tested assumptions, an evidence-tied Confidence on the selected option, and Commitment (revisit trigger + progress metric); confirm a reader could re-derive the Decision from the Frame and assumptions. **Exception for a rungs-1–2-only response** (per the Proportionality guardrail above): tested assumptions, a formal progress metric, and the Confidence line are not required — Frame plus a named revisit trigger is sufficient. A response that stops at rungs 1–2 but skips even the revisit trigger is not finished; one that goes further than rung 2 owes the full record.
 - **`strategize`** — same Output format template, mapped from its own step vocabulary: Diagnosis + Guiding policy fill the Frame section, the irreversibility map and red-team results are the tested assumptions, and Commitment's revisit trigger comes from step 6's strategy loop (progress metric = whatever the red-team/tripwire step names as the signal to watch).
 - **`critique`** — verify the verdict (holds / holds with caveat / needs rework), the one assumption most worth re-verifying, and — when the verdict isn't a clean "holds" — what specifically would need to change are all stated. No Frame/Commitment record required; critique audits an existing plan rather than producing a new one.
 - **`clarify` / `probe`** — completion is the stated handoff itself (resolved scope + working default, or a framing memo) — these modes never produce a decision record and aren't held to the Frame/Commitment bar.

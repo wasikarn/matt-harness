@@ -18,7 +18,7 @@ State, in one line: the decision being scored, the options (if ≥2), and what a
 
 ### 2. Set the criteria + weights
 
-Propose 4–6 judging criteria, each **measurable** (you can cite the evidence that moves the score), and assign each a weight (integers summing to 100). If the user named criteria, honor them. Default rubric for "should we act on this proposal?" — adapt to the decision at hand:
+Propose 4–6 judging criteria, each **measurable** (you can cite the evidence that moves the score), and assign each a weight (integers summing to 100) — and **state that total in the output** ("weights sum to 100"), don't leave the reader to add the column to check the rubric is well-formed. If the user named criteria, honor them. Default rubric for "should we act on this proposal?" — adapt to the decision at hand:
 
 | Criterion | Wt | Measures |
 |---|---|---|
@@ -72,10 +72,13 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 | Proportionality (10) | NN | ... |
 | No-conflict (5) | NN | ... |
 
+*Weights sum to 100.*
+
 **Weighted: NN / 100** — Pass threshold 70 · Fatal-weakness floor 40
 **Verdict**: PASS | FAIL (below threshold | below floor on <criterion>)
 **Confidence**: high | medium | low
 **Leverage**: <which criterion would flip it, and what evidence would move it>
+**Re-score when**: <the concrete event that re-opens this verdict — e.g. the leverage evidence lands, or a named constraint changes>
 **Blocked**: ข้อมูลไม่เพียงพอ on <criterion> — <what's needed to score it>
 ```
 
@@ -83,10 +86,17 @@ A decision **passes** only if both hold. A criterion below the floor fails the d
 
 Before scoring, name whether the option set was **generated exhaustively** or **handed to you** (selection bias — a confident rank over an incomplete set can't surface an absent, better option). If handed to you and the stakes are real, ask whether a completeness/reframe pass ran first; if not, say so in the output rather than silently ranking as if the set were complete.
 
-When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable. **If the highest raw weighted sum belongs to a disqualified option** (not the one recommended), render that option's full breakdown too — a reader needs to verify the disqualification was a genuine floor call, not a scoring artifact, and that check is impossible without seeing the numbers behind it.
+When the decision is to choose among ≥2 options (rank / recommend), score **each** option against the *same* rubric (Steps 2–4) — identical criteria + weights so the comparison is apples-to-apples — then rank by weighted sum. **Render the full per-criterion × per-option score matrix, every cell**, before the rank table: a weighted total whose per-criterion scores aren't on the page is unauditable (one total is consistent with many different splits), so "scored on the same rubric" must be quotable from the output, not implied by it. The fatal-weakness floor applies **per option**: any option with a criterion below the floor is **disqualified** regardless of its weighted sum, so a high-scoring-but-fragile option cannot win on averages alone. Render a compact rank table, then the **recommended** option's full criterion breakdown so the pick is auditable. **If the highest raw weighted sum belongs to a disqualified option** (not the one recommended), render that option's full breakdown too — a reader needs to verify the disqualification was a genuine floor call, not a scoring artifact, and that check is impossible without seeing the numbers behind it.
 
 ```markdown
 ## Decision Score: <decision> — rank <N> options
+
+Criteria + weights (sum to 100) declared before any scoring, then the full matrix:
+
+| Criterion (wt) | A | B |
+|---|---|---|
+| Evidence (25) | NN | NN |
+| ... every criterion × every option — no cell omitted | | |
 
 | Option | Weighted | Floor | Verdict |
 |---|---|---|---|
@@ -95,13 +105,14 @@ When the decision is to choose among ≥2 options (rank / recommend), score **ea
 
 **Recommend**: Option A — highest weighted among floor-passing.
 **Leverage**: <which criterion would flip A vs the runner-up, and what evidence would move it>
+**Re-score when**: <the concrete event that re-opens this ranking>
 
-— then render Option A's full criterion table (the single-decision format above). If Option B's raw weighted sum was higher than A's despite disqualification, render B's table too.
+— then render Option A's full criterion table with per-cell reasons (the single-decision format above). If Option B's raw weighted sum was higher than A's despite disqualification, render B's table too.
 ```
 
 ## Completion criterion
 
-A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit. **For ranking**: a ranked table with the per-option floor verdict, a named recommendation among floor-passing options, and the recommended option's full criterion breakdown — plus the disqualified top scorer's breakdown too, if a different, disqualified option has the higher raw weighted sum.
+A Decision Score table with every criterion scored (or explicitly blocked), a weighted total, a pass/fail verdict against the threshold AND the fatal-weakness floor, a confidence level, and a named leverage point — or a one-line "no real decision to score" exit. **For ranking**: the full per-criterion × per-option score matrix, a ranked table with the per-option floor verdict, a named recommendation among floor-passing options, and the recommended option's full criterion breakdown — plus the disqualified top scorer's breakdown too, if a different, disqualified option has the higher raw weighted sum.
 
 ## Failure modes
 

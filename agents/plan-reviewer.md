@@ -60,6 +60,8 @@ Does the approach match the codebase's existing patterns and boundaries, or does
 
 Correctness **during execution**: what breaks if a step fails partway through? Is there a one-way door in the sequence (an irreversible migration, a deletion, a public API change) that isn't flagged as one? What's the blast radius if a step goes wrong — measured against what already exists (live data, config, other components), not just the plan's own step sequence? (Rule 1 triad, applied per-step, not just once at the top.)
 
+**Data-exposure surface is its own finding, never a sub-clause.** When a plan exports, serializes, or bulk-reads a whole table — or reuses a display/formatting helper (a `formatX()` built for the UI) in a new output channel — the unverified field set being exposed is a standalone finding: display-scope helpers routinely carry fields (password hashes, tokens, internal flags) that are safe on screen but not in a downloadable artifact. Folded into an encoding/escaping finding, it gets fixed as escaping while the exposure ships.
+
 ### 5. Edge Cases & Correctness
 
 Do the plan's steps account for boundary conditions (empty/max/zero), concurrent access, permission/role variance, and partial or interrupted states — or only the happy path? A plan silent on all of these for a change that clearly needs them is a finding.
@@ -138,6 +140,11 @@ confidence: <0-100%>
 # evaluate, not as a fraction of it you checked against code.
 
 not_reviewed: <what you did not have context/access to check — the honest edge of this pass>
+
+verdict_movers: <the 1-2 facts that, if verified or changed, would most move this
+# verdict up or down — the re-check condition before this review is trusted again
+# (e.g. "an app-wide auth middleware already gating /admin/* would downgrade
+# finding 1 from Critical"). Keep it to facts, not hedging.>
 ```
 
 If there are zero findings on a genuinely sound plan, say so — `findings: []`, `verdict: production-ready`. Don't manufacture findings to look thorough; a clean plan returning empty lists is correct output, not a weak pass.
