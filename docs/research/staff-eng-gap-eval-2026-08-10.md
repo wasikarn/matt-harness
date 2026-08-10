@@ -85,9 +85,39 @@ left open, per the issue's own scope:
   logging-format pick with a single dominant contextual fact) ceilinged in the discrimination
   probe before any trials were run against it — the fact was too obviously the entire point of the
   prompt for any competent reasoner to skip, regardless of doctrine wording. Hardened once (pino
-  vs. winston, generic-performance claim vs. actually-decisive fact) per the "harden once, or
-  report as ceiling" guardrail; the hardened version still ceilinged at n=3, and a second hardening
-  round was not attempted (risk of over-fitting the fixture to force a result, per the same rule).
+  vs. winston, generic-performance claim vs. actually-decisive fact) per this round's own
+  "harden once, or report as ceiling" guardrail (FREEZE.md's operationalization of rule 6's
+  ceiling-fixture handling — rule 6's own text says only "drop or harden it, never claim it as a
+  win"; the one-hardening-round cap is this round's own addition on top, not verbatim rule-6
+  text, corrected here after a compliance audit traced the citation); the hardened version still
+  ceilinged at n=3, and a second hardening round was not attempted (risk of over-fitting the
+  fixture to force a result).
+- **G2-A1 grading criterion was narrower than FREEZE.md's frozen text — caught by a same-day
+  compliance audit, not by this report's own rule-8 check.** FREEZE.md's frozen G2-A1 wording
+  excludes only two things: a generic "revisit if requirements change" (no concrete condition),
+  or no revisit language at all. `grading/G2-verdict.md` actually scored against two additional,
+  un-frozen exclusion categories — "pre-launch check" and "added-feature exception" — and this
+  report's per-trial narrative above reproduced that narrowed criterion without flagging it as an
+  extension of the frozen rule. Read against FREEZE.md's literal text instead, at least 2 of the 6
+  trials look misclassified: baseline-t2's "only add the second ID column if FK storage or index
+  size shows up as a measured problem" and tuned-t3's "Revisit only if a real load test shows
+  UUIDv7 insert or index cost is an actual bottleneck" both closely match FREEZE.md's own worked
+  example ("revisit if insert throughput on the index bottlenecks") and would plausibly PASS under
+  a literal reading, versus the FAIL they were scored. A corrected literal-text grade could put
+  baseline at 1–2/3 (not 0/3) and tuned at 3/3 (not 2/3) — the direction (tuned ahead of baseline)
+  likely survives, but "0/3 → 2/3" is not the number a literal-frozen-text grading would produce.
+  **Not corrected in this pass**: a valid fix requires a fresh, independently-blind re-grade
+  against the literal frozen text; having now read both conditions unblinded while writing this
+  disclosure, this session is disqualified from performing that re-grade itself. Logged as an open
+  follow-up rather than silently restated to fit the original number, per method rule 5. The
+  qualitative signal underneath — only tuned trials produce an explicit "Revisit trigger:" header
+  naming a concrete condition, in 2 of 3 trials outright — is unaffected by this dispute; the
+  shipped change is not being reverted on this finding alone.
+- **9 of C1's PASS verdicts substitute a "no matching text found" note for the required ≤20-word
+  quote, undisclosed until now.** Method rule 4 requires every verdict to carry a quote; C1-A2/A3
+  grade the *absence* of option-menu or decision-framing language, which has no positive text to
+  quote. Defensible — you can't quote what isn't there — but not carved out anywhere in the method
+  doc, and not named as a rule-4 exception in this report until this line.
 - **Content-set isolation choice.** All three fixtures used `staff-eng.md` alone, not bundled with
   `METHODOLOGY.md`. This measures the local reinforcement's own pull in isolation, not the full
   session doctrine stack a live session actually has (METHODOLOGY.md is injected separately every
@@ -110,10 +140,17 @@ left open, per the issue's own scope:
 - **Inventory cross-check (rule 8), run before drafting the numbers above:** `ls` on the trials
   directory confirmed 18 trial files on disk (6 per fixture × 3 fixtures — 3 baseline + 3 tuned
   each; 2 of the 18 are the discrimination-probe trials, reused as baseline t1 for G1/G2 rather
-  than re-run, per the method's calibration-not-rubric-after-draft framing). 3 grading-verdict
-  files confirmed (`G1-verdict.md`, `G2-verdict.md`, `C1-verdict.md`). The rule restatements above
+  than re-run, per the method's calibration-not-rubric-after-draft framing) — byte-identical to
+  their `probe/` source files, confirmed by a same-day compliance audit. 3 grading-verdict files
+  confirmed (`G1-verdict.md`, `G2-verdict.md`, `C1-verdict.md`). The rule restatements above
   (rubric definitions, acceptance rule) were diffed against `FREEZE.md`'s literal text, not
-  recalled. Shipped file byte-compared against the graded `content-r2-g2` snapshot: identical.
+  recalled — **except the G2-A1 grading criterion's exclusion categories, which the compliance
+  audit found were not diffed at grading time and differ from FREEZE.md's frozen wording; see the
+  Limitations bullet above.** Rule 8's check ran and caught real gaps (this bullet, the C1
+  quote-rule note above, and a stale empty `content-r2/` dir omitted from the artifact list below)
+  but did not itself catch the G2-A1 drift — a fresh-context compliance audit did. Shipped file
+  byte-compared against the graded `content-r2-g2` snapshot (via `git show <commit>:` rather than
+  the working tree): identical.
 - `harness-audit` before this round's edit: 0 CRIT / 0 WARN / 5 INFO (unchanged fleet counts).
   After (post version-bump + README badge fix): 0 CRIT / 0 WARN / 5 INFO — the 5 INFO items are
   pre-existing token-budget notices unrelated to this change.
@@ -123,4 +160,14 @@ left open, per the issue's own scope:
   snapshot); `content-r2-g1/`, `content-r2-g2/`, `content-r2-combined/` (isolated and combined
   tuned snapshots); `probe/` (3 discrimination-probe transcripts); `trials/` (18 generation
   transcripts); `grading/G1/`, `grading/G2/`, `grading/C1/` (blind-labeled trial copies) and
-  `grading/{G1,G2,C1}-verdict.md` (3 grading transcripts).
+  `grading/{G1,G2,C1}-verdict.md` (3 grading transcripts). `content-r2/` also exists in the
+  scratchpad — empty, an unused leftover of FREEZE.md's original two-snapshot runner-template
+  language, superseded by the isolated `-g1/-g2/-combined` design before any trial ran; no trial
+  transcript preserves its dispatch instructions, so this is confirmed by the directory being
+  empty rather than by tracing a specific trial's content pointer.
+- **Independent verification:** a same-day `/kbg:compliance-audit` pass (4 fresh-context
+  verifiers against issue #38, `FREEZE.md`, and this report) found the two gaps above plus
+  confirmed everything else in this report — inventory counts, byte-compares, blind-grading
+  integrity (adversarially checked for a leak, none found), version-bump discipline, and diff
+  scope — matched what's stated. Full findings folded into this report inline rather than filed
+  separately, per the audit's own falsify-don't-rubber-stamp principle.
