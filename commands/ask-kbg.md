@@ -1,6 +1,6 @@
 ---
 name: ask-kbg
-description: "Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt)."
+description: "Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (the user types /mattpocock-skills:ask-matt)."
 disable-model-invocation: true
 disable-model-invocation-reason: explicit discovery aid — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want a live recommendation or the narrative map
 ---
@@ -81,8 +81,15 @@ Framework/language pattern skills, invoked when you're working in that stack, se
 ## Crossing sessions
 
 - **`/frame`** — load a working posture (dev/review/research). A posture-setter, not a workflow switch.
-- **matt's `mattpocock-skills:handoff`** (a separate plugin, not kbg-native) — kbg has no equivalent for compacting a full conversation into a resumable file. Use it the same way matt's flow does.
+- **matt's `/mattpocock-skills:handoff`** (a separate plugin, not kbg-native; user-invoked) — kbg has no equivalent for compacting a full conversation into a resumable file. Use it the same way matt's flow does.
 
 ## The other fleet
 
-kbg-native and matt-origin skills are separate installs (matt's migrated out of this repo in v0.46.0, and off unnamespaced `gh skill` installs onto the `mattpocock-skills` plugin 2026-07-17 — not vendored either way). For grill/prototype/spec/tickets/tdd/code-review/wayfinder/domain-modeling/codebase-design/diagnosing-bugs and the rest of that flow, ask `mattpocock-skills:ask-matt` — it owns that map, this file doesn't duplicate it.
+kbg-native and matt-origin skills are separate installs (matt's migrated out of this repo in v0.46.0, and off unnamespaced `gh skill` installs onto the `mattpocock-skills` plugin 2026-07-17 — not vendored either way). For grill/prototype/spec/tickets/tdd/code-review/wayfinder/domain-modeling/codebase-design/diagnosing-bugs and the rest of that flow, the user types `/mattpocock-skills:ask-matt` — it owns that map, this file doesn't duplicate it. (Caveat: matt's own docs flag ask-matt as hand-maintained and sometimes stale; the plugin's `plugin.json` is the authority on what's actually installed.)
+
+matt-only tools kbg has no equivalent for (all user-typed except wizard):
+
+- `mattpocock-skills:wizard` (model-invocable) — generates an interactive bash wizard for steps only a human can do: credentials, third-party dashboards, one-off cutovers.
+- `/mattpocock-skills:wait-what` — the last reply didn't land; re-pitch it in the project's own vocabulary.
+- `/mattpocock-skills:to-questionnaire` — turn an unresolved decision into a shareable questionnaire for a stakeholder outside the session.
+- `/mattpocock-skills:grill-me` — run matt's batched grilling interview (rounds over a dependency frontier) on a plan or design.

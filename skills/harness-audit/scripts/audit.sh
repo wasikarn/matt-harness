@@ -248,18 +248,18 @@ for _cf in "${_checks[@]}"; do
 done
 unset _cf
 
-# Split-integrity guard: exactly 54 fragments, each carrying one '# N.' header,
-# numbers 1..54 each exactly once. Source scope == count scope == the SAME glob
+# Split-integrity guard: exactly 55 fragments, each carrying one '# N.' header,
+# numbers 1..55 each exactly once. Source scope == count scope == the SAME glob
 # (checks/[0-9][0-9]-*.sh), so an unnumbered extra is neither sourced nor
 # counted. Three assertions close the fail-OPEN holes a single equality check
 # misses: a fragment with no header (files != headers), a duplicate number
-# (total != unique), and a gap/loss (unique set != 1..54). Any = err_die.
+# (total != unique), and a gap/loss (unique set != 1..55). Any = err_die.
 _all_ids=$(grep -hoE '^# [0-9]+\. ' "${_checks[@]}" 2>/dev/null | grep -oE '[0-9]+' | sort -n)
 _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids=$(seq 1 54 | tr '\n' ' ')
+_exp_ids=$(seq 1 55 | tr '\n' ' ')
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch — $_n_files files sourced but $_n_total '# N.' headers (a fragment lacks a header or carries >1) — fail-closed"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) — a number is duplicated, not exactly-once — fail-closed"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment integrity broken — set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared — fail-closed"

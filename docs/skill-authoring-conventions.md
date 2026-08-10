@@ -7,16 +7,21 @@ writing or editing a skill/command/agent's content — it moved out of the root 
 none of it is needed for routine work in this repo.
 
 **Core doctrine:** when creating or editing a skill under `skills/`, follow matt-pocock's
-`writing-great-skills` doctrine — canonical: the `mattpocock-skills:writing-great-skills` skill
+`writing-for-agents` doctrine — canonical: the `mattpocock-skills:writing-for-agents` skill
 (installed as the `mattpocock-skills` plugin, not vendored in this repo since v0.46.0 — see
-README.md Quick Start; leading word, ≤25-word description, completion criterion, no-op test,
-two-cuts, failure-mode guard).
+README.md Quick Start). Renamed from `writing-great-skills` in matt v1.2.0 (no alias) and
+restructured: the live elements are leading words, one trigger per branch, completion criterion +
+demand, the no-op test, and progressive disclosure across the two loads (context load vs cognitive
+load); skill-only mechanics (invocation choice, router skills) live in its `SKILL-MECHANICS.md`.
+The old "two-cuts" and "failure-mode guard" labels dissolved into its When-to-split/Pruning prose.
+The ≤25-word description cap is kbg's own token-budget rule (root `CLAUDE.md` § skill/agent
+mechanics), not matt's — misattributed to matt here until 2026-08-10.
 
 The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks`
-section — but `harness-audit` check 36 does **not** check for that heading's presence. It checks 4
-of the 6 doctrine elements via INFO-only regex proxies against each skill's live
-description/body (leading-word vocabulary, ≤25-word count, completion-criterion phrasing, a
-no-op-test line-count heuristic); "two-cuts" and "failure-mode guard" have no shell check — a
+section — but `harness-audit` check 36 does **not** check for that heading's presence. It checks
+the doctrine via INFO-only regex proxies against each skill's live
+description/body (leading-word vocabulary, ≤25-word count [the kbg-native cap], completion-criterion
+phrasing, a no-op-test line-count heuristic); "two-cuts" and "failure-mode guard" have no shell check — a
 failure-mode regex proxy was tried and retired 2026-07-16 (vacuous before a reset-bug fix, 5/5
 false-positive after: every flagged skill already named its failure mode in a prose section or
 bullet list the numbered-window proxy couldn't see). INFO findings never fail the gate. Confirmed

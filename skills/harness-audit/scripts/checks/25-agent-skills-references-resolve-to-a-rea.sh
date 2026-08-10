@@ -31,7 +31,16 @@ _known_skills=$(mktemp)
   # on any machine with no plugin cache yet (checks are sourced, so a
   # global nullglob would otherwise leak into every later check).
   shopt -s nullglob
-  for d in "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/; do basename "$d"; done
+  # Two depths: flat plugin layouts (skills/<name>/) AND bucketed ones like
+  # mattpocock-skills (skills/<bucket>/<name>/). The single-depth glob alone
+  # collected BUCKET names ("engineering", "productivity") as known skills —
+  # latent false-WARN the moment an agent's skills: array names a matt skill
+  # (caught by the 2026-08-10 plan review that built check 55). Only dirs
+  # actually carrying a SKILL.md count, so bucket dirs never leak in.
+  for d in "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/ \
+           "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/[!_]*/; do
+    [ -f "${d}SKILL.md" ] && basename "$d"
+  done
   shopt -u nullglob
 } | sort -u > "$_known_skills"
 while IFS= read -r ref_line; do

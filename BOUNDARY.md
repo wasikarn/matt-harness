@@ -28,7 +28,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 ## Commands — Repo
 | Command | Description |
 |---|---|
-| ask-kbg | Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (mattpocock-skills:ask-matt). |
+| ask-kbg | Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (the user types /mattpocock-skills:ask-matt). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
 | compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | cost-report | Generate a local Claude Code cost report from the ECC cost-tracker metrics log. |
@@ -90,7 +90,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | Hook | Purpose |
 |---|---|
 | compliance-audit-nudge.sh | Advisory: after a git commit, if a plan was approved earlier this session, remind the model to tell the user that /kbg:compliance-audit exists -- never to dispatch it (commands/compliance-audit.md is disable-model-invocation:true; the reason: "costly multi-agent fan-out that gates a done-declaration -- user decides when the audit runs, not the model"). PostToolUse hook, matcher "Bash" -- fires on tool completion regardless of the commit's own exit code (a failed/empty commit still nudges; low-impact, same advisory-noise tolerance as every other nudge here). Never blocks; always exits 0. |
-| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep before editing, with the heavyweight spec flow (mattpocock-skills:grilling → mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are silently swallowed. |
+| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep before editing, with the heavyweight spec flow (mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /ship; to-spec/to-tickets are disable-model-invocation upstream) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are silently swallowed. […] |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge routing through the jira-acli plugin's skills (jira-acli:acli, jira-acli:jira-content, jira-acli:confluence-content) before any direct mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit hook. Output -> plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"); never blocks, always exits 0. Errors are silently swallowed. |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
 | plan-review-nudge.sh | Advisory: after a plan is approved (ExitPlanMode succeeds), nudge dispatching kbg:plan-reviewer for consequential plans before implementing. PostToolUse hook, matcher "ExitPlanMode" -- fires only on approval (a manual reject/cancel never reaches PostToolUse; the tool never "completes successfully" on a deny). Never blocks; always exits 0. Output goes via hookSpecificOutput.additionalContext (PostToolUse's structured-output field), not plain stdout -- unlike flow-nudge.sh's UserPromptSubmit shape. |
@@ -120,10 +120,10 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
+| staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-09T11:29:48Z_
+_Generated: 2026-08-10T14:10:29Z_
 
 ---
 

@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # 36. matt-pocock doctrine conformance — emit INFO findings when a skill's
-# description + body fails one or more of the checks below. Checks 1, 2, 4,
-# 5 map to 4 of matt's 6 doctrine elements from CLAUDE.md § "Skill authoring
-# doctrine (matt-pocock)" and the docs/skill-template/SKILL.md "## Design
-# checks" block; check 3 (trigger-per-branch) is a script-only addition, not
-# one of matt's 6:
+# description + body fails one or more of the checks below. Doctrine source:
+# matt's `writing-for-agents` skill (renamed from `writing-great-skills` in
+# matt v1.2.0) via CLAUDE.md § "Skill authoring doctrine (matt-pocock)" and
+# the docs/skill-template/SKILL.md "## Design checks" block. Checks 1, 4, 5
+# proxy matt elements (leading words, completion criterion, no-op test);
+# check 2 (≤25 words) is the KBG-NATIVE token-budget cap, not matt's; check 3
+# (trigger-per-branch) started as a script-only addition and v1.2 promoted
+# the same idea upstream ("one trigger per branch" in the context-pointer
+# rules):
 #
 #   1. Leading word — coined term in the first 10 words of description.
 #      Matt vocabulary: grill, seam, vertical slice, premature completion,
@@ -19,8 +23,10 @@
 #      "## " headings); a skill that is all-intro and no procedure is
 #      candidate for the no-op test rewrite.
 #
-# Matt's remaining 2 elements — "failure-mode guard" and "two-cuts" — have no
-# shell check. A numbered-window regex proxy for failure-mode guard was tried
+# The old "failure-mode guard" and "two-cuts" labels have no shell check —
+# and matt's v1.2 rewrite dissolved both as named terms (distributed into
+# writing-for-agents' When-to-split/Pruning prose), so a proxy is now doubly
+# unwarranted. A numbered-window regex proxy for failure-mode guard was tried
 # and retired (2026-07-16): it was vacuous before the reset-bug fix (any
 # trigger word anywhere later in the file passed) and 5/5 false-positive
 # after (every flagged skill already named its failure mode in a prose
@@ -56,8 +62,10 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   # (grill-me, not grill_me) so coined compounds recruit their prior intact.
   first_word=$(printf '%s' "$desc" | awk '{print tolower($1); exit}' | tr -d ':,;')
   case "$first_word" in
-    # matt canonical vocabulary — anchored in `writing-great-skills/SKILL.md`.
-    grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut) : ;;  # silent
+    # matt canonical vocabulary — anchored in `writing-for-agents/SKILL.md`
+    # (renamed from writing-great-skills in matt v1.2.0; v1.2 additions:
+    # sediment, sprawl, legwork, frontier, co-location, context-pointer).
+    grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut|sediment|sprawl|legwork|frontier|co-location|context-pointer) : ;;  # silent
     # kbg-native coined compounds — high-signal terms already used across
     # kbg skill descriptions. Adding to the vocabulary is a one-line edit
     # here; extending further belongs in a dedicated audit-policy pass.

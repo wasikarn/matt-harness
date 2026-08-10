@@ -16,13 +16,13 @@ You don't need to memorize every surface — describe what you're doing, and the
 | Stage | Entry points |
 |-------|--------------|
 | **DEFINE** — idea, scope, research | `/ideate` · `kbg:decide` · `mattpocock-skills:research` |
-| **PLAN** — spec, prioritize | `kbg:orchestrate` · `mattpocock-skills:triage` · `kbg:decide` |
+| **PLAN** — spec, prioritize | `kbg:orchestrate` · `/mattpocock-skills:triage` (user-invoked) · `kbg:decide` |
 | **BUILD** — implement | `/ship` · `/fix-bug` · `kbg:backend-patterns` · `kbg:incident` |
 | **VERIFY** — test, debug | `/ship` (acceptance gating) · `kbg:review-pr` (per-task validation) |
 | **REVIEW** — QA gate | `kbg:review-pr` · `kbg:security-auditor` · `kbg:decide` |
 | **SHIP** — merge, release | `/ship` (blank-slate or already-scoped, Phase 0 asks which) · `/ship-merge` (reviewed PR) · `/ship-release` (version/tag cut) |
 
-Two runtime routers do the live dispatch: **`kbg:orchestrate`** (a pile of tasks → prioritize + route) and **`mattpocock-skills:triage`** (one issue → `/fix-bug`, `/ship`, `mattpocock-skills:research`, `kbg:decide` probe mode).
+**`kbg:orchestrate`** is the live model-side router (a pile of tasks → prioritize + route). Matt's issue router, `/mattpocock-skills:triage` (one issue → `/fix-bug`, `/ship`, `mattpocock-skills:research`, `kbg:decide` probe mode), is user-invoked only — the user types it; the model can't fire it.
 
 ### ...and which specialist (agent) per stage
 

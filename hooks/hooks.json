@@ -40,7 +40,7 @@
       {
         "id": "advisory:flow-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge mattpocock-skills:grilling → mattpocock-skills:to-spec → mattpocock-skills:to-tickets → /ship",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /ship",
         "hooks": [
           {
             "type": "command",

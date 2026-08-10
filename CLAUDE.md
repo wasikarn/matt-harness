@@ -32,7 +32,9 @@ Before writing a new skill, command, or agent from scratch, check sources in thi
 (`claude plugin list` / the Skill tool's listing, namespaced `mattpocock-skills:<name>`), plus the
 local clone at `~/Codes/Personals/mattpocock-skills` for what's upstream but not yet
 installed. This is a **Matt-Pocock-first harness**; checking ECC/superpowers before matt's own repo
-gets the priority backwards. **(2)** the upstream ECC repo at `~/Codes/Personals/ECC`
+gets the priority backwards. `git fetch` the local clone before trusting it — it silently lagged
+origin/main by 104 commits (a whole minor release) until caught 2026-08-10; the installed plugin
+can be *newer* than the clone, inverting this section's "upstream but not yet installed" framing. **(2)** the upstream ECC repo at `~/Codes/Personals/ECC`
 and the vendored superpowers checkout at `~/Codes/Personals/superpowers`. **(3)** sibling
 harnesses under `~/Codes/Personals/` for structural patterns (e.g. `oh-my-claudecode`;
 ask if unsure which qualify). Cherry-pick and adapt from whichever source fits; create kbg-native
@@ -104,7 +106,7 @@ When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), sto
 
 ## Skill authoring doctrine (matt-pocock)
 
-When creating or editing a skill under `skills/`, follow matt-pocock's `writing-great-skills` doctrine (leading word, ≤25-word description, completion criterion, no-op test, two-cuts, failure-mode guard) — canonical: the `mattpocock-skills:writing-great-skills` skill. See `docs/skill-authoring-conventions.md` for the kbg-specific additions on top of that (harness-audit check 36's proxy coverage, Named Model footers, Suggested next step footers, AskUserQuestion-escalation criteria) — only load it when actually authoring or editing a skill/command/agent's content.
+When creating or editing a skill under `skills/`, follow matt-pocock's `writing-for-agents` doctrine (leading words, one trigger per branch, completion criterion + demand, no-op test, progressive disclosure across the two loads) — canonical: the `mattpocock-skills:writing-for-agents` skill (model-invocable; renamed from `writing-great-skills` in matt v1.2.0, no alias — the old "two-cuts" and "failure-mode guard" labels dissolved into its When-to-split/Pruning prose). The ≤25-word description cap is kbg's own token-budget rule ("Skill descriptions load on every Task spawn" below), not matt's — it was misattributed to matt here until 2026-08-10. See `docs/skill-authoring-conventions.md` for the kbg-specific additions on top of that (harness-audit check 36's proxy coverage, Named Model footers, Suggested next step footers, AskUserQuestion-escalation criteria) — only load it when actually authoring or editing a skill/command/agent's content.
 
 ## Branching model
 

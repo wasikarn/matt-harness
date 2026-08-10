@@ -31,13 +31,16 @@ bad()  { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 # summary lines. Audit may exit non-zero on a CRIT fixture; capture via `|| true`.
 CRIT_FOUND=0
 WARN_FOUND=0
+INFO_FOUND=0
 run_check() {
-  local id="$1" root="$2" out c w
+  local id="$1" root="$2" out c w i
   out=$(bash "$AUDIT" "$root" --only "$id" 2>/dev/null || true)
   c=$(printf '%s\n' "$out" | sed -n 's/^Critical: //p')
   w=$(printf '%s\n' "$out" | sed -n 's/^Warnings: //p')
+  i=$(printf '%s\n' "$out" | sed -n 's/^Info: *//p')
   CRIT_FOUND="${c:-0}"
   WARN_FOUND="${w:-0}"
+  INFO_FOUND="${i:-0}"
 }
 
 echo "=== harness-audit self-test ==="
@@ -113,6 +116,35 @@ else
   bad "check-25 aborted before printing a Summary against an empty-cache \$HOME — nullglob regression:
 $CHECK25_OUT"
 fi
+
+# Check 55 — mattpocock-skills integration refs (A refs resolve / B flag
+# claims / C coverage ledger / D gated-ref phrasing). The check reads the
+# mattpocock plugin cache from $KBG_MATT_CACHE when set (fixture override;
+# real runs default to ~/.claude/plugins/cache/mattpocock/mattpocock-skills).
+export KBG_MATT_CACHE="$FIX/check-55-bad/fake-matt-cache"
+run_check 55 "$FIX/check-55-bad"
+if [ "$WARN_FOUND" -ge 3 ] && [ "$INFO_FOUND" -ge 1 ]; then
+  ok "check-55 bad fixture fires A+B+C WARNs and D INFO (warn=$WARN_FOUND info=$INFO_FOUND)"
+else
+  bad "check-55 bad fixture did NOT fire all sub-checks (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=3 info>=1)"
+fi
+export KBG_MATT_CACHE="$FIX/check-55-good/fake-matt-cache"
+run_check 55 "$FIX/check-55-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -eq 0 ]; then
+  ok "check-55 good fixture silent"
+else
+  bad "check-55 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+# Graceful skip: no mattpocock cache at all → INFO note only, never WARN/CRIT,
+# and the run completes (same class of guard as the check-25 nullglob test).
+export KBG_MATT_CACHE="$FIX/check-55-good/no-such-cache"
+run_check 55 "$FIX/check-55-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then
+  ok "check-55 gracefully skips when no mattpocock cache exists (info=$INFO_FOUND)"
+else
+  bad "check-55 missing-cache run not a graceful skip (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+unset KBG_MATT_CACHE
 
 echo ""
 echo "self-test: $pass passed, $fail failed"

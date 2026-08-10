@@ -233,7 +233,7 @@ Once triage lands on "this needs research or a call between ≥2 viable options,
 `kbg:decide`'s job, not orchestrate's. A multi-task inbox routes through orchestrate first; a
 single, already-bounded question goes straight to `kbg:decide`.
 
-**Boundary with `mattpocock-skills:wayfinder`:** orchestrate resolves a flat, in-session task list
+**Boundary with `/mattpocock-skills:wayfinder` (user-invoked):** orchestrate resolves a flat, in-session task list
 in one pass, with no cross-session persistence. If a triaged item needs multi-session tracking
 (can't close today), that's `wayfinder`'s job — it charts a persistent map of decision tickets on
 an external tracker. Name it as the next step and stop there — `wayfinder` carries

@@ -5,6 +5,40 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.262] — 2026-08-10
+
+### Added
+
+- **mattpocock v1.2 integration re-sync, scored before/after (harness-audit check 55)** — matt's
+  v1.2.x (installed 1.2.3) renamed `writing-great-skills` → `writing-for-agents` (no alias),
+  graduated `wizard`/`to-questionnaire`, added `wait-what`, and rebuilt `grill-me` as a thin
+  user-invoked wrapper over the batched `grilling` — none of which kbg's routing surfaces had
+  absorbed, and no check could see (25 reads only agents' `skills:` arrays, 40 only `kbg:`
+  tokens). New check 55 scores the integration deterministically: **A** every
+  `mattpocock-skills:<name>` token resolves in the installed cache (depth-agnostic — survives
+  upstream's pending flatten-skills-tree), **B** `disable-model-invocation` claims match installed
+  frontmatter, **C** every plugin.json-promoted skill is routed or explicitly deferred in the new
+  `docs/reference/mattpocock-integration-map.md` ledger, **D** gated skills cited in live surfaces
+  carry the user-types slash form (INFO). TDD: fixture cache + 3 self-test assertions
+  (`KBG_MATT_CACHE` override), red before implementation. **Score: pre-fix 3 WARN + 12 INFO
+  (instrument v1; +5 more D hits after a plan-review pass widened D's scope to docs/) → post-fix
+  0/0/0.** Fixes: CLAUDE.md + `docs/skill-authoring-conventions.md` doctrine refs renamed and
+  corrected (the ≤25-word cap is kbg-native, misattributed to matt until now; two-cuts /
+  failure-mode-guard dissolved upstream), check 36 comments re-anchored + v1.2 vocabulary
+  (sediment/sprawl/legwork/frontier/co-location/context-pointer), flow-nudge chain +
+  hooks.json + hook-lifecycle-contracts mark `to-spec`/`to-tickets` as user-typed, kbg-help stops
+  calling gated `triage` a live runtime router, ask-kbg gains the matt-only v1.2 list
+  (wizard/wait-what/to-questionnaire/grill-me) + ask-matt staleness caveat, slash-form markers on
+  gated refs in orchestrate/domain.md/graph-model, BOUNDARY.md regenerated. Drive-by from the
+  plan-review: check 25's plugin-cache glob collected *bucket* names, never skill names, for
+  bucketed plugins (latent false-WARN) — now globs both depths and requires SKILL.md. Companion
+  clone discipline: `git fetch` before trusting `~/Codes/Personals/mattpocock-skills` (it silently
+  lagged a full minor release). Trigger: vibecodingthailand.com/blog/agent-skills-v1-2.
+
+### Fixed
+
+- **README version badge** — v0.68.260 → v0.68.262.
+
 ## [0.68.260] — 2026-08-10
 
 ### Added
