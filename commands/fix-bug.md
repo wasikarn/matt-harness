@@ -85,8 +85,8 @@ Initial report: $ARGUMENTS
 5. **Ledger entry**: `YYYY-MM-DD HH:MM | Phase 3 | H1 tested | <instrumentation> | <evidence: found/missing> | fallback to H2? <yes/no>`.
 6. **Analyze**: instrumentation evidence strength (did expected signal appear?), falsifiability (would evidence look different if hypothesis were wrong?), fallback count (how many times have we fallen back already?). **Recommend** proceed when evidence is strong and reproducible; recommend reject when evidence is weak or contradicted.
 7. **AskUserQuestion** single-select: "Phase 3 confirmed: hypothesis '[H1 description]' is supported by [evidence summary]. Approve this hypothesis and proceed to fix strategy?"
-   - `Approve hypothesis and proceed to Phase 4 (best when instrumentation evidence is strong and reproducible; H1 is ranked highest by likelihood × cheapness-to-test)`
-   - `Reject — need more investigation (best when evidence is weak, contradicted, or a higher-ranked hypothesis was not tested yet)`
+   - `Approve hypothesis and proceed to Phase 4 (best when instrumentation evidence is strong and reproducible; H1 is ranked highest by likelihood × cheapness-to-test)` — locks H1 in as the fix target; Phase 4 builds the fix strategy on it, no further hypothesis testing
+   - `Reject — need more investigation (best when evidence is weak, contradicted, or a higher-ranked hypothesis was not tested yet)` — returns to Phase 3 step 4, falls back to the next-ranked hypothesis and re-instruments, still subject to the Stall/Degrading no-progress halts (step 4) before this gate fires again
 8. Strip instrumentation before Phase 5 — temporary scaffolding only, no permanent log spam.
 
 **Anti-pattern**: "It could be X, Y, or Z" without ranking or testing — that's a list, not a hypothesis. Writing the fix without confirming the hypothesis = fixing the wrong thing.
@@ -107,6 +107,8 @@ Initial report: $ARGUMENTS
    - `Surgical fix (best for localized logic errors in a single function; minimal blast radius, fastest to ship)` — proceed with minimal change at the identified location
    - `Structural fix (best when the bug reveals a missing seam or wrong abstraction; higher blast radius but prevents recurrence)` — delegate to the `refactor-cleaner` agent (`/refactor-clean`) for cross-module refactor
    - `Reject — need more info (best when the root cause is still unclear or the fix scope is ambiguous)`
+   - **Self-consistency**: if step 3's Analyze already found the bug confined to a single function with no seam/abstraction issue, don't present Structural as a live option — narrow the menu to Surgical / Reject. The AskUserQuestion still fires every time; Phase 5's "DO NOT START WITHOUT USER APPROVAL FROM PHASE 4" gate is never skipped, only the menu is narrowed.
+5. **Revisit trigger**: if Phase 5 implementation grows past the scope named in step 2 (touches files or call sites outside the identified location), stop — the fix-shape pick no longer matches reality. Re-run step 4 rather than letting a "surgical" change quietly expand past what surgical was chosen to bound.
 
 ---
 

@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.248] — 2026-08-10
+
+### Fixed
+
+- **Level-B batch 2 (fix-bug + review-pr + code-reviewer)** — closed 6 of the ~30 gaps tracked
+  in issue #40 (Level-B backlog from the v0.68.246 recommendation tune). Unmeasured by design
+  (Level A fixture rigor was explicitly declined for this batch — see report). `fix-bug.md`:
+  ask-consequence clauses on the Phase 3 hypothesis gate, a self-consistency menu-narrowing rule
+  and a revisit trigger on Phase 4's fix-shape pick. `review-pr/SKILL.md`: skip the Phase 6 ask
+  only on a genuine clean pass (zero tiers **and** no dispatch failures/incomplete re-hunt/missing
+  proof), plus revisit conditions on "Proceed as-is" and "Skip — I'll post manually".
+  `code-reviewer.md`: a `Revisit if:` field on every finding. A `kbg:code-reviewer` pass caught 2
+  HIGH issues in the first draft (both self-consistency wordings that would have silently
+  bypassed existing hard gates) — fixed before commit. Full report:
+  `docs/research/recommendation-quality-tune-batch-fixbug-reviewpr-codereviewer-2026-08-10.md`.
+
 ## [0.68.246] — 2026-08-10
 
 ### Added

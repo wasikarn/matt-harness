@@ -438,13 +438,16 @@ never assumed present.
 
 ## Review Output Format
 
-Organize findings by severity. For each issue:
+Organize findings by severity. For each issue, name a `Revisit if:` condition — the fact that
+would change or drop the finding, so a reader doesn't have to re-derive it from scratch when the
+context shifts:
 
 ```
 [CRITICAL] Hardcoded API key in source
 File: src/api/client.ts:42
 Issue: API key "sk-abc..." exposed in source code. This will be committed to git history.
 Fix: Move to environment variable and add to .gitignore/.env.example
+Revisit if: the key turns out to be a test-only placeholder already rotated out of production use
 
   const apiKey = "sk-abc123";           // BAD
   const apiKey = process.env.API_KEY;   // GOOD

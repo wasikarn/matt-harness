@@ -221,11 +221,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 2. **Branch on review target (from Phase 1):**
 
    **A. Reviewing the current branch (your own working tree)** — fixes land directly, so go straight to the fix decision:
-   - **AskUserQuestion** single-select: "Phase 6: [N] Critical (must fix before merge), [N] Important (should fix before merge), [N] Minor (nice to have). My recommendation: [option]. How do you want to proceed?"
+   - **Self-consistency**: skip this ask only when Critical/Important/Minor are all 0 **and** none of this file's own must-fix conditions are active — no `dispatch_failures` (Phase 4 step 4), re-hunt status isn't `incomplete` (step 3.6), and the proof-verification check above doesn't flag `[verification-gap] must-fix`. All-zero tiers with any of those still active is not a clean pass — surface the gap, don't skip the ask. Only when every condition clears: state "Clean pass, proceeding," record the decision as `proceeded-as-is` (step 3), and go straight to Phase 7.
+   - **AskUserQuestion** single-select (only when at least one tier has findings): "Phase 6: [N] Critical (must fix before merge), [N] Important (should fix before merge), [N] Minor (nice to have). My recommendation: [option]. How do you want to proceed?"
      - `Fix Critical issues now, proceed with Important/Minor later (best when Critical count is low and the user wants to keep momentum)`
      - `Fix Critical + Important now, Minor later (best when both tiers have real issues that shouldn't ship)`
      - `Fix all tiers now before proceeding (best when review surfaced significant problems across all tiers)`
-     - `Proceed as-is — acknowledge risk (only when findings are false positives or truly cosmetic)`
+     - `Proceed as-is — acknowledge risk (only when findings are false positives or truly cosmetic)` — revisit if a later change touches the same file:line and the "cosmetic" call turns out wrong; don't re-litigate otherwise
 
    **B. Reviewing a PR by number (isolated, throwaway worktree)** — the decision *is* what review to submit to the author. **First build the review payload** (per Phase 7's "Build the review payload" procedure) and show the preview, then ask **once** — Phase 7 executes the choice without re-asking:
    - **Preview** (show before the question):
@@ -238,7 +239,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      - `Post line-level review now (best when findings are concrete — the author sees each issue in context)` — batch via `gh api` (Phase 7)
      - `Post summary only (best when line-level comments would be noisy or the diff is trivial)` — single `gh pr review --body` (Phase 7)
      - `Fix + push to the PR branch (only if you have write access / it's your own PR — worktree fixes are discarded unless committed + pushed)` — apply fixes in `$WT`, commit, push before Phase 7 cleanup
-     - `Skip — I'll post manually (best when the body needs rephrasing or the PR isn't ready for external review)` — nothing posted
+     - `Skip — I'll post manually (best when the body needs rephrasing or the PR isn't ready for external review)` — nothing posted; revisit if the PR sits unreviewed past this session — Phase 2's pinned window goes stale, and a fresh `kbg:review-pr` re-run is cheaper than manually authoring from old findings
    - To tweak the top-level body first, pick a post option and say so (or answer Other) — adjust the body, then proceed.
 
 3. Record the decision; Phase 7 executes it:
