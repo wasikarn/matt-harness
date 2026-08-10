@@ -64,7 +64,8 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   case "$first_word" in
     # matt canonical vocabulary — anchored in `writing-for-agents/SKILL.md`
     # (renamed from writing-great-skills in matt v1.2.0; v1.2 additions:
-    # sediment, sprawl, legwork, frontier, co-location, context-pointer).
+    # sediment, sprawl, legwork, co-location, context-pointer — except
+    # frontier, whose anchor is `grilling/SKILL.md`'s rounds mechanic).
     grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut|sediment|sprawl|legwork|frontier|co-location|context-pointer) : ;;  # silent
     # kbg-native coined compounds — high-signal terms already used across
     # kbg skill descriptions. Adding to the vocabulary is a one-line edit

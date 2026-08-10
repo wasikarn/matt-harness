@@ -21,12 +21,11 @@
 #     renames a skill → this fails until kbg routes it or records why not.
 #   D (INFO) a gated (user-invoke-only) matt skill cited in any live surface
 #     except BOUNDARY.md (generated — regen inherits the source fixes) must
-#     carry the literal slash form
-#     `/mattpocock-skills:<name>` or a type/user marker on the same line —
-#     CLAUDE.md § Disable-Model-Invocation Surfaces: tell the user the
-#     string to type; a bare ref reads as a model-invocable route and the
-#     Skill call would be blocked mid-flow. INFO-only: descriptive prose
-#     naming a gated skill is legitimate, the reader judges.
+#     carry the literal slash form `/mattpocock-skills:<name>` on the same
+#     line — CLAUDE.md § Disable-Model-Invocation Surfaces: tell the user
+#     the string to type; a bare ref reads as a model-invocable route and
+#     the Skill call would be blocked mid-flow. Slash form only, no
+#     free-text markers. INFO-only: the reader judges each finding.
 # Historical names must be cited UNPREFIXED (plain `writing-great-skills`,
 # no `mattpocock-skills:` namespace) so A stays a live-ref check — matching
 # the former/removed convention checks 40/50 use for retired kbg names.
@@ -55,12 +54,22 @@ else
   done < <(find "$_mcache/skills" -name SKILL.md 2>/dev/null)
 
   # Promoted set from the cache's own plugin.json skills array — matt's repo
-  # names it the authority on what ships ("./skills/<bucket>/<name>" paths;
-  # last segment only, so a flattened tree parses identically).
+  # names it the authority on what ships ("./skills/<bucket>/<name>" paths,
+  # leading "./" optional; last segment only, so a flattened tree parses
+  # identically).
   _matt_promoted=()
   while IFS= read -r _pn; do
     [ -n "$_pn" ] && _matt_promoted+=("$_pn")
-  done < <(grep -oE '"\./skills/[^"]+"' "$_mcache/.claude-plugin/plugin.json" 2>/dev/null | sed 's/"//g; s|.*/||' | sort -u)
+  done < <(grep -oE '"(\./)?skills/[^"]+"' "$_mcache/.claude-plugin/plugin.json" 2>/dev/null | sed 's/"//g; s|.*/||' | sort -u)
+  # Fail-closed: an upstream plugin.json format change (object entries, an
+  # absolute-path scheme, a renamed key) makes the regex above parse ZERO
+  # promoted skills — and sub-check C would then pass vacuously, silent in
+  # exactly the failure class this check exists to catch (adversarially
+  # confirmed 2026-08-10). Cache ships SKILL.md files but the promoted set
+  # parsed empty ⇒ the parser is blind, say so loudly.
+  if [ "${#_matt_promoted[@]}" -eq 0 ] && [ "${#_matt_inv[@]}" -gt 0 ]; then
+    warn "promoted-set parse yielded 0 skills from the $_matt_ver plugin.json while the cache ships ${#_matt_inv[@]} SKILL.md files — manifest format drifted; sub-check C is blind until this parser is updated (fail-closed)"
+  fi
 
   # Live surfaces (A/B scope) — check 50's doc list + hooks/contexts/output-
   # styles. Excludes CHANGELOG + docs/research|post-mortems|plans (archival)
@@ -105,11 +114,15 @@ else
   done
 
   # C — coverage ledger.
+  # Known gap (logged 2026-08-10, deliberately unfixed): the row greps below
+  # have no fenced-code awareness — an illustrative ```-wrapped example table
+  # inside the ledger would satisfy C. The ledger is kbg-authored (self-spoof
+  # only, not an attack surface); revisit if example tables ever appear there.
   _ledger="$CLAUDE_DIR/docs/reference/mattpocock-integration-map.md"
   if [ ! -f "$_ledger" ]; then
     warn "mattpocock integration ledger missing (docs/reference/mattpocock-integration-map.md): ${#_matt_promoted[@]} promoted skills unaccounted — route each from a kbg surface or record an explicit deferral"
   else
-    for _pn in "${_matt_promoted[@]}"; do
+    for _pn in ${_matt_promoted[@]+"${_matt_promoted[@]}"}; do
       _row=$(grep -E "^\|[[:space:]]*${_pn}[[:space:]]*\|" "$_ledger" 2>/dev/null | head -1)
       if [ -z "$_row" ]; then
         warn "ledger row missing for promoted matt skill '$_pn' — add a kbg route or an explicit deferral to docs/reference/mattpocock-integration-map.md"
@@ -127,6 +140,13 @@ else
         warn "ledger row '$_rn' names a skill absent from the installed cache ($_matt_ver) — upstream removal/rename; update the ledger"
       fi
     done < <(awk -F'|' '/^\|/ {gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}' "$_ledger" 2>/dev/null | grep -vE '^-+$|^$')
+    # Duplicate rows: the promoted-skill lookup above is head -1 first-match-
+    # wins, so a second (possibly stale) row for the same skill is invisible
+    # to the invocation-drift check (adversarially confirmed 2026-08-10).
+    while IFS= read -r _dup; do
+      [ -n "$_dup" ] || continue
+      warn "ledger has duplicate rows for '$_dup' — only the first is checked; merge them (a stale duplicate is invisible to the invocation-drift check)"
+    done < <(awk -F'|' '/^\|/ {gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}' "$_ledger" 2>/dev/null | grep -vE '^-+$|^$|^skill$' | sort | uniq -d)
   fi
 
   # D — gated-ref phrasing. Same live-surface scope as A/B minus BOUNDARY.md
@@ -145,14 +165,15 @@ else
         [ -n "$_ref" ] || continue
         _base="${_ref#mattpocock-skills:}"; _base="${_base##*/}"
         [ "${_matt_inv[$_base]:-}" = "user" ] || continue
+        # Slash form ONLY — free-text fallback markers (type/user-invoked/
+        # yourself) were droppable by any unrelated same-line use of those
+        # words (adversarially confirmed 2026-08-10: "the user-only prototype
+        # for <gated>" suppressed a real finding); the literal string the
+        # user must type is the one marker coincidence can't fake.
         case "$_line" in
           *"/mattpocock-skills:$_base"*) continue ;;
         esac
-        # \btypes?\b keeps "prototype"/"TypeScript" from masking a real miss.
-        if printf '%s' "$_line" | grep -qiE '\btypes?\b|user-invoked|user-only|yourself'; then
-          continue
-        fi
-        info "gated matt skill '$_base' cited without a user-types marker in ${_f#"$CLAUDE_DIR"/}:$_ln — disable-model-invocation:true upstream; cite the slash form /mattpocock-skills:$_base (CLAUDE.md § Disable-Model-Invocation Surfaces)"
+        info "gated matt skill '$_base' cited without its slash form in ${_f#"$CLAUDE_DIR"/}:$_ln — disable-model-invocation:true upstream; cite the literal /mattpocock-skills:$_base on the same line (CLAUDE.md § Disable-Model-Invocation Surfaces)"
       done < <(printf '%s' "$_line" | grep -oE 'mattpocock-skills:[a-zA-Z0-9/_-]+' | sort -u)
     done < <(grep -n 'mattpocock-skills:' "$_f" 2>/dev/null)
   done

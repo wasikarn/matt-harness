@@ -232,7 +232,7 @@ the same claim as "no consumer anywhere is affected," and only the narrower one 
   language reviewer)
 - Want tests written first, feature after → the `tdd` skill
 - Want to drive implementation yourself, interactively, in one chat turn — not dispatched
-  autonomously → `mattpocock-skills:implement` (user-invoked only, `disable-model-invocation: true`;
+  autonomously → matt's implement skill (user-invoked only, `disable-model-invocation: true`;
   type `/mattpocock-skills:implement` yourself)
 
 ---

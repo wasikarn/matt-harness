@@ -5,6 +5,29 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.263] — 2026-08-10
+
+### Fixed
+
+- **Check 55 hardening from the compliance audit's adversarial pass** — `/kbg:compliance-audit`
+  on v0.68.262 returned 25/25 CONFORMS, and its verifier-perimeter adversarial trace still found
+  2 live in-family bypasses, both closed here with regression fixtures: **(1)** the plugin.json
+  promoted-set parser was a fixed `"./skills/…"` regex — any upstream manifest-format change
+  (object entries, dropped `./`) parsed 0 skills and sub-check C passed vacuously, silent in the
+  exact failure class the check exists to catch; now the regex tolerates a missing `./` AND an
+  empty parse with a non-empty cache fails closed (WARN). **(2)** sub-check D's free-text fallback
+  markers (`type`/`user-invoked`/`user-only`/`yourself`) were droppable by any unrelated same-line
+  use ("the user-only prototype for <gated>" suppressed a real finding; live instance:
+  `ask-kbg.md:27`'s "yourself" exempting 3 bare gated refs) — D now accepts the literal slash form
+  only, and the two lines that leaned on markers (`ask-kbg.md:27`, `code-implementer.md:235`) now
+  carry it. Also: duplicate ledger rows WARN (head-1 made a stale duplicate invisible), the
+  fenced-code-table gap is logged in-file as a deliberate known-gap, check 36's comment no longer
+  misattributes `frontier` to writing-for-agents (its anchor is `grilling`), and the
+  "dissolved labels" wording in CLAUDE.md/skill-authoring-conventions matches where the old
+  sections' content actually went. Self-test grows 11→12 (manifest-drift fail-closed fixture +
+  marker-masking assertion). Audit trail: 4 fresh-context verifiers, all 25 plan requirements
+  CONFORMS, pre-declared deviations P1–P9 all independently confirmed.
+
 ## [0.68.262] — 2026-08-10
 
 ### Added

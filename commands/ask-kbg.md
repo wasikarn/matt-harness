@@ -24,7 +24,7 @@ If step 2 lands on a `disable-model-invocation` surface (`/ship-merge`, `kbg:rec
 
 ## Reference: the full map
 
-kbg's shape differs from matt's: matt's flow is many small skills you chain yourself (`mattpocock-skills:grilling` → `mattpocock-skills:to-spec` → `mattpocock-skills:to-tickets` → `mattpocock-skills:implement`). kbg's is a trunk command — `/ship` runs Explore → Clarify → Define-done → Implement → Test → Review → Fix-loop → Merge as one gated pipeline (full phase table: `/ship`). Most of what you'd chain by hand in matt's world, `/ship` already chains internally. What's left to narrate is what feeds *into* it and what happens *after* it.
+kbg's shape differs from matt's: matt's flow is many small skills you chain yourself (`mattpocock-skills:grilling` → `/mattpocock-skills:to-spec` → `/mattpocock-skills:to-tickets` → `/mattpocock-skills:implement` — the slash-form ones are user-typed). kbg's is a trunk command — `/ship` runs Explore → Clarify → Define-done → Implement → Test → Review → Fix-loop → Merge as one gated pipeline (full phase table: `/ship`). Most of what you'd chain by hand in matt's world, `/ship` already chains internally. What's left to narrate is what feeds *into* it and what happens *after* it.
 
 ## On-ramps: what feeds `/ship`
 

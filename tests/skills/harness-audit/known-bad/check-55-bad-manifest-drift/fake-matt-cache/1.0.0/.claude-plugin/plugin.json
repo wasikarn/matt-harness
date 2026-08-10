@@ -1,0 +1,8 @@
+{
+  "name": "mattpocock-skills",
+  "version": "1.0.0",
+  "skills": [
+    { "name": "foo" },
+    { "name": "bar" }
+  ]
+}

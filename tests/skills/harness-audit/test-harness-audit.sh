@@ -123,10 +123,21 @@ fi
 # real runs default to ~/.claude/plugins/cache/mattpocock/mattpocock-skills).
 export KBG_MATT_CACHE="$FIX/check-55-bad/fake-matt-cache"
 run_check 55 "$FIX/check-55-bad"
-if [ "$WARN_FOUND" -ge 3 ] && [ "$INFO_FOUND" -ge 1 ]; then
-  ok "check-55 bad fixture fires A+B+C WARNs and D INFO (warn=$WARN_FOUND info=$INFO_FOUND)"
+if [ "$WARN_FOUND" -ge 3 ] && [ "$INFO_FOUND" -ge 2 ]; then
+  ok "check-55 bad fixture fires A+B+C WARNs and D INFOs incl. marker-masking regression (warn=$WARN_FOUND info=$INFO_FOUND)"
 else
-  bad "check-55 bad fixture did NOT fire all sub-checks (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=3 info>=1)"
+  bad "check-55 bad fixture did NOT fire all sub-checks (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=3 info>=2 — info=1 means the free-text-marker masking regressed)"
+fi
+# Manifest-drift regression (adversarial finding 2026-08-10): plugin.json's
+# skills array in an unrecognized format (object entries) must FAIL CLOSED —
+# a parse-blind WARN — never a vacuous sub-check-C pass. Same fixture also
+# carries a duplicate ledger row, which must fire its own WARN.
+export KBG_MATT_CACHE="$FIX/check-55-bad-manifest-drift/fake-matt-cache"
+run_check 55 "$FIX/check-55-bad-manifest-drift"
+if [ "$WARN_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-55 manifest-drift fixture fails closed (parse-blind + duplicate-row WARNs, warn=$WARN_FOUND)"
+else
+  bad "check-55 manifest-drift fixture did NOT fail closed (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=2 — 0 means sub-check C went vacuously green on a drifted manifest)"
 fi
 export KBG_MATT_CACHE="$FIX/check-55-good/fake-matt-cache"
 run_check 55 "$FIX/check-55-good"

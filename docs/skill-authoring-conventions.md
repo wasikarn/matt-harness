@@ -13,7 +13,9 @@ README.md Quick Start). Renamed from `writing-great-skills` in matt v1.2.0 (no a
 restructured: the live elements are leading words, one trigger per branch, completion criterion +
 demand, the no-op test, and progressive disclosure across the two loads (context load vs cognitive
 load); skill-only mechanics (invocation choice, router skills) live in its `SKILL-MECHANICS.md`.
-The old "two-cuts" and "failure-mode guard" labels dissolved into its When-to-split/Pruning prose.
+The old "two-cuts" and "failure-mode guard" labels no longer exist as named terms — two-cuts'
+content lives in its When-to-split section (+ SKILL-MECHANICS.md for the invocation cut), and the
+failure-modes section was distributed across the sections that now own each mode.
 The ≤25-word description cap is kbg's own token-budget rule (root `CLAUDE.md` § skill/agent
 mechanics), not matt's — misattributed to matt here until 2026-08-10.
 
