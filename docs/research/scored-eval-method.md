@@ -58,9 +58,70 @@ no copy-from-snapshot sync seam.
    content vs the graded snapshot, plus a disclosure bullet in Limitations scoping what the
    graded numbers do and don't cover.
 
+10. **Grader-prompt neutrality on re-grades** *(added 2026-08-10, issue #47's contaminated
+    first dispatch)*. A re-grade or grading-correction prompt hands graders the complete
+    verbatim frozen rubric text with no additional grading guidance layered on top (the
+    trials under neutral labels and output-format instructions are fine — extra
+    pass/fail steering is not); if a reading is disputed, the prompt flags
+    the ambiguity neutrally — it never resolves it directionally ("don't fail a response just
+    because X" answers the disputed question before the grader can reason about it). Graders
+    see no prior verdicts, no issue narrative, and not each other's output. A grading result
+    that reproduces the hypothesis its prompt author already read is contaminated, not
+    evidence — discard it and disclose the voided run, never average it in.
+
 ## Report skeleton (what the committed report must carry)
 
 Frozen-list reference · per-trial table with the control row first · what-changed table with
 per-file evidence · char-delta note · Level-B found/closed section with deliberate-skip reasons ·
-Limitations (including any rule deviations and post-grading edits) · Verification section
-(harness-audit before/after, reviewer pass, **the rule-8 inventory-check line**, artifact paths).
+Limitations (including any rule deviations, post-grading edits, and N/A dispositions) ·
+Verification section (harness-audit before/after — or a named N/A/substitution for a
+docs-only round, never a silent swap — reviewer pass, **the rule-8 inventory-check line**,
+**the pre-commit checklist-verifier line**, artifact paths).
+
+## Pre-commit verification (mandatory, decided 2026-08-10)
+
+Before a measured-round report is committed, dispatch at least one fresh-context verifier
+whose prompt **embeds the literal checklist below verbatim** — not a "compare against this
+doc" brief, and not the doc path alone. The incident behind this
+(`docs/post-mortems/eval-report-skeleton-gaps-2026-08-10.md`): two review layers briefed
+generally caught only salient defects, while a silent absence and a silent substitution
+survived both and fell only to a fresh-context verifier walking the enumerated list. The
+maker never grades its own report. The user can additionally run `/kbg:compliance-audit`
+for the full multi-verifier pass — that command is user-invoked only; this step never
+invokes it and does not replace it.
+
+**No automated skeleton check, deliberately** *(same decision, that post-mortem's
+follow-up 3)*: both escaped defects were content-level (a rule silently unaddressed, a
+check silently substituted) — a heading/structure linter would have passed both while
+adding false confidence. The checklist verifier above is the containment. Revisit only if
+this class recurs with that step in place.
+
+## Literal checklist (embed verbatim in reviewer/verifier prompts)
+
+Every item gets an explicit disposition: CONFORMS (with evidence) or N/A (with the reason
+stated in the report itself). An item with no disposition is a finding, not a pass.
+
+Rules — R1 instruments (file list, rubric criteria, fixture prompts + assertions,
+acceptance rule) frozen in `FREEZE.md` before any tuning text · R2 Level A behavioral
+vs Level B work-list separated, Level B never a scored delta · R3 n=3 fresh-context trials
+per condition, snapshot reads only (never `Skill()`/agent-name/slash resolution — the
+plugin cache serves stale installed content), no significance claims at n=3 (a
+single-trial flip is weak evidence) · R4 blind paired grading: neutral names, graders
+never told which set is tuned, A/B randomization recorded in `FREEZE.md`, every verdict
+carries a ≤20-word quote, comparator secondary with ties allowed and never overriding a
+rubric verdict · R5 acceptance rule pre-declared in `FREEZE.md`, deviations named against
+its frozen wording · R6 ceiling fixtures dropped or hardened, never claimed as wins ·
+R7 per-file char deltas
+tracked, >20% flagged · R8 inventory cross-check against disk (counts, artifact paths,
+restated rules diffed against `FREEZE.md`'s text), recorded in Verification · R9
+post-grading edits byte-compared and disclosed, the disclosure scoping what the graded
+numbers do and don't cover · R10 re-grade prompts carry the verbatim `FREEZE.md` rubric
+with no grading guidance layered on top (no pass/fail steering), flag disputed readings
+neutrally, keep graders isolated (no prior verdicts, no issue narrative, not each other's
+output); contaminated runs discarded and disclosed.
+
+Skeleton — frozen-list reference · per-trial table, control row first · what-changed table
+with per-file evidence · char-delta note · Level-B found/closed with skip reasons ·
+Limitations (deviations, post-grading edits, N/A dispositions) · Verification
+(harness-audit before/after, or a named N/A/substitution — never silent; reviewer pass,
+rule-8 line, pre-commit checklist-verifier line, artifact paths).

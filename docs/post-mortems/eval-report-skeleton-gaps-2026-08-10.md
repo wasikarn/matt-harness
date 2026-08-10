@@ -69,17 +69,30 @@ the two gaps was used to re-confirm, within that same pass, that the fixed repor
 addresses rule 9 and names the harness-audit substitution.
 
 ## 9. Follow-Ups
-- [ ] Turn `scored-eval-method.md`'s 9 rules + report-skeleton checklist into an explicit, literal
+- [x] Turn `scored-eval-method.md`'s 9 rules + report-skeleton checklist into an explicit, literal
       checklist that a Standards-axis code-review prompt can be handed directly, instead of a
-      general "compare against this doc" brief. Owner: Unowned — needs assignment. Done when: a
+      general "compare against this doc" brief. Owner: @kobig. Done when: a
       future code-review pass on a `docs/research/` eval report is given the literal 9-rule +
-      skeleton list as part of its prompt, not just the doc path.
-- [ ] Decide whether every measured-eval-round report should get a compliance-audit pass by default
+      skeleton list as part of its prompt, not just the doc path. *Status 2026-08-10: the method
+      doc now carries a "Literal checklist" section (10 rules + 7 skeleton items — the count
+      grew from this follow-up's original "9 rules" when rule 10 landed in the same change)
+      plus a mandatory embed-verbatim pre-commit verifier step. Residual — the next
+      eval report's review pass actually embedding it — closes on the next round, the same
+      half-then-proven pattern as `eval-report-inventory-claims-2026-08-10.md`'s follow-up 1.*
+- [x] Decide whether every measured-eval-round report should get a compliance-audit pass by default
       before commit, rather than only on explicit user request — i.e., fold the checklist-audit step
-      into `scored-eval-method.md`'s own workflow. Owner: Unowned — needs assignment. Done when: the
+      into `scored-eval-method.md`'s own workflow. Owner: @kobig. Done when: the
       method doc either recommends this explicitly, or a considered decision is recorded for why
-      not.
-- [ ] No automated structural check exists for `docs/research/` reports against the skeleton —
+      not. *Decision 2026-08-10: **yes, scaled.** The method doc's new "Pre-commit verification"
+      section mandates ≥1 fresh-context verifier with the literal checklist embedded, before any
+      report commit — three same-day incidents showed fresh-context checklist verifiers catching
+      what in-session review missed. The full `/kbg:compliance-audit` stays user-invoked
+      (`disable-model-invocation`); the mandated step never invokes it and does not replace it.*
+- [x] No automated structural check exists for `docs/research/` reports against the skeleton —
       evaluate whether a lightweight script check is worth adding given this repo's existing
       harness-audit-style tooling, or whether that's over-engineering for a low-frequency artifact
-      type. Owner: Unowned — needs assignment. Done when: a decision is recorded either way.
+      type. Owner: @kobig. Done when: a decision is recorded either way. *Decision 2026-08-10:
+      **skip.** Both escaped defects were content-level (a rule silently unaddressed, a check
+      silently substituted) — a heading/structure linter would have passed both while adding
+      false confidence. Containment is follow-up 2's mandatory checklist-verifier step; revisit
+      trigger (recorded in the method doc): this defect class recurs with that step in place.*
