@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.257] — 2026-08-10
+
+### Fixed
+
+- **`ship-merge.md` Phase 2 EXPLICIT-PICK follow-up (surfaced by batch 8, not itself a tracked
+  issue file)** — Phase 2 step 5's merge-authorization ask now recommends a default (rendered as
+  the literal `(Recommended)` tag) based on step 4's branch-protection decision, step 2's rebase
+  result, and Phase 1's CI signal, instead of two symmetric `(best when X)` options with no
+  resolved pick. Took 3 review rounds to land correctly: round 1 shipped a wrong-default risk
+  (could recommend "Merge now" on a freshly-rebased, CI-unvalidated SHA under active branch
+  protection); round 2's fix closed that but introduced a narrower category error (recommending
+  "Abort" with a CI-validation justification even when the repo has no CI configured at all, i.e.
+  Phase 1's verified-N/A case); round 3 closed both, confirmed by a 4th independent read against
+  the full protection × rebase-result × CI-signal truth table. Both sync-seam notes (this file and
+  `hotfix-reference.md`) updated to record the check.
+
 ## [0.68.256] — 2026-08-10
 
 ### Fixed

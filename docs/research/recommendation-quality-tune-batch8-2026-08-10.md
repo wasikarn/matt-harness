@@ -115,9 +115,19 @@ gate; and the `(Recommended)` tag mechanic in both edited files matches the pre-
   a fix.
 - **No second full code-review round** after the MEDIUM/LOW fixes — the targeted independent
   re-verification above substitutes, same pattern as every prior batch.
-- **`ship-merge.md`'s own EXPLICIT-PICK gap, surfaced as a side effect of this batch's review, is
-  explicitly NOT fixed here** — flagging it in the file (per the sync-seam fix above) is
-  transparency, not scope creep; fixing it would have gone beyond issue #43's own file list.
+- **`ship-merge.md`'s own EXPLICIT-PICK gap, surfaced as a side effect of this batch's review, was
+  left unfixed in the batch-8 commit** — flagging it in the file (per the sync-seam fix above) was
+  transparency, not scope creep, since fixing it would have gone beyond issue #43's own file list.
+  The user authorized it as an immediate follow-up the same day (v0.68.257): the fix took 3 review
+  rounds to land correctly (a `kbg:code-reviewer` pass on round 1 caught a wrong-default risk on a
+  freshly-rebased, CI-unvalidated SHA; round 2's fix introduced a second, narrower category error
+  on the CI-N/A case; round 3 closed both). Worth naming as its own data point on this backlog's
+  established pattern (re-review after every fix round, confirmed 5+ times now): a fix to a
+  *merge-authorization gate* earned meaningfully more review depth than this backlog's typical
+  doc-content fix, and needed it — each of the first two rounds shipped a real, distinct logic gap
+  that only surfaced under adversarial review, not a self-check. See commit history for the
+  specifics; not written up as a separate batch report since it's one file, no new gap discovered
+  in a *tracked* backlog file.
 
 ## Backlog status: issue #43 partially closed
 

@@ -142,10 +142,12 @@ here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,
 unlike ship-merge's normal path (which now conditions `--admin` on branch
 protection actually being active). If you edit the merge flags or the confirm
 prompt here, check whether ship-merge's Phase 2 needs the matching edit too.
-**Checked 2026-08-10:** ship-merge.md's Phase 2 ask still carries the same
-unresolved `(best when X)` pattern this edit fixed here — a real, separate gap,
-left unfixed because it's out of scope for the tracking issue this edit closes
-(the file list doesn't include ship-merge.md). Flagged, not silently dropped.
+**Checked 2026-08-10:** ship-merge.md's Phase 2 ask carried the same unresolved
+`(best when X)` pattern this edit fixed here — flagged as a separate, out-of-scope
+gap when this note was first written, then closed the same day once the user
+confirmed it as a follow-up. Ship-merge's Phase 2 step 5 now has its own
+default-recommendation sentence too, keyed to its own rebase-freshness signal
+(not severity — that axis doesn't exist there), not a copy of this step's logic.
 
 6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from)
 7. Verify merge landed: `git log --oneline -3`
