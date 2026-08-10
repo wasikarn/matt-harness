@@ -113,6 +113,18 @@ left open, per the issue's own scope:
   qualitative signal underneath — only tuned trials produce an explicit "Revisit trigger:" header
   naming a concrete condition, in 2 of 3 trials outright — is unaffected by this dispute; the
   shipped change is not being reverted on this finding alone.
+
+  **2026-08-10 addendum (issue #47) — re-graded, no single corrected number exists.** Three
+  independent fresh-context graders re-scored the same 6 trials against `FREEZE.md`'s literal
+  text only. They split 2–1 on whether a fallback to a bigint column (conditioned on a measured
+  index/FK-cost trigger) counts as "reconsidering the pick" when the surrounding text is
+  ambiguous about whether that fallback actually replaces the PK. Majority reading: baseline 2/3,
+  tuned 3/3. One grader's narrow reading reproduced this report's original 0/3 → 2/3 exactly, via
+  a different argument than the un-frozen "added-feature exception" exclusion this report used.
+  Direction (tuned ≥ baseline) holds under both readings; magnitude does not — full writeup,
+  including a first grading attempt that was run and discarded for smuggling in a directional
+  bias, in `docs/research/staff-eng-g2-a1-regrade-2026-08-10.md`. Original numbers left intact
+  above per this repo's dated-addendum convention (not rewritten).
 - **9 of C1's PASS verdicts substitute a "no matching text found" note for the required ≤20-word
   quote, undisclosed until now.** Method rule 4 requires every verdict to carry a quote; C1-A2/A3
   grade the *absence* of option-menu or decision-framing language, which has no positive text to
