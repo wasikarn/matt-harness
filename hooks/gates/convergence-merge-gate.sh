@@ -121,6 +121,14 @@ except Exception:
           file=sys.stderr)
     sys.exit(2)
 
+if not isinstance(s, dict):
+    # Valid JSON but not an object (a list/string/number from a corrupted or
+    # hand-edited state file) -- the fields cannot be read. Fail closed.
+    print("[kbg:gate] BLOCKED: review state (" + state_file + ") is valid JSON "
+          "but not an object; cannot confirm a clean review. "
+          "Use /kbg:ship-merge to merge.", file=sys.stderr)
+    sys.exit(2)
+
 clean = s.get("clean")
 if not isinstance(clean, bool):
     # Missing or wrong-type clean on a merge attempt -> fail closed.
@@ -154,3 +162,9 @@ reason += (" /kbg:ship-merge is the merge path -- it reads this convergence "
 print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)
 sys.exit(2)
 '
+rc=$?
+if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
+  echo "[kbg:gate] internal error (rc=$rc) — failing closed" >&2
+  exit 2
+fi
+exit "$rc"
