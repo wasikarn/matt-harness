@@ -12,6 +12,7 @@ Usage:
   memory-lint.py [MEMORY_DIR] --auto-archive --yes  # apply (no confirm prompt)
   memory-lint.py [MEMORY_DIR] --json              # machine-readable output
   memory-lint.py [MEMORY_DIR] --classify-unindexed  # fold-vs-forgotten triage, see below
+  memory-lint.py [MEMORY_DIR] --find-patterns       # recurrence clusters (shared [[link]] referents)
 
 Detector checks (default mode):
   - dangling links       — [[wikilink]] or same-store markdown [text](file.md) target
@@ -432,6 +433,132 @@ def run_find_contradictions(state, as_json, min_overlap):
     for c in candidates:
         link_note = f", shared links: {', '.join(c['shared_links'])}" if c["shared_links"] else ""
         print(f"  [{c['type']}] {c['a']}  <->  {c['b']}  (overlap: {c['token_overlap']}{link_note})")
+    return 0
+
+
+def pattern_clusters(state, min_cluster, max_cluster=0):
+    """Deterministic recurrence-cluster surfacer for --find-patterns.
+
+    Builds a file<->file graph where two memories share an edge iff they both
+    link the same RESOLVABLE [[target]] (target in stems or slug_set — dangling
+    links are skipped so noise doesn't seed clusters), then returns connected
+    components of size >= min_cluster (and <= max_cluster when max_cluster > 0).
+    Pure graph topology, no embeddings, no LLM — the same signature ->
+    episode-graph -> connected-component mechanism as Zep's "Observations" (see
+    docs/research/observations-pattern-2026-08-13.md), with [[links]] as the
+    signatures and memories as the episode nodes.
+
+    max_cluster exists because a dense store collapses into one giant component
+    that swamps the smaller, tighter clusters which are the real signal. The
+    giant is the LARGEST component, so raising min_cluster cannot remove it
+    (it filters the small clusters first) — only an upper bound can. 0 = no cap.
+
+    NEVER writes a synthesis — only groups. An LLM writing the summary is a
+    separate, by-hand paste step (--prompt emits the prompt; this script never
+    calls an LLM), so the maker (model) never grades its own grouping — the
+    verifier here is this deterministic pass (CLAUDE.md's maker/verifier
+    doctrine). Manual, on-demand: a heuristic over a small graph will both over-
+    and under-cluster, which is why it stays a hand-run tool until a real run
+    proves the signal is worth scheduling.
+    """
+    files = sorted(state["files"])
+    stems = state["stems"]
+    slug_set = state["slug_set"]
+    resolvable = {
+        f: {t for t in state["links_out"].get(f, []) if t in stems or t in slug_set}
+        for f in files
+    }
+    # target -> files that link it. Only targets linked by >=2 files create edges.
+    by_target = {}
+    for f in files:
+        for t in resolvable[f]:
+            by_target.setdefault(t, []).append(f)
+
+    parent = {f: f for f in files}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    for group in by_target.values():
+        for i in range(1, len(group)):
+            union(group[0], group[i])
+
+    comp = {}
+    for f in files:
+        comp.setdefault(find(f), []).append(f)
+
+    clusters = []
+    for members in comp.values():
+        if len(members) < min_cluster:
+            continue
+        if max_cluster and len(members) > max_cluster:
+            continue
+        mset = set(members)
+        # shared_links = signatures binding THIS cluster: targets linked by >=2
+        # of its members. All linkers of a target land in one component, so a
+        # multi-linker target always belongs to exactly one cluster.
+        shared = sorted(t for t, group in by_target.items()
+                        if sum(1 for f in group if f in mset) >= 2)
+        clusters.append({
+            "members": sorted(members),
+            "shared_links": shared,
+            "size": len(members),
+        })
+    clusters.sort(key=lambda c: (-c["size"], c["members"]))
+    return clusters
+
+
+def run_find_patterns(state, as_json, min_cluster, max_cluster, prompt):
+    clusters = pattern_clusters(state, min_cluster, max_cluster)
+    if as_json:
+        print(json.dumps({
+            "mode": "find-patterns",
+            "memory_dir": state["d"],
+            "min_cluster": min_cluster,
+            "max_cluster": max_cluster,
+            "clusters": clusters,
+        }, indent=2))
+        return 0
+
+    print(f"=== memory-lint --find-patterns: {state['d']} ===")
+    cap = f", max-cluster: {max_cluster}" if max_cluster else ""
+    print(f"min-cluster: {min_cluster}{cap} | clusters: {len(clusters)}")
+    print("Advisory recurrence pre-filter only — NOT a verdict. A cluster says these")
+    print("memories share [[link]] referents, not that they say the same thing. Read")
+    print("each cluster by hand; never auto-merge.")
+    print()
+    if not clusters:
+        print(f"  none — no connected component reached {min_cluster} members")
+    for c in clusters:
+        print(f"  [size {c['size']}] {', '.join(c['members'])}")
+        if c["shared_links"]:
+            print(f"      shared links: {', '.join(c['shared_links'])}")
+    if prompt:
+        print()
+        print("--- paste-ready LLM synthesis prompts (one per cluster) ---")
+        print("# The script does NOT call an LLM. Paste each block into a model to write")
+        print("# the recurrence summary; the deterministic pass already decided the")
+        print("# grouping — the model only turns that structure into prose.")
+        print()
+        for c in clusters:
+            shared = ", ".join(c["shared_links"]) or "none"
+            print(f"## Cluster ({c['size']} memories, shared: {shared})")
+            print(f"Members: {', '.join(c['members'])}")
+            print()
+            print("Write a 2-4 sentence observation about what these memories share,")
+            print("constrained to the evidence above (members + shared links). Write only")
+            print("what the shared referents and member topics support — do not invent")
+            print("claims, and do not assert causation the links alone don't show. Name")
+            print("the recurring pattern, not each file.")
+            print()
     return 0
 
 
@@ -1211,6 +1338,23 @@ def main():
                     help="Classify UNINDEXED findings as folded-confirmed / never-indexed / "
                          "ambiguous-pre-baseline using git history on MEMORY.md. "
                          "Read-only — never appends anything.")
+    ap.add_argument("--find-patterns", action="store_true",
+                    help="Advisory, one-off: surface connected components of memories "
+                         "sharing [[link]] referents (recurrence clusters, size >= "
+                         "--min-cluster) for manual review. Deterministic — never calls "
+                         "an LLM; --prompt emits a paste-ready synthesis prompt instead.")
+    ap.add_argument("--min-cluster", type=int, default=3,
+                    help="Minimum component size for --find-patterns (default: 3)")
+    ap.add_argument("--max-cluster", type=int, default=0,
+                    help="Upper bound on component size for --find-patterns (0 = no cap). "
+                         "A dense store produces one giant component that swamps the smaller "
+                         "tight clusters which are the real signal; the giant is the LARGEST "
+                         "component, so raising --min-cluster cannot remove it — only an upper "
+                         "bound can. Try --max-cluster 10 to hide the giant and surface the "
+                         "tight groupings.")
+    ap.add_argument("--prompt", action="store_true",
+                    help="With --find-patterns, also emit one paste-ready LLM-synthesis "
+                         "prompt per cluster. The script never calls an LLM itself.")
     args = ap.parse_args()
 
     d = memory_dir(args.memory_dir)
@@ -1220,6 +1364,8 @@ def main():
 
     if args.find_contradictions:
         sys.exit(run_find_contradictions(state, args.json, args.min_overlap))
+    elif args.find_patterns:
+        sys.exit(run_find_patterns(state, args.json, args.min_cluster, args.max_cluster, args.prompt))
     elif args.classify_unindexed:
         sys.exit(run_classify_unindexed(state, args.json))
     elif args.auto_archive:

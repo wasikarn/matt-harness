@@ -491,31 +491,6 @@ def test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_cou
         assert len(results) == 5
 
 
-if __name__ == "__main__":
-    test_typo_link_gets_suggestion()
-    test_unrelated_dangling_link_gets_no_suggestion()
-    test_markdown_style_dangling_link_is_detected()
-    test_markdown_style_link_in_backticks_is_not_a_real_reference()
-    test_markdown_style_link_with_path_is_treated_as_external_not_dangling()
-    test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan()
-    test_class_d_count_fold_fires_over_trigger_and_reaches_target()
-    test_class_d_count_fold_returns_nothing_under_trigger()
-    test_template_compliance_flags_feedback_memory_missing_both_fields()
-    test_contradiction_candidates_requires_matching_type()
-    test_contradiction_candidates_pairs_high_overlap_same_type()
-    test_contradiction_candidates_shared_link_is_context_not_an_independent_trigger()
-    test_classify_unindexed_confirms_git_fold()
-    test_classify_unindexed_flags_never_indexed_after_baseline()
-    test_classify_unindexed_flags_ambiguous_when_pre_baseline()
-    test_classify_unindexed_pre_baseline_file_edited_later_stays_ambiguous()
-    test_classify_unindexed_handles_no_git_repo()
-    test_classify_unindexed_no_substring_collision()
-    test_classify_unindexed_no_prose_mention_false_fold()
-    test_classify_unindexed_failed_git_query_is_safe_not_never_indexed()
-    test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_count()
-    print("OK")
-
-
 def test_unindexed_file_linked_from_indexed_memory_is_context_layer_not_a_finding():
     """Fold rule Layer-2: unindexed but [[link]]-reachable from an indexed root
     must NOT fire UNINDEXED — it's counted in context_layer instead."""
@@ -567,3 +542,84 @@ def test_context_layer_reachability_is_transitive_through_unindexed_files():
         unindexed = [x for x in findings if "UNINDEXED" in x]
         assert unindexed == [], f"transitively reachable files must not fire, got {unindexed}"
         assert context_layer == 2, f"expected context_layer == 2 (mid+leaf), got {context_layer}"
+
+
+def test_find_patterns_clusters_by_shared_link():
+    """--find-patterns groups memories into connected components by shared
+    resolvable [[link]] referents. A/B/C all link [[hub]] so they form one
+    cluster of size 3; D links only [[other]] so it stays isolated. A dangling
+    link (no resolvable target) must NOT seed an edge."""
+    with tempfile.TemporaryDirectory() as d:
+        for name in ("a", "b", "c"):
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[hub]] and a [[ghost]] that resolves nowhere\n")
+        with open(os.path.join(d, "d.md"), "w") as f:
+            f.write("---\nname: d\n---\nsee [[other]]\n")
+        # resolvable targets so [[hub]]/[[other]] create edges (by filename stem)
+        with open(os.path.join(d, "hub.md"), "w") as f:
+            f.write("---\nname: hub\n---\nshared referent\n")
+        with open(os.path.join(d, "other.md"), "w") as f:
+            f.write("---\nname: other\n---\nother referent\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [a](a.md)\n- [b](b.md)\n- [c](c.md)\n- [d](d.md)\n- [hub](hub.md)\n- [other](other.md)\n")
+        state = memory_lint.collect_state(d)
+
+        # default min_cluster=3: exactly one cluster {a,b,c} bound by hub
+        clusters = memory_lint.pattern_clusters(state, 3)
+        assert len(clusters) == 1, f"expected 1 cluster at min_cluster=3, got {len(clusters)}: {clusters}"
+        assert set(clusters[0]["members"]) == {"a.md", "b.md", "c.md"}, clusters[0]["members"]
+        assert "hub" in clusters[0]["shared_links"], clusters[0]["shared_links"]
+        # d.md must not appear (isolated, below threshold)
+        assert "d.md" not in {m for c in clusters for m in c["members"]}, "d.md should be isolated"
+        # the dangling [[ghost]] must not create an edge or a shared link
+        assert "ghost" not in clusters[0]["shared_links"], "dangling link must not seed an edge"
+
+        # mutation guard: drop [[hub]] from a.md -> {a} is now isolated,
+        # {b,c} drops to size 2, so no cluster survives at min_cluster=3
+        with open(os.path.join(d, "a.md"), "w") as f:
+            f.write("---\nname: a\n---\nonly a [[ghost]] that resolves nowhere\n")
+        state2 = memory_lint.collect_state(d)
+        clusters2 = memory_lint.pattern_clusters(state2, 3)
+        assert clusters2 == [], f"removing one hub link must dissolve the size-3 cluster, got {clusters2}"
+
+        # --max-cluster caps component size: the {a,b,c} cluster (size 3) must be
+        # hidden by max_cluster=2, leaving no clusters. Guards the dense-store
+        # giant-component filter — raising min_cluster cannot remove the largest
+        # component, only an upper bound can.
+        with open(os.path.join(d, "a.md"), "w") as f:
+            f.write("---\nname: a\n---\nsee [[hub]]\n")
+        state3 = memory_lint.collect_state(d)
+        capped = memory_lint.pattern_clusters(state3, 3, max_cluster=2)
+        assert capped == [], f"max_cluster=2 must hide the size-3 cluster, got {capped}"
+        # and it must NOT hide a cluster at or below the cap
+        kept = memory_lint.pattern_clusters(state3, 3, max_cluster=3)
+        assert len(kept) == 1 and kept[0]["size"] == 3, f"max_cluster=3 must keep the size-3 cluster, got {kept}"
+
+
+if __name__ == "__main__":
+    test_typo_link_gets_suggestion()
+    test_unrelated_dangling_link_gets_no_suggestion()
+    test_markdown_style_dangling_link_is_detected()
+    test_markdown_style_link_in_backticks_is_not_a_real_reference()
+    test_markdown_style_link_with_path_is_treated_as_external_not_dangling()
+    test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan()
+    test_class_d_count_fold_fires_over_trigger_and_reaches_target()
+    test_class_d_count_fold_returns_nothing_under_trigger()
+    test_template_compliance_flags_feedback_memory_missing_both_fields()
+    test_contradiction_candidates_requires_matching_type()
+    test_contradiction_candidates_pairs_high_overlap_same_type()
+    test_contradiction_candidates_shared_link_is_context_not_an_independent_trigger()
+    test_classify_unindexed_confirms_git_fold()
+    test_classify_unindexed_flags_never_indexed_after_baseline()
+    test_classify_unindexed_flags_ambiguous_when_pre_baseline()
+    test_classify_unindexed_pre_baseline_file_edited_later_stays_ambiguous()
+    test_classify_unindexed_handles_no_git_repo()
+    test_classify_unindexed_no_substring_collision()
+    test_classify_unindexed_no_prose_mention_false_fold()
+    test_classify_unindexed_failed_git_query_is_safe_not_never_indexed()
+    test_classify_unindexed_git_call_count_stays_constant_regardless_of_file_count()
+    test_unindexed_file_linked_from_indexed_memory_is_context_layer_not_a_finding()
+    test_unindexed_and_unreachable_file_still_fires_unindexed()
+    test_context_layer_reachability_is_transitive_through_unindexed_files()
+    test_find_patterns_clusters_by_shared_link()
+    print("OK")
