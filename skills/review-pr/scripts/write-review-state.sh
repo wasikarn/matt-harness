@@ -202,7 +202,19 @@ print(str(force).lower())
 print(state)
 print(json.dumps(cur))
 ' "$STATE_FILE" "$FINDING_FILES_PATH" "$STALLED" "$ROUND" "$CLEAN" "$ROUND_CEILING" 2>/dev/null \
-    || printf 'false\nfalse\nprogressing\n[]\n')
+    || { if [ "$CLEAN" = "true" ]; then
+           printf 'false\nfalse\nconverged\n[]\n'
+         else
+           printf 'false\ntrue\nprogressing\n[]\n'
+         fi; })
+  # Fail-closed: a python3 crash (OOM, missing binary, unhandled path) on a
+  # NON-clean review must not silently downgrade to force_human=false — that
+  # would let a non-converged review reach ship-merge's one-way door with the
+  # gate reading "all clear." $CLEAN is a bash var in scope here (computed at
+  # the top of the script), so the fallback branches on it without re-entering
+  # python3. $ROUND/$ROUND_CEILING are intentionally NOT consulted in the
+  # fallback — when the verifier can't compute convergence at all, blocking on
+  # any non-clean review is the safe superset of the ceiling+regressed checks.
   { read -r REGRESSED; read -r FORCE_HUMAN; read -r CONVERGENCE_STATE; read -r FINDING_FILES_JSON; } <<< "$CONV_DATA"
   # Re-validate the JSON piece parsed cleanly; if it didn'\''t (a path contained
   # a newline — theoretical only), fall back to empty — regressed was already
