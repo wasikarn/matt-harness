@@ -95,6 +95,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
 | plan-review-nudge.sh | Advisory: after a plan is approved (ExitPlanMode succeeds), nudge dispatching kbg:plan-reviewer for consequential plans before implementing. PostToolUse hook, matcher "ExitPlanMode" -- fires only on approval (a manual reject/cancel never reaches PostToolUse; the tool never "completes successfully" on a deny). Never blocks; always exits 0. Output goes via hookSpecificOutput.additionalContext (PostToolUse's structured-output field), not plain stdout -- unlike flow-nudge.sh's UserPromptSubmit shape. |
 | atlassian-mcp-gate.sh | Gate: block a direct Atlassian/Jira/Confluence MCP call (any mcp__*atlassian*/ mcp__*rovo* tool -- both a locally-configured/plugin MCP server, e.g. mcp__plugin_atlassian_atlassian__*, and a claude.ai-hosted connector, e.g. mcp__claude_ai_Atlassian_Rovo__*) before a jira-acli:* skill has loaded this session. Escalates ~/.claude/CLAUDE.md's "route through jira-acli first" doctrine + the advisory/jira-route-nudge.sh UserPromptSubmit reminder from prose to a computational PreToolUse gate -- both proved insufficient in practice (2026-07-15: still routing straight to the Atlassian MCP). |
+| convergence-merge-gate.sh | Gate: block a raw `gh pr merge` on a non-clean review-pr state. |
 | db-write-gate.sh | Gate: ask on any MCP execute_sql-shaped call (mcp__<server>__execute_sql*) unless the statement is provably a simple read. Generic — matches any server, no config needed. |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
@@ -123,7 +124,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-13T12:19:26Z_
+_Generated: 2026-08-13T13:48:30Z_
 
 ---
 

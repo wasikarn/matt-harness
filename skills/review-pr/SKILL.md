@@ -311,6 +311,15 @@ Run a comprehensive pull request review using multiple specialized agents, each 
      - At PR-ready → `/ship-merge` (or push for review)
      - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA
        window). Render this round-aware from step 1's second stdout line, not a flat suggestion:
+       - `clean == true` (regardless of round): **drop the re-run suggestion entirely** — the review
+         is certified clean (0 Criticals, rehunt clean, no dispatch failures). Remaining
+         Important/Minor are non-blocking by definition. Render instead: `Review clean — Critical 0,
+         rehunt clean. Non-blocking Important/Minor may be addressed in a follow-up; merge via
+         /kbg:ship-merge. Do not re-run review-pr on non-blocking findings.` This is the stop
+         condition for the review→fix loop: a clean review does not need another pass. (The
+         merge-path deny-gate in `hooks/gates/convergence-merge-gate.sh` blocks a raw `gh pr merge`
+         on a non-clean review; this carve-out is the advisory half that stops the loop from
+         re-running past clean.)
        - `round == 1`: unchanged wording above (nothing to compare against yet).
        - `round >= 2` and `stalled == false` and `force_human == false`: `Round {round} on PR #{n}
          — Critical {prev}→{now}, Important {prev}→{now} → re-run kbg:review-pr` (name only the
