@@ -1,6 +1,6 @@
 ---
 name: risk-check
-description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates or skips a merge. See /kbg:ship-merge for the actual decision."
+description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /kbg:ship-merge for the decision."
 argument-hint: "[pr-number|branch]"
 ---
 
@@ -41,15 +41,18 @@ paths = [f.get("path", "") for f in d.get("files", [])]
 # Sensitive-path definition reused verbatim from ship-merge.md line 53 --
 # the third surface reusing this exact list (review-pr and ship-merge
 # automation-bias guards are the first two). Do not redefine it here.
+# Case-insensitive to match verifier-protect.sh -- CHANGELOG.md already
+# documents a real bypass from skipping this fold on macOS/APFS.
 KEYWORD_RE = re.compile(r"auth|secret|credential|payment|billing|token", re.IGNORECASE)
 def is_gate_path(p):
-    if p.startswith("hooks/gates/"):
+    pl = p.lower()
+    if pl.startswith("hooks/gates/"):
         return True
-    if p == "hooks/hooks.json":
+    if pl == "hooks/hooks.json":
         return True
-    if p == "skills/harness-audit/scripts/audit.sh":
+    if pl == "skills/harness-audit/scripts/audit.sh":
         return True
-    if p.startswith("skills/harness-audit/scripts/checks/"):
+    if pl.startswith("skills/harness-audit/scripts/checks/"):
         return True
     return False
 
