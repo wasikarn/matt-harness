@@ -140,6 +140,65 @@ if not isinstance(clean, bool):
 if clean is True:
     # Clean wins regardless of force_human (matches ship-merge line 49):
     # 0 Criticals, rehunt clean, no dispatch failures -> merge freely.
+    # BUT a clean review with failing/pending CI must not auto-merge via raw
+    # gh (Slice 1): the ship-merge scored gate checks CI on the human-only
+    # path (wt 25); this closes the same gap on the raw-gh auto path. The
+    # merge one-way door now gates on BOTH clean AND CI-green.
+    import subprocess
+    ci_args = ["gh", "pr", "checks"]
+    if pr_num:
+        ci_args.append(str(pr_num))
+    ci_args += ["--json", "name,state,conclusion"]
+    try:
+        ci_r = subprocess.run(ci_args, capture_output=True, text=True, timeout=20)
+    except Exception:
+        # gh timed out / not found / unlaunchable -> unknown, NOT N/A. Fail
+        # closed: a merge we cannot confirm CI-green is not allowed.
+        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+              " (gh pr checks errored/timed out); cannot confirm CI green. "
+              "Use /kbg:ship-merge to merge -- it scores CI.", file=sys.stderr)
+        sys.exit(2)
+    ci_checks = None
+    if ci_r.stdout.strip():
+        try:
+            ci_checks = json.loads(ci_r.stdout)
+        except Exception:
+            ci_checks = None
+    if ci_checks is None:
+        # Unparseable or empty stdout. Distinguish no-CI from a gh error:
+        # empty + returncode 0 => repo has no CI configured => N/A => allow.
+        # empty/unparseable + returncode != 0 => gh errored (auth, no PR,
+        # rate limit) => unknown, NOT N/A => fail closed. (A real check
+        # failure still outputs JSON with --json and exits 0; a nonzero exit
+        # here means gh itself failed, not that a check failed.)
+        if ci_r.returncode == 0:
+            sys.exit(0)
+        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+              " (gh pr checks exit={}); cannot confirm CI green. "
+              "Use /kbg:ship-merge to merge -- it scores CI.".format(
+                  ci_r.returncode), file=sys.stderr)
+        sys.exit(2)
+    # ponytail: treat ALL checks (cannot filter on required: true -- gh pr
+    # checks --json has no required field). SUCCESS/NEUTRAL/SKIPPED = green;
+    # anything else (FAILURE, TIMED_OUT, CANCELLED, ACTION_REQUIRED, or
+    # null=pending) = not green -> deny. Pending -> deny is correct: do not
+    # merge while CI is running; ship-merge scores pending CI low too.
+    # Ceiling: filter on required: true once gh exposes it reliably, so a
+    # failing non-required check does not block. Stricter-now is the safe
+    # direction (deny -> redirect to the ship-merge required-check gate).
+    if isinstance(ci_checks, list) and ci_checks:
+        bad = [c.get("name", "?") for c in ci_checks
+               if not isinstance(c, dict)
+               or c.get("conclusion") not in ("SUCCESS", "NEUTRAL", "SKIPPED")]
+        if bad:
+            print("[kbg:gate] BLOCKED: clean review but CI not green"
+                  " -- {} not SUCCESS. Use /kbg:ship-merge to merge"
+                  " (it scores CI at weight 25).".format(", ".join(bad[:5])),
+                  file=sys.stderr)
+            sys.exit(2)
+    # empty list => no CI configured for this repo => N/A (not zeroed) =>
+    # allow. CI is not this repo merge model (direct-push-to-develop); the
+    # check only bites when CI IS configured and not green.
     sys.exit(0)
 
 # ponytail: block on `clean` only, not on force_human / round-ceiling. The
