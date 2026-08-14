@@ -272,8 +272,11 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    # Immediately after: the bounded auto-loop's continue/stop decision (ADR
    # 0009). Same $HEAD_SHA/$WT this round's write above just used — confirms
    # the state file this reads back is THIS round's write, not stale.
-   LOOP_DECISION=$(bash "${CLAUDE_SKILL_DIR}/scripts/should-continue-loop.sh" "$HEAD_SHA" "${WT:-}")
-   LOOP_EXIT=$?
+   if LOOP_DECISION=$(bash "${CLAUDE_SKILL_DIR}/scripts/should-continue-loop.sh" "$HEAD_SHA" "${WT:-}"); then
+     LOOP_EXIT=0
+   else
+     LOOP_EXIT=$?
+   fi
    LOOP_REASON=$(printf '%s\n' "$LOOP_DECISION" | sed -n 's/^reason=//p')
    ```
    `FINDING_FILES` = the set of file paths from Phase 5's Critical + Important findings (the files
@@ -309,10 +312,10 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    close. `0` = continue automatically; any non-zero = stop and hand back to a human, with
    `$LOOP_REASON` naming why (`converged`/`regressed`/`churning`/`stalled`/`ceiling` mirror
    `convergence_state`; `missing-state`/`malformed-state`/`stale-sha`/`malformed-round`/
-   `malformed-force-human`/`malformed-convergence-state`/`no-findings-nonclean` are fail-closed
-   integrity stops; `reviewer-flow` means this is a PR-by-number review — auto-continue is
-   `own-branch`-only, since a reviewer can't act on someone else's diff). Full script: `scripts/
-   should-continue-loop.sh`.
+   `malformed-force-human`/`malformed-convergence-state`/`malformed-finding-files`/
+   `no-findings-nonclean` are fail-closed integrity stops; `reviewer-flow` means this is a
+   PR-by-number review — auto-continue is `own-branch`-only, since a reviewer can't act on
+   someone else's diff). Full script: `scripts/should-continue-loop.sh`.
 
    **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
    7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
@@ -396,10 +399,10 @@ Run a comprehensive pull request review using multiple specialized agents, each 
            passive suggestion: `Round {round} on PR #{n} — Critical {prev}→{now} → re-run
            kbg:review-pr`, same as before this ADR.
          - `missing-state` / `malformed-state` / `stale-sha` / `malformed-round` /
-           `malformed-force-human` / `malformed-convergence-state`: `should-continue-loop.sh
-           detected a state-file integrity problem ({reason}) — a human should inspect
-           $STATE_FILE directly before another round runs.` Don't auto-continue on any of these;
-           they're fail-closed by design.
+           `malformed-force-human` / `malformed-convergence-state` / `malformed-finding-files`:
+           `should-continue-loop.sh detected a state-file integrity problem ({reason}) — a human
+           should inspect $STATE_FILE directly before another round runs.` Don't auto-continue on
+           any of these; they're fail-closed by design.
          - `no-findings-nonclean`: `{round} rounds, review not clean but no Critical/Important
            findings were tracked this round — the convergence gate can't verify regression/churn
            without a file set to compare. Needs a human call before another automatic pass.`

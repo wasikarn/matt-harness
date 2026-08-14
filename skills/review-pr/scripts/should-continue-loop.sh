@@ -68,8 +68,19 @@
 #                                     plan review: routing both through the
 #                                     same reason misdirects the operator at
 #                                     the exact hard-stop the ADR depends on).
+#   malformed-finding-files        — finding_files is present but not a list
+#                                     (a string/dict/number/bool) — a genuinely
+#                                     corrupted field, distinct from it being
+#                                     merely absent (that's not an error; see
+#                                     no-findings-nonclean below). Found by a
+#                                     deep-audit pass, 2026-08-14: the prior
+#                                     code silently coerced ANY non-list value
+#                                     to empty and kept going at round<2, the
+#                                     only field among round/force_human/
+#                                     convergence_state that didn't hard-stop
+#                                     on a type mismatch.
 #   no-findings-nonclean            — round>=2 and finding_files is empty (or
-#                                      absent/non-list, normalized to empty).
+#                                      absent, normalized to empty).
 #                                      convergence_state=="progressing"
 #                                      already implies not-clean by
 #                                      construction, so that isn't re-checked
@@ -159,7 +170,9 @@ if force_human:
     print("stop"); print("reason=ceiling"); sys.exit(0)
 
 finding_files = d.get("finding_files")
-if not isinstance(finding_files, list):
+if finding_files is not None and not isinstance(finding_files, list):
+    print("stop"); print("reason=malformed-finding-files"); sys.exit(0)
+if finding_files is None:
     finding_files = []
 if round_n >= 2 and len(finding_files) == 0:
     print("stop"); print("reason=no-findings-nonclean"); sys.exit(0)

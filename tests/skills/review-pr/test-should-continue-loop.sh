@@ -142,6 +142,18 @@ assert_stop "case10b: round non-integer -> malformed-round" "malformed-round"
 printf '{"last_sha":"%s","review_mode":"pr-by-number","round":2,"force_human":false,"convergence_state":"progressing","finding_files":["a.ts"]}' "$SHA" > "$STATE_FILE"
 assert_stop "case11: review_mode=pr-by-number -> reviewer-flow, never auto-continues" "reviewer-flow"
 
+# --- Case 12: finding_files present but wrong type (not a list, not null) ->
+# stop, malformed-finding-files -- distinct from absent/empty, which are not
+# errors (case8/case9). Found by a deep-audit pass (2026-08-14): the original
+# code silently coerced ANY non-list value to [] and kept going at round<2. ---
+for round_ceil_check in 0 1 2; do
+  for payload in '"corrupted"' '{}' '42' 'true'; do
+    printf '{"last_sha":"%s","review_mode":"own-branch","round":%s,"force_human":false,"convergence_state":"progressing","finding_files":%s}' \
+      "$SHA" "$round_ceil_check" "$payload" > "$STATE_FILE"
+    assert_stop "case12: finding_files=$payload at round=$round_ceil_check -> malformed-finding-files" "malformed-finding-files"
+  done
+done
+
 echo ""
 echo "=== should-continue-loop.sh: $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -27,7 +27,7 @@ stub) still ships pre-3.12 on plenty of real machines.
 
 ```bash
 python3 -c '
-import json, glob, os, sys, datetime
+import json, glob, os, sys, datetime, subprocess
 
 STATE_DIR = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.join(os.path.expanduser("~"), ".claude", "state")
 
@@ -93,9 +93,11 @@ for p, d, k in readable:
         target = d.get("branch") or "(unknown branch)"
         own_branch_row = (p, d)
     cim = "%s/%s/%s" % (d.get("critical_count", "?"), d.get("important_count", "?"), d.get("minor_count", "?"))
+    clean_val = d.get("clean")
+    clean_str = "yes" if clean_val is True else ("no" if clean_val is False else "?")
     print(ROW_FMT % (
         target, k, str(d.get("round", "?")), cim, str(d.get("convergence_state", "?")),
-        "yes" if d.get("clean") else "no", short_sha(d.get("last_sha")), age(d.get("ts")),
+        clean_str, short_sha(d.get("last_sha")), age(d.get("ts")),
     ))
 
 if malformed:
@@ -107,24 +109,47 @@ if any(k == "pr-by-number" for _, _, k in readable):
     print("\nPR-by-number rows: auto-continue N/A (ADR 0009 scopes it to own-branch only).")
 
 if own_branch_row:
-    print(json.dumps({"own_branch_state_path": own_branch_row[0], "own_branch_last_sha": own_branch_row[1].get("last_sha")}))
+    p, d = own_branch_row
+    branch = d.get("branch")
+    # The state file own last_sha is NOT a valid freshness check against
+    # itself -- would always trivially match, defeating the one thing
+    # the stale-sha guard in should-continue-loop.sh exists to catch (found
+    # in a deep-audit pass, 2026-08-14). Resolve the branch REAL current
+    # HEAD instead; best-effort since this command may run from a different
+    # repo or an already-deleted branch.
+    real_head = None
+    if isinstance(branch, str) and branch:
+        try:
+            r = subprocess.run(["git", "rev-parse", branch], capture_output=True, text=True, timeout=5)
+            if r.returncode == 0:
+                real_head = r.stdout.strip()
+        except Exception:
+            pass
+    print(json.dumps({"own_branch_state_path": p, "own_branch_current_head": real_head}))
 else:
     print("{}")
 '
 ```
 
-**If the last line printed a JSON object** (an own-branch review exists),
-run `should-continue-loop.sh` against it to show the *authoritative*
-auto-continue verdict — reuse the real decision script, don't re-derive
-`convergence_state`/`force_human` logic here (the exact sync-seam ADR 0009's
-implementation was about closing):
+**If the printed object has a non-null `own_branch_state_path` key** (an
+own-branch review exists — `{}` alone means it doesn't, that's still valid
+JSON so check the key, not just "is it an object"), and `own_branch_current_head`
+is **not** null, run `should-continue-loop.sh` against that real current
+HEAD to show the *authoritative* auto-continue verdict — reuse the real
+decision script, don't re-derive `convergence_state`/`force_human` logic
+here (the exact sync-seam ADR 0009's implementation was about closing):
 
 ```bash
-bash skills/review-pr/scripts/should-continue-loop.sh "<own_branch_last_sha from the JSON above>" ""
+bash skills/review-pr/scripts/should-continue-loop.sh "<own_branch_current_head from the JSON above>" ""
 ```
 
-Render its two-line output as `Auto-continue verdict: continue` or
-`Auto-continue verdict: stop (reason=<token>)`.
+**Never pass the state file's own `last_sha`** as the expected sha here —
+that was the tautological bug above. Render the script's two-line output as
+`Auto-continue verdict: continue` or `Auto-continue verdict: stop
+(reason=<token>)`. **If `own_branch_current_head` is null** (branch
+unresolvable from this working directory — deleted, or you're not in the
+right repo), print `Auto-continue verdict: unavailable — can't resolve
+<branch>'s current HEAD from here` instead of guessing.
 
 **Do not compute a `ship-merge`-style score anywhere in this command.** For
 Critical findings, print the raw count with a one-line pointer only —
@@ -148,13 +173,23 @@ for the actual merge decision)` — never a computed pass/fail of your own.
    `stalled`, `regressed`, `force_human`, `finding_files` (if non-empty),
    `file_streaks`/`churn_files` (if non-empty). Same "point at ship-merge,
    don't score" rule as the list view for anything ship-merge's gate weighs.
-4. **If `review_mode == "own-branch"`**, run `should-continue-loop.sh` with
-   this file's own `last_sha` (same reuse as the list view) and render its
-   verdict.
-5. **If the state file's `last_sha` doesn't match the PR's actual current
-   HEAD** (`headRefOid` from step 1's `gh pr view`), say so explicitly —
-   `⚠ state is stale: last reviewed <sha>, PR HEAD is now <sha>` — this
-   command never re-runs a review to refresh it; that's `kbg:review-pr`'s job.
+4. **Get the real current HEAD to check freshness against** — prefer step 1's
+   `headRefOid` if a PR was resolved; otherwise (branch-name target) run
+   `git rev-parse <branch>` (best-effort — the branch may be deleted, or this
+   command may run from a different repo). **Never use the state file's own
+   `last_sha` as the freshness reference** — it would always trivially match
+   itself, defeating the one check `should-continue-loop.sh`'s `stale-sha`
+   guard exists to run (tautology bug found in a deep-audit pass, 2026-08-14).
+   - **If the state file's `last_sha` doesn't match this real current HEAD**,
+     say so explicitly — `⚠ state is stale: last reviewed <sha>, current HEAD
+     is now <sha>` — this command never re-runs a review to refresh it;
+     that's `kbg:review-pr`'s job.
+   - **If the real current HEAD couldn't be resolved at all**, say so —
+     `⚠ can't verify freshness — <branch>'s current HEAD isn't resolvable
+     from here` — and skip step 5 rather than guessing.
+5. **If `review_mode == "own-branch"` and step 4 resolved a real current
+   HEAD**, run `should-continue-loop.sh "<real current HEAD>" ""` and render
+   its verdict the same way the list view does.
 
 ## Notes
 
