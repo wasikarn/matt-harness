@@ -69,7 +69,7 @@ bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: f
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
 ```
 
-The `run-gauntlet.sh` shortcut above already runs the 10-file hook behavioral suite (`tests/hooks/*.sh` + `tests/skills/harness-audit/test-harness-audit.sh`) as its own layer. The old critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`) — see `CLAUDE.md`'s Validation section for current coverage.
+The `run-gauntlet.sh` shortcut above already runs the 12-file hook behavioral suite (`tests/hooks/*.sh` + `tests/skills/harness-audit/test-harness-audit.sh` + `tests/commands/*.sh`) as its own layer. The old critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`) — see `CLAUDE.md`'s Validation section for current coverage.
 
 ## Update the plugin after surface changes
 
@@ -87,7 +87,7 @@ Skipping step 1 or 2 causes stale cache loads and `harness-audit` will CRIT-flag
 ## Load-bearing invariants
 
 - **No unattended self-repair.** `kbg:recursive-improve` stops at a user `AskUserQuestion` gate before any mutation — the model never self-starts a repair loop. *(CLAUDE.md §Architecture calls this the no-model-self-start rule.)*
-- **Advisory sensors never gate.** Sensors like `verification-gate.sh` journal only — they inform, they never emit a `permissionDecision` that blocks anything.
+- **Advisory sensors never gate.** Sensors like `flow-nudge.sh` / `compliance-audit-nudge.sh` journal only — they inform, they never emit a `permissionDecision` that blocks anything.
 - **Cache invalidation is manual.** Editing a file changes nothing until you bump both manifests, run `claude plugin update kbg@kobig`, and restart.
 
 ## Full inventory

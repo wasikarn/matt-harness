@@ -17,8 +17,16 @@
 _f=""
 [ -f "$CLAUDE_DIR/commands/ship-merge.md" ] && _f="$CLAUDE_DIR/commands/ship-merge.md"
 [ -f "$CLAUDE_DIR/commands/ship-merge/COMMAND.md" ] && _f="$CLAUDE_DIR/commands/ship-merge/COMMAND.md"
+# Frontmatter-scoped (fm_get), not a raw substring grep over the first 20
+# lines — same hardening #39/#49 got in the 2026-07-23 compliance-audit pass:
+# `head -20 | grep -qF` false-negatives if the literal string appears anywhere
+# in the first 20 lines (e.g. inside `description:` prose) even when the real
+# frontmatter key was stripped. #44 was missed in that pass (found by the
+# 2026-08-14 fleet breadth sweep). fm_get matches `^key:` inside the real
+# `---...---` block only, closing the latent bypass. Works on command files
+# (commands carry `---` frontmatter the same as skills).
 if [ -n "$_f" ]; then
-  head -20 "$_f" | grep -qF 'disable-model-invocation: true' || \
+  [ "$(fm_get "$_f" disable-model-invocation)" = "true" ] || \
     crit "'$_f': missing 'disable-model-invocation: true' — this is the only mechanism blocking the model from self-invoking a server-side PR merge; its absence means the model could trigger an irreversible external action unattended"
 else
   crit "ship-merge command not found at commands/ship-merge.md or commands/ship-merge/COMMAND.md — cannot verify the disable-model-invocation flag that is the only mechanism blocking the model from self-invoking a server-side PR merge"

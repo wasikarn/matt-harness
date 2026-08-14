@@ -4,9 +4,10 @@
 # (docs/research/kbg-vs-adhd.md). The structural contract must hold or the next
 # refactor will silently collapse the algorithm (the 2026-06-12 44→105-agent
 # failure mode that bounded-agent-spawning.md was written to prevent). WARNs
-# (not CRITs) on missing pieces. The regression fixture
-# eval/regressions/ideate-fanout-cap.json is the load-bearing guard; this check
-# is the inline fallback for editor / pre-commit visibility.
+# (not CRITs) on missing pieces. This check IS the sole guard now — the
+# former regression fixture eval/regressions/ideate-fanout-cap.json (and the
+# whole eval/ tree) was deleted in the 2026-06-27 owner-authorized reset
+# (c452102); this check survived as the inline editor / pre-commit guard.
 # Command file lives at one of two paths per code.claude.com/docs/en/slash-commands:
 # - commands/ideate.md                              (legacy flat form)
 # - commands/ideate/COMMAND.md                      (subdir form for supporting files)

@@ -158,27 +158,54 @@ discussion. The full comparison lives in
 
 The corpus converges on a class-name: **irreversible actions** (destructive
 commands, hardcoded-path leaks, edits to the code that judges the model)
-deserve a human gate. kbg-harness currently has 3 gate scripts, all under
-`hooks/gates/`:
+deserve a human gate. kbg-harness currently has 7 gate scripts under
+`hooks/gates/` (10 PreToolUse hook entries — three gates register on two
+matchers each):
 
 - **Irrecoverable Bash patterns** — `hooks/gates/irrecoverable.sh` (PreToolUse
   on Bash; `exit 2`-blocks `rm -rf`, `git push --force`, `--no-verify`, `git
-  reset --hard`, and `git clean -f` — the destructive-command class, `deny`
-  not `ask`).
-- **Hardcoded home paths** — `hooks/gates/path-hardcode.sh` (PreToolUse on
-  Write/Edit; `exit 2`-blocks a literal `/Users/<name>` written into a `.sh`
-  or `.py` file — `$HOME`/`~` pass through).
-- **Verifier tamper-protection** — `hooks/gates/verifier-protect.sh`
-  (PreToolUse on Write/Edit/NotebookEdit; emits `permissionDecision: ask` — not
-  deny — for edits to `hooks/gates/**`, `hooks/hooks.json`,
-  `skills/harness-audit/scripts/audit.sh`, and
-  `skills/harness-audit/scripts/checks/**`. The class is "the model editing
-  the code that judges it" — the gate forces a live human approve/deny
-  instead of a silent self-edit).
+  reset --hard`, `git clean -f`, and `git worktree add -b <new-branch>` when
+  the repo's `/.kbg-no-worktree` sentinel is absent — the destructive-command
+  class + the develop-only branching doctrine, `deny` not `ask`).
+- **Unreviewed merge** — `hooks/gates/convergence-merge-gate.sh` (PreToolUse
+  on Bash; blocks a raw `gh pr merge` when the review-pr state's `clean !=
+  true`, and on `clean == true` requires CI green — the merge one-way door
+  gates on BOTH clean AND CI-green. Bash fast-path exits 0 on non-merge
+  commands; fail-closed on unreadable/missing-`clean` state).
+- **Verifier tamper-protection + hardcoded paths** —
+  `hooks/gates/verifier-protect.sh` (PreToolUse on Write|Edit|NotebookEdit
+  AND on Bash — the latter catches Bash-mediated writes like `tee`/`sed -i`/
+  `cp`/`mv` to verifier surfaces). Emits `permissionDecision: ask` for edits
+  to `hooks/gates/**`, `hooks/advisory/**`, `hooks/hooks.json`, and
+  `skills/harness-audit/scripts/{audit.sh,checks/**}` — the class is "the
+  model editing the code that judges it." **Also folds the former standalone
+  `path-hardcode.sh`** (deleted 2026-07-03): an `exit 2` deny leg blocks a
+  literal `/Users/<name>` written into a `.sh`/`.py` file before the ask —
+  `$HOME`/`~` pass through.
+- **DB-write** — `hooks/gates/db-write-gate.sh` (PreToolUse on
+  `mcp__.*__execute_sql.*`; emits `permissionDecision: ask` on any
+  non-proven-read SQL statement — a read-allowlist, not a write-blocklist, so
+  an unrecognized statement asks rather than slips. Restored after the v0.6.0
+  reset deleted the prior version).
+- **Task self-completion** — `hooks/gates/task-complete-separation.sh`
+  (PreToolUse on TaskUpdate; `exit 2`-denies `TaskUpdate(status=completed)`
+  when `agent_type` is present — maker≠checker: a subagent cannot mark its own
+  task completed; only the main session completes).
+- **Atlassian MCP cold-start** — `hooks/gates/atlassian-mcp-gate.sh`
+  (PreToolUse on Skill AND `mcp__.*`; the Skill matcher marks the session
+  jira-acli-engaged when a `jira-acli:*` skill loads, and the `mcp__.*` matcher
+  blocks a direct Atlassian/Jira/Confluence MCP call before that mark exists —
+  forcing routing through jira-acli's templates. Cold-start guard, not a
+  per-call router: later calls allow once engaged).
+- **Guarded-worktree writes** — `hooks/gates/worktree-guard.py` (PreToolUse on
+  Write|Edit|NotebookEdit AND on Bash; opt-in via `KBG_GUARDED_WORKSPACE`:
+  redirects Write/Edit on a guarded sub-repo main checkout into a session
+  worktree, denies the Bash-mediated equivalent. Off by default everywhere —
+  no workspace path ships in this public plugin. Bash early-exit skips the
+  python3 cold-start when the var is unset).
 
-There is no dedicated DB-write, secret-read, or config-edit gate today —
-those are candidate classes for a future gate, not gates the harness already
-ships.
+There is no dedicated secret-read or config-edit gate today — those remain
+candidate classes for a future gate. (A DB-write gate now exists, above.)
 
 **Pattern for future gates**: any new gate should be keyed on the **class**
 of mutation, not on a specific tool. `irrecoverable.sh` matches a family of
@@ -192,13 +219,15 @@ themselves live in `hooks/`; this section is the map of which class each
 existing gate covers, so a future contributor can find the right
 precedent before adding a new one.
 
-`deny` (exit 2) is what `irrecoverable.sh` and `path-hardcode.sh` use —
-reserved for actions the model should never be trusted to do even with
-human in-the-loop confirmation. `ask` (`permissionDecision: ask`) is what
-`verifier-protect.sh` uses — a live approve/deny prompt for edits that are
-sometimes legitimate but always deserve a human look. Read the scripts
-themselves (`hooks/gates/irrecoverable.sh`, `hooks/gates/path-hardcode.sh`,
-`hooks/gates/verifier-protect.sh`) for the exact pattern list.
+`deny` (exit 2) is what `irrecoverable.sh`, `task-complete-separation.sh`,
+`worktree-guard.py` (its Bash deny leg), `convergence-merge-gate.sh` (block
+non-clean), and `verifier-protect.sh`'s path-hardcode leg use — reserved for
+actions the model should never be trusted to do even with human in-the-loop
+confirmation. `ask` (`permissionDecision: ask`) is what `verifier-protect.sh`
+(verifier edits), `db-write-gate.sh`, and `atlassian-mcp-gate.sh` use — a live
+approve/deny prompt for edits/calls that are sometimes legitimate but always
+deserve a human look. Read the scripts themselves under `hooks/gates/` for the
+exact pattern list.
 
 ### Refused extension: mandatory verification of every reasoning event
 

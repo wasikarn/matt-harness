@@ -136,9 +136,22 @@ def emit_ask(target, preview):
 try:
     d = json.load(sys.stdin)
     tool = d.get("tool_name", "") or ""
-    ti = d.get("tool_input", {}) or {}
+    ti = d.get("tool_input")
 
     if not re.match(r"^mcp__.*__execute_sql", tool):
+        sys.exit(0)
+
+    if not isinstance(ti, dict):
+        # A present-but-non-dict tool_input (e.g. JSON null) previously
+        # collapsed via "or {}" into an empty statement -> silent allow,
+        # defeating the read-allowlist ask-on-unknown invariant (same class
+        # as the OPEN #1 fix in convergence-merge-gate + the 2026-08-06
+        # isinstance guard in verifier-protect; found by the 2026-08-14 fleet sweep).
+        emit_ask("<missing/malformed tool_input>", (
+            "db-write-gate received an execute_sql call with no usable "
+            "tool_input and cannot confirm the statement is a read. "
+            "Fail-safe: state the exact statement, approve manually or deny."
+        ))
         sys.exit(0)
 
     statement = ti.get("query") or ti.get("sql") or ti.get("statement") or ti.get("text") or ""
