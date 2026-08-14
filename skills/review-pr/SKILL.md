@@ -316,7 +316,11 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    compares the round against its own already-written counts as "prior round," and produces a false
    `stalled:true` — confirmed in production, session e34b6832/PR #2754 round 9, 2026-08-11). `amend`
    ignores `finding_files_path`; `regressed`/`churning`/`finding_files`/`file_streaks`/`churn_files`
-   carry through unchanged from the round being corrected.
+   carry through unchanged from the round being corrected. For an own-branch review, `amend` refuses
+   (fails closed) if the shared state file's `branch` doesn't match the current branch — it corrects
+   the current branch's own round, never a different branch's (found by `/kbg:deep-audit`,
+   2026-08-14: with no guard, switching branches then running `amend` silently adopted the other
+   branch's round/prev_*/streaks).
 
    `CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` = number of Critical/Important/Minor findings
    from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).

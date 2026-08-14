@@ -128,8 +128,24 @@ print(rn)
 print(_na(d.get("prev_critical_count")))
 print(_na(d.get("prev_important_count")))
 print(_na(d.get("prev_minor_count")))
+print(d.get("branch", ""))
 ' "$STATE_FILE") || err_die "amend requested but $STATE_FILE has no valid round to amend"
-  { read -r ROUND; read -r PREV_CRITICAL; read -r PREV_IMPORTANT; read -r PREV_MINOR; } <<< "$AMEND_META"
+  { read -r ROUND; read -r PREV_CRITICAL; read -r PREV_IMPORTANT; read -r PREV_MINOR; read -r AMEND_BRANCH; } <<< "$AMEND_META"
+  # Own-branch state is one shared file keyed by nothing but branch name (see
+  # the "Round tracking" header comment above) -- the non-amend path below
+  # already refuses to continue a series when PREV_BRANCH != BRANCH; amend had
+  # no equivalent, so switching branches and then running amend silently
+  # adopted the OTHER branch's round/prev_*/streaks onto the current branch.
+  # Found by /kbg:deep-audit (2026-08-14): reachable through ordinary
+  # multi-branch use, no malformed input needed. PR-by-number is unaffected
+  # (keyed per PR via $WT, same as the non-amend path). Side effect, decided
+  # deliberately, not just inherited: a state file written when `git
+  # rev-parse` failed (BRANCH="", the fallback above) can never be amended
+  # from a real branch, since "" will never equal a real $BRANCH — correct,
+  # since amend cannot establish the file is even this branch's own record.
+  if [ -z "$WT" ] && [ "$AMEND_BRANCH" != "$BRANCH" ]; then
+    err_die "amend requested on branch '$BRANCH' but $STATE_FILE holds branch '$AMEND_BRANCH' — refusing to amend a different branch's round"
+  fi
 else
   # Carry the prior round forward. Own-branch only continues the series when the
   # old file's branch matches this run's; PR-by-number is keyed per PR so any
@@ -245,9 +261,15 @@ try:
     d = json.load(open(state_file))
 except Exception:
     d = {}
-cur = d.get("finding_files") or []
+cur = d.get("finding_files") if isinstance(d.get("finding_files"), list) else []
 streaks = d.get("file_streaks") if isinstance(d.get("file_streaks"), dict) else {}
 churn = d.get("churn_files") if isinstance(d.get("churn_files"), list) else []
+# known gap (found by /kbg:deep-audit, 2026-08-14, not fixed here): bool() on
+# a hand-authored string "false" is True in Python, same class of bug as the
+# int()-on-bool fix above but on the read side of a different field. Left
+# alone because it fails toward force_human=true (over-blocks a review that
+# did not need blocking) rather than silently waving one through -- fixing
+# the read semantics needs its own pass, not bundled into this one.
 regressed = bool(d.get("regressed"))
 cl = (clean == "true"); st = (stalled == "true"); ce = int(ceiling)
 if cl:
