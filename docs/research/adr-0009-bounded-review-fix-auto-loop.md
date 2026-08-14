@@ -1,4 +1,4 @@
-# ADR 0007 — Bounded review→fix auto-loop (the per-round "go" button)
+# ADR 0009 — Bounded review→fix auto-loop (the per-round "go" button)
 
 > **Status:** 🟡 Proposed (Accepted-not-Implemented) — awaiting operator approval.
 > This ADR supersedes **part** of ADR 0006. It does NOT ship until the operator
@@ -34,17 +34,53 @@ ADR 0006's sources independently. Verdicts:
   `stalled` catches whack-a-mole was WRONG for the same-file case. The ceiling
   does double duty (universal backstop, not just the human gate).
 
-**The one thing the operator must resolve before acceptance:** the doctrine's
-"no model self-start" is stated flatly, without scoping it to irreversible
-boundaries. The ADR reads it as an expression of maker≠checker (scoped to
-one-way doors, so a reversible per-round continue is substitutable by a
-deterministic gate). The refusal's literal words read it as blanket. **That
-ambiguity is the operator's to resolve — not the ADR's to settle unilaterally.**
-The operator must engage the steelman's strongest point (refusal #3 refused the
-*shape* "auto retry/re-plan IS the ladder," not the stop; the expression-vs-
-principle distinction is self-graded) before moving this ADR from Proposed to
-Accepted. Without that, the "Why this is not the 5th refusal" table is the maker
-grading its own work — the exact circularity the crux exists to prevent.
+**Cross-ADR pass (2026-08-14, 2nd round — 4 reviewers reading ADRs 0001-0008
+from git history, not just this ADR in isolation):** three framing corrections
+landed. (1) The "proposed 4× / refused 4× / 4 reasons" setup was inflated —
+decay-cadence records 3 refusal reasons for a *verifier-first runtime*, and "no
+model self-start" is the principle those rest on, not a 4th standalone reason;
+the 4 recurrences (memory `rgs-pushback-descope-2026-07-01`) were of a broader
+"Reasoning Governance System" pattern, not 4 refusals of this loop. (2) The
+"no model self-start is stated flatly" claim was true only of the *compressed*
+doctrine (CLAUDE.md/decay-cadence) — the *source* ADR 0006 scopes it to
+self-launch, which narrows the operator's open question (see below). (3) The
+strongest surviving steelman: ADR 0006 stripped `--auto` and restored the
+per-iteration human gate, and this ADR reverses that for review→fix — so refusal
+#3 partially bites on the *shape* (L3's auto-continue) even though it does not
+bite on the *ratchet identity* (no flag/notches/self-launch/auto-push). Also:
+renumbered 0007→0009 to avoid collision with the retired `docs/adr/0007-ecc-parity-
+ports` in git history; fixed `docs/agents/domain.md` generic-template example.
+
+**The one thing the operator must resolve before acceptance:** how "no model
+self-start" reads against its *source*, not just its compressed restatement. ADR
+0006 — the ADR this one supersedes — **does not state "no model self-start"
+flatly.** Its "What lives (preserved)" section scopes it explicitly to
+self-launch: *"The model cannot self-start the improvement loop. (The launchd
+self-start is gone with the L4 machinery; there is no OS-scheduler self-start
+either now.)"* — a *process-lifecycle* scope (launchd/cron/detached self-start of
+a loop from zero), not a per-round-continue scope. The *compressed* doctrine
+(`CLAUDE.md` §Architecture, `harness-decay-cadence.md`) dropped that scoping and
+does state it flatly; an operator reading only the current docs finds genuine
+ambiguity, but an operator reading the source ADR does not — old 0006 forecloses
+the launchd/cron reading directly, and per-round auto-continue within an
+operator-started session is not self-start in 0006's sense.
+
+This *narrows* the open question but does not fully close it: 0006's "new
+principle" sentence ("there is no autonomy flag, no enforced maker≠checker
+ship-gate, and no model self-start") is stated broadly, and 0006 did not merely
+retire the flag — it **stripped `--auto` and restored the per-iteration human
+gate**. So the residual question the operator must weigh is narrower than
+"expression vs. blanket": it is whether **auto-continue bounded by a
+deterministic stop + human ceiling, with no flag/ratchet/self-launch**, is a
+re-arming of L3's retired auto-continue *shape* (which 0006 explicitly stripped)
+or a separable loop behavior the ladder happened to include. The operator must
+engage the steelman's strongest point (refusal #3 refused the *shape* "auto
+retry/re-plan IS the ladder," not the stop; L3's shape was auto-continue within a
+human-started session, and 0006 stripped it; the expression-vs-principle
+distinction is self-graded by the implementing session) before moving this ADR
+from Proposed to Accepted. Without that, the "Why this is not the 5th refusal"
+table is the maker grading its own work — the exact circularity the crux exists to
+prevent.
 
 ## Context
 
@@ -57,18 +93,32 @@ authority at every irreversible boundary; no model self-start.* The retiring
 crux (`agent-loop-verifier-crux.md`): *the gate is a verifier, the model is the
 maker, and the maker can never grade its own work — "two optimists agreeing."*
 
-This design (let the model auto-continue the review→fix loop) was proposed
-**4×** and refused **4×** (`docs/harness-decay-cadence.md` §"Refused extension";
-memory `rgs-pushback-descope-2026-07-01`). The four refusal reasons:
+The broader idea — a model-driven auto-loop / "reasoning governance runtime" —
+recurred **4×** on a single day (2026-07-01), each a generic "Phase N" framework
+spec (RAF/RGS/RVSEF/verifier-runtime) colliding with the retired L2–L5 ladder +
+verifier-separation crux, and each de-scoped (memory `rgs-pushback-descope-
+2026-07-01`). The 4th recurrence is the one recorded in
+`docs/harness-decay-cadence.md` §"Refused extension: mandatory verification of
+every reasoning event" — a "verifier-first runtime" generalizing deny-gates from
+*irreversible actions* to *every reasoning event*. That record lists **3** refusal
+reasons (not 4):
 
-1. Classifying decision criticality at runtime needs an LLM (unverified
-   reasoning gating reasoning) or deterministic semantic understanding of free
-   text (not buildable).
+1. Classifying decision criticality / "verifying reasoning" at runtime needs an
+   LLM doing the classifying (unverified reasoning gating reasoning — the model
+   grading itself) or deterministic semantic understanding of free text (not
+   buildable).
 2. Confidence-based gating uses model self-report as the gate signal — same
-   crux.
+   crux, "two optimists agreeing."
 3. Mandatory-verify-everything + auto retry/re-plan/escalate is the L2–L5 ladder
-   under a new name — retired, do not re-arm.
-4. No model self-start.
+   under a new name — retired by ADR 0006, do not re-arm.
+
+**"No model self-start" is not a 4th standalone refusal reason** — it is the
+underlying *principle* (the maker≠checker / no-self-launch invariant) the three
+reasons above rest on, and the invariant ADR 0006 explicitly preserved. This
+ADR's narrower proposal (bounded review→fix auto-continue) is a specific instance
+the framework-level refusals addressed at full generality; the honest question is
+whether the narrowing (one loop, deterministic stop, no flag/ratchet/self-launch)
+escapes the framework refusal or is the same shape in miniature.
 
 ### The new evidence (post-dating the latest 2026-07-01 refusal)
 
@@ -99,7 +149,7 @@ here):**
 - **Rounds 1-2** (`stalled` requires `round ≥ 3`).
 - **Minor churn** (`finding_files` is Crit+Imp by construction, lines 16-18
   header / 176-177, 203 construction; Minor is structurally invisible to
-  `regressed`; `stalled` sees Minor only on up-ticks).
+  `regressed`; `stalled` sees Minor only on flat-or-up — a Minor dip breaks it).
 - **State-file-write crash** (the fail-closed fallback at lines 205-209 guards
   only the convergence-computation python3 at line 171, NOT the final write at
   lines 242-275; if python3 is missing/broken at the final write, no state file
@@ -167,6 +217,17 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
   expected HEAD SHA; `should-continue-loop.sh` fails closed if
   `state.last_sha != expected` OR the file is missing. mtime/round heuristics
   fail open — do not use them.
+- **Fail-closed on a missing/non-boolean `force_human` field.** The "two
+  clauses, not three" condition (`convergence_state == "progressing" AND
+  force_human == false`) is only safe for state files the current
+  `write-review-state.sh` writes — which always set `force_human`. An older
+  state file (pre-convergence-gate) lacking the field, or a corrupted/hand-edited
+  one with a non-boolean, must NOT be read as `force_human == false` (that would
+  let the loop continue past the ceiling). `should-continue-loop.sh` must fail
+  closed — treat as `force_human == true` → hard-stop — if `force_human` is
+  missing or non-boolean, mirroring `convergence-merge-gate.sh`'s handling of a
+  missing `clean` field (lines 132-138). Same shape for `convergence_state`
+  itself.
 
 ### What this does NOT change (the retained invariants)
 
@@ -208,12 +269,16 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
    this — "scoring without separation = the maker grading its own homework with
    a rubric it wrote." Two paths exploit it:
    - **Within-round mis-tiering (active):** a real defect mis-tiered as Minor
-     → `CRITICAL_COUNT=0` → step 3.5 has nothing to refute (it only *demotes*
-     flagged findings, never *promotes*, and has nothing to verify at 0
-     Crit/Imp; `SKILL.md:139`) → on a trivial diff the blind-spot hunter skips
-     (`SKILL.md:163`) → `clean=true` → loop stops → human merges on a buggy
-     diff. The model (deliberately or via shared blind spot) fed the count the
-     gate scored.
+     with no other Crit/Imp present → `CRITICAL_COUNT=0 AND IMPORTANT_COUNT=0`
+     → step 3.5 has nothing to refute (it only *demotes* flagged findings, never
+     *promotes*, and has nothing to verify at 0 Crit/Imp; `SKILL.md:139`) → on a
+     trivial diff the blind-spot hunter skips (`SKILL.md:163`) → `clean=true` →
+     loop stops → human merges on a buggy diff. (If a real Important *does*
+     survive, step 3.5 runs on it, the hunter-skip path is not taken, and the
+     loop continues fixing — but `clean=true` only requires `CRITICAL_COUNT==0`,
+     so a *separate* Minor-mis-tiered defect still slips through the clean pass.)
+     The model (deliberately or via shared blind spot) fed the count the gate
+     scored.
    - **Reviewer miss + hunter-runs-but-misses (passive):** on a multi-file PR
      the hunter *does* trigger, but it is an LLM — a shared blind spot can
      survive a reframe. Reviewers miss + hunter misses → same `clean=true` →
@@ -258,8 +323,8 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
 |---|---|
 | "classifying criticality at runtime needs an LLM" | ✗ the continue decision reads the deterministic `convergence_state` from the shell script |
 | "confidence-based gating = model self-report" | ✗ the signal is the convergence gate's computed verdict, not model confidence |
-| "auto retry/re-plan = the ladder" | ⚠ partial — this IS auto retry/re-plan, but bounded by a deterministic stop + a human ceiling gate. Refusal #3 refused the *shape* ("auto retry/re-plan IS the ladder"), not the stop. The distinguishing fact (the convergence gate, shipped 2026-08-13, post-dating the latest refusal) is a deterministic non-convergence signal L3 lacked. **But:** refusal #3 did not condition on the stop — so "new evidence about stops" does not address a refusal that refused the shape unconditionally. **The operator must engage this point explicitly.** |
-| "no model self-start" | ⚠ the model auto-presses "go" per round. The crux page frames "no model self-start" as an *expression* of maker≠checker (line 88: "never let a model raise its own autonomy ceiling — that is the generator appointing its own verifier"). The ADR's expression/principle distinction IS the crux's own framing. But: "no model self-start" is stated flatly in the doctrine. **The operator must resolve this ambiguity.** |
+| "auto retry/re-plan = the ladder" | ⚠ partial — this IS auto retry/re-plan, but bounded by a deterministic stop + a human ceiling gate. The ladder's structural definition (per ADR 0006 itself) was the **ratchet** — flag-gated escalation across notches — which this ADR does not re-arm (no flag, no notches, no self-launch, no auto-push). L3's substance was auto-continue within a human-started session, coupled to the flag; 0006 did not merely retire the flag, it **stripped `--auto` and restored the per-iteration human gate**. Refusal #3 refused the *shape* ("auto retry/re-plan IS the ladder") unconditionally — it did not condition on a stop, a flag, or bounds — and refused a *bundle* ("mandatory-verify-everything **plus** auto-retry"); this ADR has only the second half. The convergence gate (shipped 2026-08-13, post-dating the refusal) is a deterministic non-convergence signal L3 lacked — new evidence about the *stop*, not the *shape*. **The operator must engage explicitly whether bounded auto-continue (no ratchet) is L3's retired shape re-armed or a separable loop behavior.** |
+| "no model self-start" | ⚠ the model auto-presses "go" per round. The crux page (§88: "never let a model raise its own autonomy ceiling — that is the generator appointing its own verifier") frames "no model self-start" as an *expression* of maker≠checker. **The source ADR 0006 scopes it to self-launch** ("the launchd self-start is gone... no OS-scheduler self-start"), so a per-round continue within an operator-started session is not self-start in 0006's sense — the *compressed* doctrine (CLAUDE.md/decay-cadence) states it flatly, but the source does not. §88's literal concern (the model appointing its own verifier) is not violated: the continue decision is a shell script, not the model, and the ceiling is raised by the operator via this ADR, not by the model. §56 (input-layer circularity — the gate scores the model's own counts) is the real residual, named as risk #2. **The operator's residual question is the L3-shape one above, not a blanket "self-start" ban.** |
 
 ## What this ADR does NOT authorize
 
