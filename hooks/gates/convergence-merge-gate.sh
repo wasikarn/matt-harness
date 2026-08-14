@@ -59,6 +59,14 @@ case "$_norm" in
 esac
 
 # --- Slow path: a candidate merge command. Tokenize precisely in python. ---
+# Resolve this gate's own directory from $0 rather than trusting
+# CLAUDE_PLUGIN_ROOT alone -- hooks.json invokes this file as
+# `bash "${CLAUDE_PLUGIN_ROOT}/hooks/gates/convergence-merge-gate.sh"`, so $0
+# is always the absolute path Claude Code actually launched, in every install
+# mode (plugin cache, symlink farm, or a direct test invocation). An empty or
+# stale CLAUDE_PLUGIN_ROOT env var would otherwise silently hard-block every
+# clean, CI-green merge once the CODEOWNERS import fails below.
+_gate_dir="$(cd -P "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2016  # single quotes are intentional: Python code
 printf '%s' "$_input" | python3 -c '
 import json, os, shlex, sys
@@ -162,75 +170,205 @@ if clean is True:
     # path (wt 25); this closes the same gap on the raw-gh auto path. The
     # merge one-way door now gates on BOTH clean AND CI-green.
     import subprocess
-    ci_args = ["gh", "pr", "checks"]
-    if pr_num:
-        ci_args.append(str(pr_num))
-    ci_args += ["--json", "name,state,conclusion"]
-    try:
-        ci_r = subprocess.run(ci_args, capture_output=True, text=True, timeout=20)
-    except Exception:
-        # gh timed out / not found / unlaunchable -> unknown, NOT N/A. Fail
-        # closed: a merge we cannot confirm CI-green is not allowed.
-        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-              " (gh pr checks errored/timed out); cannot confirm CI green. "
-              "Use /kbg:ship-merge to merge -- it scores CI.", file=sys.stderr)
-        sys.exit(2)
-    ci_checks = None
-    if ci_r.stdout.strip():
+
+    def ci_check_passed():
+        # Returns True only when CI is green or genuinely N/A (no CI
+        # configured) -- every other outcome exits(2) directly from inside
+        # here, unchanged from before. Factored into a function (kbg:
+        # plan-reviewer Critical #2, 2026-08-15) so there is exactly ONE
+        # place code can fall through to an allow -- the two separate
+        # sys.exit(0) call sites this used to have would each independently
+        # skip the CODEOWNERS check below, silently, for the "no CI
+        # configured" case in particular.
+        ci_args = ["gh", "pr", "checks"]
+        if pr_num:
+            ci_args.append(str(pr_num))
+        ci_args += ["--json", "name,state,conclusion"]
         try:
-            ci_checks = json.loads(ci_r.stdout)
+            ci_r = subprocess.run(ci_args, capture_output=True, text=True, timeout=20)
         except Exception:
-            ci_checks = None
-    if ci_checks is None:
-        # Unparseable or empty stdout. Distinguish no-CI from a gh error:
-        # empty + returncode 0 => repo has no CI configured => N/A => allow.
-        # empty/unparseable + returncode != 0 => gh errored (auth, no PR,
-        # rate limit) => unknown, NOT N/A => fail closed. (A real check
-        # failure still outputs JSON with --json and exits 0; a nonzero exit
-        # here means gh itself failed, not that a check failed.)
-        if ci_r.returncode == 0:
-            sys.exit(0)
-        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-              " (gh pr checks exit={}); cannot confirm CI green. "
-              "Use /kbg:ship-merge to merge -- it scores CI.".format(
-                  ci_r.returncode), file=sys.stderr)
-        sys.exit(2)
-    if not isinstance(ci_checks, list):
-        # Parseable but NOT a list (e.g. a gh error object {"message": ...}
-        # some gh error/GraphQL paths emit, or any future non-array shape).
-        # Fail closed: a non-list stdout is not a check result we can score,
-        # and its returncode was not consulted in the is-None branch above.
-        # Closes the dict-with-rc!=0 bypass (a parseable non-list used to fall
-        # through to the exit(0) allow). Found by the compliance-audit
-        # adversarial verifier (OPEN #1); a security perimeter must not rely
-        # on a subprocess stdout shape staying list-only across versions.
-        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-              " (gh pr checks returned a non-list response); cannot confirm"
-              " CI green. Use /kbg:ship-merge to merge -- it scores CI.",
-              file=sys.stderr)
-        sys.exit(2)
-    # ponytail: treat ALL checks (cannot filter on required: true -- gh pr
-    # checks --json has no required field). SUCCESS/NEUTRAL/SKIPPED = green;
-    # anything else (FAILURE, TIMED_OUT, CANCELLED, ACTION_REQUIRED, or
-    # null=pending) = not green -> deny. Pending -> deny is correct: do not
-    # merge while CI is running; ship-merge scores pending CI low too.
-    # Ceiling: filter on required: true once gh exposes it reliably, so a
-    # failing non-required check does not block. Stricter-now is the safe
-    # direction (deny -> redirect to the ship-merge required-check gate).
-    if isinstance(ci_checks, list) and ci_checks:
-        bad = [(c.get("name", "?") if isinstance(c, dict) else "<non-dict>")
-               for c in ci_checks
-               if not isinstance(c, dict)
-               or c.get("conclusion") not in ("SUCCESS", "NEUTRAL", "SKIPPED")]
-        if bad:
-            print("[kbg:gate] BLOCKED: clean review but CI not green"
-                  " -- {} not SUCCESS. Use /kbg:ship-merge to merge"
-                  " (it scores CI at weight 25).".format(", ".join(bad[:5])),
+            # gh timed out / not found / unlaunchable -> unknown, NOT N/A. Fail
+            # closed: a merge we cannot confirm CI-green is not allowed.
+            print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+                  " (gh pr checks errored/timed out); cannot confirm CI green. "
+                  "Use /kbg:ship-merge to merge -- it scores CI.", file=sys.stderr)
+            sys.exit(2)
+        ci_checks = None
+        if ci_r.stdout.strip():
+            try:
+                ci_checks = json.loads(ci_r.stdout)
+            except Exception:
+                ci_checks = None
+        if ci_checks is None:
+            # Unparseable or empty stdout. Distinguish no-CI from a gh error:
+            # empty + returncode 0 => repo has no CI configured => N/A => pass.
+            # empty/unparseable + returncode != 0 => gh errored (auth, no PR,
+            # rate limit) => unknown, NOT N/A => fail closed. (A real check
+            # failure still outputs JSON with --json and exits 0; a nonzero exit
+            # here means gh itself failed, not that a check failed.)
+            if ci_r.returncode == 0:
+                return True
+            print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+                  " (gh pr checks exit={}); cannot confirm CI green. "
+                  "Use /kbg:ship-merge to merge -- it scores CI.".format(
+                      ci_r.returncode), file=sys.stderr)
+            sys.exit(2)
+        if not isinstance(ci_checks, list):
+            # Parseable but NOT a list (e.g. a gh error object {"message": ...}
+            # some gh error/GraphQL paths emit, or any future non-array shape).
+            # Fail closed: a non-list stdout is not a check result we can score,
+            # and its returncode was not consulted in the is-None branch above.
+            # Closes the dict-with-rc!=0 bypass (a parseable non-list used to fall
+            # through to the allow). Found by the compliance-audit
+            # adversarial verifier (OPEN #1); a security perimeter must not rely
+            # on a subprocess stdout shape staying list-only across versions.
+            print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+                  " (gh pr checks returned a non-list response); cannot confirm"
+                  " CI green. Use /kbg:ship-merge to merge -- it scores CI.",
                   file=sys.stderr)
             sys.exit(2)
-    # empty list => no CI configured for this repo => N/A (not zeroed) =>
-    # allow. CI is not this repo merge model (direct-push-to-develop); the
-    # check only bites when CI IS configured and not green.
+        # ponytail: treat ALL checks (cannot filter on required: true -- gh pr
+        # checks --json has no required field). SUCCESS/NEUTRAL/SKIPPED = green;
+        # anything else (FAILURE, TIMED_OUT, CANCELLED, ACTION_REQUIRED, or
+        # null=pending) = not green -> deny. Pending -> deny is correct: do not
+        # merge while CI is running; ship-merge scores pending CI low too.
+        # Ceiling: filter on required: true once gh exposes it reliably, so a
+        # failing non-required check does not block. Stricter-now is the safe
+        # direction (deny -> redirect to the ship-merge required-check gate).
+        if ci_checks:
+            bad = [(c.get("name", "?") if isinstance(c, dict) else "<non-dict>")
+                   for c in ci_checks
+                   if not isinstance(c, dict)
+                   or c.get("conclusion") not in ("SUCCESS", "NEUTRAL", "SKIPPED")]
+            if bad:
+                print("[kbg:gate] BLOCKED: clean review but CI not green"
+                      " -- {} not SUCCESS. Use /kbg:ship-merge to merge"
+                      " (it scores CI at weight 25).".format(", ".join(bad[:5])),
+                      file=sys.stderr)
+                sys.exit(2)
+        # empty list or all-green list => allow (empty = no CI configured for
+        # this repo => N/A, not zeroed -- CI is not this repo merge model,
+        # direct-push-to-develop; the check only bites when CI IS configured
+        # and not green).
+        return True
+
+    if not ci_check_passed():
+        sys.exit(2)  # unreachable today (ci_check_passed only returns True or
+                      # exits(2) itself) -- kept so a future change to that
+                      # function cannot silently fall through to an allow here.
+
+    # --- CODEOWNERS check (2026-08-15) --- runs only once CI has passed or is
+    # N/A, closing a previously-named residual gap in this file: ship-merge.md
+    # step 7 CODEOWNER check only ran through markdown prose there, never
+    # through this gate, so a raw ad-hoc `gh pr merge` bypassed CODEOWNERS
+    # entirely even on a clean, CI-green review.
+    if os.environ.get("KBG_SKIP_CODEOWNERS_GATE") == "1":
+        sys.exit(0)
+
+    # gate_dir is the directory this script lives in, resolved from $0 by the bash
+    # wrapper above (argv[1] here) -- reliable in every install mode. Only
+    # falls back to CLAUDE_PLUGIN_ROOT if that somehow came through empty.
+    gate_dir = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else ""
+    if not gate_dir:
+        gate_dir = os.path.join(os.environ.get("CLAUDE_PLUGIN_ROOT", ""), "hooks", "gates")
+    lib_dir = os.path.join(gate_dir, "lib")
+    sys.path.insert(0, lib_dir)
+    try:
+        from _codeowners_match import evaluate, discover_live
+    except Exception:
+        # Cannot confirm CODEOWNER approval without the matcher -- fail
+        # closed, same as every other cannot-confirm branch in this file.
+        print("[kbg:gate] BLOCKED: clean review but the CODEOWNERS matcher"
+              " (" + lib_dir + ") could not be imported; cannot confirm"
+              " CODEOWNER approval. Use /kbg:ship-merge to merge, or set"
+              " KBG_SKIP_CODEOWNERS_GATE=1 if this repo has no CODEOWNERS"
+              " policy to enforce.", file=sys.stderr)
+        sys.exit(2)
+
+    pv_args = ["gh", "pr", "view"]
+    if pr_num:
+        pv_args.append(str(pr_num))
+    pv_args += ["--json", "headRefOid,files,reviews"]
+    try:
+        pv_r = subprocess.run(pv_args, capture_output=True, text=True, timeout=10)
+    except Exception:
+        print("[kbg:gate] BLOCKED: clean review but PR data unreadable"
+              " (gh pr view errored/timed out); cannot confirm CODEOWNER"
+              " approval. Use /kbg:ship-merge to merge.", file=sys.stderr)
+        sys.exit(2)
+    if pv_r.returncode != 0:
+        print("[kbg:gate] BLOCKED: clean review but PR data unreadable"
+              " (gh pr view exit={}); cannot confirm CODEOWNER approval."
+              " Use /kbg:ship-merge to merge.".format(pv_r.returncode),
+              file=sys.stderr)
+        sys.exit(2)
+    try:
+        pv = json.loads(pv_r.stdout)
+    except Exception:
+        pv = None
+    if not isinstance(pv, dict):
+        print("[kbg:gate] BLOCKED: clean review but PR data unparseable or"
+              " has an unexpected shape; cannot confirm CODEOWNER approval."
+              " Use /kbg:ship-merge to merge.", file=sys.stderr)
+        sys.exit(2)
+
+    head_sha = pv.get("headRefOid")
+    if not head_sha:
+        print("[kbg:gate] BLOCKED: clean review but PR head SHA unreadable;"
+              " cannot confirm CODEOWNER approval. Use /kbg:ship-merge to"
+              " merge.", file=sys.stderr)
+        sys.exit(2)
+    changed_files = [f.get("path", "") for f in pv.get("files", []) if isinstance(f, dict)]
+    reviews = pv.get("reviews", [])
+    if not isinstance(reviews, list):
+        reviews = []
+
+    try:
+        content, found, disc_error = discover_live(head_sha)
+    except Exception:
+        print("[kbg:gate] BLOCKED: clean review but CODEOWNERS fetch"
+              " errored/timed out; cannot confirm CODEOWNER approval."
+              " Use /kbg:ship-merge to merge.", file=sys.stderr)
+        sys.exit(2)
+    if disc_error:
+        print("[kbg:gate] BLOCKED: clean review but CODEOWNERS fetch failed"
+              " ({}), not confirmed absent. Use /kbg:ship-merge to"
+              " merge.".format(disc_error), file=sys.stderr)
+        sys.exit(2)
+
+    if found:
+        verdict, reason, detail_lines = evaluate(content, changed_files, reviews)
+        if verdict == "STOP":
+            print("[kbg:gate] BLOCKED: clean review + CI green, but CODEOWNER"
+                  " approval missing ({}). Use /kbg:ship-merge to merge -- it"
+                  " checks CODEOWNERS too.".format(reason), file=sys.stderr)
+            for line in detail_lines:
+                print(line, file=sys.stderr)
+            sys.exit(2)
+        if verdict == "DEFERRED":
+            # Cannot verify a team/email owner via the reviews API -- ask a
+            # human right here instead of a hard block. A hard block would
+            # dead-end: ship-merge.md itself resolves this exact case via
+            # a human AskUserQuestion confirmation immediately before the
+            # SAME `gh pr merge` command this gate intercepts, so blocking it
+            # here would tell the user to run the command that just hit this
+            # wall (kbg:plan-reviewer Critical #1, 2026-08-15). STOP above
+            # stays a hard block -- it means "verified no," not "unknown."
+            detail = " ".join(line.strip() for line in detail_lines)
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "ask",
+                    "permissionDecisionReason": (
+                        "CODEOWNER entry requires an unverifiable team/email"
+                        " approval (" + reason + ") -- confirm a real owner"
+                        " has approved before merging. " + detail
+                    ),
+                }
+            }))
+            sys.exit(0)
+        # verdict == "PASS" -> fall through to the allow below.
+
     sys.exit(0)
 
 # ponytail: block on `clean` only, not on force_human / round-ceiling. The
@@ -252,7 +390,7 @@ reason += (" /kbg:ship-merge is the merge path -- it reads this convergence "
            "state and blocks non-clean reviews by score. Do not raw-merge.")
 print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)
 sys.exit(2)
-'
+' "$_gate_dir"
 rc=$?
 if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
   echo "[kbg:gate] internal error (rc=$rc) — failing closed" >&2

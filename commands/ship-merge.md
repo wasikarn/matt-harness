@@ -64,152 +64,26 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
    **Locate CODEOWNERS pinned to this PR's head SHA** (not the local working tree — Phase 2's checkout/rebase hasn't run yet, so local files aren't guaranteed to reflect the PR), in GitHub's own documented search order (`.github/`, root, `docs/` — first one found wins, this is not a merge of all three), **distinguishing a genuine 404 (file absent) from any other fetch error** (auth, rate-limit) — the two get opposite verdicts below:
    ```bash
-   CODEOWNERS_CONTENT=""
+   CODEOWNERS_CONTENT=$(python3 "${KBG_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" --discover "<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
+   DISCOVER_RC=$?
    CODEOWNERS_FOUND=0
    CODEOWNERS_ERROR=""
-   for path in ".github/CODEOWNERS" "CODEOWNERS" "docs/CODEOWNERS"; do
-     OUT=$(gh api -H "Accept: application/vnd.github.raw" "repos/{owner}/{repo}/contents/${path}?ref=<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
-     RC=$?
-     if [ "$RC" -eq 0 ]; then CODEOWNERS_CONTENT="$OUT"; CODEOWNERS_FOUND=1; break; fi
-     ERR=$(cat "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null)
-     if ! printf '%s' "$ERR" | grep -q "404"; then CODEOWNERS_ERROR="$ERR"; break; fi
-   done
+   if [ "$DISCOVER_RC" -eq 0 ]; then
+     CODEOWNERS_FOUND=1
+   elif [ "$DISCOVER_RC" -ne 3 ]; then
+     CODEOWNERS_ERROR=$(cat "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null)
+   fi
    trash "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null
    ```
-   Branches on the actual exit status, not on whether stdout came back non-empty — an existing-but-EMPTY `.github/CODEOWNERS` (zero owner rules, first in search order per GitHub's own docs) must still short-circuit the search the same way GitHub itself does, but it must be labeled "found, zero rules," not misread as "absent everywhere" the way a content-emptiness check would collapse the two. The raw accept header returns content directly, no base64 decode. If `$CODEOWNERS_ERROR` is non-empty → **fail-closed, STOP** — "CODEOWNERS fetch failed ($CODEOWNERS_ERROR), not confirmed absent — the 'never fabricate a clean result' rule applies here too." If the loop exhausted all three paths with `$CODEOWNERS_FOUND` still `0` → **N/A**, proceed to Phase 2 (verified-absent-everywhere, same treatment as CI's absence above).
+   The discovery loop itself (3-path search order, exit-code-based found/absent/error distinction) lives in the shared `hooks/gates/lib/_codeowners_match.py`'s `discover()` — the exact same implementation `hooks/gates/convergence-merge-gate.sh`'s own CODEOWNER check imports in-process, not a second, independently-maintained copy. `--discover <head_sha>` exit codes: `0` = found (content on stdout, possibly empty — still authoritative per GitHub's first-found-wins search order, not the same as absent), `3` = genuinely absent everywhere (verified-N/A), `4` = a real fetch error (message on stderr instead of stdout). If `$CODEOWNERS_ERROR` is non-empty → **fail-closed, STOP** — "CODEOWNERS fetch failed ($CODEOWNERS_ERROR), not confirmed absent — the 'never fabricate a clean result' rule applies here too." If `$CODEOWNERS_FOUND` is still `0` → **N/A**, proceed to Phase 2 (verified-absent-everywhere, same treatment as CI's absence above).
 
-   **If `$CODEOWNERS_FOUND` is `1`**, parse + match with a real translator, not prose reasoning — run this even when `$CODEOWNERS_CONTENT` is empty (an empty or comment-only file naturally parses to zero rules; the script's own `no-owned-files-changed` branch below already handles that correctly, so don't special-case it above the script) — GitHub's documented CODEOWNERS grammar (verified against GitHub's own docs, 2026-08-14 — two `.gitignore` features explicitly do NOT carry over: `[ ]` character ranges and `!` negation, so the matcher needs neither: no `/` in a pattern matches the basename at any depth; a `/` anywhere except a lone trailing one anchors to the repo root; a trailing `/` matches that directory and everything under it; `*` matches within one path segment, `**` crosses segments, `?` matches one character; last-matching-line wins). Reuse `gh pr diff <n> --name-only` (step 6's automation-bias guard already calls it — don't fetch twice) and step 4's already-fetched `gh pr view <n> --json reviews -q .reviews` (also don't re-fetch):
+   **If `$CODEOWNERS_FOUND` is `1`**, parse + match with a real translator, not prose reasoning — run this even when `$CODEOWNERS_CONTENT` is empty (an empty or comment-only file naturally parses to zero rules; the shared script's own `no-owned-files-changed` branch already handles that correctly, so don't special-case it above the script). Matching logic — GitHub's documented CODEOWNERS grammar (verified against GitHub's own docs, 2026-08-14 — two `.gitignore` features explicitly do NOT carry over: `[ ]` character ranges and `!` negation, so the matcher needs neither: no `/` in a pattern matches the basename at any depth; a `/` anywhere except a lone trailing one anchors to the repo root; a trailing `/` matches that directory and everything under it; `*` matches within one path segment, `**` crosses segments, `?` matches one character; last-matching-line wins) — lives in the same shared script, not embedded here. Reuse `gh pr diff <n> --name-only` (step 6's automation-bias guard already calls it — don't fetch twice) and step 4's already-fetched `gh pr view <n> --json reviews -q .reviews` (also don't re-fetch):
    ```bash
    CHANGED_FILES=$(gh pr diff <n> --name-only)
    REVIEWS_JSON=$(gh pr view <n> --json reviews -q .reviews)
-   python3 -c '
-import json, re, sys
-
-def translate_pattern(pat):
-    if "[" in pat or pat.startswith("!"):
-        return None
-    is_dir = pat.endswith("/")
-    p = pat[:-1] if is_dir else pat
-    if not p:
-        return None
-    anchored = "/" in p
-    if p.startswith("/"):
-        p = p[1:]
-    segments = p.split("/") if p else []
-    if not segments:
-        return None
-    globstar_count = sum(1 for s in segments if s == "**")
-    if globstar_count > 1:
-        return None
-    def seg_to_regex(seg):
-        part = ""
-        for c in seg:
-            if c == "*": part += "[^/]*"
-            elif c == "?": part += "[^/]"
-            else: part += re.escape(c)
-        return part
-    if globstar_count == 1:
-        idx = segments.index("**")
-        before, after = segments[:idx], segments[idx + 1:]
-        before_re = "/".join(seg_to_regex(s) for s in before)
-        after_re = "/".join(seg_to_regex(s) for s in after)
-        if before_re and after_re: body = before_re + "/(?:.*/)?" + after_re
-        elif before_re: body = before_re + "(?:/.*)?"
-        elif after_re: body = "(?:.*/)?" + after_re
-        else: body = ".*"
-    else:
-        body = "/".join(seg_to_regex(s) for s in segments)
-    body = ("^" + body) if anchored else ("(^|.*/)" + body)
-    body += "(/.*)?$" if is_dir else "$"
-    try:
-        return re.compile(body)
-    except re.error:
-        return None
-
-def parse_codeowners(text):
-    rules = []
-    for raw_line in text.splitlines():
-        line = raw_line.split("#", 1)[0].strip()
-        if not line:
-            continue
-        parts = line.split()
-        if len(parts) < 2:
-            continue
-        pattern, owners = parts[0], parts[1:]
-        rules.append((pattern, translate_pattern(pattern), owners))
-    return rules
-
-def owners_for_file(rules, path):
-    result, unsupported = None, False
-    for _pattern, regex, owners in rules:
-        if regex is None:
-            unsupported = True
-            continue
-        if regex.match(path):
-            result = owners
-    return result, unsupported
-
-codeowners_text, changed_files_text, reviews_json = sys.argv[1:4]
-rules = parse_codeowners(codeowners_text)
-required = {}
-any_unsupported = False
-for f in changed_files_text.splitlines():
-    f = f.strip()
-    if not f:
-        continue
-    owners, unsupported = owners_for_file(rules, f)
-    if unsupported:
-        any_unsupported = True
-    if owners:
-        for o in owners:
-            required.setdefault(o, set()).add(f)
-
-if any_unsupported:
-    print("STOP"); print("reason=unparseable-pattern"); sys.exit(0)
-if not required:
-    print("PASS"); print("reason=no-owned-files-changed"); sys.exit(0)
-
-reviews = json.loads(reviews_json)
-# Only these three states carry review-decision weight on GitHub; a COMMENTED
-# review left after an APPROVED one does not revoke the approval, so it must
-# not overwrite it here.
-DECISION_STATES = {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}
-latest_by_author = {}
-for r in reviews:
-    login = (r.get("author") or {}).get("login")
-    state = r.get("state")
-    if login and state in DECISION_STATES:
-        latest_by_author[login] = state  # array order == chronological; last write wins
-approved = set(a for a, s in latest_by_author.items() if s == "APPROVED")
-
-unsatisfied_user, unsatisfied_team = [], []
-for owner, files in required.items():
-    if owner.startswith("@"):
-        if "/" in owner:
-            unsatisfied_team.append((owner, sorted(files)))
-        elif owner.lstrip("@") not in approved:
-            unsatisfied_user.append((owner, sorted(files)))
-    else:
-        # A bare email-address owner (GitHub CODEOWNERS supports these) --
-        # the reviews API only returns GitHub logins, never emails, so this
-        # matcher cannot resolve it either way. Same DEFERRED treatment as
-        # an @org/team entry, not a permanent, unsatisfiable STOP.
-        unsatisfied_team.append((owner, sorted(files)))
-
-if unsatisfied_user:
-    print("STOP"); print("reason=missing-user-approval")
-    for owner, files in unsatisfied_user:
-        print("  %s needed for: %s" % (owner, ", ".join(files)))
-    sys.exit(0)
-if unsatisfied_team:
-    print("DEFERRED"); print("reason=unverified-owner-approval")
-    for owner, files in unsatisfied_team:
-        print("  %s needed for: %s" % (owner, ", ".join(files)))
-    sys.exit(0)
-print("PASS"); print("reason=all-required-owners-approved")
-' "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON"
+   python3 "${KBG_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON"
    ```
-   Verified against 16 fixture cases plus the last-match-wins and fail-closed-on-unparseable scenarios (2026-08-14) — exact path match, `*.ext` any-depth, `/docs/` root-anchored directory, `apps/` unanchored directory, `docs/*` single-level-only (confirmed a nested file does NOT match), `db/**/index.md` recursive, an `[abc]` bracket pattern correctly failing the whole check closed rather than silently resolving to no-match.
+   Verified against 18 fixture cases (matching-engine cases — exact path match, `*.ext` any-depth, `/docs/` root-anchored directory, `apps/` unanchored directory, `docs/*` single-level-only confirming a nested file does NOT match, `db/**/index.md` recursive, last-match-wins, an `[abc]` bracket pattern correctly failing the whole check closed rather than silently resolving to no-match — plus the review-decision-state and email-owner-`DEFERRED` regressions) plus `discover()`'s own found/found-but-empty/absent/error fixtures — `tests/commands/test-ship-merge-codeowners.sh` and `tests/hooks/test-convergence-merge-gate.sh` both exercise the shared script directly, not a markdown-embedded copy.
 
    **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (any unsatisfied `@username` entry, regardless of what else, or an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure, render the reason + file/owner detail lines. `DEFERRED` (every remaining unsatisfied entry is `@org/team` or a bare email address — this matcher can't resolve either against the reviews API's usernames) → do not stop here — carry the printed file/team detail lines forward into Phase 2 step 5's confirmation prompt for explicit human acknowledgment before merge (the same "make a human knowingly accept a real bypass" pattern this file already uses for the branch-protection `--admin` bypass) — proceed to Phase 2.
 

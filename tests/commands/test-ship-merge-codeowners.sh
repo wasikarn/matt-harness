@@ -1,37 +1,32 @@
 #!/usr/bin/env bash
-# Regression test for commands/ship-merge.md's Phase 1 step 7 CODEOWNER check:
-# the CODEOWNERS-discovery bash loop and the embedded python3 matcher/approval
-# script. Extracts both the same way a user's shell would run them, no mocking
-# of the matching logic itself.
+# Regression test for the CODEOWNER check: the shared
+# hooks/gates/lib/_codeowners_match.py (evaluate() + discover()) and
+# commands/ship-merge.md's Phase 1 step 7 wiring around it.
 #
-# Built by a deep-audit pass (2026-08-15) that found this matcher had NEVER had
-# a persisted test — only ephemeral /tmp fixture runs during the original build
-# (a4204e1) and a compliance-audit's live spot-checks (dce81fe/60f368e, a
-# different command). "Verified against 16 fixture cases" in a4204e1's own
-# commit message was true when written; it just wasn't reproducible. This file
-# makes it reproducible, and pins 3 real bugs the same audit found by executing
-# (not just reading) the shipped logic:
-#   1. The discovery loop judged "found" by non-empty stdout, not gh api's exit
-#      code -- an existing-but-EMPTY .github/CODEOWNERS short-circuited after
-#      one path with both CODEOWNERS_CONTENT and CODEOWNERS_ERROR empty, which
-#      the file's own prose then read as "all three genuinely 404'd" -- true
-#      only by coincidence, not by anything the code actually checked. Fixed to
-#      branch on the real exit status.
-#   2. latest_by_author tracked every review state including COMMENTED, so an
-#      ordinary "approve, then leave a follow-up comment" sequence overwrote
-#      APPROVED and produced a false STOP. GitHub's own review-decision model
-#      only treats APPROVED/CHANGES_REQUESTED/DISMISSED as state-changing.
-#   3. A bare email-address owner (GitHub CODEOWNERS syntax; no "@" prefix) had
-#      no DEFERRED path -- it fell into the @username branch, could never
-#      appear in the reviews API's login set, and permanently STOPped. Same
-#      class of bug plan-reviewer already caught for @org/team before shipping;
-#      this one used a narrower detection check that missed the email shape.
+# MIGRATED 2026-08-15: the matcher and discovery loop used to be embedded
+# in ship-merge.md's markdown and extracted via regex here. A
+# kbg:plan-reviewer pass on a plan to add CODEOWNERS awareness to
+# hooks/gates/convergence-merge-gate.sh (needs-revision, High #2) flagged
+# that leaving the discovery loop unshared -- reimplemented independently
+# in the hook -- repeated the exact "same logic in 2+ files, no
+# machine-check" pattern this repo has already been bitten by. Both the
+# matcher and the discovery loop are now in _codeowners_match.py, imported
+# directly here (no markdown-regex extraction needed for those), plus one
+# small end-to-end check that ship-merge.md's own bash wiring around
+# --discover's exit codes still does the right thing.
+#
+# Original build (a4204e1) claimed "verified against 16 fixture cases" --
+# true when written, not reproducible; a later deep-audit pass (cdd3cbd)
+# found and fixed 3 real bugs by executing the shipped logic, not just
+# reading it, and built this file. That history is why every case below
+# still exists even after the file's physical shape changed.
 #
 # Run standalone: bash tests/commands/test-ship-merge-codeowners.sh
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SHIP_MERGE_MD="$ROOT/commands/ship-merge.md"
+CM_LIB="$ROOT/hooks/gates/lib"
 
 pass=0
 fail=0
@@ -50,124 +45,169 @@ assert() {
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# --- Extract the embedded python3 matcher (the block invoked as
-#     `python3 -c '...' "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON"`) ---
-python3 - "$SHIP_MERGE_MD" "$WORK/matcher.py" <<'EXTRACT'
-import re, sys
-content = open(sys.argv[1]).read()
-m = re.search(r"python3 -c '\n(.*?)\n' \"\$CODEOWNERS_CONTENT\"", content, re.S)
-if not m:
-    sys.exit("could not locate the embedded CODEOWNERS matcher block")
-open(sys.argv[2], "w").write(m.group(1))
-EXTRACT
-if [[ ! -s "$WORK/matcher.py" ]]; then
-  assert "extracted the embedded CODEOWNERS matcher script" 0
-  echo "=== 0/1 passed (extraction failed, cannot run any fixture) ===" >&2
-  exit 1
-fi
-python3 -c "import ast; ast.parse(open('$WORK/matcher.py').read())" 2>/dev/null
-assert "extracted matcher is syntactically valid python" "$([[ $? -eq 0 ]] && echo 1 || echo 0)"
+python3 -c "import ast; ast.parse(open('$CM_LIB/_codeowners_match.py').read())" 2>/dev/null
+assert "_codeowners_match.py is syntactically valid python" "$([[ $? -eq 0 ]] && echo 1 || echo 0)"
 
-run_matcher() {
-  # args: codeowners_text changed_files_text reviews_json
-  python3 -c "$(cat "$WORK/matcher.py")" "$1" "$2" "$3" 2>/dev/null
+# === Part 1: evaluate() -- matching engine + review-decision + owner-shape fixtures ===
+run_matcher_suite() {
+python3 - "$CM_LIB" <<'PYEOF'
+import sys, json
+sys.path.insert(0, sys.argv[1])
+import _codeowners_match as cm
+
+cases = [
+    ("exact path match, approved -> PASS", 'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED"}], "PASS"),
+    ("exact path match, not approved -> STOP", 'src/a.py @alice', ['src/a.py'], [], "STOP"),
+    ("wildcard matches any depth", '*.md @bob', ['docs/deep/x.md'],
+     [{"author":{"login":"bob"},"state":"APPROVED"}], "PASS"),
+    ("root-anchored directory pattern matches", '/docs/ @carol', ['docs/x.md'],
+     [{"author":{"login":"carol"},"state":"APPROVED"}], "PASS"),
+    ("root-anchored directory does not match elsewhere", '/docs/ @carol', ['other/docs/x.md'], [], "PASS"),
+    ("unanchored directory pattern matches at any depth", 'apps/ @dave', ['x/apps/y.py'],
+     [{"author":{"login":"dave"},"state":"APPROVED"}], "PASS"),
+    ("single-level pattern does NOT match a nested file", 'docs/* @erin', ['docs/sub/deep.md'], [], "PASS"),
+    ("single-level pattern matches a direct child", 'docs/* @erin', ['docs/deep.md'],
+     [{"author":{"login":"erin"},"state":"APPROVED"}], "PASS"),
+    ("recursive globstar matches zero intervening segments", 'db/**/index.md @frank', ['db/index.md'],
+     [{"author":{"login":"frank"},"state":"APPROVED"}], "PASS"),
+    ("recursive globstar matches one intervening segment", 'db/**/index.md @frank', ['db/sub/index.md'],
+     [{"author":{"login":"frank"},"state":"APPROVED"}], "PASS"),
+    ("last-matching-line wins", '*.py @old\n*.py @new', ['a.py'],
+     [{"author":{"login":"new"},"state":"APPROVED"}], "PASS"),
+    ("unparseable [bracket] pattern fails the whole check closed", '[abc].py @g', ['x.py'], [], "STOP"),
+    ("@org/team owner defers instead of permanent STOP", '*.py @org/team', ['a.py'], [], "DEFERRED"),
+    ("no owned files among changed files -> PASS", '*.md @h', ['src/a.py'], [], "PASS"),
+    ("empty CODEOWNERS content parses to zero rules -> PASS", '', ['src/a.py'], [], "PASS"),
+    ("comment-only CODEOWNERS content -> PASS", '# just a comment', ['src/a.py'], [], "PASS"),
+    ("BUG FIX: a COMMENTED review after APPROVED must not revoke it",
+     'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"COMMENTED"}],
+     "PASS"),
+    ("BUG FIX: a bare email-address owner defers instead of permanent STOP",
+     'src/a.py docs@example.com', ['src/a.py'], [], "DEFERRED"),
+    ("CHANGES_REQUESTED after an earlier APPROVED still blocks (decision states still override)",
+     'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"CHANGES_REQUESTED"}],
+     "STOP"),
+]
+
+fails = []
+for desc, codeowners, changed, reviews, expected in cases:
+    verdict, reason, detail = cm.evaluate(codeowners, changed, reviews)
+    ok = verdict == expected
+    print("%s|%s (expected %s, got %s)" % ("1" if ok else "0", desc, expected, verdict))
+    if not ok:
+        fails.append(desc)
+sys.exit(1 if fails else 0)
+PYEOF
 }
+while IFS='|' read -r ok desc; do
+  assert "$desc" "$ok"
+done < <(run_matcher_suite)
 
-check_verdict() {
-  local desc="$1" codeowners="$2" changed="$3" reviews="$4" expected="$5"
-  local out first_line
-  out=$(run_matcher "$codeowners" "$changed" "$reviews")
-  first_line=$(printf '%s\n' "$out" | head -1)
-  assert "$desc (expected $expected, got '${first_line:-<empty>}')" "$([[ "$first_line" == "$expected" ]] && echo 1 || echo 0)"
+# === Part 2: discover() -- discovery-loop fixtures, no shelling out ===
+run_discover_suite() {
+python3 - "$CM_LIB" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+import _codeowners_match as cm
+
+def check(desc, run_gh, expected):
+    got = cm.discover(run_gh)
+    ok = got == expected
+    print("%s|%s (expected %s, got %s)" % ("1" if ok else "0", desc, expected, got))
+    return ok
+
+fails = []
+
+if not check(
+    "found at first path with content",
+    lambda p: (0, 'src/a.py @alice', '') if p == '.github/CODEOWNERS' else (1, '', 'gh: Not Found (HTTP 404)'),
+    ('src/a.py @alice', True, ''),
+):
+    fails.append(1)
+
+calls = []
+def gh_empty_first(p):
+    calls.append(p)
+    if p == '.github/CODEOWNERS':
+        return (0, '', '')
+    return (0, 'src/a.py @alice', '')  # would be found if the bug incorrectly continued past .github
+
+ok = check("BUG FIX: found-but-empty at first path short-circuits (does not try root)",
+           gh_empty_first, ('', True, ''))
+ok = ok and calls == ['.github/CODEOWNERS']
+print("%s|discover() tried exactly 1 path for the found-but-empty case, tried: %s" % ("1" if calls == ['.github/CODEOWNERS'] else "0", calls))
+if not ok:
+    fails.append(2)
+
+if not check("all three paths 404 -> verified absent", lambda p: (1, '', 'gh: Not Found (HTTP 404)'), ('', False, '')):
+    fails.append(3)
+
+calls2 = []
+def gh_error(p):
+    calls2.append(p)
+    return (1, '', 'gh: authentication required')
+ok = check("non-404 fetch error fails closed", gh_error, ('', False, 'gh: authentication required'))
+print("%s|non-404 error stops after 1 path, tried: %s" % ("1" if calls2 == ['.github/CODEOWNERS'] else "0", calls2))
+if not (ok and calls2 == ['.github/CODEOWNERS']):
+    fails.append(4)
+
+if not check(
+    "falls through 404s to the third path",
+    lambda p: (0, 'x @z', '') if p == 'docs/CODEOWNERS' else (1, '', 'gh: Not Found (HTTP 404)'),
+    ('x @z', True, ''),
+):
+    fails.append(5)
+
+sys.exit(1 if fails else 0)
+PYEOF
 }
+while IFS='|' read -r ok desc; do
+  assert "$desc" "$ok"
+done < <(run_discover_suite)
 
-# --- Core matching-engine fixtures (the 16 cases verified ephemerally at build time) ---
-check_verdict "exact path match, approved -> PASS" \
-  'src/a.py @alice' 'src/a.py' '[{"author":{"login":"alice"},"state":"APPROVED"}]' PASS
-check_verdict "exact path match, not approved -> STOP" \
-  'src/a.py @alice' 'src/a.py' '[]' STOP
-check_verdict "wildcard matches any depth" \
-  '*.md @bob' 'docs/deep/x.md' '[{"author":{"login":"bob"},"state":"APPROVED"}]' PASS
-check_verdict "root-anchored directory pattern matches" \
-  '/docs/ @carol' 'docs/x.md' '[{"author":{"login":"carol"},"state":"APPROVED"}]' PASS
-check_verdict "root-anchored directory does not match elsewhere" \
-  '/docs/ @carol' 'other/docs/x.md' '[]' PASS
-check_verdict "unanchored directory pattern matches at any depth" \
-  'apps/ @dave' 'x/apps/y.py' '[{"author":{"login":"dave"},"state":"APPROVED"}]' PASS
-check_verdict "single-level pattern does NOT match a nested file" \
-  'docs/* @erin' 'docs/sub/deep.md' '[]' PASS
-check_verdict "single-level pattern matches a direct child" \
-  'docs/* @erin' 'docs/deep.md' '[{"author":{"login":"erin"},"state":"APPROVED"}]' PASS
-check_verdict "recursive globstar matches zero intervening segments" \
-  'db/**/index.md @frank' 'db/index.md' '[{"author":{"login":"frank"},"state":"APPROVED"}]' PASS
-check_verdict "recursive globstar matches one intervening segment" \
-  'db/**/index.md @frank' 'db/sub/index.md' '[{"author":{"login":"frank"},"state":"APPROVED"}]' PASS
-check_verdict "last-matching-line wins" \
-  '*.py @old
-*.py @new' 'a.py' '[{"author":{"login":"new"},"state":"APPROVED"}]' PASS
-check_verdict "unparseable [bracket] pattern fails the whole check closed" \
-  '[abc].py @g' 'x.py' '[]' STOP
-check_verdict "@org/team owner defers instead of permanent STOP" \
-  '*.py @org/team' 'a.py' '[]' DEFERRED
-check_verdict "no owned files among changed files -> PASS" \
-  '*.md @h' 'src/a.py' '[]' PASS
-check_verdict "empty CODEOWNERS content parses to zero rules -> PASS" \
-  '' 'src/a.py' '[]' PASS
-check_verdict "comment-only CODEOWNERS content -> PASS" \
-  '# just a comment' 'src/a.py' '[]' PASS
-
-# --- Regressions for the 3 bugs this audit found and fixed ---
-check_verdict "BUG FIX: a COMMENTED review after APPROVED must not revoke it" \
-  'src/a.py @alice' 'src/a.py' \
-  '[{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"COMMENTED"}]' \
-  PASS
-check_verdict "BUG FIX: a bare email-address owner defers instead of permanent STOP" \
-  'src/a.py docs@example.com' 'src/a.py' '[]' DEFERRED
-check_verdict "CHANGES_REQUESTED after an earlier APPROVED still blocks (decision states still override)" \
-  'src/a.py @alice' 'src/a.py' \
-  '[{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"CHANGES_REQUESTED"}]' \
-  STOP
-
-# --- Discovery-loop fixture: found-but-empty must not be mislabeled as absent ---
-# Stubs gh api: .github/CODEOWNERS exists but is empty (exit 0, empty stdout);
-# root CODEOWNERS (never reached once .github/CODEOWNERS is found, matching
-# GitHub's own first-found-wins search order) carries a real rule.
+# === Part 3: end-to-end -- ship-merge.md's own bash wiring around --discover's exit codes ===
 python3 - "$SHIP_MERGE_MD" "$WORK/discovery.sh" <<'EXTRACT'
 import re, sys, textwrap
 content = open(sys.argv[1]).read()
 blocks = re.findall(r"```bash\n(.*?)\n   ```", content, re.S)
-loop = next((b for b in blocks if "CODEOWNERS_FOUND" in b), None)
+loop = next((b for b in blocks if "DISCOVER_RC" in b), None)
 if not loop:
-    sys.exit("could not locate the CODEOWNERS discovery loop block")
+    sys.exit("could not locate ship-merge.md's discovery wiring block")
 open(sys.argv[2], "w").write(textwrap.dedent(loop))
 EXTRACT
 if [[ -s "$WORK/discovery.sh" ]]; then
   bash -n "$WORK/discovery.sh" 2>/dev/null
-  assert "extracted discovery loop is syntactically valid bash" "$([[ $? -eq 0 ]] && echo 1 || echo 0)"
+  assert "extracted ship-merge.md discovery wiring is syntactically valid bash" "$([[ $? -eq 0 ]] && echo 1 || echo 0)"
 
-  run_discovery() {
-    ( gh() {
-        local args="$*"
-        if [[ "$args" == *".github/CODEOWNERS?ref="* ]]; then
-          return 0  # found, empty body (gh api succeeded, empty stdout)
-        elif [[ "$args" == *"contents/CODEOWNERS?ref="* ]]; then
-          echo "src/a.py @alice"; return 0  # never reached if the bug is fixed
-        elif [[ "$args" == *"docs/CODEOWNERS?ref="* ]]; then
-          echo "gh: Not Found (HTTP 404)" >&2; return 1
-        fi
-        return 1
-      }
-      export -f gh
-      source "$WORK/discovery.sh"
-      echo "FOUND=$CODEOWNERS_FOUND CONTENT=[$CODEOWNERS_CONTENT] ERROR=[$CODEOWNERS_ERROR]"
-    )
+  mkdir -p "$WORK/fakebin"
+  run_wiring() {
+    # $1: fake gh script body
+    printf '%s' "$1" > "$WORK/fakebin/gh"
+    chmod +x "$WORK/fakebin/gh"
+    sed "s|\${KBG_PLUGIN_ROOT}|$ROOT|; s|\"<head_sha>\"|abc123|" "$WORK/discovery.sh" > "$WORK/discovery-runnable.sh"
+    PATH="$WORK/fakebin:$PATH" bash -c "$(cat "$WORK/discovery-runnable.sh"); echo FOUND=\$CODEOWNERS_FOUND CONTENT=[\$CODEOWNERS_CONTENT] ERROR=[\$CODEOWNERS_ERROR]"
   }
 
-  out=$(run_discovery)
-  assert "BUG FIX: found-but-empty .github/CODEOWNERS sets FOUND=1 (not misread as absent) — $out" \
+  out=$(run_wiring '#!/bin/bash
+if [[ "$*" == *"contents/.github/CODEOWNERS"* ]]; then exit 0; fi
+echo "gh: Not Found (HTTP 404)" >&2; exit 1')
+  assert "e2e: found-but-empty -> FOUND=1, empty content, no error ($out)" \
     "$([[ "$out" == *"FOUND=1"* && "$out" == *"CONTENT=[]"* && "$out" == *"ERROR=[]"* ]] && echo 1 || echo 0)"
+
+  out=$(run_wiring '#!/bin/bash
+echo "gh: Not Found (HTTP 404)" >&2; exit 1')
+  assert "e2e: all-404 -> FOUND=0, no error (N/A) ($out)" \
+    "$([[ "$out" == *"FOUND=0"* && "$out" == *"ERROR=[]"* ]] && echo 1 || echo 0)"
+
+  out=$(run_wiring '#!/bin/bash
+echo "gh: authentication required" >&2; exit 1')
+  assert "e2e: fetch error -> FOUND=0, error captured ($out)" \
+    "$([[ "$out" == *"FOUND=0"* && "$out" == *"ERROR=[gh: authentication required]"* ]] && echo 1 || echo 0)"
 else
-  assert "extracted the CODEOWNERS discovery loop" 0
+  assert "extracted ship-merge.md discovery wiring block" 0
 fi
 
 echo ""
