@@ -237,12 +237,12 @@ echo "=== Part F -- CODEOWNERS import resolves without CLAUDE_PLUGIN_ROOT ==="
 # first -- this case runs the SAME gate binary with CLAUDE_PLUGIN_ROOT
 # explicitly unset and confirms the CODEOWNERS import still succeeds.
 state_clean_true
-out=$(printf '%s' "$(merge_payload 42)" \
+printf '%s' "$(merge_payload 42)" \
   | PATH="$WORK/fakebin:$PATH" REVIEW_PR_STATE_DIR="$WORK/state" \
     FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
     FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
     FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[]')" \
-    bash "$GATE" 2>"$WORK/err")
+    bash "$GATE" >/dev/null 2>"$WORK/err"
 rc=$?
 ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "CODEOWNER approval missing" "$WORK/err" && ok=0
 check "CLAUDE_PLUGIN_ROOT unset -> CODEOWNERS import still resolves via \$0, check still runs" "$ok"
