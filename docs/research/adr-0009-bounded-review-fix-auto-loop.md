@@ -183,6 +183,14 @@ an incorrect merge. Full forensic detail and a second, independently-analyzed
 incident (PR #2754, session `e34b6832`, same root cause) are in the commit
 that ships the same-file churn detector below.
 
+**This correction does not change this ADR's Accepted status or its core
+decision** — it is scoped entirely to the accuracy of the cited incident
+evidence and to residual risk #1's status update below. The decision to allow
+a bounded, human-started per-round continue loop stands on its own reasoning
+(§`Decision` above), not on either incident having been a bypass; correcting
+the evidence narrows what residual risk #1 says about same-file churn, it does
+not reopen whether this ADR should be Accepted.
+
 With `review-pr` + the convergence gate + the merge gate (Slice 1, CI gated),
 the failure surface is different from either incident as originally
 mischaracterized: the loop deterministically auto-stops on cross-file
@@ -504,3 +512,11 @@ signal is proactive within its round-3-4 window — it fires DURING the loop,
 before the ceiling, naming the specific file(s) responsible, not after a
 human notices post-hoc. The ceiling hard-stop (round 5) remains the backstop
 for whatever `churning` doesn't catch.
+
+This closure also reaches the auto-loop this ADR proposes but has not yet
+built: `should-continue-loop.sh`'s stop condition (`convergence_state ==
+"progressing"`, an equality check) auto-stops on `churning` with zero
+additional code, the same way it already auto-stops on `regressed`/`stalled`
+— see residual risk #1 above for the full reasoning. Trigger #1's round-3-4
+proactive closure is not a special case the auto-loop would need separate
+handling for.
