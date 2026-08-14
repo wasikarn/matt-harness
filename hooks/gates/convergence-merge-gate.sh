@@ -1,12 +1,29 @@
 #!/usr/bin/env bash
 # Gate: block a raw `gh pr merge` on a non-clean review-pr state.
 #
-# Closes the bypass that let the tathep compliance-audit-round-2 session
-# (6e7c3bed) merge PR #2768 at review round 12: the cross-pass convergence
-# gate's enforcement point lived only inside ship-merge (disable-model-
-# invocation — the model cannot invoke it), so the model merged via raw
-# `gh pr merge`, which had NO gate. The verifier was never connected to the
-# one-way door actually used (found 2026-08-13).
+# Defense-in-depth for the merge one-way door. Before this gate shipped
+# (2026-08-13), the cross-pass convergence gate's ONLY enforcement point was
+# `ship-merge`'s prose checklist (disable-model-invocation — the model cannot
+# invoke it) plus a human confirming each step via AskUserQuestion. That's a
+# real gap in principle: nothing at the tool-call level double-checked that
+# an actual `gh pr merge` Bash invocation (which is how `ship-merge` itself
+# executes a merge — there is no separate wrapped tool) corresponded to a
+# clean state, so a procedural mistake in either the model's checklist
+# reading or the human's confirmation had no independent backstop.
+#
+# Corrected 2026-08-14: this gate's original comment characterized the tathep
+# session `6e7c3bed` (PR #2768) as having "ran a hand-rolled review (not
+# review-pr), merged via raw gh pr merge, no gate" — a bypass narrative.
+# Direct transcript verification disproves both claims: `review-pr` was
+# invoked 16x with real reviewer-agent dispatch, and the merge followed
+# `ship-merge`'s Phase 1/2 checklist with an explicit human AskUserQuestion
+# confirmation on a genuinely clean, round-14 state (state file read at
+# transcript line 12081 showed `clean:true, round:14`; confirmation at line
+# 12128; merge at line 12131). The merge was clean and human-confirmed, not a
+# bypass. This gate is still the right addition — it closes the
+# defense-in-depth gap named above regardless of whether any specific past
+# merge was clean — but its justification is architectural, not "this
+# incident went wrong."
 #
 # Reads the PreToolUse JSON payload from stdin. Exit 0 = allow; exit 2 =
 # block (prints "[kbg:gate] BLOCKED: <reason>" to stderr). Mirrors the

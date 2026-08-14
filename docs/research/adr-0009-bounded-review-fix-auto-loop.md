@@ -160,12 +160,38 @@ here):**
   lines 242-275; if python3 is missing/broken at the final write, no state file
   lands and the auto-loop reads stale/absent state).
 
-The 12-round incident (PR #2768, session `6e7c3bed`) ran a *hand-rolled* review
-(not `review-pr`), merged via *raw `gh pr merge`* (no gate), and the convergence
-gate did not exist yet. With `review-pr` + the convergence gate + the merge gate
-(Slice 1, CI gated), the failure surface is different: the loop deterministically
-auto-stops on cross-file `regressed` + all-tiers-flat `stalled`, and the merge is
-computationally gated. The incident does not directly repeat under this design.
+**Correction (2026-08-14, direct transcript verification — supersedes the
+paragraph below as originally written):** the PR #2768 incident's
+characterization was wrong on two factual points. `review-pr` was invoked 16x
+in that session with real reviewer-agent dispatch (`code-reviewer` 39x,
+`typescript-reviewer` 30x, `silent-failure-hunter` 15x, `blind-spot-hunter`
+6x, `security-reviewer` 5x) — not a hand-rolled review. The merge went through
+`ship-merge`'s Phase 1/2 checklist with an explicit human `AskUserQuestion`
+confirmation on a genuinely clean state (state file read at transcript line
+12081 showed `clean:true, round:14`; confirmation at line 12128; merge at line
+12131) — not a raw, ungated bypass. The round count itself is also imprecise:
+"12-round" undercounts a real oddity — rounds 10-12 were the same 3 debug/
+script-inspection calls within 32 seconds (the assistant debugging the state
+script itself, not fresh review rounds), and round 14 was the actual final,
+clean state before merge. What IS accurate: the convergence gate's
+`finding_files`/`regressed`/`convergence_state`/`force_human` machinery did
+not exist yet during this session's review loop (it shipped `fd7d531`,
+2026-08-13 19:21 — ~2 hours after this PR merged), so it never had a chance to
+run. Neither incident produced a bad merge — both converged to a genuinely
+clean, human-confirmed state before shipping. The cost was wasted rounds, not
+an incorrect merge. Full forensic detail and a second, independently-analyzed
+incident (PR #2754, session `e34b6832`, same root cause) are in the commit
+that ships the same-file churn detector below.
+
+With `review-pr` + the convergence gate + the merge gate (Slice 1, CI gated),
+the failure surface is different from either incident as originally
+mischaracterized: the loop deterministically auto-stops on cross-file
+`regressed`, all-tiers-flat `stalled`, **and same-file `churning`** (added
+2026-08-14 — see residual risk #1 below), and the merge is computationally
+gated. This narrows, but does not eliminate, the round-count risk: both real
+incidents' actual non-convergence cause (same-file fix-induced regression
+chains) is now caught by `churning` at round 3-4, closing the specific gap
+residual risk #1 originally left open.
 
 ## Decision
 
@@ -255,16 +281,63 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
 
 ## Residual risk (named, not zero — verified by fresh-context review)
 
-1. **Compounding entanglement (not just burn).** Same-file churn: the ADR's
-   original framing was "the ceiling bounds the burn." The real harm is a file
-   mutated 2-5× by a model re-introducing a bug in the same file — harder to
-   recover than the original bug. The merge gate prevents bad-ship (non-clean
-   blocks merge), but the compounding+burn is real. **Mitigation:** the ceiling
-   (5) bounds the rounds; the operator is at the ceiling. **Revisit trigger:**
-   if a same-file-churn burn incident occurs (the loop churns ≥3 rounds reading
-   `progressing` on a same-file regression), close this ADR (revert to
-   human-started) + upgrade `regressed` to line-level identity (the AST-layer
-   upgrade, currently out of scope — "Agents Need an AST Layer").
+1. **Compounding entanglement (not just burn) — closed 2026-08-14, see below.**
+   Same-file churn: the ADR's original framing was "the ceiling bounds the
+   burn." The real harm is a file mutated 2-5× by a model re-introducing a bug
+   in the same file — harder to recover than the original bug. The merge gate
+   prevents bad-ship (non-clean blocks merge), but the compounding+burn is
+   real. **Mitigation (original):** the ceiling (5) bounds the rounds; the
+   operator is at the ceiling.
+
+   **Status update (2026-08-14): the underlying risk materialized
+   pre-implementation, and a targeted remedy shipped.** Careful wording here —
+   this is not the same as saying the revisit trigger below "fired": that
+   trigger's literal precondition is an *unattended auto-loop* reading
+   `convergence_state == "progressing"` on a same-file regression, and that
+   loop has not shipped (this ADR's own Status line: "the loop stays
+   human-started per round"). Both real incidents that surfaced this risk (PR
+   #2754/session `e34b6832`, PR #2768/session `6e7c3bed`) had a
+   human/session manually re-invoking `review-pr` each round — the trigger's
+   stated precondition was never actually met. What happened instead: direct
+   forensic analysis of both transcripts found the SAME root cause
+   independently in each — a fix in round N introducing a new, different
+   problem in the SAME file in round N+1 (e34b6832:
+   `PlayScheduleCreateByExclusive.ts` held findings across rounds 8→9→10→11;
+   6e7c3bed: `AdvertisementController.ts` re-flagged 3 rounds straight,
+   `AccountCreditController.ts`/`AdvertisingRevenueController.ts` oscillated
+   across rounds 6-8). This is evidence the risk is real, gathered before the
+   auto-loop shipped and from a different failure path (human-driven
+   re-invocation, not the auto-loop) than the trigger names — closing the gap
+   before the trigger's literal precondition could ever occur, not the
+   trigger firing as written.
+
+   **The line-level upgrade this residual risk originally prescribed was
+   evaluated and rejected**, not built. Fixes shift or remove line numbers
+   between rounds, so a fixed finding's `file:start-end` fingerprint vanishes
+   and a moved one's fingerprint changes — `cur ∩ prev ≈ ∅` on nearly every
+   round by construction, which would make `regressed` fire on almost every
+   round ≥ 2 and collapse the 4-state token to `regressed` for the whole
+   series. **The shipped remedy instead: a per-file streak counter.**
+   `write-review-state.sh` now tracks `file_streaks: {path: consecutive_round_
+   count}`; a file held for 3+ consecutive rounds sets a new
+   `convergence_state = "churning"` (self-pruning by omission, no line-number
+   dependency), which feeds `force_human=true` via the same mechanism
+   `regressed` already used. This closes the gap for the round 3-4 window —
+   which matters specifically for this ADR's own proposed auto-loop, since its
+   continue-condition (`convergence_state == "progressing"`, an equality
+   check) now also stops on `churning` automatically, with zero additional
+   code needed in the not-yet-built `should-continue-loop.sh`. See
+   `skills/review-pr/scripts/write-review-state.sh`'s updated ponytail comment
+   for the full same-file-vs-line-level reasoning.
+
+   **Revisit trigger (retained, now narrower):** if a same-file-churn burn
+   incident occurs UNDER THE AUTO-LOOP SPECIFICALLY (once it ships) — i.e. the
+   loop auto-continues ≥3 rounds on a same-file regression that `churning`
+   somehow fails to catch — close this ADR (revert to human-started) and
+   reopen the detection design. The pre-implementation evidence above does not
+   retire this trigger; it narrows what would have to go wrong for it to fire
+   again (the shipped `churning` signal would have to itself fail, not merely
+   be absent).
 
 2. **The gate scores model-supplied counts (input-layer circularity).** The
    convergence gate is a faithful verifier, but its inputs — tier counts and
@@ -345,8 +418,17 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
 
 If any of these incidents occur under this design, close this ADR (revert to
 human-started per round):
-1. A same-file-churn burn incident (the loop churns ≥3 rounds reading
-   `progressing` on a same-file regression).
+1. **Closed 2026-08-14 for the round 3-4 window, narrowed rather than
+   eliminated.** Originally: "a same-file-churn burn incident (the loop churns
+   ≥3 rounds reading `progressing` on a same-file regression)." That gap is
+   now caught proactively — `write-review-state.sh`'s new `churning` signal
+   fires at exactly 3 consecutive same-file rounds, before this trigger's
+   original condition (≥3 rounds *reading `progressing`*, i.e. undetected)
+   could occur. The trigger is retained in narrower form: a same-file-churn
+   burn incident that the `churning` signal itself fails to catch (e.g. a
+   same-file streak that resets due to a file-path representation drift the
+   normalization doesn't cover, or a genuinely novel churn shape 3-consecutive
+   detection misses).
 2. A trivial-diff clean-pass incident (latent bug → clean → merge on a buggy
    diff).
 3. A state-file-write-crash incident (the auto-loop reads stale/absent state
@@ -355,12 +437,11 @@ human-started per round):
 This ADR's safety rests on the convergence gate catching non-convergence; if it
 doesn't, the human-per-round click is the proven backstop.
 
-**All three are post-incident, not proactive.** No mechanism surfaces them in
-real time — they rely on a post-hoc human noticing. The ceiling hard-stop
-fires at round 5, but between round 3 (where `stalled` first could catch flat
-churn) and the ceiling, a same-file regression churns silently reading
-`progressing`, and the operator at the ceiling cannot distinguish "genuinely
-slow convergence" from "the gate missed a same-file whack-a-mole." For an
-auto-loop, the absence of a proactive churn detector is a real gap: the ceiling
-catches the burn but not the cause. A close condition that fires post-merge
-(trigger #2) is, by definition, a revert, not a prevention.
+**Triggers #2 and #3 are still post-incident, not proactive** — no mechanism
+surfaces them in real time, they rely on a post-hoc human noticing, and a
+close condition that fires post-merge (trigger #2) is, by definition, a
+revert, not a prevention. **Trigger #1 is now the exception**: the `churning`
+signal is proactive within its round-3-4 window — it fires DURING the loop,
+before the ceiling, naming the specific file(s) responsible, not after a
+human notices post-hoc. The ceiling hard-stop (round 5) remains the backstop
+for whatever `churning` doesn't catch.

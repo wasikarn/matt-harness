@@ -272,7 +272,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    `FINDING_FILES` = the set of file paths from Phase 5's Critical + Important findings (the files
    that actually hold a must-fix this round). Build it as a bash array as you aggregate Phase 5 —
    one entry per distinct file with a Critical or Important finding. Pass it through the temp file
-   (not an env var) for the same positional-arg reason as the counts below.
+   (not an env var) for the same positional-arg reason as the counts below. **Entries must be
+   repo-relative** (matching Phase 7 step 3's `comments[].path` convention below) — the same file
+   reported as `$WT`-absolute in one round and repo-relative in another reads as two different
+   identities to both `regressed` and the churn-streak tracker (both are exact-string set
+   comparisons). The script normalizes a leading `/` defensively, but don't rely on that — report
+   repo-relative at the source.
    Positional, not inherited env, on purpose: pass the actual values you're holding at this point
    in the phase (`CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` from Phase 5, `REHUNT_STATUS` from
    step 3.6, `DISPATCH_FAILURES` from Phase 4 step 4, `HEAD_SHA`/`WT` from Phase 2) as literal
@@ -280,9 +285,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    invocation this script call is.
    Prints the written state-file path on success, then a second stdout line —
    `round=N prev_critical=X prev_important=X prev_minor=X stalled=true|false
-   regressed=true|false force_human=true|false convergence_state=converged|regressed|stalled|progressing`
+   regressed=true|false force_human=true|false
+   convergence_state=converged|regressed|churning|stalled|progressing churn_files=a.ts,b.ts`
    — that step 2's round-aware footer renders from directly; don't re-derive these by re-reading the
-   state file back.
+   state file back. `churning` = a file has held a Critical/Important finding 3+ rounds running
+   (regardless of whether it's the same issue each time) — `churn_files` names which; empty when not
+   churning.
    On failure, don't proceed to step 4's worktree cleanup — but a non-zero exit doesn't always mean
    nothing was written: the worktree-escape trap catches a bad `REVIEW_PR_STATE_DIR` only after the
    file is already written to the (about-to-be-deleted) wrong path. Fix the state dir and re-run
@@ -295,8 +303,8 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    routinely rename or drop these exact keys — silently breaking the downstream gate even though
    the review itself was fine. **Adding extra fields alongside the required 7 is fine** (a `note`,
    or the `important_count`/`minor_count`/`round`/`stalled`/`finding_files`/`regressed`/
-   `force_human`/`convergence_state` fields this script now writes and step 2 below reads back to
-   render the round-aware footer) — just never rename or omit the 7. Full
+   `force_human`/`convergence_state`/`file_streaks`/`churn_files` fields this script now writes and
+   step 2 below reads back to render the round-aware footer) — just never rename or omit the 7. Full
    script (canonicalization rule, keying scheme, the worktree-escape safety check, and the incident
    history behind each): `scripts/write-review-state.sh`.
 
@@ -332,6 +340,12 @@ Run a comprehensive pull request review using multiple specialized agents, each 
          - `regressed`: `Fixes are introducing new findings in files not flagged last round — a
            fix in one place is breaking another. Stop auto-looping; review the fix blast radius
            before the next round (check for missed sibling call sites — see address-review Phase 4).`
+         - `churning`: `The same file(s) have held a Critical/Important finding {N} rounds running
+           ({churn_files}) — fixes in this module keep producing new findings there. Stop
+           auto-looping; this is fix-induced churn, not slow convergence. Have a human read the
+           file's recent diffs before the next round.` (Neutral framing, same as `regressed`: a
+           module that keeps generating findings may be fix-induced churn or a genuinely deep
+           problem area — the file set alone can't tell which.)
          - `stalled`: `Counts not moving across rounds — the remaining findings aren't responding
            to fixes. Needs a human call (accept as-is / wontfix the remainder / escalate).`
          - `progressing` (round-ceiling only, ≥ `REVIEW_PR_ROUND_CEILING` default 5): `Round

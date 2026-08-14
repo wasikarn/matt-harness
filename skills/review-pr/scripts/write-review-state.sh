@@ -25,9 +25,10 @@
 # shared slot can't represent interleaved series. PR-by-number is unaffected (keyed per PR).
 #
 # Prints the written state-file path to stdout on success, then a second line with the round-aware
-# footer inputs (round/prev_*/stalled/regressed/force_human/convergence_state) so the caller renders
-# from what this script computed instead of having to re-read the file back out — a skipped re-read
-# would silently degrade the footer.
+# footer inputs (round/prev_*/stalled/regressed/force_human/convergence_state/churn_files) so the
+# caller renders from what this script computed instead of having to re-read the file back out — a
+# skipped re-read would silently degrade the footer. convergence_state is one of converged/regressed/
+# churning/stalled/progressing; churning is a same-file streak (a file flagged 3+ rounds running).
 set -euo pipefail
 
 # shellcheck source=../../../scripts/_lib/err.sh
@@ -145,11 +146,19 @@ fi
 # force_human and trips the 40 floor; the model can't bypass it because
 # ship-merge is disable-model-invocation (human-only).
 #
-# ponytail: file-level identity only — a new finding in a file that already had
-# one (same-file regression) is NOT detected. Left to SCRUTINIZE-4 Q2/Q3 (trace
-# the call graph + verify execution branches). Upgrade to line-level
-# fingerprints (file:start_line-end_line tuples) if file-level proves
-# insufficient — the prior-round read and the set-diff both extend naturally.
+# ponytail: file-level identity, deliberately NOT line-level. A new finding in
+# a file that already had one is caught by the churn streak below, not by
+# `regressed` (which stays file-set-only on purpose). Line-level fingerprints
+# (file:start_line-end_line) were evaluated and rejected 2026-08-14: a fixed
+# finding's fingerprint vanishes and a moved one changes every round, so
+# cur ∩ prev ≈ ∅ on nearly every round by construction — `regressed` would fire
+# on almost every round ≥ 2 and the 4-state token would collapse to
+# "regressed" for the whole series. The churn streak below deliberately does
+# NOT try to distinguish "same issue recurring" from "new issue, same module"
+# — 3 rounds running on one file is the signal either way, and both are real
+# fix-induced-regression risk. Confirmed empirically 2026-08-14: two real
+# incidents (10-14 review rounds each) both showed same-file churn as the
+# actual non-convergence cause, not cross-file regression.
 #
 # REVIEW_PR_ROUND_CEILING is read INSIDE this script (not across the nested-bash
 # boundary the header's "explicit positional args, not inherited env" warning is
@@ -163,49 +172,104 @@ REGRESSED=false
 FORCE_HUMAN=false
 CONVERGENCE_STATE="progressing"
 FINDING_FILES_JSON="[]"
+CHURN_FILES=""
+FILE_STREAKS_JSON="{}"
+CHURN_FILES_JSON="[]"
 
 if [ -n "$FINDING_FILES_PATH" ] && [ -f "$FINDING_FILES_PATH" ]; then
-  # 4 newline-separated lines out: regressed, force_human, convergence_state,
-  # finding_files_json. The last (read -r) absorbs the full JSON line — file
-  # paths never contain newlines, so the single-line json.dumps is safe.
+  # 7 newline-separated lines out: regressed, force_human, convergence_state,
+  # churn_files (comma-joined, human-readable, MAY be empty — kept off the
+  # last line on purpose: $() strips only trailing newlines from the very end
+  # of the captured output, so an empty non-last line is fine, but a failing
+  # `read -r` on a genuinely-absent last line would kill the script under
+  # set -e), finding_files_json, file_streaks_json, churn_files_json (last
+  # three are JSON via json.dumps — always >=2 chars, safe in any position).
   CONV_DATA=$(python3 -c '
 import json, sys
 state_file, finding_files_path, stalled, round_n, clean, ceiling = sys.argv[1:7]
+
+def _norm_path(p):
+    # Strip a leading "/" so a caller that reports a $WT-absolute path (own-
+    # branch reviews sit at repo root; pr-by-number reviews cd into $WT) does
+    # not create a second, non-matching identity for the same file across
+    # rounds -- both `regressed` and the churn streak are exact-string set
+    # comparisons. Enforced here (the verifier), not just documented in
+    # SKILL.md prose, per the 2026-08-14 adversarial review: a bad caller
+    # left unenforced can make `regressed` fire spuriously (a "new" absolute-
+    # path string never in `prev`) while churn silently never accumulates
+    # (its own prior-round string never matches either).
+    return p.lstrip("/")
+
 cur = []
 try:
     with open(finding_files_path) as f:
-        cur = [l.strip() for l in f if l.strip()]
+        cur = sorted({_norm_path(l.strip()) for l in f if l.strip()})
 except OSError:
     cur = []
+
+rn = int(round_n)
 prev = set()
+prev_streaks = {}
 try:
     d = json.load(open(state_file))
     prev = set(d.get("finding_files") or [])
+    ps = d.get("file_streaks")
+    if isinstance(ps, dict):
+        prev_streaks = ps
 except Exception:
     prev = set()
+    prev_streaks = {}
+# A fresh series (round 1) must not inherit another series'\'' streaks -- same
+# reasoning as `regressed`'\''s own round>1 guard below.
+if rn <= 1:
+    prev_streaks = {}
+
 # regressed needs a real prior round that recorded findings — otherwise the
 # first round that supplies finding_files can'\''t diff against nothing.
-regressed = (int(round_n) > 1 and len(cur) > 0 and len(prev) > 0
+regressed = (rn > 1 and len(cur) > 0 and len(prev) > 0
              and any(f not in prev for f in cur))
-rn = int(round_n); cl = (clean == "true"); st = (stalled == "true"); ce = int(ceiling)
+
+# Same-file churn: consecutive rounds a file has held a Critical/Important
+# finding, regardless of whether it'\''s the same issue each time. A file
+# absent this round simply is not in the new dict, so streaks reset by
+# omission -- no separate reset logic needed. Threshold 3 is forced by the
+# existing ROUND_CEILING default of 5, not chosen freely: it leaves a 2-round
+# early-warning window (rounds 3-4) before the ceiling would fire anyway.
+streaks = {}
+for f in cur:
+    p = prev_streaks.get(f)
+    streaks[f] = (p if isinstance(p, int) and p > 0 else 0) + 1
+churn = sorted(f for f, n in streaks.items() if n >= 3)
+
+cl = (clean == "true"); st = (stalled == "true"); ce = int(ceiling)
 if cl:
     state = "converged"
 elif regressed:
     state = "regressed"
+elif churn:
+    state = "churning"
 elif st:
     state = "stalled"
 else:
     state = "progressing"
-force = (rn >= ce and not cl) or (regressed and rn >= 3)
+# churn implies rn >= 3 (a streak of 3 takes 3 rounds to build), so no
+# separate round guard is needed here, unlike the `regressed and rn >= 3`
+# clause. `and not cl` preserves the writer'\''s invariant that a converged
+# review never sets force_human -- ship-merge and the Phase 7 footer both
+# rely on clean winning regardless of any other signal.
+force = (rn >= ce and not cl) or (regressed and rn >= 3) or (bool(churn) and not cl)
 print(str(regressed).lower())
 print(str(force).lower())
 print(state)
+print(",".join(churn))
 print(json.dumps(cur))
+print(json.dumps(streaks))
+print(json.dumps(churn))
 ' "$STATE_FILE" "$FINDING_FILES_PATH" "$STALLED" "$ROUND" "$CLEAN" "$ROUND_CEILING" 2>/dev/null \
     || { if [ "$CLEAN" = "true" ]; then
-           printf 'false\nfalse\nconverged\n[]\n'
+           printf 'false\nfalse\nconverged\n\n[]\n{}\n[]\n'
          else
-           printf 'false\ntrue\nprogressing\n[]\n'
+           printf 'false\ntrue\nprogressing\n\n[]\n{}\n[]\n'
          fi; })
   # Fail-closed: a python3 crash (OOM, missing binary, unhandled path) on a
   # NON-clean review must not silently downgrade to force_human=false — that
@@ -214,15 +278,22 @@ print(json.dumps(cur))
   # the top of the script), so the fallback branches on it without re-entering
   # python3. $ROUND/$ROUND_CEILING are intentionally NOT consulted in the
   # fallback — when the verifier can't compute convergence at all, blocking on
-  # any non-clean review is the safe superset of the ceiling+regressed checks.
-  { read -r REGRESSED; read -r FORCE_HUMAN; read -r CONVERGENCE_STATE; read -r FINDING_FILES_JSON; } <<< "$CONV_DATA"
-  # Re-validate the JSON piece parsed cleanly; if it didn'\''t (a path contained
-  # a newline — theoretical only), fall back to empty — regressed was already
-  # computed from the actual set comparison, so only the stored list is lost.
-  python3 -c 'import json,sys; json.loads(sys.argv[1])' "$FINDING_FILES_JSON" 2>/dev/null || FINDING_FILES_JSON="[]"
+  # any non-clean review is the safe superset of the ceiling+regressed+churn
+  # checks.
+  { read -r REGRESSED; read -r FORCE_HUMAN; read -r CONVERGENCE_STATE; read -r CHURN_FILES
+    read -r FINDING_FILES_JSON; read -r FILE_STREAKS_JSON; read -r CHURN_FILES_JSON; } <<< "$CONV_DATA"
+  # Re-validate all three JSON pieces parsed cleanly; if any didn'\''t (a path
+  # contained a newline — theoretical only), fall back to empty for all three
+  # — regressed/force/state were already computed from the actual comparison,
+  # so only the stored blobs are lost, matching the existing conservative
+  # direction for this class of failure.
+  python3 -c 'import json,sys; [json.loads(a) for a in sys.argv[1:]]' \
+    "$FINDING_FILES_JSON" "$FILE_STREAKS_JSON" "$CHURN_FILES_JSON" 2>/dev/null \
+    || { FINDING_FILES_JSON="[]"; FILE_STREAKS_JSON="{}"; CHURN_FILES_JSON="[]"; }
 else
-  # No finding files supplied — regressed is unknown (false), convergence_state
-  # derives from clean/stalled only. The round ceiling still applies.
+  # No finding files supplied — regressed/churn are unknown (false),
+  # convergence_state derives from clean/stalled only. The round ceiling
+  # still applies.
   if [ "$CLEAN" = "true" ]; then
     CONVERGENCE_STATE="converged"
   elif [ "$STALLED" = "true" ]; then
@@ -264,15 +335,23 @@ d = {
     "regressed": sys.argv[16] == "true",
     "force_human": sys.argv[17] == "true",
     "convergence_state": sys.argv[18],
+    "file_streaks": json.loads(sys.argv[19]),
+    "churn_files": json.loads(sys.argv[20]),
 }
-with open(sys.argv[19], "w") as f:
+with open(sys.argv[21], "w") as f:
     json.dump(d, f)
     f.write("\n")
 ' "$CLEAN" "$CRITICAL_COUNT" "$REHUNT" "$HEAD_SHA" "$BRANCH" "$REVIEW_MODE" \
   "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   "$ROUND" "$IMPORTANT_COUNT" "$MINOR_COUNT" \
   "$PREV_CRITICAL" "$PREV_IMPORTANT" "$PREV_MINOR" \
-  "$STALLED" "$FINDING_FILES_JSON" "$REGRESSED" "$FORCE_HUMAN" "$CONVERGENCE_STATE" "$STATE_FILE"
+  "$STALLED" "$FINDING_FILES_JSON" "$REGRESSED" "$FORCE_HUMAN" "$CONVERGENCE_STATE" \
+  "$FILE_STREAKS_JSON" "$CHURN_FILES_JSON" "$STATE_FILE"
+# ponytail: if a future edit drops "file_streaks" from this write, the next
+# round's `prev_streaks` read (above) always sees {}, every streak resets to
+# 1, and churn detection silently never fires again -- this field is
+# load-bearing INPUT to the next round, not just output. Machine-checked by
+# harness-audit check 56 (writer-side grep for the field name).
 
 # The state file MUST land outside $WT so worktree cleanup can't delete it
 # (production incident: PR #2619's state file was written to $WT/.scratch/
@@ -290,4 +369,4 @@ fi
 test -s "$STATE_FILE" || err_die "state file $STATE_FILE is missing/empty after write"
 
 echo "$STATE_FILE"
-echo "round=$ROUND prev_critical=$PREV_CRITICAL prev_important=$PREV_IMPORTANT prev_minor=$PREV_MINOR stalled=$STALLED regressed=$REGRESSED force_human=$FORCE_HUMAN convergence_state=$CONVERGENCE_STATE"
+echo "round=$ROUND prev_critical=$PREV_CRITICAL prev_important=$PREV_IMPORTANT prev_minor=$PREV_MINOR stalled=$STALLED regressed=$REGRESSED force_human=$FORCE_HUMAN convergence_state=$CONVERGENCE_STATE churn_files=$CHURN_FILES"

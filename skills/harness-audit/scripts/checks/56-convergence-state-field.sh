@@ -23,7 +23,9 @@ if [ -f "$_w" ]; then
   /usr/bin/grep -q '"force_human"' "$_w" || \
     crit "write-review-state.sh: JSON output contract lost 'force_human' — the convergence verifier no longer emits the field ship-merge reads; a non-converged review loop reaches merge with no computational backstop"
   /usr/bin/grep -q '"convergence_state"' "$_w" || \
-    crit "write-review-state.sh: JSON output contract lost 'convergence_state' — the convergence-state token (converged/regressed/stalled/progressing) is no longer emitted; ship-merge's STOP reason can't name the cause"
+    crit "write-review-state.sh: JSON output contract lost 'convergence_state' — the convergence-state token (converged/regressed/churning/stalled/progressing) is no longer emitted; ship-merge's STOP reason can't name the cause"
+  /usr/bin/grep -q '"file_streaks"' "$_w" || \
+    crit "write-review-state.sh: JSON output contract lost 'file_streaks' — same-file churn detection reads this as INPUT for the next round's streak count; dropping it from the write silently resets every streak to 0, permanently killing churn detection with no signal anywhere in the gauntlet"
 else
   crit "write-review-state.sh: not found at $_w — the convergence verifier is missing entirely"
 fi
