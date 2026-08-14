@@ -268,6 +268,13 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    bash "${CLAUDE_SKILL_DIR}/scripts/write-review-state.sh" \
      "${CRITICAL_COUNT:-0}" "${REHUNT_STATUS:-n/a}" "${DISPATCH_FAILURES:-}" "$HEAD_SHA" "${WT:-}" \
      "${IMPORTANT_COUNT:-0}" "${MINOR_COUNT:-0}" "$FINDING_FILES_TMP"
+
+   # Immediately after: the bounded auto-loop's continue/stop decision (ADR
+   # 0009). Same $HEAD_SHA/$WT this round's write above just used — confirms
+   # the state file this reads back is THIS round's write, not stale.
+   LOOP_DECISION=$(bash "${CLAUDE_SKILL_DIR}/scripts/should-continue-loop.sh" "$HEAD_SHA" "${WT:-}")
+   LOOP_EXIT=$?
+   LOOP_REASON=$(printf '%s\n' "$LOOP_DECISION" | sed -n 's/^reason=//p')
    ```
    `FINDING_FILES` = the set of file paths from Phase 5's Critical + Important findings (the files
    that actually hold a must-fix this round). Build it as a bash array as you aggregate Phase 5 —
@@ -295,6 +302,17 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    nothing was written: the worktree-escape trap catches a bad `REVIEW_PR_STATE_DIR` only after the
    file is already written to the (about-to-be-deleted) wrong path. Fix the state dir and re-run
    rather than assuming the write never happened.
+
+   **`should-continue-loop.sh`'s exit code (`$LOOP_EXIT` above) is what step 2 branches on to
+   decide auto-continue** — never re-derive this from `round`/`stalled`/`force_human`/
+   `convergence_state` yourself; that re-derivation is exactly the sync-seam this script exists to
+   close. `0` = continue automatically; any non-zero = stop and hand back to a human, with
+   `$LOOP_REASON` naming why (`converged`/`regressed`/`churning`/`stalled`/`ceiling` mirror
+   `convergence_state`; `missing-state`/`malformed-state`/`stale-sha`/`malformed-round`/
+   `malformed-force-human`/`malformed-convergence-state`/`no-findings-nonclean` are fail-closed
+   integrity stops; `reviewer-flow` means this is a PR-by-number review — auto-continue is
+   `own-branch`-only, since a reviewer can't act on someone else's diff). Full script: `scripts/
+   should-continue-loop.sh`.
 
    **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
    7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
@@ -333,43 +351,56 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    - **Suggested next steps** (pick what applies):
      - Wants clarity polish after fixes → run the native `/simplify` (clarity-only, behavior-preserving) as follow-up (NOT part of kbg:review-pr itself)
      - At PR-ready → `/ship-merge` (or push for review)
-     - Review needs another pass after fixes → re-run `kbg:review-pr` (Phase 2 pins a new HEAD_SHA
-       window). Render this round-aware from step 1's second stdout line, not a flat suggestion:
-       - `clean == true` (regardless of round): **drop the re-run suggestion entirely** — the review
-         is certified clean (0 Criticals, rehunt clean, no dispatch failures). Remaining
-         Important/Minor are non-blocking by definition. Render instead: `Review clean — Critical 0,
-         rehunt clean. Non-blocking Important/Minor may be addressed in a follow-up; merge via
-         /kbg:ship-merge. Do not re-run review-pr on non-blocking findings.` This is the stop
-         condition for the review→fix loop: a clean review does not need another pass. (The
-         merge-path deny-gate in `hooks/gates/convergence-merge-gate.sh` blocks a raw `gh pr merge`
-         on a non-clean review; this carve-out is the advisory half that stops the loop from
-         re-running past clean.)
-       - `round == 1`: unchanged wording above (nothing to compare against yet).
-       - `round >= 2` and `stalled == false` and `force_human == false`: `Round {round} on PR #{n}
-         — Critical {prev}→{now}, Important {prev}→{now} → re-run kbg:review-pr` (name only the
-         tiers that actually moved).
-       - `force_human == true`: drop the re-run suggestion entirely — say instead `{round} rounds
-         on PR #{n}, convergence gate tripped ({convergence_state}) — this needs a human decision,
-         not another automatic review-pr→fix cycle.` Then name the cause from `convergence_state`:
-         - `regressed`: `Fixes are introducing new findings in files not flagged last round — a
-           fix in one place is breaking another. Stop auto-looping; review the fix blast radius
-           before the next round (check for missed sibling call sites — see address-review Phase 4).`
-         - `churning`: `The same file(s) have held a Critical/Important finding {N} rounds running
-           ({churn_files}) — fixes in this module keep producing new findings there. Stop
-           auto-looping; this is fix-induced churn, not slow convergence. Have a human read the
-           file's recent diffs before the next round.` (Neutral framing, same as `regressed`: a
-           module that keeps generating findings may be fix-induced churn or a genuinely deep
-           problem area — the file set alone can't tell which.)
-         - `stalled`: `Counts not moving across rounds — the remaining findings aren't responding
-           to fixes. Needs a human call (accept as-is / wontfix the remainder / escalate).`
-         - `progressing` (round-ceiling only, ≥ `REVIEW_PR_ROUND_CEILING` default 5): `Round
-           ceiling reached with findings still open. Needs a human call (accept as-is / wontfix
-           the remainder / escalate), not another automatic pass.`
-         `/ship-merge` will block the merge on this signal (it scores Critical-findings 0 → hits
-         the 40 floor → STOP) — the human decision is required before merge, not optional.
-       - `stalled == true` and `force_human == false`: `{round} rounds on PR #{n}, counts not
-         moving — this isn't converging on its own. Needs a human call (accept as-is / wontfix the
-         remainder / escalate), not another automatic pass.`
+     - Review needs another pass after fixes → **branch on `$LOOP_EXIT`/`$LOOP_REASON` from step
+       1** (ADR 0009's bounded auto-loop) — never re-derive this from `round`/`stalled`/
+       `force_human`/`convergence_state` yourself; `should-continue-loop.sh` is the single source
+       of the decision, this renders from it:
+       - **`$LOOP_EXIT == 0` (continue):** render `Round {round} — Critical {prev}→{now}, Important
+         {prev}→{now} → convergence: progressing, auto-continuing to round {round+1}.` then
+         **actually re-invoke `kbg:review-pr` from Phase 1 on the same branch**, without waiting
+         for a fresh human prompt. Phase 6 in the new round still asks the human as today; Phase
+         1's own dispatch-mode `AskUserQuestion` (if its trigger conditions are met) still fires
+         exactly as on any invocation — auto-continue only removes the "should I re-invoke at all"
+         click, nothing else in the skill is bypassed. `REVIEW_PR_ROUND_CEILING=1` disables
+         auto-continue immediately with no code change, if ever needed as a rollback.
+       - **`$LOOP_EXIT != 0` (stop):** drop the re-run suggestion; render from `$LOOP_REASON`:
+         - `converged`: `Review clean — Critical 0, rehunt clean. Non-blocking Important/Minor may
+           be addressed in a follow-up; merge via /kbg:ship-merge. Do not re-run review-pr on
+           non-blocking findings.` This is the loop's stop condition: a clean review does not need
+           another pass. (The merge-path deny-gate in `hooks/gates/convergence-merge-gate.sh`
+           blocks a raw `gh pr merge` on a non-clean review; this carve-out is the advisory half
+           that stops the loop from re-running past clean.)
+         - `regressed`: `{round} rounds — fixes are introducing new findings in files not flagged
+           last round, a fix in one place is breaking another. Needs a human call, not another
+           automatic pass (check for missed sibling call sites — see address-review Phase 4).`
+         - `churning`: `{round} rounds — the same file(s) have held a Critical/Important finding
+           multiple rounds running — fixes in this module keep producing new findings there. Needs
+           a human call; have someone read the file's recent diffs before another pass.` (Neutral
+           framing: a module that keeps generating findings may be fix-induced churn or a
+           genuinely deep problem area — the file set alone can't tell which.)
+         - `stalled`: `{round} rounds — counts not moving across rounds, the remaining findings
+           aren't responding to fixes. Needs a human call (accept as-is / wontfix the remainder /
+           escalate), not another automatic pass.` This now fires uniformly whenever the
+           convergence gate reads `stalled` — deliberately stricter than a passive suggestion a
+           human could ignore: auto-continue must not advance past a state that isn't
+           `progressing`, full stop, matching the ADR's literal continue condition.
+         - `ceiling`: `Round ceiling ({round}) reached with findings still open. Needs a human
+           call (accept as-is / wontfix the remainder / escalate), not another automatic pass.`
+         - `reviewer-flow`: this is a PR-by-number review — auto-continue only applies to
+           own-branch self-review (a reviewer can't act on someone else's diff). Fall back to the
+           passive suggestion: `Round {round} on PR #{n} — Critical {prev}→{now} → re-run
+           kbg:review-pr`, same as before this ADR.
+         - `missing-state` / `malformed-state` / `stale-sha` / `malformed-round` /
+           `malformed-force-human` / `malformed-convergence-state`: `should-continue-loop.sh
+           detected a state-file integrity problem ({reason}) — a human should inspect
+           $STATE_FILE directly before another round runs.` Don't auto-continue on any of these;
+           they're fail-closed by design.
+         - `no-findings-nonclean`: `{round} rounds, review not clean but no Critical/Important
+           findings were tracked this round — the convergence gate can't verify regression/churn
+           without a file set to compare. Needs a human call before another automatic pass.`
+         Any non-`converged` reason above that blocks a merge does so via `/ship-merge`'s
+         Critical-findings/`force_human` scoring (0 → hits the 40 floor → STOP) — the human
+         decision is required before merge, not optional.
      - Reviewer comments came back externally → `/address-review`
      - Reviewer flow (PR #N), review posted → done; ping the author / await their `/address-review`
 3. **Submit the review to GitHub** (gated — never auto-submit; posting a review is outward-facing). Posts findings as **individual line-level review comments** so the author sees each issue in context — not just a single top-level summary.

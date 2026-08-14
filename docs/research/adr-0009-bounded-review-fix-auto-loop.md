@@ -1,9 +1,27 @@
 # ADR 0009 — Bounded review→fix auto-loop (the per-round "go" button)
 
-> **Status:** ✅ Accepted (Not Yet Implemented) — operator accepted 2026-08-14.
-> This ADR supersedes **part** of ADR 0006. It does NOT ship until the
-> implementation (the "go"-button change + its audit guard) lands. Until then
-> the loop stays human-started per round (the current behavior).
+> **Status:** ✅ Accepted and Implemented — operator accepted 2026-08-14;
+> implementation landed the same day (v0.68.277). This ADR supersedes
+> **part** of ADR 0006. **Implementation update (2026-08-14):** the "go"-
+> button change (`skills/review-pr/scripts/should-continue-loop.sh`) and its
+> audit guard (check 59) have shipped; `skills/review-pr/SKILL.md` Phase 7
+> now branches on the script's exit code instead of re-deriving the decision
+> in prose. Two scope decisions made during implementation, not present in
+> the original Decision section below: (1) auto-continue is **own-branch
+> only** — a PR-by-number (reviewer-flow) review always stops with reason
+> `reviewer-flow`, since a reviewer can't act on someone else's diff and
+> auto-looping it would only burn dispatch cost; (2) a **no-findings guard**
+> stops the loop (reason `no-findings-nonclean`) when a non-clean round ≥ 2
+> has an empty `finding_files` set — a hole neither this ADR nor
+> `write-review-state.sh` originally named: `regressed`/`churning` can only
+> be computed from that field, so an empty set silently disables the
+> convergence gate's core detection on exactly the rounds unattended
+> auto-continue most needs it. A pre-ship adversarial plan review also
+> caught and closed a reason-token collision that would have routed the
+> legitimate round-ceiling stop through the same message as a corrupted
+> `force_human` field — `ceiling` is now its own reason, never conflated
+> with `malformed-force-human`. Full design: `skills/review-pr/scripts/
+> should-continue-loop.sh`'s header comment.
 > **Date:** 2026-08-14 · **Decider:** Operator · **Supersedes:** the "no model
 > self-start" *expression* of ADR 0006, narrowly for the bounded review→fix loop.
 > **Retains:** the maker≠checker *principle*, the computational merge-gate, the
