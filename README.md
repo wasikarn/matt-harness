@@ -282,7 +282,7 @@ kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # 19 specialist subagents (.md each)
 ├── skills/               # 31 workflow skills (SKILL.md per directory)
-├── commands/             # 21 slash commands
+├── commands/             # 23 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames
