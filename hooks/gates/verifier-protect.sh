@@ -67,6 +67,12 @@ set -uo pipefail
 # Out of threat model (this gate is not an adversarial sandbox, line ~210): a
 # pre-existing symlink whose realpath resolves into a verifier surface, and
 # \u JSON escapes (the CC serializer emits ASCII alphanumerics literally).
+# sync-seam: the stdin-capture + whitespace-normalize prefix (this line +
+# the next) is hand-duplicated in irrecoverable.sh's own fast-path -- not
+# extracted to a shared sourced helper because these gates govern their own
+# edits (a shared-helper bug would break both simultaneously; editing this
+# exact fast-path cost 2 self-inflicted lockouts before it landed clean,
+# 2026-08-14). If either file's normalize step changes, check the other.
 _input="$(cat)"
 _ws="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ')"
 _norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"

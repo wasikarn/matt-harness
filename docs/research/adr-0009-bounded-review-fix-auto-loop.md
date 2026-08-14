@@ -1,9 +1,9 @@
 # ADR 0009 — Bounded review→fix auto-loop (the per-round "go" button)
 
-> **Status:** 🟡 Proposed (Accepted-not-Implemented) — awaiting operator approval.
-> This ADR supersedes **part** of ADR 0006. It does NOT ship until the operator
-> approves it AND the implementation (the "go"-button change + its audit guard)
-> lands. Until then the loop stays human-started per round (the current behavior).
+> **Status:** ✅ Accepted (Not Yet Implemented) — operator accepted 2026-08-14.
+> This ADR supersedes **part** of ADR 0006. It does NOT ship until the
+> implementation (the "go"-button change + its audit guard) lands. Until then
+> the loop stays human-started per round (the current behavior).
 > **Date:** 2026-08-14 · **Decider:** Operator · **Supersedes:** the "no model
 > self-start" *expression* of ADR 0006, narrowly for the bounded review→fix loop.
 > **Retains:** the maker≠checker *principle*, the computational merge-gate, the
@@ -81,6 +81,11 @@ distinction is self-graded by the implementing session) before moving this ADR
 from Proposed to Accepted. Without that, the "Why this is not the 5th refusal"
 table is the maker grading its own work — the exact circularity the crux exists to
 prevent.
+
+**Resolved (2026-08-14):** operator accepted this ADR. The residual
+shape-vs-ratchet question above is not thereby erased — it stays live as the
+lens for the three revisit triggers below, which remain post-incident, not
+proactive.
 
 ## Context
 

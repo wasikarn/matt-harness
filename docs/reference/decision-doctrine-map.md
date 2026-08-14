@@ -23,7 +23,9 @@ decisions.
 ## Decision-sizing triad (run before any non-trivial act)
 
 Owned by **METHODOLOGY.md Rule 1, sub-rule "Size the decision before acting"**.
-Before building, answer all three:
+Before building, answer all three (paraphrased here for discoverability —
+sync-seam: this restates METHODOLOGY.md Rule 1's wording, no machine-check
+ties the two; if Rule 1's phrasing changes, re-check this block):
 
 1. **One-way door?** — if reversing is expensive, surface options + the fact that
    would flip the call. Don't pick silently.

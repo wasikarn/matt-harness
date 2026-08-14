@@ -58,10 +58,11 @@ rejected.
   the default.
 - **Same-model judge.** Upstream uses the same model class for
   generation, scoring, clustering, and deepening. kbg's
-  `inferential-structural-judge` precedent (`agents/inferential-
-  structural-judge.md`) plus the 2×2 doctrine (`CLAUDE.md` §"LLM-judge
-  circularity") treat the same-model judge as a covert L4 loop and a
-  shared-blind-spots failure mode. PR1 keeps the 4 phases on the host
+  `inferential-structural-judge` precedent (deleted in the v0.6.3 reset,
+  never rebuilt — the agent file no longer exists; cited here for the
+  design reasoning, not as a live reference) plus the 2×2 doctrine
+  (`CLAUDE.md` §"LLM-judge circularity") treat the same-model judge as a
+  covert L4 loop and a shared-blind-spots failure mode. PR1 keeps the 4 phases on the host
   Claude (which is the same model, so the same caveat applies), but
   the structure is engineered to be drop-in replaceable with a
   fresh-context critic agent — the skill body and the cross-

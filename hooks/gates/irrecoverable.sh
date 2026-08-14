@@ -13,6 +13,12 @@ set -uo pipefail
 # ponytail: coarse pre-filter for a habit-guard, not an adversarial sandbox;
 # command-substitution/eval unwrapping stays out of scope (see line 83 below).
 # False positives (digit/warm/scheduling) just spawn python -- safe direction.
+# sync-seam: the stdin-capture + whitespace-normalize prefix (this line +
+# the next) is hand-duplicated in verifier-protect.sh's own fast-path -- not
+# extracted to a shared sourced helper because these gates govern their own
+# edits (a shared-helper bug would break both simultaneously; a lockout here
+# already cost 2 self-inflicted recoveries in verifier-protect.sh alone,
+# 2026-08-14). If either file's normalize step changes, check the other.
 _input="$(cat)"
 _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
 case "$_norm" in

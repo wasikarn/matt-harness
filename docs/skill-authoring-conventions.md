@@ -50,6 +50,17 @@ no-model-self-start doctrine). Skip self-contained reference/pattern/catalog sur
 footer there is the retired canonical-sections ceremony, 2026-06-16) and terminal workflows
 (post-mortem, ship-release terminus).
 
+**`model_limitation:` frontmatter field:** optional, kbg-native (non-standard-but-harmless
+per root `CLAUDE.md` § skill/agent mechanics). Declare it when a skill's correctness rests on
+a model capability or behavior that could shift on a model upgrade — a moving-target
+assumption, not a stable fact. Canonical spec + worked example: `docs/skill-template/SKILL.md`
+(frontmatter comment + "Model Limitation Assumption" body section). The quarterly cadence
+(`docs/harness-decay-cadence.md` § Cadence) walks every skill carrying this field and prompts
+a re-verify. First real adopter: `tech-humanize/SKILL.md` (`f940729`) — its lexical-tell catalog
+assumes current-gen LLM output still carries the enumerated tells (em dash, delve,
+rule-of-three), which decays across model generations. No shell check enforces re-verification
+today — it's a human-cadence pointer, not a gate.
+
 **Escalation to `AskUserQuestion`:** a branch belongs in the passive footer only while it's
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
 every branch is already true/decidable right now and there's no sensible default, that's a
