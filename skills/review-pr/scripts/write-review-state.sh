@@ -5,7 +5,7 @@
 # a nested bash invocation like this one (same bug class as kbg-harness's
 # wiki-scan, v0.68.107).
 #
-# Usage: write-review-state.sh <critical_count> <rehunt> <dispatch_failures> <head_sha> [worktree_path] [important_count] [minor_count] [finding_files_path]
+# Usage: write-review-state.sh <critical_count> <rehunt> <dispatch_failures> <head_sha> [worktree_path] [important_count] [minor_count] [finding_files_path] [amend]
 #   critical_count    — number of Critical findings from Phase 5 (required)
 #   rehunt            — Phase 5 step 3.6 outcome: clean|skipped-trivial|incomplete|n/a (required)
 #   dispatch_failures — non-empty string if Phase 4 step 4 recorded any (pass "" if none)
@@ -16,6 +16,20 @@
 #   finding_files_path — temp file with one file-path per line holding Critical+Important
 #                        findings this round (optional). Feeds file-level finding-identity
 #                        tracking for the cross-pass convergence gate (regressed detection).
+#   amend             — non-empty to correct a field (e.g. a wrong head_sha) on the MOST RECENT
+#                        round already in the state file, in place, without advancing the round
+#                        counter (optional, default off). Requires the state file to already hold
+#                        a round >= 1. Round/prev_critical/prev_important/prev_minor are read back
+#                        from the existing file instead of derived from a "prior round"; regressed/
+#                        churning/finding_files/file_streaks/churn_files carry through unchanged
+#                        (finding_files_path is ignored in this mode) — only stalled/force_human/
+#                        convergence_state are recomputed, against the corrected inputs. Root
+#                        incident (2026-08-11, session e34b6832, PR #2754): a caller resubmitted a
+#                        round's data under a NEW round number just to fix the recorded head_sha,
+#                        which made the round's counts compare against themselves as "prior round"
+#                        and produced a false stalled:true — the model then hand-edited the JSON
+#                        directly to repair it (exactly what step 1's "never hand-author the JSON"
+#                        warning exists to prevent). `amend` is the sanctioned repair path instead.
 #
 # Round tracking: carries the prior round's counts forward from the same state file so Phase 7 can
 # report a delta instead of starting cold each re-run. Own-branch reviews share one file
@@ -42,6 +56,16 @@ WT="${5:-}"
 IMPORTANT_COUNT="${6:-0}"
 MINOR_COUNT="${7:-0}"
 FINDING_FILES_PATH="${8:-}"
+AMEND="${9:-}"
+# Fail-closed on garbage, not silently-truthy: `[ -n "$AMEND" ]` alone would
+# make ANY stray/mistyped 9th arg switch on amend semantics on what the
+# caller meant as a real new round -- silently freezing the round counter,
+# which is worse than the bug amend mode exists to fix.
+case "$AMEND" in
+  '') ;;
+  amend) ;;
+  *) err_die "unrecognized 9th arg '$AMEND' — expected 'amend' or omit it" ;;
+esac
 
 STATE_DIR="${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}"
 mkdir -p "$STATE_DIR"
@@ -78,15 +102,44 @@ else
   STATE_FILE="$STATE_DIR/review-last.json"
 fi
 
-# Carry the prior round forward. Own-branch only continues the series when the
-# old file's branch matches this run's; PR-by-number is keyed per PR so any
-# existing content is already the same PR's prior round.
-PREV_ROUND=0
-PREV_CRITICAL="n/a"
-PREV_IMPORTANT="n/a"
-PREV_MINOR="n/a"
-if [ -s "$STATE_FILE" ]; then
-  PREV_DATA=$(python3 -c '
+if [ -n "$AMEND" ]; then
+  # Amend mode: correct fields on the round already stored in the state file,
+  # in place. ROUND stays what the file already has (not +1) and PREV_* are
+  # read from the file's OWN prev_critical/prev_important/prev_minor fields —
+  # NOT from its critical_count/important_count/minor_count fields, which
+  # would compare the round being amended against itself (the exact bug this
+  # mode exists to avoid; see the `amend` doc comment in the usage block above).
+  test -s "$STATE_FILE" || err_die "amend requested but no existing state file at $STATE_FILE — nothing to amend"
+  AMEND_META=$(python3 -c '
+import json, sys
+try: d = json.load(open(sys.argv[1]))
+except Exception: d = {}
+def _na(v):
+    # isinstance(True, int) is True in Python -- a hand-edited or corrupted
+    # state file with a boolean in a count field must not pass through as
+    # a literal "True"/"False" string, which would crash the int() cast
+    # downstream instead of degrading to "n/a" like every other bad-value
+    # case this script treats as absent-not-data.
+    return v if isinstance(v, int) and not isinstance(v, bool) else "n/a"
+rn = d.get("round")
+if not isinstance(rn, int) or isinstance(rn, bool) or rn < 1:
+    sys.exit(1)
+print(rn)
+print(_na(d.get("prev_critical_count")))
+print(_na(d.get("prev_important_count")))
+print(_na(d.get("prev_minor_count")))
+' "$STATE_FILE") || err_die "amend requested but $STATE_FILE has no valid round to amend"
+  { read -r ROUND; read -r PREV_CRITICAL; read -r PREV_IMPORTANT; read -r PREV_MINOR; } <<< "$AMEND_META"
+else
+  # Carry the prior round forward. Own-branch only continues the series when the
+  # old file's branch matches this run's; PR-by-number is keyed per PR so any
+  # existing content is already the same PR's prior round.
+  PREV_ROUND=0
+  PREV_CRITICAL="n/a"
+  PREV_IMPORTANT="n/a"
+  PREV_MINOR="n/a"
+  if [ -s "$STATE_FILE" ]; then
+    PREV_DATA=$(python3 -c '
 import json, sys
 try: d = json.load(open(sys.argv[1]))
 except Exception: d = {}
@@ -94,27 +147,28 @@ print("%s|%s|%s|%s|%s" % (
     d.get("branch", ""), d.get("round", 0),
     d.get("critical_count", "n/a"), d.get("important_count", "n/a"), d.get("minor_count", "n/a")))
 ' "$STATE_FILE" 2>/dev/null || echo "|||||")
-  IFS='|' read -r PREV_BRANCH PREV_ROUND_READ PREV_CRITICAL_READ PREV_IMPORTANT_READ PREV_MINOR_READ <<< "$PREV_DATA"
-  if [ -n "$WT" ] || [ "$PREV_BRANCH" = "$BRANCH" ]; then
-    PREV_ROUND="${PREV_ROUND_READ:-0}"
-    PREV_CRITICAL="${PREV_CRITICAL_READ:-n/a}"
-    PREV_IMPORTANT="${PREV_IMPORTANT_READ:-n/a}"
-    PREV_MINOR="${PREV_MINOR_READ:-n/a}"
+    IFS='|' read -r PREV_BRANCH PREV_ROUND_READ PREV_CRITICAL_READ PREV_IMPORTANT_READ PREV_MINOR_READ <<< "$PREV_DATA"
+    if [ -n "$WT" ] || [ "$PREV_BRANCH" = "$BRANCH" ]; then
+      PREV_ROUND="${PREV_ROUND_READ:-0}"
+      PREV_CRITICAL="${PREV_CRITICAL_READ:-n/a}"
+      PREV_IMPORTANT="${PREV_IMPORTANT_READ:-n/a}"
+      PREV_MINOR="${PREV_MINOR_READ:-n/a}"
+    fi
   fi
+
+  # A predecessor file can carry hand-authored non-numeric values (same incident
+  # class ship-merge.md documents auditing: ~19% of 105 sampled state files held
+  # free-text instead of the canonical tokens their field expects). Treat
+  # anything that isn't a plain non-negative integer as absent, not as data —
+  # feeding a non-numeric PREV_* into the `-ge` checks below or the round
+  # arithmetic would either silently skip the STALLED check or crash the script.
+  case "$PREV_ROUND" in ''|*[!0-9]*) PREV_ROUND=0 ;; esac
+  case "$PREV_CRITICAL" in ''|*[!0-9]*) PREV_CRITICAL="n/a" ;; esac
+  case "$PREV_IMPORTANT" in ''|*[!0-9]*) PREV_IMPORTANT="n/a" ;; esac
+  case "$PREV_MINOR" in ''|*[!0-9]*) PREV_MINOR="n/a" ;; esac
+
+  ROUND=$((PREV_ROUND + 1))
 fi
-
-# A predecessor file can carry hand-authored non-numeric values (same incident
-# class ship-merge.md documents auditing: ~19% of 105 sampled state files held
-# free-text instead of the canonical tokens their field expects). Treat
-# anything that isn't a plain non-negative integer as absent, not as data —
-# feeding a non-numeric PREV_* into the `-ge` checks below or the round
-# arithmetic would either silently skip the STALLED check or crash the script.
-case "$PREV_ROUND" in ''|*[!0-9]*) PREV_ROUND=0 ;; esac
-case "$PREV_CRITICAL" in ''|*[!0-9]*) PREV_CRITICAL="n/a" ;; esac
-case "$PREV_IMPORTANT" in ''|*[!0-9]*) PREV_IMPORTANT="n/a" ;; esac
-case "$PREV_MINOR" in ''|*[!0-9]*) PREV_MINOR="n/a" ;; esac
-
-ROUND=$((PREV_ROUND + 1))
 
 # Non-convergence signal: 3+ rounds in, still not clean, and no tier improved
 # since the prior round. Not a round-count threshold on its own — the worst
@@ -176,7 +230,56 @@ CHURN_FILES=""
 FILE_STREAKS_JSON="{}"
 CHURN_FILES_JSON="[]"
 
-if [ -n "$FINDING_FILES_PATH" ] && [ -f "$FINDING_FILES_PATH" ]; then
+if [ -n "$AMEND" ]; then
+  # Amend mode: carry finding_files/regressed/file_streaks/churn_files through
+  # UNCHANGED from the existing round (recomputing them would need the round
+  # BEFORE the one being amended, which this script doesn't retain a second
+  # level of) and only recompute convergence_state/force_human from the
+  # carried-through regressed/churn plus the now-correct ROUND/CLEAN/STALLED.
+  # $FINDING_FILES_PATH is intentionally ignored here — see the `amend` doc
+  # comment in the usage block above.
+  CONV_DATA=$(python3 -c '
+import json, sys
+state_file, stalled, round_n, clean, ceiling = sys.argv[1:6]
+try:
+    d = json.load(open(state_file))
+except Exception:
+    d = {}
+cur = d.get("finding_files") or []
+streaks = d.get("file_streaks") if isinstance(d.get("file_streaks"), dict) else {}
+churn = d.get("churn_files") if isinstance(d.get("churn_files"), list) else []
+regressed = bool(d.get("regressed"))
+cl = (clean == "true"); st = (stalled == "true"); ce = int(ceiling)
+if cl:
+    state = "converged"
+elif regressed:
+    state = "regressed"
+elif churn:
+    state = "churning"
+elif st:
+    state = "stalled"
+else:
+    state = "progressing"
+force = (int(round_n) >= ce and not cl) or (regressed and int(round_n) >= 3) or (bool(churn) and not cl)
+print(str(regressed).lower())
+print(str(force).lower())
+print(state)
+print(",".join(churn))
+print(json.dumps(cur))
+print(json.dumps(streaks))
+print(json.dumps(churn))
+' "$STATE_FILE" "$STALLED" "$ROUND" "$CLEAN" "$ROUND_CEILING" 2>/dev/null \
+    || { if [ "$CLEAN" = "true" ]; then
+           printf 'false\nfalse\nconverged\n\n[]\n{}\n[]\n'
+         else
+           printf 'false\ntrue\nprogressing\n\n[]\n{}\n[]\n'
+         fi; })
+  { read -r REGRESSED; read -r FORCE_HUMAN; read -r CONVERGENCE_STATE; read -r CHURN_FILES
+    read -r FINDING_FILES_JSON; read -r FILE_STREAKS_JSON; read -r CHURN_FILES_JSON; } <<< "$CONV_DATA"
+  python3 -c 'import json,sys; [json.loads(a) for a in sys.argv[1:]]' \
+    "$FINDING_FILES_JSON" "$FILE_STREAKS_JSON" "$CHURN_FILES_JSON" 2>/dev/null \
+    || { FINDING_FILES_JSON="[]"; FILE_STREAKS_JSON="{}"; CHURN_FILES_JSON="[]"; }
+elif [ -n "$FINDING_FILES_PATH" ] && [ -f "$FINDING_FILES_PATH" ]; then
   # 7 newline-separated lines out: regressed, force_human, convergence_state,
   # churn_files (comma-joined, human-readable, MAY be empty — kept off the
   # last line on purpose: $() strips only trailing newlines from the very end
@@ -355,8 +458,14 @@ with open(sys.argv[21], "w") as f:
 
 # The state file MUST land outside $WT so worktree cleanup can't delete it
 # (production incident: PR #2619's state file was written to $WT/.scratch/
-# and lost with the worktree, so the merge gate read "no review ran").
-if [ -n "$WT" ]; then
+# and lost with the worktree, so the merge gate read "no review ran"). Only
+# checkable while $WT still exists on disk — if it's already been removed
+# (e.g. an `amend` re-run after Phase 7 step 4 cleanup already ran), there's
+# nothing left to have escaped into, and `cd` into a gone directory would
+# otherwise abort the script here under `set -e` AFTER the state file below
+# was already written (production incident: session e34b6832, PR #2754 round
+# 9 — a correction re-run crashed on this exact line with no clear message).
+if [ -n "$WT" ] && [ -d "$WT" ]; then
   STATE_FILE_DIR=$(cd -- "$(dirname -- "$STATE_FILE")" && pwd -P)
   WT_REAL=$(cd -- "$WT" && pwd -P)
   case "$STATE_FILE_DIR" in

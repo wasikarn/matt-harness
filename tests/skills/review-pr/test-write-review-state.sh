@@ -7,6 +7,11 @@
 # different problem in the SAME file in round N+1, which neither the
 # tier-count STALLED check nor the file-set REGRESSED check catches (a file
 # already in the prior round's finding-set doesn't register as "new").
+# Cases 7-8 cover `amend` mode, added the same day after direct-transcript
+# root-causing of a separate defect in the same e34b6832 session: the model
+# hand-edited its own state JSON twice to self-correct a round-counter bug it
+# had introduced by resubmitting a round's data under a new round number just
+# to fix a wrong head_sha.
 # Run standalone: bash tests/skills/review-pr/test-write-review-state.sh
 set -uo pipefail
 
@@ -136,6 +141,63 @@ printf '/src/foo.ts\n' > "$FF"              # round2: same file, leading-slash f
 run_round 1 clean "" sha1 "" 1 0 "$FF"
 assert_eq "case6: leading-slash path does not trip a spurious regressed" "$(field regressed)" 'false'
 assert_eq "case6: leading-slash path still accumulates the same streak (2, not reset)" "$(field file_streaks 'src/foo.ts')" '2'
+
+# --- Case 7: amend — correct a wrong head_sha on the round already in the
+# state file, in place, without advancing round or self-comparing (the
+# e34b6832/PR #2754 incident: a caller resubmitted round 9's data under round
+# 10 just to fix the SHA, which compared round 9 against itself and produced
+# a false stalled:true). Amend must leave round/prev_*/stalled/streak intact
+# and only change last_sha. ---
+fresh_series
+printf 'src/foo.ts\n' > "$FF"
+run_round 2 clean "" sha_r1 "" 1 0 "$FF"          # round 1 (stand-in for round 8)
+run_round 1 clean "" sha_WRONG "" 2 5 "$FF"       # round 2 (stand-in for round 9), wrong sha
+BEFORE_STREAK="$(field file_streaks 'src/foo.ts')"
+run_round 1 clean "" sha_CORRECT "" 2 5 "$FF" amend
+assert_eq "case7: amend keeps round unchanged (does not advance to 3)" "$(field round)" '2'
+assert_eq "case7: amend corrects last_sha" "$(field last_sha)" '"sha_CORRECT"'
+assert_eq "case7: amend does not self-compare into a false stalled" "$(field stalled)" 'false'
+assert_eq "case7: amend carries prev_critical through unchanged" "$(field prev_critical_count)" '2'
+assert_eq "case7: amend does not double-count the file streak" "$(field file_streaks 'src/foo.ts')" "$BEFORE_STREAK"
+
+# --- Case 8: amend with no existing state file errors instead of silently
+# fabricating a round-1 record. ---
+fresh_series
+printf 'src/foo.ts\n' > "$FF"
+if REVIEW_PR_STATE_DIR="$STATEDIR" bash "$SCRIPT" 1 clean "" sha_x "" 0 0 "$FF" amend > /dev/null 2>&1; then
+  echo "  ❌ case8: amend with no prior state should fail, but exited 0" >&2
+  fail=$((fail + 1))
+else
+  echo "  ✅ case8: amend with no prior state file fails instead of fabricating round 1"
+  pass=$((pass + 1))
+fi
+
+# --- Case 9: amend degrades a boolean count field to "n/a" instead of
+# crashing. isinstance(True, int) is True in Python, so a corrupted state
+# file's boolean value must not reach int() in the amend-mode reader. ---
+fresh_series
+cat > "$STATE_FILE" <<'JSON'
+{"branch": "", "round": 2, "prev_critical_count": true, "prev_important_count": 0, "prev_minor_count": 0, "finding_files": [], "file_streaks": {}, "churn_files": []}
+JSON
+printf 'src/foo.ts\n' > "$FF"
+if REVIEW_PR_STATE_DIR="$STATEDIR" bash "$SCRIPT" 1 clean "" sha_x "" 0 0 "$FF" amend > /dev/null 2>&1; then
+  assert_eq "case9: amend degrades a boolean prev_critical_count to n/a, not a crash" "$(field prev_critical_count)" '"n/a"'
+else
+  echo "  ❌ case9: amend should degrade a boolean count field, not exit non-zero" >&2
+  fail=$((fail + 1))
+fi
+
+# --- Case 10: an unrecognized 9th arg fails closed instead of silently
+# switching on amend semantics for a real new round. ---
+fresh_series
+printf 'src/foo.ts\n' > "$FF"
+if REVIEW_PR_STATE_DIR="$STATEDIR" bash "$SCRIPT" 1 clean "" sha_x "" 0 0 "$FF" typo_9th_arg > /dev/null 2>&1; then
+  echo "  ❌ case10: an unrecognized 9th arg should fail closed, but exited 0" >&2
+  fail=$((fail + 1))
+else
+  echo "  ✅ case10: an unrecognized 9th arg fails closed instead of silently amending"
+  pass=$((pass + 1))
+fi
 
 echo ""
 total=$((pass + fail))

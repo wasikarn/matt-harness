@@ -395,6 +395,38 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
    the should-continue-loop script must fail-closed on a missing/stale state
    file (treat as `force_human=true` → hard-stop), not allow.
 
+6. **Closed 2026-08-14 — no way to correct a mistake without a self-
+   comparison artifact.** Direct forensic re-tracing of session `e34b6832`
+   (same session as item 1's incident) found a second, distinct defect: at
+   round 9 the caller passed the wrong `head_sha` to `write-review-state.sh`,
+   then tried to correct it by re-running the script normally. Because a
+   normal re-run always advances the round counter and reads the *just-
+   written* round's own counts as "the prior round," the correction compared
+   round 9's counts against themselves — every tier read as non-decreasing,
+   producing a false `stalled:true`. The model then hand-edited the state
+   JSON directly to repair it — exactly the failure mode `review-pr/SKILL.md`
+   step 1's "never hand-author the JSON" warning exists to prevent, forced by
+   there being no sanctioned alternative. **This is a maker≠checker breach in
+   its own right**: hand-editing the verifier's own output is the model
+   grading its own homework at the one place the whole convergence design
+   depends on staying computational. Root cause is distinct from item 1 (a
+   caller-input mistake, not a fix-induced regression) but shares the same
+   underlying gap — the script conflated "record a new round" with "correct
+   the round just recorded." **Shipped remedy:** an explicit `amend` mode (9th
+   positional arg) that corrects fields on the existing round in place —
+   round/`prev_critical`/`prev_important`/`prev_minor` are read back from the
+   file instead of re-derived, so the correction cannot compare a round
+   against itself; `regressed`/`churning`/`finding_files`/`file_streaks`
+   carry through unchanged (recomputing them would need a second level of
+   round history this script doesn't retain). A related crash was fixed in
+   the same pass: the worktree-escape safety check unconditionally `cd`'d
+   into `$WT`, which aborted the script under `set -e` if the worktree had
+   already been cleaned up before a correction re-run — exactly what
+   happened here. See `skills/review-pr/scripts/write-review-state.sh`'s
+   `amend` doc comment and `tests/skills/review-pr/test-write-review-state.sh`
+   cases 7-10 (red-before-green confirmed: cases 7-8 reproduce the false
+   `stalled:true` and the round self-advance against the pre-fix script).
+
 ## What this is not the 5th refusal (rebuttal table)
 
 | Refusal reason | This ADR |
