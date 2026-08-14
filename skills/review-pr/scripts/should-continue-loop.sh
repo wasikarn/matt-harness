@@ -31,7 +31,15 @@
 # Checks run in a fixed order, first match wins (fail-closed/type-validation
 # before semantic checks):
 #   missing-state                — state file absent/empty
-#   malformed-state               — state file present, not valid JSON
+#   malformed-state               — state file present, not valid JSON, or
+#                                    valid JSON that isn't a top-level object
+#                                    (e.g. a bare array/string/null — parses
+#                                    fine but has no .get() to read fields
+#                                    from; caught explicitly so this fails
+#                                    closed with the documented stop/reason
+#                                    contract instead of an uncaught
+#                                    exception, found by a compliance-audit
+#                                    adversarial pass, 2026-08-14)
 #   stale-sha                     — last_sha != expected (or absent)
 #   reviewer-flow                 — review_mode != own-branch. Auto-continue
 #                                    is scoped to self-review only — a
@@ -110,6 +118,8 @@ state_file, expected_sha = sys.argv[1:3]
 try:
     with open(state_file) as f:
         d = json.load(f)
+    if not isinstance(d, dict):
+        raise ValueError("top-level JSON is not an object")
 except Exception:
     print("stop"); print("reason=malformed-state"); sys.exit(0)
 

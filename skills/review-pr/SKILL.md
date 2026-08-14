@@ -374,10 +374,15 @@ Run a comprehensive pull request review using multiple specialized agents, each 
            last round, a fix in one place is breaking another. Needs a human call, not another
            automatic pass (check for missed sibling call sites — see address-review Phase 4).`
          - `churning`: `{round} rounds — the same file(s) have held a Critical/Important finding
-           multiple rounds running — fixes in this module keep producing new findings there. Needs
-           a human call; have someone read the file's recent diffs before another pass.` (Neutral
-           framing: a module that keeps generating findings may be fix-induced churn or a
-           genuinely deep problem area — the file set alone can't tell which.)
+           {N} rounds running ({churn_files}) — fixes in this module keep producing new findings
+           there. This is fix-induced churn, not slow convergence — needs a human call; have
+           someone read the file's recent diffs before another pass.` `{N}`/`{churn_files}` come
+           from step 1's own second stdout line (same source as `{round}`/`{prev}`/`{now}` above —
+           no new variable, just don't drop the interpolation). (Neutral framing on WHY it's
+           churning: a module that keeps generating findings may be fix-induced churn or a
+           genuinely deep problem area — the file set alone can't tell which; but THAT it's
+           fix-induced churn rather than a stalled-but-different problem is worth naming, since
+           `stalled` gets its own distinct message below.)
          - `stalled`: `{round} rounds — counts not moving across rounds, the remaining findings
            aren't responding to fixes. Needs a human call (accept as-is / wontfix the remainder /
            escalate), not another automatic pass.` This now fires uniformly whenever the

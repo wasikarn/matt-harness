@@ -93,6 +93,15 @@ assert_stop "case4: missing state file -> missing-state" "missing-state"
 printf 'not json at all' > "$STATE_FILE"
 assert_stop "case4b: corrupt JSON -> malformed-state" "malformed-state"
 
+# --- Case 4c: state file is valid JSON but not a top-level object (array,
+# string, null, number) -> stop, malformed-state, not an uncaught exception.
+# Found by a compliance-audit adversarial pass (2026-08-14): these parse fine
+# under json.load but have no .get() to read fields from. ---
+for payload in '[]' '"hello"' 'null' '42'; do
+  printf '%s' "$payload" > "$STATE_FILE"
+  assert_stop "case4c: non-object JSON ($payload) -> malformed-state, not a crash" "malformed-state"
+done
+
 # --- Case 5: last_sha mismatch -> stop, stale-sha ---
 write "$(base 2 false progressing '["a.ts"]')"
 run "different-sha"
