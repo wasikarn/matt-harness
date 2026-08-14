@@ -3,8 +3,25 @@
 # Reads the PreToolUse JSON payload from stdin; exits 2 to block.
 set -uo pipefail
 
+# --- Fast path: skip the python3 cold-start on commands that cannot match a
+# deny pattern. Every deny below dispatches on an argv0 in {rm, find, git, dd,
+# mysql, psql, sqlite3, mariadb} (lines 186-383); a wrapper (sudo/env/nice/
+# xargs/docker exec) never hides that token from the raw string, so if NONE of
+# these substrings survives normalization the command is allow-safe and we exit
+# 0 without spawning python. Quote/backslash stripping (tr -d) exposes the one
+# shlex obfuscation the python catches -- a quote-concatenated `r""m` -> `rm`.
+# ponytail: coarse pre-filter for a habit-guard, not an adversarial sandbox;
+# command-substitution/eval unwrapping stays out of scope (see line 83 below).
+# False positives (digit/warm/scheduling) just spawn python -- safe direction.
+_input="$(cat)"
+_norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
+case "$_norm" in
+  *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*) : ;;  # candidate -> python
+  *) exit 0 ;;                                                   # no destructive token possible -> allow
+esac
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
-python3 -c '
+printf '%s' "$_input" | python3 -c '
 import json, os, re, shlex, sys
 
 try:

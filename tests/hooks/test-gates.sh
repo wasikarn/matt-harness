@@ -555,6 +555,37 @@ rm -f "$HOME/.local/share/kbg/jira-acli-sessions/$AG_COLD" \
       "$HOME/.local/share/kbg/jira-acli-sessions/$AG_ESCAPE" 2>/dev/null
 
 echo ""
+echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
+# irrecoverable + verifier-protect gained a bash fast-path so a benign command
+# skips the python3 cold-start. The fast-path only exits 0 (never 2), so a
+# deny-case still exiting 2 / an ask-case still emitting stdout PROVES python ran
+# and the fast-path did not short-circuit it. These guard the fast-path's own
+# specific risks (the existing suite already covers the git-apply-with-verifier-
+# diff fail-open at line ~314, which the carrier fall-through must preserve).
+# irrecoverable: the quote-strip MUST expose a quote-concatenated `r""m` -> rm
+# (the one shlex obfuscation the python catches that a naive substring misses).
+test_deny  "$IRRECOVERABLE" "r\"\"m -rf (quote-concatenation -> fast-path quote-strip)" \
+  "$(bash_payload 'r""m -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "r\\m -rf (backslash-concatenation -> fast-path strip)" \
+  "$(bash_payload 'r\m -rf /tmp/x')"
+# verifier-protect: a Write to a file_path containing "Bash" must NOT be
+# mis-routed through the Bash fast-path (which would exit 0 and skip the Write
+# ask) -- the tool_name peek matches the quoted value precisely.
+test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/Bash.sh (mis-route guard: file_path contains Bash)" \
+  "$(write_payload 'hooks/gates/Bash.sh' 'echo neutered')"
+# verifier-protect: write/carrier substrings with no verifier path fast-exit 0
+# (the latency win); the fast-path must not deny (it never does) and python
+# (if a carrier substring like 'tar' in 'start' reaches it) must allow.
+test_allow "$VERIFIER_PROTECT" "npm install (write token 'install', no verifier path -> allow)" \
+  "$(bash_payload 'npm install')"
+test_allow "$VERIFIER_PROTECT" "npm start (carrier 'tar' in 'start', false-pos -> allow)" \
+  "$(bash_payload 'npm start')"
+test_allow "$VERIFIER_PROTECT" "ls (no write token -> fast allow)" \
+  "$(bash_payload 'ls -la')"
+test_allow "$VERIFIER_PROTECT" "echo > /tmp/x (redirect, no verifier path -> allow)" \
+  "$(bash_payload 'echo x > /tmp/x')"
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1

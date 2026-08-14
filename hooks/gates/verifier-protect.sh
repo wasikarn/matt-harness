@@ -49,8 +49,51 @@
 # Write-matcher floor). path-hardcode.sh and its hooks.json entry are deleted.
 set -uo pipefail
 
+# --- Fast path (Bash matcher only): skip the python3 cold-start on Bash
+# commands that cannot write to a verifier surface. Write|Edit|NotebookEdit
+# calls always reach python (the gate's primary purpose). For a Bash call, a
+# write to a verifier surface needs EITHER the verifier path spelled out in the
+# command (redirects, tee/cp/mv/sed/perl/rsync/dd/rm/trash targets are argv) OR
+# a diff/archive carrier (git apply/am, patch, tar -x) whose real target lives
+# inside a diff file or resolves to cwd -- invisible to a command-string
+# substring match, so those carriers fall through to python unconditionally
+# (plan-review 2026-08-14: git apply/am + patch + tar-cwd would otherwise fail
+# open -- `git apply /tmp/x.diff` with `+++ b/hooks/gates/...` rewrites a gate
+# with no prompt) OR an unquoted $VAR/~ target that python expands
+# (os.path.expandvars/expanduser, line ~427) into a verifier path invisible to
+# the raw command string (found by tests/hooks/test-verifier-protect.sh's
+# existing $TARGETDIR/~ battery cases -- both fell open on the first version of
+# this fast-path). False positives (digit/start/dispatch) just spawn python.
+# Out of threat model (this gate is not an adversarial sandbox, line ~210): a
+# pre-existing symlink whose realpath resolves into a verifier surface, and
+# \u JSON escapes (the CC serializer emits ASCII alphanumerics literally).
+_input="$(cat)"
+_ws="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ')"
+_norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"
+_run=1
+# Match the quoted tool_name value precisely (the "Bash" is the JSON value, not
+# a substring of a longer word) so a Write to a file_path that happens to
+# contain "Bash" is not mis-routed through the Bash fast-path (which could exit
+# 0 and skip the gate's primary Write-path protection). [[ =~ ]] is used
+# because a `case` pattern cannot contain literal double-quotes cleanly (the
+# syntax-error lockout on the first attempt). The regex tolerates the optional
+# space after the colon in both JSON serializations.
+if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
+  case "$_norm" in
+    *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
+    *tee*|*sed*|*perl*|*cp*|*mv*|*install*|*rsync*|*dd*|*rm*|*trash*|*">"*)
+      case "$_norm" in
+        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*skills/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
+        *) _run=0 ;;  # write to a non-verifier, non-expandable surface -> allow fast
+      esac
+      ;;
+    *) _run=0 ;;  # no write/redirect token -> allow fast
+  esac
+fi
+[ "$_run" -eq 0 ] && exit 0
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
-python3 -c '
+printf '%s' "$_input" | python3 -c '
 import sys, json, os, shlex, re
 
 PROTECTED_REASON = (
