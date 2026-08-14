@@ -97,9 +97,9 @@ here):**
 - **Same-file tier reclassification** (Crit→Imp, same file → not `regressed` +
   Crit count dropped → `stalled` False → `progressing`).
 - **Rounds 1-2** (`stalled` requires `round ≥ 3`).
-- **Minor churn** (`finding_files` is Crit+Imp by construction, line 272-274;
-  Minor is structurally invisible to `regressed`; `stalled` sees Minor only on
-  up-ticks).
+- **Minor churn** (`finding_files` is Crit+Imp by construction, lines 16-18
+  header / 176-177, 203 construction; Minor is structurally invisible to
+  `regressed`; `stalled` sees Minor only on up-ticks).
 - **State-file-write crash** (the fail-closed fallback at lines 205-209 guards
   only the convergence-computation python3 at line 171, NOT the final write at
   lines 242-275; if python3 is missing/broken at the final write, no state file
@@ -145,6 +145,29 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
   executable, not split across SKILL.md prose + write-review-state.sh + audit
   check with no machine-check of consistency).
 
+**Implementation requirements (to actually close, not create, the sync-seam):**
+- **Replace, don't supplement, the SKILL.md prose.** Phase 7 step 2
+  (`SKILL.md:314-344`) currently restates the full decision tree in prose. The
+  script must *replace* that prose with a call (`bash should-continue-loop.sh;
+  case $? in ...`) — not sit alongside it. Leaving the prose = 3 places
+  (script + prose + audit) with no machine-check between script and prose = a
+  new sync-seam. A check 59 can assert the script is *invoked* (positive grep)
+  but cannot assert the prose is *gone* (a negative grep false-positives on the
+  legitimate footer-rendering prose that references the same fields).
+- **Drop the redundant `round < ceiling` clause.** Under
+  `convergence_state == "progressing"`, `force_human == false` already implies
+  `round < ceiling` (the writer sets `force_human = (round >= ceiling)` on the
+  progressing path). Keeping the clause makes two scripts read
+  `REVIEW_PR_ROUND_CEILING` independently = a new sync-seam. The continue
+  condition is `convergence_state == "progressing" AND force_human == false` —
+  two clauses, not three.
+- **Specify the `last_sha` staleness contract.** Mode-12's fail-closed-on-stale
+  only fires if the *detector* fires; a misfiring detector fails OPEN (the loop
+  continues on stale `progressing`). The robust contract: the caller passes the
+  expected HEAD SHA; `should-continue-loop.sh` fails closed if
+  `state.last_sha != expected` OR the file is missing. mtime/round heuristics
+  fail open — do not use them.
+
 ### What this does NOT change (the retained invariants)
 
 - **The merge stays a computational gate.** Slice 1's `convergence-merge-gate`
@@ -177,23 +200,34 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
    human-started) + upgrade `regressed` to line-level identity (the AST-layer
    upgrade, currently out of scope — "Agents Need an AST Layer").
 
-2. **The fresh verifier is per-finding, not per-fix.** `review-pr` Phase 5 step
-   3.5 dispatches a fresh agent to *refute each Critical/Important finding* — it
-   is never asked "is the fix correct?" or "did the fix introduce a new bug?"
-   A wrong fix that resolves the flagged finding (count drops) and introduces an
-   unflagged latent bug is invisible to step 3.5. The guard for fix-induced
-   latent bugs is the next round's review + the blind-spot hunter (which
-   **skips on a trivial diff**, `SKILL.md:163`). So a 1-file fix that introduces
-   a latent bug: reviewers miss it → zero findings → hunter skips →
-   `rehunt="skipped-trivial"` → `clean=true` → loop stops → human merges on a
-   subtly buggy diff. Inherited from the human-started loop, but the auto-loop's
-   reduced human round-by-round context (they didn't click "go" each round and
-   skim each round's findings) makes the clean verdict more rubber-stamp-prone.
-   **Mitigation:** none in the auto-loop; the operator at the hard-stop must
-   read the diff, not rubber-stamp the clean verdict. **Revisit trigger:** if a
-   trivial-diff clean-pass incident occurs (latent bug → clean → merge on a
-   buggy diff), close this ADR + require the blind-spot hunter to run on ALL
-   diffs (not skip trivial ones).
+2. **The gate scores model-supplied counts (input-layer circularity).** The
+   convergence gate is a faithful verifier, but its inputs — tier counts and
+   `finding_files` — are the model's own aggregation. The *decision* to
+   continue is separated (the script decides, not the model), but the *input*
+   is not: the model tiers findings, the gate counts them. The crux (§56) names
+   this — "scoring without separation = the maker grading its own homework with
+   a rubric it wrote." Two paths exploit it:
+   - **Within-round mis-tiering (active):** a real defect mis-tiered as Minor
+     → `CRITICAL_COUNT=0` → step 3.5 has nothing to refute (it only *demotes*
+     flagged findings, never *promotes*, and has nothing to verify at 0
+     Crit/Imp; `SKILL.md:139`) → on a trivial diff the blind-spot hunter skips
+     (`SKILL.md:163`) → `clean=true` → loop stops → human merges on a buggy
+     diff. The model (deliberately or via shared blind spot) fed the count the
+     gate scored.
+   - **Reviewer miss + hunter-runs-but-misses (passive):** on a multi-file PR
+     the hunter *does* trigger, but it is an LLM — a shared blind spot can
+     survive a reframe. Reviewers miss + hunter misses → same `clean=true` →
+     merge. (The earlier framing named only the hunter-*skips* case, not the
+     hunter-*runs-but-misses* case.)
+   Inherited from the human-started loop, but the auto-loop's reduced
+   round-by-round human context (no per-round "go" click + skim) makes the
+   clean verdict more rubber-stamp-prone. **Mitigation:** none in the auto-loop
+   itself; the operator at the hard-stop must read the diff, not rubber-stamp
+   the clean verdict. An implementation that wants to close this would require
+   the blind-spot hunter to run on ALL diffs (not skip trivial ones) and/or
+   add a fresh-context re-tier verifier. **Revisit trigger:** if a clean-pass
+   incident occurs (latent bug → clean → merge on a buggy diff), close this ADR
+   + require the hunter on all diffs.
 
 3. **Token burn is bounded, not zero.** Up to `ceiling` unattended rounds of
    `review-pr` (each spawning ≤5 routed reviewers + a fresh verifier per
@@ -250,3 +284,13 @@ human-started per round):
 
 This ADR's safety rests on the convergence gate catching non-convergence; if it
 doesn't, the human-per-round click is the proven backstop.
+
+**All three are post-incident, not proactive.** No mechanism surfaces them in
+real time — they rely on a post-hoc human noticing. The ceiling hard-stop
+fires at round 5, but between round 3 (where `stalled` first could catch flat
+churn) and the ceiling, a same-file regression churns silently reading
+`progressing`, and the operator at the ceiling cannot distinguish "genuinely
+slow convergence" from "the gate missed a same-file whack-a-mole." For an
+auto-loop, the absence of a proactive churn detector is a real gap: the ceiling
+catches the burn but not the cause. A close condition that fires post-merge
+(trigger #2) is, by definition, a revert, not a prevention.
