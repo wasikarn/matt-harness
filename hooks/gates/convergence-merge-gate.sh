@@ -178,6 +178,20 @@ if clean is True:
               "Use /kbg:ship-merge to merge -- it scores CI.".format(
                   ci_r.returncode), file=sys.stderr)
         sys.exit(2)
+    if not isinstance(ci_checks, list):
+        # Parseable but NOT a list (e.g. a gh error object {"message": ...}
+        # some gh error/GraphQL paths emit, or any future non-array shape).
+        # Fail closed: a non-list stdout is not a check result we can score,
+        # and its returncode was not consulted in the is-None branch above.
+        # Closes the dict-with-rc!=0 bypass (a parseable non-list used to fall
+        # through to the exit(0) allow). Found by the compliance-audit
+        # adversarial verifier (OPEN #1); a security perimeter must not rely
+        # on a subprocess stdout shape staying list-only across versions.
+        print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
+              " (gh pr checks returned a non-list response); cannot confirm"
+              " CI green. Use /kbg:ship-merge to merge -- it scores CI.",
+              file=sys.stderr)
+        sys.exit(2)
     # ponytail: treat ALL checks (cannot filter on required: true -- gh pr
     # checks --json has no required field). SUCCESS/NEUTRAL/SKIPPED = green;
     # anything else (FAILURE, TIMED_OUT, CANCELLED, ACTION_REQUIRED, or
@@ -187,7 +201,8 @@ if clean is True:
     # failing non-required check does not block. Stricter-now is the safe
     # direction (deny -> redirect to the ship-merge required-check gate).
     if isinstance(ci_checks, list) and ci_checks:
-        bad = [c.get("name", "?") for c in ci_checks
+        bad = [(c.get("name", "?") if isinstance(c, dict) else "<non-dict>")
+               for c in ci_checks
                if not isinstance(c, dict)
                or c.get("conclusion") not in ("SUCCESS", "NEUTRAL", "SKIPPED")]
         if bad:
