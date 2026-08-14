@@ -65,18 +65,20 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
    **Locate CODEOWNERS pinned to this PR's head SHA** (not the local working tree — Phase 2's checkout/rebase hasn't run yet, so local files aren't guaranteed to reflect the PR), in GitHub's own documented search order (`.github/`, root, `docs/` — first one found wins, this is not a merge of all three), **distinguishing a genuine 404 (file absent) from any other fetch error** (auth, rate-limit) — the two get opposite verdicts below:
    ```bash
    CODEOWNERS_CONTENT=""
+   CODEOWNERS_FOUND=0
    CODEOWNERS_ERROR=""
    for path in ".github/CODEOWNERS" "CODEOWNERS" "docs/CODEOWNERS"; do
      OUT=$(gh api -H "Accept: application/vnd.github.raw" "repos/{owner}/{repo}/contents/${path}?ref=<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
-     if [ -n "$OUT" ]; then CODEOWNERS_CONTENT="$OUT"; break; fi
+     RC=$?
+     if [ "$RC" -eq 0 ]; then CODEOWNERS_CONTENT="$OUT"; CODEOWNERS_FOUND=1; break; fi
      ERR=$(cat "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null)
      if ! printf '%s' "$ERR" | grep -q "404"; then CODEOWNERS_ERROR="$ERR"; break; fi
    done
    trash "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null
    ```
-   The raw accept header returns content directly, no base64 decode. If `$CODEOWNERS_ERROR` is non-empty → **fail-closed, STOP** — "CODEOWNERS fetch failed ($CODEOWNERS_ERROR), not confirmed absent — the 'never fabricate a clean result' rule applies here too." If all three genuinely 404'd (`$CODEOWNERS_CONTENT` and `$CODEOWNERS_ERROR` both empty) → **N/A**, proceed to Phase 2 (verified-N/A, same treatment as CI's absence above).
+   Branches on the actual exit status, not on whether stdout came back non-empty — an existing-but-EMPTY `.github/CODEOWNERS` (zero owner rules, first in search order per GitHub's own docs) must still short-circuit the search the same way GitHub itself does, but it must be labeled "found, zero rules," not misread as "absent everywhere" the way a content-emptiness check would collapse the two. The raw accept header returns content directly, no base64 decode. If `$CODEOWNERS_ERROR` is non-empty → **fail-closed, STOP** — "CODEOWNERS fetch failed ($CODEOWNERS_ERROR), not confirmed absent — the 'never fabricate a clean result' rule applies here too." If the loop exhausted all three paths with `$CODEOWNERS_FOUND` still `0` → **N/A**, proceed to Phase 2 (verified-absent-everywhere, same treatment as CI's absence above).
 
-   **If `$CODEOWNERS_CONTENT` is non-empty**, parse + match with a real translator, not prose reasoning — GitHub's documented CODEOWNERS grammar (verified against GitHub's own docs, 2026-08-14 — two `.gitignore` features explicitly do NOT carry over: `[ ]` character ranges and `!` negation, so the matcher needs neither: no `/` in a pattern matches the basename at any depth; a `/` anywhere except a lone trailing one anchors to the repo root; a trailing `/` matches that directory and everything under it; `*` matches within one path segment, `**` crosses segments, `?` matches one character; last-matching-line wins). Reuse `gh pr diff <n> --name-only` (step 6's automation-bias guard already calls it — don't fetch twice) and step 4's already-fetched `gh pr view <n> --json reviews -q .reviews` (also don't re-fetch):
+   **If `$CODEOWNERS_FOUND` is `1`**, parse + match with a real translator, not prose reasoning — run this even when `$CODEOWNERS_CONTENT` is empty (an empty or comment-only file naturally parses to zero rules; the script's own `no-owned-files-changed` branch below already handles that correctly, so don't special-case it above the script) — GitHub's documented CODEOWNERS grammar (verified against GitHub's own docs, 2026-08-14 — two `.gitignore` features explicitly do NOT carry over: `[ ]` character ranges and `!` negation, so the matcher needs neither: no `/` in a pattern matches the basename at any depth; a `/` anywhere except a lone trailing one anchors to the repo root; a trailing `/` matches that directory and everything under it; `*` matches within one path segment, `**` crosses segments, `?` matches one character; last-matching-line wins). Reuse `gh pr diff <n> --name-only` (step 6's automation-bias guard already calls it — don't fetch twice) and step 4's already-fetched `gh pr view <n> --json reviews -q .reviews` (also don't re-fetch):
    ```bash
    CHANGED_FILES=$(gh pr diff <n> --name-only)
    REVIEWS_JSON=$(gh pr view <n> --json reviews -q .reviews)
@@ -168,21 +170,31 @@ if not required:
     print("PASS"); print("reason=no-owned-files-changed"); sys.exit(0)
 
 reviews = json.loads(reviews_json)
+# Only these three states carry review-decision weight on GitHub; a COMMENTED
+# review left after an APPROVED one does not revoke the approval, so it must
+# not overwrite it here.
+DECISION_STATES = {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}
 latest_by_author = {}
 for r in reviews:
     login = (r.get("author") or {}).get("login")
     state = r.get("state")
-    if login and state:
+    if login and state in DECISION_STATES:
         latest_by_author[login] = state  # array order == chronological; last write wins
 approved = set(a for a, s in latest_by_author.items() if s == "APPROVED")
 
 unsatisfied_user, unsatisfied_team = [], []
 for owner, files in required.items():
-    if owner.count("/") >= 1 and "@" in owner:
+    if owner.startswith("@"):
+        if "/" in owner:
+            unsatisfied_team.append((owner, sorted(files)))
+        elif owner.lstrip("@") not in approved:
+            unsatisfied_user.append((owner, sorted(files)))
+    else:
+        # A bare email-address owner (GitHub CODEOWNERS supports these) --
+        # the reviews API only returns GitHub logins, never emails, so this
+        # matcher cannot resolve it either way. Same DEFERRED treatment as
+        # an @org/team entry, not a permanent, unsatisfiable STOP.
         unsatisfied_team.append((owner, sorted(files)))
-        continue
-    if owner.lstrip("@") not in approved:
-        unsatisfied_user.append((owner, sorted(files)))
 
 if unsatisfied_user:
     print("STOP"); print("reason=missing-user-approval")
@@ -190,7 +202,7 @@ if unsatisfied_user:
         print("  %s needed for: %s" % (owner, ", ".join(files)))
     sys.exit(0)
 if unsatisfied_team:
-    print("DEFERRED"); print("reason=unverified-team-approval")
+    print("DEFERRED"); print("reason=unverified-owner-approval")
     for owner, files in unsatisfied_team:
         print("  %s needed for: %s" % (owner, ", ".join(files)))
     sys.exit(0)
@@ -199,7 +211,7 @@ print("PASS"); print("reason=all-required-owners-approved")
    ```
    Verified against 16 fixture cases plus the last-match-wins and fail-closed-on-unparseable scenarios (2026-08-14) — exact path match, `*.ext` any-depth, `/docs/` root-anchored directory, `apps/` unanchored directory, `docs/*` single-level-only (confirmed a nested file does NOT match), `db/**/index.md` recursive, an `[abc]` bracket pattern correctly failing the whole check closed rather than silently resolving to no-match.
 
-   **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (any unsatisfied `@username` entry, regardless of what else, or an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure, render the reason + file/owner detail lines. `DEFERRED` (every remaining unsatisfied entry is `@org/team` only) → do not stop here — carry the printed file/team detail lines forward into Phase 2 step 5's confirmation prompt for explicit human acknowledgment before merge (the same "make a human knowingly accept a real bypass" pattern this file already uses for the branch-protection `--admin` bypass) — proceed to Phase 2.
+   **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (any unsatisfied `@username` entry, regardless of what else, or an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure, render the reason + file/owner detail lines. `DEFERRED` (every remaining unsatisfied entry is `@org/team` or a bare email address — this matcher can't resolve either against the reviews API's usernames) → do not stop here — carry the printed file/team detail lines forward into Phase 2 step 5's confirmation prompt for explicit human acknowledgment before merge (the same "make a human knowingly accept a real bypass" pattern this file already uses for the branch-protection `--admin` bypass) — proceed to Phase 2.
 
    **Named residual gap, not silently missing:** this check only runs when this file's own Phase 1 prose actually executes. `hooks/gates/convergence-merge-gate.sh` independently intercepts a raw `gh pr merge` call outside this flow entirely — the actual reason `ship-merge` is `disable-model-invocation` in the first place (see that hook and `docs/reference/hook-lifecycle-contracts.md`) — and does not check CODEOWNERS. Closing that path means adding live GitHub API calls to a PreToolUse deny-gate, a different risk/latency profile, and `hooks/gates/**` is itself sensitive-path; deliberately left as a separate, not-yet-built follow-up rather than folded in here.
 
@@ -218,8 +230,8 @@ print("PASS"); print("reason=all-required-owners-approved")
    - **No protection at all** (step 2 read a 404) → plain merge, no `--admin` — there's nothing to bypass.
    - **Protection exists** → check this phase's step 2 rebase result and Phase 1 step 3's CI signal together. If the rebase actually replayed commits (not "already up to date") **and** CI is not N/A, this phase's step 3 force-push just produced a fresh SHA with no completed status checks yet (and possibly dismissed reviews, if the repo dismisses stale reviews on push) → `--admin` is needed to land now instead of waiting for CI to re-run on the new SHA. This is a real bypass of a real policy — say so plainly in step 5, don't fold it silently into a generic confirmation line. If the rebase was a no-op, **or** CI was verified-N/A in Phase 1 step 3, the fresh-CI concern doesn't apply — but step 6 still uses `--admin` here, the same as the fresh-SHA case (protection active always uses it once you reach step 6's flag decision — there's no partial-bypass command); the difference is only in *why*: whatever other protection rule is configured (e.g. required reviews), not an unvalidated CI check.
    - If Phase 1 step 2 found `allow_squash_merge: false` → STOP now. `--squash` will fail outright; resolve the strategy mismatch before retrying.
-   - **If Phase 1 step 7 found required CODEOWNER entries (not N/A)** and this phase's step 2 rebase actually replayed commits (not a no-op) → **re-run step 7's matching+approval logic** (CODEOWNERS fetch, changed-file match, approval check) against the new post-rebase head SHA, before step 6's merge. A force-push can dismiss stale reviews (already noted above for CI); the same risk applies to CODEOWNER approvals Phase 1 certified against the pre-rebase SHA. Skip this re-check when step 7 was N/A, or when this phase's rebase was a no-op — nothing could have been invalidated either way. Re-check surfaces a newly-unsatisfied `@username` entry → STOP here, same as a Phase 1 step 7 failure; don't proceed to step 6. A newly-DEFERRED `@org/team` entry folds into step 5's prompt exactly like one found in Phase 1.
-5. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / pending / N/A — no CI configured], approvals [N], conflicts [none / yes]. [CODEOWNER: N/A / satisfied / DEFERRED — {file} requires {team} approval, unverified — confirm a team member has approved before proceeding]. Target: [base-branch]. [No branch protection to bypass / Branch protection active — this merge uses --admin to bypass it]. Merge will squash + delete branch. Proceed?" The CODEOWNER field renders only when step 7 (or this step's re-check above) returned DEFERRED — omit it entirely on PASS/N/A, don't pad the prompt with a field that has nothing to say. Base the recommendation on step 4's branch decision, this phase's step 2 rebase result, and Phase 1 step 3's CI signal — not a blanket "Phase 1 already passed" assumption. Render whichever option this resolves to as the literal `(Recommended)` tag, replacing its `(best when X)` clause at render time — the list below is a template, not fixed text to paste verbatim:
+   - **If Phase 1 step 7 found required CODEOWNER entries (not N/A)** and this phase's step 2 rebase actually replayed commits (not a no-op) → **re-run step 7's matching+approval logic** (CODEOWNERS fetch, changed-file match, approval check) against the new post-rebase head SHA, before step 6's merge. A force-push can dismiss stale reviews (already noted above for CI); the same risk applies to CODEOWNER approvals Phase 1 certified against the pre-rebase SHA. Skip this re-check when step 7 was N/A, or when this phase's rebase was a no-op — nothing could have been invalidated either way. Re-check surfaces a newly-unsatisfied `@username` entry → STOP here, same as a Phase 1 step 7 failure; don't proceed to step 6. A newly-DEFERRED `@org/team` or email entry folds into step 5's prompt exactly like one found in Phase 1.
+5. **AskUserQuestion** single-select: "Phase 2: PR [#N] — CI [green / red / pending / N/A — no CI configured], approvals [N], conflicts [none / yes]. [CODEOWNER: N/A / satisfied / DEFERRED — {file} requires {team-or-email} approval, unverified — confirm an owner has approved before proceeding]. Target: [base-branch]. [No branch protection to bypass / Branch protection active — this merge uses --admin to bypass it]. Merge will squash + delete branch. Proceed?" The CODEOWNER field renders only when step 7 (or this step's re-check above) returned DEFERRED — omit it entirely on PASS/N/A, don't pad the prompt with a field that has nothing to say. Base the recommendation on step 4's branch decision, this phase's step 2 rebase result, and Phase 1 step 3's CI signal — not a blanket "Phase 1 already passed" assumption. Render whichever option this resolves to as the literal `(Recommended)` tag, replacing its `(best when X)` clause at render time — the list below is a template, not fixed text to paste verbatim:
    - **No protection at all**, **protection exists but the rebase was a no-op** (already up to date — Phase 1's validated SHA is still current), or **CI was verified-N/A in Phase 1 step 3** (no CI configured for this repo at all — there's nothing for a fresh SHA to leave unvalidated) → recommend Merge now.
    - **Protection exists, the rebase actually replayed commits, and CI is not N/A** (step 4's fresh-SHA case — a real check that hasn't re-run on the new SHA yet, likely showing `pending`) → do not default to Merge now: recommend Abort instead, and tell the user the fresh SHA hasn't been CI-validated — picking Merge now there needs the user to knowingly accept an unvalidated `--admin` bypass, not a default nudge toward it.
    - `Merge now (best when all gates pass and the user is ready to land)` — execute server-side merge. Bypasses branch protection when it's active (step 4); on a genuinely re-based SHA under active protection with a real (non-N/A) CI signal, this also means merging before CI has re-run on it — not a concern when CI was verified-N/A.
