@@ -427,6 +427,33 @@ file and returns `continue` / `stop` — NOT prose in SKILL.md. This:
    cases 7-10 (red-before-green confirmed: cases 7-8 reproduce the false
    `stalled:true` and the round self-advance against the pre-fix script).
 
+   **The gap recurred a second time in the same session, from a different
+   trigger, confirming this isn't a one-off.** At round 12 (L9373 of the raw
+   transcript) the model wrote the state file with a *hallucinated* `head_sha`
+   — a fabricated tail on an otherwise-real-prefixed hex string, self-admitted
+   at L9387: "I fabricated the trailing characters of that SHA instead of
+   reading the real one." Unlike round 9's incident, nothing external caused
+   this trigger — the model caught its own mistake, independently re-verified
+   the real SHA via `gh pr view`, then made the identical procedural error:
+   re-ran the script normally to "correct" it, which read the fabricated-SHA
+   write's own counts back as "the prior round" and bumped round 12→13 with
+   corrupted `prev_*` values (0,0,0 instead of the real (1,2,2) the *first*
+   write had itself already correctly computed). No false `stalled:true` this
+   time only because the review was genuinely clean, so `clean` won regardless
+   — the corruption would otherwise have been silent. The model's own
+   diagnosis (L9401) was exactly right: "the round counter got corrupted by my
+   mistaken first write... fixing the file directly rather than running the
+   script a third time, which would just compound the drift" — it correctly
+   recognized a normal re-run could not fix this, and chose hand-editing as
+   the least-bad option because no better one existed. Applying `amend` to the
+   fabricated-SHA record instead would have read `round=12` and
+   `prev=(1,2,2)` straight from that record — both already correct — and
+   produced the model's eventual hand-repaired state in one command, with no
+   round=13 corruption ever appearing. Two distinct triggers (a caller/recovery
+   mix-up at round 9, a model self-hallucination at round 12) converging on the
+   identical missing capability is why this is item 6 in this ADR and not a
+   footnote — the shipped `amend` mode covers both without further change.
+
 ## What this is not the 5th refusal (rebuttal table)
 
 | Refusal reason | This ADR |
