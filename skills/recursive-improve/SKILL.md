@@ -19,7 +19,7 @@ the hand — but a hand the human always holds.
 multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion` gate before any
 mutation. The skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and the human is the loop's real stop condition at the per-mutation gate; the iteration cap is a
-context-exhaustion backstop. The operating model is CLAUDE.md §The operating model (current) — read in Bash:
+context-exhaustion backstop. The operating model is CLAUDE.md's Operating model under §Architecture (current) — read in Bash:
 `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`.
 
 **When to use:** the user explicitly asks to improve / fix / audit the harness, or a session's
@@ -80,34 +80,70 @@ proceed plan-only into execution.
   re-rank before presenting at Step 3, mirroring `agents/ideate-critic.md`'s pattern.
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
   **≤ 5 files / ≤ 200 lines**. A candidate bigger than that is not a loop iteration — surface
-  it and hand it to `/ship`; do not smuggle a large change through this ritual.
+  it and hand it to `/ship`; do not smuggle a large change through this ritual. **File count is
+  a proxy for the real risk (correlated content-judgment across many files), not the risk
+  itself** — a mechanical, low-risk edit spanning many files can fail this guard unnecessarily,
+  while a small, high-judgment edit inside `hooks/gates/**` can clear it easily. Clearing the
+  count is not a substitute for actually weighing what the candidate touches. **This is a
+  caveat for how you describe and prioritize a routed candidate, not an exception procedure —
+  there is no override that lets a >5-file/>200-line candidate execute through this loop even
+  when you judge it mechanical and low-risk; it still routes to `/ship`, where a human decides
+  with full context, not this ritual.**
+- **Cross-iteration evasion guard.** The count above bounds a single Propose pass — it does not
+  by itself stop the same root-cause finding from being smuggled through piecemeal across
+  several separately-approved iterations (e.g. 4 files this iteration, 4 the next, 4 after).
+  Before ranking a new candidate, check it against Step 6's routed-to-`/ship` memory entries for
+  root-cause overlap with anything previously excluded on scope grounds — if it shares a root
+  cause with a deferred systemic finding, name that explicitly at the gate instead of presenting
+  it as ordinary new work.
 - **Success criterion:** a ranked candidate list ready to present, each within the scope guard
   or explicitly flagged as "too big — route to /ship".
 
 ### 3. ASK — the gate (mandatory)
 
-- Present the ranked list, then **AskUserQuestion** single-select:
-  "[N] candidates: [ranked list]. Blast radius: [low/med/high, cited]. Dependencies:
-  [none/chain]. Recommended order: [...]. Approve?"
-  - `Approve — execute in recommended order (best when candidates are independent and blast radius is low)`
+- **If every candidate's blast radius is LOW/MED, present the ranked list in one
+  AskUserQuestion** single-select: "[N] candidates: [ranked list]. Blast radius: [low/med,
+  cited]. Dependencies: [none/chain]. Recommended order: [...]. Approve?"
+- **If any candidate's blast radius is HIGH, ask about it with its own separate
+  AskUserQuestion call — not folded into a combined ask with LOW/MED candidates.** First, a
+  single-select on the HIGH item(s) alone: "[HIGH candidate]. Blast radius: high — [what it
+  touches]. Approve / Revise / Reject?" Then a second, separate single-select for the
+  remaining LOW/MED candidates as a batch, using the template above. A human approving the
+  LOW/MED batch must not be able to simultaneously approve the HIGH item through the same
+  click — that is the actual protection this rule exists for, not just naming the HIGH item
+  first inside a still-combined ask.
+- Revise and Reject read the same on both asks; only Approve's wording differs, since "execute
+  in recommended order" and "blast radius is low" are batch-shaped claims that don't hold for a
+  single HIGH candidate:
+  - LOW/MED batch ask: `Approve — execute in recommended order (best when candidates are independent and blast radius is low)`
+  - HIGH-alone ask: `Approve — execute this candidate (best when you've weighed the blast radius and still want it to run)`
   - `Revise — drop / add / reorder (best when scope or order is off)`
   - `Reject — keep as analysis only (best when you want the findings without acting)`
-- **This ask never collapses, even when Step 2's ranking is unambiguous.** Unlike a
+  If more than one HIGH candidate exists, the HIGH ask is still one single-select covering all
+  of them together — that bundling is acceptable (all are HIGH, none is being smuggled past a
+  LOW/MED item), but don't reuse the LOW/MED batch's "recommended order" framing for it either;
+  name each HIGH candidate on its own line.
+- **Neither ask collapses, even when Step 2's ranking is unambiguous.** Unlike a
   self-consistency skip elsewhere in the fleet (e.g. `incident/SKILL.md`'s mitigation-confirm),
   this gate is authorization, not information-gathering — an unambiguous ranking answers "what's
   best," not "do you approve." Do not add a skip-when-obvious rule here: if the answer feels
   settled enough to skip, that feeling is exactly what the load-bearing invariant above exists to
   override.
 - A planning request is **not** authorization to execute. **Denial ≠ approval.** If
-  `AskUserQuestion` is denied (dontAsk / headless `-p`), render the same question as numbered
-  prose in the turn's own output and stop there — "waiting for an explicit reply" means ending
-  the turn with the question on record, not an active poll loop; there is no live channel to
-  wait on inside a single headless dispatch. If no human can answer (this turn or ever), **stop
-  at analysis-only** — never fail open into execution. A later turn that carries an explicit
-  reply resumes at this same gate, not at Step 4 directly.
-- **Success criterion:** an explicit Approve (with the candidate set the user signed off on), a
-  Revise/Reject that loops back / ends, or — when no human is reachable this turn — the rendered
-  prose question plus an explicit stop-at-analysis-only statement. Only Approve authorizes Step 4.
+  `AskUserQuestion` is denied (dontAsk / headless `-p`), render the relevant question(s) as
+  numbered prose in the turn's own output and stop there — "waiting for an explicit reply" means
+  ending the turn with the question(s) on record, not an active poll loop; there is no live
+  channel to wait on inside a single headless dispatch. This applies per-ask: if both the
+  HIGH-alone and LOW/MED-batch asks ran, a denial on one is not a denial on the other — resolve
+  and report each independently. If no human can answer (this turn or ever), **stop at
+  analysis-only** — never fail open into execution. A later turn that carries an explicit reply
+  resumes at this same gate, not at Step 4 directly.
+- **Success criterion:** for each ask that ran, an explicit Approve (with the candidate(s) the
+  user signed off on), a Revise/Reject that loops back / ends, or — when no human is reachable
+  this turn — the rendered prose question plus an explicit stop-at-analysis-only statement. Only
+  an Approve on a given ask authorizes Step 4 for that ask's candidate(s); a HIGH candidate
+  denied or unreachable does not block Step 4 for an already-Approved LOW/MED batch, and vice
+  versa.
 
 ### 4. Act — execute approved candidates
 
@@ -161,7 +197,9 @@ proceed plan-only into execution.
   entry (e.g. "revisit if the same `file:line` resurfaces in a later Observe pass," or "revisit
   if the accepted regression's metric moves further in the same direction").
 - Emit the iteration report (Output Format below). Capture any durable WHY (a decision, a deferred
-  candidate, a regression accepted) in memory.
+  candidate, a regression accepted) in memory. **A candidate routed to `/ship` for exceeding the
+  scope guard must be captured with its full member-file list**, not a one-line mention — this is
+  what Step 2's cross-iteration evasion guard checks a later candidate against.
 - **Iteration cap: 5 per session** (soft — the human gates each iteration anyway; this is only a
   context-exhaustion backstop). If more candidates remain after the cap, surface them as a backlog
   and stop; do not silently continue.
@@ -171,8 +209,10 @@ proceed plan-only into execution.
 ```
 recursive-improve — iteration <N> report
   observed:        <reader summary: gaps across N sessions> · <audit: C/W/I counts>
-  proposed:        <N candidates>
-  approved:        <N>   (user gate: approve | revise | reject | unreachable — analysis only)
+  proposed:        <N candidates>   routed_to_ship: <N — never reached Step 3, scope guard>
+  approved:        <N>   (user gate: approve | revise | reject | unreachable — analysis only;
+                    if Step 3 ran two separate asks, report each ask's outcome — e.g.
+                    "HIGH: unreachable, LOW/MED batch: approve" — never one shared verdict)
   executed:        <N>   dropped: <N — and why>
   per candidate:
     - <name> · file:line | session | audit-id
@@ -180,7 +220,7 @@ recursive-improve — iteration <N> report
         done_when: <observable check>
         status:    done | not-done (<reason>)
         delta:     <metric moved? gaps N→M / audit X→Y / n/a>
-  drift_guard:     improved | flat | regressed   (rollback: <none | reverted | tuned | accepted+why>)
+  drift_guard:     improved | flat | regressed | n/a (Verify not reached)   (rollback: <none | reverted | tuned | accepted+why>)
   witness_diff:    <fleet changes, or "none">
   backlog:         <candidates past the cap / deferred, or "none">
 ```
@@ -189,6 +229,19 @@ recursive-improve — iteration <N> report
 enum: never entered Act (gate came back unreachable/reject, or this candidate wasn't selected
 this iteration) versus entered Act and failed (retry cap spent, per Step 4's escalate-not-retry
 rule). Say which one happened in the reason string every time.
+
+**`routed_to_ship`, `dropped`, and a gate-unreachable stop are three different things — keep
+them apart.** `routed_to_ship` counts candidates that never reached Step 3 at all, because
+Step 2's scope guard excluded them before any ask — they are not part of the Step-3 candidate
+set `proposed` reflects being offered, and they are not `dropped`; they go straight to
+`backlog` with their full member-file list (Step 6). `dropped` counts only candidates that
+*were* offered at Step 3 and were then explicitly excluded by the human via Revise, with the
+gate actually reachable and answered — never use it for a gate-unreachable/reject stop. When
+the gate comes back unreachable/reject, every offered candidate carries into `backlog`
+untouched, pending a later turn's explicit reply, so that case is `dropped: 0`, not
+`dropped: N`. Use `drift_guard: n/a (Verify not reached)` for the same never-executed case — the
+three-value enum presupposes Verify actually ran; don't force a flat/improved/regressed read
+onto a turn where nothing did.
 
 ## Failure Modes to Avoid
 
@@ -223,4 +276,5 @@ rule). Say which one happened in the reason string every time.
   revisit only if a durable per-iteration history is actually needed).
 - **Origin & locked decisions:** metric = harness-audit findings (CRIT/WARN/INFO counts); cap = 5;
   rollback = surface + ask. The autonomous-vs-human-gated question is resolved: **human-gated at the
-  per-mutation gate** — never model-gated, never self-launching (CLAUDE.md §The operating model).
+  per-mutation gate** — never model-gated, never self-launching (CLAUDE.md's Operating model under
+  §Architecture).
