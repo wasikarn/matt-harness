@@ -15,7 +15,11 @@ no copy-from-snapshot sync seam.
 
 1. **Freeze instruments BEFORE any tuning text exists.** File list, rubric criteria, fixture
    prompts + assertions, and the acceptance rule all land in a `FREEZE.md` in the eval workspace
-   first. A rubric written after seeing a draft is the maker grading its own work.
+   first. A rubric written after seeing a draft is the maker grading its own work. Before
+   freezing, check open GitHub issues labeled `eval-fold-in` for pending fold-in items on any
+   file this round is touching, and add any that apply as tested fixture variables in the
+   frozen file/variable list — not a Level-B-only mention — this is the only point where a
+   deferred item re-enters a round (see issue #48).
 
 2. **Behavioral headline vs static work-list, honestly separated.**
    - *Level A (behavioral)* — fixtures run against content; the only numbers reported as
@@ -101,8 +105,10 @@ this class recurs with that step in place.
 Every item gets an explicit disposition: CONFORMS (with evidence) or N/A (with the reason
 stated in the report itself). An item with no disposition is a finding, not a pass.
 
-Rules — R1 instruments (file list, rubric criteria, fixture prompts + assertions,
-acceptance rule) frozen in `FREEZE.md` before any tuning text · R2 Level A behavioral
+Rules — R1 open `eval-fold-in`-labeled issues touching this round's files checked before
+freezing, applicable items folded in as tested fixture variables, then instruments (file
+list, rubric criteria, fixture prompts + assertions, acceptance rule) frozen in `FREEZE.md`
+before any tuning text · R2 Level A behavioral
 vs Level B work-list separated, Level B never a scored delta · R3 n=3 fresh-context trials
 per condition, snapshot reads only (never `Skill()`/agent-name/slash resolution — the
 plugin cache serves stale installed content), no significance claims at n=3 (a
