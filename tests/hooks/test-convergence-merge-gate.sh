@@ -563,6 +563,22 @@ check "value-taking flag with no trailing PR number -> pr_num stays unresolved, 
   "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
 rm_state
 
+# Compliance-audit gap (kbg:compliance-audit V1, 2026-08-15): a correctly-
+# resolved pr_num that names a KNOWN, SPECIFIC PR with no review file of its
+# own must still hit Part K's "known PR, simply unreviewed" allow logic
+# (line ~326-327, unchanged by this fix) -- an unrelated PR's non-clean
+# state elsewhere on disk must not punish it. Part L's other FIX cases all
+# use review-pr-42.json clean:true for the resolved target; none exercised
+# "resolved via a value-taking flag, but the resolved PR has NO state file
+# at all". Correctly allows on the current code -- pinning it as a
+# regression guard now that the extraction fix makes this combination newly
+# reachable through a value-taking flag.
+state_clean_false  # unrelated PR 42, non-clean (only file on disk)
+run_gate_raw 'gh pr merge --repo owner/repo 999' 0
+check "FIX + Part K interaction: --repo owner/repo 999 resolves pr_num=999 (no state file for 999), unrelated PR 42 non-clean -> allow (named target, simply unreviewed -- not ambiguous)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm_state
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
