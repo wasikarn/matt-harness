@@ -75,7 +75,7 @@ fi
 _gate_dir="$(cd -P "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2016  # single quotes are intentional: Python code
 printf '%s' "$_input" | python3 -c '
-import json, os, re, shlex, sys
+import glob, json, os, re, shlex, sys
 
 try:
     d = json.load(sys.stdin)
@@ -122,7 +122,7 @@ def _deindirect(cmd, depth=0):
         return cmd
 
     resolved = re.sub(
-        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-c\s+"
+        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-[A-Za-z]*c\s+"
         r"\"((?:[^\"\\]|\\.)*)\"",
         lambda m: m.group(1),
         cmd,
@@ -134,33 +134,99 @@ def _deindirect(cmd, depth=0):
         if len(v) >= 2 and v[0] == "\"" and v[-1] == "\"":
             v = v[1:-1]
         assigns[k] = v
+    # re.sub with a negative lookahead, not .replace(): a plain substring
+    # replace of "$GH" also matches inside "$GHX" (GH is a literal prefix of
+    # GHX), corrupting the longer name'\''s expansion. The lookahead requires
+    # the char after the name to not continue an identifier. Lambda (not a
+    # string) as the replacement so a literal `\` in v is never read as a
+    # backreference. github.com/wasikarn/kbg-harness/issues/49
     for k, v in assigns.items():
-        resolved = resolved.replace("${" + k + "}", v).replace("$" + k, v)
+        resolved = re.sub(r"\$\{" + re.escape(k) + r"\}",
+                           lambda m, v=v: v, resolved)
+        resolved = re.sub(r"\$" + re.escape(k) + r"(?![A-Za-z0-9_])",
+                           lambda m, v=v: v, resolved)
 
     if resolved != cmd and depth < 5:
         return _deindirect(resolved, depth + 1)
     return resolved
 
-cmd = cmd.replace("\r", " ").replace("\n", " ")
-cmd = _deindirect(cmd)
+def _any_at_risk_state(state_dir):
+    # Scan every known review state file (keyed review-pr-*.json plus the
+    # unkeyed review-last.json) and return True if ANY is non-clean or
+    # unreadable. Shared by both places that can'\''t pin a merge command to
+    # ONE specific PR: an ambiguous command (shell indirection this gate
+    # can'\''t resolve) and a confirmed `gh pr merge` whose selector never
+    # produces a numeric pr_num (bare invocation, --squash-only, a branch
+    # name, a URL -- gh resolves all of those from the current branch, not
+    # from the command text). Either way, a stale non-clean review for some
+    # OTHER PR still blocks until cleaned up -- the safe direction, not a
+    # bypass. github.com/wasikarn/kbg-harness/issues/49
+    files = glob.glob(os.path.join(state_dir, "review-pr-*.json"))
+    unkeyed = os.path.join(state_dir, "review-last.json")
+    if os.path.isfile(unkeyed):
+        files.append(unkeyed)
+    for sf in files:
+        try:
+            with open(sf) as f:
+                s = json.load(f)
+        except Exception:
+            return True
+        if not (isinstance(s, dict) and s.get("clean") is True):
+            return True
+    return False
+
+cmd = cmd.replace("\\\n", "")  # real backslash-newline continuation: bash
+cmd = cmd.replace("\r", " ").replace("\n", " ")  # deletes both chars, joining
+cmd = _deindirect(cmd)  # lines with whatever whitespace was already adjacent
+# -- was `.replace("\n", " ")` alone, turning "\<NL>" into "\ " (backslash-
+# space). shlex.shlex(posix=True) treats that as an ESCAPED space, folding
+# it into the next token as a leading literal space ("merge" -> " merge"),
+# breaking the adjacency check below. Confirmed a real `gh pr \`+newline+
+# `merge 42` (bash'\''s own line-continuation syntax) rc=0-bypassed on the
+# corrupted token. Order matters: the backslash-newline deletion MUST run
+# before the general \n -> " " collapse below, or there'\''s no backslash left
+# to match. github.com/wasikarn/kbg-harness/issues/49
+
+# Command substitution / backtick / eval leave part of the command opaque to
+# static tokenizing -- decide this BEFORE the has_merge walk, not after, and
+# never trust that walk'\''s result when it'\''s true. Punctuation_chars mode
+# below (needed to split on ; & |) also splits on ( and ), so a "gh" living
+# INSIDE an unresolved $(...) leaks out as an ordinary top-level token once
+# the parens become separators -- confirmed via `XPR=$(echo gh); $XPR pr
+# merge 42`: the walk found a coincidental gh...pr merge sequence spanning
+# across the substitution boundary and mis-classified it as a confirmed
+# merge with a bogus pr_num, not the ambiguous case it actually is.
+# github.com/wasikarn/kbg-harness/issues/49
+has_opaque_indirection = "$(" in cmd or "`" in cmd or bool(re.search(r"\beval\b", cmd))
+
 try:
-    tokens = shlex.split(cmd, posix=True)
+    # shlex.split() alone never splits on ; & | -- "pull;gh" stays one glued
+    # token and "gh" never surfaces for the has_merge walk below. punctuation_
+    # chars=True makes shlex treat those as their own tokens (still quote-
+    # aware), same fix the file'\''s own comment above already named as the
+    # ceiling. Verified --repo owner/repo and /usr/local/bin/gh both still
+    # tokenize intact under this mode. github.com/wasikarn/kbg-harness/issues/49
+    _lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+    _lex.whitespace_split = True
+    tokens = list(_lex)
 except ValueError:
     tokens = []
+state_dir = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.expanduser("~/.claude/state")
 pr_num = None
 has_merge = False
-gh_seen = False
-for j, t in enumerate(tokens):
-    if t == "gh" or t.endswith("/gh"):
-        gh_seen = True
-        continue
-    if gh_seen and t == "pr" and j + 1 < len(tokens) and tokens[j + 1] == "merge":
-        has_merge = True
-        for a in tokens[j + 2:]:
-            if not a.startswith("-"):
-                pr_num = a
-                break
-        break
+if not has_opaque_indirection:
+    gh_seen = False
+    for j, t in enumerate(tokens):
+        if t == "gh" or t.endswith("/gh"):
+            gh_seen = True
+            continue
+        if gh_seen and t == "pr" and j + 1 < len(tokens) and tokens[j + 1] == "merge":
+            has_merge = True
+            for a in tokens[j + 2:]:
+                if not a.startswith("-"):
+                    pr_num = a
+                    break
+            break
 
 if not has_merge:
     # Reached only because the (widened) bash fast-path found "gh" and
@@ -174,13 +240,23 @@ if not has_merge:
     # prose string is a real ambiguity; that same text embedded inside a
     # bigger quoted string (already inert prose to shlex) should not trip
     # this. github.com/wasikarn/kbg-harness/issues/49
-    residual = bool(re.search(
-        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-c\b", cmd
-    )) or "$(" in cmd or "`" in cmd or bool(re.search(r"\beval\b", cmd)) or any(
+    residual = has_opaque_indirection or bool(re.search(
+        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-[A-Za-z]*c\b", cmd
+    )) or any(
         re.fullmatch(r"\$\{?[A-Za-z_]\w*\}?", t)
         for t in tokens
     )
     if residual:
+        # has_merge is False here, so pr_num is never set -- we cannot know
+        # WHICH review this ambiguous command might target. _any_at_risk_
+        # state() checks every review-pr-*.json plus review-last.json,
+        # since a prior version of this check looked only at the unkeyed
+        # file and missed the realistic PR-by-number layout entirely:
+        # write-review-state.sh writes ONLY review-pr-<N>.json for that
+        # flow -- a full silent bypass for exactly the case `kbg:review-pr
+        # <N>` produces. github.com/wasikarn/kbg-harness/issues/49
+        if not _any_at_risk_state(state_dir):
+            sys.exit(0)
         print("[kbg:gate] BLOCKED: command references gh/merge but also"
               " contains shell indirection (command substitution, eval, or"
               " a variable this command never assigns) this gate cannot"
@@ -191,7 +267,6 @@ if not has_merge:
     sys.exit(0)
 
 # --- Resolve the review-pr state file. ---
-state_dir = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.expanduser("~/.claude/state")
 state_file = None
 if pr_num:
     keyed = os.path.join(state_dir, "review-pr-{}.json".format(pr_num))
@@ -203,8 +278,40 @@ if state_file is None:
         state_file = unkeyed
 
 if state_file is None:
-    # No review state on disk -- unreviewed merge, not this gate'\''s concern.
-    sys.exit(0)
+    # No file matches THIS merge'\''s specific selector (pr_num unresolved --
+    # bare `gh pr merge`, --squash-only, a branch name, or a URL all skip
+    # the keyed lookup above, and no unkeyed review-last.json exists
+    # either -- gh resolves all of those forms from the CURRENT BRANCH, not
+    # from the command text, so pr_num being unset here is common, not
+    # exotic). A prior version of this gate treated that as "unreviewed
+    # merge, not this gate'\''s concern" and allowed unconditionally -- but
+    # that can'\''t rule out this bare merge being exactly the one some OTHER
+    # on-disk review already flagged non-clean. Same _any_at_risk_state()
+    # backstop the ambiguous-indirection path above already uses.
+    # github.com/wasikarn/kbg-harness/issues/49
+    #
+    # But a PLAUSIBLE PR NUMBER (pr_num matches \d+) with no keyed file for
+    # it is a KNOWN, SPECIFIC PR that simply hasn'\''t been reviewed by this
+    # gate'\''s ecosystem -- not ambiguous. Some OTHER unrelated PR being
+    # non-clean elsewhere on disk says nothing about this one; punishing it
+    # would be a false block on a target we can actually name. Restore the
+    # pre-round-3 "known PR, unreviewed" -> allow semantics for that case
+    # only. Genuinely ambiguous selectors (pr_num is None, a branch name, a
+    # URL, or a flag'\''s value token swallowed by the extraction loop, e.g.
+    # `--repo owner/repo`) still fall through to the backstop below.
+    if pr_num and re.fullmatch(r"\d+", pr_num):
+        sys.exit(0)
+    if not _any_at_risk_state(state_dir):
+        sys.exit(0)
+    print("[kbg:gate] BLOCKED: this merge'\''s target PR could not be matched"
+          " to a review state on disk (no PR number resolvable from the"
+          " command -- bare invocation, a flag-only form, a branch name, a"
+          " URL, or a flag value adjacent to the PR number -- or the"
+          " resolved number has no state file), and at least one review"
+          " state on disk is non-clean or unreadable; cannot confirm this"
+          " merge is not that one. Run `gh pr merge <N>` with an explicit,"
+          " unambiguous PR number, or use /kbg:ship-merge.", file=sys.stderr)
+    sys.exit(2)
 
 # --- Parse and decide. ---
 try:

@@ -322,6 +322,21 @@ check "REGRESSION PIN: VAR=value; \$VAR indirection on non-clean review -> block
 run_gate_raw 'M=merge; gh pr $M 42' 0
 check "sibling case: non-contiguous gh...merge via mid-command var -> block (was silent allow)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
 
+# Confirmed 2026-08-15 by a code-review agent AFTER 2112bcd (the first #49
+# fix) had already shipped: three more bypasses, all rc=0 against that
+# commit. Manually re-verified against 2112bcd before trusting these green.
+run_gate_raw 'git pull;gh pr merge 42' 0
+check "REGRESSION PIN: bare semicolon, zero indirection syntax -> block (Finding A, shlex never split on ;)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'bash -ec \"gh pr merge 42\"' 0
+check "REGRESSION PIN: bundled short flags -ec -> block (Finding B, -c regex required its own token)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'GH=gh; GHX=merge; $GH pr $GHX 42' 0
+check "REGRESSION PIN: variable-name substring collision, GH is a prefix of GHX -> block (Finding C)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'GH=gh;$GH pr merge 42' 0
+check "no-space variant of VAR indirection (GH=gh;\$GH, no space after ;) -> block" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
 # The fix must not overreach: resolution on a CLEAN, CI-green review must
 # still allow -- proves indirection got resolved to a real merge and
 # evaluated normally, not just blanket-blocked.
@@ -343,10 +358,145 @@ check "unrelated \$HOME next to gh/merge prose -> allow, no false block" "$([ "$
 run_gate_raw 'echo \"talking about gh pr merge\" && bash -c \"ls -la\"' 0
 check "bash -c wrapper with unrelated payload beside gh/merge prose -> allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-# Named ceiling: command substitution is never resolved, only fails closed.
+# Named ceiling: command substitution is never resolved. Whether that's a
+# block now depends on whether there's a state file to protect (MEDIUM fix,
+# 2026-08-15): no state -> nothing for this gate to check -> allow, matching
+# the documented "no state file -> allow" philosophy this gate already
+# applies to a CONFIRMED merge below. A state file present -> still fail
+# closed, unchanged.
+run_gate_raw 'XPR=$(echo gh); $XPR pr merge 42' 0
+check "unresolvable command substitution, NO state file -> allow (MEDIUM fix: nothing to protect)" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+# A residual-ambiguous command never has a confirmed pr_num, so it can't
+# check ONE specific keyed file -- it scans both review-pr-*.json and
+# review-last.json and blocks if any is non-clean. Pin with the unkeyed
+# layout here (own-branch reviews).
+printf '{"clean": false, "round": 3, "convergence_state": "critical_open"}' > "$WORK/state/review-last.json"
 run_gate_raw 'XPR=$(echo gh); $XPR pr merge 42' 0
 ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "statically resolve" "$WORK/err" && ok=0
-check "unresolvable command substitution -> fail closed (named ceiling, not silently allowed)" "$ok"
+check "unresolvable command substitution, non-clean state present -> fail closed (named ceiling, not silently allowed)" "$ok"
+rm -f "$WORK/state/review-last.json"
+rm_state
+
+echo ""
+echo "=== Part I -- round 2 findings (issue #49, post-2112bcd adversarial review) ==="
+# A code-review agent actually EXECUTED the round-1 fix (2112bcd, already
+# pushed) against fresh adversarial payloads and found two more confirmed
+# rc=0 bypasses, both re-verified against that commit before trusting these
+# green -- same discipline as Parts C and H above.
+
+# Finding 1: `cmd.replace("\n", " ")` alone turned real bash backslash-
+# newline continuation ("\"+NL) into "\ " (backslash-space), which
+# shlex(posix=True) reads as an ESCAPED space folded into the next token
+# ("merge" -> " merge"), breaking the has_merge adjacency check. Needs a
+# state file present (keyed-only, the realistic layout) to prove it's a
+# real bypass and not just "no state to protect anyway".
+state_clean_false
+run_gate_raw 'gh pr \\\nmerge 42' 0
+check "REGRESSION PIN: backslash-newline continuation before merge -> block (Finding 1, round 2)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'gh \\\npr merge 42' 0
+check "REGRESSION PIN: backslash-newline continuation before pr -> block (Finding 1, round 2)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+# Finding 2: the residual/ambiguous fail-closed check looked ONLY at the
+# unkeyed review-last.json. write-review-state.sh writes ONLY the keyed
+# review-pr-<N>.json for a PR-by-number review (skills/review-pr/scripts/
+# write-review-state.sh:99-102) -- the realistic shape a non-clean review
+# actually leaves on disk. state_clean_false() here writes ONLY the keyed
+# file, same as that real flow -- this is the gap, not a contrived setup.
+run_gate_raw 'eval \"gh pr merge 42\"' 0
+check "REGRESSION PIN: eval wrapper, KEYED-ONLY state (real review-pr layout) -> block (Finding 2, round 2)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw '`echo gh pr merge 42`' 0
+check "REGRESSION PIN: backtick command substitution, keyed-only state -> block (Finding 2, round 2)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'GH=gh; eval $GH pr merge 42' 0
+check "REGRESSION PIN: eval + VAR indirection combined, keyed-only state -> block (Finding 2, round 2)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'bash -c \"bash -c \\\"gh pr merge 42\\\"\"' 0
+check "nested bash -c bash -c, keyed-only state -> block (residual -c regex catches it independent of double-unwrap)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'gh pr merge 42 $(true)' 0
+check "confirmed-looking merge with trailing \$(...), keyed-only state -> block (opaque indirection forces ambiguous path)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
+
+# The fix must not overreach: an ambiguous command with only an UNRELATED
+# clean:true state file on disk (for a different PR) must still allow --
+# proves the check reads the `clean` field, not just file existence (the
+# MEDIUM finding the round-1 fix introduced).
+printf '{"clean": true}' > "$WORK/state/review-pr-99.json"
+run_gate_raw 'eval \"gh pr merge 42\"' 0
+check "ambiguous command, only an unrelated PR's clean:true state exists -> allow (reads clean, not just existence)" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm -f "$WORK/state/review-pr-99.json"
+
+echo ""
+echo "=== Part J -- round 3 finding: confirmed merge with no resolvable PR number ==="
+# A third review round (this time scoped to just the round-2 fixes) found the
+# CONFIRMED-merge path (has_merge=True, zero shell tricks) had the identical
+# gap Finding 2 had already closed on the ambiguous path: `gh pr merge` with
+# no PR number in the command text -- bare, --squash-only, a branch name, or
+# a URL -- never sets pr_num, so the keyed lookup is skipped, no unkeyed
+# review-last.json exists either (write-review-state.sh writes only the
+# keyed file for a PR-by-number review), and the old code took that as
+# "unreviewed merge, not this gate's concern" and allowed. `gh pr merge`
+# resolves ALL of those forms from the current branch -- this is the single
+# most common way to type the command, not an edge case. All 4 confirmed
+# rc=0 against the round-2 code before this fix.
+state_clean_false
+run_gate_raw 'gh pr merge' 0
+check "REGRESSION PIN: bare gh pr merge, keyed-only state -> block (Finding, round 3)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'gh pr merge --squash' 0
+check "REGRESSION PIN: gh pr merge --squash (no number), keyed-only state -> block (Finding, round 3)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'gh pr merge feature-x' 0
+check "REGRESSION PIN: gh pr merge <branch-name>, keyed-only state -> block (Finding, round 3)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'gh pr merge https://github.com/o/r/pull/42' 0
+check "REGRESSION PIN: gh pr merge <URL>, keyed-only state -> block (Finding, round 3)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
+
+# Must not overreach: truly nothing on disk, or only an unrelated clean
+# review, still allows a bare merge -- same "no state file -> allow"
+# philosophy, just now correctly scoped to "no AT-RISK state" instead of
+# "no file matching this exact selector".
+run_gate_raw 'gh pr merge' 0
+check "bare gh pr merge, NO state at all -> allow (nothing to protect)" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+printf '{"clean": true}' > "$WORK/state/review-pr-99.json"
+run_gate_raw 'gh pr merge' 0
+check "bare gh pr merge, only an unrelated PR's clean:true state exists -> allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm -f "$WORK/state/review-pr-99.json"
+
+echo ""
+echo "=== Part K -- round 4 finding: known-but-unreviewed PR must not inherit an unrelated PR's non-clean state ==="
+# A 4th review round found the round-3 fix (Part J above) over-broadened: it
+# gated the _any_at_risk_state() fallback on state_file being None, which
+# also fires for a PLAUSIBLE, KNOWN PR NUMBER that simply has no review file
+# yet -- not just genuinely ambiguous selectors. That turned a previously
+# inert case (old code: state_file is None -> unconditional allow) into a
+# false block on a merge the gate can actually name, just because some
+# UNRELATED PR's state happens to be non-clean. Confirmed rc=2 against the
+# round-3 code before this fix.
+state_clean_false  # unrelated PR 42, non-clean
+run_gate_raw 'gh pr merge 999' 0
+check "REGRESSION PIN (round 4): gh pr merge 999 (known PR, never reviewed), unrelated PR 42 non-clean -> allow (named target, simply unreviewed -- not ambiguous)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm_state
+
+# The inverse is NOT a bug: --repo's value token sits where the extraction
+# loop expects the PR number, so pr_num resolves to the non-numeric string
+# "owner/repo" instead of "42" -- the gate genuinely cannot tell this merge
+# targets PR 42, so PR 42 being clean is not a fact it has. With an unrelated
+# PR non-clean on disk, failing closed is correct: ambiguity + at-risk state
+# on disk still means "cannot confirm this isn't that one".
+state_clean_true  # review-pr-42.json clean:true (the PR actually being merged)
+printf '{"clean": false}' > "$WORK/state/review-pr-7.json"  # unrelated PR, non-clean
+run_gate_raw 'gh pr merge --repo owner/repo 42' 0
+ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "could not be matched to a review state on disk" "$WORK/err" && ok=0
+check "gh pr merge --repo owner/repo 42: --repo's value swallows pr_num extraction -> target unresolvable, unrelated PR 7 non-clean -> still blocks (fail closed, not a regression -- PR 42 being clean isn't a fact the gate has here)" "$ok"
+rm_state
+rm -f "$WORK/state/review-pr-7.json"
 
 echo ""
 total=$((pass + fail))
