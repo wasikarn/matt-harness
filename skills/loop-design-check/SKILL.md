@@ -53,6 +53,12 @@ The whole loop rides on the comparator's "is it done yet?" **The comparator can 
 **Five-point goal framework:**
 1. **Done-criterion is machine-verifiable.**
 2. **Boundary conditions defined alongside the done-criterion** ("what it must NOT do") — anti-Goodhart; missing boundaries = a license to cheat.
+   Two boundary categories are easy to skip because they aren't about the goal itself: if the loop
+   processes content it didn't generate (a ticket body, a file upload, anything user-controlled),
+   that content is untrusted input, not just data — the boundary should say what the loop must not
+   do in response to what the input *says*, not just what it contains. And if the loop edits files,
+   the boundary should scope *which* files it may touch (excluding migrations, CI config, auth/secrets
+   paths by default) rather than leaving write access unrestricted.
 3. **Has a failure fallback** — retry cap N + escalate to a human when exceeded.
 4. **Goal is layered.**
 5. **Prefer reconciliation over assertion for the done-criterion** — anchor to external fact (golden sample / upstream total / reconciled diff) before your own assertions. "All tests pass" can be gamed; "diff vs the reference < 0.01" can't.
@@ -90,6 +96,9 @@ This fleet already runs both skeletons: `recursive-improve` is document-driven d
 ### Step 4 · Add damping (against oscillation/runaway)
 
 Retry cap, hard stop, human flips the last switch = damping. **Negative feedback with no damping oscillates** — spinning in place, burning tokens.
+For a periodic/regulator loop (Step 2), damping also covers overlapping invocations — a lock or a
+skip-if-already-running check — since a cron interval shorter than one run's duration is a different
+way to lose control than oscillation, and just as real.
 
 ### Step 5 · Land in three stages (don't go fully automatic on day one)
 
