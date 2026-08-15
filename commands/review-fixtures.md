@@ -31,7 +31,7 @@ don't assume the Skill-side names apply to an Agent or Command target.
 **Why 2 agents, not 1**, and the exact prompt skeleton this command fills in: read
 `${KBG_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5
 below. That file is the single source of truth for the prompt text, the fixture-construction
-hygiene checklist, and the 4 instructions that must not be cut — this command only
+hygiene checklist, and the 5 instructions that must not be cut — this command only
 orchestrates around it.
 
 ### 1. Parse arguments and resolve the target surface

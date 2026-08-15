@@ -155,6 +155,12 @@ rounds since the fixtures were generated, list them here by version + one-line d
 so the reviewer can rule out re-flagging closed bugs — omit this sentence entirely on a
 target's first iteration]).
 
+Separately: if the target file's own body makes a claim about how another skill, agent,
+command, or doc in this fleet works — a named phase, a described mechanism, a cross-reference
+used to justify a design choice — that claim is independently checkable against the file it
+names. Grep it and confirm the target's description is accurate; a mismatch is a
+target-attributable finding on its own, whether or not it shows up in any with_skill output.
+
 For each of the [N] outputs, write a genuine, critical, real-findings paragraph — the way
 a staff engineer would comment on a pull request. Actually trace the logic ([1-2
 domain-specific tracing examples, e.g. "if there's a retry loop, walk through what
@@ -200,9 +206,9 @@ input, accessibility/memoization for UI, N+1/index cases for anything DB-facing)
 
 ## What not to cut when adapting this
 
-Three instructions are the load-bearing part — they're what separated this from two
+Five instructions are the load-bearing part — they're what separated this from two
 shallow, agreeing summaries in both confirmed runs. Domain specifics (file paths, eval
-names, assertions) change every time; these three don't:
+names, assertions) change every time; these five don't:
 
 1. **No `grading.json` before forming an independent view.** Anchoring on a prior grade
    is exactly what a second reviewer is supposed to correct for.
@@ -222,6 +228,15 @@ names, assertions) change every time; these three don't:
    findings dissolved once checked against the true dispatch text. If the source prompt is
    long, quote a shortened excerpt rather than trimming it to a summary — cut length, not
    fidelity.
+5. **Verify the target's own cross-fleet claims, not just its fixture-output teaching.**
+   Rule 3 above checks whether the target's *guidance* is still current; it says nothing
+   about whether the target's *prose describing other files* is true. If the body names a
+   phase, mechanism, or design choice in another skill/agent/command/doc, grep that file and
+   confirm it. Missed twice by this exact process on `loop-design-check` (deep-audit,
+   2026-08-15): two full fixture-review rounds both passed clean while the skill's own body
+   mischaracterized `recursive-improve`'s mechanism and named a `review-pr` phase that
+   doesn't exist — neither showed up in any with_skill output, because fixture review never
+   reads the target file looking for this.
 
 ## After both agents return
 
