@@ -248,6 +248,29 @@ ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "CODEOWNER approval missing" "$WORK/er
 check "CLAUDE_PLUGIN_ROOT unset -> CODEOWNERS import still resolves via \$0, check still runs" "$ok"
 
 echo ""
+echo "=== Part G -- regression pin: gh pr view response missing 'files' key -> fail closed ==="
+# Pins the fix: changed_files used to be built via pv.get("files", []), so a
+# malformed/incomplete gh pr view response (key absent, not just empty) was
+# silently read as "zero changed files" -> evaluate() returns PASS regardless
+# of what CODEOWNERS actually protects. This is the same class of gap already
+# closed for headRefOid; files now gets the identical fail-closed treatment.
+state_clean_true
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
+FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
+FAKE_PR_VIEW_JSON='{"headRefOid":"deadbeef","reviews":[]}' \
+  run_gate 42
+ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "PR file list unreadable" "$WORK/err" && ok=0
+check "REGRESSION PIN: gh pr view response missing 'files' key -> block, not silent allow" "$ok"
+
+# The fix must not overreach: a PR that genuinely has zero changed files
+# (files: [], key present) still has to reach the existing no-owned-files PASS.
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
+FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
+FAKE_PR_VIEW_JSON="$(pr_view_json '[]' '[]')" \
+  run_gate 42
+check "files: [] (genuinely zero changed files, key present) -> still allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [ "$fail" -eq 0 ] && exit 0 || exit 1

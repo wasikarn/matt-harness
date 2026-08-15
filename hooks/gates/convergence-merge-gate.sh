@@ -318,7 +318,12 @@ if clean is True:
               " cannot confirm CODEOWNER approval. Use /kbg:ship-merge to"
               " merge.", file=sys.stderr)
         sys.exit(2)
-    changed_files = [f.get("path", "") for f in pv.get("files", []) if isinstance(f, dict)]
+    if "files" not in pv or not isinstance(pv.get("files"), list):
+        print("[kbg:gate] BLOCKED: clean review but PR file list unreadable;"
+              " cannot confirm CODEOWNER approval. Use /kbg:ship-merge to"
+              " merge.", file=sys.stderr)
+        sys.exit(2)
+    changed_files = [f.get("path", "") for f in pv["files"] if isinstance(f, dict)]
     reviews = pv.get("reviews", [])
     if not isinstance(reviews, list):
         reviews = []
