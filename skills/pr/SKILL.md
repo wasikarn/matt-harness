@@ -38,18 +38,17 @@ and Phase 6 reported the number + URL + CI state.
   default branch is often the integration branch (`develop`) or a stale legacy branch, so a
   silent default misroutes the fix just as effectively as a persuasive wrong guess does.
 - If no base branch given (non-hotfix), resolve the repo's actual default branch (don't
-  assume `main`):
+  assume `main`) via `skills/pr/scripts/resolve-default-branch.sh` (2026-08-15 extraction —
+  the full fallback chain this bullet used to describe inline, now shared with
+  `skills/review-pr/SKILL.md`, which previously only had the first 2 lines of it):
   ```bash
-  gh repo view --json defaultBranchRef -q .defaultBranchRefName 2>/dev/null \
-    || git remote show origin | awk '/HEAD branch/ {print $NF}'
+  bash skills/pr/scripts/resolve-default-branch.sh
   ```
-  If both return nothing usable (`(unknown)`, empty, or a branch name that doesn't actually
-  exist — a stale or dangling remote `HEAD` symref, which happens on a freshly-mirrored or
-  partially-configured remote), don't guess: list what actually exists (`git branch -a`) and
-  use `git merge-base` between the current branch and each candidate to find which one it
-  really forked from. If more than one candidate is still plausible after that, ask the user
-  rather than picking one silently — a wrong default here is exactly as costly as the hotfix
-  guard's wrong default above, it's just rarer.
+  Exit 0 → stdout is the resolved branch name, use it directly. Exit 1 → stdout starts
+  `AMBIGUOUS: ...` — more than one candidate is equally plausible after the
+  `git merge-base` disambiguation; ask the user rather than picking one silently, same as
+  the hotfix guard's wrong-default cost above. Exit 2 → stdout is `UNRESOLVED` — no usable
+  candidate at all; surface that rather than guessing.
 
 ---
 
