@@ -91,7 +91,7 @@ The loop isn't "run a fixed check on a timer," it's **"read a doc on a timer, an
 
 Three iron rules: ① **the judge must be independent** — not the same agent as Build; ② **deterministic rules**, never "looks right"; ③ **Build may not edit the acceptance conditions to pass**. Three failed retries → escalate to a human.
 
-This fleet already runs both skeletons: `recursive-improve` is document-driven dispatch (the ranked list is the task queue, `AskUserQuestion` is the human-only "done" flip); `orchestrate`'s Validator/Re-validator chain and `review-pr`'s Judge phase are plan/build/judge, with the judge always a separate agent invocation from the one that wrote the fix.
+This fleet's clearest skeleton match is plan/build/judge, not document-driven dispatch: `orchestrate`'s Validator/Re-validator chain runs the judge as a separate agent invocation from the one that wrote the fix, and `review-pr`'s Phase 5 scrutinize step sends every Critical/Important finding to a fresh, independent agent that tries to refute it — the reviewer that surfaced the finding never gets to be its sole judge either. `recursive-improve`'s gated propose-loop (`AskUserQuestion` as the human-only approve flip) is close in spirit but re-derives its candidate list fresh every run rather than reading a persisted doc that only advances on change — not a strict document-driven-dispatch instance.
 
 ### Step 4 · Add damping (against oscillation/runaway)
 
