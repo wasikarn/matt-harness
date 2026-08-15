@@ -28,8 +28,12 @@ ways — under-planning a one-way door and over-planning a typo are the same err
 Once inside plan mode, the analysis is the deliverable, not a formality before the
 real work starts. Read the files the task touches and trace the actual flow before
 drafting — a plan built from the request text alone, without opening the code, is a
-guess wearing a plan's shape. Call `advisor()` before presenting the plan, not only
-before implementing it — the plan is what the user spends their review cycle on.
+guess wearing a plan's shape. For a multi-file or architectural change, dispatch
+`kbg:code-architect` for the blueprint (pattern analysis, layer-direction check,
+DI-style check, test-impact check) instead of reading ad hoc — its output format
+(Design Decisions, Trade-offs, Build Sequence, Risks, Success Criteria) is the plan.
+Call `advisor()` before presenting the plan, not only before implementing it — the
+plan is what the user spends their review cycle on.
 
 ### Pressure-test before committing
 
