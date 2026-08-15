@@ -74,6 +74,10 @@ merge_payload() { # merge_payload <pr_num>
   printf '{"tool_input":{"command":"gh pr merge %s"}}' "$1"
 }
 
+raw_payload() { # raw_payload <raw_shell_command_json_escaped>
+  printf '{"tool_input":{"command":"%s"}}' "$1"
+}
+
 # run_gate <pr_num> [with_gh:0|1]
 # Writes stdout to $WORK/out, stderr to $WORK/err, sets $rc.
 run_gate() {
@@ -85,6 +89,24 @@ run_gate() {
     p="/usr/bin:/bin"  # deliberately no gh -- proves the fast path never spawns it
   fi
   printf '%s' "$(merge_payload "$pr")" \
+    | PATH="$p" REVIEW_PR_STATE_DIR="$WORK/state" CLAUDE_PLUGIN_ROOT="$ROOT" \
+      bash "$GATE" >"$WORK/out" 2>"$WORK/err"
+  rc=$?
+}
+
+# run_gate_raw <json_escaped_command> [with_gh:0|1]
+# Same as run_gate but takes a raw (already-escaped) command string instead
+# of building "gh pr merge <N>" -- needed for the indirection test cases
+# (issue #49), where the actual command text isn't the literal merge form.
+run_gate_raw() {
+  local cmd="$1" with_gh="${2:-1}"
+  local p
+  if [ "$with_gh" = "1" ]; then
+    p="$WORK/fakebin:$PATH"
+  else
+    p="/usr/bin:/bin"
+  fi
+  printf '%s' "$(raw_payload "$cmd")" \
     | PATH="$p" REVIEW_PR_STATE_DIR="$WORK/state" CLAUDE_PLUGIN_ROOT="$ROOT" \
       bash "$GATE" >"$WORK/out" 2>"$WORK/err"
   rc=$?
@@ -269,6 +291,49 @@ FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
 FAKE_PR_VIEW_JSON="$(pr_view_json '[]' '[]')" \
   run_gate 42
 check "files: [] (genuinely zero changed files, key present) -> still allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+echo ""
+echo "=== Part H -- shell-indirection bypasses (issue #49) ==="
+# Confirmed 2026-08-15: both these commands returned rc=0 (silent allow)
+# against a clean:false state on the pre-fix gate -- a real bypass, not a
+# hypothetical. Manually re-verified against the pre-fix code before trusting
+# these green, same discipline as Part C.
+
+state_clean_false
+run_gate_raw 'bash -c \"gh pr merge 42\"' 0
+check "REGRESSION PIN: bash -c wrapper on non-clean review -> block (was silent allow)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'GH=gh; $GH pr merge 42' 0
+check "REGRESSION PIN: VAR=value; \$VAR indirection on non-clean review -> block (was silent allow)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+run_gate_raw 'M=merge; gh pr $M 42' 0
+check "sibling case: non-contiguous gh...merge via mid-command var -> block (was silent allow)" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+
+# The fix must not overreach: resolution on a CLEAN, CI-green review must
+# still allow -- proves indirection got resolved to a real merge and
+# evaluated normally, not just blanket-blocked.
+state_clean_true
+export KBG_SKIP_CODEOWNERS_GATE=1
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 run_gate_raw 'bash -c \"gh pr merge 42\"'
+check "clean + CI green through bash -c wrapper -> allow (resolution, not blanket block)" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 run_gate_raw 'GH=gh; $GH pr merge 42'
+check "clean + CI green through VAR indirection -> allow (resolution, not blanket block)" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+unset KBG_SKIP_CODEOWNERS_GATE
+
+# False-positive guards: prose mentioning gh/merge, or an unrelated $VAR
+# embedded in a quoted string, must not trip the residual fail-closed check.
+rm_state
+run_gate_raw 'echo \"$HOME: run gh pr merge later\"' 0
+check "unrelated \$HOME next to gh/merge prose -> allow, no false block" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+run_gate_raw 'echo \"talking about gh pr merge\" && bash -c \"ls -la\"' 0
+check "bash -c wrapper with unrelated payload beside gh/merge prose -> allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+# Named ceiling: command substitution is never resolved, only fails closed.
+run_gate_raw 'XPR=$(echo gh); $XPR pr merge 42' 0
+ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "statically resolve" "$WORK/err" && ok=0
+check "unresolvable command substitution -> fail closed (named ceiling, not silently allowed)" "$ok"
 
 echo ""
 total=$((pass + fail))

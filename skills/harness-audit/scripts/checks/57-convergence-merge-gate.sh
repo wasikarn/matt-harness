@@ -27,8 +27,15 @@ else
   crit "hooks.json: not found at $_h — the hook registry is missing entirely"
 fi
 if [ -f "$_g" ]; then
-  /usr/bin/grep -q '"pr merge"' "$_g" || \
-    crit "convergence-merge-gate.sh: fast-path lost the \`pr merge\` glob — the bash fast-path no longer catches merge commands, so every non-merge command may spawn python (latency) AND merge commands may bypass the python detection"
+  # Widened 2026-08-15 (issue #49): the fast-path condition changed from a
+  # contiguous `"pr merge"` glob to a `gh` AND `merge` presence check (order-
+  # independent), so a merge hidden behind mid-command variable indirection
+  # (`gh pr $M 42` where `M=merge`) still reaches the python slow path. This
+  # assertion must track the ACTUAL gating expression, not just a substring
+  # that happens to survive in a comment -- a real neuter (e.g. deleting the
+  # `[[ ... ]]` condition entirely) must fail this check.
+  /usr/bin/grep -q '\*gh\*' "$_g" && /usr/bin/grep -q '\*merge\*' "$_g" || \
+    crit "convergence-merge-gate.sh: fast-path lost its gh/merge candidate check — the bash fast-path no longer catches merge commands, so every non-merge command may spawn python (latency) AND merge commands may bypass the python detection"
   /usr/bin/grep -q 's\.get("clean")' "$_g" || \
     crit "convergence-merge-gate.sh: lost the \`clean\` field read — the gate no longer reads the review state's clean verdict, so it cannot decide allow-vs-deny; it degrades to unconditional allow or unconditional deny"
   /usr/bin/grep -q 'sys.exit(2)' "$_g" || \

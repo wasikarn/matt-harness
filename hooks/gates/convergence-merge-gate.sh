@@ -53,10 +53,16 @@ _input="$(cat)"
 # just spawns python, which tokenizes with shlex and allows -- quoted prose
 # stays one token, so it never splits into bare `pr` + `merge`.
 _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ')"
-case "$_norm" in
-  *gh*"pr merge"*) : ;;  # candidate -- python decides
-  *) exit 0 ;;           # no merge possible -- allow, no cold-start
-esac
+# Widened 2026-08-15 (issue #49): require "gh" and "merge" present ANYWHERE
+# in the text, not the contiguous "pr merge" substring -- contiguous-only
+# missed `gh pr $M 42` where `M=merge` sits elsewhere in the same command
+# (the substring "merge" is real, just not adjacent to "pr"). Costs more
+# python cold-starts on ordinary text mentioning both words; the python slow
+# path's own indirection resolver (_deindirect below) does the precision
+# work from here, same tradeoff this file already accepted for prose hits.
+if [[ "$_norm" != *gh* || "$_norm" != *merge* ]]; then
+  exit 0  # no merge possible -- allow, no cold-start
+fi
 
 # --- Slow path: a candidate merge command. Tokenize precisely in python. ---
 # Resolve this gate's own directory from $0 rather than trusting
@@ -69,7 +75,7 @@ esac
 _gate_dir="$(cd -P "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2016  # single quotes are intentional: Python code
 printf '%s' "$_input" | python3 -c '
-import json, os, shlex, sys
+import json, os, re, shlex, sys
 
 try:
     d = json.load(sys.stdin)
@@ -96,7 +102,47 @@ cmd = d["tool_input"].get("command", "")
 # positive that only fires on a non-clean review state -- safe direction.
 # Ceiling: split on shell separators (;, &&, ||) and reset gh_seen per
 # command if a real cross-command false positive appears.
+def _deindirect(cmd, depth=0):
+    # Best-effort: unwrap `<shell> -c "<nested>"` wrapping and resolve
+    # simple same-command `VAR=value; ... $VAR ...` indirection, so the
+    # token walk below sees what the shell would actually run instead of an
+    # opaque quoted blob or an unexpanded variable name. Bounded recursion
+    # against pathological nesting.
+    # ponytail: heuristic, not a real shell interpreter. Single-quoted -c
+    # bodies and single-quoted assignment values are not unwrapped here --
+    # they fall through to the residual-indirection fail-closed check below
+    # instead of being resolved. Command substitution ($(...), backticks)
+    # and variables this command never itself assigns (env, export, a
+    # parent shell) are never resolved either, by design -- same fail-closed
+    # backstop. Ceiling: an interpreter -c/-e flag (python3 -c, perl -e)
+    # running `gh pr merge` via a system call is not covered at all -- an
+    # open-ended chase, out of scope for this fix.
+    # github.com/wasikarn/kbg-harness/issues/49
+    if depth > 5:
+        return cmd
+
+    resolved = re.sub(
+        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-c\s+"
+        r"\"((?:[^\"\\]|\\.)*)\"",
+        lambda m: m.group(1),
+        cmd,
+    )
+
+    assigns = {}
+    for k, v in re.findall(
+            r"(?<![-\w])([A-Za-z_]\w*)=(\"[^\"]*\"|[^\s;&|()]+)", resolved):
+        if len(v) >= 2 and v[0] == "\"" and v[-1] == "\"":
+            v = v[1:-1]
+        assigns[k] = v
+    for k, v in assigns.items():
+        resolved = resolved.replace("${" + k + "}", v).replace("$" + k, v)
+
+    if resolved != cmd and depth < 5:
+        return _deindirect(resolved, depth + 1)
+    return resolved
+
 cmd = cmd.replace("\r", " ").replace("\n", " ")
+cmd = _deindirect(cmd)
 try:
     tokens = shlex.split(cmd, posix=True)
 except ValueError:
@@ -117,6 +163,31 @@ for j, t in enumerate(tokens):
         break
 
 if not has_merge:
+    # Reached only because the (widened) bash fast-path found "gh" and
+    # "merge" somewhere in the raw text. _deindirect() above already
+    # resolved `<shell> -c "..."` wrapping and same-command `VAR=value; ...
+    # $VAR ...` indirection into plain tokens -- a real merge hiding behind
+    # either already surfaced in the walk above. What is left here is what
+    # that heuristic could not resolve: command substitution, `eval`, or a
+    # variable this command never itself assigns. Check TOKENS, not raw
+    # substrings -- a bare `$VAR` sitting alone in an otherwise-innocuous
+    # prose string is a real ambiguity; that same text embedded inside a
+    # bigger quoted string (already inert prose to shlex) should not trip
+    # this. github.com/wasikarn/kbg-harness/issues/49
+    residual = bool(re.search(
+        r"(?:^|[;&|]+\s*)(?:\S*/)?\w*sh\s+(?:-\S+\s+)*-c\b", cmd
+    )) or "$(" in cmd or "`" in cmd or bool(re.search(r"\beval\b", cmd)) or any(
+        re.fullmatch(r"\$\{?[A-Za-z_]\w*\}?", t)
+        for t in tokens
+    )
+    if residual:
+        print("[kbg:gate] BLOCKED: command references gh/merge but also"
+              " contains shell indirection (command substitution, eval, or"
+              " a variable this command never assigns) this gate cannot"
+              " statically resolve -- cannot confirm this is not a merge."
+              " Run `gh pr merge` directly (no wrapper), or use"
+              " /kbg:ship-merge.", file=sys.stderr)
+        sys.exit(2)
     sys.exit(0)
 
 # --- Resolve the review-pr state file. ---
