@@ -51,10 +51,16 @@ Read `<iteration-path>/feedback.json`.
   interrupted before Verify finished. The `candidate.diff` that produced these fixtures is NOT at
   `<iteration-path>/candidate.diff` — Step 5 writes `candidate.diff` to the iteration that was
   current *before* Act created this one. If `<iteration-path>` resolved to `iteration-<N>`, check
-  `iteration-<N-1>/candidate.diff` instead. If present, diff it against the live target file: if
-  the file's current content already matches, an unverified change from an earlier session is
-  already live. Tell the user this explicitly and offer to run Verify (Step 6) now, rather than
-  silently restarting at Propose — restarting would hide that the target file already changed.
+  `iteration-<N-1>/candidate.diff` instead. If present, `Read` the live target file yourself and
+  diff it against `candidate.diff` — do this check yourself even if the user already states the
+  file matches; a claim isn't the check. If the file's current content already matches, an
+  unverified change from an earlier session is already live. This same interrupted state is also
+  what a still-live concurrent session on this repo's shared working tree would leave mid-run
+  (see Step 7's manifest-bump note for a confirmed instance of this failure mode) — before
+  recommending Verify, say so and confirm no other session is actively working this workspace
+  right now. Tell the user the unverified change is live and offer to run Verify (Step 6) now,
+  rather than silently restarting at Propose — restarting would hide that the target file already
+  changed.
 - **Doesn't exist, and this iteration has no fixture output either:** tell the user to run
   `/review-fixtures <name>` first. This command builds on top of that one — it does not
   reimplement reviewer dispatch.
@@ -73,7 +79,8 @@ target-attributable findings (critical and major first — minor only if there's
 bounded history of prior candidates *from this loop run* ("previous attempts — do NOT repeat
 these, try something structurally different," the same instruction shape `skill-creator`'s
 `improve_description.py` uses for descriptions, applied here to body prose). Produce it as a
-unified diff against the live target file.
+unified diff against the live target file — generate it by actually diffing the old and new
+content rather than hand-authoring the diff text, so hunk-header line counts stay accurate.
 
 **Success criterion:** a diff that, if applied, plausibly addresses the findings named — not a
 rewrite that touches unrelated sections. Keep the change scoped to what the findings actually
@@ -96,9 +103,11 @@ template, not fixed text to paste verbatim:
   cost, or none of the candidates are landing)
 
 Reuse `kbg:recursive-improve`'s Step 3 gate language verbatim for the edge cases — denial ≠
-approval; if `AskUserQuestion` is unreachable (headless, `dontAsk`), render the same question as
-numbered prose and stop there, waiting for an explicit reply in a later turn; never fail open into
-Act. A planning request is not authorization to execute.
+approval; default to actually calling `AskUserQuestion` — don't self-declare it unreachable
+without trying it first. Only if it's genuinely unreachable (headless, `dontAsk`, or the call
+itself errors), render the same question as numbered prose and stop there, waiting for an
+explicit reply in a later turn; never fail open into Act. A planning request is not authorization
+to execute.
 
 **Success criterion:** an explicit Apply, Revise (loop back to Step 3), or Stop — never an
 inferred approval.
@@ -180,8 +189,13 @@ iterate-skill — <target> — iteration <N> report
 - **Treating an interrupted prior run as "never reviewed."** Fixtures with no feedback.json is a
   resume state, not a fresh start — check `candidate.diff` against the live file before assuming
   nothing happened.
+- **Treating a user's claim as your own verification.** "I checked, it matches" is a reason to
+  double-check quickly, not a substitute for reading the file yourself — and a claim about file
+  state can go stale if another session touches the workspace before you act on it.
 - **Skipping the ASK gate because a candidate "looks obviously right."** The signal is reviewer
   judgment, not a grounded score — the human gate is what makes that acceptable to act on at all.
+- **Self-declaring `AskUserQuestion` unreachable without trying it.** Defaults to the real gate;
+  the prose fallback is for genuine unreachability, not a shortcut.
 - **Bumping the manifest per iteration.** Races concurrent sessions; bump once, at the end.
 - **Rewriting the whole target file in one candidate.** Makes Verify's delta impossible to
   attribute to the specific findings it was meant to address.
