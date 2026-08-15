@@ -1,6 +1,6 @@
 ---
 name: frontend-design-direction
-description: Set visual/interaction design direction for production UI, covering typography, layout, tone, motion. Use when building or restyling app UI. Don't use for React architecture (kbg:frontend-patterns).
+description: Set UI design direction, covering typography, layout, tone, motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html).
 metadata:
   origin: community PR #1659 (via ECC)
 ---

@@ -69,7 +69,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | design-system | Generate or audit a design system for token/visual consistency and AI-slop detection. Use when starting a project. Don't use for scraping other sites. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
-| frontend-design-direction | Set visual/interaction design direction for production UI, covering typography, layout, tone, motion. Use when building or restyling app UI. Don't use for React architecture (kbg:frontend-patterns). | inline | auto |
+| frontend-design-direction | Set UI design direction, covering typography, layout, tone, motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
 | frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (kbg:backend-patterns), or WCAG/a11y audits (kbg:accessibility). | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
@@ -136,7 +136,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-15T14:55:17Z_
+_Generated: 2026-08-15T15:03:52Z_
 
 ---
 

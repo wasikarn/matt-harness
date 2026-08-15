@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.302-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.303-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -118,8 +118,8 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 31 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
-| **Agents** | 19 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Skills** | 36 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Agents** | 20 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 24 | `/kbg:<command>` — e.g. `/kbg:ship`, `/kbg:address-review`, `/kbg:fix-bug` (namespaced identically to skills — see Quick Start step 7) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
@@ -280,8 +280,8 @@ Stack-specific pattern skills, kbg-native.
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 19 specialist subagents (.md each)
-├── skills/               # 31 workflow skills (SKILL.md per directory)
+├── agents/               # 20 specialist subagents (.md each)
+├── skills/               # 36 workflow skills (SKILL.md per directory)
 ├── commands/             # 23 slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
