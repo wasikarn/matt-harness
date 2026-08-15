@@ -484,19 +484,84 @@ check "REGRESSION PIN (round 4): gh pr merge 999 (known PR, never reviewed), unr
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 rm_state
 
-# The inverse is NOT a bug: --repo's value token sits where the extraction
-# loop expects the PR number, so pr_num resolves to the non-numeric string
-# "owner/repo" instead of "42" -- the gate genuinely cannot tell this merge
-# targets PR 42, so PR 42 being clean is not a fact it has. With an unrelated
-# PR non-clean on disk, failing closed is correct: ambiguity + at-risk state
-# on disk still means "cannot confirm this isn't that one".
+echo ""
+echo "=== Part L -- issue #51 fix: value-taking gh pr merge flags no longer swallow pr_num ==="
+# FIXED (github.com/wasikarn/kbg-harness/issues/51): a value-taking flag in
+# separated-token form (--repo owner/repo, not --repo=owner/repo) used to
+# swallow the NEXT token as pr_num instead of skipping past it. The
+# extraction loop now consults an explicit allowlist of gh pr merge's
+# value-taking flags (verified against cli/cli's pkg/cmd/pr/merge/merge.go
+# + cli.github.com/manual/gh_pr_merge, gh 2.95.0) and skips both the flag
+# and its value token. These cases were manually confirmed to resolve
+# pr_num="owner/repo" (wrong) and rc=2 (block) against the pre-fix gate
+# before being trusted here -- same discipline as every prior "REGRESSION
+# PIN" case in this file.
 state_clean_true  # review-pr-42.json clean:true (the PR actually being merged)
 printf '{"clean": false}' > "$WORK/state/review-pr-7.json"  # unrelated PR, non-clean
-run_gate_raw 'gh pr merge --repo owner/repo 42' 0
-ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "could not be matched to a review state on disk" "$WORK/err" && ok=0
-check "gh pr merge --repo owner/repo 42: --repo's value swallows pr_num extraction -> target unresolvable, unrelated PR 7 non-clean -> still blocks (fail closed, not a regression -- PR 42 being clean isn't a fact the gate has here)" "$ok"
+export KBG_SKIP_CODEOWNERS_GATE=1  # isolate the pr_num-extraction fix from the CODEOWNERS layer
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge --repo owner/repo 42'
+check "FIX: --repo owner/repo 42 correctly resolves pr_num=42 (long form, unrelated PR 7 non-clean is irrelevant) -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -R owner/repo 42'
+check "FIX: -R owner/repo 42 correctly resolves pr_num=42 (short form) -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+# kbg:code-reviewer (issue #51 review pass) flagged that only -R had short-form
+# coverage -- the other three short flags are added to _MERGE_VALUE_FLAGS by
+# this same diff and are exactly where a future wrong-shorthand edit would
+# ship silently green. One case per remaining short flag closes the gap.
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -A a@b.com 42'
+check "FIX: -A a@b.com 42 correctly resolves pr_num=42 (short form of --author-email)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -b \"see CHANGELOG\" 42'
+check "FIX: -b \"see CHANGELOG\" 42 correctly resolves pr_num=42 (short form of --body)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -F /tmp/body.txt 42'
+check "FIX: -F /tmp/body.txt 42 correctly resolves pr_num=42 (short form of --body-file)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -t \"release notes\" 42'
+check "FIX: -t \"release notes\" 42 correctly resolves pr_num=42 (short form of --subject)" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge --subject \"release notes\" --body \"see CHANGELOG\" --repo owner/repo 42'
+check "FIX: three chained value-flags (--subject, --body, --repo) before the PR number all skip correctly -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge --repo=owner/repo 42'
+check "no regression: glued --repo=owner/repo (single token, already skipped pre-fix) -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+unset KBG_SKIP_CODEOWNERS_GATE
 rm_state
 rm -f "$WORK/state/review-pr-7.json"
+
+# The negative direction must still work: a correctly-resolved pr_num=42
+# whose OWN state is non-clean blocks for the right reason (reading
+# clean:false directly), not via the ambiguity backstop.
+state_clean_false  # review-pr-42.json clean:false
+run_gate_raw 'gh pr merge --repo owner/repo 42' 0
+check "FIX, negative direction: --repo owner/repo 42 resolves pr_num=42, PR 42 itself is clean:false -> block" \
+  "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
+
+# A value-taking flag with nothing after it (no PR number at all) must still
+# fall through to "unresolved" -- not crash, not wrongly resolve.
+state_clean_false  # unrelated PR 42 non-clean (only file on disk)
+run_gate_raw 'gh pr merge --repo owner/repo' 0
+check "value-taking flag with no trailing PR number -> pr_num stays unresolved, falls through to the at-risk backstop (block)" \
+  "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
 
 echo ""
 total=$((pass + fail))

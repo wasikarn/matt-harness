@@ -211,6 +211,24 @@ try:
     tokens = list(_lex)
 except ValueError:
     tokens = []
+# Value-taking flags of the "gh pr merge" subcommand, separated-token form
+# only -- glued forms like --repo=owner/repo or -Rowner/repo are already
+# single tokens starting with "-" and are skipped below without needing this
+# list. Verified against the cli/cli repository, file
+# pkg/cmd/pr/merge/merge.go (StringVarP registrations), and
+# cli.github.com/manual/gh_pr_merge, for gh 2.95.0. --repo has no
+# subcommand-local registration there because it is the global -R/--repo
+# flag, but it still takes a value the same way.
+# github.com/wasikarn/kbg-harness/issues/51
+_MERGE_VALUE_FLAGS = frozenset((
+    "-R", "--repo",
+    "-A", "--author-email",
+    "-b", "--body",
+    "-F", "--body-file",
+    "-t", "--subject",
+    "--match-head-commit",
+))
+
 state_dir = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.expanduser("~/.claude/state")
 pr_num = None
 has_merge = False
@@ -222,7 +240,14 @@ if not has_opaque_indirection:
             continue
         if gh_seen and t == "pr" and j + 1 < len(tokens) and tokens[j + 1] == "merge":
             has_merge = True
+            skip_next = False
             for a in tokens[j + 2:]:
+                if skip_next:
+                    skip_next = False
+                    continue
+                if a in _MERGE_VALUE_FLAGS:
+                    skip_next = True
+                    continue
                 if not a.startswith("-"):
                     pr_num = a
                     break
@@ -296,9 +321,12 @@ if state_file is None:
     # non-clean elsewhere on disk says nothing about this one; punishing it
     # would be a false block on a target we can actually name. Restore the
     # pre-round-3 "known PR, unreviewed" -> allow semantics for that case
-    # only. Genuinely ambiguous selectors (pr_num is None, a branch name, a
-    # URL, or a flag'\''s value token swallowed by the extraction loop, e.g.
-    # `--repo owner/repo`) still fall through to the backstop below.
+    # only. Genuinely ambiguous selectors (pr_num is None, a branch name, or
+    # a URL -- gh resolves each of these from the current branch, not from
+    # the command text) still fall through to the backstop below. A
+    # value-taking flag in separated-token form, e.g. `--repo owner/repo`,
+    # used to land here too until the allowlist above closed that gap.
+    # github.com/wasikarn/kbg-harness/issues/51
     if pr_num and re.fullmatch(r"\d+", pr_num):
         sys.exit(0)
     if not _any_at_risk_state(state_dir):
