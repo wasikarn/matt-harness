@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# Shared gate/verifier-governance path classifier. Ported near-verbatim
+# (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path()
+# -- the more complete of two prior copies. commands/risk-check.md's
+# embedded is_gate_path() was the other, missing hooks/advisory/ coverage;
+# both now call this one instead, closing that gap.
+#
+# Covers: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, and the
+# non-model audit verifier (skills/harness-audit/scripts/audit.sh +
+# checks/**) -- the same tamper-resistance surface verifier-protect.sh's own
+# header comment names.
+
+import os
+
+
+def is_gate_path(fp):
+    if not fp:
+        return False
+    norm = fp.lstrip()
+    if norm.startswith("./"):
+        norm = norm[2:]
+    try:
+        norm = os.path.realpath(norm)
+    except Exception:
+        pass
+    nl = norm.lower()
+    rel = fp.lstrip()
+    if rel.startswith("./"):
+        rel = rel[2:]
+    rl = rel.lower()
+    if "/hooks/gates/" in nl or nl.endswith("/hooks/gates"):
+        return True
+    if "/hooks/advisory/" in nl or nl.endswith("/hooks/advisory"):
+        return True
+    if nl.endswith("/hooks/hooks.json"):
+        return True
+    if nl.endswith("/skills/harness-audit/scripts/audit.sh"):
+        return True
+    if "/skills/harness-audit/scripts/checks/" in nl or \
+       nl.endswith("/skills/harness-audit/scripts/checks"):
+        return True
+    if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/") or \
+       rl.startswith("hooks/advisory/"):
+        return True
+    if rl == "skills/harness-audit/scripts/audit.sh" or \
+       rl.startswith("skills/harness-audit/scripts/checks/") or \
+       rl == "skills/harness-audit/scripts/checks":
+        return True
+    return False

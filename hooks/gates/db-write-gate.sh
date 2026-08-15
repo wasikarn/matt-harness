@@ -31,6 +31,14 @@ set -uo pipefail
 python3 -c '
 import sys, json, re
 
+# lib_dir is argv[1] -- $(dirname "$0")/lib, appended below where this
+# python3 -c block is invoked. Same $0-based resolution as
+# hooks/gates/convergence-merge-gate.sh already uses for its own shared-lib
+# import (CLAUDE_PLUGIN_ROOT can be empty in some invocation contexts;
+# $0 cannot, since bash sets it from the literal command that ran this file).
+sys.path.insert(0, sys.argv[1])
+from _hook_output import emit_ask
+
 # Quote characters as ordinals so this whole program stays free of literal
 # apostrophes -- it runs inside a bash single-quoted python3 -c, where a literal
 # apostrophe would terminate the shell string (the documented gate quoting trap).
@@ -120,18 +128,12 @@ def is_read(seg):
         return not re.search(r"\b(" + WRITE_VERBS + r")\b", seg, re.IGNORECASE)
     return bool(re.match(r"^(" + READ_LEADS + r")\b", seg, re.IGNORECASE))
 
-def emit_ask(target, preview):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": (
-                "db-write-gate: statement on MCP SQL server <" + target +
-                "> is not a proven read (" + preview + "...). State the exact "
-                "statement and target DB, get explicit approval, then run."
-            ),
-        }
-    }))
+def _sql_reason(target, preview):
+    return (
+        "db-write-gate: statement on MCP SQL server <" + target +
+        "> is not a proven read (" + preview + "...). State the exact "
+        "statement and target DB, get explicit approval, then run."
+    )
 
 try:
     d = json.load(sys.stdin)
@@ -147,11 +149,11 @@ try:
         # defeating the read-allowlist ask-on-unknown invariant (same class
         # as the OPEN #1 fix in convergence-merge-gate + the 2026-08-06
         # isinstance guard in verifier-protect; found by the 2026-08-14 fleet sweep).
-        emit_ask("<missing/malformed tool_input>", (
+        emit_ask(_sql_reason("<missing/malformed tool_input>", (
             "db-write-gate received an execute_sql call with no usable "
             "tool_input and cannot confirm the statement is a read. "
             "Fail-safe: state the exact statement, approve manually or deny."
-        ))
+        )))
         sys.exit(0)
 
     statement = ti.get("query") or ti.get("sql") or ti.get("statement") or ti.get("text") or ""
@@ -171,8 +173,8 @@ try:
     preview = normalized[:80]
     target = re.sub(r"^mcp__", "", tool)
     target = re.sub(r"__.*$", "", target)
-    emit_ask(target, preview)
+    emit_ask(_sql_reason(target, preview))
 except Exception:
     # Cannot confirm this statement is a safe read -- fail toward asking.
-    emit_ask("mcp-sql", "<unparsed tool input>")
-'
+    emit_ask(_sql_reason("mcp-sql", "<unparsed tool input>"))
+' "$(dirname "$0")/lib"

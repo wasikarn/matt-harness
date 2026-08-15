@@ -65,7 +65,7 @@ assert "extracted classifier is syntactically valid python" "$([[ $? -eq 0 ]] &&
 
 run_classifier() {
   # $1: JSON-encoded gh pr view response
-  python3 -c "$(cat "$WORK/classify.py")" "$1" 2>/dev/null
+  python3 -c "$(cat "$WORK/classify.py")" "$1" "$ROOT/hooks/gates/lib" 2>/dev/null
 }
 
 check_tier() {

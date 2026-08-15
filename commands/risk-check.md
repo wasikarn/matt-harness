@@ -31,6 +31,9 @@ PR_JSON=$(gh pr view "${1:-}" --json number,additions,deletions,changedFiles,fil
 python3 -c '
 import json, re, sys
 
+sys.path.insert(0, sys.argv[2])
+from _protected_paths import is_gate_path
+
 d = json.loads(sys.argv[1])
 additions = d.get("additions", 0)
 deletions = d.get("deletions", 0)
@@ -44,17 +47,11 @@ paths = [f.get("path", "") for f in d.get("files", [])]
 # Case-insensitive to match verifier-protect.sh -- CHANGELOG.md already
 # documents a real bypass from skipping this fold on macOS/APFS.
 KEYWORD_RE = re.compile(r"auth|secret|credential|payment|billing|token", re.IGNORECASE)
-def is_gate_path(p):
-    pl = p.lower()
-    if pl.startswith("hooks/gates/"):
-        return True
-    if pl == "hooks/hooks.json":
-        return True
-    if pl == "skills/harness-audit/scripts/audit.sh":
-        return True
-    if pl.startswith("skills/harness-audit/scripts/checks/"):
-        return True
-    return False
+
+# is_gate_path -- imported above from hooks/gates/lib/_protected_paths.py
+# (2026-08-15 extraction; this file previously defined its own narrower
+# copy missing hooks/advisory/ coverage). Also used by
+# hooks/gates/verifier-protect.sh, which is the more complete original.
 
 sensitive_hits = [p for p in paths if KEYWORD_RE.search(p) or is_gate_path(p)]
 
@@ -87,7 +84,7 @@ print("exists here to calibrate against.")
 print()
 print("Advisory only -- does not gate or skip anything. See /kbg:ship-merge for the actual")
 print("merge decision, /kbg:review-pr for the actual review.")
-' "$PR_JSON"
+' "$PR_JSON" "${KBG_PLUGIN_ROOT}/hooks/gates/lib"
 ```
 
 ## Notes

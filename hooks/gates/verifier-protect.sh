@@ -102,6 +102,15 @@ fi
 printf '%s' "$_input" | python3 -c '
 import sys, json, os, shlex, re
 
+# lib_dir is argv[1] -- $(dirname "$0")/lib, appended below where this
+# python3 -c block is invoked. Same $0-based resolution
+# hooks/gates/convergence-merge-gate.sh already uses for its own shared-lib
+# import (CLAUDE_PLUGIN_ROOT can be empty in some invocation contexts; $0
+# cannot, since bash sets it from the literal command that ran this file).
+sys.path.insert(0, sys.argv[1])
+from _hook_output import emit_ask
+from _protected_paths import is_gate_path
+
 PROTECTED_REASON = (
     "Editing a verifier surface — the deny-gates or audit checks that "
     "judge the model live here. Tamper-resistance: the model cannot edit "
@@ -210,49 +219,13 @@ def _diff_targets(path):
     except OSError:
         pass
 
-def emit_ask(fp, reason=None):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": reason or (PROTECTED_REASON + " (" + fp + ")"),
-        }
-    }))
+def _verifier_reason(fp, reason=None):
+    return reason or (PROTECTED_REASON + " (" + fp + ")")
 
-def is_verifier_path(fp):
-    if not fp:
-        return False
-    norm = fp.lstrip()
-    if norm.startswith("./"):
-        norm = norm[2:]
-    try:
-        norm = os.path.realpath(norm)
-    except Exception:
-        pass
-    nl = norm.lower()
-    rel = fp.lstrip()
-    if rel.startswith("./"):
-        rel = rel[2:]
-    rl = rel.lower()
-    if "/hooks/gates/" in nl or nl.endswith("/hooks/gates"):
-        return True
-    if "/hooks/advisory/" in nl or nl.endswith("/hooks/advisory"):
-        return True
-    if nl.endswith("/hooks/hooks.json"):
-        return True
-    if nl.endswith("/skills/harness-audit/scripts/audit.sh"):
-        return True
-    if "/skills/harness-audit/scripts/checks/" in nl or \
-       nl.endswith("/skills/harness-audit/scripts/checks"):
-        return True
-    if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/") or \
-       rl.startswith("hooks/advisory/"):
-        return True
-    if rl == "skills/harness-audit/scripts/audit.sh" or \
-       rl.startswith("skills/harness-audit/scripts/checks/") or \
-       rl == "skills/harness-audit/scripts/checks":
-        return True
-    return False
+# is_gate_path -- imported above from _protected_paths (2026-08-15
+# extraction; was is_verifier_path, defined inline here). Also used by
+# the embedded classifier in commands/risk-check.md, which previously had its own
+# narrower copy missing hooks/advisory/ coverage.
 
 def bash_write_targets(cmd):
     """Yield candidate file paths the Bash command writes to or deletes.
@@ -459,11 +432,11 @@ try:
         # collapsed via "or {}" into a clean allow, silently defeating the
         # never-resolve-to-a-silent-allow invariant documented above
         # (found 2026-08-06).
-        emit_ask("<missing/malformed tool_input>", (
+        emit_ask(_verifier_reason("<missing/malformed tool_input>", (
             "verifier-protect received a PreToolUse payload with no usable "
             "tool_input and cannot confirm this write is safe. Fail-safe: "
             "approve manually or deny."
-        ))
+        )))
         sys.exit(0)
 
     if tool == "Bash":
@@ -474,8 +447,8 @@ try:
             # never did either. Expand both, or a target that really
             # resolves into a protected path never matches.
             expanded = os.path.expandvars(os.path.expanduser(p))
-            if is_verifier_path(expanded):
-                emit_ask(expanded, "Bash write to a verifier surface (" + expanded + ") — " + PROTECTED_REASON)
+            if is_gate_path(expanded):
+                emit_ask(_verifier_reason(expanded, "Bash write to a verifier surface (" + expanded + ") — " + PROTECTED_REASON))
                 break
         sys.exit(0)
 
@@ -494,13 +467,13 @@ try:
                   " — use $HOME or ~ instead", file=sys.stderr)
             sys.exit(2)
 
-    if is_verifier_path(fp):
-        emit_ask(fp)
+    if is_gate_path(fp):
+        emit_ask(_verifier_reason(fp))
 except Exception:
     # Cannot confirm this write is safe — fail toward asking, never toward a
     # silent allow.
-    emit_ask("<unparsed tool input>", (
+    emit_ask(_verifier_reason("<unparsed tool input>", (
         "verifier-protect could not parse this tool call and cannot confirm "
         "it is safe. Fail-safe: approve manually or deny."
-    ))
-'
+    )))
+' "$(dirname "$0")/lib"
