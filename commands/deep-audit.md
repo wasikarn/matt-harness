@@ -53,7 +53,14 @@ Do not assume the current implementation is correct. Treat the entire session ou
     After making changes:
     -   Re-run relevant tests and checks.
     -   Re-audit affected areas.
-    -   Check for regressions.
+    -   Check for regressions — including ones the fix itself just introduced, not only
+        pre-existing weaknesses. If a self-inflicted regression is cheap to close (e.g. an
+        unbounded collection that now needs an eviction policy), fix it in the same pass
+        instead of just naming it as a remaining risk. Then check that fix's own mechanism
+        for a new regression before scoring the affected dimension as resolved — a fix for
+        one problem (e.g. adding eviction) can silently reopen a different one (e.g. an
+        evicted entry resets its own rate-limit history), and a test that merely documents
+        the new behavior as a passing case can hide this instead of catching it.
     -   Verify that the original problems were actually resolved.
 7.  **Re-score using the exact same rubric**\
     Apply the **same scoring criteria and methodology** used for the baseline.
