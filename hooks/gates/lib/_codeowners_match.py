@@ -107,8 +107,12 @@ def owners_for_file(rules, path):
 def evaluate(codeowners_text, changed_files, reviews, head_sha):
     """changed_files: list of changed file path strings.
     reviews: list of dicts, each with an "author":{"login":...}, "state",
-    and "commit":{"oid":...} -- gh's reviews API always ties a review to
-    the commit it was submitted against. head_sha: the PR's current
+    and "commit":{"oid":...} -- gh's reviews API generally ties a review to
+    the commit it was submitted against, but GitHub's own GraphQL schema
+    documents PullRequestReview.commit as nullable (confirmed via
+    `gh api graphql` introspection, 2026-08-15 -- e.g. a rewritten-history
+    case); a missing/null commit is treated the same as a non-matching one
+    below, so this is handled safely either way. head_sha: the PR's current
     headRefOid. A review whose commit oid doesn't match head_sha is stale
     and does not count, even if its state is APPROVED: the owned files may
     have changed again since that review was submitted, and GitHub only
@@ -118,7 +122,10 @@ def evaluate(codeowners_text, changed_files, reviews, head_sha):
     Returns (verdict, reason, detail_lines). verdict is one of
     "PASS" / "STOP" / "DEFERRED". detail_lines is a list of already-
     formatted "  <owner> needed for: <files>" strings, empty when there's
-    nothing to detail.
+    nothing to detail -- a user-owner entry gets an extra "(approved an
+    earlier commit...)" clause appended when a stale decision-state review
+    exists for them, so a rebase-invalidated approval doesn't render
+    identically to "never reviewed."
     """
     rules = parse_codeowners(codeowners_text)
     required = {}
@@ -144,12 +151,17 @@ def evaluate(codeowners_text, changed_files, reviews, head_sha):
     # approval, so it must not overwrite it here.
     decision_states = ("APPROVED", "CHANGES_REQUESTED", "DISMISSED")
     latest_by_author = {}
+    stale_reviewers = set()
     for r in reviews:
         login = (r.get("author") or {}).get("login")
         state = r.get("state")
         commit_oid = (r.get("commit") or {}).get("oid")
-        if login and state in decision_states and commit_oid == head_sha:
+        if not login or state not in decision_states:
+            continue
+        if commit_oid == head_sha:
             latest_by_author[login] = state  # array order == chronological; last write wins
+        else:
+            stale_reviewers.add(login)
     approved = set(a for a, s in latest_by_author.items() if s == "APPROVED")
 
     unsatisfied_user, unsatisfied_team = [], []
@@ -157,8 +169,21 @@ def evaluate(codeowners_text, changed_files, reviews, head_sha):
         if owner.startswith("@"):
             if "/" in owner:
                 unsatisfied_team.append((owner, sorted(files)))
-            elif owner.lstrip("@") not in approved:
-                unsatisfied_user.append((owner, sorted(files)))
+            else:
+                login = owner.lstrip("@")
+                if login not in approved:
+                    # A stale review only explains the gap when there's no
+                    # current-head decision at all -- a CHANGES_REQUESTED on
+                    # head plus an old stale APPROVED should read as "changes
+                    # requested," not "stale approval."
+                    note = (
+                        " (approved an earlier commit -- stale after a"
+                        " rebase/new push, needs re-approval on the"
+                        " current head)"
+                        if login not in latest_by_author and login in stale_reviewers
+                        else ""
+                    )
+                    unsatisfied_user.append((owner, sorted(files), note))
         else:
             # A bare email-address owner (GitHub CODEOWNERS supports these)
             # -- the reviews API only returns GitHub logins, never emails,
@@ -167,7 +192,7 @@ def evaluate(codeowners_text, changed_files, reviews, head_sha):
             unsatisfied_team.append((owner, sorted(files)))
 
     if unsatisfied_user:
-        detail = ["  %s needed for: %s" % (o, ", ".join(f)) for o, f in unsatisfied_user]
+        detail = ["  %s needed for: %s%s" % (o, ", ".join(f), n) for o, f, n in unsatisfied_user]
         return "STOP", "missing-user-approval", detail
     if unsatisfied_team:
         detail = ["  %s needed for: %s" % (o, ", ".join(f)) for o, f in unsatisfied_team]

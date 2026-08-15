@@ -99,7 +99,7 @@ cases = [
      'src/a.py @alice', ['src/a.py'],
      [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}}],
      "STOP"),
-    ("BUG FIX (#50): a fresh approval on the current head SHA supersedes a stale one -> PASS",
+    ("SANITY (not a #50 regression pin -- passes identically pre-fix, since a stale entry never outranks a fresh APPROVED under either dict-overwrite or SHA-filtered semantics): the SHA filter doesn't wrongly drop a fresh entry sitting next to a stale one -> PASS",
      'src/a.py @alice', ['src/a.py'],
      [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}},
       {"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":HEAD}}],
@@ -123,6 +123,50 @@ PYEOF
 while IFS='|' read -r ok desc; do
   assert "$desc" "$ok"
 done < <(run_matcher_suite)
+
+# === Part 1b: evaluate() -- stale-approval detail-text regression ===
+# 2026-08-15 deep-audit follow-up: the note guard that distinguishes "never
+# reviewed" from "approved an earlier commit" only fires when the owner has
+# NO current-head decision at all. Part 1's cases list above only asserts on
+# verdict, never on detail-line text, so a broken guard here (note showing on
+# a CHANGES_REQUESTED-on-head block, or missing on a genuine stale-only
+# block) changes the message but not the STOP verdict -- invisible to Part 1.
+run_detail_text_suite() {
+python3 - "$CM_LIB" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+import _codeowners_match as cm
+
+HEAD, STALE = "deadbeef", "stale123"
+NOTE = "approved an earlier commit"
+
+detail_cases = [
+    ("stale-only approval -> detail line carries the stale-approval note",
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}}],
+     True),
+    ("never reviewed at all -> detail line has no stale-approval note",
+     [],
+     False),
+    ("CHANGES_REQUESTED on current head + an old stale APPROVED -> no stale-approval note (the real blocker is the current decision, not staleness)",
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}},
+      {"author":{"login":"alice"},"state":"CHANGES_REQUESTED","commit":{"oid":HEAD}}],
+     False),
+]
+
+fails = []
+for desc, reviews, expect_note in detail_cases:
+    verdict, reason, detail = cm.evaluate('src/a.py @alice', ['src/a.py'], reviews, HEAD)
+    has_note = any(NOTE in line for line in detail)
+    ok = verdict == "STOP" and has_note == expect_note
+    print("%s|%s (expected note=%s, got note=%s)" % ("1" if ok else "0", desc, expect_note, has_note))
+    if not ok:
+        fails.append(desc)
+sys.exit(1 if fails else 0)
+PYEOF
+}
+while IFS='|' read -r ok desc; do
+  assert "$desc" "$ok"
+done < <(run_detail_text_suite)
 
 # === Part 2: discover() -- discovery-loop fixtures, no shelling out ===
 run_discover_suite() {
