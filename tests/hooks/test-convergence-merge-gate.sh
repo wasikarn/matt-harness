@@ -580,6 +580,50 @@ check "FIX + Part K interaction: --repo owner/repo 999 resolves pr_num=999 (no s
 rm_state
 
 echo ""
+echo "=== Part M -- deep-audit gap: combined short-flag clusters (e.g. -db) ==="
+# Found by kbg:deep-audit, 2026-08-15, cross-checked against the advisor
+# review and against spf13/pflag's own parseSingleShortArg before being
+# trusted here (same discipline as every other pinned case in this file).
+# gh, like every pflag/cobra CLI, lets short boolean flags cluster with a
+# trailing value-taking short flag: -db means -d (delete-branch, takes no
+# value) followed by -b (body, takes the NEXT token as its value) -- NOT
+# a single unknown flag named "db". Part L's allowlist only matched exact
+# flag strings ("-b" alone), so a cluster like "-db" was not recognized as
+# value-taking at all, and the token right after it (the intended PR
+# number) got wrongly captured as -b's swallowed value instead of being
+# skipped -- reopening exactly the bug class issue #51 named, through a
+# flag SHAPE the original fix did not enumerate.
+# github.com/wasikarn/kbg-harness/issues/51
+export KBG_SKIP_CODEOWNERS_GATE=1
+
+state_clean_false  # PR 42 (the real target) is non-clean; no state file for 123 at all
+run_gate_raw 'gh pr merge -db 123 42'
+check "SECURITY: -db 123 42 must resolve pr_num=42 (not 123, the value -b swallows from the cluster) -> PR 42 non-clean -> block" \
+  "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
+
+state_clean_true  # PR 42 clean:true
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -db 123 42'
+check "FIX: -db 123 42 correctly resolves pr_num=42, PR 42 clean:true -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm_state
+
+state_clean_true  # PR 42 clean:true
+FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+  run_gate_raw 'gh pr merge -dR owner/repo 42'
+check "FIX: -dR owner/repo 42 (cluster ending in a different value-taking short flag) correctly resolves pr_num=42 -> allow" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm_state
+
+state_clean_false  # PR 42 non-clean
+run_gate_raw 'gh pr merge -ds 42'
+check "no regression: -ds (an all-boolean cluster, delete-branch + squash, no trailing value flag) still correctly resolves pr_num=42 -> block" \
+  "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
+rm_state
+unset KBG_SKIP_CODEOWNERS_GATE
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [ "$fail" -eq 0 ] && exit 0 || exit 1

@@ -229,6 +229,21 @@ _MERGE_VALUE_FLAGS = frozenset((
     "--match-head-commit",
 ))
 
+# Combined short-flag clusters, e.g. -db (delete-branch + body): pflag
+# parses a cluster left to right, and only the LAST character in the
+# cluster can take a value -- every earlier character must be a boolean
+# flag (delete-branch, merge, rebase, and squash all are). When the last
+# character is one of the five short, value-taking flags above (R A b F
+# t), pflag consumes the NEXT token as the value for that flag, exactly
+# like the bare single-char form (-b text) already handled above.
+# Verified against spf13/pflag parseSingleShortArg, the library gh uses
+# for flag parsing. A cluster ending in any other letter is either an
+# all-boolean cluster (no value consumed) or a malformed invocation gh
+# itself rejects before any merge runs -- either way, no separate token
+# gets wrongly captured as pr_num.
+# github.com/wasikarn/kbg-harness/issues/51
+_SHORT_VALUE_CHARS = frozenset("RAbFt")
+
 state_dir = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.expanduser("~/.claude/state")
 pr_num = None
 has_merge = False
@@ -245,7 +260,8 @@ if not has_opaque_indirection:
                 if skip_next:
                     skip_next = False
                     continue
-                if a in _MERGE_VALUE_FLAGS:
+                if a in _MERGE_VALUE_FLAGS or (
+                        re.fullmatch(r"-[A-Za-z]+", a) and a[-1] in _SHORT_VALUE_CHARS):
                     skip_next = True
                     continue
                 if not a.startswith("-"):
