@@ -59,8 +59,8 @@ Flag generic AI-generated design patterns specifically:
 ## Verify before use
 
 A 10-dimension score or a proposed token set only means something once it's checked against the
-live UI — render the `design-preview.html` output (or the audited pages) at a couple of real
-breakpoints and confirm the tokens actually render as scored before calling the pass done.
+live UI — apply the tokens to a representative component or render the audited pages at a couple
+of real breakpoints and confirm they actually render as scored before calling the pass done.
 
 ## Related
 

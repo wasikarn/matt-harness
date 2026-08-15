@@ -160,8 +160,10 @@ Choose patterns that fit your project complexity.
 
 ## Related
 
-- Agent: `performance-optimizer` - once a client-side computation (not just rendering) is
+- Agent: `kbg:performance-optimizer` - once a client-side computation (not just rendering) is
   the confirmed bottleneck, for the algorithmic fix underneath it
+- Skill: `kbg:accessibility` — the WCAG conformance layer and generic React a11y fixes (forms,
+  labels, ARIA) this file's own Accessibility Patterns section doesn't cover
 
 ## Verify before use
 

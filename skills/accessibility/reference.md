@@ -175,13 +175,16 @@ Use ARIA only when native HTML semantics are insufficient — wrong ARIA is wors
 
 ### `aria-live` for dynamic content
 
-`polite` waits for the user to finish their current action before announcing; `assertive`
-interrupts immediately — reserve it for urgent errors.
+`role="status"` carries an implicit `aria-live="polite"` and waits for the user to finish their
+current action before announcing; `role="alert"` carries an implicit `aria-live="assertive"` and
+interrupts immediately — reserve it for urgent errors. Switch the role itself rather than
+overriding `aria-live` on a fixed role — `status` is spec-defined as advisory info that isn't
+urgent enough to interrupt, so forcing `assertive` onto it fights the role's own semantics.
 
 ```tsx
 export function StatusMessage({ message, isError }: { message: string; isError?: boolean }) {
   return (
-    <div role="status" aria-live={isError ? 'assertive' : 'polite'} aria-atomic="true">
+    <div role={isError ? 'alert' : 'status'} aria-atomic="true">
       {message}
     </div>
   );

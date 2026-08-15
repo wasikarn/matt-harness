@@ -38,7 +38,8 @@ than improvising platform code this agent wasn't built to verify.
 - Map the focus flow explicitly — how does a keyboard or screen-reader user move through this
   interface?
 - Verify every interactive element meets the minimum 24×24 CSS pixel target size (WCAG 2.2 SC
-  2.5.8), with at least 4px spacing between adjacent targets.
+  2.5.8) — or, if smaller, has enough spacing from its neighbors that a 24px circle centered on
+  each target's bounding box doesn't overlap the next one's.
 
 ### 3. Validation
 
@@ -52,8 +53,8 @@ than improvising platform code this agent wasn't built to verify.
 components/graphics; content reflows and stays functional up to 400% zoom.
 
 **Operable** — every interactive element reachable via keyboard; focus order is logical with a
-high-contrast indicator (SC 2.4.11); single-pointer alternatives for dragging/multipoint
-gestures; 24×24px minimum target size (SC 2.5.8).
+visible indicator (SC 2.4.7); single-pointer alternatives for dragging/multipoint gestures;
+24×24px minimum target size (SC 2.5.8).
 
 **Understandable** — navigation and element identification stay consistent across the app; forms
 give clear error identification and a correction suggestion; no asking for the same info twice

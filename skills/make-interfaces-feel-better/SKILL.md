@@ -99,9 +99,10 @@ Use `will-change` only for first-frame stutter on compositor-friendly properties
 
 ### Hit Areas
 
-Interactive controls need at least a 40×40px hit area, ideally 44×44px where layout allows.
-Expand with a pseudo-element when the visible icon is smaller than that — don't let expanded hit
-areas overlap each other.
+Interactive controls need at least a 40×40px hit area, ideally 44×44px where layout allows — an
+ergonomic comfort target above WCAG's 24×24px compliance floor (SC 2.5.8), not a replacement for
+it. Expand with a pseudo-element when the visible icon is smaller than that — don't let expanded
+hit areas overlap each other.
 
 ## Review Output
 
@@ -138,4 +139,4 @@ hit areas or wrapping) before marking the checklist item done.
 - Skill: `kbg:frontend-design-direction` — run that first to set the overall visual/interaction
   direction; this skill polishes the details once components already exist.
 - Skill: `kbg:accessibility` — hit-area and focus-indicator requirements here overlap WCAG SC
-  2.5.8 (Target Size) and SC 2.4.11 (Focus Appearance) — check both when either applies.
+  2.5.8 (Target Size, AA) and SC 2.4.13 (Focus Appearance, AAA) — check both when either applies.

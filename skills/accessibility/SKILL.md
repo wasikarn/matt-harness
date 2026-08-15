@@ -42,7 +42,7 @@ now.
 - Text contrast meets **4.5:1** (normal text) or **3:1** (large text/UI components).
 - Content reflows at up to **400% zoom** without loss of function.
 - Interactive elements meet a minimum **24×24 CSS pixel** target size (WCAG 2.2 SC 2.5.8).
-- Every interactive element is keyboard-reachable with a visible focus indicator (SC 2.4.11).
+- Every interactive element is keyboard-reachable with a visible focus indicator (SC 2.4.7).
 - Dragging interactions offer a single-pointer alternative.
 - Error messages are descriptive and suggest a correction (SC 3.3.3).
 - Forms don't ask for the same data twice across a flow (Redundant Entry, SC 3.3.7).
