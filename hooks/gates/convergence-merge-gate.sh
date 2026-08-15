@@ -413,7 +413,7 @@ if clean is True:
         sys.exit(2)
 
     if found:
-        verdict, reason, detail_lines = evaluate(content, changed_files, reviews)
+        verdict, reason, detail_lines = evaluate(content, changed_files, reviews, head_sha)
         if verdict == "STOP":
             print("[kbg:gate] BLOCKED: clean review + CI green, but CODEOWNER"
                   " approval missing ({}). Use /kbg:ship-merge to merge -- it"

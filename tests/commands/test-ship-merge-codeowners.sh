@@ -55,26 +55,29 @@ import sys, json
 sys.path.insert(0, sys.argv[1])
 import _codeowners_match as cm
 
+HEAD = "deadbeef"
+STALE = "stale123"
+
 cases = [
     ("exact path match, approved -> PASS", 'src/a.py @alice', ['src/a.py'],
-     [{"author":{"login":"alice"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("exact path match, not approved -> STOP", 'src/a.py @alice', ['src/a.py'], [], "STOP"),
     ("wildcard matches any depth", '*.md @bob', ['docs/deep/x.md'],
-     [{"author":{"login":"bob"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"bob"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("root-anchored directory pattern matches", '/docs/ @carol', ['docs/x.md'],
-     [{"author":{"login":"carol"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"carol"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("root-anchored directory does not match elsewhere", '/docs/ @carol', ['other/docs/x.md'], [], "PASS"),
     ("unanchored directory pattern matches at any depth", 'apps/ @dave', ['x/apps/y.py'],
-     [{"author":{"login":"dave"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"dave"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("single-level pattern does NOT match a nested file", 'docs/* @erin', ['docs/sub/deep.md'], [], "PASS"),
     ("single-level pattern matches a direct child", 'docs/* @erin', ['docs/deep.md'],
-     [{"author":{"login":"erin"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"erin"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("recursive globstar matches zero intervening segments", 'db/**/index.md @frank', ['db/index.md'],
-     [{"author":{"login":"frank"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"frank"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("recursive globstar matches one intervening segment", 'db/**/index.md @frank', ['db/sub/index.md'],
-     [{"author":{"login":"frank"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"frank"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("last-matching-line wins", '*.py @old\n*.py @new', ['a.py'],
-     [{"author":{"login":"new"},"state":"APPROVED"}], "PASS"),
+     [{"author":{"login":"new"},"state":"APPROVED","commit":{"oid":HEAD}}], "PASS"),
     ("unparseable [bracket] pattern fails the whole check closed", '[abc].py @g', ['x.py'], [], "STOP"),
     ("@org/team owner defers instead of permanent STOP", '*.py @org/team', ['a.py'], [], "DEFERRED"),
     ("no owned files among changed files -> PASS", '*.md @h', ['src/a.py'], [], "PASS"),
@@ -82,19 +85,34 @@ cases = [
     ("comment-only CODEOWNERS content -> PASS", '# just a comment', ['src/a.py'], [], "PASS"),
     ("BUG FIX: a COMMENTED review after APPROVED must not revoke it",
      'src/a.py @alice', ['src/a.py'],
-     [{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"COMMENTED"}],
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":HEAD}},
+      {"author":{"login":"alice"},"state":"COMMENTED","commit":{"oid":HEAD}}],
      "PASS"),
     ("BUG FIX: a bare email-address owner defers instead of permanent STOP",
      'src/a.py docs@example.com', ['src/a.py'], [], "DEFERRED"),
     ("CHANGES_REQUESTED after an earlier APPROVED still blocks (decision states still override)",
      'src/a.py @alice', ['src/a.py'],
-     [{"author":{"login":"alice"},"state":"APPROVED"},{"author":{"login":"alice"},"state":"CHANGES_REQUESTED"}],
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":HEAD}},
+      {"author":{"login":"alice"},"state":"CHANGES_REQUESTED","commit":{"oid":HEAD}}],
+     "STOP"),
+    ("BUG FIX (#50): approval pinned to a stale SHA does not count -> STOP",
+     'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}}],
+     "STOP"),
+    ("BUG FIX (#50): a fresh approval on the current head SHA supersedes a stale one -> PASS",
+     'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":STALE}},
+      {"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":HEAD}}],
+     "PASS"),
+    ("BUG FIX (#50): a review missing commit info entirely does not count -> STOP",
+     'src/a.py @alice', ['src/a.py'],
+     [{"author":{"login":"alice"},"state":"APPROVED"}],
      "STOP"),
 ]
 
 fails = []
 for desc, codeowners, changed, reviews, expected in cases:
-    verdict, reason, detail = cm.evaluate(codeowners, changed, reviews)
+    verdict, reason, detail = cm.evaluate(codeowners, changed, reviews, HEAD)
     ok = verdict == expected
     print("%s|%s (expected %s, got %s)" % ("1" if ok else "0", desc, expected, verdict))
     if not ok:

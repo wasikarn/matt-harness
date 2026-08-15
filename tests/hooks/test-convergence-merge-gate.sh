@@ -174,12 +174,25 @@ check "CI green + CODEOWNERS PASS (no owned files touched) -> allow" "$([ "$rc" 
 # passes reviews='[]' -- this is the only one where a real approval must be
 # read back correctly. A shape mismatch here fails toward a false STOP on a
 # legitimately-approved PR, the worst outcome this gate can produce.
+# The approval's commit.oid must match headRefOid ("deadbeef" here, set by
+# pr_view_json) -- issue #50's fix pins approval-counting to the PR's
+# current head SHA, not just author+state.
 FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
 FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
-FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[{"author":{"login":"alice"},"state":"APPROVED"}]')" \
+FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":"deadbeef"}}]')" \
   run_gate 42
 ok=1; [ "$rc" -eq 0 ] && [ ! -s "$WORK/out" ] && ok=0
 check "CI green + CODEOWNERS PASS (owner matched AND approved via real reviews array) -> allow" "$ok"
+
+# issue #50 regression pin: an approval left on an EARLIER revision (commit
+# oid != current headRefOid) must not count -- the owned files may have
+# changed again since that approval was submitted.
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
+FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
+FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[{"author":{"login":"alice"},"state":"APPROVED","commit":{"oid":"stale-sha-from-an-earlier-push"}}]')" \
+  run_gate 42
+ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "CODEOWNER approval missing" "$WORK/err" && ok=0
+check "REGRESSION PIN (#50): approval pinned to a stale SHA -> block, not counted as approved" "$ok"
 
 FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
 FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \

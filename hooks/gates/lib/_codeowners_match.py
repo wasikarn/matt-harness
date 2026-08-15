@@ -104,9 +104,17 @@ def owners_for_file(rules, path):
     return result, unsupported
 
 
-def evaluate(codeowners_text, changed_files, reviews):
+def evaluate(codeowners_text, changed_files, reviews, head_sha):
     """changed_files: list of changed file path strings.
-    reviews: list of dicts, each with an "author":{"login":...} and "state".
+    reviews: list of dicts, each with an "author":{"login":...}, "state",
+    and "commit":{"oid":...} -- gh's reviews API always ties a review to
+    the commit it was submitted against. head_sha: the PR's current
+    headRefOid. A review whose commit oid doesn't match head_sha is stale
+    and does not count, even if its state is APPROVED: the owned files may
+    have changed again since that review was submitted, and GitHub only
+    strips stale reviews itself when branch protection's "dismiss stale
+    reviews" setting is enabled repo-side -- an out-of-band precondition
+    this function has no way to check, so it enforces the pin itself.
     Returns (verdict, reason, detail_lines). verdict is one of
     "PASS" / "STOP" / "DEFERRED". detail_lines is a list of already-
     formatted "  <owner> needed for: <files>" strings, empty when there's
@@ -139,7 +147,8 @@ def evaluate(codeowners_text, changed_files, reviews):
     for r in reviews:
         login = (r.get("author") or {}).get("login")
         state = r.get("state")
-        if login and state in decision_states:
+        commit_oid = (r.get("commit") or {}).get("oid")
+        if login and state in decision_states and commit_oid == head_sha:
             latest_by_author[login] = state  # array order == chronological; last write wins
     approved = set(a for a, s in latest_by_author.items() if s == "APPROVED")
 
@@ -242,10 +251,10 @@ if __name__ == "__main__":
 
     import json
 
-    codeowners_text, changed_files_text, reviews_json = sys.argv[1:4]
+    codeowners_text, changed_files_text, reviews_json, head_sha = sys.argv[1:5]
     changed_files = changed_files_text.splitlines()
     reviews = json.loads(reviews_json)
-    verdict, reason, detail_lines = evaluate(codeowners_text, changed_files, reviews)
+    verdict, reason, detail_lines = evaluate(codeowners_text, changed_files, reviews, head_sha)
     print(verdict)
     print("reason=%s" % reason)
     for line in detail_lines:
