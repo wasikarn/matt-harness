@@ -50,8 +50,26 @@ if [ -f "$CACHE" ] && [ -z "$(find "$MEMDIR" -maxdepth 1 -type f -newer "$CACHE"
   exit 0
 fi
 
-OUT=$(python3 "$LINT" 2>/dev/null) || true
-touch "$CACHE" 2>/dev/null
+# memory-lint.py exits len(findings) on success (see its own sys.exit calls) —
+# a non-zero exit is the NORMAL path whenever findings exist, so exit code
+# alone can't tell "1 real finding" (exit 1) apart from a genuine crash
+# (also typically exit 1). Only an actual traceback on stderr means it
+# crashed; that's the one case where OUT can't be trusted and the cache must
+# not be touched, since a stale touch here would suppress every subsequent
+# run's rescan (and any real findings) until $MEMDIR's mtime changes again.
+ERRLOG=$(mktemp "${TMPDIR:-/tmp}/kbg-memlint-err.XXXXXX" 2>/dev/null) || ERRLOG=""
+if [ -n "$ERRLOG" ]; then
+  OUT=$(python3 "$LINT" 2>"$ERRLOG")
+  if command grep -q '^Traceback' "$ERRLOG" 2>/dev/null; then
+    OUT=""
+  else
+    touch "$CACHE" 2>/dev/null
+  fi
+  rm -f "$ERRLOG" 2>/dev/null
+else
+  OUT=$(python3 "$LINT" 2>/dev/null) || true
+  touch "$CACHE" 2>/dev/null
+fi
 
 # memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when clean).
 printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0

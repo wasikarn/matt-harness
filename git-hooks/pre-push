@@ -16,7 +16,14 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Resolve via git, not "$(dirname "$0")/.." — core.hooksPath is shared across
+# linked worktrees (a bare hub repo + worktree layout), so the hook script's
+# own location is the hub's git-hooks/ dir, not the worktree that's actually
+# pushing. git already cds into the invoking worktree's root before running
+# hooks; asking git directly (instead of relying on that cwd contract) also
+# keeps this correct if the hook is ever invoked manually from a subdirectory.
+# Same pattern pre-commit already uses one directory over.
+ROOT="$(git rev-parse --show-toplevel)"
 GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
 
 if [ ! -x "$GAUNTLET" ]; then

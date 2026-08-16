@@ -402,8 +402,12 @@ for w in windows:
         # SQL genuinely lives inside -e/-c values, unlike git free-text
         # messages — deliberately DO scan inside those here. The check
         # is restricted to known-dangerous statements.
-        if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+TABLE", " ".join(rest), re.IGNORECASE):
-            deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE TABLE) detected — confirm with user first")
+        # TABLE is optional in TRUNCATE grammar (MySQL/MariaDB/Postgres all
+        # accept bare "TRUNCATE tbl_name") — matching only "TRUNCATE TABLE"
+        # let a fully destructive bare TRUNCATE through undetected.
+        if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+(TABLE\s+)?\w",
+                     " ".join(rest), re.IGNORECASE):
+            deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
 
 sys.exit(0)
 '
