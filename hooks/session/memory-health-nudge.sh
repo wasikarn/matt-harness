@@ -50,8 +50,14 @@ if [ -f "$CACHE" ] && [ -z "$(find "$MEMDIR" -maxdepth 1 -type f -newer "$CACHE"
   exit 0
 fi
 
-OUT=$(python3 "$LINT" 2>/dev/null) || true
-touch "$CACHE" 2>/dev/null
+if OUT=$(python3 "$LINT" 2>/dev/null); then
+  touch "$CACHE" 2>/dev/null
+else
+  # Don't cache a crash as "scanned, nothing to report" — a stale touch here
+  # would suppress every subsequent run's rescan (and any real findings)
+  # until something in $MEMDIR changes again to bust the cache.
+  OUT=""
+fi
 
 # memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when clean).
 printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0
