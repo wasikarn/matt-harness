@@ -6,6 +6,18 @@
 # until rebuilt; the deny-gate behavioral tests below are the safety-critical subset.
 set -uo pipefail
 
+# When pre-push runs from a linked worktree, git exports GIT_DIR (pointing at
+# the worktree's private gitdir) into this process's environment. Several
+# test files under run_hook_tests() build throwaway git fixtures via
+# `git -C <tmpdir> ...` or `(cd <tmpdir> && git ...)`, expecting an isolated
+# repo — but neither -C nor cd clears an inherited GIT_DIR, and GIT_DIR wins
+# over cwd-based repo discovery. Left set, `git init` in a fixture dir
+# silently re-inits the REAL repo instead, and every following fixture commit
+# lands there too. Confirmed by direct repro: this is why the gauntlet
+# corrupts real repo state only when triggered by an actual git push from a
+# worktree, never when the same test files are run standalone.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-gauntlet.XXXXXX")
 trap 'rm -rf "$WORK_TMP"' EXIT
