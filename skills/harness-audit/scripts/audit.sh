@@ -272,9 +272,8 @@ echo "=== Summary ==="
 echo "Critical: $CRIT_COUNT"
 echo "Warnings: $WARN_COUNT"
 echo "Info:     $INFO_COUNT"
-TOTAL=$((CRIT_COUNT + WARN_COUNT))
 echo ""
-echo "Exit: $TOTAL"
+echo "Exit: $CRIT_COUNT"
 # Exit policy: CRITs are blocking (nonzero), WARNs are informational (zero).
 # This matches the gauntlet's blocking gate (CRITs only) and the in-CC sensor
 # visibility (WARNs print to stderr so editors still see them). The pre-push
