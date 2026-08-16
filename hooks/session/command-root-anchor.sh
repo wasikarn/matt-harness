@@ -30,4 +30,4 @@ ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 # "${KBG_PLUGIN_ROOT}/scripts/..." without producing double slashes.
 ROOT="${ROOT%/}"
 
-printf 'export KBG_PLUGIN_ROOT=%s\n' "$ROOT" >> "$CLAUDE_ENV_FILE"
+printf 'export KBG_PLUGIN_ROOT=%q\n' "$ROOT" >> "$CLAUDE_ENV_FILE"

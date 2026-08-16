@@ -21,16 +21,15 @@ fail=0
 # to an empty command downstream.
 bash_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[1]}}))' "$1"; }
 
-# Build a Write tool payload.
+# Build a Write tool payload. Uses json.dumps (see bash_payload above) so
+# content containing quotes/backslashes doesn't produce malformed JSON.
 write_payload() {
-  local path="$1" content="$2"
-  printf '{"tool_name":"Write","tool_input":{"file_path":"%s","content":"%s"}}' "$path" "$content"
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": "Write", "tool_input": {"file_path": sys.argv[1], "content": sys.argv[2]}}))' "$1" "$2"
 }
 
-# Build an Edit tool payload.
+# Build an Edit tool payload. Same json.dumps rationale as write_payload.
 edit_payload() {
-  local path="$1" new="$2"
-  printf '{"tool_name":"Edit","tool_input":{"file_path":"%s","new_string":"%s"}}' "$path" "$new"
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": sys.argv[1], "new_string": sys.argv[2]}}))' "$1" "$2"
 }
 
 # Build a TaskUpdate payload. $1=status (or empty to omit the field),

@@ -47,8 +47,8 @@ def filter_rows(rows, args):
     return out
 
 
-def render_cost(rows):
-    print(f"## Token usage (costs.jsonl)\nledger: {DEFAULT_COSTS}\n")
+def render_cost(rows, costs_path):
+    print(f"## Token usage (costs.jsonl)\nledger: {costs_path}\n")
     if not rows:
         print("0 rows — the cost-tracker Stop hook appends one per session")
         return
@@ -87,7 +87,7 @@ def main():
         return 0
     if not rows and not os.path.isfile(args.costs):
         print(f"ERROR: ledger not found: {args.costs}", file=sys.stderr); return 1
-    render_cost(rows)
+    render_cost(rows, args.costs)
     return 0
 
 
