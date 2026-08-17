@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.344] — 2026-08-17
+
+### Fixed
+
+- **Compliance-audit remediation for the `review-pr` 3-skill split** — a `/kbg:compliance-audit`
+  pass (4 fresh-context verifiers + a deterministic backstop) against v0.68.342/343 found 2 real
+  gaps the split's own plan claimed were already clear: `tests/skills/review-pr/test-review-checkpoint.sh`
+  never asserted the phase-2/phase-4 happy-path reads `ok` (only their failure branches were
+  covered — added cases 9-10, closing the exact path `review-pr-tier` hits first in production),
+  and 6 files (`commands/ship-merge/COMMAND.md`, `commands/ship-merge/references/scored-gate-guards.md`,
+  `commands/address-review/references/phase6-verify.md`, 2 `harness-audit` check scripts,
+  `review-pr-tier/SKILL.md`'s own cross-reference) carried stale "review-pr Phase 5/7" attributions
+  the plan's "no change needed" claim had missed. All fixed and re-verified (gauntlet,
+  harness-audit, `automation-coverage.sh` all green post-fix).
+
 ## [0.68.343] — 2026-08-17
 
 ### Fixed
