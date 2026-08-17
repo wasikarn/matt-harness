@@ -20,7 +20,7 @@ see, because every file was reviewed on its own and the bug lives in the *compos
 individually-correct pieces, a framework behavior nobody verified, or a string the code emits that
 no one read.
 
-This is the standalone form of `skills/review-pr` Phase 5 **step 3.6** (the zero-findings
+This is the standalone form of `skills/review-pr-tier` Phase 5 **step 3.6** (the zero-findings
 adversarial re-hunt). Use it there, or dispatch it directly on a self-authored delta mid-session —
 the highest-risk case, because the reviewers who cleared your own code share your blind spot (an
 agent that wrote the code rationalizes what it built). Review coverage does not equal safety:

@@ -395,11 +395,11 @@ for w in windows:
                         d = parent
                 sentinel = os.path.join(root, ".kbg-no-worktree") if root else ""
                 if sentinel and os.path.isfile(sentinel):
-                    # review-pr allowlist. Skills/review-pr/SKILL.md line
-                    # 46 uses the shape "git worktree add --detach path
-                    # sha" with no -b. A command that combines --detach
-                    # and -b new is doctrine-breaking disguised as
-                    # review-pr — deny it.
+                    # review-pr allowlist. skills/review-pr/SKILL.md
+                    # Phase 2 (PR-by-number path) uses the shape "git
+                    # worktree add --detach path sha" with no -b. A
+                    # command that combines --detach and -b new is
+                    # doctrine-breaking disguised as review-pr — deny it.
                     is_review_pr = (
                         "--detach" in args
                         and any("review-pr-" in a for a in args)

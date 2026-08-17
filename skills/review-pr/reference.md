@@ -57,9 +57,27 @@ One-line orientation; **see kbg:inventory for current frontmatter descriptions a
 | `nextjs-reviewer` | App Router rendering/caching, Server Actions, middleware — routed alongside `code-reviewer` (and `typescript-reviewer`, if still dominant) when the diff touches `app/**`, `middleware.ts`, `proxy.ts`, or `next.config.*` |
 | native `/simplify` (post-review polish, **not** a reviewer) | Clarity/readability refactor without behavior change |
 
+## Per-Reviewer Worktree Isolation
+
+Supplementary detail for `review-pr/SKILL.md § Phase 4, step 3 (No-mutate instruction)`.
+
+The light fix shipped today is advisory: every dispatched reviewer is told it must not mutate
+the shared `$WT` (or working tree, own-branch review) — no `git checkout`, no file writes, no
+`git stash`. Review agents are read-only by frontmatter (no Edit/Write), so the only mutation
+vector is Bash, and that advisory instruction is the whole guard.
+
+A heavier, deterministic alternative was evaluated and NOT shipped: per-reviewer worktrees —
+`git worktree add --detach "$TMPDIR/review-pr-<#>-r<i>" "$HEAD_SHA"`, one per dispatched agent
+(`i` up to N≤5, `orchestrate`'s fan-out cap), with `kbg:review-pr-finish`'s Phase 7 cleaning a
+`review-pr-<#>-*` glob instead of a single `$WT`. Reasons it wasn't shipped: the only mutation
+vector is Bash (agents hold no Edit/Write), and the convergence gate + sibling-generalization
+fixes address the actual >10-loop failure mode this repo has seen in production — a higher-rank
+problem than a clobber that has never been observed happening. Upgrade to the heavier version if
+a clobber is ever confirmed.
+
 ## Phase 5 step 3.6 — standalone form
 
-Supplementary detail for `SKILL.md § Phase 5, step 3.6 (Zero-findings adversarial re-hunt)`.
+Supplementary detail for `review-pr-tier/SKILL.md § Phase 5, step 3.6 (Zero-findings adversarial re-hunt)`.
 
 The standalone, dispatchable form of this exact discipline — usable outside a review-pr run, e.g.
 on a self-authored delta mid-session — is `agents/blind-spot-hunter.md`, which also carries the
@@ -69,7 +87,20 @@ this note used to track).
 
 ## write-review-state.sh — Field Contract & Amend Mode
 
-Supplementary detail for `SKILL.md § Phase 7, step 1 (write-review-state.sh)`.
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 1 (write-review-state.sh)`.
+
+   **stdout contract.** Prints the written state-file path on success, then a second stdout line
+   — `round=N prev_critical=X prev_important=X prev_minor=X stalled=true|false
+   regressed=true|false force_human=true|false
+   convergence_state=converged|regressed|churning|stalled|progressing churn_files=a.ts,b.ts`
+   — that step 2's round-aware footer renders from directly; don't re-derive these by re-reading
+   the state file back. `churning` = a file has held a Critical/Important finding 3+ rounds
+   running (regardless of whether it's the same issue each time) — `churn_files` names which;
+   empty when not churning.
+   On failure, don't proceed to step 4's worktree cleanup — but a non-zero exit doesn't always
+   mean nothing was written: the worktree-escape trap catches a bad `REVIEW_PR_STATE_DIR` only
+   after the file is already written to the (about-to-be-deleted) wrong path. Fix the state dir
+   and re-run rather than assuming the write never happened.
 
    **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
    7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
@@ -102,7 +133,7 @@ Supplementary detail for `SKILL.md § Phase 7, step 1 (write-review-state.sh)`.
 
 ## Loop Reason Stop Messages
 
-Supplementary detail for `SKILL.md § Phase 7, step 2` — the per-`$LOOP_REASON` message text
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 2` — the per-`$LOOP_REASON` message text
 step 2 renders when `should-continue-loop.sh` returns non-zero (`$LOOP_EXIT != 0`). Moved here
 2026-08-17 (a pure lookup table, not branch logic — the `should-continue-loop.sh` invocation
 itself and the `$LOOP_EXIT`/`$LOOP_REASON` branch skeleton stay inline in SKILL.md, satisfying
@@ -152,9 +183,42 @@ Any non-`converged` reason above that blocks a merge does so via `/ship-merge`'s
 Critical-findings/`force_human` scoring (0 → hits the 40 floor → STOP) — the human
 decision is required before merge, not optional.
 
+## Requirement Analysis Presentation
+
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 6, step 1` — the opt-in
+JIRA-ticket-quality presentation, moved here 2026-08-17 to keep `review-pr-finish/SKILL.md`
+under the fleet's size threshold. Rarely-executed (only when Phase 1.5 ran, i.e. `JIRA_KEY` was
+set) and template-shaped, so it costs nothing on the common path.
+
+If `JIRA_KEY` was set (Phase 1.5 ran), present the ticket-quality report first, as its own
+section before the code findings — never blended into the Critical/Important/Minor tiers (same
+"don't blend across agents" principle as Phase 5 step 1; this is a report on the *ticket*, the
+tiers below are about the *code*):
+
+```markdown
+## Requirement Analysis — TP-871 (verdict: <verdict>)
+- Business trace: <business_trace, or "not stated — flagged as gap">
+- Ambiguities: <count> — <one line each, or "none">
+- Bundled requirements: <count> — <one line each, or "none">
+- Open questions: <count> — <one line each, or "none">
+```
+
+If `JIRA_FETCH_FAILED`, show `## Requirement Analysis — <key> — fetch failed, cross-check
+skipped` instead and continue with the ordinary code review. **Skip this sub-step entirely
+when `JIRA_KEY` is unset** — go straight to presenting code findings.
+
+**Terminal-only — never part of the posted review body.** This section critiques the *ticket*
+(ambiguities, open questions, bundling); posting a critique of someone else's ticket onto their
+PR is out of scope for a code review, and this repo is public, so ticket content (names,
+internal detail) landing in a public GitHub comment is a real consequence, not a hypothetical.
+Phase 7's review-body construction starts from the code findings only — this section never
+feeds it, on either review target. **This constraint is safety-load-bearing and is repeated
+inline in `review-pr-finish/SKILL.md` itself, not left as a lazy-loaded fact only visible here**
+— it must survive on the common path even if this reference file is never read.
+
 ## Build the Review Payload
 
-Supplementary detail for `SKILL.md § Phase 7, step 3 (Submit the review to GitHub)`.
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 3 (Submit the review to GitHub)`.
 
    **Build the review payload** (canonical procedure — Phase 6 branch B builds its preview from this):
    - **Event**: `REQUEST_CHANGES` if any Critical findings, `COMMENT` if only Important/Minor, `APPROVE` if zero findings.
@@ -179,7 +243,7 @@ Supplementary detail for `SKILL.md § Phase 7, step 3 (Submit the review to GitH
 
 ## Integration Notes — full detail
 
-Supplementary detail for `SKILL.md § Integration Notes (Project-Specific)`.
+Supplementary detail for `review-pr/SKILL.md`, `review-pr-tier/SKILL.md`, and `review-pr-finish/SKILL.md`'s Integration Notes sections (spans all three — phases named per bullet below).
 
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session. Phase 5 step 3.6 fires only on the zero-surviving-findings path with a non-trivial diff — one hunter dispatch, plus one 3.5-style refuter for each Critical/Important finding the hunter raises (usually zero). So the zero-findings path costs 1 + N dispatches where N is small; the several-findings path costs 3.5's ~one-per-finding. They're near-exclusive by trigger (3.6 only when nothing survived 3.5), so a single review never pays both at full volume. Phase 1.5 (opt-in, only when `JIRA_KEY` is detected) adds one `jira-acli:acli` fetch + one `requirement-analyst` dispatch, flat cost regardless of diff size — negligible next to the per-finding verifier cost above.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.

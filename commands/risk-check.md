@@ -95,9 +95,8 @@ print("merge decision, /kbg:review-pr for the actual review.")
 ## Notes
 
 - Deliberately does not wire this tier into `review-pr`'s dispatch/aspect
-  routing (would scale reviewer-agent effort by risk — real value, but
-  `skills/review-pr/SKILL.md` is already ~15K tokens over its fleet
-  threshold; a separate follow-up, not folded into this command).
+  routing (would scale reviewer-agent effort by risk — real value, but a
+  separate follow-up, not folded into this command).
 - Deliberately does not touch `ship-merge.md` at all — no bypass, no
   lightened gate for a LOW tier. That half of the article's design was
   explicitly declined.

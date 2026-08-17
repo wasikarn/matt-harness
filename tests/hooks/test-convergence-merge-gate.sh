@@ -637,6 +637,27 @@ rm_state
 unset KBG_SKIP_CODEOWNERS_GATE
 
 echo ""
+echo "=== Part N -- regression pin: review-pr's 3-skill chain checkpoint file must never trip _any_at_risk_state() ==="
+# review-pr/scripts/write-review-checkpoint.sh (added alongside the
+# review-pr/review-pr-tier/review-pr-finish skill split) writes an
+# intermediate checkpoint mid-review, with no "clean" field, and never
+# cleans it up. Found during planning, before any code shipped: a
+# checkpoint filename starting with "review-pr-" would match this gate's
+# own "review-pr-*.json" glob (_any_at_risk_state(), line ~164) and
+# permanently block every ambiguous merge from then on -- the checkpoint
+# is written on every review round and never deleted, so this isn't a
+# transient window, it's a standing block. The chosen filename
+# ("review-checkpoint-<n>.json") is designed not to match; this pin proves
+# it against the REAL gate logic, not just a naming convention on paper.
+state_clean_true  # PR 42 clean:true -- the merge SHOULD be allowed
+printf '{"phase": 4, "head_sha": "deadbeef", "base_sha": "x"}' > "$WORK/state/review-checkpoint-42.json"
+run_gate_raw 'eval \"gh pr merge 42\"' 0
+check "REGRESSION PIN: mid-review checkpoint (no 'clean' field) present alongside clean:true state -> still allow, checkpoint not globbed as an at-risk review" \
+  "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+rm -f "$WORK/state/review-checkpoint-42.json"
+rm_state
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [ "$fail" -eq 0 ] && exit 0 || exit 1

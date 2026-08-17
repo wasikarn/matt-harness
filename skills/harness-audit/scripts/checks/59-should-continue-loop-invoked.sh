@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # 59. Bounded auto-loop decision script contract — should-continue-loop.sh
-# must exist, be invoked by review-pr's SKILL.md, and retain its load-bearing
-# fail-closed fields (CRIT).
+# must exist, be invoked by review-pr-finish's SKILL.md, and retain its
+# load-bearing fail-closed fields (CRIT).
+#
+# Retargeted 2026-08-17 from review-pr/SKILL.md to review-pr-finish/SKILL.md:
+# the 3-way review-pr -> review-pr-tier -> review-pr-finish split moved
+# Phase 7 (where the invocation lives) into the new review-pr-finish skill.
+# The script itself (checked below as $_s) did not move.
 #
 # ADR 0009 (docs/research/adr-0009-bounded-review-fix-auto-loop.md) requires
 # the review→fix auto-continue decision to be computational (a shell script),
@@ -30,7 +35,7 @@
 # false-positive on the legitimate footer-message prose that still references
 # round/convergence_state/etc. for rendering, per the ADR's own concession).
 _s="$CLAUDE_DIR/skills/review-pr/scripts/should-continue-loop.sh"
-_m="$CLAUDE_DIR/skills/review-pr/SKILL.md"
+_m="$CLAUDE_DIR/skills/review-pr-finish/SKILL.md"
 
 if [ -f "$_s" ]; then
   /usr/bin/grep -q 'last_sha' "$_s" || \
@@ -47,7 +52,7 @@ fi
 
 if [ -f "$_m" ]; then
   /usr/bin/grep -q 'should-continue-loop.sh' "$_m" || \
-    crit "SKILL.md: Phase 7 never calls should-continue-loop.sh — the auto-loop's decision script exists but nothing invokes it, so the loop can't run and any surviving decision-tree prose would be the ONLY thing deciding continue/stop again (the sync-seam ADR 0009 exists to close)"
+    crit "review-pr-finish/SKILL.md: Phase 7 never calls should-continue-loop.sh — the auto-loop's decision script exists but nothing invokes it, so the loop can't run and any surviving decision-tree prose would be the ONLY thing deciding continue/stop again (the sync-seam ADR 0009 exists to close)"
 else
-  crit "SKILL.md: not found at $_m — the review-pr skill file is missing entirely"
+  crit "review-pr-finish/SKILL.md: not found at $_m — the review-pr-finish skill file is missing entirely"
 fi

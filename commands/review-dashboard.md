@@ -97,9 +97,9 @@ for the actual merge decision)` — never a computed pass/fail of your own.
   hidden.
 - Rejection-rate trend / ledger health (`skills/review-pr/ledger.md`,
   `policy.md`) is a different axis (session-level fleet health, not
-  per-review status) and already surfaces in `review-pr`'s own Phase 6 —
+  per-review status) and already surfaces in `review-pr-finish`'s own Phase 6 —
   intentionally not duplicated here.
-- The `.scratch/<slug>/proofs/` evidence directory `review-pr/SKILL.md`
+- The `.scratch/<slug>/proofs/` evidence directory `review-pr-finish/SKILL.md`
   specifies is never actually instantiated in real usage (confirmed against
   every session directory on disk) — this command doesn't render an
   always-empty evidence section for it.

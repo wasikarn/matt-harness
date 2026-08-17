@@ -44,27 +44,26 @@ if [ -f "$_gate" ] && /usr/bin/grep -q 'gh pr checks' "$_gate"; then
   _g=$((_g + 1)); _merge_dims_gated=$((_merge_dims_gated + 1))
 fi
 
-# review-pr's own markers may live in SKILL.md or (once split) a references/*.md
-# it points to — grep both so a lazy-loaded extraction doesn't silently drop a
-# site from this report with no signal anywhere else (this script never CRITs).
+# review-pr's own markers may live in SKILL.md or the 2 sibling skills its
+# 3-way chain hands off to (review-pr-tier, review-pr-finish) — grep all 3 so
+# a marker that moved during the split doesn't silently drop from this report
+# with no signal anywhere else (this script never CRITs).
 _rp="$CLAUDE_DIR/skills/review-pr/SKILL.md"
 _rp_extra=()
-if [ -d "$CLAUDE_DIR/skills/review-pr/references" ]; then
-  for _rpf in "$CLAUDE_DIR/skills/review-pr/references"/*.md; do
-    [ -f "$_rpf" ] && _rp_extra+=("$_rpf")
-  done
-fi
+for _rpf in "$CLAUDE_DIR/skills/review-pr-tier/SKILL.md" "$CLAUDE_DIR/skills/review-pr-finish/SKILL.md"; do
+  [ -f "$_rpf" ] && _rp_extra+=("$_rpf")
+done
 
 # 3. review-pr Phase 6 own-branch: all-zero → "Clean pass, proceeding" (skip ask).
 if [ -f "$_rp" ] && /usr/bin/grep -q 'Clean pass, proceeding' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
-  emit "G  review-pr/SKILL.md  Phase 6 all-zero tiers → proceed (skip ask)"
+  emit "G  review-pr-finish/SKILL.md  Phase 6 all-zero tiers → proceed (skip ask)"
   _g=$((_g + 1))
 fi
 
 # 4. review-pr Phase 6 own-branch: Minor-only → auto-proceed (Slice 3). Detected
 #    by the widened skip marker. Absent before Slice 3.
 if [ -f "$_rp" ] && /usr/bin/grep -q 'ACS:minor-only-auto-proceed' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
-  emit "G  review-pr/SKILL.md  Phase 6 Minor-only (0 Critical, 0 Important) → auto-proceed"
+  emit "G  review-pr-finish/SKILL.md  Phase 6 Minor-only (0 Critical, 0 Important) → auto-proceed"
   _g=$((_g + 1))
 fi
 
@@ -80,7 +79,7 @@ fi
 _demote=0
 if [ -f "$_rp" ] && /usr/bin/grep -q 'confidence.*0\.8\|0\.8.*confidence' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
   _demote=1
-  emit "G* review-pr/SKILL.md  Phase 5 step 3.5 verifier demotion (confidence≥0.8 + isReal=false) — advisory, already shipped, not counted in ACS auto-act"
+  emit "G* review-pr-tier/SKILL.md  Phase 5 step 3.5 verifier demotion (confidence≥0.8 + isReal=false) — advisory, already shipped, not counted in ACS auto-act"
 fi
 
 # --- H / X / J inventory (curated — the honest ceiling) ----------------------

@@ -90,6 +90,8 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | review-lens-db-sql | DB/SQL query-safety checklist for code-reviewer's db-aspect dispatch. Use when code-reviewer is dispatched for the db lens. Don't use for authoring guidance — kbg:mysql-patterns/kbg:drizzle-patterns instead. | inline | auto |
 | review-lens-fix-authenticity | Fix-authenticity checklist for code-reviewer's fix: dispatch. Use when a diff's commit is labeled fix:. Don't use for features, refactors, hardening diffs, or standalone review. | inline | auto |
 | review-lens-requirement-coverage | Requirement-coverage checklist for code-reviewer's ticket-gap dispatch. Use when review-pr passes extracted requirements. Don't use for self-invoked or standalone review. | inline | auto |
+| review-pr-finish | Present kbg:review-pr's tiered findings, decide submit/fix, write review state and loop verdict. Use when kbg:review-pr-tier hands off. Don't use for self-invoked or standalone review. | inline | auto |
+| review-pr-tier | Tier and scrutinize kbg:review-pr's findings (SCRUTINIZE-4, adversarial verify, blind-spot re-hunt). Use when kbg:review-pr hands off after Phase 4. Don't use for self-invoked or standalone review. | inline | auto |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
@@ -140,7 +142,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-17T13:10:10Z_
+_Generated: 2026-08-17T15:55:51Z_
 
 ---
 
