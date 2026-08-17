@@ -66,18 +66,9 @@ Read the nearest manifest present (`package.json` / `go.mod` / `pyproject.toml` 
 
 ### Step 3.5 — Requirement cross-check (opt-in — Jira ticket, or a real feature/behavior requirement)
 
-Two independent detect paths (METHODOLOGY Rule 3 — interrogate the claim, not just the prompt shape). Neither blocks Step 4 if it doesn't fire.
-
-**Jira path — detect**: the draft contains the case-insensitive substring `jira` **and** a ticket-key-shaped token (`[A-Z][A-Z0-9]*-\d+`, e.g. `TP-871`) — requiring both avoids false-triggering on unrelated tokens shaped like `UTF-8`/`ISO-8601`. If detected:
-1. Fetch the ticket via the **`jira-acli:acli` skill** — never a raw `acli` command or a direct `mcp__*atlassian*`/`mcp__*Rovo*` call (CLAUDE.md's global routing rule). `jira-acli` is a separate plugin; if it isn't installed, treat that the same as a fetch failure below — note it, don't fall back to a raw call. Fetch failure (bad key, no access, plugin missing) → note it inline and skip to Step 4 unaffected; an unresolved ticket reference never blocks task prep.
-2. **Topical sanity check**: does the fetched summary plausibly match what the draft says the ticket is about? A wrong-but-valid key (typo, copy-paste from another task) fetches cleanly and looks like success — nothing else catches this. Mismatch → treat the same as a fetch failure: note it inline, skip dispatch, and add "ticket key resolves but its content doesn't match the draft" to Step 6's `open_questions` batch directly — there's no requirement-analyst report to draw from since dispatch was skipped, but Step 6 treats this one ad-hoc note the same as a dispatched `open_questions` entry. Soft check, not a hard gate — a false positive just falls back to draft-only prep, same cost as any other fetch failure.
-3. Match confirmed (or no mismatch found) → dispatch `requirement-analyst` (Agent tool) with the fetched body as its prompt. Capture: `business_trace`, `functional_requirements`, `non_functional_requirements`, `acceptance_criteria`, `edge_cases_missing`, `open_questions`, `riskiest_assumption`.
-
-**Non-Jira path — detect**: no ticket reference, but the draft states a real feature or behavior requirement (new user-facing capability, a rule the system must enforce, a workflow to support) — not a purely mechanical change (rename, typo, config bump, a routine dependency-version bump with no behavior change). A cross-version API/library migration that changes what the caller must adapt to (auth scheme, payload/schema shape, error codes, rate limits) is **not** covered by that last example just because it also involves a version number — the exclusion is about diff size and blast radius, not the word "version." **Bias toward skip on any doubt** — this path spawns a second Opus agent on top of Step 6's verifier, so it only earns its cost when there's an actual requirement to interrogate, not just a task to execute. If detected: dispatch `requirement-analyst` (Agent tool) with the **draft text itself** as its prompt (no fetch — the draft is the source). Capture the same fields as the Jira path.
-
-Either path: hold the report for Step 4/5/6 below — it supplies **candidate** values, it does not fill anything by itself (Step 7's "never overwrite a filled field" still applies).
-
-**Success criterion:** either skipped (no ticket reference and no standalone feature requirement), or you're holding a requirement-analyst report to draw on below.
+See `references/requirement-cross-check.md` for the full procedure (Jira-path and
+non-Jira-path detect conditions, the topical sanity check, and what each path
+captures for Step 4/5/6 below).
 
 ### Step 4 — Map to the 9 fields
 

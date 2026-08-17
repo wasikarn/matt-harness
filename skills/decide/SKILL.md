@@ -85,161 +85,39 @@ Before the analysis runs, the first line of the response states the active mode 
 
 ## Mode: clarify
 
-Resolve unstated scope or assumptions before any other mode runs. Analyze → recommend
-→ ask — do not enumerate a long list of questions when a stated assumption will do.
-
-1. **Analyze.** Name what's actually ambiguous: scope boundary, success criterion, or
-   a load-bearing assumption the request leaves implicit.
-2. **Recommend.** State your working interpretation as a default, not a question.
-3. **Ask.** Only if the ambiguity is consequential enough that guessing wrong is
-   expensive — use `AskUserQuestion` for a genuine fork, or a plain-text fork in the
-   response if that tool isn't exposed in this context; otherwise proceed on the
-   stated default and flag it. When the fork fires via `AskUserQuestion`, every
-   option's description carries a one-line consequence — what changes, what it
-   costs, or what breaks if picked; a menu of bare labels is not an ask. A
-   plain-text fork keeps the lighter prose shape: name each option, the
-   recommended pick, and the one-line reason it wins. **One question max per
-   turn** — clarify never emits a multi-question intake. Settled-ask check
-   before asking: if the option you'd tag as
-   the recommended default is one you'd proceed with anyway absent an answer, the ask
-   is decoration — state it as the working default and move on (asking a question
-   whose answer you already picked is the twice-confirmed 2026-07-02 consistency
-   defect). Worked example: "add caching to the product API" → state the default
-   ("in-process LRU on the hot read path, TTL 60s — say if you need cross-instance
-   invalidation") and proceed; do **not** append a menu of cache backends each already
-   tagged with your own pick.
-
-**Bias to guard:** framing bias — a narrow first framing of the ask silently
-constrains every option considered downstream. Reframe test: "if the literal request
-did not exist, what problem is actually being solved?"
-
-Output: scope is resolved, then hand off to `probe`, `decide`, or `strategize`.
+See `references/mode-clarify.md` for the full procedure (analyze → recommend → ask,
+the framing-bias guard, and the settled-ask check).
 
 ---
 
 ## Mode: decide (default)
 
-Interactive walk through the 5-rung Judgment Ladder. Pause with `AskUserQuestion`
-only at a genuine fork where guessing wrong is expensive (same bar as `clarify`);
-otherwise narrate the rungs straight through and flag open assumptions inline rather
-than blocking on each one.
-
-Match depth to stakes (reversibility, magnitude, time pressure, uncertainty,
-precedent — judgment-ladder.md's Proportionality rule) — reversible low-stakes
-choices need only rungs 1–2 (Recognize + Frame), not the full climb (completion
-criterion below has the matching exception for what a rungs-1–2 response still owes).
-
-Even a rungs-1–2 shortcut still owes one thing from rung 4/5's playbook: if the
-request leans on an unverified quantitative or certainty claim (a stated cost, a
-"zero risk," a time estimate), spot-check that specific claim before accepting it.
-Skipping the full bias-guard checklist (reserved for rung 5's closing pass) is not
-the same as skipping anchoring on a load-bearing number the request handed you — a
-lightweight decision is exactly where an unverified number is most likely to just
-get accepted at face value.
-
-### 1. Recognize
-Name the actual choice, its owner, its timing, and its trigger.
-> Quick check: "What would happen if we did nothing for 30 days?"
-
-### 2. Frame
-Objectives, constraints (hard limits vs preferences), stakeholders, scope in/out.
-> Reframe test: "If our favorite option did not exist, how would we solve this?"
-
-### 3. Test assumptions
-List load-bearing beliefs. For each: what evidence would refute it? Then answer a
-second, separate question: which ONE assumption, if it resolved against the current
-pick, reverses Selected → Rejected? This is not the "genuine fork → AskUserQuestion"
-test above — that asks whether to pause and ask now; this asks whether the pick is
-falsifiable at all. Failing the fork test says nothing about this one — an assumption
-can be too cheap to block on now and still be exactly what would flip the decision
-later. Carry the answer into the Decision record's Flip condition line (§ Output
-format); "none of these would flip it" is a framing-bias smell, not a default answer.
-> "Who disagrees with us, and what do they know that we don't?"
-
-### 4. Estimate risk
-Express uncertainty as ranges, not point estimates. Name compound/tail scenarios.
-> "What is the 90% confidence interval, and would we bet money on it?"
-
-### 5. Decide, commit, follow through
-Document chosen and rejected options, trade-offs, revisit trigger, progress metric.
-> Bias guards before closing: framing, anchoring, confirmation, sunk-cost.
-> "If we had not already started, would we start today?"
-
-**Full rung detail and decision record template:** read via Bash — `cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"` (the bare repo-relative path resolves nowhere in a foreign-project CWD; the plugin cache is the stable anchor).
+See `references/mode-decide.md` for the full 5-rung Judgment Ladder walk (Recognize →
+Frame → Test assumptions → Estimate risk → Decide/commit/follow-through), the
+Proportionality depth-matching rule, and the rungs-1–2 shortcut's spot-check
+exception.
 
 ---
 
 ## Mode: probe
 
-Systems-thinking analysis *before* committing to a frame. Use when the diagnosis
-itself is contested or the problem space is complex/emergent.
-
-1. Map the system: actors, flows, feedback loops, delays.
-2. Name the leverage points — the highest-impact spots to intervene (catalog at
-   `docs/reference/thinking-skills/skills/` — read via Bash, `cat
-   "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<file>"`; the bare
-   repo-relative path resolves nowhere in a foreign-project CWD).
-3. Stress-test the diagnosis: what would prove the current frame wrong? Cross-check
-   against every actor named in step 1's map, not just the theories already on the
-   table — a stated diagnosis only covers who spoke up, and the map often holds an
-   unclaimed candidate cause nobody's blaming yet.
-4. Output: a framing memo, not a decision — hand off to `decide` or `strategize`.
+See `references/mode-probe.md` for the full systems-thinking procedure (map the
+system → name leverage points → stress-test the diagnosis → output a framing memo).
 
 ---
 
 ## Mode: strategize
 
-For irreversible or long-horizon commitments where rivals adapt and resources are
-constrained. Walks six steps, grounded in Rumelt's kernel plus real-options and
-red-team discipline:
-
-1. **Diagnosis** — simplified explanation of the actual challenge (not a goal).
-2. **Guiding policy** — overall approach to the obstacles named in the diagnosis.
-3. **Coherent actions** — steps that coordinate to carry out the policy.
-4. **Map irreversibilities and real options** — per commitment, name whether it's an
-   irreversible bet, a reversible probe, a stage gate, or an adaptive commitment (see
-   "Real options and adaptive commitment" in the reference). Buy information before
-   buying irreversibility.
-5. **Red-team the strategy** — run the reference's "Strategic red-team" question set
-   against the diagnosis, guiding policy, and coherent actions.
-6. **Commit to the strategy loop** — cross-check with Lafley-Martin's five choices
-   (winning aspiration → where to play → how to win → capabilities → management
-   systems), then commit with a named revisit trigger.
-
-A weak diagnosis produces a vague policy; a policy that fails the red-team is not
-ready to commit. If the elements don't fit, loop back to Diagnosis.
-
-**Full model detail:** read via Bash — `cat "${KBG_PLUGIN_ROOT}/docs/reference/strategic-judgment.md"`.
+See `references/mode-strategize.md` for the full 6-step walk (Diagnosis → Guiding
+policy → Coherent actions → Map irreversibilities/real options → Red-team →
+Commit to the strategy loop).
 
 ---
 
 ## Mode: critique
 
-Adversarial stress-test of reasoning that **already exists** — a plan, an ADR, an RFC,
-a proposal on the table. Not for generating a new decision from scratch (`decide`/
-`strategize` do that); this mode only audits one that's already made.
-
-1. **Skeptic.** Argue against the proposal on its own terms: what load-bearing
-   assumption, if false, collapses it? What would a competent rival or reviewer
-   attack first? (red-team)
-2. **Steel-man.** State the strongest version of the opposing case, not the weakest —
-   the version that would actually change the decision if true. (steel-manning)
-3. **Synthesis.** Name any unconsidered alternative the Skeptic/Steel-man pass
-   surfaced. If the proposal survives, say why the strongest objection doesn't hold.
-   If it doesn't survive, name what changes.
-
-**Bias to guard:** confirmation bias — the proposal's author is structurally
-motivated to find it sound. If that author is this session itself (drafted or
-reasoned through earlier in this conversation), the mode-selection table's skeptic
-row applies instead — critique's own guard isn't strong enough for that case. Ask:
-"what evidence would prove this proposal wrong, and did we look for it or just for
-evidence it's right?"
-
-Output: a verdict — the reasoning holds, holds with a named caveat, or needs rework —
-plus the one assumption most worth re-verifying, and, when the verdict carries a
-caveat or needs rework, what specifically would need to change (per step 3) — a
-verdict without a concrete next step leaves the reader with a red flag and no path
-forward.
+See `references/mode-critique.md` for the full procedure (Skeptic → Steel-man →
+Synthesis, the confirmation-bias guard, and the required verdict shape).
 
 ---
 

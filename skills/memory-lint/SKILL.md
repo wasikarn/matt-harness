@@ -36,78 +36,31 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --find-patterns --prompt   
 python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py" --classify-unindexed
 ```
 
-Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). Exit code = finding count; 0 = clean. Two advisory sections print below the findings and never affect the exit code: staleness (mtime-based — tune with `--stale-days N`, default 90) and template compliance (`**Why:**`/`**How to apply:**` coverage for `feedback`/`project` memories) — see Checks table for both.
+Auto-derives the store from the current repo (`~/.claude/projects/<enc>/memory`). **Verify** the run against the exit code: it equals the finding count, so 0 confirms a clean store. Two advisory sections print below the findings and never affect the exit code: staleness (mtime-based — tune with `--stale-days N`, default 90) and template compliance (`**Why:**`/`**How to apply:**` coverage for `feedback`/`project` memories) — see Checks table for both.
 
 ## Contradiction pre-filter (`--find-contradictions`)
 
-A deterministic, manual-only candidate surfacer — never a scheduled job, never an auto-resolver. Pairs same-`type:` memories whose filename+description token-overlap crosses `--min-overlap` (default 0.35); a shared outbound `[[link]]` is reported as *context* alongside a qualifying pair, never as an independent trigger.
-
-**Why never a trigger on its own:** the first hand-run against this store (2026-08-07) used "shared link OR high overlap" and returned 296 candidates on 178 files — almost all of them pairs that merely cite one common well-known memory (e.g. `verify-adversarially-before-nothing`), not anything resembling a contradiction. Token-overlap alone, same threshold: 4 candidates. That run's own spot-check found 0/4 were real contradictions (two were a SUPERSEDED feature and its own already-cross-linked history note; two were sequential phase-log entries of one project) — a negative result, and a useful one: it confirms the store had no detectable internal contradiction at that point, and it's the evidence this stays a manual, occasional tool rather than something scheduled. Per Article 1 (`docs/research/agent-memory-engineering-2026-08-07.md`): "a memory system that runs against three notes will hallucinate connections that are not there and train you to ignore it, so prove each pass by hand, then automate" — this only earns a schedule if a future hand-run's precision says otherwise.
-
-**Never auto-resolves.** Two memories can both be right in different contexts — every candidate is for a human (or a separately-dispatched, adversarial LLM pass) to read and judge. An extraction step that both writes memories and unilaterally decides which one is now false is the same maker-grades-itself failure this harness already rejects everywhere else (CLAUDE.md's operating model: an LLM can't grade its own output).
+See `references/contradiction-prefilter.md` for the full design rationale (why this
+stays manual-only, the 2026-08-07 hand-run evidence, and why it never auto-resolves).
 
 ## Pattern clusters (`--find-patterns`)
 
-A deterministic, manual-only recurrence-cluster surfacer — never a scheduled job, never an auto-merger. Builds a file↔file graph where two memories share an edge iff they share ≥1 **resolvable** outbound `[[link]]` target (the target must exist as a filename stem or `name:` slug, mirroring the dangling-link check — dangling links don't create edges, so noise doesn't seed clusters), then reports connected components of size ≥ `--min-cluster` (default 3). Each cluster lists its members and the shared links that bind it. Pure graph topology — no embeddings, no semantic similarity, no LLM in the loop. This is the Zep "Observations" mechanism (reduce facts to signatures → episode graph → connected components → LLM writes prose) with `[[links]]` standing in for Zep's entity-pair signatures and memories standing in for episodes; the design rationale and convergence with harness doctrine live in `docs/research/observations-pattern-2026-08-13.md`.
-
-**Why the LLM is a separate paste step, not in-loop:** the deterministic pass decides *what groups together*; an LLM only writes prose *over the structure the algorithm already decided*. That is this harness's maker/verifier doctrine arriving from the memory side — the model is the maker, the algorithm is the verifier, and the maker never grades its own grouping. `--prompt` emits one paste-ready synthesis prompt per cluster (constrained to the cluster's evidence — write only what the shared referents and member topics support, no invented claims, no causation the links alone don't show). The script never calls an LLM itself — paste the block into a model by hand.
-
-**Read each cluster as a hypothesis, never a verdict.** A cluster says these memories share `[[link]]` referents, not that they say the same thing. Never auto-merge.
-
-**Expected on a dense store: one giant component — `--max-cluster` filters it, and defaults on.** A curated memory store that encourages linking is a dense graph, and connected components on a dense graph collapse most files into a single giant blob. The first hand-run against this store (2026-08-13) at `--min-cluster 3` returned 6 clusters — one of **size 102** (most of the store, chained transitively through popular hubs like `verify-adversarially-before-nothing`, `harness-engineering-2x2-model`) plus 5 tight small clusters (sizes 5/4/4/4/3) bound by specific shared lessons (`re-review-after-every-fix-round`, `delegation-validation-is-orchestrator-role`, `askuserquestion-consistency-gap`). The giant component is **not a pattern** — it's "the graph is connected," which a dense store should be. The real recurrence signal is in the **small, tight clusters** (few members, few shared links). The giant is the *largest* component, so raising `--min-cluster` cannot remove it — that filters the small clusters first and leaves only the giant (confirmed live: `--min-cluster 8` returns *just* the size-102 blob). `--max-cluster` caps component size and hides the giant instead.
-
-**The flag defaulting to 0 (opt-in) is what caused a 2026-08-17 hand-run to misdiagnose this as an unfixed algorithm problem.** That verdict ran plain `--find-patterns` (no `--max-cluster`), saw the now-107-file giant mixed in with the 5 tight clusters, and concluded the clustering itself needed work before the tool was "worth a human's time" — when the fix (this section, written 4 days earlier) already existed and just wasn't on by default. `--max-cluster` now defaults to **10**: plain `--find-patterns` gives the 5 tight clusters with no extra flag. Pass `--max-cluster 0` for the old uncapped view. A capped-out component is never silently dropped — the header and (when it empties the result entirely) the "none" line both report how many components were hidden above the cap, so the tool can't repeat this exact mistake in the other direction. A hub-target-exclusion alternative (drop targets above a linker-count threshold before clustering, instead of filtering the final component by size) was tested against the live store and performed worse — even excluding every target with >4 linkers left a 17-file blob, because the giant forms from many diffuse mid-degree bridges, not a handful of clean hubs; size-capping the final component remains the right mechanism. Considered safe to hand-run periodically now, same tier as `--find-contradictions` above — no scheduling/automation, per this doc's standing "prove by hand, then automate" bar (Article 1, quoted above).
-
-**Why not an always-on layer:** this repo's memory architecture already rejected heavy read-time-synthesis tools (incl. Zep) in favor of write-time curation — one curated line per lesson, paid at write time (`docs/research/agent-memory-engineering-2026-08-07.md`). Zep-style always-on synthesis is redundant by design when the curator already wrote the pattern into the memory itself. This mode is the on-demand, manual version of the one idea worth borrowing — it feeds the human curator on the rare occasion recurrence is worth checking; it does not replace curation.
+See `references/pattern-clusters.md` for the full design rationale (graph-topology
+mechanism, the `--max-cluster` giant-component fix and its 2026-08-13/2026-08-17
+evidence, and why this stays a manual, on-demand mode rather than an always-on
+layer).
 
 ## UNINDEXED fold-vs-forgotten triage (`--classify-unindexed`)
 
-Since v0.68.241 the detector itself only fires UNINDEXED for files that are *also* unreachable from the index via `[[links]]` (reachable ones are the healthy Context layer — live-fire 2026-08-09: 62 raw UNINDEXED → 48 reachable + 14 true orphans, of which 12 were linked into hubs and 2 archived, findings now 0). This mode remains the deeper forensic view for whatever still fires. UNINDEXED (a file with no MEMORY.md pointer) is two different states wearing one label: an authoring oversight, or the fold rule's own documented correct end-state ("merge/drop stale entries... just stop indexing it, never delete the backing file"). Blind-appending every UNINDEXED file back into MEMORY.md would silently undo real prior fold decisions. This mode classifies instead of auto-fixing, using git history on MEMORY.md — see `docs/research/claude-mem-architecture-study-2026-08-07.md` (Adopt-1) for the full design rationale, including the first draft (blind auto-append) that adversarial review caught before it shipped.
-
-| Bucket | Meaning | Action |
-|---|---|---|
-| **folded-confirmed** | A real `[text](file.md)` pointer link to this file was removed from MEMORY.md at some past commit | Already deliberately removed — NOT a candidate to re-add |
-| **never-indexed** | File is absent from the tree at the memory dir's first commit (its whole life is inside tracked history) and no fold commit was found | Real candidate to add |
-| **ambiguous-pre-baseline** | File is present in the tree at the memory dir's first commit — it predates tracking, so git has no opinion either way | Needs a human to read the content |
-| **no-git-history** | Memory dir isn't a git repo (or has 0 commits) | Same ambiguity as ambiguous-pre-baseline, for everything |
-| **git-query-failed** | The dir IS a git repo, but a git call failed mid-scan (lock contention, timeout, corrupted history) | Same ambiguity as ambiguous-pre-baseline — never silently downgrades to never-indexed |
-
-`never-indexed`/`ambiguous-pre-baseline` are decided by tree membership at the first commit, not file mtime — an mtime-based version was caught by `advisor()` before shipping (v0.68.228): mtime resets on every edit, so it would misclassify an already-correct pre-baseline file as a false "add this" candidate the moment anyone touched it. Tree membership at a past commit is a fixed historical fact, immune to later edits.
-
-**v0.68.229 rewrite, adversarially audited before/after a scored fixture harness (score went 5/9 → 9/9):** fold detection originally used `git log -S<filename> -- MEMORY.md`, one subprocess call per UNINDEXED file. Two real bugs, both confirmed by a 3-agent adversarial review (security/silent-failure/blind-spot) plus independent hand-verification: (1) `-S` matches the filename as a **substring anywhere in the diff text**, including a bare prose mention that was never a real link — editing an unrelated sentence later could misclassify a genuinely-never-indexed file as folded; (2) a **transient git failure** on any one file's call silently fell through to the confident `never-indexed` bucket instead of a safe "couldn't determine" state — the wrong direction, since it could relabel a real fold as a fresh candidate. Both close under one redesign: a single `git log -p -- MEMORY.md` call parsed once, matching only real `](file.md)` pointer syntax via the existing `POINTER_RE`, plus a single `git ls-tree` call for the whole baseline tree instead of one per file — 3 total git subprocess calls regardless of UNINDEXED count, down from up to 2N. Measured against the real store: 744ms → ~85ms for the classify call. A failed git call now lands in `git-query-failed`, never silently downgrades. Regression tests for both bugs plus a subprocess-call-count invariant live in `tests/skills/memory-lint/test_memory_lint.py`.
-
-Live-run confirmed 2026-08-07 against the real store (69 UNINDEXED at the time, both before and after the rewrite — identical per-file bucket assignment, 0 moved): 27 folded-confirmed (all citing the same fold-rule compaction commit, `ce2c21f`), 0 never-indexed, 42 ambiguous-pre-baseline (the memory dir's git tracking only started 2026-08-07 — see `docs/research/claude-mem-architecture-study-2026-08-07.md`, Adopt-1 — so most of the existing backlog predates it). Read-only — never appends anything to MEMORY.md.
-
-**Wired into the SessionStart nudge (v0.68.228).** `hooks/session/memory-health-nudge.sh` already surfaces raw UNINDEXED findings whenever the store changes; it now additionally runs `--classify-unindexed` (only when the fired findings include an UNINDEXED entry, to skip the extra scan otherwise) and adds one line — "N of the UNINDEXED file(s) above look like real candidates" — only when `never-indexed` is nonzero. Silent when every UNINDEXED finding is folded-confirmed or ambiguous-pre-baseline, matching the "silent when clean" convention every other nudge in this fleet follows. Tested in `tests/hooks/test-memory-health-nudge.sh`.
+See `references/unindexed-triage.md` for the full bucket table, the git-history
+classification mechanism (tree membership at first commit, not mtime), the
+v0.68.229 adversarial rewrite, and the SessionStart nudge wiring.
 
 ## Action mode (`--auto-archive`)
 
-Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]), plus a **Class D fallback valve** (added 2026-08-07). This engine is the **canonical home of the trim workflow** — the `--trim` aliases below wrap it; there is no separate trim skill.
-
-- **<2KB delta per session for A/B/C** — never collapse the whole store; trim only the worst. Class D is the deliberate exception: it's a last-resort valve for a store shape A/B/C structurally can't catch (many small terse entries, no verbose outlier), so its delta can be larger — confirmed live at -5,039B in one fold, see below.
-- **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix
-- **Reversible** — A moves via `mv` (never `rm`); B/C rewrite in place; D deindexes only (removes the MEMORY.md pointer line, backing file untouched — recoverable via git history, `qmd`, or re-adding the line by hand)
-
-| Class | Trigger | Action | Safety |
-|---|---|---|---|
-| **A — stale-superseded** | MEMORY.md pointer has `**SUPERSEDED**` marker + topic has 0 surviving inbound `[[wikilinks]]` | `mv <topic> _archive/<date>/` + collapse pointer to 1-line stub | Always safe (marker = user intent) |
-| **B — near-budget-collapse** | MEMORY.md >80% cap + pointer ≥250 chars + topic >5KB + pointer ≥ 1.2x first paragraph | Replace pointer with ~80-char stub + add `supersedes:` note in topic | Editorial; review each rewrite |
-| **C — dangling-link-rewrite** | Surviving file's `[[wikilink]]` resolves to nothing or to `_archive/` | Rewrite `[[X]]` → `[[<ledger>]]` | Mechanical when target is already-archived |
-| **D — count-fold** | Index ≥80% of cap AND A+B+C together found nothing (confirmed live 2026-08-07: 0 candidates from either class at 84% of cap on the real store — its growth is many small terse entries, not a few verbose outliers) | Deindex oldest pointer lines by topic-file **mtime**, any type, until back under 65% of cap | Dry-run/confirm gated, same as A/B/C — but ranks by "hasn't been edited," which can catch a stable, correct, evergreen reference for the wrong reason (confirmed live: `harness-engineering-2x2-model.md` was a real candidate). Review the dry-run list before confirming. |
-
-> **Source of truth:** the thresholds above (≥250 chars, >5KB, ≥1.2×, 200L/25KB cap, Class D's 80%/65% fold band) are enforced in `scripts/memory-lint.py` (`class_a_stale_superseded` / `class_b_near_budget_collapse` / `class_c_dangling_link_rewrite` / `class_d_count_fold`). Update this table when the code changes — this prose mirrors the code, it does not define it.
-
-Default for `--auto-archive` is dry-run with confirm prompt; `--yes` skips the prompt (use for CI/scripts). `--json` produces machine-readable output (mode-aware: detector JSON for plain lint, action-plan JSON for `--auto-archive --dry-run`).
-
-### `--trim` mode (plan / apply / status)
-
-The trim workflow is `--auto-archive` under three intents — no separate skill. Run them in order:
-
-1. **plan** — `--auto-archive --dry-run --json` → the action plan (what would move, projected before/after size) without touching the store. Never skip straight to apply: drift the plan review and you `mv` entries you meant to keep.
-2. **apply** — `--auto-archive --yes` → executes the reversible `mv`s (collapsed pointers stay grep-able in `_archive/`; never `rm`).
-3. **status** — `python3 "${CLAUDE_SKILL_DIR}/scripts/memory-lint.py"` (detector mode) → current finding count + load-budget %; run before and after an apply to read the size delta.
-
-Reach for trim when MEMORY.md is over its 200-line / 25KB cap or after a big session; for routine link/index checks the default detector is enough.
+See `references/action-mode.md` for the full A/B/C/D rubric (trigger/action/safety
+table for each class), the `--trim` plan/apply/status workflow, and the thresholds'
+source-of-truth note.
 
 ## Checks
 
