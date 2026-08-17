@@ -246,6 +246,18 @@ _SHORT_VALUE_CHARS = frozenset("RAbFt")
 
 state_dir = os.environ.get("REVIEW_PR_STATE_DIR") or os.path.expanduser("~/.claude/state")
 pr_num = None
+# repo_arg: the -R/--repo value from the ORIGINAL merge command, when
+# present. Verified live (tathep-platform-api PR #2788, 2026-08-17): the
+# re-verification gh calls below (CI check, CODEOWNERS check) run in the
+# hook subprocess own cwd, which is NOT necessarily the cwd the proposed
+# command would actually run in (e.g. a leading `cd X &&` this static
+# parser deliberately does not resolve, same as any other shell
+# indirection it leaves alone) -- so a merge command that named its repo
+# explicitly via --repo/-R must have that same repo threaded through, or
+# the re-verification calls silently resolve against whatever repo (or no
+# repo at all) the hook process happens to be sitting in and fail closed
+# on an unrelated exit!=0. github.com/wasikarn/kbg-harness/issues/55
+repo_arg = None
 has_merge = False
 if not has_opaque_indirection:
     gh_seen = False
@@ -256,17 +268,35 @@ if not has_opaque_indirection:
         if gh_seen and t == "pr" and j + 1 < len(tokens) and tokens[j + 1] == "merge":
             has_merge = True
             skip_next = False
+            pending_flag = None
             for a in tokens[j + 2:]:
                 if skip_next:
+                    if pending_flag in ("-R", "--repo"):
+                        repo_arg = a
                     skip_next = False
+                    pending_flag = None
+                    continue
+                if a.startswith("--repo="):
+                    repo_arg = a[len("--repo="):]
+                    continue
+                if re.fullmatch(r"-R.+", a):
+                    repo_arg = a[2:]
                     continue
                 if a in _MERGE_VALUE_FLAGS or (
                         re.fullmatch(r"-[A-Za-z]+", a) and a[-1] in _SHORT_VALUE_CHARS):
                     skip_next = True
+                    pending_flag = a
                     continue
-                if not a.startswith("-"):
+                if not a.startswith("-") and pr_num is None:
+                    # Do NOT break here: --repo (or -R) can follow the PR
+                    # number in the token stream (`gh pr merge 2788 --repo
+                    # owner/repo ...` -- confirmed the real shape of a
+                    # merge command issued from a cwd that does not match
+                    # the target repo, 2026-08-17) and the walk must keep
+                    # going to find it. `pr_num is None` guards against a
+                    # later stray bare token overwriting an already-found
+                    # PR number.
                     pr_num = a
-                    break
             break
 
 if not has_merge:
@@ -402,69 +432,89 @@ if clean is True:
         # sys.exit(0) call sites this used to have would each independently
         # skip the CODEOWNERS check below, silently, for the "no CI
         # configured" case in particular.
-        ci_args = ["gh", "pr", "checks"]
+        # `gh pr checks --json name,state,conclusion` was the original
+        # source here, but on gh 2.95.0 (2026-06-17) `conclusion` is not a
+        # valid --json field for that subcommand at all (verified live:
+        # Unknown JSON field: conclusion, exit 1, on every call regardless
+        # of PR) -- every invocation of this block errored before reaching
+        # any check-result logic. Separately, even the correct field name
+        # does not fix the no-CI case: on gh 2.95.0, `pr checks` exits 1
+        # with EMPTY stdout (the no-checks-reported-on-this-branch message
+        # goes to stderr instead) for a genuinely zero-CI branch -- not
+        # exit 0 as this function used to assume, so the old
+        # empty-stdout-plus-returncode-0-means-N/A distinction could never
+        # fire. `gh pr view --json statusCheckRollup` does not have either
+        # problem: verified live, a zero-CI branch returns
+        # {"statusCheckRollup":[]} on exit 0 (a real, parseable, empty-array
+        # signal), and a genuine gh error (bad PR number, auth, rate limit)
+        # exits non-zero with an error message on stderr and no valid JSON
+        # on stdout -- the same distinction this function always intended,
+        # just keyed off a subcommand that actually produces it on the
+        # installed gh version.
+        # github.com/wasikarn/kbg-harness/issues/54
+        cr_args = ["gh", "pr", "view"]
         if pr_num:
-            ci_args.append(str(pr_num))
-        ci_args += ["--json", "name,state,conclusion"]
+            cr_args.append(str(pr_num))
+        if repo_arg:
+            cr_args += ["--repo", repo_arg]
+        cr_args += ["--json", "statusCheckRollup"]
         try:
-            ci_r = subprocess.run(ci_args, capture_output=True, text=True, timeout=20)
+            cr_r = subprocess.run(cr_args, capture_output=True, text=True, timeout=20)
         except Exception:
             # gh timed out / not found / unlaunchable -> unknown, NOT N/A. Fail
             # closed: a merge we cannot confirm CI-green is not allowed.
             print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-                  " (gh pr checks errored/timed out); cannot confirm CI green. "
+                  " (gh pr view errored/timed out); cannot confirm CI green. "
                   "Use /kbg:ship-merge to merge -- it scores CI.", file=sys.stderr)
             sys.exit(2)
-        ci_checks = None
-        if ci_r.stdout.strip():
+        rollup = None
+        if cr_r.returncode == 0 and cr_r.stdout.strip():
             try:
-                ci_checks = json.loads(ci_r.stdout)
+                parsed = json.loads(cr_r.stdout)
+                if isinstance(parsed, dict):
+                    rollup = parsed.get("statusCheckRollup")
             except Exception:
-                ci_checks = None
-        if ci_checks is None:
-            # Unparseable or empty stdout. Distinguish no-CI from a gh error:
-            # empty + returncode 0 => repo has no CI configured => N/A => pass.
-            # empty/unparseable + returncode != 0 => gh errored (auth, no PR,
-            # rate limit) => unknown, NOT N/A => fail closed. (A real check
-            # failure still outputs JSON with --json and exits 0; a nonzero exit
-            # here means gh itself failed, not that a check failed.)
-            if ci_r.returncode == 0:
-                return True
+                rollup = None
+        if not isinstance(rollup, list):
+            # Non-zero exit, unparseable/empty stdout, non-dict JSON, or a
+            # missing/wrong-type statusCheckRollup key -- none of these is
+            # the "zero CI configured" signal (that is an exit-0 empty
+            # list, caught below), so all of them fail closed rather than being read as
+            # N/A. Mirrors the dict-with-rc!=0 bypass this file already
+            # closed once for the old `gh pr checks` path (compliance-audit
+            # adversarial verifier, OPEN #1) -- same shape, new subcommand.
             print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-                  " (gh pr checks exit={}); cannot confirm CI green. "
-                  "Use /kbg:ship-merge to merge -- it scores CI.".format(
-                      ci_r.returncode), file=sys.stderr)
+                  " (gh pr view exit={}, no usable statusCheckRollup);"
+                  " cannot confirm CI green. Use /kbg:ship-merge to merge --"
+                  " it scores CI.".format(cr_r.returncode), file=sys.stderr)
             sys.exit(2)
-        if not isinstance(ci_checks, list):
-            # Parseable but NOT a list (e.g. a gh error object {"message": ...}
-            # some gh error/GraphQL paths emit, or any future non-array shape).
-            # Fail closed: a non-list stdout is not a check result we can score,
-            # and its returncode was not consulted in the is-None branch above.
-            # Closes the dict-with-rc!=0 bypass (a parseable non-list used to fall
-            # through to the allow). Found by the compliance-audit
-            # adversarial verifier (OPEN #1); a security perimeter must not rely
-            # on a subprocess stdout shape staying list-only across versions.
-            print("[kbg:gate] BLOCKED: clean review but CI status unreadable"
-                  " (gh pr checks returned a non-list response); cannot confirm"
-                  " CI green. Use /kbg:ship-merge to merge -- it scores CI.",
-                  file=sys.stderr)
-            sys.exit(2)
-        # ponytail: treat ALL checks (cannot filter on required: true -- gh pr
-        # checks --json has no required field). SUCCESS/NEUTRAL/SKIPPED = green;
-        # anything else (FAILURE, TIMED_OUT, CANCELLED, ACTION_REQUIRED, or
-        # null=pending) = not green -> deny. Pending -> deny is correct: do not
-        # merge while CI is running; ship-merge scores pending CI low too.
-        # Ceiling: filter on required: true once gh exposes it reliably, so a
-        # failing non-required check does not block. Stricter-now is the safe
-        # direction (deny -> redirect to the ship-merge required-check gate).
-        if ci_checks:
+        # ponytail: treat ALL checks (statusCheckRollup has no `required`
+        # field either). Two GraphQL node shapes appear in this array,
+        # distinguished by __typename: CheckRun (Actions/most third-party
+        # checks -- green iff status=="COMPLETED" and conclusion in
+        # SUCCESS/NEUTRAL/SKIPPED) and StatusContext (legacy commit statuses
+        # -- green iff state=="SUCCESS"). Anything else (FAILURE, TIMED_OUT,
+        # CANCELLED, ACTION_REQUIRED, an in-progress/pending CheckRun, an
+        # unrecognized __typename, or a non-dict entry) is not green -> deny.
+        # Pending -> deny is correct: do not merge while CI is running;
+        # ship-merge scores pending CI low too.
+        def _is_green(c):
+            if not isinstance(c, dict):
+                return False
+            tn = c.get("__typename")
+            if tn == "CheckRun":
+                return c.get("status") == "COMPLETED" and c.get("conclusion") in (
+                    "SUCCESS", "NEUTRAL", "SKIPPED")
+            if tn == "StatusContext":
+                return c.get("state") == "SUCCESS"
+            return False
+
+        if rollup:
             bad = [(c.get("name", "?") if isinstance(c, dict) else "<non-dict>")
-                   for c in ci_checks
-                   if not isinstance(c, dict)
-                   or c.get("conclusion") not in ("SUCCESS", "NEUTRAL", "SKIPPED")]
+                   for c in rollup if not _is_green(c)]
             if bad:
                 print("[kbg:gate] BLOCKED: clean review but CI not green"
-                      " -- {} not SUCCESS. Use /kbg:ship-merge to merge"
+                      " -- {} not passing. Use /kbg:ship-merge to merge"
                       " (it scores CI at weight 25).".format(", ".join(bad[:5])),
                       file=sys.stderr)
                 sys.exit(2)
@@ -510,6 +560,8 @@ if clean is True:
     pv_args = ["gh", "pr", "view"]
     if pr_num:
         pv_args.append(str(pr_num))
+    if repo_arg:
+        pv_args += ["--repo", repo_arg]
     pv_args += ["--json", "headRefOid,files,reviews"]
     try:
         pv_r = subprocess.run(pv_args, capture_output=True, text=True, timeout=10)
@@ -551,6 +603,19 @@ if clean is True:
         reviews = []
 
     try:
+        # discover_live -> _real_run_gh shells out to `gh api
+        # repos/{owner}/{repo}/contents/...`, and gh expands that
+        # placeholder from the current process git remote context, same
+        # as the CI check above -- same missing-context failure (verified
+        # live: unable to expand placeholder in path, no git remotes
+        # found, when this hook subprocess cwd has no remote). Setting
+        # GH_REPO here (subprocess.run in _real_run_gh inherits os.environ
+        # by default -- no explicit env= passed) closes it the same way
+        # repo_arg already closes it for the CI check, without needing to
+        # thread a new parameter through the codeowners-match module
+        # public surface. github.com/wasikarn/kbg-harness/issues/55
+        if repo_arg:
+            os.environ["GH_REPO"] = repo_arg
         content, found, disc_error = discover_live(head_sha)
     except Exception:
         print("[kbg:gate] BLOCKED: clean review but CODEOWNERS fetch"
