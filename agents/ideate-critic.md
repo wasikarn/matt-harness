@@ -68,7 +68,8 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
   "clusters": [
     {
       "label": "stateless-counter plays",
-      "ideaIds": ["uuid-1", "uuid-3"]
+      "ideaIds": ["uuid-1", "uuid-3"],
+      "frameCount": 2  // distinct frameId values among ideaIds — see Clustering rules
     },
     ...
   ],
@@ -112,6 +113,7 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
 **Clustering rules:**
 - 3-6 clusters by underlying angle, not surface keywords
 - Labels should name the angle: "remove-the-server plays", "cache-shaped plays", "batched-window plays", "race-multiple-backends plays"
+- Set `frameCount` to the number of distinct `frameId` values among a cluster's `ideaIds`. A cluster drawn from 3 or more distinct frames is independent convergence — report it in `frameCount`, never fold it into the label or omit it because the cluster reads as one idea.
 
 **Shortlist rules:**
 - Exclude trapped ideas

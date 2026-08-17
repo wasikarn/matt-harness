@@ -367,7 +367,11 @@ wall of prose. The structure is the point.
    operator that ideate is intentionally expensive.
 2. **Wide set.** Full pool grouped by cluster. Each cluster
    labeled by underlying angle. Each idea is one short phrase.
-   Show score chips like `[N7 V8 F9]` next to each.
+   Show score chips like `[N7 V8 F9]` next to each. When the
+   critic pass ran, render its `frameCount` next to any cluster
+   where it's 3 or more ("3 frames converged here") — the same
+   convergence note the host-inline path already gives; don't drop
+   it just because the critic computed it instead.
 3. **Converge.** A 2 to 4 idea shortlist. State why each is on
    the list — when the critic pass ran, use its `shortlistReasons`
    verbatim rather than inventing a new justification; when

@@ -61,7 +61,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 **Actions**:
 1. Launch `code-reviewer` agent (simplicity + correctness focus).
 2. If fix touches auth/secrets/external input → also launch `security-reviewer` agent in parallel.
-3. Wait for both. Consolidate into two buckets only:
+3. Wait for both. Consolidate into two buckets only — if both reviewers flag the same file:line, note it once rather than picking one silently:
    - **Block** — must fix before merge (security, data loss, breaks prod)
    - **Ship** — everything else is a follow-up
 4. Fix Block items inline. Do NOT block on Minor/Important.

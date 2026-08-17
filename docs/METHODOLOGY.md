@@ -79,6 +79,7 @@ A subagent's own "nothing found" or "shipped clean" report is not verification �
 
 Decompose → route → verify → combine.
 
+- **Combine ≠ blend.** When N sub-agent outputs feed one synthesis call, surface agreement and conflict explicitly and drop malformed entries by a stated rule — never by the synthesizing model's own unaided judgment (prose-only — see CLAUDE.md §Architecture, "Same crux, N-worker fan-in," for the enforcing detail and the code-vs-instruction distinction).
 - Orchestrators delegate; they never implement (prose-only — no gate stops an orchestrator from self-implementing; the phase-gates bullet below covers the one piece of this that IS enforced).
 - A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 45 (`45-agent-tool-grant-must-not-include-agent.sh`).
 - Phase gates: a sub-agent can never self-mark a task complete (enforced by `gate:task:complete-separation.sh`); Quality never ships without passing Orchestration's review (prose-only — no check blocks a skipped review).
@@ -95,6 +96,7 @@ window doesn't help — it just lets unused material pile higher before anyone n
 - **Delegate by what a task needs to understand, not by how many tasks there are.** Work sharing a subsystem, a file set, or a convention belongs to one agent — splitting it just makes each one rebuild the same picture of the code. Fewer, better-grouped agents beats more agents; there is no minimum.
 - **Big output goes to a file; return the path.** Content relayed through the orchestrator is copied twice and then carried forever.
 - **Never pull a raw agent transcript back into the main thread.** Answer status from what you already know; `Read` the artifact when you need the result.
+- **Before N fanned-out outputs feed one downstream synthesis/verifier call, reduce first — in code.** Drop malformed entries and exact-normalize-dedupe before that call ever reads them. Distinct from "big output to file" above (protects the orchestrator's own context) and from "combine ≠ blend" above (protects correctness) — this one protects the downstream call's own billed/compute input, the specific gap a 2026-08-17 audit found unnamed in this rule despite existing in the fleet once, unpropagated (`review-pr/reference.md`'s per-agent token budget). Fuzzy/semantic dedup risks false-merges (a claim silently dropped from verification) — exact-normalize only, unless a real run shows literal near-dupes slipping through unmerged.
 
 This is the point of subagents — not that they run in parallel, but that they keep
 disposable reasoning disposable. Parallelism is a side effect, not the objective.

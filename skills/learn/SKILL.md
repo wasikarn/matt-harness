@@ -55,14 +55,23 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
 ## Procedure
 
 1. **Locate the transcript.** Run `bash "${CLAUDE_SKILL_DIR}/scripts/find-transcript.sh"` for the
-   current project's latest `.jsonl`. If it fails, ask the operator for the transcript path directly
-   — no hook injects one into session context (a prior design assumed one would; none is wired).
+   current project's latest `.jsonl` — prints `<path> <bytes>`. If it fails, ask the operator for
+   the transcript path directly — no hook injects one into session context (a prior design assumed
+   one would; none is wired).
 
-2. **Mine candidates — bias toward what a single-turn trigger can't see.** Read the whole
-   transcript and extract things that are **durable + non-obvious + reusable next session**,
-   weighting repetition and cross-turn arcs over one-shot moments (native ambient capture already
-   catches the obvious in-the-moment correction — this pass's marginal value is what only shows up
-   across the full session):
+2. **Mine candidates — bias toward what a single-turn trigger can't see.** If the reported size is
+   under ~2MB, read the whole transcript. Above that, don't — this repo's own transcripts range up
+   to 83MB, and reading that whole into one mining pass is the same "cut what your model has to
+   read" problem a 2026-08-17 audit found in this fleet's fan-out/synthesis steps. Instead, bound
+   the read with a deterministic pre-filter: `grep -n -iE '"(no,|instead|don.t|actually,|wait,|revert|undo)' <path>`
+   for correction-shaped turns, plus `tail -c 500000 <path>` for the most recent stretch (native
+   ambient capture already thins the middle of a long session; the tail and the corrections are
+   where cross-turn value concentrates). Read only the matched line ranges plus their surrounding
+   context, not the full file. (ponytail: a hard byte cap + grep pre-filter, not smarter chunking —
+   upgrade only if a real run shows this misses too much.) Either way, extract things that are
+   **durable + non-obvious + reusable next session**, weighting repetition and cross-turn arcs over
+   one-shot moments (native ambient capture already catches the obvious in-the-moment correction —
+   this pass's marginal value is what only shows up across the full session):
    - **Repeated workflows** — a multi-step sequence the operator ran more than once this session.
    - **Decisions re-litigated or reversed** — a choice revisited later in the same session, and why.
    - **Corrections whose rule only generalizes in hindsight** — "no, do X instead" where the

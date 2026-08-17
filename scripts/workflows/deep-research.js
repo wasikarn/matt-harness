@@ -286,16 +286,55 @@ const allClaims = allSources.flatMap(s => s.claims)
 const impRank = { central: 0, supporting: 1, tangential: 2 }
 const qualRank = { primary: 0, secondary: 1, blog: 2, forum: 3, unreliable: 4 }
 
-const rankedClaims = [...allClaims]
+// ─── Claim-level reduce (code, not the synthesis model) ───
+// Mirrors the URL-level dedup above (normURL/seen/dupes) one level down: that
+// pass stops duplicate URLs from reaching Fetch, this stops duplicate CLAIMS
+// (same fact, different wording, different source) from reaching Verify/
+// Synthesize. The 5 search angles are built to be complementary on one
+// question (see Scope prompt) — claim overlap across angles is the expected
+// case, not an edge case, and every duplicate that reaches Verify burns
+// VOTES_PER_CLAIM agent calls re-litigating a fact a different worker already
+// checked, occupying a MAX_VERIFY_CLAIMS slot a genuinely distinct claim
+// could have used instead (2026-08-17 reducer-engineering audit, 3-agent
+// independent convergence on this gap).
+// Schema `required` only guarantees claim/quote are PRESENT, not non-empty —
+// drop the blanks before they cost a verification slot.
+const wellFormedClaims = allClaims.filter(c => c.claim?.trim() && c.quote?.trim())
+const malformedClaims = allClaims.length - wellFormedClaims.length
+
+// ponytail: exact-normalized-match only, not fuzzy/embedding similarity — a
+// false merge here silently drops a claim from verification entirely, the
+// worst place for the false-merge risk the source article itself flags (§7)
+// to land. Upgrade only if a real run shows literal near-dupes slipping
+// through unmerged.
+const normClaim = c => c.claim.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+const claimGroups = new Map()
+for (const c of wellFormedClaims) {
+  const key = normClaim(c)
+  if (!claimGroups.has(key)) claimGroups.set(key, [])
+  claimGroups.get(key).push(c)
+}
+const dedupedClaims = [...claimGroups.values()].map(group => {
+  const best = [...group].sort((a, b) => qualRank[a.sourceQuality] - qualRank[b.sourceQuality])[0]
+  return group.length > 1
+    ? { ...best, corroboratedBy: group.length, otherSources: group.filter(c => c !== best).map(c => c.sourceUrl) }
+    : best
+})
+const claimDupesCollapsed = wellFormedClaims.length - dedupedClaims.length
+
+const rankedClaims = [...dedupedClaims]
   .sort((a, b) => (impRank[a.importance] - impRank[b.importance]) || (qualRank[a.sourceQuality] - qualRank[b.sourceQuality]))
   .slice(0, MAX_VERIFY_CLAIMS)
-// Not a silent cap: allClaims.length can exceed MAX_VERIFY_CLAIMS on a broad question with many
+// Not a silent cap: dedupedClaims.length can exceed MAX_VERIFY_CLAIMS on a broad question with many
 // sources. The dropped tail is lower-ranked (by importance, then source quality) but still real
 // claims nobody checked — log the count and carry it into every stats object below, the same
 // transparency MAX_FETCH's budgetDropped already gets.
-const claimsDroppedByCap = allClaims.length - rankedClaims.length
+const claimsDroppedByCap = dedupedClaims.length - rankedClaims.length
 
-log("Fetched " + allSources.length + " sources → " + allClaims.length + " claims → verifying top " + rankedClaims.length +
+log("Fetched " + allSources.length + " sources → " + allClaims.length + " claims" +
+  (malformedClaims > 0 ? " (" + malformedClaims + " malformed, dropped)" : "") +
+  (claimDupesCollapsed > 0 ? " → " + dedupedClaims.length + " after dedup (" + claimDupesCollapsed + " collapsed)" : "") +
+  " → verifying top " + rankedClaims.length +
   (claimsDroppedByCap > 0 ? " (" + claimsDroppedByCap + " lower-ranked claims dropped by MAX_VERIFY_CLAIMS cap, unverified)" : ""))
 
 if (rankedClaims.length === 0) {
@@ -378,7 +417,7 @@ if (confirmed.length === 0) {
     refuted: killed.map(toRefuted),
     unverified: unverified.map(toUnverified),
     sources: allSources.map(s => ({ url: s.url, quality: s.sourceQuality, claimCount: s.claims.length })),
-    stats: { angles: scope.angles.length, sources: allSources.length, claims: allClaims.length, verified: voted.length, confirmed: 0, killed: killed.length, unverified: unverified.length, claimsDroppedByCap },
+    stats: { angles: scope.angles.length, sources: allSources.length, claims: allClaims.length, malformedClaims, claimDupesCollapsed, verified: voted.length, confirmed: 0, killed: killed.length, unverified: unverified.length, claimsDroppedByCap },
   }
 }
 
@@ -388,8 +427,9 @@ phase("Synthesize")
 const confRank = { high: 0, medium: 1, low: 2 }
 const block = confirmed.map((c, i) => {
   const best = c.verdicts.filter(v => !v.refuted).sort((a, b) => confRank[a.confidence] - confRank[b.confidence])[0]
+  const corrob = c.corroboratedBy > 1 ? " · Corroborated by " + c.corroboratedBy + " independent sources" : ""
   return "### [" + i + "] " + c.claim + "\n" +
-    "Vote: " + (c.verdicts.length - c.refutedVotes) + "-" + c.refutedVotes + " · Source: " + c.sourceUrl + " (" + c.sourceQuality + ")\n" +
+    "Vote: " + (c.verdicts.length - c.refutedVotes) + "-" + c.refutedVotes + " · Source: " + c.sourceUrl + " (" + c.sourceQuality + ")" + corrob + "\n" +
     "Quote: \"" + c.quote + "\"\nVerifier evidence (" + best.confidence + "): " + best.evidence + "\n"
 }).join("\n")
 
@@ -410,7 +450,7 @@ const report = await agent(
   confirmed.length + " claims survived " + VOTES_PER_CLAIM + "-vote adversarial verification. Merge semantic duplicates and synthesize.\n\n" +
   "## Confirmed claims\n" + block + "\n" + killedBlock + unverifiedBlock + "\n\n" +
   "## Instructions\n" +
-  "1. Identify claims that say the same thing — merge them, combine their sources. If you merge two claims, name both in the merged bullet (e.g. \"Claims [3] and [7]: ...\") — never let a merge disappear silently, the same transparency claimsDroppedByCap already gives the ranking step above.\n" +
+  "1. Exact-text duplicate claims are already collapsed above (see \"Corroborated by N independent sources\" where present) — you don't need to re-merge those. Still watch for near-duplicates in different phrasing that the exact-match pass wouldn't catch; if you merge any, name both in the merged bullet (e.g. \"Claims [3] and [7]: ...\") — never let a merge disappear silently.\n" +
   "2. Group related claims into coherent findings. Each finding should directly address the research question.\n" +
   "3. Assign confidence per finding: high (multiple primary sources, unanimous votes), medium (secondary sources or split votes), low (single source or blog-quality).\n" +
   "4. Write a 3-5 sentence executive summary answering the research question.\n" +
@@ -430,7 +470,7 @@ if (!report) {
     refuted: killed.map(toRefuted),
     unverified: unverified.map(toUnverified),
     sources: allSources.map(s => ({ url: s.url, quality: s.sourceQuality, claimCount: s.claims.length })),
-    stats: { angles: scope.angles.length, sources: allSources.length, claims: allClaims.length, verified: voted.length, confirmed: confirmed.length, killed: killed.length, unverified: unverified.length, claimsDroppedByCap, afterSynthesis: 0 },
+    stats: { angles: scope.angles.length, sources: allSources.length, claims: allClaims.length, malformedClaims, claimDupesCollapsed, verified: voted.length, confirmed: confirmed.length, killed: killed.length, unverified: unverified.length, claimsDroppedByCap, afterSynthesis: 0 },
   }
 }
 
@@ -444,6 +484,8 @@ return {
     angles: scope.angles.length,
     sourcesFetched: allSources.length,
     claimsExtracted: allClaims.length,
+    malformedClaims,
+    claimDupesCollapsed,
     claimsVerified: voted.length,
     confirmed: confirmed.length,
     killed: killed.length,
