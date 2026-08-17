@@ -76,15 +76,8 @@ Initial input: $ARGUMENTS
 
 ## Phase 3: Plan
 
-**Goal**: Cluster + order the actionable threads. Identify which ones route to `/fix-bug`.
-
-**Actions**:
-1. Cluster related comments — same file, same concern, same fix. One cluster → one commit (where possible).
-2. Order clusters: critical (security / data correctness) → high → low. Wontfix / clarify / out-of-scope clusters skip implementation; queued for Phase 5.
-3. Mark bug-shaped clusters for `/fix-bug` delegation:
-   - Reviewer described observable wrong behavior + can be reproduced
-   - Reviewer's concern is a missing edge case in a code path
-4. Present plan to user. Confirm before Phase 4 — a plain-text acknowledgment is enough here (unlike Phase 2/5's `AskUserQuestion` gates): the plan is a re-ordering of choices the user already approved in Phase 2, not a new classification decision.
+See `references/phase3-plan.md` for the full clustering, ordering, and `/fix-bug`
+delegation criteria, plus the plain-text-confirm rationale.
 
 ---
 
@@ -105,13 +98,10 @@ Initial input: $ARGUMENTS
    - **Don't assert an unverified cause.** If the note attributes the residual failure to something ("unrelated flake," "pre-existing issue") without having actually checked, say so as an open question in the reply, not as fact — a reviewer-facing claim about why something broke needs the same evidence bar as any other claim in this command.
    - **A stalled cluster isn't always "nothing fixed."** If a commit landed before the cluster stalled — this Phase 4 pass, or `/fix-bug` per the branch above — the `clarify`/`wontfix` reclassification doesn't erase it: cite the sha and summarize what it changed (per Core Principles' "cite the sha," which isn't scoped to `actionable + fixed` only) *alongside* the clarify question or wontfix rationale in Phase 5 — see `review-pr/reference.md` §"Blending a sha into Wontfix / Clarify" for the shape.
 4. Maintain a running mapping: `{sha: [thread-id, ...]}`. This is the input to Phase 5.
-5. Conditional agent routing **launched in parallel** for inline-edit clusters only (bug-shaped clusters get this routing from `/fix-bug`'s own Phase 7 — don't double-route):
-   - Reviewer flagged error handling → `silent-failure-hunter` agent on the fix
-   - Reviewer flagged auth/secrets/external input → `security-reviewer` agent on the fix
-   - Reviewer flagged performance/algorithm (a complexity suggestion, not observable wrong
-     behavior — that shape stays `bug-shaped` and routes via `/fix-bug` instead) →
-     `performance-optimizer` agent on the fix
-   - Reviewer flagged general correctness → `code-reviewer` agent on the fix
+5. Conditional agent routing, launched in parallel, for inline-edit clusters only
+   (bug-shaped clusters get this from `/fix-bug`'s own Phase 7 — don't double-route)
+   — see `references/phase4-agent-routing.md` for the full flagged-concern → agent
+   mapping.
 
 ---
 
@@ -147,42 +137,17 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 
 ## Phase 6: Re-Request Review + Verify
 
-**Goal**: Move the PR back to reviewer's queue + confirm CI is happy.
-
-**Actions**:
-1. Push all Phase 4 commits if not already pushed: `git push`.
-2. If the PR was draft (state changed during work) → `gh pr ready <n>`.
-3. Re-request review — `gh pr edit <n> --add-reviewer <user>` (comma-separate multiple logins in one call, e.g. `--add-reviewer <user1>,<user2>`, when more than one reviewer needs it; or `gh api ... requested_reviewers`) — in either of two cases: the previous review was dismissed-on-push (re-request whichever reviewer(s) got dismissed), or zero commits were pushed this session but every thread got a substantive reply (wontfix/clarify rationale) and at least one **required** reviewer's review state is still `CHANGES_REQUESTED` (re-request every required reviewer still in that state, not just one, if more than one qualifies). Posting inline replies doesn't change a reviewer's review state on GitHub — only a re-request or a new review submission does — so a pushback-heavy, zero-commit session still needs this step to put the PR back on every stale required reviewer's radar. (A non-required reviewer's stale `CHANGES_REQUESTED` doesn't block merge, so re-requesting isn't the actionable lever there — a reply is enough. "Required" tracks GitHub's actual merge-blocking mechanic: a reviewer with write/admin/owner access whose Request Changes review stands, regardless of formal branch-protection listing — the two usually coincide, but if a stale `CHANGES_REQUESTED` comes from someone outside the required-reviewers list, verify their permission level before treating it as non-blocking, e.g. `gh api repos/<owner>/<repo>/collaborators/<user>/permission`.)
-4. Check CI: `gh pr checks <n>`. If failures, surface to user before declaring done.
-5. **Read the review-state file** (`$HOME/.claude/state/review-pr-<n>.json` for a PR-by-number review, or `review-last.json` for an own-branch one) — **read-only**: this command does NOT write it and must not invoke `write-review-state.sh` (maker/verifier holds — the fixer doesn't compute convergence; `review-pr` Phase 7 is the verifier that writes the contract, `ship-merge` is the one-way-door reader, this command is a third reader surfacing round memory the human-reviewer path otherwise lacked). Extract `force_human`, `convergence_state`, and `round` if present (a file written before the convergence-gate fields shipped will be missing them — treat missing as no signal, not as force_human). Carry these into Phase 7's summary.
-6. Output:
-   - PR number + URL
-   - Commits pushed in this session (sha + 1-line)
-   - Thread-to-sha mapping for the user's records
-   - CI state
+See `references/phase6-verify.md` for the full procedure (push, draft-ready toggle,
+re-request-review criteria including the required-vs-non-required-reviewer
+distinction, CI check, and the review-state file read for Phase 7).
 
 ---
 
 ## Phase 7: Summary
 
-**Goal**: Document the response cycle.
-
-**Actions**:
-1. Mark all todos complete.
-2. Summarize:
-   - PR # and URL
-   - Threads handled — breakdown by category (fixed / wontfix / clarify / out-of-scope)
-   - Review-body items acknowledged (separate count, from Phase 5 step 4 — not folded into the thread breakdown above, since it was never a thread)
-   - Commits added with sha → thread mapping
-   - CI state from Phase 6
-   - **Convergence state** (from Phase 6 step 5): if `force_human == true`, surface *"Prior `review-pr` flagged this PR stalled at round {N} ({convergence_state}: round ceiling reached, a new finding in a file not flagged last round, or the same file flagged 3+ rounds running) — consider a human decision (accept-as-is / wontfix-remainder / escalate) before another fix round, rather than re-running `review-pr`→fix automatically."* where `{convergence_state}` is `regressed`, `churning`, or `progressing`/`stalled`, and `{N}` is the `round` field — for `churning`, name the file(s) from the state file's `churn_files` array in place of the generic phrase. This is advisory — `address-review` can't computationally stop another round (only `ship-merge`'s scored gate does, at the one-way door) — but it hands the human the same round memory `review-pr`'s footer already shows, so the reviewer-aware path doesn't silently restart an unconverged loop. If `force_human` is absent or `false`, state *"review-state: round {N}, not stalled"* (or omit if no state file exists).
-   - **Suggested next step:**
-     - Fixes pushed, awaiting re-review → await reviewer; ping if urgent
-     - Reviewer approves on push        → /ship-merge
-     - Another pass wanted before merge → kbg:review-pr
-     - wontfix-heavy and abandoned      → `gh pr close <n>` — "abandoned" means the user has explicitly said they're not pursuing this PR further (dropped the effort, superseded by other work, priorities changed). It is never inferable from wontfix density alone — a session where every thread got a substantive wontfix reply is NOT "abandoned" by that fact; see the two bullets below for that exact shape, both of which route to waiting or to nothing further needed, not to closing.
-     - Pushback posted, nothing to push, at least one required reviewer's block still stands → Phase 6 step 3 already re-requested review from every stale required reviewer — now await their responses to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
-     - Pushback posted, nothing to push, no required reviewer's block stands (either no reviewer's `CHANGES_REQUESTED` is outstanding at all, or only a non-required reviewer's is) → nothing further to do on the review-state axis; only a required reviewer's `CHANGES_REQUESTED` blocks merge on that axis (CI and merge-conflict state were already checked separately in Phase 6 step 4), and the reply already posted is sufficient. Don't reach for `gh pr close` here either — the same "no code changed doesn't mean abandoned" reasoning applies regardless of whether any reviewer happens to be mid-review.
+See `references/phase7-summary.md` for the full report shape (thread/review-body
+breakdown, convergence-state surfacing from Phase 6, and the suggested-next-step
+branch table including the "abandoned" definition and its false-trigger guard).
 
 ---
 

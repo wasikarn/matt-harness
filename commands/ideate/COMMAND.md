@@ -412,52 +412,15 @@ fan-out.
 
 ## Anti-patterns
 
-These are how this skill goes wrong. Watch for them.
-
-- **Convergence disguised as divergence.** Ten minor variations
-  of one idea is not breadth. If every candidate shares the same
-  underlying assumption, you have not diverged. You have
-  decorated. Spread the frame picks.
-- **Weird-for-weird's-sake with no convergence.** A pile of 30
-  unsorted absurdities is as useless as one safe answer. Always
-  converge with a real opinion.
-- **Walls of equally-weighted prose.** Cluster, label, pull out
-  the best. The output structure is half the value.
-- **Refusing to commit.** After diverging, take a position on
-  what is actually promising. "Here are 30 ideas, you decide" is
-  a cop-out. Generate wide, but converge with a real opinion.
-- **Skipping the isolation invariant.** If you simulate parallel
-  branches by writing them sequentially in one context, you have
-  not done ideate. You have done a wider single thought. The
-  Agent/Task tool gives each branch a fresh context. Use it.
-- **Collapsing Phase 1 + Phase 3 into one wave.** The 2-wave
-  structure is a code contract, not a vibe — a single-wave variant
-  of 8 agents would exceed the F8.5 hard cap (5 per wave). See
-  [2-wave fan-out (load-bearing)](#2-wave-fan-out-load-bearing)
-  for the full rationale and enforcement caveat.
-- **Silent parse failures.** If a Diverge branch returns empty
-  or unparseable, surface the failure to the user — do not
-  pretend the run succeeded. The upstream `engine.ts:88-91`
-  silent-empty return is *not* the kbg posture; see
-  `kbg:silent-failure-hunter` and the
-  [3-axis scoring rubric](#3-axis-scoring-rubric) note on
-  `trap` being a free-text reason field rather than a silent
-  drop.
-- **Same-model judge treated as ground truth.** Phase 2 + 3 scoring runs on
-  the same model class as the generators — advisory evidence, not ground
-  truth. Full reasoning: [Phase 2 — Focus](#phase-2--focus).
+See `references/anti-patterns.md` for the full list (convergence disguised as
+divergence, walls of equally-weighted prose, skipping the isolation invariant,
+collapsing the 2-wave structure, silent parse failures, and same-model-judge
+ground-truth conflation) — how this skill goes wrong, watch for them.
 
 ## Cost
 
-≈ 8 to 10 Agent calls per run (5 diverge + 1 score + 1 cluster +
-3 deepen, with score + cluster on the host) — or ≈ 9 to 11 on an
-auto-fired run, which adds 1 call for the `ideate-critic` pass (see
-[Phase 2 — Focus](#phase-2--focus)). Same multiplier as the Pre-flight
-gate above. The brief includes an advisory cost-estimate line so the
-operator sees the token envelope up front. Not for every keystroke —
-for decision points where the cost of the obvious answer is high.
-
-Source: `references/provenance.md` §"Cost source".
+See `references/cost.md` for the per-run Agent-call estimate (≈8-10, or ≈9-11
+on an auto-fired run) and its provenance source.
 
 ## Cross-references
 
