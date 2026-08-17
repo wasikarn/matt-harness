@@ -59,27 +59,42 @@ fi
 # a non-zero exit is the NORMAL path whenever findings exist, so exit code
 # alone can't tell "1 real finding" (exit 1) apart from a genuine crash
 # (also typically exit 1). Only an actual traceback on stderr means it
-# crashed; that's the one case where OUT can't be trusted and the cache must
-# not be touched, since a stale touch here would suppress every subsequent
-# run's rescan (and any real findings) until $MEMDIR's mtime changes again.
+# crashed; that's the one case where OUT can't be trusted.
 ERRLOG=$(mktemp "${TMPDIR:-/tmp}/kbg-memlint-err.XXXXXX" 2>/dev/null) || ERRLOG=""
+CRASHED=0
 if [ -n "$ERRLOG" ]; then
   OUT=$(python3 "$LINT" 2>"$ERRLOG")
   if command grep -q '^Traceback' "$ERRLOG" 2>/dev/null; then
     OUT=""
-  else
-    touch "$CACHE" 2>/dev/null
+    CRASHED=1
   fi
   rm -f "$ERRLOG" 2>/dev/null
 else
   OUT=$(python3 "$LINT" 2>/dev/null) || true
+fi
+
+# Only cache a CLEAN, successful result — never a crash, and never a run
+# that found real findings. Touching the cache unconditionally (the
+# pre-2026-08-17 behavior) meant a dirty store fired the nudge exactly once
+# and then went silent on every later session until some unrelated file in
+# $MEMDIR happened to get a newer mtime — the still-unresolved finding never
+# resurfaced. Confirmed live: a fixture with one unresolved dangling link
+# fired on run 1, then stayed silent on runs 2 and 3 with nothing about the
+# finding changed. That's the exact silent-forever failure this hook exists
+# to prevent (see the header comment above), just reintroduced one layer
+# down, in the cache instead of the missing loop. A dirty store now keeps
+# rescanning every session until it's actually fixed; a clean store gets the
+# fast skip-rescan path back once it earns it.
+if [ "$CRASHED" -eq 0 ] && ! printf '%s' "$OUT" | command grep -qE 'findings: [1-9]'; then
   touch "$CACHE" 2>/dev/null
 fi
 
 # memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when
 # clean). Deliberately NOT gating on the 2026-08-17 "advisory: N stale, M
-# template-gap" line either signal: template compliance sits at 71/149 on the
-# live store and won't reach 0 soon, and staleness has the identical
+# template-gap" line either signal: template compliance sits well under 100%
+# on the live store (a snapshot ratio, not worth hardcoding here — it only
+# ever drifts as the store grows) and won't reach 0 soon, and staleness has
+# the identical
 # permanence problem — MEMORY.md's own "Settled audits — don't redo without
 # new evidence" entries are dormant *by design* and will cross the 90d
 # threshold with nobody editing them (the earliest, refactor-survey-2026-06-18,
@@ -108,10 +123,13 @@ printf '%s\n' \
 # UNINDEXED findings conflate two states: an authoring oversight vs. the fold
 # rule's own correct end-state (pointer removed, file kept — see
 # skills/memory-lint/SKILL.md "UNINDEXED fold-vs-forgotten triage"). Only pay
-# for the extra git-history scan (one `git log -S` per UNINDEXED file) when
-# the findings above actually include one, and only speak up when there's a
-# genuinely new candidate — folded-confirmed / ambiguous-pre-baseline files
-# need no action and would just be noise every time the store changes.
+# for the extra git-history scan (3 total git subprocess calls per
+# --classify-unindexed run, fixed regardless of UNINDEXED count — see
+# memory-lint.py's classify_unindexed() docstring; the older per-file
+# `git log -S` approach was replaced v0.68.229) when the findings above
+# actually include one, and only speak up when there's a genuinely new
+# candidate — folded-confirmed / ambiguous-pre-baseline files need no action
+# and would just be noise every time the store changes.
 if printf '%s' "$OUT" | command grep -q 'UNINDEXED:'; then
   CLASSIFY=$(python3 "$LINT" --classify-unindexed 2>/dev/null) || true
   NEVER_COUNT=$(printf '%s' "$CLASSIFY" | command grep -oE '^never-indexed \([0-9]+\)' | command grep -oE '[0-9]+')

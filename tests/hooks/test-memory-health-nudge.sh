@@ -60,6 +60,13 @@ run_hook() {
   ( cd "$PROJECT_DIR" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$FAKE_HOME" bash "$HOOK" )
 }
 
+run_hook_no_cache_clear() {
+  # Deliberately does NOT clear the cache first — for testing what happens
+  # across consecutive "sessions" against the same unmodified store, which
+  # is the exact scenario the cache-persistence regression test below needs.
+  ( cd "$PROJECT_DIR" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$FAKE_HOME" bash "$HOOK" )
+}
+
 assert_contains() {
   local desc="$1" needle="$2" haystack="$3"
   if printf '%s' "$haystack" | command grep -qF "$needle"; then
@@ -246,6 +253,73 @@ assert_contains "no-git-history: raw UNINDEXED finding still surfaces" \
   "UNINDEXED: plain-target.md" "$OUT"
 assert_not_contains "no-git-history has no never-indexed bucket -> no triage line" \
   "UNINDEXED triage" "$OUT"
+
+echo ""
+echo "--- cache persistence: a dirty store keeps firing across sessions, a clean one doesn't ---"
+
+init_memdir
+rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
+cat > "$MEMDIR/topic-a.md" <<'EOF'
+---
+name: topic-a
+description: "has a dangling link, unresolved across every run below"
+metadata:
+  type: project
+---
+see [[nonexistent-target-xyz]]
+EOF
+printf '%s\n' "- [topic-a](topic-a.md) — has a dangling link" > "$MEMDIR/MEMORY.md"
+OUT1=$(run_hook_no_cache_clear)
+assert_contains "run 1: unresolved finding fires the nudge" \
+  "[memory-lint] The memory store has findings" "$OUT1"
+OUT2=$(run_hook_no_cache_clear)
+# Regression test for the 2026-08-17 fix: the cache used to be touched after
+# EVERY successful run, dirty or clean — so a real, still-unresolved finding
+# fired once and then went silent on every later session until some
+# unrelated file in $MEMDIR happened to get a newer mtime. Nothing changed
+# between run 1 and run 2 here on purpose; the finding must still fire.
+assert_contains "run 2 (nothing changed, finding still unresolved): must still fire, not go silent" \
+  "[memory-lint] The memory store has findings" "$OUT2"
+OUT3=$(run_hook_no_cache_clear)
+assert_contains "run 3: still fires — confirms it's not a one-tick fluke" \
+  "[memory-lint] The memory store has findings" "$OUT3"
+
+# Once the store is genuinely clean, the cache should resume its normal job
+# (skip the python3 rescan on an unchanged store) rather than rescan forever.
+init_memdir
+rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
+write_memory "topic-a.md" "a fully indexed topic"
+write_memory "topic-b.md" "another fully indexed topic"
+cat > "$MEMDIR/topic-a.md" <<'EOF'
+---
+name: topic-a
+description: "a fully indexed topic"
+metadata:
+  type: project
+---
+see [[topic-b]]
+EOF
+cat > "$MEMDIR/topic-b.md" <<'EOF'
+---
+name: topic-b
+description: "another fully indexed topic"
+metadata:
+  type: project
+---
+see [[topic-a]]
+EOF
+printf '%s\n' \
+  "- [topic-a](topic-a.md) — a fully indexed topic" \
+  "- [topic-b](topic-b.md) — another fully indexed topic" > "$MEMDIR/MEMORY.md"
+run_hook_no_cache_clear >/dev/null
+CACHE_FILE=$(find "$FAKE_HOME/.claude/state" -name 'memory-lint-cache-*' 2>/dev/null | head -1)
+if [ -n "$CACHE_FILE" ] && [ -f "$CACHE_FILE" ]; then
+  echo "  ✅ PRESENT: a clean run still writes the cache (fast-path preserved)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ MISSING: a clean run should still write the cache" >&2
+  fail=$((fail + 1))
+fi
 
 echo ""
 total=$((pass + fail))

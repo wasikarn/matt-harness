@@ -43,8 +43,12 @@ Fold-vs-forgotten triage (--classify-unindexed, manual, read-only):
   MEMORY.md (see docs/research/claude-mem-architecture-study-2026-08-07.md, Adopt-1 — the first
   draft of this feature proposed the blind-append version and was caught by adversarial review
   before shipping):
-    folded-confirmed        — `git log -S<filename> -- MEMORY.md` finds a commit where this
-                               file's occurrence count changed. NOT a candidate to re-add.
+    folded-confirmed        — a real `](file.md)` pointer link to this file was removed by a
+                               commit to MEMORY.md (single-pass diff scan across MEMORY.md's
+                               whole history, not `git log -S<filename>` substring search —
+                               -S matches a bare filename MENTION in unrelated prose too, which
+                               would misclassify an edit to that prose as a fold; see
+                               _git_fold_commits()'s own docstring). NOT a candidate to re-add.
     never-indexed            — file is absent from the tree at the memory dir's first commit
                                (its whole life is inside tracked history) and no fold commit was
                                found — a real candidate to add. Tree membership at that commit,
@@ -57,6 +61,12 @@ Fold-vs-forgotten triage (--classify-unindexed, manual, read-only):
                                human to read the content.
     no-git-history           — the memory dir isn't a git repo (or has 0 commits) — same
                                ambiguity as ambiguous-pre-baseline, for every file, always.
+    git-query-failed         — the dir IS a git repo, but a git call failed mid-scan (lock
+                               contention, timeout, corrupted history) — can't safely tell fold
+                               vs. forgotten, needs a manual read same as the two buckets above.
+  All 3 real git calls (one log -p over MEMORY.md's history, one first-commit lookup, one
+  tree-membership check) run exactly once per --classify-unindexed invocation, fixed regardless
+  of UNINDEXED count — not once per file (measured: 744ms -> ~85ms on this store, v0.68.229).
   Never auto-appends anything to MEMORY.md — output is a classified list for a human to triage.
 
 Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memory_trim_session_2026_06_04.md):
@@ -519,19 +529,47 @@ def pattern_clusters(state, min_cluster, max_cluster=0):
     return clusters
 
 
+def _synthesis_prompt(c):
+    """One paste-ready LLM synthesis prompt for a single --find-patterns cluster.
+    Shared by both the text and JSON output paths of run_find_patterns() so
+    --prompt means the same thing in each — see run_find_patterns()'s own
+    docstring note on why that parity matters."""
+    shared = ", ".join(c["shared_links"]) or "none"
+    return (
+        f"## Cluster ({c['size']} memories, shared: {shared})\n"
+        f"Members: {', '.join(c['members'])}\n\n"
+        "Write a 2-4 sentence observation about what these memories share,\n"
+        "constrained to the evidence above (members + shared links). Write only\n"
+        "what the shared referents and member topics support — do not invent\n"
+        "claims, and do not assert causation the links alone don't show. Name\n"
+        "the recurring pattern, not each file."
+    )
+
+
 def run_find_patterns(state, as_json, min_cluster, max_cluster, prompt):
+    """--find-patterns. NOTE: --prompt must produce the same content in --json
+    mode as in text mode — run_detector() already sets this precedent (JSON
+    mirrors every text-mode field, e.g. stale/template_compliance), and a
+    caller building automation around --json has no other signal that
+    --prompt was silently a no-op there (confirmed live 2026-08-17:
+    --find-patterns --json --prompt previously returned byte-identical
+    output to --find-patterns --json alone, since the old as_json branch
+    `return`ed before the prompt block below it ever ran)."""
     all_clusters = pattern_clusters(state, min_cluster, 0)
     clusters = [c for c in all_clusters if not max_cluster or c["size"] <= max_cluster]
     hidden = len(all_clusters) - len(clusters)
     if as_json:
-        print(json.dumps({
+        result = {
             "mode": "find-patterns",
             "memory_dir": state["d"],
             "min_cluster": min_cluster,
             "max_cluster": max_cluster,
             "hidden_above_cap": hidden,
             "clusters": clusters,
-        }, indent=2))
+        }
+        if prompt:
+            result["prompts"] = [_synthesis_prompt(c) for c in clusters]
+        print(json.dumps(result, indent=2))
         return 0
 
     print(f"=== memory-lint --find-patterns: {state['d']} ===")
@@ -560,15 +598,7 @@ def run_find_patterns(state, as_json, min_cluster, max_cluster, prompt):
         print("# grouping — the model only turns that structure into prose.")
         print()
         for c in clusters:
-            shared = ", ".join(c["shared_links"]) or "none"
-            print(f"## Cluster ({c['size']} memories, shared: {shared})")
-            print(f"Members: {', '.join(c['members'])}")
-            print()
-            print("Write a 2-4 sentence observation about what these memories share,")
-            print("constrained to the evidence above (members + shared links). Write only")
-            print("what the shared referents and member topics support — do not invent")
-            print("claims, and do not assert causation the links alone don't show. Name")
-            print("the recurring pattern, not each file.")
+            print(_synthesis_prompt(c))
             print()
     return 0
 

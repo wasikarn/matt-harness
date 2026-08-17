@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Self-check for the dangling-link did-you-mean suggestion. Run directly: python3 test_memory_lint.py"""
 import importlib.util
+import json
 import os
 import subprocess
 import tempfile
@@ -667,6 +668,75 @@ def test_find_patterns_reports_hidden_count_when_everything_is_capped_out():
             f"this message is false when a component exists but is capped out: {result.stdout}"
 
 
+def test_find_patterns_json_prompt_includes_prompts():
+    """Regression test for a 2026-08-17 finding (kbg:bug-sweep): --json's
+    early `return 0` used to fire before the --prompt block ever ran, so
+    `--find-patterns --json --prompt` silently dropped the prompt content
+    with no warning — byte-identical to `--json` alone. JSON must mirror
+    text mode's --prompt output (run_detector() already sets this precedent
+    for the stale/template_compliance fields), so a caller building
+    automation around --json has a way to see --prompt actually fired."""
+    with tempfile.TemporaryDirectory() as d:
+        for name in ("a", "b", "c"):
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[tighthub]]\n")
+        with open(os.path.join(d, "tighthub.md"), "w") as f:
+            f.write("---\nname: tighthub\n---\nshared referent\n")
+        index_lines = [f"- [{n}]({n}.md)" for n in ("a", "b", "c", "tighthub")]
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("\n".join(index_lines) + "\n")
+
+        script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                               "skills", "memory-lint", "scripts", "memory-lint.py")
+        with_prompt = subprocess.run(
+            ["python3", script, d, "--find-patterns", "--json", "--prompt"],
+            capture_output=True, text=True, check=True,
+        )
+        parsed = json.loads(with_prompt.stdout)
+        assert "prompts" in parsed, f"--json --prompt must include a prompts key: {with_prompt.stdout}"
+        assert len(parsed["prompts"]) == len(parsed["clusters"]) == 1, \
+            f"expected exactly 1 prompt for the 1 qualifying cluster: {parsed}"
+        assert "tighthub" in parsed["prompts"][0], f"prompt content missing shared-link context: {parsed['prompts'][0]}"
+
+        without_prompt = subprocess.run(
+            ["python3", script, d, "--find-patterns", "--json"],
+            capture_output=True, text=True, check=True,
+        )
+        assert "prompts" not in json.loads(without_prompt.stdout), \
+            "plain --json (no --prompt) must not include a prompts key"
+
+
+def test_find_patterns_cli_boundary_at_exact_cap_size():
+    """Regression test for a 2026-08-17 mutation-testing finding (kbg:bug-sweep):
+    run_find_patterns()'s own re-filter (`c["size"] <= max_cluster`) had zero
+    test coverage at size == max_cluster through the actual CLI path — a
+    mutated `<=` -> `<` still passed the full suite. A cluster sized exactly
+    at the cap must be KEPT, not hidden (the cap is inclusive, matching
+    pattern_clusters()'s own `> max_cluster` exclusion boundary)."""
+    with tempfile.TemporaryDirectory() as d:
+        names = [f"m{i}" for i in range(5)]
+        for name in names:
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[exacthub]]\n")
+        with open(os.path.join(d, "exacthub.md"), "w") as f:
+            f.write("---\nname: exacthub\n---\nshared referent\n")
+        index_lines = [f"- [{n}]({n}.md)" for n in names + ["exacthub"]]
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("\n".join(index_lines) + "\n")
+
+        script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                               "skills", "memory-lint", "scripts", "memory-lint.py")
+        result = subprocess.run(
+            ["python3", script, d, "--find-patterns", "--max-cluster", "5"],
+            capture_output=True, text=True, check=True,
+        )
+        assert "clusters: 1" in result.stdout, \
+            f"a cluster sized exactly at --max-cluster must be kept, not hidden: {result.stdout}"
+        assert "0 above cap" not in result.stdout and "above cap, hidden" not in result.stdout, \
+            f"nothing should be reported as hidden when the only cluster is exactly at the cap: {result.stdout}"
+        assert "exacthub" in result.stdout, f"the size-5 cluster's content must appear: {result.stdout}"
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -695,4 +765,6 @@ if __name__ == "__main__":
     test_find_patterns_clusters_by_shared_link()
     test_find_patterns_cli_default_caps_giant_component()
     test_find_patterns_reports_hidden_count_when_everything_is_capped_out()
+    test_find_patterns_json_prompt_includes_prompts()
+    test_find_patterns_cli_boundary_at_exact_cap_size()
     print("OK")
