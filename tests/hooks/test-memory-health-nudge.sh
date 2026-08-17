@@ -157,6 +157,46 @@ assert_not_contains "0 findings + 1 stale (>90d) file stays silent — a dormant
   "[memory-lint]" "$OUT"
 
 echo ""
+echo "--- stale-file list stays out of the emitted block when it fires for an unrelated finding ---"
+
+init_memdir
+cat > "$MEMDIR/topic-a.md" <<'EOF'
+---
+name: topic-a
+description: "has a dangling link to trigger findings>=1"
+metadata:
+  type: project
+---
+see [[nonexistent-target-xyz]]
+EOF
+cat > "$MEMDIR/old-settled-audit.md" <<'EOF'
+---
+name: old-settled-audit
+description: "a dormant settled-audit style memory, deliberately stale"
+metadata:
+  type: project
+---
+old content, dormant by design
+EOF
+printf '%s\n' \
+  "- [topic-a](topic-a.md) — has a dangling link" \
+  "- [old-settled-audit](old-settled-audit.md) — dormant" > "$MEMDIR/MEMORY.md"
+OLD=$(date -v-100d +%Y%m%d0000 2>/dev/null || date -d '100 days ago' +%Y%m%d0000)
+touch -t "$OLD" "$MEMDIR/old-settled-audit.md"
+OUT=$(run_hook)
+assert_contains "the dangling-link finding still fires the main block" \
+  "[memory-lint] The memory store has findings" "$OUT"
+# Regression test for the 2026-08-17 fix: the Staleness section used to stay
+# unfiltered ("Staleness stays in — a short summary line, not a file dump"),
+# but it prints one STALE: line per stale file just like Template compliance
+# did before that section was stripped — a live repro found "STALE:
+# old-settled-audit.md — 100d..." leaking into the emitted nudge.
+assert_not_contains "stale-file filename/line stays out of the emitted block" \
+  "STALE:" "$OUT"
+assert_contains "the advisory summary line (with its stale count) still survives" \
+  "advisory: 1 stale" "$OUT"
+
+echo ""
 echo "--- classify-unindexed wiring ---"
 
 init_memdir

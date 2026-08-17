@@ -89,11 +89,16 @@ fi
 # non-gating. Both still ride along in the body when findings trigger a fire.
 printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0
 
-# Strip the Template compliance section before printing — up to 71 filenames
-# buries the actual finding that triggered this. `kbg:memory-lint` still
-# surfaces it on demand. Staleness stays in (it's a short summary line, not a
-# file dump) since it's genuinely useful context once something else fired.
-FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Template compliance/,/^advisory:/{' -e '/^advisory:/!d' -e '}')
+# Strip both the Staleness and Template compliance sections before printing —
+# each can dump one line per file (up to 71 for template-gap; staleness has
+# the identical shape once any file crosses the 90d threshold, confirmed live
+# 2026-08-17: a fixture with 1 dangling-link finding + 1 stale file leaked
+# "STALE: <file> — 100d since last edit" straight into the nudge, the same
+# bury-the-actual-finding bug this section was written to fix in the first
+# place, one section over). `kbg:memory-lint` still surfaces both on demand.
+# The trailing "advisory: N stale, M template-gap" line (kept below) already
+# carries both counts, so nothing is lost by collapsing the two sections.
+FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Staleness/,/^advisory:/{' -e '/^advisory:/!d' -e '}')
 
 printf '%s\n' \
   "[memory-lint] The memory store has findings (dangling links / orphans / index drift / near-budget):" \
