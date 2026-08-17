@@ -30,6 +30,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | Command | Description |
 |---|---|
 | ask-kbg | Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (the user types /mattpocock-skills:ask-matt). |
+| bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (/review-pr) or session audit (/deep-audit). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
 | compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | cost-report | Generate a local Claude Code cost report from the ECC cost-tracker metrics log. |
@@ -136,7 +137,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-15T17:17:07Z_
+_Generated: 2026-08-17T01:41:52Z_
 
 ---
 
