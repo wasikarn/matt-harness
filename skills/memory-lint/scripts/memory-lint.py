@@ -825,6 +825,9 @@ def run_detector(state, as_json, stale_days):
     else:
         print("  no feedback/project-typed memories in this store")
 
+    template_gap = template["missing_why"] + template["missing_how"] - len(template["missing_both"])
+    print(f"\nadvisory: {len(stale)} stale, {template_gap} template-gap")
+
     sys.exit(len(findings))
 
 
