@@ -19,7 +19,9 @@ description: Build or remove a plugin surface (agent, skill, command, hook, outp
    phrase, plus the count mention in `docs/agent-voice-extension.md`.
 5. Run validation (`claude plugin validate . --strict`), then `bash
    skills/harness-audit/scripts/audit.sh` and fix any WARN it raises — checks 12 and 48 exist
-   specifically to catch anything step 4 missed.
+   specifically to catch anything step 4 missed. A CRIT F1 ("not loadable") for the new
+   component is expected at this point and clears at step 6, below — only WARNs are
+   actionable here.
 6. `claude plugin update kbg@kobig`. Do this **before** committing, not after — the pre-commit
    hook re-runs harness-audit, and its F1 check only sees the latest *cached* plugin version. A
    brand-new file isn't there until this command copies the working tree into a fresh cache dir,
