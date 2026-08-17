@@ -21,7 +21,7 @@ When invoked:
 
 1. **Gather context** — If the dispatch prompt specifies a commit range (`BASE_SHA..HEAD_SHA`, as `kbg:review-pr` Phase 4 passes for a reproducible window), run `git diff BASE_SHA..HEAD_SHA` and review exactly that range — do not substitute the working tree. Otherwise (ad-hoc invocation), run `git diff --staged` and `git diff` to see uncommitted changes; if no diff, check recent commits with `git log --oneline -5`.
 2. **Understand scope** — Identify which files changed, what feature/fix they relate to, and how they connect.
-3. **Read surrounding code** — Don't review changes in isolation. Read the full file and understand imports, dependencies, and call sites.
+3. **Read surrounding code, scoped to file size** — Don't review changes in isolation, but don't default to a full-file `Read` on every changed file either. Small file: read it whole. Large file with a small diff: `Read` the changed region with enough offset/limit padding to see the enclosing function/imports, then `Grep` for call sites and callers across the repo instead of opening unrelated files whole — call sites live in *other* files anyway, so a full read of the changed file was never going to surface them.
 4. **Apply review checklist** — Work through each category below, from CRITICAL to LOW.
 5. **Report findings** — Use the output format below. Only report issues you are confident about (>80% sure it is a real problem).
 
