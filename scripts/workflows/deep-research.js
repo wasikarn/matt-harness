@@ -338,11 +338,19 @@ log("Fetched " + allSources.length + " sources → " + allClaims.length + " clai
   (claimsDroppedByCap > 0 ? " (" + claimsDroppedByCap + " lower-ranked claims dropped by MAX_VERIFY_CLAIMS cap, unverified)" : ""))
 
 if (rankedClaims.length === 0) {
+  // Two distinct zero-claim causes since the dedup/malformed filter landed: no claims
+  // extracted at all (allClaims.length === 0, the original case this branch covered), or
+  // claims WERE extracted but every one was malformed (blank claim/quote text) and dropped
+  // by the filter above — "No claims extracted" would misreport that case, and the old
+  // hardcoded `claims: 0` in stats was flatly wrong for it (2026-08-17 deep-audit finding).
+  const summary = malformedClaims > 0
+    ? malformedClaims + " claim(s) extracted from " + allSources.length + " source(s) but all were malformed (blank claim/quote text) and dropped before verification."
+    : "No claims extracted. " + allSources.length + " sources fetched, all empty/failed. " + dupes.length + " URL dupes, " + budgetDropped.length + " budget-dropped."
   return {
     question: QUESTION,
-    summary: "No claims extracted. " + allSources.length + " sources fetched, all empty/failed. " + dupes.length + " URL dupes, " + budgetDropped.length + " budget-dropped.",
+    summary,
     findings: [], refuted: [], unverified: [], sources: allSources.map(s => ({ url: s.url, quality: s.sourceQuality })),
-    stats: { angles: scope.angles.length, sources: allSources.length, claims: 0, dupes: dupes.length },
+    stats: { angles: scope.angles.length, sources: allSources.length, claims: allClaims.length, malformedClaims, claimDupesCollapsed, dupes: dupes.length },
   }
 }
 

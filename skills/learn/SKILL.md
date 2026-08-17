@@ -63,12 +63,21 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
    under ~2MB, read the whole transcript. Above that, don't — this repo's own transcripts range up
    to 83MB, and reading that whole into one mining pass is the same "cut what your model has to
    read" problem a 2026-08-17 audit found in this fleet's fan-out/synthesis steps. Instead, bound
-   the read with a deterministic pre-filter: `grep -n -iE '"(no,|instead|don.t|actually,|wait,|revert|undo)' <path>`
+   the read with a deterministic pre-filter: `grep -n '"type":"user"' <path> | grep -iE '\b(no,|instead|don.t|actually,|wait,|revert|undo)\b'`
    for correction-shaped turns, plus `tail -c 500000 <path>` for the most recent stretch (native
    ambient capture already thins the middle of a long session; the tail and the corrections are
    where cross-turn value concentrates). Read only the matched line ranges plus their surrounding
    context, not the full file. (ponytail: a hard byte cap + grep pre-filter, not smarter chunking —
-   upgrade only if a real run shows this misses too much.) Either way, extract things that are
+   upgrade only if a real run shows this misses too much. A 2026-08-17 deep-audit already caught
+   one real miss and closed it here: the original pattern anchored the trigger words to right after
+   a literal `"`, which only matches text starting a JSON string — real corrections are usually
+   mid-message, so on a live 4MB transcript it returned 16 matches and 0 were genuine user
+   corrections, all false positives from prose/tool-descriptions elsewhere in the file. Restricting
+   to `"type":"user"` lines and dropping the `"`-anchor fixed recall on the same transcript;
+   precision is still loose — a pasted document inside a user turn can still match — accepted
+   because a pre-filter's job is to bound the read, not achieve perfect precision, and losing a
+   real correction to a too-narrow filter is worse than reading a few extra irrelevant lines.)
+   Either way, extract things that are
    **durable + non-obvious + reusable next session**, weighting repetition and cross-turn arcs over
    one-shot moments (native ambient capture already catches the obvious in-the-moment correction —
    this pass's marginal value is what only shows up across the full session):
