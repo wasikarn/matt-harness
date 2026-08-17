@@ -54,6 +54,19 @@ if [ "$1" = "pr" ] && [ "$2" = "checks" ]; then
   exit "${FAKE_CI_RC:-0}"
 fi
 if [ "$1" = "pr" ] && [ "$2" = "view" ]; then
+  # Two distinct callers now hit `gh pr view`: the CI check (--json
+  # statusCheckRollup, added when gh pr checks stopped working on gh
+  # 2.95.0) and the pre-existing CODEOWNERS check (--json
+  # headRefOid,files,reviews). Route on which --json fields were asked
+  # for, same distinction the real gh CLI response shape carries.
+  is_rollup=0
+  for a in "$@"; do
+    case "$a" in *statusCheckRollup*) is_rollup=1 ;; esac
+  done
+  if [ "$is_rollup" = "1" ]; then
+    printf '{"statusCheckRollup":%s}' "${FAKE_CI_CHECKS_JSON:-[]}"
+    exit "${FAKE_CI_RC:-0}"
+  fi
   printf '%s' "${FAKE_PR_VIEW_JSON:-}"
   exit "${FAKE_PR_VIEW_RC:-0}"
 fi
@@ -144,13 +157,13 @@ check "clean: false -> block" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
 
 state_clean_true
 export KBG_SKIP_CODEOWNERS_GATE=1  # isolate the pre-existing CI layer only
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 run_gate 42
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 run_gate 42
 check "clean: true + CI green -> allow" "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"FAILURE"}]' FAKE_CI_RC=0 run_gate 42
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"FAILURE"}]' FAKE_CI_RC=0 run_gate 42
 check "clean: true + CI red -> block" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":null}]' FAKE_CI_RC=0 run_gate 42
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"IN_PROGRESS","conclusion":null}]' FAKE_CI_RC=0 run_gate 42
 check "clean: true + CI pending -> block" "$([ "$rc" -eq 2 ] && echo 0 || echo 1)"
 
 FAKE_CI_CHECKS_JSON='' FAKE_CI_RC=1 run_gate 42
@@ -218,14 +231,14 @@ echo ""
 echo "=== Part C -- CI-N/A x CODEOWNERS (Critical #2 / High #1 regression pins) ==="
 echo "    (manually verified to FAIL against the pre-revision gate -- see header)"
 
-FAKE_CI_CHECKS_JSON='' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
 FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @alice' \
 FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[]')" \
   run_gate 42
 ok=1; [ "$rc" -eq 2 ] && /usr/bin/grep -q "CODEOWNER approval missing" "$WORK/err" && ok=0
 check "REGRESSION PIN: CI N/A (no CI configured) + CODEOWNERS STOP -> still block" "$ok"
 
-FAKE_CI_CHECKS_JSON='' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[]' FAKE_CI_RC=0 \
 FAKE_CODEOWNERS_FOUND=1 FAKE_CODEOWNERS_CONTENT='src/a.py @org/team' \
 FAKE_PR_VIEW_JSON="$(pr_view_json '[{"path":"src/a.py"}]' '[]')" \
   run_gate 42
@@ -499,12 +512,12 @@ echo "=== Part L -- issue #51 fix: value-taking gh pr merge flags no longer swal
 state_clean_true  # review-pr-42.json clean:true (the PR actually being merged)
 printf '{"clean": false}' > "$WORK/state/review-pr-7.json"  # unrelated PR, non-clean
 export KBG_SKIP_CODEOWNERS_GATE=1  # isolate the pr_num-extraction fix from the CODEOWNERS layer
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge --repo owner/repo 42'
 check "FIX: --repo owner/repo 42 correctly resolves pr_num=42 (long form, unrelated PR 7 non-clean is irrelevant) -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -R owner/repo 42'
 check "FIX: -R owner/repo 42 correctly resolves pr_num=42 (short form) -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
@@ -513,32 +526,32 @@ check "FIX: -R owner/repo 42 correctly resolves pr_num=42 (short form) -> allow"
 # coverage -- the other three short flags are added to _MERGE_VALUE_FLAGS by
 # this same diff and are exactly where a future wrong-shorthand edit would
 # ship silently green. One case per remaining short flag closes the gap.
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -A a@b.com 42'
 check "FIX: -A a@b.com 42 correctly resolves pr_num=42 (short form of --author-email)" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -b \"see CHANGELOG\" 42'
 check "FIX: -b \"see CHANGELOG\" 42 correctly resolves pr_num=42 (short form of --body)" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -F /tmp/body.txt 42'
 check "FIX: -F /tmp/body.txt 42 correctly resolves pr_num=42 (short form of --body-file)" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -t \"release notes\" 42'
 check "FIX: -t \"release notes\" 42 correctly resolves pr_num=42 (short form of --subject)" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge --subject \"release notes\" --body \"see CHANGELOG\" --repo owner/repo 42'
 check "FIX: three chained value-flags (--subject, --body, --repo) before the PR number all skip correctly -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge --repo=owner/repo 42'
 check "no regression: glued --repo=owner/repo (single token, already skipped pre-fix) -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
@@ -603,14 +616,14 @@ check "SECURITY: -db 123 42 must resolve pr_num=42 (not 123, the value -b swallo
 rm_state
 
 state_clean_true  # PR 42 clean:true
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -db 123 42'
 check "FIX: -db 123 42 correctly resolves pr_num=42, PR 42 clean:true -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
 rm_state
 
 state_clean_true  # PR 42 clean:true
-FAKE_CI_CHECKS_JSON='[{"name":"build","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
+FAKE_CI_CHECKS_JSON='[{"__typename":"CheckRun","name":"build","status":"COMPLETED","conclusion":"SUCCESS"}]' FAKE_CI_RC=0 \
   run_gate_raw 'gh pr merge -dR owner/repo 42'
 check "FIX: -dR owner/repo 42 (cluster ending in a different value-taking short flag) correctly resolves pr_num=42 -> allow" \
   "$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
