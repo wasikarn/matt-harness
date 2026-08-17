@@ -5,6 +5,61 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.343] — 2026-08-17
+
+### Fixed
+
+- **`review-pr-tier`/`review-pr-finish` description word-cap + negation-clause** — the two new
+  skills from v0.68.342's split tripped harness-audit check 36's 25-word cap (27/28 words) and
+  check 5's negation-clause WARN ("Don't use standalone..." doesn't match the required "Don't
+  use for" pattern). Retitled to match the `review-lens-*` skills' exact convention, trimmed
+  under the cap. Also bumped the version to invalidate the plugin cache — `claude plugin update`
+  had run mid-edit, before the description fix landed, so the cached v0.68.342 slot held a stale
+  description even though the committed repo content was correct. Verified: cache now
+  byte-identical to the repo for all 3 split skill files.
+
+## [0.68.342] — 2026-08-17
+
+### Fixed
+
+- **`review-pr` split into a 3-skill chain + state-checkpoint mechanism** — `skills/review-pr/SKILL.md`
+  was 52,918 chars, 2.6x harness-audit's 20,000-char threshold; Phase 5 sat at Claude Code's
+  5,000-token auto-compaction re-attachment cutoff and Phase 6-7 fell entirely past it, meaning
+  that procedure text could silently drop on a mid-review compaction with no recovery signal
+  (confirmed against `code.claude.com/docs/en/skills` § Skill content lifecycle, not assumed).
+  A `reference.md` extraction alone doesn't close this — a `Read`-tool result gets zero
+  compaction protection, but a separately-`Skill()`-invoked file gets its own protected
+  5,000-token slot, the "Chained" pattern Anthropic's own Claude Code team documented using
+  internally. Split into `review-pr` (Phases 1-4) → `review-pr-tier` (Phase 5) →
+  `review-pr-finish` (Phase 6-7), chained by explicit `Skill()` calls. Added
+  `write-review-checkpoint.sh`/`read-review-checkpoint.sh` (fail-closed, exact-phase-equality)
+  to persist the handful of genuinely-unrecoverable cross-phase values (base/head SHA, agent
+  findings, tier list) a file split alone can't protect, since that state lives in conversation
+  history and compaction clears it before skill re-attachment even applies — deliberately not an
+  extension of `write-review-state.sh`, which is welded to the round-tracking contract
+  `/ship-merge` depends on. Checkpoint files are named `review-checkpoint-*.json` (not
+  `review-pr-*`) to stay clear of `convergence-merge-gate.sh`'s `review-pr-*.json` glob — a
+  `review-pr-`-prefixed name would have permanently blocked merges, caught during planning
+  before any code shipped. Retargeted check 59 and `automation-coverage.sh`'s marker tracking to
+  the moved Phase 5/6 sites, plus 4 stale cross-references (`review-dashboard.md`,
+  `risk-check.md`, `blind-spot-hunter.md`, `irrecoverable.sh`'s worktree-allowlist comment). All
+  3 split files verified under 20,000 chars with margin; automation-coverage's G-count (5 G + 1
+  G*) matches the pre-split baseline exactly, each marker confirmed in its correct new file.
+  Verified via a full content-fidelity enumeration (every backtick token + bold span, pre vs.
+  post across all 3 files + `reference.md`) — zero real content loss found.
+
+## [0.68.341] — 2026-08-17
+
+### Fixed
+
+- **`review-pr` Phase 7 extraction + new `agents/*.md` size check** — first-round size-reduction
+  pass on `skills/review-pr/SKILL.md` (still 52,918 chars afterward — the full fix landed in
+  v0.68.342's 3-skill split above). Extracted a Phase 7 lookup table to `reference.md` and added
+  harness-audit check 60 flagging `agents/*.md` bodies over the 20,000-char fleet threshold
+  (`code-reviewer.md` and `nextjs-reviewer.md` both INFO-level — deferred, since they load as a
+  subagent system prompt in a fresh isolated context, never through the skill-invocation
+  mechanism that truncates, so they carry a token-cost INFO only, not a correctness risk).
+
 ## [0.68.263] — 2026-08-10
 
 ### Fixed
