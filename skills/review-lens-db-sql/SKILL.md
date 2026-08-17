@@ -12,9 +12,10 @@ project's stack — MySQL/MariaDB (`kbg:mysql-patterns`) and Drizzle ORM (`kbg:d
 Check raw SQL, query builders, and Drizzle calls alike.
 
 - **UPDATE/DELETE without WHERE** — mutates or destroys every row in the table.
-  Tag this **CRITICAL**, not the section's default HIGH — an unscoped mass
-  mutation is as irreversible as anything in the Security section, and
-  "data-loss risk" is not a style nit that a HIGH label communicates. This is
+  Tag this **CRITICAL**, not `agents/code-reviewer.md`'s Code Quality section's
+  default HIGH — an unscoped mass mutation is as irreversible as anything in
+  that file's Security section, and "data-loss risk" is not a style nit that
+  a HIGH label communicates. This is
   the severity once the Pre-Report Gate's proof is met, not a bypass of it —
   usually trivial here, since the unscoped query text is its own trigger; if
   a genuine scoping guard exists elsewhere (a dynamically-built WHERE, an ORM

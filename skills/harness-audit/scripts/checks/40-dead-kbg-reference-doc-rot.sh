@@ -18,6 +18,13 @@
 # 3 files on first run of this check: skills/harness-audit, skills/incident,
 # commands/ship). Same shape as check 37/38's own false-positive guards:
 # don't nag on a clean, explicitly-historical pattern.
+#
+# Scan list widened 2026-08-17 (deep-audit pass) to include the
+# `skills/*/references/*.md` and `commands/*/references/*.md` subfolder
+# convention several skills/commands adopted for their oversized-file split
+# — the prior list only covered `skills/*/reference.md` (singular,
+# pre-dating that convention), so a dead `kbg:` citation inside one of these
+# subfolder files could have gone unseen with no functional signal.
 # Set built once; lookups below are pure-bash array membership (was: one
 # `grep -qx` re-scan of this list per referenced name).
 declare -A _known_kbg=()
@@ -38,6 +45,7 @@ while IFS= read -r _k; do [ -n "$_k" ] && _known_kbg["$_k"]=1; done < <({
   fi
 } | sort -u)
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
+          "$CLAUDE_DIR"/skills/*/references/*.md "$CLAUDE_DIR"/commands/*/references/*.md \
           "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
           "$CLAUDE_DIR"/agents/*.md \
           "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \

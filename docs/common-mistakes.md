@@ -86,7 +86,7 @@ The grep should return no files — if it does, a validator-class agent picked u
 
 **Root cause:** The spawn prompt describes a topic, not a deliverable. Without an explicit "done-when" checklist, the subagent substitutes prose for evidence and the lead has no gate to reject it.
 
-**Harness fix:** The F9 spawn-prompt template (`skills/orchestrate/SKILL.md` § Spawn-prompt template) mandates a `## Done-when` section with three observable checks. Every `orchestrate` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
+**Harness fix:** The F9 spawn-prompt template (`skills/orchestrate/SKILL.md` § Spawn-prompt template, full text in `reference.md` § Spawn-prompt template (gates F3) — full text) mandates a `## Done-when` section with three observable checks. Every `orchestrate` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
 
 ```markdown
 ## Done-when
@@ -100,10 +100,14 @@ The orchestrator's verification step greps for these observables before starting
 **Self-check:**
 
 ```bash
-grep -c "Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
+grep -c "^## Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/reference.md"
 ```
 
-The count should be > 0 — orchestrate's F9 template embeds the Done-when contract.
+The count should be > 0 — orchestrate's F9 template embeds the Done-when contract. This checks
+`reference.md`, not `SKILL.md`: the template's full text (including this heading) was moved
+there during the 2026-08-17 size-split, leaving only a pointer stub in `SKILL.md`. A bare
+`grep -c "Done-when"` against `SKILL.md` would still report a false-positive nonzero count — the
+Output Format table's "Done-when" column header is an unrelated coincidental match.
 
 ## Mistake 5 — Plan without validation
 
@@ -111,17 +115,21 @@ The count should be > 0 — orchestrate's F9 template embeds the Done-when contr
 
 **Root cause:** The planning phase optimistically assumed correctness; the execution phase had no post-work gate. Quality was eyes-only, not command-verified.
 
-**Harness fix:** the real, currently-shipped gate is the per-task validation chain — after each wave completes, the lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain inline on each completed task before starting the next wave. The dispatch-side companion is the orchestrator's Step 4 blast-radius + dependency analysis (`skills/orchestrate/SKILL.md` § Procedure step 4), which catches overlapping file ownership and missing dependencies before a wave even starts.
+**Harness fix:** the real, currently-shipped gate is the per-task validation chain — after each wave completes, the lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/orchestrate/SKILL.md` § Validation chain (full text in `reference.md` § Validation chain (builder → validator → fix → re-validator) — full text) inline on each completed task before starting the next wave. The dispatch-side companion is the orchestrator's Step 4 blast-radius + dependency analysis (`skills/orchestrate/SKILL.md` § Procedure step 4), which catches overlapping file ownership and missing dependencies before a wave even starts.
 
 A dedicated pre-flight plan linter and a standalone test-claim hook were previously drafted here as a fuller pipeline, but neither was ever built — no `scripts/plan-linter.py` or `hooks/lifecycle/task-lifecycle.sh` exists in this repo (a 2026-07-01 audit caught this section describing them as live). If a genuine gap shows up (bad plans repeatedly reaching dispatch, or tests claimed but not run), build the narrowest gate that actually fixes the observed failure — don't reintroduce these as documentation without shipping them.
 
 **Self-check:**
 
 ```bash
-grep -c "validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/SKILL.md"
+grep -c "^## Validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/reference.md"
 ```
 
-Should be non-zero. If it's zero, the one real gate this section describes is gone from the documented surface.
+Should be non-zero. If it's zero, the one real gate this section describes is gone from the
+documented surface. This checks `reference.md`, not `SKILL.md`, for the same reason as Mistake
+4's self-check above — the chain's full text (`### Concept`, `### Gating rules`, `### Structured
+verdict`) lives there since the 2026-08-17 size-split; a bare `grep -c "validation chain"`
+against `SKILL.md` matches unrelated lowercase prose mentions instead of the actual content.
 
 ## Cross-references
 

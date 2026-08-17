@@ -1,8 +1,3 @@
----
-name: harness-audit-health
-description: "Read-only per-session token-cost query over the live cost ledger for `kbg:harness-audit --health`. Use when the user asks 'token usage / cost this session', 'harness health', 'ใช้ token เท่าไหร่'. Don't use for: deep PR review (kbg:review-pr), security posture (kbg:security-auditor), fleet audit (`kbg:harness-audit` default)."
----
-
 # Mode: `kbg:harness-audit --health`
 
 Read-only query layer over `~/.local/share/kbg/metrics/costs.jsonl` — the live cost ledger the `cost-tracker` Stop hook appends one row per session (see `hooks/stop/cost-tracker.sh`).

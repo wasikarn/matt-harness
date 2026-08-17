@@ -12,7 +12,7 @@ shown is a raw read of what `skills/review-pr/scripts/write-review-state.sh`
 already wrote; this command adds no new tracking.
 
 **Why this exists**: nothing else in this codebase globs
-`review-pr-*.json` — `ship-merge.md`, `address-review/COMMAND.md`, and
+`review-pr-*.json` — `ship-merge/COMMAND.md`, `address-review/COMMAND.md`, and
 `should-continue-loop.sh` all resolve one already-known PR#/branch. This is
 the first surface that lists what's actually in flight.
 
@@ -64,7 +64,7 @@ for the actual merge decision)` — never a computed pass/fail of your own.
      `review-last.json` directly and check its `branch` field matches.
 2. **Read the one relevant state file** — PR-keyed
    (`review-pr-<n>.json`) if a PR number resolved, else `review-last.json`
-   (same fallback order `ship-merge.md` Phase 1 already documents).
+   (same fallback order `ship-merge/COMMAND.md` Phase 1 already documents).
 3. **Render every field**, human-labeled: `review_mode`, `round`,
    Critical/Important/Minor counts + `prev_*` deltas, `convergence_state`,
    `clean`, `rehunt`, `last_sha` (full), `branch`, `ts` (with computed age),
