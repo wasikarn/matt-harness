@@ -112,6 +112,9 @@ run_hook_tests() {
     [ -f "$t" ] || continue
     bash "$t" 2>&1 || rc=1
   done
+  if [ -f "$ROOT/tests/skills/memory-lint/test_memory_lint.py" ]; then
+    python3 "$ROOT/tests/skills/memory-lint/test_memory_lint.py" 2>&1 || rc=1
+  fi
   return "$rc"
 }
 

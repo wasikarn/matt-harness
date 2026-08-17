@@ -451,7 +451,10 @@ def pattern_clusters(state, min_cluster, max_cluster=0):
     max_cluster exists because a dense store collapses into one giant component
     that swamps the smaller, tighter clusters which are the real signal. The
     giant is the LARGEST component, so raising min_cluster cannot remove it
-    (it filters the small clusters first) — only an upper bound can. 0 = no cap.
+    (it filters the small clusters first) — only an upper bound can. 0 = no
+    cap. This function's own default stays 0 (uncapped); the CLI's
+    --max-cluster flag defaults to 10 instead (see its argparse help and
+    SKILL.md § "Pattern clusters" for why).
 
     NEVER writes a synthesis — only groups. An LLM writing the summary is a
     separate, by-hand paste step (--prompt emits the prompt; this script never
@@ -517,26 +520,34 @@ def pattern_clusters(state, min_cluster, max_cluster=0):
 
 
 def run_find_patterns(state, as_json, min_cluster, max_cluster, prompt):
-    clusters = pattern_clusters(state, min_cluster, max_cluster)
+    all_clusters = pattern_clusters(state, min_cluster, 0)
+    clusters = [c for c in all_clusters if not max_cluster or c["size"] <= max_cluster]
+    hidden = len(all_clusters) - len(clusters)
     if as_json:
         print(json.dumps({
             "mode": "find-patterns",
             "memory_dir": state["d"],
             "min_cluster": min_cluster,
             "max_cluster": max_cluster,
+            "hidden_above_cap": hidden,
             "clusters": clusters,
         }, indent=2))
         return 0
 
     print(f"=== memory-lint --find-patterns: {state['d']} ===")
     cap = f", max-cluster: {max_cluster}" if max_cluster else ""
-    print(f"min-cluster: {min_cluster}{cap} | clusters: {len(clusters)}")
+    print(f"min-cluster: {min_cluster}{cap} | clusters: {len(clusters)}"
+          + (f" | {hidden} above cap, hidden — rerun with --max-cluster 0 to see" if hidden else ""))
     print("Advisory recurrence pre-filter only — NOT a verdict. A cluster says these")
     print("memories share [[link]] referents, not that they say the same thing. Read")
     print("each cluster by hand; never auto-merge.")
     print()
     if not clusters:
-        print(f"  none — no connected component reached {min_cluster} members")
+        if hidden:
+            print(f"  none within the cap — {hidden} component(s) above --max-cluster {max_cluster}, "
+                  f"hidden. Rerun with --max-cluster 0 to see them.")
+        else:
+            print(f"  none — no connected component reached {min_cluster} members")
     for c in clusters:
         print(f"  [size {c['size']}] {', '.join(c['members'])}")
         if c["shared_links"]:
@@ -1348,13 +1359,14 @@ def main():
                          "an LLM; --prompt emits a paste-ready synthesis prompt instead.")
     ap.add_argument("--min-cluster", type=int, default=3,
                     help="Minimum component size for --find-patterns (default: 3)")
-    ap.add_argument("--max-cluster", type=int, default=0,
-                    help="Upper bound on component size for --find-patterns (0 = no cap). "
-                         "A dense store produces one giant component that swamps the smaller "
-                         "tight clusters which are the real signal; the giant is the LARGEST "
-                         "component, so raising --min-cluster cannot remove it — only an upper "
-                         "bound can. Try --max-cluster 10 to hide the giant and surface the "
-                         "tight groupings.")
+    ap.add_argument("--max-cluster", type=int, default=10,
+                    help="Upper bound on component size for --find-patterns (default: 10; "
+                         "pass 0 for no cap / the raw uncapped view). A dense store produces "
+                         "one giant component that swamps the smaller tight clusters which are "
+                         "the real signal; the giant is the LARGEST component, so raising "
+                         "--min-cluster cannot remove it — only an upper bound can. Clusters "
+                         "hidden by the cap are counted, not silently dropped: the header and "
+                         "the empty-result message both report how many were suppressed.")
     ap.add_argument("--prompt", action="store_true",
                     help="With --find-patterns, also emit one paste-ready LLM-synthesis "
                          "prompt per cluster. The script never calls an LLM itself.")

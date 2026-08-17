@@ -596,6 +596,77 @@ def test_find_patterns_clusters_by_shared_link():
         assert len(kept) == 1 and kept[0]["size"] == 3, f"max_cluster=3 must keep the size-3 cluster, got {kept}"
 
 
+def test_find_patterns_cli_default_caps_giant_component():
+    """--max-cluster now defaults to 10 at the CLI layer (pattern_clusters()
+    itself still defaults to 0/uncapped for direct callers). Regression test
+    for the 2026-08-17 incident: a plain `--find-patterns` hand-run with no
+    flag saw a giant component mixed in with the real small clusters and
+    misdiagnosed the clustering algorithm as broken — the fix (--max-cluster)
+    already existed but wasn't on by default. A size-12 hub-linked component
+    must be excluded from output with zero extra flags; a size-3 tight
+    cluster on a different hub must still surface."""
+    with tempfile.TemporaryDirectory() as d:
+        big_names = [f"big{i}" for i in range(12)]
+        for name in big_names:
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[bighub]]\n")
+        with open(os.path.join(d, "bighub.md"), "w") as f:
+            f.write("---\nname: bighub\n---\nshared referent\n")
+        for name in ("a", "b", "c"):
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[tighthub]]\n")
+        with open(os.path.join(d, "tighthub.md"), "w") as f:
+            f.write("---\nname: tighthub\n---\nshared referent\n")
+        index_lines = [f"- [{n}]({n}.md)" for n in big_names + ["bighub", "a", "b", "c", "tighthub"]]
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("\n".join(index_lines) + "\n")
+
+        script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                               "skills", "memory-lint", "scripts", "memory-lint.py")
+        result = subprocess.run(
+            ["python3", script, d, "--find-patterns"],
+            capture_output=True, text=True, check=True,
+        )
+        assert "max-cluster: 10" in result.stdout, \
+            f"CLI default must be 10, got: {result.stdout[:200]}"
+        assert "clusters: 1" in result.stdout, \
+            f"the size-12 hub component must be capped out, only the size-3 cluster should remain: {result.stdout}"
+        assert "bighub" not in result.stdout, \
+            f"the giant component must not appear in default output: {result.stdout}"
+        assert "tighthub" in result.stdout, \
+            f"the tight size-3 cluster must still surface by default: {result.stdout}"
+        assert "1 above cap, hidden" in result.stdout, \
+            f"the capped-out component must be counted, not silently dropped: {result.stdout}"
+
+
+def test_find_patterns_reports_hidden_count_when_everything_is_capped_out():
+    """When every component exceeds --max-cluster, the empty-result branch
+    must say so, not claim no cluster reached --min-cluster (that claim
+    would be false — a qualifying cluster exists, it's just hidden)."""
+    with tempfile.TemporaryDirectory() as d:
+        big_names = [f"big{i}" for i in range(12)]
+        for name in big_names:
+            with open(os.path.join(d, f"{name}.md"), "w") as f:
+                f.write(f"---\nname: {name}\n---\nsee [[bighub]]\n")
+        with open(os.path.join(d, "bighub.md"), "w") as f:
+            f.write("---\nname: bighub\n---\nshared referent\n")
+        index_lines = [f"- [{n}]({n}.md)" for n in big_names + ["bighub"]]
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("\n".join(index_lines) + "\n")
+
+        script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
+                               "skills", "memory-lint", "scripts", "memory-lint.py")
+        result = subprocess.run(
+            ["python3", script, d, "--find-patterns"],
+            capture_output=True, text=True, check=True,
+        )
+        assert "clusters: 0" in result.stdout, f"expected 0 clusters within the cap: {result.stdout}"
+        assert "none within the cap" in result.stdout, \
+            f"empty-result message must say a component was hidden, not that none reached --min-cluster: {result.stdout}"
+        assert "no connected component reached" not in result.stdout, \
+            f"this message is false when a component exists but is capped out: {result.stdout}"
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -622,4 +693,6 @@ if __name__ == "__main__":
     test_unindexed_and_unreachable_file_still_fires_unindexed()
     test_context_layer_reachability_is_transitive_through_unindexed_files()
     test_find_patterns_clusters_by_shared_link()
+    test_find_patterns_cli_default_caps_giant_component()
+    test_find_patterns_reports_hidden_count_when_everything_is_capped_out()
     print("OK")

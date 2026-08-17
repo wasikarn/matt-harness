@@ -36,7 +36,7 @@ Dangling links (target resolves to nothing) are skipped — they're noise, not s
 
 ## Decision: `--find-patterns` mode, deterministic-only, no always-on layer
 
-**What ships (v0.68.264):** a new `--find-patterns` mode on `skills/memory-lint/scripts/memory-lint.py` — `pattern_clusters(state, min_cluster, max_cluster)` builds the file↔file graph via union-find and reports connected components of size ≥ `--min-cluster` (default 3) and ≤ `--max-cluster` (default 0 = no cap); `--prompt` emits one paste-ready, evidence-constrained synthesis prompt per cluster. The script never calls an LLM. Documented in `skills/memory-lint/SKILL.md` ("Pattern clusters" section + Checks table row). One regression test in `tests/skills/memory-lint/test_memory_lint.py`.
+**What ships (v0.68.264):** a new `--find-patterns` mode on `skills/memory-lint/scripts/memory-lint.py` — `pattern_clusters(state, min_cluster, max_cluster)` builds the file↔file graph via union-find and reports connected components of size ≥ `--min-cluster` (default 3) and ≤ `--max-cluster` (function default 0 = no cap, **superseded at the CLI layer by a default of 10, v0.68.317** — see `skills/memory-lint/SKILL.md` § "Pattern clusters"); `--prompt` emits one paste-ready, evidence-constrained synthesis prompt per cluster. The script never calls an LLM. Documented in `skills/memory-lint/SKILL.md` ("Pattern clusters" section + Checks table row). One regression test in `tests/skills/memory-lint/test_memory_lint.py`.
 
 **Why not a Zep-like always-on layer:**
 
