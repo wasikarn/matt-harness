@@ -147,6 +147,24 @@ test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
   "$(bash_payload 'git checkout -b new-branch')"
+# 2026-08-17 bug sweep: the force check only matched the exact token "-f"/
+# "--force", missing a bundled short-flag cluster like "-qf" (quiet+force).
+# Live-verified bypass: this discarded uncommitted work with no gate block.
+test_deny "$IRRECOVERABLE" "git checkout -qf bundled force flag (was a bypass)" \
+  "$(bash_payload 'git checkout -qf other-branch')"
+test_deny "$IRRECOVERABLE" "git switch -fq bundled force flag (was a bypass)" \
+  "$(bash_payload 'git switch -fq other-branch')"
+# The fix scans bundled clusters for "f" but must stop at a value-taking flag
+# letter (checkout's -b/-B, switch's -c/-C) so the branch-name argument
+# itself isn't misread as more bundled flags.
+test_allow "$IRRECOVERABLE" "git checkout -bfoo (branch name starting with f, must not over-block)" \
+  "$(bash_payload 'git checkout -bfoo')"
+test_allow "$IRRECOVERABLE" "git switch -cfoo (branch name starting with f, must not over-block)" \
+  "$(bash_payload 'git switch -cfoo')"
+test_allow "$IRRECOVERABLE" "git checkout -Bfoo (uppercase stop-char variant, must not over-block)" \
+  "$(bash_payload 'git checkout -Bfoo')"
+test_allow "$IRRECOVERABLE" "git switch -Cfoo (uppercase stop-char variant, must not over-block)" \
+  "$(bash_payload 'git switch -Cfoo')"
 # 2026-08-06: a HEREDOC-authored commit message (this repo's own documented
 # convention) that merely mentions "git checkout X Y" in prose was tokenized
 # as a real command and falsely denied -- reproduced live during this

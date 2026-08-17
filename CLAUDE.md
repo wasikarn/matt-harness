@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 claude plugin validate . --strict
 ```
 
-Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit + the 17-file behavioral test suite (deny-gate, advisory-sensor, session/stop-hook, harness-audit, review-pr convergence-state, review-pr bounded-auto-loop, and slash-command-script unit tests — see the script for the file list) in parallel. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 owner-authorized reset (`c452102`): most of what they tested was L3/L4/L5 autonomy machinery retired by ADR 0006, and current coverage already exceeds them. Recovery anchor if ever wanted: `24d7663`.
+Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit + the 19-file behavioral test suite (deny-gate, advisory-sensor, session/stop-hook, harness-audit, review-pr convergence-state, review-pr bounded-auto-loop, inventory-witness canonical-mode, gauntlet test-wiring, and slash-command-script unit tests — see the script for the file list) in parallel. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 owner-authorized reset (`c452102`): most of what they tested was L3/L4/L5 autonomy machinery retired by ADR 0006, and current coverage already exceeds them. Recovery anchor if ever wanted: `24d7663`.
 
 ## Adding or removing a surface
 

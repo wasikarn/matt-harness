@@ -299,15 +299,31 @@ for w in windows:
             targets_worktree = "--worktree" in scan or "--staged" not in scan
             if has_pathspec and targets_worktree:
                 deny("git restore discards working-tree changes — confirm with user first")
+        # Bundled short flags: "-qf" means -q -f, and an exact-token check like
+        # `t in ("-f", "--force")` misses it (2026-08-17 bug sweep, live-verified
+        # bypass). Stop scanning a cluster at a value-taking flag letter
+        # (checkout -b/-B, switch -c/-C) so "-bfoo"/"-cfoo" is not misread as
+        # -f hiding inside the branch-name argument. No apostrophes in this
+        # block: it lives inside the bash single-quoted python3 -c wrapper
+        # below, and a literal apostrophe closes that string early.
+        def _bundled_force(t, stop_chars):
+            if not (t.startswith("-") and not t.startswith("--")):
+                return False
+            for ch in t[1:]:
+                if ch in stop_chars:
+                    return False
+                if ch == "f":
+                    return True
+            return False
         # checkout: "--"/"." = discard (existing); 2+ nonflag = tree-ish +
         # path (e.g. `git checkout HEAD~1 file`, overwrites worktree from an
         # old commit — unrecoverable). 1 nonflag stays allowed: it may be a
         # legit branch switch (found v0.36.0 audit: HEAD~1+file was missed).
         if sub == "checkout" and ("--" in scan or "." in scan or
                                     len([t for t in scan if not t.startswith("-")]) >= 2 or
-                                    any(t in ("-f", "--force") for t in scan)):
+                                    any(t in ("-f", "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
             deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
-        if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") for t in scan):
+        if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
             deny("git switch --force discards working-tree changes — confirm with user first")
         if sub == "branch" and (
             any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)

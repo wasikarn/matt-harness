@@ -187,7 +187,7 @@ Update todos as you progress.
   - Phase 5 defaults to `tdd`'s red-green-refactor. Opt out only when the test framework can't encode the bug type (visual regression, hard race condition).
   - Use standalone `diagnosing-bugs` for understand-only loops (e.g. characterising a flaky test before deciding whether to fix it).
   - Use standalone `tdd` for greenfield TDD on new features, not bug fixes.
-- **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/path-hardcode.sh` (hardcoded `/Users/` paths) run automatically. Don't bypass.
+- **Hooks active**: `hooks/gates/irrecoverable.sh` (destructive Bash/git/SQL patterns) and `hooks/gates/verifier-protect.sh` (hardcoded `/Users/` paths, folded from the deleted `path-hardcode.sh` 2026-07-03) run automatically. Don't bypass.
 - **Agent routing reference**: silent-failure-hunter (error-handling audit), code-reviewer (test-coverage + comment-accuracy lenses), security-reviewer (auth/secrets/OWASP), performance-optimizer (algorithm/query-pattern root causes).
 
 ---

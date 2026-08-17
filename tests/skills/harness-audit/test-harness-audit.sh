@@ -157,6 +157,30 @@ else
 fi
 unset KBG_MATT_CACHE
 
+# Check 43 — grep -c pipefail-abort regression guard (2026-08-17 bug sweep).
+# `_count=$(grep -c ... 2>/dev/null)` with no `|| true` dies under set -e when
+# the pattern legitimately has zero matches — the exact doc-rot condition this
+# check exists to WARN about, so the crash hides the one case it should catch.
+# Same class of guard as the check-25 test above: assert the run completes
+# (prints a Summary) instead of aborting mid-source.
+FAKE43=$(mktemp -d)
+mkdir -p "$FAKE43/skills/orchestrate" "$FAKE43/docs"
+cat > "$FAKE43/skills/orchestrate/SKILL.md" <<'EOF'
+# orchestrate
+no matching content in this fixture
+EOF
+cat > "$FAKE43/docs/common-mistakes.md" <<'EOF'
+Self-check: `grep -c "this-pattern-does-not-exist-anywhere" "skills/orchestrate/SKILL.md"`
+EOF
+CHECK43_OUT=$(bash "$AUDIT" "$FAKE43" --only 43 2>&1 || true)
+rm -rf "$FAKE43"
+if printf '%s\n' "$CHECK43_OUT" | grep -q "=== Summary"; then
+  ok "check-43 survives a zero-match self-check pattern (no pipefail abort)"
+else
+  bad "check-43 aborted before printing a Summary on a zero-match pattern — grep -c/set -e regression:
+$CHECK43_OUT"
+fi
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then

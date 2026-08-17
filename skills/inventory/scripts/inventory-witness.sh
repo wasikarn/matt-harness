@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT="${1:-claude/BOUNDARY.md}"
 
 echo "Generating boundary snapshot → $OUTPUT"
-bash "$SCRIPT_DIR/inventory-boundary.sh" > "$OUTPUT"
+bash "$SCRIPT_DIR/inventory-boundary.sh" --repo-only > "$OUTPUT"
 
 echo ""
 echo "Done. Commit $OUTPUT to detect fleet drift:"

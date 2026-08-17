@@ -13,7 +13,7 @@ MISTAKES_DOC="$CLAUDE_DIR/docs/common-mistakes.md"
 if [ -f "$ORCH_SKILL" ] && [ -f "$MISTAKES_DOC" ]; then
   while IFS= read -r _pattern; do
     [ -z "$_pattern" ] && continue
-    _count=$(grep -c -- "$_pattern" "$ORCH_SKILL" 2>/dev/null)
+    _count=$(grep -c -- "$_pattern" "$ORCH_SKILL" 2>/dev/null || true)
     if [ "${_count:-0}" -eq 0 ]; then
       warn "docs/common-mistakes.md self-check 'grep -c \"$_pattern\" orchestrate/SKILL.md' now returns 0 — the doc's own asserted count no longer holds (doc-rot)"
     fi

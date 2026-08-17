@@ -108,12 +108,15 @@ run_path_hygiene() {
 # Graceful-skip if absent.
 run_hook_tests() {
   local rc=0 t
-  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/hooks/test-memory-health-nudge.sh" "$ROOT/tests/hooks/test-convergence-merge-gate.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh" "$ROOT/tests/skills/review-pr/test-write-review-state.sh" "$ROOT/tests/skills/review-pr/test-should-continue-loop.sh" "$ROOT/tests/commands/test-cost-report.sh" "$ROOT/tests/commands/test-ship-merge-codeowners.sh" "$ROOT/tests/commands/test-risk-check.sh"; do
+  for t in "$ROOT/tests/hooks/test-gates.sh" "$ROOT/tests/hooks/test-worktree-guard.sh" "$ROOT/tests/hooks/test-verifier-protect.sh" "$ROOT/tests/hooks/test-flow-nudge.sh" "$ROOT/tests/hooks/test-jira-route-nudge.sh" "$ROOT/tests/hooks/test-session-stop.sh" "$ROOT/tests/hooks/test-learn-nudge.sh" "$ROOT/tests/hooks/test-plan-review-nudge.sh" "$ROOT/tests/hooks/test-compliance-audit-nudge.sh" "$ROOT/tests/hooks/test-memory-health-nudge.sh" "$ROOT/tests/hooks/test-convergence-merge-gate.sh" "$ROOT/tests/skills/harness-audit/test-harness-audit.sh" "$ROOT/tests/skills/review-pr/test-write-review-state.sh" "$ROOT/tests/skills/review-pr/test-should-continue-loop.sh" "$ROOT/tests/skills/inventory/test-inventory-witness.sh" "$ROOT/tests/scripts/test-run-gauntlet-wiring.sh" "$ROOT/tests/commands/test-cost-report.sh" "$ROOT/tests/commands/test-ship-merge-codeowners.sh" "$ROOT/tests/commands/test-risk-check.sh"; do
     [ -f "$t" ] || continue
     bash "$t" 2>&1 || rc=1
   done
   if [ -f "$ROOT/tests/skills/memory-lint/test_memory_lint.py" ]; then
     python3 "$ROOT/tests/skills/memory-lint/test_memory_lint.py" 2>&1 || rc=1
+  fi
+  if [ -f "$ROOT/tests/skills/compress-docs/test_verify_preserved.py" ]; then
+    python3 "$ROOT/tests/skills/compress-docs/test_verify_preserved.py" 2>&1 || rc=1
   fi
   return "$rc"
 }
