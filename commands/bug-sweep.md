@@ -36,7 +36,10 @@ N found (of <count> agents dispatched)
 
 If zero: `Sweep clean — no small bug found by any of the <count> agents.`
 
-Suggested next step: fix one directly, or route a non-trivial one through `/fix-bug`.
+Suggested next step: to fix one directly, verify it yourself first — reproduce the failure,
+don't just trust the dispatched agent's report — then apply the smallest change that addresses
+it, then re-run whatever surfaced the bug to confirm it's actually gone. Route anything bigger
+than a one-line fix through `/fix-bug` instead.
 
 ## Arguments
 
