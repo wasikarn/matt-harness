@@ -3,7 +3,7 @@
 # registered in hooks.json AND its script must still carry the fast-path, the
 # `clean` read, and the sys.exit(2) deny (CRIT).
 #
-# The convergence gate has two layers: advisory (review-pr Phase 7 footer) and
+# The convergence gate has two layers: advisory (review-pr-finish Phase 7 footer) and
 # computational (ship-merge's scored gate reads force_human). The decisive gap
 # found 2026-08-13 in session 6e7c3bed: ship-merge is disable-model-invocation,
 # so the model merges via raw `gh pr merge`, which had NO gate — the verifier

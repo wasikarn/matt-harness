@@ -28,7 +28,9 @@
 #                        finding_files_path is in write-review-state.sh).
 #                        Required fields per phase (all must already be
 #                        valid JSON in the payload object):
-#                          phase=2 -> base_sha, jira_ticket (object or null)
+#                          phase=2 -> base_sha (required); jira_ticket (object or
+#                          null — included in the payload but not enforced by
+#                          the required-field check below)
 #                          phase=4 -> agent_findings (list), dispatch_failures (string)
 #                          phase=5 -> tier_list (list)
 #

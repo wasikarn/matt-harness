@@ -97,7 +97,7 @@ if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ] || [ -f "$CLAUDE_DIR/commands/shi
 
 # X: one-way doors (external/irreversible writes) — review-pr submit, address-review
 #    auto-resolve, incident mitigation. Correctly human.
-emit "X  review-pr Phase 6B/7 submit      external write (post review to a PR)"
+emit "X  review-pr-finish Phase 6B/7 submit      external write (post review to a PR)"
 emit "X  address-review Phase 5 auto-resolve  external write (resolve reviewer thread)"
 emit "X  incident mitigation              irreversible — only escalate auto-selectable"
 

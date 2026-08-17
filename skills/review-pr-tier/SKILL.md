@@ -73,7 +73,7 @@ do not attempt to reconstruct the missing state from conversational memory. On s
    - **A verifier surfaces an entirely new finding while checking a different one** (not confirming/refuting the finding it was dispatched against, but something else noticed along the way) → route that new finding back through step 2's SCRUTINIZE-4 gate before it enters the tier table, and update `rejected.md`/`ledger.md`'s counts to include it. Never let a finding skip the same gate every other finding cleared just because of when it surfaced — confirmed gap: a finding that emerged this way once matched Important-tier evidence but never appeared in `rejected.md`'s SCRUTINIZE-4 tally, so the presented "N findings passed all four checks" summary silently overcounted.
 
    This roughly doubles dispatches on a review with several such findings (see
-   `../review-pr/reference.md` § Integration Notes — Token budget). It closes the *independence*
+   `../review-pr/reference.md` § Integration Notes — full detail, "Token budget" bullet). It closes the *independence*
    gap, not the *empirical-grounding* gap (a correlated hallucination across same-distribution
    reviewers can still survive) — that second gap is `kbg:review-pr-finish`'s Phase 6
    proof-verification check (own-branch flow) and `/ship-merge` Phase 1 step 6's distrust of
@@ -109,11 +109,12 @@ do not attempt to reconstruct the missing state from conversational memory. On s
 `Skill(kbg:review-pr-finish)` next:
 
 ```bash
+PAYLOAD="${TMPDIR:-/tmp}/review-pr-p5-$$.json"
+# build {"tier_list": [...]} into $PAYLOAD — the tier-grouped findings from step 7 above
 bash "${KBG_PLUGIN_ROOT}/skills/review-pr/scripts/write-review-checkpoint.sh" 5 "$HEAD_SHA" "${WT:-}" "$PAYLOAD"
 ```
 
-`$PAYLOAD` is a temp file holding `{"tier_list": [...]}` — the tier-grouped findings from step 7
-above, plus the `rejected.md`/ledger state from step 6. This is a mandatory next step, not a
+`$PAYLOAD` also carries the `rejected.md`/ledger state from step 6. This is a mandatory next step, not a
 suggestion — the review is not complete until `kbg:review-pr-finish`'s Phase 6 and 7 have run.
 
 **Reference tables** (aspect routing, agent descriptions, tips, workflow examples):

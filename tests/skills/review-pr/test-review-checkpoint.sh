@@ -176,6 +176,31 @@ do_read 4 "$SHA"
 assert_eq "case8b: agent_findings wrong type (exit)" "$R_EXIT" "1"
 assert_eq "case8b: agent_findings wrong type (reason)" "$R_REASON" "malformed-checkpoint-fields"
 
+# --- Case 9: happy path — read immediately after a phase-2 write, expected
+# phase=2, matching sha -> ok, base_sha present. Case 3 above only exercised
+# the happy path at phase 5; phases 2 and 4 were never asserted ok, only
+# their failure branches (cases 6, 7, 8a, 8b). ---
+reset_state
+do_write 2 "$SHA" '{"base_sha":"deadbeef","jira_ticket":null}'
+do_read 2 "$SHA"
+assert_eq "case9: phase-2 happy path (exit)" "$R_EXIT" "0"
+assert_eq "case9: phase-2 happy path (no reason)" "$R_REASON" ""
+GOT_BASE_SHA=$(printf '%s' "$R_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['base_sha'])")
+assert_eq "case9: phase-2 happy path returns the real phase-2 payload (base_sha survives the read)" "$GOT_BASE_SHA" "deadbeef"
+
+# --- Case 10: happy path — read immediately after a phase-4 write, expected
+# phase=4, matching sha -> ok. This is review-pr-tier's REAL first production
+# action (its opening read is at expected_phase=4) — without this case, the
+# actual happy path a live skill hits first was never asserted. ---
+reset_state
+do_write 2 "$SHA" '{"base_sha":"deadbeef","jira_ticket":null}'
+do_write 4 "$SHA" '{"agent_findings":[{"a":1}],"dispatch_failures":""}'
+do_read 4 "$SHA"
+assert_eq "case10: phase-4 happy path (exit)" "$R_EXIT" "0"
+assert_eq "case10: phase-4 happy path (no reason)" "$R_REASON" ""
+GOT_FINDINGS_LEN=$(printf '%s' "$R_JSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['agent_findings']))")
+assert_eq "case10: phase-4 happy path returns the real phase-4 payload (agent_findings survives the read)" "$GOT_FINDINGS_LEN" "1"
+
 echo ""
 echo "=== review-checkpoint: $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# review-pr Phase 7 — deterministic continue/stop decision for the bounded
+# review-pr-finish Phase 7 — deterministic continue/stop decision for the bounded
 # auto-loop ADR 0009 authorizes (docs/research/adr-0009-bounded-review-fix-
 # auto-loop.md). Reads the state file write-review-state.sh just wrote and
 # decides whether the model may automatically re-invoke review-pr for

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# review-pr Phase 7 — writes the machine-readable review-state contract
+# review-pr-finish Phase 7 — writes the machine-readable review-state contract
 # /ship-merge's scored review gate reads. Explicit positional args, not
 # inherited env — an inherited-but-unexported variable fails silently across
 # a nested bash invocation like this one (same bug class as kbg-harness's
@@ -234,7 +234,7 @@ fi
 # boundary the header's "explicit positional args, not inherited env" warning is
 # about — that warning targets an inherited-but-unexported var failing silently
 # across a nested invocation, which this isn't). Callers that want to override
-# export it before invoking this script; review-pr Phase 7 lets the env default.
+# export it before invoking this script; review-pr-finish Phase 7 lets the env default.
 ROUND_CEILING="${REVIEW_PR_ROUND_CEILING:-5}"
 case "$ROUND_CEILING" in ''|*[!0-9]*) ROUND_CEILING=5 ;; esac
 
