@@ -11,7 +11,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | code-architect | Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order. | [Read, Grep, Glob, Bash] | yes |
 | code-implementer | Feature implementer — detects the stack, loads the matching kbg:*-patterns skill, writes the smallest-scope highest-rigor diff, verifies. Not for design or review. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"] | yes |
-| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, fix-authenticity, and requirement-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| code-reviewer | Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, fix-authenticity, and requirement-coverage lenses. Use after writing or modifying code. | ["Read", "Grep", "Glob", "Bash", "Skill"] | yes |
 | ideate-critic | Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer). | Read | no |
 | nextjs-reviewer | Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
@@ -46,13 +46,13 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (kbg:code-reviewer) or skill-creator's own quantitative grading/benchmark step. |
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /kbg:ship-merge for the decision. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor. |
-| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident). |
 | ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (kbg:incident). |
 | summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
 | test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (kbg:learn). |
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via /fix-bug, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (kbg:review-pr) or merge (/ship-merge). |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
+| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident). |
 | ship | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or a PR already ready to merge (/ship-merge). |
 
 ## Skills — Repo
@@ -87,6 +87,9 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
+| review-lens-db-sql | DB/SQL query-safety checklist for code-reviewer's db-aspect dispatch. Use when code-reviewer is dispatched for the db lens. Don't use for authoring guidance — kbg:mysql-patterns/kbg:drizzle-patterns instead. | inline | auto |
+| review-lens-fix-authenticity | Fix-authenticity checklist for code-reviewer's fix: dispatch. Use when a diff's commit is labeled fix:. Don't use for features, refactors, or hardening diffs. | inline | auto |
+| review-lens-requirement-coverage | Requirement-coverage checklist for code-reviewer's ticket-gap dispatch. Use when review-pr passes extracted requirements. Don't use for self-invoked or standalone review. | inline | auto |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
@@ -107,7 +110,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | convergence-merge-gate.sh | Gate: block a raw `gh pr merge` on a non-clean review-pr state. |
 | db-write-gate.sh | Gate: ask on any MCP execute_sql-shaped call (mcp__<server>__execute_sql*) unless the statement is provably a simple read. Generic — matches any server, no config needed. |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
-| _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by both commands/ship-merge.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block) and hooks/gates/convergence-merge-gate.sh (imports evaluate()/discover() in-process, no subprocess spawn). |
+| _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by both commands/ship-merge/COMMAND.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block) and hooks/gates/convergence-merge-gate.sh (imports evaluate()/discover() in-process, no subprocess spawn). |
 | _hook_output.py | Shared hook-output JSON primitive. Used by hooks/gates/db-write-gate.sh and hooks/gates/verifier-protect.sh's embedded python3 -c blocks, both of which defined an identical emit_ask() before this extraction (2026-08-15) -- each gate still builds its own reason message inline (that part is legitimately gate-specific), only the JSON-shape emission is shared here. |
 | _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. commands/risk-check.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
@@ -137,7 +140,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-17T02:07:45Z_
+_Generated: 2026-08-17T09:43:39Z_
 
 ---
 
