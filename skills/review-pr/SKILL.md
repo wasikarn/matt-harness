@@ -16,6 +16,16 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Reproducible window**: Phase 2 pins `BASE_SHA` + `HEAD_SHA` so re-running gives the same result, not drift as commits accumulate.
 - **The checker isn't the maker**: Phase 5 step 3.5 sends every Critical/Important finding to a fresh, independent agent that tries to refute it — the same context that found an issue never gets to be the sole judge of whether it survives. Step 3.6 covers the mirror case: when the reviewers find *nothing* on a non-trivial diff, one fresh agent hunts adversarially for the defect a shared blind spot would have hidden — a clean pass is a verdict from a second pair of eyes, not the absence of a finding.
 - **Use TodoWrite**: track phases.
+- **Compaction survival note**: this file is large enough (~13K tokens) that Claude Code's
+  auto-compaction can truncate it to its first ~5,000 tokens on re-attachment after a
+  conversation-summarization event (`code.claude.com/docs/en/skills` § Skill content
+  lifecycle — confirmed 2026-08-17, not assumed) — everything from roughly Phase 5 onward can
+  silently drop. This bullet sits near the top specifically because that region survives the
+  cutoff. There is no computational check that catches this for you — it's a prose reminder,
+  not a guarantee: if a long session's Phase 5+ behavior stops matching this file (tier
+  logic, the convergence-gate stop messages, Phase 7's submit mechanics feel unfamiliar or
+  are being improvised), re-invoke `kbg:review-pr` to restore the full procedure before
+  continuing rather than trusting a possibly-truncated copy.
 
 ---
 
@@ -342,49 +352,13 @@ Run a comprehensive pull request review using multiple specialized agents, each 
          exactly as on any invocation — auto-continue only removes the "should I re-invoke at all"
          click, nothing else in the skill is bypassed. `REVIEW_PR_ROUND_CEILING=1` disables
          auto-continue immediately with no code change, if ever needed as a rollback.
-       - **`$LOOP_EXIT != 0` (stop):** drop the re-run suggestion; render from `$LOOP_REASON`:
-         - `converged`: `Review clean — Critical 0, rehunt clean. Non-blocking Important/Minor may
-           be addressed in a follow-up; merge via /kbg:ship-merge. Do not re-run review-pr on
-           non-blocking findings.` This is the loop's stop condition: a clean review does not need
-           another pass. (The merge-path deny-gate in `hooks/gates/convergence-merge-gate.sh`
-           blocks a raw `gh pr merge` on a non-clean review; this carve-out is the advisory half
-           that stops the loop from re-running past clean.)
-         - `regressed`: `{round} rounds — fixes are introducing new findings in files not flagged
-           last round, a fix in one place is breaking another. Needs a human call, not another
-           automatic pass (check for missed sibling call sites — see address-review Phase 4).`
-         - `churning`: `{round} rounds — the same file(s) have held a Critical/Important finding
-           {N} rounds running ({churn_files}) — fixes in this module keep producing new findings
-           there. This is fix-induced churn, not slow convergence — needs a human call; have
-           someone read the file's recent diffs before another pass.` `{N}`/`{churn_files}` come
-           from step 1's own second stdout line (same source as `{round}`/`{prev}`/`{now}` above —
-           no new variable, just don't drop the interpolation). (Neutral framing on WHY it's
-           churning: a module that keeps generating findings may be fix-induced churn or a
-           genuinely deep problem area — the file set alone can't tell which; but THAT it's
-           fix-induced churn rather than a stalled-but-different problem is worth naming, since
-           `stalled` gets its own distinct message below.)
-         - `stalled`: `{round} rounds — counts not moving across rounds, the remaining findings
-           aren't responding to fixes. Needs a human call (accept as-is / wontfix the remainder /
-           escalate), not another automatic pass.` This now fires uniformly whenever the
-           convergence gate reads `stalled` — deliberately stricter than a passive suggestion a
-           human could ignore: auto-continue must not advance past a state that isn't
-           `progressing`, full stop, matching the ADR's literal continue condition.
-         - `ceiling`: `Round ceiling ({round}) reached with findings still open. Needs a human
-           call (accept as-is / wontfix the remainder / escalate), not another automatic pass.`
-         - `reviewer-flow`: this is a PR-by-number review — auto-continue only applies to
-           own-branch self-review (a reviewer can't act on someone else's diff). Fall back to the
-           passive suggestion: `Round {round} on PR #{n} — Critical {prev}→{now} → re-run
-           kbg:review-pr`, same as before this ADR.
-         - `missing-state` / `malformed-state` / `stale-sha` / `malformed-round` /
-           `malformed-force-human` / `malformed-convergence-state` / `malformed-finding-files`:
-           `should-continue-loop.sh detected a state-file integrity problem ({reason}) — a human
-           should inspect $STATE_FILE directly before another round runs.` Don't auto-continue on
-           any of these; they're fail-closed by design.
-         - `no-findings-nonclean`: `{round} rounds, review not clean but no Critical/Important
-           findings were tracked this round — the convergence gate can't verify regression/churn
-           without a file set to compare. Needs a human call before another automatic pass.`
-         Any non-`converged` reason above that blocks a merge does so via `/ship-merge`'s
-         Critical-findings/`force_human` scoring (0 → hits the 40 floor → STOP) — the human
-         decision is required before merge, not optional.
+       - **`$LOOP_EXIT != 0` (stop):** drop the re-run suggestion; render the per-`$LOOP_REASON`
+         message from `reference.md` § Loop Reason Stop Messages (`converged` / `regressed` /
+         `churning` / `stalled` / `ceiling` / `reviewer-flow` / the integrity-stop reasons /
+         `no-findings-nonclean`) — interpolate `{round}`/`{prev}`/`{now}`/`{N}`/`{churn_files}`
+         from step 1's stdout as that section specifies. Any non-`converged` reason that blocks
+         a merge does so via `/ship-merge`'s Critical-findings/`force_human` scoring (0 → hits
+         the 40 floor → STOP) — the human decision is required before merge, not optional.
      - Reviewer comments came back externally → `/address-review`
      - Reviewer flow (PR #N), review posted → done; ping the author / await their `/address-review`
 3. **Submit the review to GitHub** (gated — never auto-submit; posting a review is outward-facing). Posts findings as **individual line-level review comments** so the author sees each issue in context — not just a single top-level summary.
