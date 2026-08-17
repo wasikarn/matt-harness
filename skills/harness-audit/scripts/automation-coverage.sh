@@ -81,7 +81,7 @@ emit "Human-gated / one-way-door / judgment-bound (stay human by doctrine):"
 
 # H: disable-model-invocation surfaces (model can't invoke — human-only).
 _dm_count=0
-if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ]; then _dm_count=$((_dm_count + 1)); emit "H  ship-merge.md             disable-model-invocation (human-only scored gate)"; fi
+if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ] || [ -f "$CLAUDE_DIR/commands/ship-merge/COMMAND.md" ]; then _dm_count=$((_dm_count + 1)); emit "H  ship-merge.md             disable-model-invocation (human-only scored gate)"; fi
 # (ship-release, ship, post-mortem, iterate-skill, recursive-improve, address-review,
 #  ask-kbg, ideate-search, wiki-ingest, compliance-audit, score-decision — all H by
 #  doctrine; listed compactly, not exhaustively grepped to keep the script readable.)

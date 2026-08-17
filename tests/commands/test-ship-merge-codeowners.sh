@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Regression test for the CODEOWNER check: the shared
 # hooks/gates/lib/_codeowners_match.py (evaluate() + discover()) and
-# commands/ship-merge.md's Phase 1 step 7 wiring around it.
+# commands/ship-merge/COMMAND.md's Phase 1 step 7 wiring around it (flat
+# commands/ship-merge.md before the directory-form conversion).
 #
 # MIGRATED 2026-08-15: the matcher and discovery loop used to be embedded
 # in ship-merge.md's markdown and extracted via regex here. A
@@ -25,7 +26,10 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# ship-merge.md may live flat or directory-form — mirror harness-audit check 44's
+# own path resolution (both are valid per docs/command-authoring-conventions.md).
 SHIP_MERGE_MD="$ROOT/commands/ship-merge.md"
+[[ -f "$ROOT/commands/ship-merge/COMMAND.md" ]] && SHIP_MERGE_MD="$ROOT/commands/ship-merge/COMMAND.md"
 CM_LIB="$ROOT/hooks/gates/lib"
 
 pass=0

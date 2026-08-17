@@ -1,6 +1,6 @@
 # ship-merge scored-gate margin invariant
 
-Deep-dive for anyone editing `commands/ship-merge.md` Phase 1 step 6's criteria table, weights,
+Deep-dive for anyone editing `commands/ship-merge/COMMAND.md` Phase 1 step 6's criteria table, weights,
 or the 70/40 thresholds. Not needed to run `/ship-merge` — read this only when changing the gate
 itself.
 

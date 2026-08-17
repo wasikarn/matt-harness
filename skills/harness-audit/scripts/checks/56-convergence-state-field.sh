@@ -18,7 +18,25 @@
 # equality check misses in the fragment integrity guard. Mirrors the verifier-
 # contract shape: the field is load-bearing in two files, so both are asserted.
 _w="$CLAUDE_DIR/skills/review-pr/scripts/write-review-state.sh"
-_r="$CLAUDE_DIR/commands/ship-merge.md"
+# ship-merge.md may live flat or directory-form — mirror check 44's own
+# path resolution (both are valid per docs/command-authoring-conventions.md).
+# Directory-form can push step 6's guard prose into references/*.md (lazy-
+# loaded, still part of the shipped reader), so the field-presence grep must
+# cover COMMAND.md + its references/ dir, not COMMAND.md alone — a reader
+# whose own body has been trimmed below the check's single-file assumption
+# is a false CRIT, not a real drift.
+_r=""
+_r_extra=()
+if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ]; then
+  _r="$CLAUDE_DIR/commands/ship-merge.md"
+elif [ -f "$CLAUDE_DIR/commands/ship-merge/COMMAND.md" ]; then
+  _r="$CLAUDE_DIR/commands/ship-merge/COMMAND.md"
+  if [ -d "$CLAUDE_DIR/commands/ship-merge/references" ]; then
+    for _rf in "$CLAUDE_DIR/commands/ship-merge/references"/*.md; do
+      [ -f "$_rf" ] && _r_extra+=("$_rf")
+    done
+  fi
+fi
 if [ -f "$_w" ]; then
   /usr/bin/grep -q '"force_human"' "$_w" || \
     crit "write-review-state.sh: JSON output contract lost 'force_human' — the convergence verifier no longer emits the field ship-merge reads; a non-converged review loop reaches merge with no computational backstop"
@@ -30,8 +48,8 @@ else
   crit "write-review-state.sh: not found at $_w — the convergence verifier is missing entirely"
 fi
 if [ -f "$_r" ]; then
-  /usr/bin/grep -q 'force_human' "$_r" || \
+  /usr/bin/grep -q 'force_human' "$_r" "${_r_extra[@]}" 2>/dev/null || \
     crit "ship-merge.md: Phase 1 step 6 scored gate no longer reads 'force_human' — the one-way-door backstop lost its read of the convergence verdict; a non-converged review can merge regardless of the writer emitting the field"
 else
-  crit "ship-merge.md: not found at $_r — the merge gate command is missing entirely"
+  crit "ship-merge command not found at commands/ship-merge.md or commands/ship-merge/COMMAND.md — the merge gate command is missing entirely"
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Shared CODEOWNERS discovery + matching logic, used by both
-# commands/ship-merge.md's step 7 (CLI wrapper below, argv/stdout contract
+# commands/ship-merge/COMMAND.md's step 7 (CLI wrapper below, argv/stdout contract
 # unchanged from the original embedded block) and
 # hooks/gates/convergence-merge-gate.sh (imports evaluate()/discover()
 # in-process, no subprocess spawn).

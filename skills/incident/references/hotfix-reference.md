@@ -135,7 +135,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - `--delete-branch` cleans up.
    - **Caveat:** If repo has merge queues with "Do not allow bypassing" enabled, `--admin` may be blocked. Escalate to repo admin or use a GitHub App token.
 
-**Sync seam:** `commands/ship-merge.md` Phase 2 duplicates this exact merge command
+**Sync seam:** `commands/ship-merge/COMMAND.md` Phase 2 duplicates this exact merge command
 (same `gh pr merge`/`AskUserQuestion` shape) — the two are intentionally not the
 same call, since hotfix strips the scored gate for speed. Unconditional `--admin`
 here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,

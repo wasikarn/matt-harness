@@ -15,9 +15,13 @@
 # drop that breaks the invariant CRITs — forcing the documented margin
 # re-derivation. Mirrors check 57's bidirectional shape: the invariant is the
 # real check, not a fixed literal.
-_sm="$CLAUDE_DIR/commands/ship-merge.md"
+# ship-merge.md may live flat or directory-form — mirror check 44's own
+# path resolution (both are valid per docs/command-authoring-conventions.md).
+_sm=""
+[ -f "$CLAUDE_DIR/commands/ship-merge.md" ] && _sm="$CLAUDE_DIR/commands/ship-merge.md"
+[ -f "$CLAUDE_DIR/commands/ship-merge/COMMAND.md" ] && _sm="$CLAUDE_DIR/commands/ship-merge/COMMAND.md"
 if [ ! -f "$_sm" ]; then
-  crit "ship-merge.md: not found at $_sm — the scored merge gate is missing"
+  crit "ship-merge command not found at commands/ship-merge.md or commands/ship-merge/COMMAND.md — the scored merge gate is missing"
 else
   # Parse the criterion weights from the scored-gate table rows. Each row is
   # `| <name> | <weight> | <measures> |`. Extract the weight (first integer in
