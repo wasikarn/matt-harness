@@ -116,11 +116,45 @@ printf '%s\n' \
   "- [topic-a](topic-a.md) — a fully indexed topic" \
   "- [topic-b](topic-b.md) — another fully indexed topic" > "$MEMDIR/MEMORY.md"
 OUT=$(run_hook)
-assert_not_contains "clean store stays fully silent" "[memory-lint]" "$OUT"
+# topic-a/topic-b bodies carry no Why:/How-to-apply: fields, so this store
+# also has template-gap > 0 (feedback/project template compliance) — this
+# assertion doubles as coverage that template-gap alone never trips the gate.
+assert_not_contains "clean store (incl. template-gap-only) stays fully silent" "[memory-lint]" "$OUT"
 
 rm -rf "$FAKE_HOME/.claude/projects"
 OUT=$(run_hook)
 assert_not_contains "no memory dir at all stays silent" "[memory-lint]" "$OUT"
+
+echo ""
+echo "--- stale-only stays silent (staleness is permanent-by-design debt, same as template-gap) ---"
+
+init_memdir
+cat > "$MEMDIR/topic-a.md" <<'EOF'
+---
+name: topic-a
+description: "a fully indexed topic"
+metadata:
+  type: project
+---
+see [[topic-b]]
+EOF
+cat > "$MEMDIR/topic-b.md" <<'EOF'
+---
+name: topic-b
+description: "another fully indexed topic"
+metadata:
+  type: project
+---
+see [[topic-a]]
+EOF
+printf '%s\n' \
+  "- [topic-a](topic-a.md) — a fully indexed topic" \
+  "- [topic-b](topic-b.md) — another fully indexed topic" > "$MEMDIR/MEMORY.md"
+OLD=$(date -v-100d +%Y%m%d0000 2>/dev/null || date -d '100 days ago' +%Y%m%d0000)
+touch -t "$OLD" "$MEMDIR/topic-a.md"
+OUT=$(run_hook)
+assert_not_contains "0 findings + 1 stale (>90d) file stays silent — a dormant-by-design 'settled audit' memory would otherwise re-trigger this forever" \
+  "[memory-lint]" "$OUT"
 
 echo ""
 echo "--- classify-unindexed wiring ---"
@@ -135,6 +169,12 @@ assert_contains "non-UNINDEXED finding (dangling link) still fires the main bloc
   "[memory-lint] The memory store has findings" "$OUT"
 assert_not_contains "no UNINDEXED finding present -> no triage line" \
   "UNINDEXED triage" "$OUT"
+# write_memory's fixture body carries no Why:/How-to-apply: fields, so this
+# store also has template-gap > 0 — confirms the Template compliance section
+# (and its file list) never reaches the emitted message even when the block
+# fires for an unrelated reason.
+assert_not_contains "template-gap noise stays out of the emitted block" \
+  "Template compliance" "$OUT"
 
 init_memdir
 init_git_repo

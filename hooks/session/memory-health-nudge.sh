@@ -44,6 +44,11 @@ MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR" ] || exit 0
 
 # Skip the python3 scan if nothing in the store changed since the last run.
+# -maxdepth 1 is deliberate, not a gap: memory-lint.py's collect_state() reads
+# only top-level *.md via non-recursive os.listdir() (see its own "lives flat"
+# comment) — _archive/ and _candidates/ never feed the detector, so a change
+# inside either can never affect what a rescan would report. Widening this to
+# recurse would only add pointless rescans.
 CACHE="$HOME/.claude/state/memory-lint-cache-$ENC"
 mkdir -p "$HOME/.claude/state" 2>/dev/null
 if [ -f "$CACHE" ] && [ -z "$(find "$MEMDIR" -maxdepth 1 -type f -newer "$CACHE" 2>/dev/null | head -1)" ]; then
@@ -71,12 +76,28 @@ else
   touch "$CACHE" 2>/dev/null
 fi
 
-# memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when clean).
+# memory-lint prints "… | findings: N" — emit only when N ≥ 1 (silent when
+# clean). Deliberately NOT gating on the 2026-08-17 "advisory: N stale, M
+# template-gap" line either signal: template compliance sits at 71/149 on the
+# live store and won't reach 0 soon, and staleness has the identical
+# permanence problem — MEMORY.md's own "Settled audits — don't redo without
+# new evidence" entries are dormant *by design* and will cross the 90d
+# threshold with nobody editing them (the earliest, refactor-survey-2026-06-18,
+# in September 2026). Gating on either would make this hook fire forever,
+# defeating the silent-when-clean design — matches memory-lint.py's own
+# framing of both signals as "visibility… not enforcement", i.e. deliberately
+# non-gating. Both still ride along in the body when findings trigger a fire.
 printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0
+
+# Strip the Template compliance section before printing — up to 71 filenames
+# buries the actual finding that triggered this. `kbg:memory-lint` still
+# surfaces it on demand. Staleness stays in (it's a short summary line, not a
+# file dump) since it's genuinely useful context once something else fired.
+FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Template compliance/,/^advisory:/{' -e '/^advisory:/!d' -e '}')
 
 printf '%s\n' \
   "[memory-lint] The memory store has findings (dangling links / orphans / index drift / near-budget):" \
-  "$OUT" \
+  "$FILTERED" \
   "Run \`kbg:memory-lint\` for detail, or fix inline. Advisory only — not a gate."
 
 # UNINDEXED findings conflate two states: an authoring oversight vs. the fold
