@@ -23,7 +23,7 @@ Spawn parallel agents to hunt for small, concrete bugs across the codebase — r
    - Find **exactly one** small, concrete, verifiable bug in `<assigned area>` — not a style nit, not a hypothetical, not a "could be improved."
    - Report `file:line`, the concrete failure scenario (input/state → wrong output), and a minimal fix.
    - **If no real bug is found, say so explicitly.** Do not invent a finding just to have something to report.
-4. **Consolidate.** Collect all reports. Drop empty ("none found") results and near-duplicate findings across agents. Don't inflate a minor nit into something bigger than the dispatched agent actually reported.
+4. **Consolidate.** Collect all reports. Drop empty ("none found") results — that's a true negative, not a merge decision. Directory-split agents can't overlap (Step 1 already guarantees disjoint files), but a lens split shares files across agents by design — when two lens agents describe the same underlying bug there, don't silently drop one: note the overlap explicitly ("N agents independently found this") — agreement across lenses is a confidence signal, not noise to blend away (same discipline as `review-pr` Phase 5: overlap is signal, dedupe would erase it). Don't inflate a minor nit into something bigger than the dispatched agent actually reported.
 5. **Report, don't fix.** Present the surviving findings as a numbered list. If zero findings survive, say the sweep came up clean — that's a valid result, not a failure to report harder.
 
 ## Output Contract

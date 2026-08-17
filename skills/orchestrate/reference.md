@@ -288,7 +288,7 @@ The CC Workflow tool composes from 6 named patterns (trq212, "A harness for ever
 | Pattern | Use when | Failure mode it answers |
 |---|---|---|
 | **classify-and-act** | Decision is "which lane?" — task shape, security tier, priority quadrant. Often a static routing table. | agentic-laziness (explicit choice replaces "do the obvious") |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices; verifier merges. | agentic-laziness (no single window can quit early), self-preferential-bias (N distinct lenses) |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices; verifier merges — default: surface overlap/conflict explicitly, never silently blend or drop (`review-pr` Phase 5, `bug-sweep` Consolidate); deviate only with a stated reason. | agentic-laziness (no single window can quit early), self-preferential-bias (N distinct lenses) |
 | **adversarial verification** | Producer's output judged by a fresh-context skeptic against a rubric. (`kbg:decide`, `doubt-driven-development`, `review-pr` Phase 5.) | self-preferential-bias |
 | **generate-and-filter** | Produce N candidates (names, designs, fixes), filter by rubric, return top-K. | goal-drift (rubric is the commitment, not the pool) |
 | **tournament** | N agents attempt the same task via different approaches; pairwise judges pick a winner. (`kbg:score-decision`'s Ranking mode is the static analog — score N options against one rubric instead of dispatching agents.) | self-preferential-bias (model + approach diversity) |

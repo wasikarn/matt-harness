@@ -410,7 +410,7 @@ const report = await agent(
   confirmed.length + " claims survived " + VOTES_PER_CLAIM + "-vote adversarial verification. Merge semantic duplicates and synthesize.\n\n" +
   "## Confirmed claims\n" + block + "\n" + killedBlock + unverifiedBlock + "\n\n" +
   "## Instructions\n" +
-  "1. Identify claims that say the same thing — merge them, combine their sources.\n" +
+  "1. Identify claims that say the same thing — merge them, combine their sources. If you merge two claims, name both in the merged bullet (e.g. \"Claims [3] and [7]: ...\") — never let a merge disappear silently, the same transparency claimsDroppedByCap already gives the ranking step above.\n" +
   "2. Group related claims into coherent findings. Each finding should directly address the research question.\n" +
   "3. Assign confidence per finding: high (multiple primary sources, unanimous votes), medium (secondary sources or split votes), low (single source or blog-quality).\n" +
   "4. Write a 3-5 sentence executive summary answering the research question.\n" +

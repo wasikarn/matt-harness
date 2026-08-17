@@ -181,6 +181,11 @@ After all 5 Diverge branches return:
    shape of the idea space is the point — clusters are how the
    human reader sees the shape.
 
+   **Note independent convergence.** When a cluster draws ideas from 3 or more
+   distinct frames, say so next to the cluster label ("3 frames converged here") —
+   frames arriving at the same angle independently is a signal worth keeping
+   visible, not something to fold silently into the cluster.
+
 3. **Deepen the top 3.** Rank by the weighted score
    (`novelty × 0.35 + viability × 0.40 + fit × 0.25`), exclude
    traps, take top 3. For each, spawn one **parallel** Agent call

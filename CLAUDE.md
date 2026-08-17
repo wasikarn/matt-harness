@@ -102,6 +102,8 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 **Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
 
+**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job (or a fixed instruction), reasoning about what survives is the model's. Default: never silently blend or drop overlap — `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row states this; `review-pr` Phase 5 and `memory-lint`'s pattern-cluster mode are the reference implementations. Gap confirmed 2026-08-17 (5-agent read-only audit, prompted by an external "reducer engineering" article): `bug-sweep`'s Consolidate step and `deep-research.js`'s Synthesize step both did this silently before the fix.
+
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
 
 ## Skill authoring doctrine (matt-pocock)
