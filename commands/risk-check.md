@@ -42,8 +42,11 @@ total_lines = additions + deletions
 paths = [f.get("path", "") for f in d.get("files", [])]
 
 # Sensitive-path definition reused verbatim from ship-merge.md line 53 --
-# the third surface reusing this exact list (review-pr and ship-merge
-# automation-bias guards are the first two). Do not redefine it here.
+# the second surface reusing this exact regex (ship-merge.md is the
+# canonical source; ship/COMMAND.md's Phase-8 failure-mode note points at
+# ship-merge.md rather than holding its own copy -- confirmed 2026-08-17,
+# review-pr has no copy of this list at all despite an earlier version of
+# this comment claiming otherwise). Do not redefine it here.
 # Case-insensitive to match verifier-protect.sh -- CHANGELOG.md already
 # documents a real bypass from skipping this fold on macOS/APFS.
 KEYWORD_RE = re.compile(r"auth|secret|credential|payment|billing|token", re.IGNORECASE)
