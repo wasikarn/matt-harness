@@ -117,6 +117,8 @@ do_write 5 "$SHA" '{"tier_list":[{"file":"a.ts"}]}'
 do_read 5 "$SHA"
 assert_eq "case3: happy path (exit)" "$R_EXIT" "0"
 assert_eq "case3: happy path (no reason)" "$R_REASON" ""
+GOT_TIER_FILE=$(printf '%s' "$R_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['tier_list'][0]['file'])")
+assert_eq "case3: happy path returns the real phase-5 payload (tier_list survives the read)" "$GOT_TIER_FILE" "a.ts"
 
 # --- Case 4: missing-checkpoint (no file at all) ---
 reset_state
