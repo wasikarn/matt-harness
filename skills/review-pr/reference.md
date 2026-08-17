@@ -67,6 +67,64 @@ enriched hunt-shape checklist. Step 3.6 now dispatches `blind-spot-hunter` direc
 2026-08-09 — it previously dispatched an inline-framed `general-purpose` agent instead, the gap
 this note used to track).
 
+## write-review-state.sh — Field Contract & Amend Mode
+
+Supplementary detail for `SKILL.md § Phase 7, step 1 (write-review-state.sh)`.
+
+   **Run the script exactly as shown — don't paraphrase its output into hand-authored JSON.** The
+   7 field names (`clean`, `critical_count`, `rehunt`, `last_sha`, `branch`, `review_mode`, `ts`)
+   are the machine-readable contract `/ship-merge`'s gate depends on. Confirmed against real
+   production state files: sessions that skip the script and narrate their own richer summary
+   routinely rename or drop these exact keys — silently breaking the downstream gate even though
+   the review itself was fine. **Adding extra fields alongside the required 7 is fine** (a `note`,
+   or the `important_count`/`minor_count`/`round`/`stalled`/`finding_files`/`regressed`/
+   `force_human`/`convergence_state`/`file_streaks`/`churn_files` fields this script now writes and
+   step 2 below reads back to render the round-aware footer) — just never rename or omit the 7. Full
+   script (canonicalization rule, keying scheme, the worktree-escape safety check, and the incident
+   history behind each): `scripts/write-review-state.sh`.
+
+   **Realized you passed a wrong value (e.g. the wrong `HEAD_SHA`) after the write already
+   happened?** Re-run the same command with `amend` appended as a 9th argument — it corrects the
+   fields you re-pass on the round already in the state file, in place, without advancing the round
+   counter or comparing that round's counts against themselves. Do NOT hand-edit the JSON to fix it
+   and do NOT just re-run the script normally (that treats the correction as a brand-new round,
+   compares the round against its own already-written counts as "prior round," and produces a false
+   `stalled:true` — confirmed in production, session e34b6832/PR #2754 round 9, 2026-08-11). `amend`
+   ignores `finding_files_path`; `regressed`/`churning`/`finding_files`/`file_streaks`/`churn_files`
+   carry through unchanged from the round being corrected. For an own-branch review, `amend` refuses
+   (fails closed) if the shared state file's `branch` doesn't match the current branch — it corrects
+   the current branch's own round, never a different branch's (found by `/kbg:deep-audit`,
+   2026-08-14: with no guard, switching branches then running `amend` silently adopted the other
+   branch's round/prev_*/streaks).
+
+   `CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` = number of Critical/Important/Minor findings
+   from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
+
+## Build the Review Payload
+
+Supplementary detail for `SKILL.md § Phase 7, step 3 (Submit the review to GitHub)`.
+
+   **Build the review payload** (canonical procedure — Phase 6 branch B builds its preview from this):
+   - **Event**: `REQUEST_CHANGES` if any Critical findings, `COMMENT` if only Important/Minor, `APPROVE` if zero findings.
+   - **Review body**: The Phase 6 summary's tier table + trend + proof-check (top-level overview) — **excludes** the Requirement Analysis section (ticket ambiguities/open questions). That section critiques the ticket, not the diff, and is terminal-only (Phase 6 step 1) — it never goes into a posted GitHub body on either review target.
+   - **Comments array**: For every finding that has `file` + `line`, create:
+     ```json
+     {"path": "<file-path>", "line": <line-number>, "side": "RIGHT", "body": "[<severity>] <message>"}
+     ```
+     Findings without file:line go into the review body instead.
+
+   **Two entry points — the gate is never asked twice:**
+   - **Reviewer flow (PR #N):** the submit decision (preview + prior-review check + choice) already happened in **Phase 6 branch B**. **Do not re-ask.** Execute the recorded choice: *Post line-level* → JSON + `gh api` (below); *Post summary only* → single `gh pr review --body`; *Fix + push* → already applied/pushed in Phase 6, nothing to post; *Skip* → nothing to post.
+   - **Author flow (current branch):** Phase 6 was a fix decision, so offer submit **here**, only if a PR exists for the branch. **Prior-review check**: `gh pr view <#> --json reviews -q ".reviews[].author.login"` vs `gh api user -q .login`; if you already reviewed, warn that GitHub stacks new reviews. **Preview** event type + comment count + 2–3 samples + body, then **AskUserQuestion** single-select: `Post line-level review now` / `Post summary only` / `Skip — post manually`. If no PR exists yet, skip (nothing to submit to).
+
+   **If posting line-level comments**, build JSON (`commit_id: $HEAD_SHA`, `event`, `body`, `comments[]`) and submit:
+   ```bash
+   python3 -c "import json,sys; print(json.dumps({'commit_id':sys.argv[1],'event':sys.argv[2],'body':sys.argv[3],'comments':json.loads(sys.argv[4])}))" \
+     "$HEAD_SHA" "$EVENT" "$REVIEW_BODY" "$COMMENTS_JSON" \
+     | gh api repos/{owner}/{repo}/pulls/<n>/reviews --method POST --input -
+   ```
+   `<#>` = target PR number, or current branch's PR (`gh pr view --json number -q .number`). If no PR exists yet, skip (nothing to submit to).
+
 ## Integration Notes — full detail
 
 Supplementary detail for `SKILL.md § Integration Notes (Project-Specific)`.

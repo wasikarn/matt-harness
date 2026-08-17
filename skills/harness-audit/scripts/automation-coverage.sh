@@ -44,23 +44,33 @@ if [ -f "$_gate" ] && /usr/bin/grep -q 'gh pr checks' "$_gate"; then
   _g=$((_g + 1)); _merge_dims_gated=$((_merge_dims_gated + 1))
 fi
 
-# 3. review-pr Phase 6 own-branch: all-zero → "Clean pass, proceeding" (skip ask).
+# review-pr's own markers may live in SKILL.md or (once split) a references/*.md
+# it points to — grep both so a lazy-loaded extraction doesn't silently drop a
+# site from this report with no signal anywhere else (this script never CRITs).
 _rp="$CLAUDE_DIR/skills/review-pr/SKILL.md"
-if [ -f "$_rp" ] && /usr/bin/grep -q 'Clean pass, proceeding' "$_rp"; then
+_rp_extra=()
+if [ -d "$CLAUDE_DIR/skills/review-pr/references" ]; then
+  for _rpf in "$CLAUDE_DIR/skills/review-pr/references"/*.md; do
+    [ -f "$_rpf" ] && _rp_extra+=("$_rpf")
+  done
+fi
+
+# 3. review-pr Phase 6 own-branch: all-zero → "Clean pass, proceeding" (skip ask).
+if [ -f "$_rp" ] && /usr/bin/grep -q 'Clean pass, proceeding' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
   emit "G  review-pr/SKILL.md  Phase 6 all-zero tiers → proceed (skip ask)"
   _g=$((_g + 1))
 fi
 
 # 4. review-pr Phase 6 own-branch: Minor-only → auto-proceed (Slice 3). Detected
 #    by the widened skip marker. Absent before Slice 3.
-if [ -f "$_rp" ] && /usr/bin/grep -q 'ACS:minor-only-auto-proceed' "$_rp"; then
+if [ -f "$_rp" ] && /usr/bin/grep -q 'ACS:minor-only-auto-proceed' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
   emit "G  review-pr/SKILL.md  Phase 6 Minor-only (0 Critical, 0 Important) → auto-proceed"
   _g=$((_g + 1))
 fi
 
 # 5. review-pr Phase 1: clear-analysis → auto-Parallel (Slice 2). Detected by the
 #    auto-decide marker. Absent before Slice 2.
-if [ -f "$_rp" ] && /usr/bin/grep -q 'ACS:auto-parallel' "$_rp"; then
+if [ -f "$_rp" ] && /usr/bin/grep -q 'ACS:auto-parallel' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
   emit "G  review-pr/SKILL.md  Phase 1 unambiguous analysis → auto-Parallel (skip ask)"
   _g=$((_g + 1))
 fi
@@ -68,7 +78,7 @@ fi
 # --- Advisory G (verifier demotion — already shipped, NOT an auto-act/escalate
 #     decision; counted separately so the ACS auto-act count matches the plan) --
 _demote=0
-if [ -f "$_rp" ] && /usr/bin/grep -q 'confidence.*0\.8\|0\.8.*confidence' "$_rp"; then
+if [ -f "$_rp" ] && /usr/bin/grep -q 'confidence.*0\.8\|0\.8.*confidence' "$_rp" "${_rp_extra[@]}" 2>/dev/null; then
   _demote=1
   emit "G* review-pr/SKILL.md  Phase 5 step 3.5 verifier demotion (confidence≥0.8 + isReal=false) — advisory, already shipped, not counted in ACS auto-act"
 fi

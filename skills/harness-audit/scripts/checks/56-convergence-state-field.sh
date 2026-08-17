@@ -50,6 +50,13 @@ fi
 if [ -f "$_r" ]; then
   /usr/bin/grep -q 'force_human' "$_r" "${_r_extra[@]}" 2>/dev/null || \
     crit "ship-merge.md: Phase 1 step 6 scored gate no longer reads 'force_human' — the one-way-door backstop lost its read of the convergence verdict; a non-converged review can merge regardless of the writer emitting the field"
+  # force_human living only in a references/ file is a real read ONLY if
+  # COMMAND.md still points there — an orphaned reference (its pointer
+  # stub deleted) would pass the grep above while the model never loads it.
+  if [ ${#_r_extra[@]} -gt 0 ] && ! /usr/bin/grep -q 'force_human' "$_r" 2>/dev/null; then
+    /usr/bin/grep -q 'scored-gate-guards.md' "$_r" || \
+      crit "ship-merge/COMMAND.md: force_human lives only in references/scored-gate-guards.md but COMMAND.md's pointer to it is gone — the field is orphaned and never loaded"
+  fi
 else
   crit "ship-merge command not found at commands/ship-merge.md or commands/ship-merge/COMMAND.md — the merge gate command is missing entirely"
 fi
