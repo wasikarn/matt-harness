@@ -17,7 +17,7 @@ description: Build or remove a plugin surface (agent, skill, command, hook, outp
    — hand-edit both: `skills/orchestrate/reference.md`'s named routing table (an agent missing
    there loads fine but `orchestrate` can't route to it) and its "N-agent survivor set" count
    phrase, plus the count mention in `docs/agent-voice-extension.md`.
-5. Run validation (`claude plugin validate --strict`), then `bash
+5. Run validation (`claude plugin validate . --strict`), then `bash
    skills/harness-audit/scripts/audit.sh` and fix any WARN it raises — checks 12 and 48 exist
    specifically to catch anything step 4 missed.
 6. `claude plugin update kbg@kobig`. Do this **before** committing, not after — the pre-commit
@@ -33,7 +33,7 @@ When `skills/inventory/` is present, regenerate the capability map with:
 
 ## Completion criterion
 
-The new surface loads: `claude plugin validate --strict` passes, both manifests carry the same
+The new surface loads: `claude plugin validate . --strict` passes, both manifests carry the same
 bumped version, and the component appears in the live `/skills`/`/agents`/`/commands` listing after
 `claude plugin update kbg@kobig` + restart. For an addition, `harness-audit` also reports no new
 WARN — for a new agent, that means it appears in `orchestrate/reference.md`'s routing table AND

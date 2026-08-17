@@ -1,6 +1,7 @@
 ---
 name: bug-sweep
 description: "Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (/review-pr) or session audit (/deep-audit)."
+argument-hint: "[path] [count]"
 ---
 
 # Bug Sweep
