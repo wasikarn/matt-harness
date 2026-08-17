@@ -20,8 +20,12 @@ description: Build or remove a plugin surface (agent, skill, command, hook, outp
 5. Run validation (`claude plugin validate --strict`), then `bash
    skills/harness-audit/scripts/audit.sh` and fix any WARN it raises — checks 12 and 48 exist
    specifically to catch anything step 4 missed.
-6. Commit and push.
-7. `claude plugin update kbg@kobig` → restart Claude Code.
+6. `claude plugin update kbg@kobig`. Do this **before** committing, not after — the pre-commit
+   hook re-runs harness-audit, and its F1 check only sees the latest *cached* plugin version. A
+   brand-new file isn't there until this command copies the working tree into a fresh cache dir,
+   so committing first blocks on a CRIT F1 ("not loadable").
+7. Commit and push.
+8. Restart Claude Code to pick up the change in the current session.
 
 When `skills/inventory/` is present, regenerate the capability map with:
 `bash skills/inventory/scripts/inventory-boundary.sh --repo-only > BOUNDARY.md`
@@ -42,6 +46,9 @@ fresh grep of the test file confirms every remaining shared helper still has at 
 
 - **Same-version edit.** A cached plugin no-ops on an unchanged version — step 3's bump is not
   optional, and skipping it means the edit silently never takes effect.
+- **Committing before `claude plugin update`.** Confirmed live 2026-08-17 (`/bug-sweep` add):
+  the pre-commit hook's harness-audit pass sees only the latest *cached* version, so a new file
+  reads as CRIT F1 ("not loadable") until step 6 runs first.
 - **Skipped `BOUNDARY.md` regen.** Leaves the capability map stale the next time `inventory` reads
   it as ground truth.
 - **Skipped fleet-count/routing-table sync.** A new agent that never gets added to
