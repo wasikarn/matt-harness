@@ -137,6 +137,95 @@ kbg-harness's own equivalent is split across three surfaces (`kbg:inventory` —
 thinner) covering 96 surfaces (51 skills + 20 agents + 25 commands), with no functional/role-based
 grouping comparable to `ask-matt`'s. Raised as a candidate improvement, not yet scoped or spec'd.
 
+## 5. The mechanism confirmed in practice — the fleet, measured and read
+
+The earlier sections above were derived mostly from matt's *meta*-doc (`writing-for-agents`) and
+one 3-line example (`wait-what`). This section checks the theory against his actual working
+skills — measured sizes, read files across the size spectrum, plus one previously-unread doc
+(`SKILL-MECHANICS.md`) that turned out to explain a structural difference from kbg's own fleet.
+
+### Size distribution, measured
+
+All 25 published skills (`skills/engineering/` + `skills/productivity/`, excluding the
+unpublished `in-progress/`/`misc/` folders — see §4): **count 25, sum 116,728 chars, average
+4,669, min 157 (`grill-me`), max 12,056 (`wayfinder` — his own description: "the most cognitively
+demanding flow here").** Every one of his skills, including the largest and hardest, sits well
+under kbg-harness's own 20,000-char hard ceiling and 14,000-char reduction target — this isn't a
+close call.
+
+### The extreme case: composition over restatement
+
+`grill-with-docs/SKILL.md`'s entire body, in full: `Call the Skill tool twice, for "grilling" and
+"domain-modeling".` (247 chars total, frontmatter included). This is the no-op test taken to its
+logical limit — every sentence explaining the interview procedure would be a no-op duplicate of
+what `grilling` and `domain-modeling` already say, so the file states none of them. Single source
+of truth enforced by literal reference, not restatement. `grill-me` (157 chars, the smallest skill
+in the fleet) does the same for the stateless variant.
+
+### The actual answer to "why small without losing content"
+
+Reading `diagnosing-bugs` (8,614 chars, a 6-phase discipline) shows the identical move
+`writing-for-agents` teaches for documents, applied instead to a bug repro: *"Minimise... shrink
+the repro to the smallest scenario that still goes red... Done when every remaining element is
+load-bearing — removing any one of them makes the loop go green"* (Phase 2). That is the no-op
+test, word for word in spirit — "delete it, check if the outcome changes" — pointed at a failing
+test case instead of a paragraph. `tdd`'s red-green loop ("only enough code to pass it... don't
+anticipate future tests") is the same discipline applied to implementation. `wait-what`'s repair
+logic is the same discipline applied to a misunderstood sentence.
+
+**This is the real mechanism, not a documentation trick bolted onto his skill-writing separately:
+"minimize to what's load-bearing, verified against a behavioral or outcome check" is matt's one
+general-purpose problem-solving move, and he applies it reflexively to his own prose exactly as he
+teaches the model to apply it to the user's code, bugs, and documents.** The no-op test isn't a
+special writing technique sitting apart from the rest of his doctrine — it's this same move,
+pointed at himself.
+
+### Completion criteria as literal checklists, confirmed independently convergent
+
+`diagnosing-bugs`'s phases end in explicit `- [ ]` checkboxes with falsifiable conditions (Phase
+1: "Red-capable... Not 'runs without erroring' — it must be able to catch this specific bug"), plus
+explicit stop-triggers against premature completion ("If you catch yourself reading code to build
+a theory before this command exists, **stop**"). This independently converges with this repo's own
+Rule 14 ("score, not feel") — arrived at separately, not copied from either direction.
+
+### Leading words, watched doing real cross-section work
+
+"Tight" is defined once in `diagnosing-bugs` Phase 1, then reused as a load-bearing adjective 4+
+times through the rest of the file with no re-explanation. "Seam" is defined narrowly inside `tdd`,
+but `tdd` explicitly defers to `codebase-design` for the *full* vocabulary rather than
+re-explaining it there — single source of truth for a term shared across skills, enforced the same
+way `grill-with-docs` enforces it for a whole procedure. "Load-bearing" is the same word, doing the
+same test, in both `diagnosing-bugs` (bug repros) and this repo's own doctrine ("keep only what's
+load-bearing") — independently, not borrowed.
+
+### The piece that explains the structural gap with kbg's own fleet: `SKILL-MECHANICS.md`
+
+`writing-for-agents`' own doc names a linked `SKILL-MECHANICS.md` for "what changes when the
+document is a skill" but the earlier research pass never opened it. It names two invocation modes
+with an explicit tradeoff:
+
+- **Model-invoked** (keeps a `description`): the description is *permanent context load* — loaded
+  every session/Task-spawn whether or not the skill ever fires — in exchange for the agent being
+  able to fire it autonomously, and for *other skills* being able to reach it by name.
+- **User-invoked** (`disable-model-invocation: true`): zero context load, but the cost shifts to
+  the human — "you are the index that must remember it exists."
+
+Matt's fleet leans heavily on user-invoked: `wait-what`, `grill-with-docs`, `grill-me`, `implement`,
+`to-spec`, `to-tickets`, and `ask-matt` itself all carry the flag. This is a deliberate
+context-load-minimization lever, not an accident — and it's *why* `ask-matt` has to exist at all:
+*"When user-invoked skills multiply past what you can remember, that piled-up cognitive load is
+cured by a router skill... It can only hint, never fire them."*
+
+**This is a genuinely different reason than kbg-harness's own use of the same flag.**
+kbg-harness's `disable-model-invocation` convention (12 carriers per root `CLAUDE.md`) is used
+almost entirely as a *safety gate* — blocking an irreversible or external action (a PR merge, an
+ambient-chat mis-trigger) from firing without deliberate user invocation. Matt's primary use of the
+identical YAML field is a *context-load lever*, with safety as at most a secondary side-effect for
+a couple of his own surfaces (`wizard`'s credential-handling caution reads closer to kbg's
+reasoning than the rest of his fleet does). Two genuinely different problems converging on the same
+mechanism — worth keeping distinct rather than assuming kbg's flagged surfaces and matt's flagged
+surfaces solve the same thing.
+
 ## What this produced (tracked in GitHub, not narrated here)
 
 - **Shipped**, commit `b88015e` (v0.68.368): `staff-eng.md`'s wait-what-repair bullet narrowed
