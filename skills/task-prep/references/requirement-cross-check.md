@@ -12,3 +12,11 @@ Two independent detect paths (METHODOLOGY Rule 3 — interrogate the claim, not 
 Either path: hold the report for Step 4/5/6 below — it supplies **candidate** values, it does not fill anything by itself (Step 7's "never overwrite a filled field" still applies).
 
 **Success criterion:** either skipped (no ticket reference and no standalone feature requirement), or you're holding a requirement-analyst report to draw on below.
+
+### Step 6 gap-priority rationale (why `riskiest_assumption` and `open_questions` rank where they do)
+
+A ticket ambiguity a downstream implementer would hit is exactly the class of gap Step 6 exists to surface before send, not after — that's why Step 3.5's `open_questions` fold into the same batch as the four generic gap types.
+
+A flagged `riskiest_assumption` gets its own priority tier ahead of the generic `open_questions` list because it's the analyst's single designated top risk, not one more item that has to win a tie-break against everything else on the list — don't let a task-threatening assumption get demoted to a passing `<edge-cases>` mention just because ten lower-stakes `open_questions` are competing for the same ask-slot.
+
+When the ≤4 batch cap forces a cut past `<artifacts>`, `open_questions` outranks `<edge-cases>` because a concrete, ticket-sourced ambiguity outranks generic foresight-gathering.
