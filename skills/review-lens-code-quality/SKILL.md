@@ -1,6 +1,6 @@
 ---
 name: review-lens-code-quality
-description: Fowler smell heuristics, AI-generated-code review priorities, and illustrative BAD/GOOD examples for code-reviewer's general checklist. Don't use for the db/fix-authenticity/requirement-coverage lenses or standalone review.
+description: Fowler smells, AI-generated-code priorities, and BAD/GOOD examples for code-reviewer. Auto-loads when code-reviewer runs its checklist. Don't use for db/fix-authenticity/requirement-coverage lenses or standalone review.
 metadata:
   origin: kbg
 ---

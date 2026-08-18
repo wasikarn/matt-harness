@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.346] — 2026-08-18
+
+### Fixed
+
+- **v0.68.345 follow-up: closed its two deliberately-deferred gaps, plus a trigger-pattern WARN** —
+  v0.68.345's own goal scope excluded `README.md` and `CHANGELOG.md`, so it shipped with a stale
+  fleet count/version badge and no changelog entry; both closed here (README's 3 fleet-count
+  mentions — including the "What You Get" table row `sync-fleet-counts.sh` doesn't reach — now
+  read 43 skills/v0.68.346). Also added "Auto-loads when…" trigger phrasing to
+  `kbg:review-lens-code-quality`/`kbg:review-lens-nextjs-routing`'s descriptions to clear
+  harness-audit check 5's missing-trigger-pattern WARN, caught on this pass.
+
+## [0.68.345] — 2026-08-18
+
+### Fixed
+
+- **`code-reviewer`/`nextjs-reviewer` split under harness-audit check 60's 20K-char threshold** —
+  both agent bodies sat over the limit (`code-reviewer.md` 23,979 chars, `nextjs-reviewer.md`
+  22,772 chars). Extracted the Fowler smell baseline, the v1.8 AI-generated-code addendum, and 4
+  illustrative BAD/GOOD examples out of `code-reviewer.md` into a new `kbg:review-lens-code-quality`
+  skill, mirroring the existing `review-lens-db-sql`/`fix-authenticity`/`requirement-coverage`
+  pattern. Extracted App Router File Conventions and Middleware out of `nextjs-reviewer.md` into a
+  new `kbg:review-lens-nextjs-routing` skill, wired via the `skills:` frontmatter preload field
+  since that agent carries no `Skill` tool. Both agents now sit at ~19.3K chars. Every extracted
+  line verified verbatim against the pre-edit git blob by grep (120 lines checked).
+
 ## [0.68.344] — 2026-08-17
 
 ### Fixed
