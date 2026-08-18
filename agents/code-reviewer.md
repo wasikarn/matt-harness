@@ -32,7 +32,10 @@ When invoked:
 - **Report** if you are >80% confident it is a real issue
 - **Skip** stylistic preferences unless they violate project conventions
 - **Skip** issues in unchanged code unless they are CRITICAL security issues
-- **Consolidate** similar issues (e.g., "5 functions missing error handling" not 5 separate findings)
+- **Consolidate** similar issues into one finding, but every instance's file:line must still be
+  cited — consolidation reduces finding *count*, it never drops the locatability Q1 below
+  requires (e.g., "5 functions missing error handling [a.ts:12, a.ts:40, b.ts:8, b.ts:55, c.ts:3]"
+  not 5 separate findings, and not a bare "5 functions missing error handling" with no citations)
 - **Prioritize** issues that could cause bugs, security vulnerabilities, or data loss
 
 ### Pre-Report Gate
