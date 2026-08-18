@@ -30,6 +30,18 @@ bullet list the numbered-window proxy couldn't see). INFO findings never fail th
 2026-07-22: only 2/35 native skills (`pr`, `task-prep`) actually carry a `## Design checks`
 section — the template's checklist is documentation, not an enforced requirement.
 
+**No-op test — the qualitative backstop for every size-driven trim:** source doctrine
+`mattpocock-skills:writing-for-agents`. One operative sentence: delete the line — does agent
+behavior change on a real branch of the skill's own worked examples? If not, prunable regardless
+of what the char count says; if so, load-bearing regardless of char count. Applies to every trim
+driven by any of the six size checks — 20, 36, 42, 47, 51, 60 — not just 36. It's the required
+pair to `skills/compress-docs/scripts/verify-preserved.py`, which checks structural preservation
+only (fenced code blocks, headings, inline code spans, link URLs, frontmatter) and never prose
+comprehension: a compression pass can pass that script at 100% green while still turning
+explanatory prose into an unclear telegram, as long as every structural element survives untouched.
+The no-op test is what catches that case — a size check and `verify-preserved.py` passing is
+necessary, never sufficient, on its own.
+
 **Named Model footers:** a skill/command/agent that makes load-bearing reasoning/judgment choices
 may end with a `## Named Model` footer citing cc-thinking-skills lenses. Apply the 3-condition
 rubric from `memory/mental-models-sweep-v0302-2026-07-03.md`: (1) load-bearing reasoning gap, (2)
