@@ -16,11 +16,11 @@ bookkeeping or explicit stop condition. This command formalizes that cycle.
 **Why this forks `kbg:recursive-improve`'s skeleton, not `skill-creator`'s `run_loop.py`:**
 `run_loop.py` fully automates *description* tuning because triggering is mechanically
 observable — it just watches which tool Claude calls. Body content has no equivalent mechanical
-check; `skill-creator`'s own body-improvement loop is explicitly human-judged ("keep going until
+check; `skill-creator`'s own body-improvement loop is human-judged ("keep going until
 the user says they're happy"), not auto-searched. This command's signal —
 `kbg:review-fixtures`' two independent reviewers plus reconciliation — is better than one
 self-grading pass, but it is **reviewer judgment, not a hard grounded score** the way
-`harness-audit`'s CRIT/WARN count is for `recursive-improve`. That's exactly why the ASK gate
+`harness-audit`'s CRIT/WARN count is for `recursive-improve`. That's why the ASK gate
 below is mandatory, not decoration: a loop whose stop condition is reviewer judgment needs a
 human as the real check (CLAUDE.md's verifier-separation crux).
 
@@ -89,7 +89,7 @@ name; a candidate that rewrites the whole file makes Verify's delta impossible t
 ### 4. ASK — the gate (mandatory)
 
 Present: the diff, the findings it targets (with severities), the iteration count so far, and the
-dispatch cost of the next step (`2N + 2`, computed from this workspace's actual eval-case count).
+dispatch cost of the next step (`2N + 2`, computed from this workspace's eval-case count).
 **Recommend**: state which of the three options the diff actually earns on its own merits — e.g.
 "Apply and re-test: the diff directly targets both critical findings and doesn't touch unrelated
 sections" — not just the general principle that a good diff should be applied.
@@ -103,8 +103,8 @@ template, not fixed text to paste verbatim:
   cost, or none of the candidates are landing)
 
 Reuse `kbg:recursive-improve`'s Step 3 gate language verbatim for the edge cases — denial ≠
-approval; default to actually calling `AskUserQuestion` — don't self-declare it unreachable
-without trying it first. Only if it's genuinely unreachable (headless, `dontAsk`, or the call
+approval; default to calling `AskUserQuestion` — don't self-declare it unreachable
+without trying it first. Only if it's unreachable (headless, `dontAsk`, or the call
 itself errors), render the same question as numbered prose and stop there, waiting for an
 explicit reply in a later turn; never fail open into Act. A planning request is not authorization
 to execute.
@@ -164,7 +164,7 @@ applied change accepted): bump `plugin.json` + `marketplace.json` **exactly once
 run**, not per-iteration — bumping after every Act would race any concurrent session editing the
 same manifest files, a confirmed failure mode in this repo. Run
 `bash skills/inventory/scripts/sync-fleet-counts.sh` if the target itself is a counted surface
-whose description changed in a way that affects the fleet-count string (rare for a body-only
+whose description change affects the fleet-count string (rare for a body-only
 edit, but check). Tell the user this content fix needs `claude plugin update kbg@kobig` + restart
 before it's live — a prior incident in this repo shipped a content fix without this bump and the
 stale cache silently served the unfixed text.
