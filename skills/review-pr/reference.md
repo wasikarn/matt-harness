@@ -122,9 +122,40 @@ enriched hunt-shape checklist. Step 3.6 now dispatches `blind-spot-hunter` direc
 2026-08-09 — it previously dispatched an inline-framed `general-purpose` agent instead, the gap
 this note used to track).
 
-Why it exists: on a clean, non-trivial-diff pass, an adversarial re-hunt for a shared blind spot
-means the clean verdict is a second pair of eyes', not just the absence of a finding — the same
-reviewers that found nothing share whatever blind spot let the defect through in the first place.
+Why it exists: step 3.5 only checks findings that already exist — it does nothing when reviewers
+return zero Critical/Important findings, exactly the shared-blind-spot case (a false *negative*
+no refutation can catch). On a clean, non-trivial-diff pass, an adversarial re-hunt for that
+shared blind spot means the clean verdict is a second pair of eyes', not just the absence of a
+finding — the same reviewers that found nothing share whatever blind spot let the defect through
+in the first place. Re-reviewing with the same lens just reproduces the zero; the reframe from "check this" to "there
+is a bug here — locate it" is what gives a shared blind spot a chance to surface. `blind-spot-hunter`
+is step 3.6's purpose-built agent for this — pinned `opus`, trace-to-earned-severity, a "Cleared
+decoys" list, fail-closed refutation already built in — not a generic agent re-framed by the
+step's own prompt. A hunter told "assume a bug exists" is primed to manufacture a weak one — the
+exact false positive step 3.5's fail-closed refutation exists to kill, which is why every hunter
+finding gets that same refutation applied before it counts.
+
+**Reading the Phase 5 checkpoint — why `$HEAD_SHA` isn't git-derived.**
+`read-review-checkpoint.sh` doesn't call `git` itself — it mirrors `should-continue-loop.sh`'s
+own pure string-compare convention. A live git-derive here would reject every legitimate
+PR-by-number hand-off, since Phase 2 works from an isolated worktree.
+
+**Step 4 — what makes a zero-findings verdict "clean" vs. "didn't check."** `agents/code-reviewer.md`
+explicitly sanctions a bare zero-findings APPROVE ("do not withhold approval to appear rigorous")
+— don't demand narration a clean pass doesn't need. What actually distinguishes "checked and
+clean" from "didn't check" is that Phase 4 hands every agent the exact pinned range
+(`$BASE_SHA..$HEAD_SHA`): a zero-findings return against a known, scoped diff *is* the clean
+signal — backed, on a non-trivial diff, by step 3.6's adversarial re-hunt so the clean verdict
+isn't just the reviewers' shared blind spot restated.
+
+**Why step 3.5 exists (independence).** SCRUTINIZE-4 (step 2) is self-graded: the same
+orchestrator context that ran the checklist decides whether its own checklist passed — the maker
+grading its own work, the exact pattern CLAUDE.md's verifier-separation principle rejects
+everywhere else in this harness. Step 3.5 is the actual independent check. It closes the
+*independence* gap, not the *empirical-grounding* gap (a correlated hallucination across
+same-distribution reviewers can still survive) — that second gap is `kbg:review-pr-finish`'s
+Phase 6 proof-verification check (own-branch flow) and `/ship-merge` Phase 1 step 6's distrust of
+same-session self-tiering on sensitive diffs.
 
 ## write-review-state.sh — Field Contract & Amend Mode
 
@@ -368,7 +399,7 @@ Supplementary detail for `review-pr/SKILL.md`, `review-pr-tier/SKILL.md`, and `r
 - **GH CLI**: Use `gh pr view` to check PR state before launching review. `review-pr` reviews code, not CI status — plenty of repos have no CI wired up at all, so this skill never checks or gates on `gh pr checks` (that belongs to `/ship-merge`'s own required-checks gate, which only runs against repos that actually have branch protection configured). Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
 - **Review routing reference**: Code that touches auth/secrets → `security-reviewer`'s fast in-review flag (Phase 3); a deeper standalone threat-model audit is `kbg:security-auditor`, run directly when the diff warrants one. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. A detected Jira ticket → `requirement-analyst` (Phase 1.5, ticket-quality report) + code-reviewer's requirement-coverage lens (Phase 3/4, diff-vs-requirements). Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
 - **Severity tier rubric** (Phase 5): Critical / Important / Minor are canonical across `/ship`, `/fix-bug`, and `kbg:review-pr`.
-- **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user.
+- **SCRUTINIZE-4 rubric** (Phase 5): Challenge intent / Trace call graph / Verify execution branches / Evidence requirement. Named + tabular (4 falsifiable checks) so the gate is a yes/no per finding, not prose that gets skipped — the prose version of this gate was skipped in real runs because it was exhausting; naming the checks turns "did I scrutinize?" from a vibe into a per-finding yes/no. Dropped findings go to `.scratch/review-pr-<UTC-timestamp>/rejected.md` (ephemeral audit log, not an `issue.md`) with a per-question tally surfaced to the user — the reject-and-log path means dropping a finding is *auditable* (vs. an agent's confidence-threshold, which is invisible). **Q3's test-reach precedent**: the tathep `compliance-audit-round-2` gap — a CRITICAL hid through 9 review rounds because no test exercised the defeating state-transition, so every pass read "code path covered" as "safe" while the transition that actually defeated the fix was never reached. That's why Q3 requires noting test-reach per branch, not just tracing the branch.
 - **Rejection-rate ledger** (Phase 5+6): per-session per-Q counters written to `ledger.md` (sibling of `rejected.md`). Rolling 10-session window drives a 1-line trend + tightening eligibility. Spec: `ledger.md`. Policy (threshold, tightening action, hard caps, reversibility, awk aggregation helper): `policy.md`. Cap: 200 sessions FIFO, 1 tightening per Q per 90 days, 1 tightening per session max.
 
 ## Tips
