@@ -18,7 +18,7 @@ State, in one line: the decision being scored, the options (if ≥2), and what a
 
 ### 2. Set the criteria + weights
 
-Propose 4–6 judging criteria, each **measurable** (you can cite the evidence that moves the score), and assign each a weight (integers summing to 100) — and **state that total in the output** ("weights sum to 100"), don't leave the reader to add the column to check the rubric is well-formed. If the user named criteria, honor them. Default rubric for "should we act on this proposal?" — adapt to the decision at hand:
+Propose 4–6 judging criteria, each **measurable** (you can cite the evidence that moves the score), and assign each a weight (integers summing to 100) — and **state that total in the output** ("weights sum to 100"), don't leave the reader to add the column to check the rubric is well-formed. If the user named criteria, honor them. **Escape hatch, past 6:** only when a criterion is genuinely independent — it moves the verdict on its own, and folding it into an existing criterion would hide a separately-decisive factor rather than just tidying the rubric — name it as its own row instead of forcing it in. Don't reach for this to split one concern into two related-sounding ones; that's ceremony, not precision. Default rubric for "should we act on this proposal?" — adapt to the decision at hand:
 
 | Criterion | Wt | Measures |
 |---|---|---|
