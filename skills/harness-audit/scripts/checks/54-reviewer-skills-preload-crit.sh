@@ -51,7 +51,13 @@
 # "Bash", "Write"]) and no prior companion skill existed, so this preload is
 # the only lawful extraction path and carries the 10-item Anti-Patterns list
 # this agent has no other way to reach.
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "plan-reviewer|kbg:plan-reviewer-format" "summarizer|kbg:summarizer-format" "security-reviewer|kbg:security-reviewer-patterns" "spec-miner|kbg:spec-miner-anti-patterns"; do
+# performance-optimizer|kbg:performance-optimizer-algorithms added 2026-08-18:
+# same split, same reason — performance-optimizer.md has no Skill tool
+# (tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]) and no prior
+# companion skill existed, so this preload is the only lawful extraction path
+# and carries the 14-row Algorithmic Analysis pattern table this agent has no
+# other way to reach.
+for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "plan-reviewer|kbg:plan-reviewer-format" "summarizer|kbg:summarizer-format" "security-reviewer|kbg:security-reviewer-patterns" "spec-miner|kbg:spec-miner-anti-patterns" "performance-optimizer|kbg:performance-optimizer-algorithms"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"
