@@ -131,6 +131,18 @@ Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 1 (write-re
    `CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` = number of Critical/Important/Minor findings
    from Phase 5. `rehunt` records step 3.6's outcome (`clean` / `skipped-trivial` / `incomplete` / `n/a`) so the downstream gate can tell a certified-clean review from one whose blind-spot hunt never returned — an `incomplete` re-hunt (or any `dispatch_failures`) writes `clean:false` even at `critical_count:0`, because an unfinished review has not certified zero criticals. Always write this file; it is the machine-readable input to `/ship-merge`'s Rule-14-scored review gate. A reviewer-flow run on a PR by number still writes it (using the PR's HEAD SHA) so the author can see the verdict — to `review-pr-<#>.json`, not the shared `review-last.json`. `review_mode` records provenance: `pr-by-number` means Phase 2 ran the review in an isolated worktree (severity tiering wasn't done by a session that could be the diff's own author); `own-branch` means an author-flow self-review. Phase 5 step 3.5 now runs an independent verifier per Critical/Important finding regardless of `review_mode` — but that verifier is still dispatched and its verdict interpreted by the same session that may have authored the diff, so `own-branch` still doesn't fully close the self-review gap (see `/ship-merge` Phase 1 step 6 — this still gates same-session self-tiering on sensitive diffs).
 
+   **`FINDING_FILES` repo-relative-path rationale.** Entries must be repo-relative (matching Phase
+   7 step 3's `comments[].path` convention) — the same file reported as `$WT`-absolute in one round
+   and repo-relative in another reads as two different identities to both `regressed` and the
+   churn-streak tracker (both are exact-string set comparisons). The script normalizes a leading
+   `/` defensively, but don't rely on that — report repo-relative at the source.
+
+   **Why positional args, not inherited env.** Pass the actual values you're holding at that point
+   in the phase (`CRITICAL_COUNT`/`IMPORTANT_COUNT`/`MINOR_COUNT` derived from `tier_list`,
+   `REHUNT_STATUS` from `kbg:review-pr-tier`'s step 3.6, `DISPATCH_FAILURES` from the checkpoint,
+   `HEAD_SHA`/`WT` from the checkpoint) as literal arguments — an inherited-but-unexported shell
+   variable fails silently across the nested bash invocation this script call is.
+
 ## Loop Reason Stop Messages
 
 Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 2` — the per-`$LOOP_REASON` message text
@@ -182,6 +194,69 @@ harness-audit check 59's requirement that the literal string stay grep-visible t
 Any non-`converged` reason above that blocks a merge does so via `/ship-merge`'s
 Critical-findings/`force_human` scoring (0 → hits the 40 floor → STOP) — the human
 decision is required before merge, not optional.
+
+## Phase 6 — Code Findings Presentation Templates
+
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 6, step 1` — the exact templates and
+their rationale for presenting code findings, moved here to keep `review-pr-finish/SKILL.md`
+under the fleet's size threshold.
+
+**Tier format:**
+
+```markdown
+# PR Review Summary
+
+## Critical (X found) — must fix before merge
+- [agent-name]: Issue description [file:line]
+
+## Important (X found) — should fix before merge
+- [agent-name]: Issue description [file:line]
+
+## Minor (X found) — nice to have
+- [agent-name]: Suggestion [file:line]
+```
+
+**Demoted findings.** A finding demoted by `kbg:review-pr-tier`'s Phase 5 step 3.5 verifier
+carries its tag into whichever tier it landed in: `- [code-reviewer] [verifier-refuted,
+confidence: 0.85]: Issue description [file:line]` — still visible, just at a lower tier, never
+silently dropped.
+
+**Zero-finding tiers.** List as `Critical: 0 ✅` (explicit green light — agents are issues-only by
+frontmatter, so empty tier = clean signal, not "we forgot to check"). Carry step 3.6's provenance
+onto the green light so the user stamps the code, not the summary — a bare `Critical: 0 ✅` is
+exactly the rubber-stamp the verifier-separation principle warns about. Append the re-hunt
+outcome: `Critical: 0 ✅ · adversarial re-hunt ran clean` (non-trivial diff, hunter found
+nothing), `Critical: 0 ✅ · re-hunt skipped — trivial diff` (single non-test file), or `Critical:
+0 — re-hunt did not return, verdict incomplete` (hunter errored/timed out; do not print an
+all-clean verdict). If the checkpoint recorded any `dispatch_failures`, list them first and do
+not print an all-clean verdict — `Dispatch: security-reviewer did not return — verdict
+incomplete, do not treat as clean` — a non-returning agent blocks the green light regardless of
+what the other agents found.
+
+**Ledger trend.** After the tier table, surface a 1-line ledger trend (read `../review-pr/ledger.md`
+§ Aggregation — rolling 10 sessions, computed by the awk helper in `../review-pr/policy.md`):
+
+```markdown
+**Trend (last 10 sessions)**: Q1: 12% (was 8%) — stable · Q2: 18% (was 22%) — improving · Q3: 67% (was 45%) — WORSENING · Q4: 8% (was 6%) — stable
+```
+
+A `WORSENING` flag means the policy is *eligible* to tighten the Q this session (see
+`kbg:review-pr-tier`'s Phase 5 step 5). The user already saw the tightening note there; the trend
+line here is the *delta* since the last session. If fewer than 5 sessions of history exist,
+surface `insufficient data` instead of percentages.
+
+## Phase 6 — Minor-only auto-proceed rationale (`ACS:minor-only-auto-proceed`)
+
+Supplementary detail for `review-pr-finish/SKILL.md § Phase 6, step 2.A`.
+
+This auto-proceed is the non-mutating default the skill's header names for the unattended case —
+taken without asking only where the deterministic tier-count fully covers the decision. Important
+findings stay human-gated even when Critical is 0: Important = "should fix before merge" (a real
+but contained issue where fix-now-vs-defer is a judgment call the deterministic score does NOT
+vouch for — `harness-decay-cadence.md:102`: "Automate past the point where you can still vouch
+for the output and you ship agent slop"). The Critical/Important tier counts this auto-proceed
+rests on are already independently verified by `kbg:review-pr-tier`'s Phase 5 step 3.5 fresh-agent
+verifier, so they are not the maker's self-report.
 
 ## Requirement Analysis Presentation
 
