@@ -61,7 +61,7 @@ Initial report: $ARGUMENTS
 2. `git log -S '<symbol>'` or `git log -p <file>` to see when the behavior changed — the last commit to touch it is often the suspect.
 3. Read the suspect files end-to-end (not just grep snippets).
 4. Wide surface (>3 files)? Spawn 1-2 `Explore` agents in parallel, each on a different angle (call sites / data flow / similar past bugs).
-5. Output: a short list of code locations + one-line explanation of each location's role in the failure.
+5. Output: a short list of code locations, each with a one-line note covering both its role in the failure and how it was found (code-review-graph query / `git log` hit / direct read / Explore agent) — later phases read this list without re-deriving it, so the provenance matters as much as the role when Phase 3 ranks hypotheses or Phase 7 writes the summary.
 
 ---
 
