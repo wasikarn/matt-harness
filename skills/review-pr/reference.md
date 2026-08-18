@@ -288,6 +288,12 @@ under the fleet's size threshold.
 - [agent-name]: Suggestion [file:line]
 ```
 
+**Fix/Revisit-if must survive onto the tier-table line.** `agents/code-reviewer.md`'s per-issue
+template (via `Skill(kbg:review-lens-code-quality)`) requires a `Fix:` and `Revisit if:` field at
+authoring time — this is the artifact a user makes a fix-now/fix-later/ship call from, so those
+fields (or a compressed equivalent, e.g. `Issue description [file:line] — fix: <short>, revisit
+if: <short>`) must survive compression onto the line above, not just the bare description.
+
 **Demoted findings.** A finding demoted by `kbg:review-pr-tier`'s Phase 5 step 3.5 verifier
 carries its tag into whichever tier it landed in: `- [code-reviewer] [verifier-refuted,
 confidence: 0.85]: Issue description [file:line]` — still visible, just at a lower tier, never
@@ -375,6 +381,10 @@ Supplementary detail for `review-pr-finish/SKILL.md § Phase 7, step 3 (Submit t
      {"path": "<file-path>", "line": <line-number>, "side": "RIGHT", "body": "[<severity>] <message>"}
      ```
      Findings without file:line go into the review body instead.
+
+     `<message>` must be built from the Review Comment Templates section below (Impact +
+     Recommendation), never the bare tier-table description — a posted GitHub comment is
+     effectively permanent, so the author needs the causal content, not just the claim.
 
    **Two entry points — the gate is never asked twice:**
    - **Reviewer flow (PR #N):** the submit decision (preview + prior-review check + choice) already happened in **Phase 6 branch B**. **Do not re-ask.** Execute the recorded choice: *Post line-level* → JSON + `gh api` (below); *Post summary only* → single `gh pr review --body`; *Fix + push* → already applied/pushed in Phase 6, nothing to post; *Skip* → nothing to post.
