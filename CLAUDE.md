@@ -33,7 +33,7 @@ Before writing a new skill, command, or agent from scratch, check sources in thi
 local clone at `~/Codes/Personals/mattpocock-skills` for what's upstream but not yet
 installed. This is a **Matt-Pocock-first harness**; checking ECC/superpowers before matt's own repo
 gets the priority backwards. `git fetch` the local clone before trusting it — it silently lagged
-origin/main by 104 commits (a whole minor release) until caught 2026-08-10; the installed plugin
+origin/main by a full minor release before being caught; the installed plugin
 can be *newer* than the clone, inverting this section's "upstream but not yet installed" framing. **(2)** the upstream ECC repo at `~/Codes/Personals/ECC`
 and the vendored superpowers checkout at `~/Codes/Personals/superpowers`. **(3)** sibling
 harnesses under `~/Codes/Personals/` for structural patterns (e.g. `oh-my-claudecode`;
@@ -69,8 +69,8 @@ to the relevant collections rather than searching all of them blind.
 
 **Why this line lives here, not in a skill:** kbg built exactly this qmd-first behavior once
 already, vendored into a `research` skill — and two unrelated namespace-collision migrations
-(`d99ccf3`, then v0.58.11's swap to `mattpocock-skills:engineering/research`, which carries no
-qmd/context7 awareness) silently deleted it with nobody catching it. A skill file is exactly the
+silently deleted it with nobody catching it — most recently the swap to
+`mattpocock-skills:engineering/research`, which carries no qmd/context7 awareness. A skill file is exactly the
 kind of surface an upstream resync can overwrite out from under you; `CLAUDE.md` isn't. The rule
 lives here so it survives the next resync and applies to every research-shaped task.
 
@@ -102,7 +102,7 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 **Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
 
-**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only where no code layer exists to hold a real reducer (a markdown-only command like `bug-sweep`/`ideate` has no backing script — the dispatching model's own step-by-step discipline is the only mechanism available there); it is not an equivalent-strength substitute for code where a script already exists, and doctrine text should say plainly which one a given fix actually is. Default: never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real reference implementations. `review-pr` Phase 5 and `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row enforce the same discipline via prompt instruction instead — real and load-bearing (review-pr backs it with a fresh-context adversarial-verify pass), but a weaker mechanism than code, and should be named as such rather than blurred together with it. Gap confirmed 2026-08-17 (5-agent read-only audit, prompted by an external "reducer engineering" article): `bug-sweep`'s Consolidate step and `deep-research.js`'s Synthesize step both silently blended before the first fix. A same-day follow-up 5-agent audit found that first fix was itself mostly prompt-only, and that it missed the article's other half — cutting what a downstream synthesis call has to read, not just what it's allowed to blend — now covered by `docs/METHODOLOGY.md` Rule 13's context-economy block.
+**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only where no code layer exists to hold a real reducer (a markdown-only command like `bug-sweep`/`ideate` has no backing script — the dispatching model's own step-by-step discipline is the only mechanism available there); it is not an equivalent-strength substitute for code where a script already exists, and doctrine text should say plainly which one a given fix actually is. Default: never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real reference implementations. `review-pr` Phase 5 and `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row enforce the same discipline via prompt instruction instead — real and load-bearing (review-pr backs it with a fresh-context adversarial-verify pass), but a weaker mechanism than code, and should be named as such rather than blurred together with it. Gap confirmed 2026-08-17: `bug-sweep`'s Consolidate step and `deep-research.js`'s Synthesize step both silently blended before the first fix; a follow-up audit found that fix was itself prompt-only and had missed cutting what a downstream synthesis call has to read — now covered by `docs/METHODOLOGY.md` Rule 13's context-economy block.
 
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
 
@@ -119,10 +119,9 @@ PR/feature-branch flow; *when* to push still follows the global confirm-before-p
 **Computationally enforced** by the `git worktree add -b` block in `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel — present in the kbg-harness repo, absent from other client/ECC/scratch repos (which keep their existing `gate:write:worktree-guard` redirect). Detached `review-pr-<N>` worktrees in `$TMPDIR` are explicitly allowlisted so the Phase 2 PR-by-number review path keeps working.
 
 A prior companion gate on the native `WorktreeCreate`/`WorktreeRemove` events was removed
-2026-07-31: those events never send `tool_name`/`tool_input` (its deny logic was dead code), and a
-registered `WorktreeCreate` hook that doesn't emit the resulting path silently breaks every
-legitimate worktree creation in every repo running this plugin. The Bash-side check above is
-unaffected. Full writeup: `docs/research/official-docs-audit-2026-07-31.md`.
+2026-07-31 — its deny logic was dead code (those events never send `tool_name`/`tool_input`) and
+would have silently broken every legitimate worktree creation if left registered. The Bash-side
+check above is unaffected. Full writeup: `docs/research/official-docs-audit-2026-07-31.md`.
 
 **Never run `mattpocock-skills:git-guardrails-claude-code`'s setup in this repo (prose-only — no check blocks it).** It wires a PreToolUse hook blocking *all* `git push` unconditionally (not just `--force`) — direct conflict with this section's workflow. Not installed here (verified 2026-08-01); a standing caveat, not an active problem.
 
