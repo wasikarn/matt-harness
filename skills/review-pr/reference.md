@@ -8,16 +8,51 @@ Static lookup tables for kbg:review-pr skill. Loaded on-demand when the skill is
 
 | Aspect arg | Routes to | Notes |
 |---|---|---|
-| `code` | `code-reviewer` (general-quality lens), plus a language specialist if the dominant changed-file language matches one (see Agent Descriptions) | general quality pass, doesn't include test / security / etc |
-| `tests` | `code-reviewer` (behavioral test-coverage lens) | only if test files changed (Phase 3 condition) |
+| `code` | `code-reviewer` (general-quality lens, unconditional), plus a language specialist and/or `nextjs-reviewer` if applicable (see Agent Descriptions) | general quality pass always dispatches even when a specialist also does — see Routing Rule Detail |
+| `tests` | `code-reviewer` (behavioral test-coverage lens) | test files changed, OR the diff touches a Claude Code surface dir — see Routing Rule Detail |
 | `comments` | `code-reviewer` (comment-accuracy lens) | only if docs/comments added |
 | `errors` | `silent-failure-hunter` | only if error handling changed |
-| `security` | `security-reviewer` | only if auth/secrets/input touched |
+| `security` | `security-reviewer` | auth/secrets/external input/payment code/dependency manifests (`package.json`, lockfiles, `go.mod`, `requirements.txt`, `Gemfile`, etc.) touched |
 | `types` | `code-reviewer` (type-design lens) | only if types/interfaces/DTOs/schemas/models changed |
-| `db` | `code-reviewer` (DB/SQL query-safety lens) | only if migrations/schema/query files changed (`.sql`, Drizzle schema, or query-builder calls) |
+| `db` | `code-reviewer` (DB/SQL query-safety lens) | migrations/schema/query files changed (`.sql`, Drizzle schema, query-builder calls) OR a raw driver call (`db.query(sqlString)`) against any engine |
 | `simplify` | NOT a reviewer | run native `/simplify` (clarity-only) separately after review decisions land (Phase 7 next-step) |
 | `all` | every applicable agent per Phase 3 routing | default if no aspect arg |
 | *(not an aspect arg — detected from a Jira ticket reference)* | `requirement-analyst` (Phase 1.5) + `code-reviewer` (requirement-coverage lens) | fires on `jira` keyword + a ticket-key-shaped token anywhere in the prompt (e.g. "review #2606 with jira TP-871"), regardless of aspect narrowing |
+
+### Routing Rule Detail
+
+Supplementary detail for `SKILL.md § Phase 3` — full rationale behind the table above.
+
+- **`code`**: a specialist never substitutes for `code-reviewer` — confirmed failure mode: PR #2603
+  dispatched only `typescript-reviewer`, so general quality went unreviewed. On a trivial diff
+  (single non-test file — same predicate as Phase 5 step 3.6 / Phase 6's proof check), only the
+  *specialist* may be skipped as a Rule-2 economy; `code-reviewer` stays mandatory regardless.
+- **Next.js**: `nextjs-reviewer` fires on path match (`app/**`, `middleware.ts`, `proxy.ts`,
+  `next.config.*`) independent of the extension-plurality rule that picks the language specialist
+  — a Next.js diff can touch few files by extension count and still carry framework-specific risk
+  (e.g. the Server Action IDOR pattern `nextjs-reviewer.md` documents). Confirmed gap: `review-pr`
+  never routed to `nextjs-reviewer` at all before this fix.
+- **`tests`**: the Claude Code surface dir trigger (`.claude/{agents,skills,commands,hooks}/`, or
+  this repo's own root `{agents,skills,commands,hooks}/`) fires even with zero test files changed
+  — the harness's own code is the one place an untested change is highest-risk, so the
+  behavioral test-coverage lens defaults on for harness diffs.
+- **`security`**: dependency-manifest triggers match `security-reviewer`'s own "When to Run"
+  section — a payments-only or lockfile-only diff still needs it, not just `code-reviewer`'s
+  general lens.
+- **Aspect narrowing vs. a dispatched specialist's own judgment**: an aspect arg narrows *which
+  agents get dispatched*, not what a dispatched specialist judges within its own brief —
+  `security-reviewer` may still surface a reliability-adjacent finding (missing audit logging,
+  fail-open error handling) it judges security-relevant, even under a narrowed `security` request.
+
+## Phase 1 — Auto-Parallel Rationale (`ACS:auto-parallel`)
+
+Supplementary detail for `SKILL.md § Phase 1, step 3`.
+
+A gate approved on autopilot is ceremony, not judgment (The Orchestrator's Tax,
+`harness-decay-cadence.md` §gate-discipline) — the deterministic score behind this auto-decide
+(routed-agent count, diff size, an auth-touch grep) already fully covers the parallel-vs-sequential
+call whenever none of the ambiguous conditions (auth-heavy, docs-only, >5 agents) are present, so
+asking anyway would just be the same autopilot-approval anti-pattern in reverse.
 
 ## Fowler Smell Baseline
 
@@ -64,7 +99,9 @@ Supplementary detail for `review-pr/SKILL.md § Phase 4, step 3 (No-mutate instr
 The light fix shipped today is advisory: every dispatched reviewer is told it must not mutate
 the shared `$WT` (or working tree, own-branch review) — no `git checkout`, no file writes, no
 `git stash`. Review agents are read-only by frontmatter (no Edit/Write), so the only mutation
-vector is Bash, and that advisory instruction is the whole guard.
+vector is Bash, and that advisory instruction is the whole guard. A reviewer reviews, it doesn't
+fix — a hypothesis that needs code run to confirm becomes a finding with the repro command, not
+an in-place execution; a mutated worktree would corrupt the other parallel reviewers' reads.
 
 A heavier, deterministic alternative was evaluated and NOT shipped: per-reviewer worktrees —
 `git worktree add --detach "$TMPDIR/review-pr-<#>-r<i>" "$HEAD_SHA"`, one per dispatched agent
@@ -84,6 +121,10 @@ on a self-authored delta mid-session — is `agents/blind-spot-hunter.md`, which
 enriched hunt-shape checklist. Step 3.6 now dispatches `blind-spot-hunter` directly (fixed
 2026-08-09 — it previously dispatched an inline-framed `general-purpose` agent instead, the gap
 this note used to track).
+
+Why it exists: on a clean, non-trivial-diff pass, an adversarial re-hunt for a shared blind spot
+means the clean verdict is a second pair of eyes', not just the absence of a finding — the same
+reviewers that found nothing share whatever blind spot let the defect through in the first place.
 
 ## write-review-state.sh — Field Contract & Amend Mode
 
@@ -322,6 +363,7 @@ Supplementary detail for `review-pr/SKILL.md`, `review-pr-tier/SKILL.md`, and `r
 
 - **Token budget**: Each agent review fits 4K task / 30K session budget. Parallel mode (Phase 4 default) is fastest; sequential is available for interactive sessions that need lower cognitive load. Phase 5 step 3.5's verifier dispatches are additional — one fresh agent per unique Critical/Important finding, so a review with several such findings roughly doubles total dispatches for that session. Phase 5 step 3.6 fires only on the zero-surviving-findings path with a non-trivial diff — one hunter dispatch, plus one 3.5-style refuter for each Critical/Important finding the hunter raises (usually zero). So the zero-findings path costs 1 + N dispatches where N is small; the several-findings path costs 3.5's ~one-per-finding. They're near-exclusive by trigger (3.6 only when nothing survived 3.5), so a single review never pays both at full volume. Phase 1.5 (opt-in, only when `JIRA_KEY` is detected) adds one `jira-acli:acli` fetch + one `requirement-analyst` dispatch, flat cost regardless of diff size — negligible next to the per-finding verifier cost above.
 - **Agent teams**: Not recommended for PR review — latency too high for a task that needs quick iteration.
+- **Default-branch resolution** (Phase 2, current-branch path): `skills/pr/scripts/resolve-default-branch.sh` is the canonical way to find the default branch — never assume `develop`. Extracted 2026-08-15, shared with `skills/pr/SKILL.md`'s own hotfix-guard resolution, including a fallback chain a pre-extraction copy of this logic had omitted.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces during the session; it does not cover CLAUDE.md/METHODOLOGY.md directly. There is no dedicated secret-scanning hook today.
 - **GH CLI**: Use `gh pr view` to check PR state before launching review. `review-pr` reviews code, not CI status — plenty of repos have no CI wired up at all, so this skill never checks or gates on `gh pr checks` (that belongs to `/ship-merge`'s own required-checks gate, which only runs against repos that actually have branch protection configured). Reviewing by number fetches `pull/<#>/head` into a throwaway `git worktree` (removed in Phase 7). Submitting the review uses `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with a JSON payload containing `commit_id`, `event`, `body`, and `comments[]` — posting findings as individual line-level comments. "Summary only" fallback uses `gh pr review --comment/--request-changes/--approve`. Both paths are gated on user confirmation (requires `Bash(gh api ...)` allow in settings.json).
 - **Review routing reference**: Code that touches auth/secrets → `security-reviewer`'s fast in-review flag (Phase 3); a deeper standalone threat-model audit is `kbg:security-auditor`, run directly when the diff warrants one. General code → code-reviewer, plus `typescript-reviewer` / `python-reviewer` when that language dominates the changed files (Phase 3). Tests, comments, types, db → code-reviewer with its behavioral test-coverage / comment-accuracy / type-design / DB-query-safety lens. A detected Jira ticket → `requirement-analyst` (Phase 1.5, ticket-quality report) + code-reviewer's requirement-coverage lens (Phase 3/4, diff-vs-requirements). Error handling → silent-failure-hunter. Polish → native `/simplify` with clarity-only scope (post-review opt-in, **not** part of kbg:review-pr).
