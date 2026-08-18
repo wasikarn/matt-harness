@@ -169,7 +169,14 @@ Update todos as you progress.
    - **Important** — should fix before merge (real issues that don't block but shouldn't ship)
    - **Minor** — nice to have (style, optional refinements)
    - Ask per tier: fix now, defer, or proceed as-is.
-3. Summarize: what broke, root cause (one sentence), fix shape, regression test name, files touched.
+3. Summarize: what broke, root cause, fix shape, regression test name, files touched. Root cause
+   must name the causal mechanism (the "because X" from the confirmed hypothesis), not just the
+   symptom — a one-sentence cap is fine as a length target, but "keep only what's load-bearing"
+   (Phase 1's minimise precedent) governs *what* survives inside that sentence, not "whatever fits
+   the cap." This text is the likeliest candidate in the file to end up in a commit/PR description
+   read later by someone with none of this session's diagnosis context — a symptom-shaped summary
+   there silently violates the file's own Core Principle above ("a fix that makes the symptom go
+   away without explaining WHY is not a fix").
 4. Suggest next step:
    - If not yet reviewed → invoke `kbg:review-pr`
    - If review addressed and approved → `/ship-merge`
