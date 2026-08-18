@@ -13,7 +13,12 @@
 # a prose comment. Mirrors #39/#49's shape — a silently-dropped field here is
 # a capability regression invisible at dispatch time (the agent still
 # answers, just without the injected patterns content).
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns"; do
+# nextjs-reviewer|kbg:review-lens-nextjs-routing added 2026-08-18 (v0.68.345):
+# same preload mechanism, added when nextjs-reviewer.md was split under check
+# 60's 20K-char threshold — carries App Router File Conventions/Middleware
+# content this agent has no Skill tool to fetch on demand, so an unguarded
+# drop here is the identical silent-regression shape this check exists for.
+for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

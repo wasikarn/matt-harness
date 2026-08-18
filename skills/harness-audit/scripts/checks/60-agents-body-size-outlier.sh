@@ -12,7 +12,7 @@
 # `skills:` frontmatter preload option below wasn't yet considered) both sat
 # over this same threshold with zero check able to see them. Fixed 2026-08-18:
 # code-reviewer.md split its Fowler-smell/AI-addendum/example content into
-# kbg:review-lens-code-quality (19,232 chars); nextjs-reviewer.md split its
+# kbg:review-lens-code-quality (19,271 chars); nextjs-reviewer.md split its
 # App Router File Conventions/Middleware sections into kbg:review-lens-nextjs-routing,
 # preloaded via the `skills:` frontmatter field since this agent carries no Skill
 # tool (19,300 chars).

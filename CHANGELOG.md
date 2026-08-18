@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.347] — 2026-08-18
+
+### Fixed
+
+- **`/kbg:deep-audit` on v0.68.345/346's split found 2 real gaps, both closed** — check 54 (the
+  CRIT-severity guard for the `skills:` frontmatter preload mechanism, built after that exact
+  mechanism silently broke once already, v0.68.231/244) only listed 2 of the now-3 preload pairs
+  in the fleet: `nextjs-reviewer.md`'s new `kbg:review-lens-nextjs-routing` entry (added in
+  v0.68.345's split) had no guard, so a future cleanup could silently drop it with zero gate
+  firing. Extended check 54's guarded-pair list; verified by simulating the exact regression
+  (temporarily deleting the entry, confirming check 54 now fires CRIT, then restoring the file
+  byte-identical). Also fixed check 60's own comment, which cited `code-reviewer.md`'s char count
+  as 19,232 — a follow-up edit later the same session had moved it to 19,271 without updating the
+  comment.
+
 ## [0.68.346] — 2026-08-18
 
 ### Fixed
