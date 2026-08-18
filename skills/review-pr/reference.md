@@ -40,7 +40,7 @@ Always-on background for the `code` aspect's general-quality lens — alongside 
 
 Source: Fowler, *Refactoring* ch.3.
 
-**Sync seam:** `agents/code-reviewer.md`'s own Fowler section carries 11 of these 12 — it deliberately omits Duplicated Code (and Long Method) because its checklist already covers them elsewhere under different names ("Duplicated helper/util", "Large functions"). That's a legitimate per-file difference, not drift — if you edit one table, check whether the other needs the matching edit or is correctly diverging on purpose.
+**Sync seam:** `kbg:review-lens-code-quality`'s own Fowler section (extracted from `agents/code-reviewer.md` 2026-08-18 to clear harness-audit check 60's size threshold, still called from that agent's checklist) carries 11 of these 12 — it deliberately omits Duplicated Code (and Long Method) because `code-reviewer`'s checklist already covers them elsewhere under different names ("Duplicated helper/util", "Large functions"). That's a legitimate per-file difference, not drift — if you edit one table, check whether the other needs the matching edit or is correctly diverging on purpose.
 
 ## Agent Descriptions
 
