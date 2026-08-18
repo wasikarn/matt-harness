@@ -15,7 +15,7 @@ details.
 
 ## Live Docs
 
-For current MySQL/MariaDB version-specific syntax (window functions, JSON, generated columns, replication), see the [MySQL docs](https://dev.mysql.com/doc/) or MariaDB equivalent via context7.
+For current MySQL/MariaDB syntax (window functions, JSON, generated columns, replication), see the [MySQL docs](https://dev.mysql.com/doc/) or MariaDB equivalent via context7.
 
 ## Activation
 
@@ -27,7 +27,7 @@ For current MySQL/MariaDB version-specific syntax (window functions, JSON, gener
 
 ## Version Check
 
-Identify the engine and version before applying patterns (MySQL and MariaDB have diverged in several SQL details). Key differences:
+Identify the engine and version before applying patterns. Key differences:
 
 - MySQL documents row aliases as the replacement for `VALUES(col)` in
   `ON DUPLICATE KEY UPDATE`; `VALUES(col)` is deprecated there.
@@ -51,7 +51,7 @@ Identify the engine and version before applying patterns (MySQL and MariaDB have
 
 ## Indexing
 
-Composite index order usually follows equality predicates first, then range or sort columns. Use `EXPLAIN` before adding or changing an index to detect:
+Composite index order usually follows equality predicates first, then range/sort columns. Use `EXPLAIN` before adding or changing an index to detect:
 
 **Signals to investigate:**
 
@@ -62,10 +62,10 @@ Composite index order usually follows equality predicates first, then range or s
 | `rows` | Very high row estimate for an interactive path |
 | `Extra` | `Using temporary`, `Using filesort`, or broad `Using where` |
 
-Avoid adding indexes blindly. Each index increases write cost, migration time,
+Avoid adding indexes blindly. Each index adds write cost, migration time,
 backup size, and buffer-pool pressure.
 
-**Target `Using index` in `Extra`, not just the absence of bad signals** — a covering composite that carries the `SELECT`ed columns serves the query index-only and skips the clustered-key lookup (one I/O per row saved); one covering composite beats two single-column indexes (avoids the slower `index_merge`). **Before adding any index for a full scan, check the predicate first**: `WHERE YEAR(col) = ?` / `WHERE LOWER(col) = ?` defeats an existing index (non-sargable — rewrite as a range or bare-column equality), and a string column compared to an int literal triggers implicit coercion and a scan. Fixing the predicate, not adding an index, is the call.
+**Target `Using index` in `Extra`, not just the absence of bad signals** — a covering composite carrying the `SELECT`ed columns serves the query index-only, skipping the clustered-key lookup (one I/O per row saved); one covering composite beats two single-column indexes (avoids `index_merge`). **Before adding an index for a full scan, check the predicate first**: `WHERE YEAR(col) = ?` / `WHERE LOWER(col) = ?` defeats an existing index (non-sargable — rewrite as a range or bare-column equality); a string-vs-int-literal comparison triggers implicit coercion and a scan. Fix the predicate, not the index.
 
 ## Query Patterns
 
@@ -115,7 +115,7 @@ and discard rows before returning the page.
 
 ### JSON Fields
 
-Use JSON columns for extension data, not for fields that need heavy relational
+Use JSON columns for extension data, not fields needing heavy relational
 filtering or constraints.
 
 ```sql
@@ -128,8 +128,8 @@ CREATE TABLE events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-For frequently queried JSON paths, expose a generated column and index that
-column. Keep foreign keys, ownership, tenancy, and lifecycle fields relational.
+For frequently queried JSON paths, expose and index a generated column. Keep
+foreign keys, ownership, tenancy, and lifecycle fields relational.
 
 ### Full-Text Search
 
@@ -144,7 +144,7 @@ LIMIT 20;
 ```
 
 Use external search when you need typo tolerance, complex ranking, cross-table
-facets, or language-specific analysis beyond built-in full-text behavior.
+facets, or language-specific analysis beyond built-in full-text.
 
 ## Transactions
 
@@ -174,7 +174,7 @@ Deadlock and lock-wait checklist:
   budget.
 - Capture `SHOW ENGINE INNODB STATUS\G` soon after a deadlock; it is overwritten
   by later events.
-- Drop to `READ COMMITTED` on insert-heavy hot paths where phantom reads are tolerable — MySQL's default `REPEATABLE READ` uses next-key/gap locks that serialize concurrent inserts into a scanned range; `READ COMMITTED` releases the gap locks. Keep `REPEATABLE READ` for integrity-sensitive read-modify-write. Before diagnosing insert stalls as missing-index or lock-ordering, check the isolation level first.
+- Drop to `READ COMMITTED` on insert-heavy hot paths where phantom reads are tolerable — MySQL's default `REPEATABLE READ` uses next-key/gap locks that serialize concurrent inserts into a scanned range; `READ COMMITTED` releases them. Keep `REPEATABLE READ` for integrity-sensitive read-modify-write. Check isolation level before blaming missing-index or lock-ordering for insert stalls.
 
 Queue-style worker claim:
 
@@ -243,7 +243,7 @@ Keep application pool recycling below the server `wait_timeout`. If the server
 uses `wait_timeout = 300`, a `pool_recycle` around 240 seconds is coherent;
 `pool_pre_ping` still helps recover from network and failover events.
 
-**Bound the aggregate, not just per-instance.** For multi-instance deploys (N AdonisJS/FastAPI/Node pods × `pool_size`), `(pool_size + max_overflow) × instances < max_connections` must hold with ~20% headroom for replicas and migrations — otherwise fan-out hits "Too many connections". Size the per-pod pool down from the server cap, not up from per-instance workload in isolation.
+**Bound the aggregate, not just per-instance.** For multi-instance deploys (N AdonisJS/FastAPI/Node pods × `pool_size`), `(pool_size + max_overflow) × instances < max_connections` must hold with ~20% headroom for replicas/migrations — otherwise fan-out hits "Too many connections". Size the per-pod pool down from the server cap, not up from workload alone.
 
 ## Diagnostics
 
@@ -285,7 +285,7 @@ Check the engine/version before standardizing on one command. Monitor replica
 SQL thread health, IO thread health, and lag, not just whether the TCP
 connection is alive.
 
-**Before pinning read-after-write to primary on lag, tune parallel apply.** On the replica set `replica_parallel_workers` + `replica_parallel_type=LOGICAL_CLOCK` (MySQL 8.0.26+ `replica_` prefix; MariaDB uses `slave_parallel_workers` and `slave_parallel_mode=optimistic` — MariaDB has no `slave_parallel_type` variable, `slave_parallel_mode` is the parallel-apply-mode tunable there), and on the MySQL primary set `binlog_transaction_dependency_tracking=WRITESET` with `binlog_format=ROW` for max parallelism — without the primary half it degrades to group-commit granularity. Parallel apply can cut lag by the parallelism factor when transactions are independent, and helps little on serial/hot-row workloads. Pinning reads to primary is the fallback (worse horizontal-read scaling), not the first move; the read-after-write rule above is correct, not step one.
+**Before pinning read-after-write to primary on lag, tune parallel apply.** Replica: set `replica_parallel_workers` + `replica_parallel_type=LOGICAL_CLOCK` (MySQL 8.0.26+ `replica_` prefix; MariaDB: `slave_parallel_workers` + `slave_parallel_mode=optimistic` — no `slave_parallel_type` there — `slave_parallel_mode` is the tunable). MySQL primary: set `binlog_transaction_dependency_tracking=WRITESET` with `binlog_format=ROW` for max parallelism — skip it and parallelism degrades to group-commit granularity. Parallel apply cuts lag by the parallelism factor for independent transactions; little help on serial/hot-row workloads. Pinning reads to primary is the fallback (worse horizontal scaling), not the first move.
 
 ## Security
 
@@ -308,7 +308,7 @@ Security review points:
 - Do not grant `ALL PRIVILEGES` or `*.*` to application users.
 - Require TLS for application users when traffic crosses hosts or networks.
 - Store credentials in the platform secret manager, not in examples, scripts, or
-  repository files.
+  repo files.
 - Separate migration/admin users from runtime application users.
 - Audit public network exposure and bind addresses before tuning performance.
 
@@ -339,10 +339,10 @@ binlog_expire_logs_seconds = 604800
 ```
 
 Treat configuration values as a prompt for review, not a universal preset. Size
-memory, connections, log retention, and durability settings from workload,
-hardware, backup policy, and recovery objectives.
+memory, connections, log retention, and durability from workload, hardware,
+backup policy, and recovery objectives.
 
-**Size `innodb_buffer_pool_size` on hit-rate, not RAM percentage.** Compute `1 - Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests` from `SHOW GLOBAL STATUS` (or read the `Buffer pool hit rate: X / Y` line in `SHOW ENGINE INNODB STATUS\G`): `<99%` = grow the pool; `>=99%` = stop — p99 is bound elsewhere (query plan/indexing, redo-log flushing, lock waits, I/O), not RAM. Defaulting to "70-80% of RAM" wastes memory when the working set already fits.
+**Size `innodb_buffer_pool_size` on hit-rate, not RAM percentage.** Compute `1 - Innodb_buffer_pool_reads / Innodb_buffer_pool_read_requests` from `SHOW GLOBAL STATUS` (or the `Buffer pool hit rate: X / Y` line in `SHOW ENGINE INNODB STATUS\G`): `<99%`: grow the pool; `>=99%`: stop — p99 is bound elsewhere (query plan/indexing, redo-log flushing, lock waits, I/O), not RAM. Defaulting to "70-80% of RAM" wastes memory once the working set fits.
 
 ## Anti-Patterns
 
@@ -374,9 +374,9 @@ When this skill is used for review, return:
 - Skill: `kbg:security-auditor` - secret handling, auth, and least privilege
 - Agent: `code-reviewer` - broader review workflow
 - Agent: `performance-optimizer` - once a query-level bottleneck is confirmed, for the
-  application-side algorithmic fix (batching, caching, in-memory structure) around it
+  application-side fix (batching, caching, in-memory structure) around it
 
 ## Verify before use
 
 1. Before applying, verify any pattern against your MySQL/MariaDB version's docs.
-   APIs drift across versions; if one has moved, the Anti-Patterns above name where each silently fails — never copy unverified, avoid drift by checking the changelog.
+   APIs drift across versions; if one has moved, the Anti-Patterns above name where each silently fails — never copy unverified, check the changelog.
