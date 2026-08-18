@@ -69,10 +69,10 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | decide | Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor(). | inline | auto |
-| design-system | Generate or audit a design system for token/visual consistency and AI-slop detection. Use when starting a project. Don't use for scraping other sites. | inline | auto |
+| design-system | Scan a design system for token/visual consistency and AI-slop detection, or generate one. Use when starting a project. Don't use for scraping other sites. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
-| frontend-design-direction | Set UI design direction, covering typography, layout, tone, motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
+| frontend-design-direction | Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
 | frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (kbg:backend-patterns), or WCAG/a11y audits (kbg:accessibility). | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
@@ -82,7 +82,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | latency-critical-systems | Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline. | inline | auto |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
 | loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
-| make-interfaces-feel-better | Concrete UI-polish details, covering spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (kbg:frontend-design-direction). | inline | auto |
+| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (kbg:frontend-design-direction). | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
@@ -95,9 +95,9 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | review-lens-code-quality | Fowler smells, React/Next.js & Node.js patterns, false positives, and output templates for code-reviewer's checklist. Auto-loads when code-reviewer runs. Don't use for db/fix-authenticity/requirement-coverage or standalone review. | inline | auto |
 | review-lens-db-sql | DB/SQL query-safety checklist for code-reviewer's db-aspect dispatch. Use when code-reviewer is dispatched for the db lens. Don't use for authoring guidance — kbg:mysql-patterns/kbg:drizzle-patterns instead. | inline | auto |
 | review-lens-fix-authenticity | Fix-authenticity checklist for code-reviewer's fix: dispatch. Use when a diff's commit is labeled fix:. Don't use for features, refactors, hardening diffs, or standalone review. | inline | auto |
-| review-lens-nextjs-routing | App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
+| review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
 | review-lens-requirement-coverage | Requirement-coverage checklist for code-reviewer's ticket-gap dispatch. Use when review-pr passes extracted requirements. Don't use for self-invoked or standalone review. | inline | auto |
-| review-pr-finish | Present kbg:review-pr's tiered findings, decide submit/fix, write review state and loop verdict. Use when kbg:review-pr-tier hands off. Don't use for self-invoked or standalone review. | inline | auto |
+| review-pr-finish | Finish kbg:review-pr's tiered findings — decide submit/fix, write review state and loop verdict. Use when kbg:review-pr-tier hands off. Don't use for self-invoked or standalone review. | inline | auto |
 | review-pr-tier | Tier and scrutinize kbg:review-pr's findings (SCRUTINIZE-4, adversarial verify, blind-spot re-hunt). Use when kbg:review-pr hands off after Phase 4. Don't use for self-invoked or standalone review. | inline | auto |
 | review-pr | Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'. | inline | auto |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
@@ -152,7 +152,7 @@ _Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulle
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-18T04:32:22Z_
+_Generated: 2026-08-18T05:09:04Z_
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: review-pr-finish
-description: "Present kbg:review-pr's tiered findings, decide submit/fix, write review state and loop verdict. Use when kbg:review-pr-tier hands off. Don't use for self-invoked or standalone review."
+description: "Finish kbg:review-pr's tiered findings — decide submit/fix, write review state and loop verdict. Use when kbg:review-pr-tier hands off. Don't use for self-invoked or standalone review."
 metadata:
   origin: kbg
 ---

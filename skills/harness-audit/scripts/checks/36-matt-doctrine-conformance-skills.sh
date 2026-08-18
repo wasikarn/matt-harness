@@ -80,7 +80,17 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
     # are deliberately NOT added — those descs are recast to a vocab lead instead.
     # humanize: skill-name-derived lead for tech-humanize, same treatment as
     # teach/score/incident/triage — not a generic verb, the skill's own name.
-    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage) : ;;  # silent
+    # M13 additions (2026-08-18, INFO-review pass): wcag/fowler are the same
+    # framework-proper-noun class as M12's adonisjs/drizzle/fastapi — an
+    # unambiguous named standard/taxonomy, not a generic noun, even read
+    # standalone. tier and finish are kbg-native coined pipeline-stage verbs
+    # (review-pr's SCRUTINIZE-4 tiering / decide-and-write-state finish
+    # step), same class as the already-accepted score/triage. pre-flight is
+    # a real, specific engineering idiom (a gate-before-launch check), not a
+    # generic noun — same bar as no-op/two-cut. next.js and
+    # frontend-design-direction follow M12's framework-proper-noun and the
+    # humanize skill-name-derived-lead precedents respectively.
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 
