@@ -37,13 +37,72 @@ records the port decisions (deterministic frame pick replacing
 Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
 `/tmp/adhd-repo/src/engine.ts:103-175, 177-229`.
 
+**Full rationale** (compact routing rule lives in `COMMAND.md`'s "Phase 2 —
+Focus" section):
+
+- Host-Claude scoring (Phase 2+3 run on the same model class as the Phase 1
+  generators) carries the LLM-judge-circularity caveat from `CLAUDE.md`'s
+  "Why — the unifying crux" (§Architecture).
+- On the explicit-invocation path (via Step 1, self-judge skipped), stakes
+  aren't classified — don't infer high-stakes from prompt wording like
+  "critical"/"production"; that lexical-heuristic pattern is exactly what
+  `harness-audit` already flags as toothless elsewhere.
+- `ideate-critic` reuses the same scoring rubric but starts fresh, cutting
+  the chance the host's own generation anchors the judgment. Its output is
+  still advisory evidence, not ground truth — the user is the gate
+  (CLAUDE.md §Architecture, "the implementer agreeing with its own work").
+- Routing to the critic adds no third fan-out wave: Phase 2 goes from 0
+  agent calls (host-inline) to 1 sequential call on the auto-fire path, not
+  a parallel spawn — the "2-wave, peak-5" F8.5 contract is unaffected.
+
 ## Output-shape source
 
-Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:145-157`.
+Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:145-157`. The
+Provocation line's format (`"What if we took this seriously: ..."`) is
+from `engine.ts:307-312`.
+
+## 3-axis scoring rubric source
+
+Source: `/tmp/adhd-repo/src/engine.ts:103-147` (why viability is the
+heaviest weight) and `engine.ts:275-280` (the upstream "shortlist vs traps"
+split that the `trap` free-text field ports from).
+
+## Isolation invariant source
+
+The upstream `engine.ts:251-258` parallel `Promise.all` over a frame list
+with no shared state is what preserves this property in the original
+implementation.
 
 ## Cost source
 
 Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:192-194`.
+
+## Advisory hooks — full mechanics
+
+Full detail behind `COMMAND.md`'s "Session frame rotation, convergence, and
+memory search" section.
+
+**Session frame rotation.** A SessionStart hook emits a block of the form:
+
+```markdown
+<ideate-rotation index="N">
+- hardware-eyes
+- regulator
+- ...
+</ideate-rotation>
+```
+
+If present, prefer these 5 frames for the next ideate run.
+
+**Ideate memory search.** Past `/ideate` runs are saved as markdown under
+the ideate-memory location and indexed by the `ideate-memory` qmd
+collection; `/ideate-search` queries that collection directly via the qmd
+MCP tool:
+
+```
+/ideate-search caching
+/ideate-search หาไอเดียที่เคยคิดเรื่อง caching
+```
 
 ## Cross-references
 
