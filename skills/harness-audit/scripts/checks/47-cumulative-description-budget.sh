@@ -82,4 +82,24 @@ info "cumulative skill+command description budget: ${_total} chars (~${_tokens} 
 if [ "$_total" -gt "$BUDGET_CHARS" ]; then
   warn "cumulative skill+command descriptions are ${_total} chars (~${_tokens} tokens), over the ${BUDGET_CHARS}-char (~${_budget_tokens}-token) listing-budget ceiling [${_budget_source}] — least-invoked surfaces risk silently dropping from the model's context; trim descriptions or split reference content out of the description field"
 fi
-unset f desc _total _tokens _budget_tokens BUDGET_CHARS _local_settings _global_settings _frac _v _sf _budget_source
+# Agent (Agent-tool) descriptions, tracked separately, NOT summed into the
+# ceiling above. Confirmed 2026-08-18: neither SLASH_COMMAND_TOOL_CHAR_BUDGET
+# nor skillListingBudgetFraction appears on any official Claude Code docs
+# page (checked skills.md, sub-agents.md, settings.md, env-vars.md directly)
+# — both are community-discovered only, and every source found describes
+# them as scoped to the skill/command listing specifically. Nothing confirms
+# the separate "Available agent types for the Agent tool" listing shares
+# this budget, or has any documented budget at all. Reporting agent
+# description chars as their own INFO figure closes the actual gap (this
+# total was uncounted by any check) without asserting an unverified shared
+# ceiling — merging it into BUDGET_CHARS above would ship a plausible-
+# sounding but unconfirmed claim into a gate script.
+_agent_total=0
+for f in "$CLAUDE_DIR/agents"/*.md; do
+  [ -f "$f" ] || continue
+  desc=$(fm_get "$f" "description" --block)
+  _agent_total=$((_agent_total + ${#desc}))
+done
+_agent_tokens=$((_agent_total / 4))
+info "cumulative agent description total: ${_agent_total} chars (~${_agent_tokens} tokens) — tracked separately, not summed into the skill+command ceiling above; no documented budget mechanism confirmed for the Agent-tool listing (2026-08-18)"
+unset f desc _total _tokens _budget_tokens BUDGET_CHARS _local_settings _global_settings _frac _v _sf _budget_source _agent_total _agent_tokens
