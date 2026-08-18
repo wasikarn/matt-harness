@@ -5,6 +5,44 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.382] — 2026-08-18
+
+### Added
+
+- **`score-decision` criteria-cap escape hatch** — Step 2 previously capped judging criteria at
+  4–6 with no exception for a decision genuinely needing more. Added a narrow escape-hatch
+  clause: only when a criterion is independent enough that folding it into an existing one would
+  hide a separately-decisive factor, not for splitting one concern into two related-sounding
+  rows. `disable-model-invocation` frontmatter (check 49's CRIT guard) left untouched, confirmed
+  still passing after the edit.
+
+## [0.68.381] — 2026-08-18
+
+### Added
+
+- **`fix-bug/COMMAND.md` Phase 2 location-provenance** — Phase 2's output listed each code
+  location's role in the failure but not how it was found; later phases (Phase 3's hypothesis
+  ranking, Phase 7's summary) read this list without re-deriving it. Added a provenance note
+  (code-review-graph query / `git log` hit / direct read / Explore agent) alongside the role.
+
+## [0.68.380] — 2026-08-18
+
+### Added
+
+- **harness-audit check 61 — `output-styles/*.md` size outlier** — mirrors checks 42/51/60
+  (20,000-char threshold, INFO-only). Closes a real gap: `output-styles/staff-eng.md` carries
+  `force-for-plugin: true` (unconditional load every session, same always-on cost profile as
+  CLAUDE.md/METHODOLOGY.md) but had zero size check watching it.
+
+### Fixed
+
+- **check 47's agent-description scope corrected before shipping** — originally scoped to sum
+  agent description chars into the same budget ceiling as skill+command descriptions; a
+  dedicated verification pass found neither `SLASH_COMMAND_TOOL_CHAR_BUDGET` nor
+  `skillListingBudgetFraction` documented anywhere official, and nothing confirms the Agent-tool
+  listing shares either mechanism. Reports the agent total (3,511 chars) as its own separate INFO
+  line instead of merging it into an unverified shared ceiling.
+
 ## [0.68.347] — 2026-08-18
 
 ### Fixed
