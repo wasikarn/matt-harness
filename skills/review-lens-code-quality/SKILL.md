@@ -71,77 +71,9 @@ Cost-awareness check:
 ## BAD/GOOD examples appendix
 
 Illustrative pairs for checklist items already stated in prose bullets in `agents/code-reviewer.md`
-— read that file's bullets first; these examples are supporting detail, not new rules.
-
-### Security — SQL injection
-
-```typescript
-// BAD: SQL injection via string concatenation
-const query = `SELECT * FROM users WHERE id = ${userId}`;
-
-// GOOD: Parameterized query (MySQL/MariaDB ? — Postgres uses $1)
-const query = `SELECT * FROM users WHERE id = ?`;
-const result = await db.query(query, [userId]);
-```
-
-### Code Quality — deep nesting + mutation
-
-```typescript
-// BAD: Deep nesting + mutation
-function processUsers(users) {
-  if (users) {
-    for (const user of users) {
-      if (user.active) {
-        if (user.email) {
-          user.verified = true;  // mutation!
-          results.push(user);
-        }
-      }
-    }
-  }
-  return results;
-}
-
-// GOOD: Early returns + immutability + flat
-function processUsers(users) {
-  if (!users) return [];
-  return users
-    .filter(user => user.active && user.email)
-    .map(user => ({ ...user, verified: true }));
-}
-```
-
-### React/Next.js Patterns — missing dependency array
-
-```tsx
-// BAD: Missing dependency, stale closure
-useEffect(() => {
-  fetchData(userId);
-}, []); // userId missing from deps
-
-// GOOD: Complete dependencies
-useEffect(() => {
-  fetchData(userId);
-}, [userId]);
-```
-
-### Node.js/Backend Patterns — N+1 query
-
-```typescript
-// BAD: N+1 query pattern (MySQL/MariaDB ? placeholder — Postgres uses $1)
-const users = await db.query('SELECT * FROM users');
-for (const user of users) {
-  user.posts = await db.query('SELECT * FROM posts WHERE user_id = ?', [user.id]);
-}
-
-// GOOD: Single query with JOIN or batch (MySQL/MariaDB — Postgres: jsonb_agg(p.*) + $1)
-const usersWithPosts = await db.query(`
-  SELECT u.*, JSON_ARRAYAGG(JSON_OBJECT('id', p.id, 'title', p.title)) AS posts
-  FROM users u
-  LEFT JOIN posts p ON p.user_id = u.id
-  GROUP BY u.id
-`);
-```
+— read that file's bullets first; these examples are supporting detail, not new rules. Full pairs
+(Security/SQL injection, Code Quality/deep nesting, React-Next.js/missing deps, Node.js/N+1 query)
+moved to `examples.md` to clear this file's own check-60 threshold — read it alongside this section.
 
 ## Common False Positives - Skip These
 
@@ -203,7 +135,7 @@ When reviewing React/Next.js code, also check:
 - **Missing loading/error states** — Data fetching without fallback UI
 - **Stale closures** — Event handlers capturing stale state values
 
-(BAD/GOOD example for this section: see React/Next.js Patterns under BAD/GOOD examples appendix above.)
+(BAD/GOOD example for this section: `examples.md` § React/Next.js Patterns.)
 
 ## Node.js/Backend Patterns (HIGH)
 
@@ -218,7 +150,7 @@ When reviewing backend code:
 - **Missing CORS configuration** — APIs accessible from unintended origins
 - **Process-lifetime reference retention** — `emitter.on` without a matching `off`, an unbounded `Map`/`Set` cache that never evicts, and closures capturing large objects are slow leaks that crash hours in, not request-scoped failures. Pair every `on` with `off`/`once`, use an LRU with `max` not a bare `Map`, and extract needed values from closed-over large objects instead of retaining them.
 
-(BAD/GOOD example for this section: see Node.js/Backend Patterns under BAD/GOOD examples appendix above.)
+(BAD/GOOD example for this section: `examples.md` § Node.js/Backend Patterns.)
 
 ## Performance (MEDIUM)
 
