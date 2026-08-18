@@ -49,6 +49,8 @@
 
 > Product-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) → เก็บใน project glossary แยก ไม่ใส่ใน global skill นี้.
 
+When replacing a calque, pick a verb matching the real action — not a vague placeholder — as the before/after pairs below do.
+
 **Before (terminology drift + calque):**
 > ตัวกรองหันหน้าผมถือไว้ก่อน รอดันแก้เรื่องมอไซค์
 

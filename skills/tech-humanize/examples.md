@@ -54,6 +54,26 @@
 
 ---
 
+## Grit Gate: Soulless vs Alive
+
+Same facts, neutral report → real voice. Illustrates `SKILL.md`'s Grit Gate (surface the grit,
+commit to a point of view):
+
+> ❌ การทดลองนี้ได้ผลลัพธ์ที่น่าสนใจ agent สร้างโค้ดได้ 3 ล้านบรรทัด developer บางส่วนประทับใจ ขณะที่บางส่วนยังคงมีข้อสงสัย
+> ✅ ผมเองก็ยังไม่รู้จะรู้สึกยังไงกับอันนี้ agent เขียนโค้ดไป 3 ล้านบรรทัดตอนคนน่าจะหลับอยู่ ครึ่ง dev community ตื่นเต้น อีกครึ่งเถียงว่ามันนับไม่ได้
+
+---
+
+## Process Step Rationale
+
+Failure modes for `SKILL.md`'s Process and Output steps, in full — the numbered steps there link here rather than carry this inline.
+
+- **Step 1 (Identify every tell):** stopping after the loudest tells (em dash, "delve") and missing a cluster that only shows up on a full pass.
+- **Step 2 (Draft rewrite):** deleting AI-isms without adding grit — lands in the "clean but neutral" safe middle the Grit Gate scores ~30/100 AI, not 0. Also: overriding your own step-1 "not a tell" call mid-rewrite without saying so — an untracked change like that can't get caught by step 3/4, since it was never named as a problem in the first place.
+- **Step 4 (Final rewrite):** treating the em-dash check as a stylistic reminder instead of a literal character scan — stating an intention to remove em dashes in a change summary is not the same as checking the delivered text for `—`. A fixture run once claimed em dashes were cut while two remained in the shipped rewrite. Also: a final rewrite indistinguishable from the draft — if step 3 found nothing, re-run step 3, don't skip step 4. Also: naming a real weakness in step 3 and then shipping it unchanged in step 4 without ever revisiting it — step 3 and step 4 have to actually connect, not run as two independent exercises.
+
+---
+
 ## Per-Register Worked Examples (v2.2)
 
 ตัวอย่างการ apply register selection gate (SKILL.md §0) + patterns ต่อ register.
