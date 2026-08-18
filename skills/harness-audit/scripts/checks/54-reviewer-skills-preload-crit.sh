@@ -18,7 +18,13 @@
 # 60's 20K-char threshold — carries App Router File Conventions/Middleware
 # content this agent has no Skill tool to fetch on demand, so an unguarded
 # drop here is the identical silent-regression shape this check exists for.
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing"; do
+# requirement-analyst|kbg:requirement-analyst-format added 2026-08-18: same
+# split, same reason — requirement-analyst.md has no Skill tool by design
+# (its own Tool guardrails section blocks adding one, to preserve the
+# Jira/Confluence no-self-fetch boundary), so this preload is the only lawful
+# extraction path and carries the self-consistency pass, Output Format
+# template, and Anti-Patterns list this agent has no other way to reach.
+for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

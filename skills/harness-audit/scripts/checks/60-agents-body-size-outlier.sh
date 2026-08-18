@@ -15,7 +15,18 @@
 # kbg:review-lens-code-quality (19,271 chars); nextjs-reviewer.md split its
 # App Router File Conventions/Middleware sections into kbg:review-lens-nextjs-routing,
 # preloaded via the `skills:` frontmatter field since this agent carries no Skill
-# tool (19,300 chars).
+# tool (19,300 chars). Same day, a 30%-safety-margin pass (target ≤14,000, not
+# just <20,000) split agents/requirement-analyst.md's self-consistency pass +
+# Output Format + Anti-Patterns into kbg:requirement-analyst-format (13,536
+# chars) — this agent is Skill-tool-less by design (its own Tool guardrails
+# section blocks adding one, to preserve a Jira/Confluence no-self-fetch
+# boundary), confirming `skills:` frontmatter preload is a real, repeatable
+# path for Skill-tool-less agents too. Caveat worth keeping visible: unlike a
+# `Skill()` runtime call (conditional — loaded only when actually invoked),
+# `skills:` frontmatter preload injects the full companion skill at every
+# spawn, identical to inline. It reduces this file's own char count (what
+# this check measures) but not the total tokens delivered when the agent
+# runs — a file-size/maintainability split, not a token-cost optimization.
 SIZE_THRESHOLD_CHARS=20000
 for _f in "$CLAUDE_DIR"/agents/*.md; do
   [ -f "$_f" ] || continue
@@ -23,7 +34,7 @@ for _f in "$CLAUDE_DIR"/agents/*.md; do
   if [ "$_chars" -gt "$SIZE_THRESHOLD_CHARS" ]; then
     _tokens=$((_chars / 4))
     _agent=$(basename "$_f" .md)
-    info "'$_agent' agent body is ${_chars} chars (~${_tokens} tokens, fleet threshold ${SIZE_THRESHOLD_CHARS}) — consider a token-optimizer pass, or (if it already carries the Skill tool) extracting a conditionally-relevant section into a kbg:review-lens-* style skill"
+    info "'$_agent' agent body is ${_chars} chars (~${_tokens} tokens, fleet threshold ${SIZE_THRESHOLD_CHARS}) — consider a token-optimizer pass, or extracting a section into a companion skill: via \`Skill()\` runtime calls if this agent carries the Skill tool (conditional load, saves runtime tokens), or via \`skills:\` frontmatter preload otherwise (file-size split only — still fully loaded at spawn, see kbg:requirement-analyst-format for a worked example)"
   fi
 done
 unset _f _chars _tokens _agent SIZE_THRESHOLD_CHARS
