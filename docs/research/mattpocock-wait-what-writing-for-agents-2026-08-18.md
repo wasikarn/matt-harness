@@ -96,7 +96,7 @@ the actual file, cross-checked against `docs/skill-authoring-conventions.md` and
 
 | Block | Claimed prunable | Verified safe | Why the gap |
 |---|---|---|---|
-| Composer-not-creator incident narrative | 750 | 400 | Scar tissue — the *only* record that the check-order rule ever mattered (the code-implementer/`/implement` collision). Stripping risks recreating the exact regression it documents. |
+| Composer-not-creator incident narrative | 750 | 400 | Scar tissue — CLAUDE.md is the *primary* record that the check-order rule ever mattered (the code-implementer/`/implement` collision); `docs/research/ast-layer-agent-codemods-2026-08-13.md:148` and `CHANGELOG.md`'s `[0.58.10]` entry both cite it, but both point back to CLAUDE.md as their source rather than independently corroborating it. Stripping the narrative here still risks recreating the exact regression it documents, since the derivative citations wouldn't survive a search of CLAUDE.md alone. |
 | qmd section's "why this line lives here" | 1,200 | 800 | States plainly the rule was already silently deleted twice by moving it into a skill — the paragraph exists specifically to stop a third recurrence. |
 | "Same crux, N-worker fan-in" paragraph | 1,050 | 550 | `docs/METHODOLOGY.md` Rule 13 line 82 points *back* to this exact paragraph as "the enforcing detail" — it's the authoritative source, not a duplicate. |
 | Worktree-guard-removed paragraph | 360 | 225 | Closest to the original estimate — its pointer destination (`docs/research/official-docs-audit-2026-07-31.md`) already exists. |

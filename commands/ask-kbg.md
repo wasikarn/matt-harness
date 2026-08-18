@@ -90,6 +90,6 @@ kbg-native and matt-origin skills are separate installs (matt's migrated out of 
 matt-only tools kbg has no equivalent for (all user-typed except wizard):
 
 - `mattpocock-skills:wizard` (model-invocable) — generates an interactive bash wizard for steps only a human can do: credentials, third-party dashboards, one-off cutovers.
-- `/mattpocock-skills:wait-what` — the last reply didn't land; re-pitch it in the project's own vocabulary. (`output-styles/staff-eng.md`'s own voice now does a narrower, ambient version of this on detected confusion — but wait-what stays the explicit, user-typed trigger for when you want the repair deliberately, not left to the assistant noticing.)
+- `/mattpocock-skills:wait-what` (`output-styles/staff-eng.md` already does a narrower, ambient version of this on detected confusion — this entry is the explicit, user-typed trigger for when you want the repair deliberately, not left to the assistant noticing) — the last reply didn't land; re-pitch it in the project's own vocabulary.
 - `/mattpocock-skills:to-questionnaire` — turn an unresolved decision into a shareable questionnaire for a stakeholder outside the session.
 - `/mattpocock-skills:grill-me` — run matt's batched grilling interview (rounds over a dependency frontier) on a plan or design.
