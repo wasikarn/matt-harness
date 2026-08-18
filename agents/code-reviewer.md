@@ -74,50 +74,12 @@ reviewers and directly undermine this agent's usefulness.
 
 ## Common False Positives - Skip These
 
-Patterns that LLM reviewers commonly mis-flag. Skip unless you have evidence
-specific to this codebase:
-
-- **"Consider adding error handling"** on a call whose error path is handled by
-  the caller or framework, such as Express error middleware, React error
-  boundaries, top-level `try/catch`, or Promise chains with `.catch` upstream.
-  Before concluding the path is covered, trace one hop outward — a wrapper
-  import (`asyncHandler`-style), the route registration, or the middleware
-  chain — this coverage is usually one hop away, not visible in the function
-  body itself, so reasoning from the body alone risks landing on the right
-  non-finding without ever checking the thing this bullet is about.
-- **"Missing input validation"** when the function is internal and its callers
-  already validate. Trace at least one caller before flagging.
-- **"Magic number"** for well-known constants: `200`, `404`, `1000` ms, `60`,
-  `24`, `1024`, array index `0` or `-1`, HTTP status codes, and single-use
-  local constants whose meaning is obvious from the variable name.
-- **"Function too long"** for exhaustive `switch` statements, configuration
-  objects, test tables, or generated code. Length is not complexity.
-- **"Missing JSDoc"** on single-purpose internal helpers whose name and
-  signature are self-describing.
-- **"Prefer `const` over `let`"** when the variable is reassigned. Read the
-  whole function before flagging.
-- **"Possible null dereference"** when the preceding line narrows the type or an
-  `if` guard is in scope. Trace type flow instead of pattern-matching on `?.`.
-- **"N+1 query"** on fixed-cardinality loops, such as iterating a four-element
-  enum, or on paths already using `DataLoader` or batching.
-- **"Missing await"** on fire-and-forget calls that are intentionally detached,
-  such as logging, metrics, or background queue pushes. Check for a comment or
-  `void` prefix before flagging.
-- **"Should use TypeScript"** or **"Should have types"** in a JavaScript-only
-  file. Match the project's existing language; do not suggest a stack change.
-- **"Hardcoded value"** for values in test fixtures, example code, or
-  documentation snippets. Tests should have hardcoded expectations.
-- **Security theater**: flagging `Math.random()` in a non-cryptographic context
-  such as animation, jitter, or sampling, or flagging `eval`/`Function` in a
-  plugin system that is explicitly a code-loading surface.
-- **"Needs a feature flag / rollout plan"** for a single-line constant or
-  config-value change on an existing branch — a flag protects a new deploy
-  surface; a bare value swap doesn't create one. See the
-  `transition_requirement` rule under the Requirement-Coverage Lens for the
-  full test.
-
-When tempted to flag one of the above, ask: "Would a senior engineer on this
-team actually change this in review?" If no, skip.
+Full list of common LLM-reviewer false-positive patterns (error-handling-already-covered,
+internal-input-validation, magic numbers, function-too-long, JSDoc, const/let, null-dereference,
+N+1 on fixed cardinality, fire-and-forget await, TS-in-JS, test-fixture hardcoding, security
+theater, feature-flag-for-a-value-swap) and the "would a senior engineer actually change this"
+gut-check preloaded via `Skill(kbg:review-lens-code-quality)`. Skip unless you have evidence
+specific to this codebase.
 
 ## Review Checklist
 
@@ -171,33 +133,15 @@ These MUST be flagged — they can cause real damage:
 
 ### React/Next.js Patterns (HIGH)
 
-When reviewing React/Next.js code, also check:
-
-- **Missing dependency arrays** — `useEffect`/`useMemo`/`useCallback` with incomplete deps
-- **State updates in render** — Calling setState UNCONDITIONALLY during render causes infinite loops. Conditional setState during render (the "adjusting state when props change" pattern) is officially supported and safe.
-- **Missing keys in lists** — Using array index as key when items can reorder
-- **Prop drilling** — Props passed through 3+ levels (use context or composition)
-- **Unnecessary re-renders** — Missing memoization for expensive computations
-- **Client/server boundary** — Using `useState`/`useEffect` in Server Components
-- **Missing loading/error states** — Data fetching without fallback UI
-- **Stale closures** — Event handlers capturing stale state values
-
-(BAD/GOOD missing-dependency-array example: `kbg:review-lens-code-quality`)
+Full checklist (missing dependency arrays, setState-in-render, list keys, prop drilling,
+memoization, client/server boundary, loading/error states, stale closures) and the BAD/GOOD
+missing-dependency-array example preloaded via `Skill(kbg:review-lens-code-quality)`.
 
 ### Node.js/Backend Patterns (HIGH)
 
-When reviewing backend code:
-
-- **Unvalidated input** — Request body/params used without schema validation
-- **Missing rate limiting** — Public endpoints without throttling
-- **Unbounded queries** — `SELECT *` or queries without LIMIT on user-facing endpoints
-- **N+1 queries** — Fetching related data in a loop instead of a join/batch
-- **Missing timeouts** — External HTTP calls without timeout configuration
-- **Error message leakage** — Sending internal error details to clients
-- **Missing CORS configuration** — APIs accessible from unintended origins
-- **Process-lifetime reference retention** — `emitter.on` without a matching `off`, an unbounded `Map`/`Set` cache that never evicts, and closures capturing large objects are slow leaks that crash hours in, not request-scoped failures. Pair every `on` with `off`/`once`, use an LRU with `max` not a bare `Map`, and extract needed values from closed-over large objects instead of retaining them.
-
-(BAD/GOOD N+1-query example: `kbg:review-lens-code-quality`)
+Full checklist (unvalidated input, rate limiting, unbounded queries, N+1 queries, missing
+timeouts, error message leakage, CORS, process-lifetime reference retention) and the BAD/GOOD
+N+1-query example preloaded via `Skill(kbg:review-lens-code-quality)`.
 
 ### DB/SQL Query Safety (HIGH)
 
@@ -222,58 +166,22 @@ never assumed present.
 
 ### Performance (MEDIUM)
 
-- **Inefficient algorithms** — O(n^2) when O(n log n) or O(n) is possible — but size the flag to realistic n and whether the path is per-request hot. A 4-element nested loop is noise (over-flagging erodes trust); a 10k-row O(n^2) inside an AdonisJS/FastAPI request handler is a real p99 source. Benchmark before flagging small-n quadratic.
-- **Unnecessary re-renders** — Missing React.memo, useMemo, useCallback
-- **Large bundle sizes** — Importing entire libraries when tree-shakeable alternatives exist
-- **Missing caching** — Repeated expensive computations without memoization
-- **Caching auth/permission/session lookups is a correctness bug, not a perf win** — a Redis/memo cache on a permission or session read without a verified write-through invalidation path ships a stale-authz bypass. If anything permission-adjacent is cached, require that every mutating write invalidates the entry (or version-bumps the key) before approving; this is where MEDIUM perf filings hide CRITICAL authz misses.
-- **Unoptimized images** — Large images without compression or lazy loading
-- **Synchronous I/O** — Blocking operations in async contexts
-- **Deeper algorithmic fix beyond the O(n^2) flag above** (heap/priority-queue, sliding window,
-  binary search, backtracking) once a real bottleneck is confirmed → hand off to
-  `performance-optimizer` rather than prescribing the specific data-structure rewrite here.
+Full checklist (inefficient algorithms sized to realistic n, unnecessary re-renders, large
+bundle sizes, missing caching, cached-auth/permission-lookup-as-correctness-bug, unoptimized
+images, synchronous I/O, and the hand-off-to-performance-optimizer boundary) preloaded via
+`Skill(kbg:review-lens-code-quality)`.
 
 ### Best Practices (LOW)
 
-- **TODO/FIXME without tickets** — TODOs should reference issue numbers
-- **Missing JSDoc for public APIs** — Exported functions without documentation
-- **Poor naming** — Single-letter variables (x, tmp, data) in non-trivial contexts
-- **Magic numbers** — Unexplained numeric constants
-- **Inconsistent formatting** — Mixed semicolons, quote styles, indentation
+Full checklist (TODO/FIXME without tickets, missing JSDoc on public APIs, poor naming, magic
+numbers, inconsistent formatting) preloaded via `Skill(kbg:review-lens-code-quality)`.
 
 ## Review Output Format
 
 Organize findings by severity. For each issue, name a `Revisit if:` condition — the fact that
 would change or drop the finding, so a reader doesn't have to re-derive it from scratch when the
-context shifts:
-
-```
-[CRITICAL] Hardcoded API key in source
-File: src/api/client.ts:42
-Issue: API key "sk-abc..." exposed in source code. This will be committed to git history.
-Fix: Move to environment variable and add to .gitignore/.env.example
-Revisit if: the key turns out to be a test-only placeholder already rotated out of production use
-
-  const apiKey = "sk-abc123";           // BAD
-  const apiKey = process.env.API_KEY;   // GOOD
-```
-
-### Summary Format
-
-End every review with:
-
-```
-## Review Summary
-
-| Severity | Count | Status |
-|----------|-------|--------|
-| CRITICAL | 0     | pass   |
-| HIGH     | 2     | warn   |
-| MEDIUM   | 3     | info   |
-| LOW      | 1     | note   |
-
-Verdict: WARNING — 2 HIGH issues should be resolved before merge.
-```
+context shifts. Full per-issue template and the closing Summary Format table template preloaded
+via `Skill(kbg:review-lens-code-quality)`.
 
 ## Approval Criteria
 
@@ -286,16 +194,10 @@ Do not withhold approval to appear rigorous. If the diff is clean, approve it.
 
 ## Project-Specific Guidelines
 
-When available, also check project-specific conventions from `CLAUDE.md` or project rules:
-
-- File size limits (e.g., 200-400 lines typical, 800 max)
-- Emoji policy (many projects prohibit emojis in code)
-- Immutability requirements (spread operator over mutation)
-- Database policies (RLS, migration patterns)
-- Error handling patterns (custom error classes, error boundaries)
-- State management conventions (Zustand, Redux, Context)
-
-Adapt your review to the project's established patterns. When in doubt, match what the rest of the codebase does.
+Check project-specific conventions from `CLAUDE.md` or project rules (file size limits, emoji
+policy, immutability requirements, DB policies, error handling patterns, state management
+conventions — full list preloaded via `Skill(kbg:review-lens-code-quality)`). Adapt your review to
+the project's established patterns. When in doubt, match what the rest of the codebase does.
 
 ## v1.8 AI-Generated Code Review Addendum
 
