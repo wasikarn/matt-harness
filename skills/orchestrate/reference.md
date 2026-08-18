@@ -1,5 +1,39 @@
 # Orchestrate Reference
 
+## Dispatch gate — Ungated/Gated agent list
+
+Supplementary detail for `SKILL.md § Procedure` step 4.
+
+**Ungated** (read-only `tools:` grant — no `Edit`/`Write`/`Bash`): currently `ideate-critic`
+(Read), `task-prep-checker` (Read/Glob/Grep), `requirement-analyst` (Read/Glob/Grep — never
+fetches Jira/Confluence itself, takes the source as given text), and `summarizer` (Read/Glob/Grep
+— takes the source as given text, no fetch).
+
+**Gated** (holds `Edit`, `Write`, or `Bash`): every review agent holds `Bash` — `code-reviewer`,
+`code-architect`, `backend-architect`, `typescript-reviewer`, `nextjs-reviewer`, `python-reviewer`,
+`silent-failure-hunter`, `security-reviewer`, `spec-miner`, `blind-spot-hunter`, `plan-reviewer` —
+plus the write-capable engineers (`build-error-resolver`, `performance-optimizer`,
+`refactor-cleaner`, `code-implementer`).
+
+**If `AskUserQuestion` is denied** (session in `dontAsk` mode, or headless `-p` — the tool is *not*
+permission-exempt, the runtime can refuse it): fall back to the **same** question + three options
+rendered as numbered prose, and wait for an explicit reply. Denial is **not** approval — never
+fail open. If no user can answer (background / headless run), **stop at plan-only**; do not
+dispatch any write-capable agent.
+
+**Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:`
+(denylist), for agent tool grants (see `docs/agent-tool-patterns.md`) — the "agent holds Bash"
+classification above reads the `tools:` line, not the runtime default.
+
+**Routing to a Skill (`plugin:name`) is not the same authorization boundary as routing to an
+Agent, and the Ungated/Gated lists above don't cover it.** A Skill has no hard `tools:` ceiling —
+its `allowed-tools` field only pre-approves calls without asking; it doesn't restrict what the
+invoking actor can do, since it runs *inside* whatever session calls it. Gate on the actor that
+will actually invoke it: if that's the lead session itself (the common case), treat the item as
+**Gated**, same as any write-capable Agent, unless the invoking actor is itself provably
+read-only-bound. Never classify a Skill route as Ungated by default just because it's absent from
+the Gated agent-name list — that list only covers Agent-tool dispatches.
+
 ## Full routing tables
 
 ### Eisenhower (Urgency × Important)
@@ -76,6 +110,18 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 
 Every *write-capable* leg dispatched here (Builder/Fixer roles — holds Bash or Edit/Write) needs the single AskUserQuestion gate before the batch goes out; prod-500s' Validator confirm step (`code-reviewer`) is ungated per SKILL.md's Gating rules table and doesn't need a separate ask. CSV inline. Dark-mode dropped.
 
+**Boundary with `kbg:decide`:** orchestrate decides *whether and how to spend effort* on an ask —
+before that ask is understood as a bounded decision. It doesn't reason through a trade-off itself.
+Once triage lands on "this needs research or a call between ≥2 viable options," that's
+`kbg:decide`'s job, not orchestrate's. A multi-task inbox routes through orchestrate first; a
+single, already-bounded question goes straight to `kbg:decide`.
+
+**Boundary with `/mattpocock-skills:wayfinder` (user-invoked):** orchestrate resolves a flat, in-session task list
+in one pass, with no cross-session persistence. If a triaged item needs multi-session tracking
+(can't close today), that's `wayfinder`'s job — it charts a persistent map of decision tickets on
+an external tracker. Name it as the next step and stop there — `wayfinder` carries
+`disable-model-invocation: true`, so only the user can start it (type `/mattpocock-skills:wayfinder`).
+
 ## Bounded fan-out — cap history & rationale
 
 Supplementary detail for `SKILL.md § Bounded fan-out — hard cap (F8.5)`.
@@ -85,6 +131,10 @@ A prior auto-split mechanism (`resolve_waves`/`f8_5_overflow_warnings` in
 `parallel`/`loop` stages, and total-spawn count all rely on the same manual clamp SKILL.md
 describes. Article `sub-agents-parallel-vs-sequential` and the `[[bounded-agent-spawning]]` memory
 converge on the same conclusion: clamp the work-list in code before fan-out, not in the prompt.
+
+**Why 5 specifically:** above it, coordination overhead dominates and the audit goes wrong before
+it even starts. More agents is never the goal — the goal is the fewest agents that keep each
+one's reasoning out of the main thread.
 
 **Cap history:** the hard cap was 16 through v0.2.11; collapsed to the F8 sweet-spot ceiling of 5
 on owner request — the F8 band and the F8.5 cap now coincide at 5. An advisory floor of 3
@@ -97,7 +147,12 @@ that hits 5 without a Step 0 grouping pass as a signal to consolidate rather tha
 the source article's and gist's own number, layered above kbg's incident-derived backstop rather
 than replacing it. Two different failure modes, two different guards: the hard cap stops
 order-of-magnitude runaway (44→105 agents in one real incident); the 2-4 preference stops
-under-grouped-but-still-small over-fragmentation. Full text: `SKILL.md`'s F8.5 section.
+under-grouped-but-still-small over-fragmentation. **Practically: run Step 0 first; if the grouped
+result still lands at 5, ask whether the grouping was thorough, not whether 5 itself is allowed —
+the hard cap's "no floor" guarantee (a wave of 1-2 is not a defect) is unaffected either way.**
+Both numbers' sources — *The Orchestrator's Tax* and the `subagent-cost-economy.md` gist — disclaim
+"2-4" as calibrated to their own model/workload, so treat it as a granularity heuristic to apply
+Step 0 against, not a number to enforce mechanically the way the hard cap is.
 
 **Why the Agent-tool clamp isn't a weaker guarantee than it sounds:** "Don't overspawn" is a vibe;
 `if len(worklist) > 5: worklist = worklist[:5]` is a contract — but that contract only exists where
@@ -109,15 +164,23 @@ path means the operator sees and can stop each dispatch, not that the cap is une
 to an attentive operator, not a rubber-stamped batch approval. **That scoped gap used to have a
 thin platform-side backstop: Claude Code 2.1.212 added a 200-subagent-per-session cap (Anthropic's
 own changelog — this repo's incident record predates that cap and never relied on it). Confirmed
-2026-08-07 against `code.claude.com/docs/en/sub-agents`, that cap was removed in 2.1.224 and its
-override var is no longer documented — a rubber-stamped batch on the Agent tool can now run
-further before hitting any platform ceiling (the 20-concurrent cap still rate-limits, it just
-doesn't total-limit). The hard cap of 5 plus Step 4's gate is the only thing standing there now,
-not one layer of two.**
+2026-08-07 against `code.claude.com/docs/en/sub-agents`, that cap was removed in 2.1.224 (override
+var `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` no longer documented) — a rubber-stamped batch on the
+Agent tool can now run further before hitting any platform ceiling. The remaining
+`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` cap of 20 rate-limits, doesn't total-limit, and is waived
+during ultracode/Workflow sessions — the same tool-mode as the 44→105 incident above, though no
+primary record confirms that specific run had ultracode active. The hard cap of 5 plus Step 4's
+`AskUserQuestion` gate is now the entire mechanical defense on the Agent-tool axis, not one layer
+of two.**
 
 **This is doctrine, not preference (Workflow tool).** The code-level clamp isn't a style choice —
 without it as a hard number in code, the next Workflow author writes the same soft "don't
 overspawn" prompt-request again, and it silently fails the same way.
+
+**Worklist count ≠ spawn count (Workflow tool).** Audit + verify is a second fan-out layer on top
+of the work-list. If the work-list already hit 44 and the audit doubles to 88, the cap on the
+work-list didn't help — the cap must be on total spawned agents across the entire plan lifetime,
+not on work-list size alone.
 
 ## Scripted Execution Modes (L4)
 
@@ -438,3 +501,16 @@ From articles `custom-commands`, `sub-agents-parallel-vs-sequential`, `sub-agent
 - **Overlapping-roles** — two agents with overlapping domain (e.g. `security-reviewer` and `silent-failure-hunter` both auditing error handling). Symptom: redundant findings, double-counted P0s. Fix: assign by primary lens, not by file ownership.
 - **F2 chain without the merge** — using `addBlockedBy` for ordering but skipping the 4-step merge after parallel fan-in. The chain is enforced; the reconciliation isn't.
 - **Anti-pattern in this anti-pattern list:** the 4-mistake taxonomy is a *checkable* list, not a *checklist*. Don't run all 4 against every dispatch — the value is naming, not scoring. Cite the mistake that fits the observed symptom, fix that one, move on.
+
+## METHODOLOGY alignment
+
+Supplementary detail for `SKILL.md`.
+
+- **Rule 2 (Match surface area to proven need):** fast path for single bounded tasks; don't orchestrate what's faster inline.
+- **Rule 4 (Define done. Loop until verified):** every dispatched agent gets explicit done-when criteria, not a vague topic.
+- **Deterministic over vibe:** the matrix decides routing — don't re-litigate each item by vibe.
+- **Checkpoint before integrating:** validate before integration.
+- **Fail loud:** report the full allocation including what was dropped and why; no silent de-scoping.
+- **Rule 13 (Orchestration shape):** decompose → distribute pieces → verify results → combine into whole.
+
+**Named models** (cc-thinking-skills): "pick the matrix" + the 6-pattern dispatch vocabulary are *model-router* / *model-selection* / *model-combination*; the frozen-bid test is *opportunity-cost*. Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
