@@ -29,7 +29,12 @@
 # Glob, Bash]) and no prior companion skill existed, so this preload is the
 # only lawful extraction path and carries the 7-shape hunt catalog this agent
 # has no other way to reach.
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes"; do
+# plan-reviewer|kbg:plan-reviewer-format added 2026-08-18: same split, same
+# reason — plan-reviewer.md has no Skill tool (tools: [Read, Grep, Glob,
+# Bash]) and no prior companion skill existed, so this preload is the only
+# lawful extraction path and carries the Output Format YAML template and
+# Anti-Patterns list this agent has no other way to reach.
+for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "plan-reviewer|kbg:plan-reviewer-format"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"
