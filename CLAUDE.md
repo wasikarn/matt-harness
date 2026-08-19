@@ -14,6 +14,10 @@ Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs p
 
 Auto-discovered directories: `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`. See `skills/add-surface/SKILL.md` for the step-by-step (manifest bump, validation, BOUNDARY.md regen).
 
+## Finding a surface
+
+Read `BOUNDARY.md` first — the generated, always-current index of every agent, skill, command, and hook, grouped by `bucket:` (skills) since schema v5. Then the specific `SKILL.md`/agent file for detail. `/kbg-help` (stage table) and `/kbg:ask-kbg` (live recommendation) are judgment layers on top of it, not replacements — both defer to `BOUNDARY.md` for the full listing.
+
 ## Git hooks
 
 Hooks live in `git-hooks/` (not `.git/hooks/`). Wire once per clone:

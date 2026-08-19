@@ -1,6 +1,7 @@
 ---
 name: security-reviewer
 description: Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
+bucket: review
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

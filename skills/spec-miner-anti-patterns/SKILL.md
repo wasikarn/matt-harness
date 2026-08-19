@@ -1,6 +1,7 @@
 ---
 name: spec-miner-anti-patterns
 description: Catalog of spec-miner's 10 Anti-Patterns FAIL list. Auto-loads when spec-miner runs. Don't use for other agents or standalone spec authoring.
+bucket: agent-support
 metadata:
   origin: kbg
 ---

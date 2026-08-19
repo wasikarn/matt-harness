@@ -1,6 +1,7 @@
 ---
 name: nextjs-reviewer
 description: "Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes."
+bucket: review
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

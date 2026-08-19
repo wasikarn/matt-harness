@@ -1,6 +1,7 @@
 ---
 name: wiki-scan
 description: "Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (kbg:memory-lint) or semantic search (qmd)."
+bucket: meta
 ---
 
 # wiki-scan

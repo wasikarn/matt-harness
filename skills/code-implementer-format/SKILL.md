@@ -1,6 +1,7 @@
 ---
 name: code-implementer-format
 description: Catalog of code-implementer's Failure modes to avoid and Report format template. Use when code-implementer runs. Don't use for other agents or standalone implementation.
+bucket: agent-support
 metadata:
   origin: kbg
 ---

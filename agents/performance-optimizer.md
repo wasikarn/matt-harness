@@ -1,6 +1,7 @@
 ---
 name: performance-optimizer
 description: Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues.
+bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

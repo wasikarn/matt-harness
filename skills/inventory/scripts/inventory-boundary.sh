@@ -42,21 +42,35 @@ print_boundary() {
   local label="$1" base="$2"
   [ -d "$base" ] || return
 
-  # Agents
+  # Agents — grouped by `bucket:` frontmatter key (v5), same pattern as Skills below.
   if [ -d "$base/agents" ] && [ -n "$(ls -A "$base/agents" 2>/dev/null)" ]; then
     echo ""
     echo "## Agents — $label"
-    echo "| Agent | Domain | Tools | Mutates |"
-    echo "|---|---|---|---|"
+    local _agent_rows=()
     for f in "$base/agents"/*.md; do
       [ -f "$f" ] || continue
-      local name desc tools mutates
+      local name desc tools mutates bucket
       name=$(basename "$f" .md)
       desc=$(fm_get "$f" description --block)
       tools=$(fm_get "$f" tools)
       mutates=$(can_mutate "$tools")
-      printf "| %s | %s | %s | %s |\n" "$name" "${desc:-—}" "${tools:-inherit-all}" "$mutates"
+      bucket=$(fm_get "$f" bucket)
+      _agent_rows+=("${bucket:-unbucketed}"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${tools:-inherit-all}"$'\t'"$mutates")
     done
+    if [ "${#_agent_rows[@]}" -gt 0 ]; then
+      local _cur_abucket=""
+      while IFS=$'\t' read -r b n d t m; do
+        [ -n "$b" ] || continue
+        if [ "$b" != "$_cur_abucket" ]; then
+          [ -n "$_cur_abucket" ] && echo ""
+          echo "### $b"
+          echo "| Agent | Domain | Tools | Mutates |"
+          echo "|---|---|---|---|"
+          _cur_abucket="$b"
+        fi
+        printf "| %s | %s | %s | %s |\n" "$n" "$d" "$t" "$m"
+      done < <(printf '%s\n' "${_agent_rows[@]}" | sort -s -t$'\t' -k1,1)
+    fi
   fi
 
   # Commands
@@ -75,15 +89,18 @@ print_boundary() {
     done
   fi
 
-  # Skills
+  # Skills — grouped by `bucket:` frontmatter key (v5). One pass collects
+  # "bucket<TAB>row..." tuples, a stable sort by bucket groups them without
+  # needing an associative array (kbg's other scripts assume portable bash,
+  # not bash-4+ only). Untagged skills land under "unbucketed" — visible,
+  # not silently dropped, so a missing bucket: is easy to spot in the diff.
   if [ -d "$base/skills" ] && [ -n "$(ls -A "$base/skills" 2>/dev/null)" ]; then
     echo ""
     echo "## Skills — $label"
-    echo "| Skill | Description | Agent | Invoke |"
-    echo "|---|---|---|---|"
+    local _skill_rows=()
     for d in "$base/skills"/[!_]*/; do  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit
       [ -d "$d" ] || continue
-      local name desc agent invoke
+      local name desc agent invoke bucket
       name=$(basename "$d")
       case "$name" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
       local skill_file="$d/SKILL.md"
@@ -91,8 +108,23 @@ print_boundary() {
       desc=$(fm_get "$skill_file" description --block)
       agent=$(fm_get "$skill_file" agent)
       invoke=$(extract_auto_invoke "$skill_file")
-      printf "| %s | %s | %s | %s |\n" "$name" "${desc:-—}" "${agent:-inline}" "$invoke"
+      bucket=$(fm_get "$skill_file" bucket)
+      _skill_rows+=("${bucket:-unbucketed}"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${agent:-inline}"$'\t'"$invoke")
     done
+    if [ "${#_skill_rows[@]}" -gt 0 ]; then
+      local _cur_bucket=""
+      while IFS=$'\t' read -r b n d a i; do
+        [ -n "$b" ] || continue
+        if [ "$b" != "$_cur_bucket" ]; then
+          [ -n "$_cur_bucket" ] && echo ""
+          echo "### $b"
+          echo "| Skill | Description | Agent | Invoke |"
+          echo "|---|---|---|---|"
+          _cur_bucket="$b"
+        fi
+        printf "| %s | %s | %s | %s |\n" "$n" "$d" "$a" "$i"
+      done < <(printf '%s\n' "${_skill_rows[@]}" | sort -s -t$'\t' -k1,1)
+    fi
   fi
 
   # Hooks (lightweight — just name + first comment paragraph). Recursive: real
@@ -153,7 +185,7 @@ echo "# Boundary Map"
 # Cache path stays literal because it IS host-relative (under $HOME) — that's
 # the only stable form across machines for that one command.
 echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <kbg-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<kbg-harness>\` is the kbg-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
-echo "_Schema version: v4 (adds Commands table; drops the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented \"Boundary map\" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._"
+echo "_Schema version: v5 (Skills table now grouped by \`bucket:\` frontmatter key under \`### <bucket>\` subheads, replacing the single flat table; v4 added Commands table and dropped the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented \"Boundary map\" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._"
 
 # Resolve repo root via git (works regardless of where the script is invoked from).
 # `git rev-parse --show-toplevel` is path-safe for any working tree layout.

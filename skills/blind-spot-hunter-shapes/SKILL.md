@@ -1,6 +1,7 @@
 ---
 name: blind-spot-hunter-shapes
 description: Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting.
+bucket: review
 metadata:
   origin: kbg
 ---

@@ -1,6 +1,7 @@
 ---
 name: review-lens-fix-authenticity
 description: "Fix-authenticity checklist for code-reviewer's fix: dispatch. Use when a diff's commit is labeled fix:. Don't use for features, refactors, hardening diffs, or standalone review."
+bucket: review
 metadata:
   origin: kbg
 ---

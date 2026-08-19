@@ -1,6 +1,7 @@
 ---
 name: requirement-analyst-format
 description: "Catalog of requirement-analyst's self-consistency checklist, Output Format template, and Anti-Patterns list. Auto-loads when requirement-analyst runs. Don't use for other reviewer agents or standalone requirement analysis."
+bucket: agent-support
 metadata:
   origin: kbg
 ---

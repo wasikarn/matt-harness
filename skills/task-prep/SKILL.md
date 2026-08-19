@@ -1,6 +1,7 @@
 ---
 name: task-prep
 description: "Prep-map a draft task against the handoff template; fill gaps; verify fresh-context; emit paste-ready. Use when tackling non-trivial tasks; don't use for ideas or one-liners."
+bucket: workflow
 argument-hint: "[draft prompt or 'interview me']"
 allowed-tools: AskUserQuestion Agent Read Glob Grep
 metadata:

@@ -1,6 +1,7 @@
 ---
 name: eval-harness
 description: Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work.
+bucket: meta
 metadata:
   origin: ECC
 ---

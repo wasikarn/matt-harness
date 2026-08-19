@@ -1,6 +1,7 @@
 ---
 name: design-system
 description: Scan a design system for token/visual consistency and AI-slop detection, or generate one. Use when starting a project. Don't use for scraping other sites.
+bucket: design
 metadata:
   origin: ECC
 ---

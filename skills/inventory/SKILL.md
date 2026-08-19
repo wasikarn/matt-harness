@@ -1,6 +1,7 @@
 ---
 name: inventory
 description: "Catalogue loadable skills/agents/commands/hooks + the escape hatch. Use when stuck on routing. Thai: 'หา skill ไหนเหมาะ'. Don't use for single-layer lists or governance health."
+bucket: meta
 ---
 
 # Inventory

@@ -13,6 +13,12 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   if [ -z "$(fm_get "$f" "description" --block)" ]; then
     crit "skill '$name' missing description: in frontmatter"
   fi
+  # bucket: groups BOUNDARY.md's Skills table (inventory-boundary.sh, v5).
+  # Missing it degrades the index (falls into "unbucketed"), doesn't break
+  # loading — WARN, not CRIT.
+  if [ -z "$(fm_get "$f" "bucket")" ]; then
+    warn "skill '$name' missing bucket: in frontmatter"
+  fi
   # "Daisy" placeholder — exclude audit skill which documents this check
   if [ "$name" != "harness-audit" ] && grep -qi 'Daisy\|\\bdaisy\\b' "$f"; then
     warn "skill '$name' contains upstream 'Daisy' placeholder"

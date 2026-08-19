@@ -1,6 +1,7 @@
 ---
 name: review-lens-requirement-coverage
 description: Requirement-coverage checklist for code-reviewer's ticket-gap dispatch. Use when review-pr passes extracted requirements. Don't use for self-invoked or standalone review.
+bucket: review
 metadata:
   origin: kbg
 ---

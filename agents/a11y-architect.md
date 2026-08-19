@@ -1,6 +1,7 @@
 ---
 name: a11y-architect
 description: Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (kbg:frontend-patterns).
+bucket: review
 model: sonnet
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 ---

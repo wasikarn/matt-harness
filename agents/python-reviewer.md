@@ -1,6 +1,7 @@
 ---
 name: python-reviewer
 description: "Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes."
+bucket: review
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 ---

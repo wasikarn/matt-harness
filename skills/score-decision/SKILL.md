@@ -1,6 +1,7 @@
 ---
 name: score-decision
 description: "Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices."
+bucket: meta
 disable-model-invocation: true
 disable-model-invocation-reason: on-demand formal scorer — the model applies Decision Scoring (METHODOLOGY Rule 14) inline by default; this skill is the explicit, structured artifact the operator requests when a decision needs a traceable verdict
 argument-hint: "The pending decision to score"

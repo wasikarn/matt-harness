@@ -1,6 +1,7 @@
 ---
 name: loop-design-check
 description: "Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks."
+bucket: meta
 metadata:
   origin: ECC
 ---

@@ -1,6 +1,7 @@
 ---
 name: decide
 description: "Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor()."
+bucket: workflow
 metadata:
   origin: kbg
   references:

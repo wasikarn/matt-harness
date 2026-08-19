@@ -1,6 +1,7 @@
 ---
 name: drizzle-patterns
 description: "Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM."
+bucket: patterns
 metadata:
   origin: kbg
 ---

@@ -1,6 +1,7 @@
 ---
 name: refactor-cleaner
 description: Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates.
+bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 ---

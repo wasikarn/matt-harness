@@ -1,6 +1,7 @@
 ---
 name: review-lens-db-sql
 description: DB/SQL query-safety checklist for code-reviewer's db-aspect dispatch. Use when code-reviewer is dispatched for the db lens. Don't use for authoring guidance — kbg:mysql-patterns/kbg:drizzle-patterns instead.
+bucket: review
 metadata:
   origin: kbg
 ---

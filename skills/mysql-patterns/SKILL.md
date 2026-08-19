@@ -1,6 +1,7 @@
 ---
 name: mysql-patterns
 description: MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases.
+bucket: patterns
 metadata:
   origin: ECC
 ---

@@ -1,11 +1,12 @@
 ---
 name: add-surface
 description: Build or remove a plugin surface (agent, skill, command, hook, output-style, theme). Use when creating one in an auto-discovered directory. Don't use for editing content.
+bucket: meta
 ---
 
 **Auto-discovered directories:** `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`.
 
-1. Create the file(s) following the pattern of an existing component in the same directory.
+1. Create the file(s) following the pattern of an existing component in the same directory. For a new **skill** or **agent**, set `bucket:` in its frontmatter (top-level key, right after `description:`) to one of the existing values — skills: `meta`, `review`, `patterns`, `agent-support`, `design`, `workflow`; agents: `design`, `review`, `build`, `analysis`, `utility` — or propose a new one if none fit. Groups the Skills/Agents tables in `BOUNDARY.md`; harness-audit checks 04/05 WARN if it's missing.
 2. For hooks: register in `hooks/hooks.json` and add tests for any gate. Removing a hook:
    deregister it, delete its test section, then grep the ENTIRE test file (not just the section
    you just deleted) for every shared helper function's name and remove any with zero remaining

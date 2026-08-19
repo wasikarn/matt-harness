@@ -1,6 +1,7 @@
 ---
 name: plan-reviewer-format
 description: Catalog of plan-reviewer's Output Format YAML template and Anti-Patterns FAIL list. Auto-loads when plan-reviewer runs. Don't use for other reviewer agents or standalone plan review.
+bucket: agent-support
 metadata:
   origin: kbg
 ---

@@ -1,6 +1,7 @@
 ---
 name: review-lens-nextjs-routing
 description: Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review.
+bucket: review
 metadata:
   origin: kbg
 ---

@@ -1,6 +1,7 @@
 ---
 name: spec-miner
 description: Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development.
+bucket: analysis
 model: opus
 tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

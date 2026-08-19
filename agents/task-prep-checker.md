@@ -1,6 +1,7 @@
 ---
 name: task-prep-checker
 description: "Fresh-context verifier for a task-prep prompt. Runs the golden-rule colleague test against the 9-field handoff template; returns a structured gap list. Read-only — never edits, never invents."
+bucket: analysis
 model: opus
 tools: ["Read", "Glob", "Grep"]
 ---

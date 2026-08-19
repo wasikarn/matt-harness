@@ -1,6 +1,7 @@
 ---
 name: plan-reviewer
 description: "Reviews an implementation plan adversarially before code exists — requirement coverage, architecture fit, risks, failure modes, edge cases, execution order, testability, operability. Use before building."
+bucket: review
 tools: [Read, Grep, Glob, Bash]
 model: opus
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

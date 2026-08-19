@@ -1,6 +1,7 @@
 ---
 name: incident
 description: "Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem."
+bucket: workflow
 ---
 
 # Incident

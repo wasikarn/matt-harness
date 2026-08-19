@@ -1,6 +1,7 @@
 ---
 name: review-pr-tier
 description: "Tier and scrutinize kbg:review-pr's findings (SCRUTINIZE-4, adversarial verify, blind-spot re-hunt). Use when kbg:review-pr hands off after Phase 4. Don't use for self-invoked or standalone review."
+bucket: review
 metadata:
   origin: kbg
 ---

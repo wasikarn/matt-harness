@@ -1,6 +1,7 @@
 ---
 name: code-reviewer
 description: Expert code reviewer for quality, security, maintainability — plus comment-accuracy, type-design, behavioral test-coverage, DB/SQL query-safety, fix-authenticity, and requirement-coverage lenses. Use after writing or modifying code.
+bucket: review
 tools: ["Read", "Grep", "Glob", "Bash", "Skill"]
 model: sonnet
 ---

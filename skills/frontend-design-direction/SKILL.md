@@ -1,6 +1,7 @@
 ---
 name: frontend-design-direction
 description: "Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html)."
+bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
 ---

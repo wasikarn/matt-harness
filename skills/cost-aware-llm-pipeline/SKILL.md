@@ -1,6 +1,7 @@
 ---
 name: cost-aware-llm-pipeline
 description: "Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips."
+bucket: patterns
 metadata:
   origin: ECC
 ---

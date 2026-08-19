@@ -1,6 +1,7 @@
 ---
 name: summarizer-format
 description: Catalog of summarizer's Output Format templates, word-level compression BAD/GOOD table, and Anti-Patterns list. Auto-loads when summarizer runs. Don't use for other agents or standalone summarization.
+bucket: agent-support
 metadata:
   origin: kbg
 ---

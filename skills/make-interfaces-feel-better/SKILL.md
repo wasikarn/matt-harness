@@ -1,6 +1,7 @@
 ---
 name: make-interfaces-feel-better
 description: Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (kbg:frontend-design-direction).
+bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
 ---

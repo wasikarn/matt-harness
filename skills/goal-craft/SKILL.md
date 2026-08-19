@@ -1,6 +1,7 @@
 ---
 name: goal-craft
 description: "Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly)."
+bucket: meta
 metadata:
   origin: kbg-native
   adapted-from: "goal-spec (retired a518ad1, orphaned from c35afcc)"

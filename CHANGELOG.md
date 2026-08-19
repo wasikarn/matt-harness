@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.384] — 2026-08-19
+
+### Added
+
+- **`bucket:` frontmatter key on all 51 skills and 20 agents** — groups `BOUNDARY.md`'s
+  Skills/Agents tables under `### <bucket>` subheads (schema v5), replacing the single flat
+  table. Skills use `meta`/`review`/`patterns`/`agent-support`/`design`/`workflow`; agents use
+  `design`/`review`/`build`/`analysis`/`utility`. Adopted instead of physically nesting
+  `skills/`/`agents/`/`commands/` into folders (the option chosen earlier, then reversed after
+  research): nesting under this repo's `"source": "."` marketplace config would have made
+  `claude plugin validate . --strict` stop content-linting any skill reached only via an
+  exhaustive `plugin.json` `"skills"` array, plus ~35 harness-audit checks silently
+  vacuous-passing, 2 independent security-gate fail-opens (`verifier-protect.sh`,
+  `_protected_paths.py`), and 13 relative-path-climbing scripts breaking — for zero invocation
+  benefit, since bucket nesting doesn't rename a skill's addressable name. Full plan + rejected
+  cost breakdown: session plan file (not committed).
+- **harness-audit checks 04/05** — WARN when a skill/agent is missing `bucket:` in frontmatter.
+- **`CLAUDE.md` "Finding a surface" pointer** — read `BOUNDARY.md` first when looking for a
+  surface; `/kbg-help` and `/kbg:ask-kbg` are judgment layers on top of it, not replacements.
+- **`add-surface/SKILL.md` step 1** — new skills/agents must set `bucket:` to an existing value
+  or propose a new one.
+
 ## [0.68.382] — 2026-08-18
 
 ### Added

@@ -1,6 +1,7 @@
 ---
 name: code-implementer
 description: Feature implementer — detects the stack, loads the matching kbg:*-patterns skill, writes the smallest-scope highest-rigor diff, verifies. Not for design or review.
+bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"]
 model: sonnet
 ---

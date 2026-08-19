@@ -1,6 +1,7 @@
 ---
 name: blind-spot-hunter
 description: Post-review adversarial hunter for emergent/interaction defects that survived normal review — cross-file, framework-behavior, data-flow-asymmetry blind spots. Traces each to an earned severity. Use after code-reviewer.
+bucket: review
 model: opus
 tools: [Read, Grep, Glob, Bash]
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,

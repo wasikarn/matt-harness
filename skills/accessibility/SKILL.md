@@ -1,6 +1,7 @@
 ---
 name: accessibility
 description: WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (kbg:frontend-patterns).
+bucket: patterns
 metadata:
   origin: ECC + community (via ECC)
 ---

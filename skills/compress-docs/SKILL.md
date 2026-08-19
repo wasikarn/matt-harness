@@ -1,6 +1,7 @@
 ---
 name: compress-docs
 description: "Compact a bloated markdown doc for tokens; verify-before-overwrite, grammar stays full. Use when over harness-audit's 20K threshold. Don't use for content grading or suggest-only scans."
+bucket: meta
 metadata:
   origin: JuliusBrussee/caveman (caveman-compress skill, safety pattern adapted — compression technique is kbg-native, not caveman-grammar)
 ---

@@ -1,6 +1,7 @@
 ---
 name: latency-critical-systems
 description: Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline.
+bucket: patterns
 metadata:
   origin: ECC
 ---
