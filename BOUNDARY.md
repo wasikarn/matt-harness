@@ -191,7 +191,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-19T13:25:46Z_
+_Generated: 2026-08-19T14:29:40Z_
 
 ---
 
@@ -231,7 +231,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 20-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table is a hand-maintained literal, not generated from `agents/*.md` — keep it in sync by hand when an agent is added or removed. Not covered by harness-audit check 12 (that check only verifies `skills/orchestrate/SKILL.md` + `reference.md`, not this table or `BOUNDARY.md`) — `inventory-boundary.sh` prints a stderr warning at regen time if this table and `agents/` disagree, but that's advisory, not a CI gate.
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|

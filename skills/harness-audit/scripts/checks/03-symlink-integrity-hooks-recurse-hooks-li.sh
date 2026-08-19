@@ -26,17 +26,12 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
        && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
     # Transitive wiring: a hook can be invoked indirectly through a small
     # dispatch script hooks.json names instead of the hook file itself (e.g.
-    # worktree-guard-dispatch.sh execs worktree-guard.py -- added 2026-08-19
-    # to dedupe an inline bash -c prelude that was byte-identical across two
-    # hooks.json entries). One level of indirection: grep $name inside every
-    # *.sh/*.py path hooks.json references, not a general call-graph walker.
-    _wired_indirect=0
-    while IFS= read -r ref_file; do
-      [ -f "$ref_file" ] || continue
-      if grep -q "$name" "$ref_file" 2>/dev/null; then _wired_indirect=1; break; fi
-    done < <(grep -oE '[A-Za-z0-9_./${}-]+\.(sh|py)' "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
-               | sed "s|\${CLAUDE_PLUGIN_ROOT}|$CLAUDE_DIR|" | sort -u)
-    [ "$_wired_indirect" = 1 ] && continue
+    # worktree-guard-dispatch.sh execs worktree-guard.py). See
+    # hook_wired_transitively() in audit.sh -- shared with check 11 so the
+    # two can't drift (2026-08-19: they'd been hand-duplicated and had
+    # already diverged, and the duplicated logic had a real false-negative;
+    # consolidated to one implementation).
+    hook_wired_transitively "$name" && continue
     if is_plugin_delivered hooks "$name"; then continue; fi
     if [ ! -L "$HOME/.claude/hooks/$name" ]; then
       crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"

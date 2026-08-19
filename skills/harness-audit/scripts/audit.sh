@@ -147,6 +147,44 @@ is_plugin_delivered() {
   esac
 }
 
+# hook_wired_transitively <hook-basename> — true if <hook-basename> is invoked
+# through a small dispatch script hooks.json names instead of the hook file
+# itself (e.g. worktree-guard-dispatch.sh execs worktree-guard.py). Shared by
+# checks 03 and 11 (2026-08-19: a deep-audit found the two had each hand-copied
+# this logic, drifting apart, and both versions had a real false-negative —
+# the extraction swept hooks.json's free-text `description` fields too, not
+# just real command/args values, so an unrelated referenced script whose own
+# TEXT happened to mention the hook's name — even in a comment — counted as
+# "wired". Falsified empirically: a genuinely unwired worktree-guard.py was
+# reported clean via a comment mention in atlassian-mcp-gate.sh).
+# Fix: scope extraction to hooks.json's actual command/args values via jq
+# (falls back to the old text-sweep if jq is unavailable), and strip comment
+# text from the referenced file before matching so a prose mention doesn't
+# count as an invocation.
+hook_wired_transitively() {
+  local name="$1" hooks_json="$CLAUDE_DIR/hooks/hooks.json" ref_file
+  if command -v jq >/dev/null 2>&1; then
+    while IFS= read -r ref_file; do
+      [ -n "$ref_file" ] && [ -f "$ref_file" ] || continue
+      sed 's/#.*$//' "$ref_file" 2>/dev/null | grep -qF "$name" && return 0
+    done < <(jq -r '
+        .hooks | to_entries[]? | .value[]? | .hooks[]? |
+        ([.command // empty] + (.args // [])) | .[] | select(type=="string")
+      ' "$hooks_json" 2>/dev/null \
+        | grep -E '\.(sh|py)$' \
+        | sed "s|\${CLAUDE_PLUGIN_ROOT}|$CLAUDE_DIR|g; s|\$CLAUDE_PLUGIN_ROOT\b|$CLAUDE_DIR|g" \
+        | sort -u)
+  else
+    while IFS= read -r ref_file; do
+      [ -n "$ref_file" ] && [ -f "$ref_file" ] || continue
+      sed 's/#.*$//' "$ref_file" 2>/dev/null | grep -qF "$name" && return 0
+    done < <(grep -oE '[A-Za-z0-9_./${}-]+\.(sh|py)' "$hooks_json" 2>/dev/null \
+        | sed "s|\${CLAUDE_PLUGIN_ROOT}|$CLAUDE_DIR|g; s|\$CLAUDE_PLUGIN_ROOT\b|$CLAUDE_DIR|g" \
+        | sort -u)
+  fi
+  return 1
+}
+
 # Finding IDs reuse the per-tier counters (F<n>/W<n>/I<n>). The previous
 # next_id() helper incremented its counter inside a $(...) command substitution
 # (a subshell), so the parent counter never advanced and every finding rendered

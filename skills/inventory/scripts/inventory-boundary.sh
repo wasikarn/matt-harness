@@ -204,11 +204,13 @@ if [ "${1:-}" = "--repo-only" ]; then
   # tokens of dead weight in the committed BOUNDARY.md. Tables are a strict
   # superset (extra columns) now that Commands has one too, so the list added
   # nothing print_boundary doesn't already cover.
+  _boundary_base="$REPO_CLAUDE"
   print_boundary "Repo" "$REPO_CLAUDE"
 elif [ -n "${1:-}" ]; then
   # Host-portable label: use repo-relative tail so the artifact doesn't leak
   # the host install dir. The scan still uses the absolute $1.
   _label_bn="$(basename "$(dirname "$1")")/$(basename "$1")"
+  _boundary_base="$1"
   print_boundary "Source: $_label_bn" "$1"
 else
   # Live-merged view: structural overview + project-local + global ~/.claude
@@ -231,6 +233,37 @@ echo "_Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)_"
 # Task sizing guidance + file ownership boundary table (added with task-sizing skill).
 # Placed here so it survives regeneration via heredoc, just like F6 Cross-references.
 if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
+  # Drift guard for the hardcoded "File ownership boundary table" below: unlike
+  # the "## Agents — $label" table above (built dynamically from agents/*.md),
+  # this table's rows are a hand-authored literal — the Canonical-file-patterns
+  # and Notes columns are domain knowledge that isn't in agent frontmatter, so
+  # it can't be generated the same way. Found 2026-08-19 during a deep-audit:
+  # the table's own text claimed "harness-audit check 12 verifies orchestrate
+  # references every agent" as if that covered this table too — it doesn't;
+  # check 12 only checks skills/orchestrate/SKILL.md + reference.md, never
+  # BOUNDARY.md. This stderr comparison at least surfaces a stale table the
+  # moment someone next regenerates, instead of it silently drifting again the
+  # way the "12-agent fleet"/"60 checks" text did. It is NOT a CI gate (stderr
+  # only, not part of the generated BOUNDARY.md content, and not a numbered
+  # harness-audit check — adding one would hit audit.sh's fail-closed
+  # contiguous check-numbering guard, out of scope for this fix).
+  _xref3_table_agents=(code-architect code-reviewer typescript-reviewer python-reviewer
+    security-reviewer silent-failure-hunter spec-miner refactor-cleaner
+    build-error-resolver performance-optimizer ideate-critic task-prep-checker
+    a11y-architect backend-architect blind-spot-hunter code-implementer
+    nextjs-reviewer plan-reviewer requirement-analyst summarizer)
+  if [ -d "$_boundary_base/agents" ]; then
+    for _af in "$_boundary_base/agents"/*.md; do
+      [ -f "$_af" ] || continue
+      _an=$(basename "$_af" .md)
+      _found=0
+      for _ta in "${_xref3_table_agents[@]}"; do [ "$_ta" = "$_an" ] && _found=1 && break; done
+      [ "$_found" = 1 ] || echo "inventory-boundary.sh: WARN — agent '$_an' missing from the hardcoded File ownership boundary table (BOUNDARY.md will list it above but not in that table)" >&2
+    done
+    for _ta in "${_xref3_table_agents[@]}"; do
+      [ -f "$_boundary_base/agents/$_ta.md" ] || echo "inventory-boundary.sh: WARN — File ownership boundary table lists '$_ta' but agents/$_ta.md no longer exists" >&2
+    done
+  fi
   cat <<'XREF3'
 
 ---
@@ -271,7 +304,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 20-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table is a hand-maintained literal, not generated from `agents/*.md` — keep it in sync by hand when an agent is added or removed. Not covered by harness-audit check 12 (that check only verifies `skills/orchestrate/SKILL.md` + `reference.md`, not this table or `BOUNDARY.md`) — `inventory-boundary.sh` prints a stderr warning at regen time if this table and `agents/` disagree, but that's advisory, not a CI gate.
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
