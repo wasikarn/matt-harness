@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.385] — 2026-08-19
+
+### Added
+
+- **Regression test for bucket-grouping** (`tests/skills/inventory/test-inventory-witness.sh`) —
+  the file's existing assertion diffs two invocations of the same code path
+  (`inventory-witness.sh` calls `inventory-boundary.sh --repo-only` internally), so it could never
+  catch a bug in the generator's own bucket-grouping logic. New block runs the generator directly
+  against a 3-skill fixture (two tagged, one untagged) and asserts on `### <bucket>` subheads and
+  the `unbucketed` fallback. Live-verified against a deliberately broken copy of the generator
+  (forced single bucket) to confirm the assertions actually fail on the exact regression class
+  they're meant to catch. Found via `/kbg:deep-audit` on v0.68.384's bucket-tagging work.
+
+### Fixed
+
+- **`CLAUDE.md`'s "Finding a surface" pointer and `inventory-boundary.sh`'s schema-v5 note both
+  under-scoped the grouping change to "Skills" only** — Agents got the identical `### <bucket>`
+  treatment. Fixed both plus regenerated `BOUNDARY.md` (schema-note text only; no row content
+  changed).
+
 ## [0.68.384] — 2026-08-19
 
 ### Added
