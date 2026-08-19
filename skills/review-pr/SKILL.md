@@ -75,7 +75,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```bash
    PAYLOAD="${TMPDIR:-/tmp}/review-pr-p2-$$.json"
    # build {"base_sha": "$BASE_SHA", "jira_ticket": <object-or-null>} into $PAYLOAD
-   bash "${KBG_PLUGIN_ROOT}/skills/review-pr/scripts/write-review-checkpoint.sh" 2 "$HEAD_SHA" "${WT:-}" "$PAYLOAD"
+   bash "${CLAUDE_SKILL_DIR}/scripts/write-review-checkpoint.sh" 2 "$HEAD_SHA" "${WT:-}" "$PAYLOAD"
    ```
 
 ---
@@ -116,7 +116,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
    ```bash
    PAYLOAD="${TMPDIR:-/tmp}/review-pr-p4-$$.json"
    # build {"agent_findings": [...], "dispatch_failures": "..."} into $PAYLOAD
-   bash "${KBG_PLUGIN_ROOT}/skills/review-pr/scripts/write-review-checkpoint.sh" 4 "$HEAD_SHA" "${WT:-}" "$PAYLOAD"
+   bash "${CLAUDE_SKILL_DIR}/scripts/write-review-checkpoint.sh" 4 "$HEAD_SHA" "${WT:-}" "$PAYLOAD"
    ```
    Then call `Skill(kbg:review-pr-tier)` — mandatory, not a suggestion; the review isn't complete
    until `kbg:review-pr-tier` and `kbg:review-pr-finish` both run.

@@ -5,6 +5,16 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.386] — 2026-08-19
+
+### Fixed
+
+- **`skills/review-pr/SKILL.md`'s hardcoded `${KBG_PLUGIN_ROOT}/skills/review-pr/scripts/...`
+  self-references** — replaced with `${CLAUDE_SKILL_DIR}/scripts/...`, matching the convention
+  every other skill (`harness-audit`, `inventory`, `learn`, `recursive-improve`) already uses.
+  Flagged twice (original bucket-tagging plan's Follow-ups, and the v0.68.384 compliance-audit's
+  X1) as a genuine standalone bug, deliberately deferred both times pending its own pass.
+
 ## [0.68.385] — 2026-08-19
 
 ### Added
