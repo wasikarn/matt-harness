@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.390] — 2026-08-19
+
+### Added
+
+- **`docs/METHODOLOGY.md` Rule 4: claim-accuracy subsection for commit messages and CHANGELOG
+  entries** — a verification-status claim ("harness-audit 0C/0W," "gauntlet green") must describe
+  a check run *after* every other change in that same commit, never carried forward from earlier
+  in the session; an attribution claim ("user-requested") must quote or closely paraphrase the
+  specific user message cited, not characterize general approval as approval of specific content.
+  Closes the two doctrine-rule follow-ups (GitHub #68, #69) from
+  `docs/post-mortems/claim-accuracy-without-fresh-verification-2026-08-19.md` — root cause was
+  `19cb8876`'s stale "0C/0W" claim (audit ran before that commit's own version bump) and
+  `a6f29c6`'s "user-requested" claim for a reclassification the user never named (corrected in
+  `135c1fc`).
+
 ## [0.68.388] — 2026-08-19
 
 ### Fixed

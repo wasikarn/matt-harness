@@ -75,6 +75,10 @@ When Acceptance Criteria already exist for the task, they ARE the testable terms
 
 A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity CLAUDE.md's crux names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this for verdicts carrying findings (each requires `file`/`line`) and for scope conformance (`scope_ok`/`unexpected_files`) — but a clean pass (`findings: []`) has nothing to check, which is exactly the gap this line targets: a clean "nothing found," inside or outside orchestrate's chain, that nothing independently checks today.
 
+### Claim accuracy in commit messages and CHANGELOG entries
+
+A verification-status claim ("harness-audit 0C/0W," "gauntlet green," "tests pass") must describe a check run *after* every other change in that same commit — never a check run earlier in the session and carried forward as if still current. An attribution claim ("user-requested," "per your ask") must quote or closely paraphrase the specific user message being cited — a general "go ahead" approves proceeding, not the specific content that ended up shipped. (Root cause this prevents: `19cb8876` claimed "0C/0W" from an audit run before that same commit's own version bump; `a6f29c6` claimed "user-requested" for a specific reclassification the user never named, corrected in `135c1fc`. Post-mortem: `docs/post-mortems/claim-accuracy-without-fresh-verification-2026-08-19.md`.)
+
 ## Rule 13 — Orchestration shape
 
 Decompose → route → verify → combine.
