@@ -136,33 +136,38 @@ out=$(echo "$(payload "$TMP/elsewhere2.txt" sessnorm)" \
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "KBG_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
 
-# Wrapper-string test: this is the only exercise the actual hooks.json bash -c string
-# ever gets (shellcheck never lints an embedded JSON string value). Extract it exactly
-# as shipped and run it in isolated subshells so env changes don't leak into the rest of
-# this script.
-# $ROOT passed via argv, not spliced into the -c source string — matches
-# the fleet convention after the 2026-08-06 check-47 injection fix.
-WRAPPER_CMD=$(python3 -c '
+# Wrapper-script test: gate:bash:worktree-guard's hooks.json entry points
+# `command`/`args` at a real file (hooks/gates/worktree-guard-dispatch.sh,
+# extracted 2026-08-19 to dedupe the byte-identical prelude that used to be
+# inlined separately in both worktree-guard hooks.json entries) instead of an
+# embedded bash -c string. Shellcheck now lints that file directly as a
+# tracked .sh in the normal lint layer, so this test no longer needs to
+# extract-and-eval a JSON string in isolation -- it resolves the args path
+# hooks.json declares and runs that file, which is what actually happens at
+# runtime. $ROOT passed via argv, not spliced into source -- matches the
+# fleet convention after the 2026-08-06 check-47 injection fix.
+WRAPPER_SCRIPT=$(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
 for blk in d["hooks"]["PreToolUse"]:
     if blk.get("id") == "gate:bash:worktree-guard":
-        print(blk["hooks"][0]["command"])
+        print(blk["hooks"][0]["args"][0])
         break
 ' "$ROOT/hooks/hooks.json")
-ok=1; [ -n "$WRAPPER_CMD" ] && ok=0
-check "wrapper command string extracted from hooks.json" "$ok"
+ok=1; [ -n "$WRAPPER_SCRIPT" ] && ok=0
+check "wrapper script path extracted from hooks.json" "$ok"
 
-out=$( (unset KBG_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR CLAUDE_PLUGIN_ROOT
-  echo '{}' | eval "$WRAPPER_CMD") 2>/dev/null); rc=$?
+out=$( (unset KBG_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR
+  export CLAUDE_PLUGIN_ROOT="$ROOT"
+  echo '{}' | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "wrapper string: var unset -> exit 0, no output (python never spawned)" "$ok"
+check "wrapper script: var unset -> exit 0, no output (python never spawned)" "$ok"
 
 bashpayload=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "echo x >> $WS/repo1/f.txt")
 out=$( (export KBG_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE_PLUGIN_ROOT="$ROOT"
-  echo "$bashpayload" | eval "$WRAPPER_CMD") 2>/dev/null); rc=$?
+  echo "$bashpayload" | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
-check "wrapper string: var set + Bash write to protected checkout -> deny exit 2" "$ok"
+check "wrapper script: var set + Bash write to protected checkout -> deny exit 2" "$ok"
 
 # Regression test (found + fixed 2026-08-04): a heredoc whose BODY contains an
 # unbalanced quote (an ordinary English contraction is enough) used to trip

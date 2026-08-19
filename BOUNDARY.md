@@ -165,6 +165,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. commands/risk-check.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated write (redirect, tee, sed -i, perl -i, cp, mv, rm, trash) — to the verifier surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, AND the non-model audit verifier (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot neuter the deny-gates, silently turn an advisory sensor into something that emits permissionDecision, OR weaken the audit checks that judge it without an in-session human approval (the tamper-resistance principle: the agent cannot edit the code that judges it). hooks/advisory/** added 2026-08-06: previously unprotected, meaning a sensor could be edited into a real gate with zero prompt (found by a blind-spot sweep). A gate/check the model can silently disable is not a computational deny — and a half-protected perimeter is worse than none, so […] |
+| worktree-guard-dispatch.sh | Shared early-exit prelude for gate:write:worktree-guard and gate:bash:worktree-guard. Both hooks.json entries pointed the same inline `bash -c` one-liner at worktree-guard.py -- extracted here so the two matchers (Write|Edit|NotebookEdit vs Bash) stay separate registrations with their own descriptions (redirect vs deny is a real behavioral difference, decided inside worktree-guard.py by tool_name), while the identical no-op-unless-guarded check isn't duplicated as a JSON string literal twice. |
 | worktree-guard.py | ponytail: generic worktree guard (moved from dotfiles 2026-07-02). Redirects Edit/Write on a SUB-repo's main checkout so parallel terminals can't clobber one shared working tree. Branch alone can't fix this — one repo dir = one working tree regardless of branch; the worktree is the isolation. Auto-creates a session-scoped worktree under WT_ROOT and transparently redirects the edit there via PreToolUse updatedInput. ponytail: branch name is `wip/<session-id>` — session_id is the only stable identifier this hook has. Rename the branch to your ticket key before opening a PR. Base selection: KBG_WORKTREE_BASE=<branch> fetches origin/<branch> and bases the auto-worktree there (hotfix sessions: KBG_WORKTREE_BASE=main). Unset = current HEAD of the main checkout, which can lag origin; prefer an explicit worktree for hotfix work. Fetch failure falls back to HEAD — never blocks editing on network. Guarded workspace is opt-in and unset by default: KBG_GUARDED_WORKSPACE has NO default, […] |
 | command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. Output goes to stdout → CC injects it as system context for the session. |
@@ -190,7 +191,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-19T05:04:38Z_
+_Generated: 2026-08-19T13:25:46Z_
 
 ---
 
@@ -230,7 +231,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 12-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table lists the live 20-agent fleet — keep it in sync with `agents/` (harness-audit check 12 verifies orchestrate references every agent).
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
@@ -246,6 +247,14 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
 | `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
 | `task-prep-checker` | none (read-only) | no | Fresh-context verifier for a task-prep prompt (Read/Glob/Grep only — no Bash) |
+| `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
+| `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
+| `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
+| `code-implementer` | any file | yes | Feature implementer — direct Write/Edit + Bash + Skill |
+| `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
+| `plan-reviewer` | none (read-only) | yes | Adversarial plan review before code exists — `tools:` grants Bash (Bash can mutate; no target files to own) |
+| `requirement-analyst` | none (read-only) | no | Requirement analysis from tickets/specs (Read/Glob/Grep only — no Bash) |
+| `summarizer` | none (read-only) | no | Condenses text/docs/transcripts (Read/Glob/Grep only — no Bash) |
 
 
 ---
@@ -274,7 +283,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; kbg-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** harness-audit (60 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
+- **Tests:** harness-audit (61 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
 

@@ -166,7 +166,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'w=\"${KBG_GUARDED_WORKSPACE:-}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -z \"$w\" || ( \"$w\" == /* && -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ) ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard-dispatch.sh"]
           }
         ]
       },
@@ -177,7 +178,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'w=\"${KBG_GUARDED_WORKSPACE:-}\"; p=\"${CLAUDE_PROJECT_DIR:-$PWD}\"; if [[ -z \"$w\" || ( \"$w\" == /* && -n \"$p\" && \"$p\" != \"$w\" && \"$p\" != \"$w/\"* ) ]]; then exit 0; fi; exec python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py\"'"
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard-dispatch.sh"]
           }
         ]
       }

@@ -14,10 +14,20 @@ if [ -f "$SETTINGS" ]; then
     # *.bak = editor/backup residue (e.g. hooks.json.test.bak from a hook-test
     # session), not a real hook — matches the F1 skip pattern in #3.
     case "$hook_name" in _*.sh|_*.py|*.bak|*.md|*.json) continue;; esac
-    # Wired = settings.json (symlink mode) OR hooks/hooks.json (plugin mode).
+    # Wired = settings.json (symlink mode) OR hooks/hooks.json (plugin mode)
+    # OR named inside a *.sh/*.py dispatch script hooks.json itself points to
+    # (transitive, one level -- see check 03's identical pattern for why).
+    _wired_transitive=0
     if ! grep -q "$hook_name" "$SETTINGS" \
        && ! grep -q "$hook_name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null; then
-      crit "hook '$hook_name' exists in hooks/ but not wired in settings.json or hooks.json"
+      while IFS= read -r ref_file; do
+        [ -f "$ref_file" ] || continue
+        if grep -q "$hook_name" "$ref_file" 2>/dev/null; then _wired_transitive=1; break; fi
+      done < <(grep -oE '[A-Za-z0-9_./${}-]+\.(sh|py)' "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
+                 | sed "s|\${CLAUDE_PLUGIN_ROOT}|$CLAUDE_DIR|" | sort -u)
+      if [ "$_wired_transitive" != 1 ]; then
+        crit "hook '$hook_name' exists in hooks/ but not wired in settings.json or hooks.json"
+      fi
     fi
   done
 fi

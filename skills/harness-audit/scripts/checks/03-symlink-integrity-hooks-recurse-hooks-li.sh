@@ -24,6 +24,19 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
     # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
     if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
        && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
+    # Transitive wiring: a hook can be invoked indirectly through a small
+    # dispatch script hooks.json names instead of the hook file itself (e.g.
+    # worktree-guard-dispatch.sh execs worktree-guard.py -- added 2026-08-19
+    # to dedupe an inline bash -c prelude that was byte-identical across two
+    # hooks.json entries). One level of indirection: grep $name inside every
+    # *.sh/*.py path hooks.json references, not a general call-graph walker.
+    _wired_indirect=0
+    while IFS= read -r ref_file; do
+      [ -f "$ref_file" ] || continue
+      if grep -q "$name" "$ref_file" 2>/dev/null; then _wired_indirect=1; break; fi
+    done < <(grep -oE '[A-Za-z0-9_./${}-]+\.(sh|py)' "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
+               | sed "s|\${CLAUDE_PLUGIN_ROOT}|$CLAUDE_DIR|" | sort -u)
+    [ "$_wired_indirect" = 1 ] && continue
     if is_plugin_delivered hooks "$name"; then continue; fi
     if [ ! -L "$HOME/.claude/hooks/$name" ]; then
       crit "hook '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
