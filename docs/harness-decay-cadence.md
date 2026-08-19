@@ -163,10 +163,10 @@ deserve a human gate. kbg-harness currently has 7 gate scripts under
 matchers each):
 
 - **Irrecoverable Bash patterns** — `hooks/gates/irrecoverable.sh` (PreToolUse
-  on Bash; `exit 2`-blocks `rm -rf`, `git push --force`, `--no-verify`, `git
-  reset --hard`, `git clean -f`, and `git worktree add -b <new-branch>` when
-  the repo's `/.kbg-no-worktree` sentinel is absent — the destructive-command
-  class + the develop-only branching doctrine, `deny` not `ask`).
+  on Bash; `exit 2`-blocks the destructive-command class + the develop-only
+  branching doctrine, `deny` not `ask` — see `docs/reference/hook-lifecycle-
+  contracts.md`'s hook-by-hook table for the exact pattern list, don't
+  restate it here).
 - **Unreviewed merge** — `hooks/gates/convergence-merge-gate.sh` (PreToolUse
   on Bash; blocks a raw `gh pr merge` when the review-pr state's `clean !=
   true`, and on `clean == true` requires CI green — the merge one-way door
