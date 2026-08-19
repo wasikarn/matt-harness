@@ -5,6 +5,19 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.387] — 2026-08-19
+
+### Changed
+
+- **Agent bucket taxonomy: reclassified `plan-reviewer` and `ideate-critic` from `review` →
+  `analysis`** — both review pre-implementation artifacts (a plan, an idea), not code; the v0.68.384
+  bucket-tagging pass grouped them by name-pattern ("*-reviewer"/"*-critic") rather than what they
+  actually review, mis-sorting them next to `code-reviewer`/`typescript-reviewer`. `ideate-critic`'s
+  own description text explicitly disclaims code review as out of scope — direct evidence for the
+  move. `review` narrows to genuine code/artifact-quality reviewers (8); `analysis` grows to 5
+  (requirement-analyst, spec-miner, task-prep-checker, plan-reviewer, ideate-critic) — all
+  pre-implementation, non-code evaluators. User-requested during taxonomy sign-off.
+
 ## [0.68.386] — 2026-08-19
 
 ### Fixed

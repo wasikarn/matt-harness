@@ -1,7 +1,7 @@
 ---
 name: ideate-critic
 description: "Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (code-reviewer) or security audit (security-reviewer)."
-bucket: review
+bucket: analysis
 tools: Read
 model: sonnet
 effort: high
