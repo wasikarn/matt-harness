@@ -176,6 +176,12 @@ When reviewing backend code:
 
 ## Review Output Format — templates
 
+**Lead with the verdict.** Before the per-issue findings, print a one-line verdict headline —
+`Verdict: <PASS|WARNING|BLOCKED> — <one-line reason>` — using the same severity counts and
+wording as the Summary Format's `Verdict:` line below. The full Summary Format block still closes
+the review with the detailed table; the headline just gives a reader the outcome first, matching
+the Minto/BLUF discipline this fleet already applies elsewhere (`agents/summarizer.md`).
+
 ```
 [CRITICAL] Hardcoded API key in source
 File: src/api/client.ts:42

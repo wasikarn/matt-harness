@@ -84,7 +84,8 @@ review: quality/security/style lenses belong to `kbg:review-pr` /
 
 ## Phase 5: Report
 
-**Goal**: One table, one honest verdict.
+**Goal**: One table, one honest verdict — lead the report with the verdict headline (N/N
+conform, open-item count) before the table, not after it.
 
 **Actions**:
 1. One row per plan requirement: **CONFORMS** / **DEVIATED (justified)** / **MISSING (fixed)**.

@@ -91,7 +91,11 @@ A fix that produces new evidence for a claim that was false when originally made
 
 ### **Final Output**
 
-Provide a concise audit report containing:
+**Lead with the verdict.** Open the report with a one-line **Final Verdict** headline — pass/fail
+against the rubric, stated plainly — before any supporting detail. A reader should know the
+outcome from the first line, not after reading through the full build-up.
+
+Then provide the concise audit report containing:
 
 1.  **Baseline Score**
 2.  **Findings / Gaps**
@@ -100,7 +104,7 @@ Provide a concise audit report containing:
 5.  **Final Score**
 6.  **Before → After Comparison**
 7.  **Remaining Risks / Unverified Areas**
-8.  **Final Verdict**
+8.  **Final Verdict** — restated in full here, with the reasoning behind it
 
 The goal is not to produce a reassuring review.
 
