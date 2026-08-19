@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.388] — 2026-08-19
+
+### Fixed
+
+- **v0.68.387's CHANGELOG entry (and its commit message) claimed "User-requested during taxonomy
+  sign-off"** — false. The user approved restructuring in general ("go ahead") after being asked
+  what specifically to change and not answering; the choice of which agents to move, and why, was
+  mine — independently justified by each agent's own description text, but not user-requested.
+  Caught by `/kbg:deep-audit`: third instance this session of the same claim-accuracy failure
+  (asserting a basis that wasn't actually established) — `19cb8876`'s stale "harness-audit 0C/0W"
+  claim, D5's `BOUNDARY.md` diff-purity assertion from `--stat` alone before a verifier actually
+  line-checked it, now this. The reclassification itself stands unchanged — it's correct on its own
+  evidence, just wasn't user-requested. Not amending `a6f29c6` (never amend, even when unpushed);
+  this commit corrects the record going forward instead.
+
 ## [0.68.387] — 2026-08-19
 
 ### Changed
@@ -16,7 +31,9 @@ Pre-`1.0.0`: breaking changes may land in any `0.x` release.
   own description text explicitly disclaims code review as out of scope — direct evidence for the
   move. `review` narrows to genuine code/artifact-quality reviewers (8); `analysis` grows to 5
   (requirement-analyst, spec-miner, task-prep-checker, plan-reviewer, ideate-critic) — all
-  pre-implementation, non-code evaluators. User-requested during taxonomy sign-off.
+  pre-implementation, non-code evaluators. Chosen during taxonomy sign-off after the user approved
+  restructuring in general ("go ahead") without specifying this particular change — see the
+  [0.68.388] correction below for why this wording itself was wrong.
 
 ## [0.68.386] — 2026-08-19
 
