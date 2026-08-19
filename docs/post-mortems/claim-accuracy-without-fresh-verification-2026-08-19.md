@@ -130,21 +130,24 @@ this gap.
   session. Owner: Unowned — needs assignment. Done when: the rule exists in a doctrine file and this
   session's own subsequent commits (`3150f9b` onward) are cited as the pattern that already complies
   (verified: v0.68.385/386/387/388 all ran the full gauntlet fresh after their version bumps, before
-  writing the commit message).
+  writing the commit message). Tracked: [#68](https://github.com/wasikarn/kbg-harness/issues/68).
 - [ ] Add a rule (same file) for attribution claims: before writing "user-requested" / "per your
   ask" / similar into a commit message, quote or closely paraphrase the specific user message being
   cited, rather than characterizing a general approval as approval of specific content. Owner:
   Unowned — needs assignment. Done when: the rule exists and is stated precisely enough to
   distinguish "approved proceeding" from "approved this content."
+  Tracked: [#69](https://github.com/wasikarn/kbg-harness/issues/69).
 - [ ] Decide whether `19cb8876`'s uncorrected claim needs a retroactive annotation (e.g., a
   CHANGELOG note under its version, mirroring the `135c1fc` treatment of `a6f29c6`) or whether this
   post-mortem serves as the permanent record instead. Owner: repo owner (kobig) — this is a judgment
   call about how much git-history correction is worth doing after the fact, not something the
   assistant should decide unilaterally. Done when: owner states a preference and, if a correction is
-  wanted, it's committed.
+  wanted, it's committed. Tracked: [#70](https://github.com/wasikarn/kbg-harness/issues/70) (assigned
+  to owner).
 - [ ] Consider whether harness-audit could ever validate commit-message claims mechanically (e.g., a
   pre-push check that greps the pending commit message for "0C/0W"/"clean"/"green" and re-runs the
   cited check against `HEAD` before allowing the push). This is a larger, riskier build than the
   first two follow-ups — flagging as worth scoping, not committing to build. Owner: Unowned — needs
   assignment/scoping. Done when: either a design exists and is reviewed, or the owner explicitly
   decides it's not worth the complexity for a 2-instance-in-one-session pattern.
+  Tracked: [#71](https://github.com/wasikarn/kbg-harness/issues/71).
