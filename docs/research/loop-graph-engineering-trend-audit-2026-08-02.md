@@ -496,3 +496,59 @@ The user asked for the Article 11 pass above to be re-checked in case anything s
 **What didn't change: the gap count.** Still 1 real, narrow gap (§5.B, shipped this session as `v0.68.204`) — three independent re-checks across the entire article found zero *additional* confirmed gaps. What changed is citation accuracy and one meaningfully wrong claim (§2's layer pairing) — the kind of error that would quietly overstate kbg's actual coverage to a future reader, not understate it.
 
 **Read-coverage caveat for future reference:** all three agents' scopes were defined by line-number estimates, and one of those estimates was wrong. If this article is ever re-checked again, verify section boundaries with `grep -n '^## \|^### [A-Z]\. '` against the source file first, rather than trusting a prior pass's stated line ranges.
+
+---
+
+## Update 2026-08-19 — ADR 0009 cross-reference (Opportunities 2 and 5 status)
+
+**Trigger:** the operator re-fed the identical article (same title/author/date) and asked for the
+full "spawn agents, deep-dive, design a 100/100 application plan" treatment again, unaware this
+exact article had already gone through 5 sweeps + 3 verification passes above. Re-verified from
+primary source (this file) before doing any new work — confirmed settled, not re-derived from
+scratch. Three forks ran this pass: a full re-extraction of the article's architecture (didn't
+change any prior finding), a fresh kbg-architecture re-survey, and a Claude-Code/Codex CLI
+claims-verification pass (below). **Gap count unchanged: still 1 real gap, shipped `v0.68.204`.**
+
+**What's genuinely new since the 2026-08-06 pass: ADR 0009** (`docs/research/adr-0009-bounded-
+review-fix-auto-loop.md`, accepted + shipped 2026-08-14 — 8 days after this audit, so the prior
+pass could not have seen it). It ships a real, deterministic convergence gate
+(`skills/review-pr/scripts/write-review-state.sh`) computing `converged` / `progressing` /
+`stalled` / `regressed` / `churning`, gating a bounded auto-continue loop
+(`should-continue-loop.sh`). This bears directly on two items in the Opportunities list above —
+status corrected for both, not just noted as "closed":
+
+- **Opportunity 2 (failure-fingerprint/no-progress advisory sensor) — still open, NOT closed by
+  ADR 0009.** ADR 0009's convergence gate operates at a different layer than Opportunity 2
+  proposed: it reads one loop's round state (tier counts, `finding_files`, `file_streaks`) to gate
+  one specific loop's continue decision, scoped to `review-pr` only. Opportunity 2 proposed a
+  general `hooks/advisory/` sensor hashing *any* failing command's error signature across *any*
+  session. Different trigger, different scope, journal-only vs. loop-gating. ADR 0009 is real
+  precedent evidence that the underlying pattern (deterministic no-progress detection) works when
+  built for a bounded case — it does not make the general sensor any less speculative under Rule 2.
+  No incident has surfaced "stuck re-running an identical failing fix outside review-pr" as an
+  observed problem. Still a watch-for, not a build.
+- **Opportunity 5 (rollback-on-regression check) — still open, distinct mechanism from ADR 0009.**
+  ADR 0009's `regressed`/`churning` states detect that a round made things worse, but the Decision
+  section routes that to **hard-stop + escalate to the operator**, not an automatic `git revert` —
+  the article's Recovery-action table treats regression as an unconditional auto-rollback case.
+  kbg's chosen shape (detect, then ask a human) is consistent with the operating model, not a step
+  toward the article's autonomous-correction shape. No proven need for automatic rollback has
+  surfaced.
+
+**New observation (not a gap, not queued — Rule 2 applies the same way ADR 0009 itself applies it
+to any further auto-loop extension):** verified directly in `write-review-state.sh` (lines
+363-367) that a file's `file_streaks` counter resets to `1` whenever that file is absent from the
+prior round's streak dict (`p if isinstance(p, int) and p > 0 else 0) + 1`) — `churning` requires
+**3 strictly consecutive** rounds. A non-consecutive oscillation (a file flagged, clean next round,
+flagged again) never accumulates past 1 and structurally cannot trigger `churning`. The article's
+§6.C `state_fingerprint()` mechanism (exact-repeat hashing, order-independent) would catch this
+shape. ADR 0009's own retained revisit trigger #1 already names this exact residual ("a genuinely
+novel churn shape 3-consecutive detection misses") — this pass is the first to connect that
+self-named residual to the external article's specific mechanism. Not a build proposal: the round-5
+ceiling remains the existing backstop for whatever `churning` doesn't catch, and ADR 0009 explicitly
+scopes itself to `review-pr` only ("Auto-loop on any loop other than review→fix... not authorized").
+
+**Confirmed source-article defect, zero kbg exposure:** the article states Codex's third sandbox
+mode is `"unrestricted"` (§4, line 133 in the source file). Verified via WebSearch: the real value
+is `danger-full-access`. Grepped the full kbg repo for any Codex sandbox-mode reference —
+zero hits. Pure error in the external source, no downstream impact, no fix needed here.
