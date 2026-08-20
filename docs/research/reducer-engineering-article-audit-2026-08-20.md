@@ -14,11 +14,20 @@ citation it makes checks out: Liu et al. (Stanford, TACL 2024, "Lost in the Midd
 U-shaped accuracy curve — worst when relevant info sits mid-context, even on long-context models
 (confirmed via [aclanthology.org/2024.tacl-1.9](https://aclanthology.org/2024.tacl-1.9/)).
 
-**Verdict: nothing to build.** kbg-harness's own doctrine already states this article's principle
-near-verbatim (`CLAUDE.md`'s "Same crux, N-worker fan-in" paragraph, `docs/METHODOLOGY.md` Rule
-13's context-economy block), and one live implementation already matches the article's specific
-mechanism — including having already reached, and declined to cross, the article's own unresolved
-caveat. Two days *before* this article was fed into this session.
+**Verdict: nothing to build.** kbg-harness's own doctrine already states the article's general
+principle and 2 of its 4 specific guards (drop malformed, exact-normalize-dedupe) closely —
+`CLAUDE.md`'s "Same crux, N-worker fan-in" paragraph and `docs/METHODOLOGY.md` Rule 13's
+context-economy block don't use the article's own language for "keep highest-confidence" or
+"flag corroboration/contradiction," which live only in the code below, not the doctrine prose —
+and one live implementation already matches the article's specific mechanism on 3 of 4 guards,
+including having already reached, and declined to cross, the article's own unresolved caveat on
+the 4th. Two days *before* this article was fed into this session.
+
+*(Corrected 2026-08-20 via `/kbg:deep-audit`: the first draft of this verdict called the
+doctrine-vs-article match "near-verbatim." A fresh-context adversarial check found that
+overstated — the doctrine prose matches the article's general framing and 2 of its 4 guards, not
+a literal or near-literal paraphrase of the full 4-guard mechanism. The "nothing to build"
+conclusion itself held up; only this one sentence's precision didn't.)*
 
 ## Guard-by-guard: `deep-research.js`'s claim-dedup vs. the article's `reduce_findings()`
 
