@@ -133,9 +133,24 @@ messages = [
 
 **Caching is a net win only when the prefix outlives enough reads to amortize the write premium.** Anthropic charges a ~25% surcharge on `cache_creation` and a discount on `cache_read` — a churn-heavy prefix (per-user system prompt, dynamic tool set) that changes per request costs more to write than it saves. Don't cache what changes per request; watch `cache_read` vs `cache_creation` in the usage response like uptime — negative net savings means stop caching, not cache harder.
 
+### 5. Effort Parameter
+
+Sweep effort on the current model before routing to a different one — it's the cheaper experiment, and it composes with model routing instead of replacing it.
+
+```python
+response = client.messages.create(
+    model=model,
+    max_tokens=4096,
+    messages=messages,
+    output_config={"effort": "low"},  # low | medium | high (default) | xhigh | max
+)
+```
+
+**Effort is a request parameter, not a model choice — sweep it first.** No beta header required. Claude Sonnet 5 defaults to `high` on both the API and Claude Code (confirmed against `platform.claude.com/docs/en/build-with-claude/effort`, 2026-08-20); `medium` is the first cost-saving step down, `low` fits high-volume or latency-sensitive work, `xhigh`/`max` exist for the hardest coding/agentic tasks. **Haiku models aren't on the supported list** (Fable 5, Mythos 5/Preview, Opus 5/4.8/4.7/4.6/4.5, Sonnet 5/4.6 are) — this composes with `select_model()`'s routing only on the branch that returns one of those, not the Haiku branch. Anthropic's own measurements: on knowledge-work benchmarks, `medium` matched the default's accuracy at 70-85% of its cost — a free cut — and `low` gave up 1-3 points for a third to a half off the cost; on long-horizon coding the tradeoff is steeper, `medium` gave up about 2 points for half the cost and `low` gave up about 8 points for a quarter of it. Test each level in its own session: changing `effort` mid-conversation invalidates the prompt cache.
+
 ## Composition
 
-Combine all four techniques in a single pipeline function:
+Combine all five techniques in a single pipeline function:
 
 ```python
 def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, CostTracker]:
@@ -146,10 +161,11 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
     if tracker.over_budget:
         raise BudgetExceededError(tracker.total_cost, tracker.budget_limit)
 
-    # 3. Call with retry + caching
+    # 3. Call with retry + caching + effort
     response = call_with_retry(lambda: client.messages.create(
         model=model,
         messages=build_cached_messages(system_prompt, text),
+        output_config={"effort": config.effort},
     ))
 
     # 4. Track cost (immutable)
@@ -173,6 +189,7 @@ skill owns the routing pattern, not the price sheet.
 ## Best Practices
 
 - **Start with the cheapest model** and only route to expensive models when complexity thresholds are met
+- **Sweep effort levels on the current model before routing to a cheaper one** — a smaller, cheaper change to test, and it composes with model routing rather than replacing it
 - **Set explicit budget limits** before processing batches — fail early rather than overspend
 - **Log model selection decisions** so you can tune thresholds based on real data
 - **Use prompt caching** for system prompts over the model's minimum cacheable prefix — saves both cost and latency. The minimum is model-dependent, not a flat 1024 tokens: 512 for Claude Opus 5, 1024 for Sonnet 5/Sonnet 4.6/Opus 4.8, but 4,096 for Claude Haiku 4.5 — a prompt sized for Sonnet's threshold routed to Haiku by this skill's own routing logic would silently fail to cache (no error, `cache_creation_input_tokens` stays 0). Check the target model's actual minimum before sizing the cached prefix.
@@ -181,6 +198,7 @@ skill owns the routing pattern, not the price sheet.
 ## Anti-Patterns to Avoid
 
 - Using the most expensive model for all requests regardless of complexity
+- Routing to a smaller model before trying a lower effort level on the current one
 - Retrying on all errors (wastes budget on permanent failures)
 - Mutating cost tracking state (makes debugging and auditing difficult)
 - Hardcoding model names throughout the codebase (use constants or config)
