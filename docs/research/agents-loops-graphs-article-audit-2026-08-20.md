@@ -44,16 +44,25 @@ Level 4 (*"runs on a schedule or a trigger... without a human in the loop. You s
 and check the output."*). Checked against kbg's own retired L2-L5 autonomy ladder and ADR 0009's
 scoping clarification:
 
-- **Levels 1-3 sit in territory kbg already has a considered position on, and permits.** ADR 0009
-  explicitly allows bounded auto-continue *within an operator-started session* — "no self-launch...
-  auto-continue within an operator-started session, not a launchd/cron/`claude -p` self-start"
-  (`docs/research/adr-0009-bounded-review-fix-auto-loop.md:303-306`).
+- **Levels 1-2 sit in territory kbg already has a considered, uncontested position on.** No tension
+  — a session-initiated model deciding mid-response to use a tool is unremarkable under any of
+  kbg's doctrine.
+- **Level 3 is not cleanly "already permitted," on a closer read.** ADR 0009 allows bounded
+  auto-continue *within an operator-started session* — but narrowly: "no self-launch... auto-
+  continue within an operator-started session, not a launchd/cron/`claude -p` self-start"
+  (`docs/research/adr-0009-bounded-review-fix-auto-loop.md:303-306`) — scoped to own-branch
+  review→fix loops, capped at 5 rounds, not a general "no human between steps" license. In fact
+  kbg's own general-purpose multi-step mechanisms shaped like Level 3 (`recursive-improve`,
+  `iterate-skill`) deliberately do the opposite of the article's defining feature ("you are not
+  involved between steps") — both require a human `AskUserQuestion` gate before every mutating
+  step. Level 3 is a mixed picture, not a clean match either way.
 - **Level 4 specifically is the exact case ADR 0006 retired, not a lookalike.** Both texts key on
   the same qualifying fact — schedule/trigger-launched execution with no human starting it. ADR
   0009 quotes ADR 0006 directly: *"The model cannot self-start the improvement loop. (The launchd
   self-start is gone with the L4 machinery; there is no OS-scheduler self-start either now.)"*
-  (`adr-0009-bounded-review-fix-auto-loop.md:75-78`) — the same "no model self-start" rule stated
-  in `CLAUDE.md:105-107`.
+  (`adr-0009-bounded-review-fix-auto-loop.md:75-78`) — the same rule CLAUDE.md states as "The
+  L2–L5 autonomy ladder is retired" (`CLAUDE.md:105`) and, in its literal scare-quoted phrasing,
+  the "no model self-start" invariant (`CLAUDE.md:174`).
 
 The article presents Level 4 as simply the natural top rung of a progression ("add one at a time
 and you move up a level") with no acknowledgment that a real harness tried exactly this rung and

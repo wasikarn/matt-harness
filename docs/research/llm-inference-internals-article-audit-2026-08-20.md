@@ -26,9 +26,16 @@ already shipped as `context-budget`'s MEMORY.md byte-count reporting line (v0.68
 427-459 of that doc). A fresh-context verification agent then checked this fuller article's 5
 additional/more-detailed mechanisms specifically against kbg's live code (not just the prior
 doc's territory) and found nothing new to build. A repo-wide grep for the article's own vocabulary
-(`PagedAttention`, `speculative decoding`, `continuous batching`, `TTFT`, `GQA`, etc.) hit exactly
-one file — the 2026-08-07 investigation itself. No part of the live fleet ever independently
-reached for this domain.
+(`PagedAttention`, `speculative decoding`, `continuous batching`, `TTFT`, `GQA`, etc.) returns
+**zero** hits anywhere in the repo — not even in the 2026-08-07 doc itself, which discusses "KV
+cache"/"prefill" only in a different, construction-cost sense, never the article's specific serving-
+engine terms. No part of the live fleet has ever independently reached for this domain, which is a
+stronger negative signal than a one-file hit would have been.
+
+*(Corrected 2026-08-20 via `/kbg:deep-audit`: the first draft of this paragraph claimed the sweep
+"hit exactly one file — the 2026-08-07 investigation itself." A fresh-context adversarial check,
+and a direct re-run of the same grep, found that wrong — the correct result is zero hits anywhere,
+including in that file. The "no build" verdict itself held up; only this one factual claim didn't.)*
 
 ## Mechanism-by-mechanism
 
@@ -36,8 +43,8 @@ reached for this domain.
 |---|---|---|
 | Prefill (compute-bound, parallel) / decode (memory-bound, sequential) split | Workflow tool's `agent()`/`parallel()`/`pipeline()` concurrency model | No application — each `agent()` call is a fully independent `generate()` call on Anthropic's own infrastructure; kbg has zero visibility into how those get scheduled server-side. A bounded local worker pool predates GPU serving by decades and shares no mechanism with continuous batching. |
 | KV cache growth costs, "context length isn't free" | `docs/METHODOLOGY.md` Rule 13 / CLAUDE.md context-economy doctrine | No new application — Rule 13's reasoning is Lost-in-the-Middle/prompt-quality, not VRAM/batch-capacity. Same practical conclusion ("keep context lean"), different mechanism, already covered for a different, sufficient reason — surface resemblance only. |
-| Speculative decoding (draft model proposes, big model verifies in one batched pass, gated on acceptance rate) | `compliance-audit` Phase 3, `review-pr` Phase 5 step 3.5 (fresh-context multi-agent verification) | No application, and forcing the metaphor would mislead — these dispatch N independent agents that each redo the analysis from scratch, no shared pass, no acceptance-rate concept. The correct existing name is maker-checker separation, already used correctly. |
-| Model-weight quantization (FP32→INT4) | `skills/cost-aware-llm-pipeline/SKILL.md` model routing (Haiku vs. Sonnet vs. Opus tiers) | No application, but a real adjacent lever already exists under correct, different vocabulary: kbg swaps models entirely (routing), it doesn't reduce one model's numeric precision (quantization) — `scripts/workflows/deep-research.js:212-282` already routes cheap search/fetch work to Haiku and reserves Sonnet for verify/synthesize. |
+| Speculative decoding (draft model proposes, big model verifies in one batched pass, gated on acceptance rate) | `compliance-audit` Phase 3, `review-pr-tier` Phase 5 step 3.5 (fresh-context multi-agent verification) | No application, and forcing the metaphor would mislead — these dispatch N independent agents that each redo the analysis from scratch, no shared pass, no acceptance-rate concept. The correct existing name is maker-checker separation, already used correctly. |
+| Model-weight quantization (FP32→INT4) | `skills/cost-aware-llm-pipeline/SKILL.md` model routing (Haiku vs. Sonnet vs. Opus tiers) | No application, but a real adjacent lever already exists under correct, different vocabulary: kbg swaps models entirely (routing), it doesn't reduce one model's numeric precision (quantization) — `scripts/workflows/deep-research.js:212-282` already routes cheap search/fetch work to Haiku, with the default (Sonnet-tier) session model reserved for verify/synthesize by simply omitting a `model:` override on those calls. |
 | PagedAttention, DeepSeek V4's CSA/HCA (architecture-level redesign) | Whole repo | No application — VRAM paging and model-architecture redesign are both entirely inside the provider's serving stack. Same boundary class as the 2026-08-07 doc's own "C2" finding: kbg cannot fine-tune or redesign the underlying model, full stop. |
 | Continuous batching (interleaving token-steps of many sequences on shared GPU weights) | Workflow tool's `min(16, CPUs-2)` concurrency cap | No application — capping concurrent HTTP calls to a client-side process limit is a generic queueing pattern, not GPU step-level batching. |
 

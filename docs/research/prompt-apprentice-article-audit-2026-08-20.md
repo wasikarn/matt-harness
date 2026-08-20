@@ -48,11 +48,15 @@ accumulated signal." All four were checked directly against source, not summariz
   write ("reject = nothing written"), and structurally never edits an existing governing
   instruction file — only ever writes new standalone `memory/<slug>.md` files.
 - **`skill-creator`'s `run_loop.py`** (upstream Anthropic, not kbg's own) — the one mechanism
-  that *does* apply-then-show without a pre-mutation gate, up to 5 unattended iterations
-  (`for iteration in range(1, max_iterations + 1)`, no human checkpoint inside the loop). But it's
-  scoped to one skill-description line, not full governing prose, and its stop condition is a
-  real measured trigger-rate score against a labeled query set — not an LLM judging its own
-  rewrite (`promptwizard-borrow-verdict-2026-08-02.md`'s prior finding, re-confirmed this pass).
+  in the neighborhood of apply-then-show without a pre-mutation gate: the loop itself
+  (`for iteration in range(1, max_iterations + 1)`, up to 5 unattended iterations, no human
+  checkpoint inside it) only searches and returns `best_description` as JSON — the actual
+  ungated write happens one layer up, in `skill-creator/SKILL.md` Step 4 ("Take `best_description`...
+  update the skill's SKILL.md frontmatter. Show the user before/after"), which applies before it
+  shows. Either way it's scoped to one skill-description line, not full governing prose, and its
+  stop condition is a real measured trigger-rate score against a labeled query set — not an LLM
+  judging its own rewrite (`promptwizard-borrow-verdict-2026-08-02.md`'s prior finding,
+  re-confirmed this pass).
 
 And the shape the article proposes was already explicitly evaluated and rejected once, before this
 article was ever fed into this session. `docs/research/passive-learning-capture-design.md:135-142`,
