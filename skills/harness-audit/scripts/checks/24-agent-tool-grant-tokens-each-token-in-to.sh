@@ -7,7 +7,7 @@
 # Also strips JSON-array brackets and quotes (`["Read", "Write"]` is valid YAML
 # and is the upstream ECC convention; the audit must accept it, not flag every
 # bracket as a typo).
-VALID_TOOLS="Agent Bash CronCreate CronDelete CronList Edit EnterWorktree ExitWorktree Glob Grep LSP ListMcpResourcesTool Monitor NotebookEdit PowerShell PushNotification Read ReadMcpResourceTool RemoteTrigger SendMessage ShareOnboardingGuide Skill TaskCreate TaskGet TaskList TaskStop TaskUpdate ToolSearch WebFetch WebSearch Workflow Write"
+VALID_TOOLS="Agent Artifact Bash CronCreate CronDelete CronList Edit EnterWorktree ExitWorktree Glob Grep LSP ListAgents ListMcpResourcesTool Monitor NotebookEdit PowerShell PushNotification Read ReadMcpResourceTool RemoteTrigger ReportFindings SendMessage SendUserFile ShareOnboardingGuide Skill TaskCreate TaskGet TaskList TaskStop TaskUpdate ToolSearch WebFetch WebSearch Workflow Write"
 while IFS= read -r badtok; do
   warn "$badtok"
 done < <(

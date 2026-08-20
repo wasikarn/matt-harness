@@ -167,11 +167,16 @@ def memory_dir(positional):
     # assumed to need one shared convention. Falls back to raw cwd outside a
     # git repo, matching the doc's "Outside a git repo, the project root is
     # used instead."
-    # CLAUDE_CODE_PROJECT_DIR_NAME (memory.md:360, requires CC v2.1.234+)
-    # overrides just the <project> name component, letting several repos
-    # share one memory dir when launched under the same config dir.
+    # CLAUDE_CODE_PROJECT_DIR_NAME (env-vars.md:326, requires CC v2.1.234+,
+    # corrected 2026-08-20) overrides the <project> name component, but only
+    # "together with CLAUDE_CONFIG_DIR" — Claude Code "ignores this variable
+    # when CLAUDE_CONFIG_DIR is unset". Honoring it alone (the prior bug here)
+    # points memory-lint at a directory Claude Code itself isn't using.
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    projects_root = os.path.expanduser(config_dir) if config_dir else os.path.expanduser("~/.claude")
+    projects_root = os.path.join(projects_root, "projects")
     project_dir_name = os.environ.get("CLAUDE_CODE_PROJECT_DIR_NAME")
-    if project_dir_name:
+    if config_dir and project_dir_name:
         enc = project_dir_name
     else:
         try:
@@ -182,7 +187,7 @@ def memory_dir(positional):
         except (subprocess.CalledProcessError, FileNotFoundError):
             root = os.getcwd()
         enc = root.replace("/", "-")
-    return os.path.join(os.path.expanduser("~/.claude/projects"), enc, "memory")
+    return os.path.join(projects_root, enc, "memory")
 
 
 FRONTMATTER_BLOCK_RE = re.compile(r"\A---\n.*?\n---\n?", re.DOTALL)

@@ -1,6 +1,6 @@
 # Hook Lifecycle Contracts
 
-Per-event **behavior contract** for the 6 hook events / 21 hooks kbg registers, separated
+Per-event **behavior contract** for the 7 hook events / 22 hooks kbg registers, separated
 from **execution** (`hooks/hooks.json` dispatch → which script fires on which event/matcher).
 This is the contract layer ECC separates as `memory-persistence/` (lifecycle definitions)
 from `hooks.json` (execution): this file is the *behavior* contract — what each event
@@ -53,6 +53,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 | Stop | `memory-audit-commit.sh` | FB / computational | If the project's memory store is already a git repo (opt-in, never auto-`init`s), commit any dirty changes for an audit trail. No-op otherwise. Async; no enforcement. |
 | Stop | `stale-task-nudge.sh` | FB / computational, model-facing | If a task created this session (`TaskCreate`) still shows `status: in_progress` with no `TaskUpdate` call for it since, emit `hookSpecificOutput.additionalContext` naming it before the turn ends. **Synchronous, not async** — `Stop` has no passive "show text, turn ends normally" lever at all (confirmed against `hooks.md` before building, not assumed): every field that reaches the model here (`decision: block`, `additionalContext`) forces one more visible agent turn, and an async hook's `additionalContext` only lands on the *next* turn — too late once this turn has already ended. Deduped to one nudge per task per session (`~/.local/share/kbg/task-nudge-sessions/<session_id>-<taskId>` marker) so a task legitimately left `in_progress` across several real turns doesn't re-nag every Stop. Guards on `stop_hook_active` to avoid re-triggering itself. Known gap, not hidden: "untouched since" is a mechanical last-write-wins check on `TaskUpdate` calls, not semantic judgment — it cannot distinguish "forgot to close" from "genuinely still working," so the dedup exists specifically to bound the false-positive cost to one nudge, not to eliminate it. |
 | SessionEnd | `learn-nudge.sh` | FB / computational (volume proxy, not content judgment) | Advisory: remind the operator `kbg:learn` exists when the transcript's `"type":"user"` turn count (includes tool-result turns) is ≥3 (`KBG_LEARN_NUDGE_MIN_TURNS` override). Skips `reason: resume` (docs: "Session switched via interactive `/resume`" — the session ended because the user left it for a possibly-different one, not that this session is pausing to continue later) and `reason: clear` (frequent mid-work housekeeping — nudging every `/clear` is nag-fatigue noise, not signal). Emits to **stderr** — SessionEnd stdout is discarded by Claude Code and SessionEnd has no `additionalContext`/decision-control mechanism at all (unlike SessionStart), so stderr is the only channel that reaches the user (confirmed against the hooks reference: `SessionEnd` → "Shows stderr to user only"). Not the retired learn-capture/learn-drain-nudge design (no queue, no state file, no confidence scoring, no python) — it judges nothing about content, only whether the session had enough activity to plausibly be worth a look. |
+| InstructionsLoaded | `instructions-loaded-journal.sh` | FB / computational | Appends a JSONL record (`~/.local/share/kbg/metrics/instructions-loaded.jsonl`) each time an instruction file loads into context — which file, when, why. Async; no enforcement. Ships from the plugin cache; landed in `b048052e` (v0.68.399), so it fires under the version a session is actually running, not necessarily this repo's checkout. |
 
 **No `TaskCompleted` hooks are registered.** The retired F7 TaskCompleted gate
 and the SessionEnd inferential-FB sensors (`inferential-structural-judge`, `verification-gate`,
@@ -67,8 +68,19 @@ enforcement the F7 gate failed to provide is now carried by
 model-as-gate, so it does not re-arm the autonomy invariant the v0.6.0 cut retired. `SessionEnd` itself
 was re-wired 2026-07-06 with `learn-nudge.sh` — a computational volume-proxy nudge, not a re-arm of the
 retired inferential-FB sensors above (those judged session *content*; this judges nothing beyond a raw
-turn count, and never emits a decision). `hooks/hooks.json` wires 6 events total: SessionStart,
-UserPromptSubmit, PreToolUse, PostToolUse, Stop, SessionEnd.
+turn count, and never emits a decision). `hooks/hooks.json` wires 7 events total: SessionStart,
+UserPromptSubmit, PreToolUse, PostToolUse, Stop, SessionEnd, InstructionsLoaded.
+
+**The four `PreToolUse (Bash)` deny/ask gates above** (`irrecoverable.sh`, `convergence-merge-gate.sh`,
+the Bash leg of `verifier-protect.sh`, `worktree-guard.py`'s Bash branch) **match `Bash` only, not
+`PowerShell`.** `tools-reference.md:361` (confirmed 2026-08-20): "Match `Bash|PowerShell` in hooks
+that inspect shell commands... matching `Bash` alone is not enough" — the PowerShell tool delivers
+its command in the same `tool_input.command` field. Deliberately not widened: a matcher-only fix
+would claim coverage the deny logic doesn't have (`irrecoverable.sh`'s pattern matching is
+POSIX-specific and doesn't recognize `Remove-Item -Recurse -Force` etc.), and this repo's dev
+environment can't exercise PowerShell to test a real fix. PowerShell is opt-in on macOS/Linux, on
+by default on Windows without Git Bash — narrowing this claim rather than widening the gate matches
+the correction made to the worktree-guard row above.
 
 **No `WorktreeCreate`/`WorktreeRemove` hooks are registered either**, as of 2026-07-31. A prior
 gate (`gate:worktree:develop-only`, `worktree-create-block.sh`) was removed: confirmed against

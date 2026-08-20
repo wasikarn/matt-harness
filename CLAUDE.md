@@ -157,6 +157,14 @@ silently broken every legitimate worktree creation if left registered, so removi
 but it means this doctrine's coverage was never — and still isn't — anything more than the literal
 `git worktree add -b` typed into Bash. Full writeup: `docs/research/official-docs-audit-2026-07-31.md`.
 
+**Also not covered: the PowerShell tool.** `irrecoverable.sh` (this gate, plus the other 3
+`PreToolUse (Bash)` deny/ask gates — `convergence-merge-gate.sh`, `verifier-protect.sh`'s Bash leg,
+`worktree-guard.py`'s Bash branch) matches on the `Bash` tool only. `tools-reference.md:361`
+(confirmed 2026-08-20) prescribes matching `Bash|PowerShell` for any hook inspecting shell
+commands — deliberately not done here, since a matcher-only fix would claim coverage this repo's
+POSIX-specific deny logic doesn't have and can't be tested on this dev box. See
+`docs/reference/hook-lifecycle-contracts.md` for the full note.
+
 **`/branch` and `claude --continue --fork-session` are session branches, not git branches** —
 they fork the conversation (try a different approach, keep the original session intact) without
 touching the filesystem's single-`develop`-branch model above. Neither interacts with the

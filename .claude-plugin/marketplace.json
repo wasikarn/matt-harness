@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "kbg",
-      "version": "v0.68.399",
+      "version": "v0.68.400",
       "source": ".",
       "description": "51 skills · 20 agents · 25 commands. Matt-Pocock-first harness: the idea→ship flow (grill → prototype → spec → tickets → ship) plus backend stacks (Drizzle, MySQL/MariaDB, gRPC). Computational deny-gates, advisory sensors, SessionStart doctrine injection, harness-audit.",
       "author": {
