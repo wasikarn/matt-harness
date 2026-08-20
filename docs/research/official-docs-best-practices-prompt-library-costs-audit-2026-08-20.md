@@ -107,26 +107,77 @@ documents which of these three distinct effort-control mechanisms fits which sit
 built in this pass (Rule 2 — no observed incident of a wrongly-tiered dispatch costing something),
 named here so a future pass doesn't have to re-derive the schema check.
 
-## Deferred to the user — genuine trade-offs, not decided here
+## Presented to the user, both resolved
 
-Two findings involve either a quality-affecting behavior change or a new surface with a real design
-question — not the kind of thing this pass should flip unilaterally:
+Two findings involved either a quality-affecting behavior change or a new surface with a real
+design question — not the kind of thing to flip unilaterally. Both were put to the user directly
+(`AskUserQuestion`) rather than decided in this pass:
 
-1. **`agents/summarizer.md` (bucket: utility) currently routes to a stronger-than-haiku tier.**
-   `costs.md` explicitly recommends `model: haiku` for "simple subagent tasks." It's the strongest
-   currently-mis-routed candidate in the fleet (0 of 20 agents route to haiku today: 13 sonnet, 7
-   opus). But `summarizer.md`'s actual job — BLUF structuring, source-fidelity, density calibration
-   — is judgment work, and haiku's summarization quality at that bar is unmeasured. Flipping it
-   without a quality check risks a real regression for a real cost saving.
-2. **No PreToolUse hook filters verbose Bash output before Claude reads it** (e.g. test-runner
-   failures). `costs.md`'s own worked example (a `PreToolUse:Bash` hook that rewrites `npm test`
-   into a failure-only, head-100 command via `updatedInput`) has zero kbg equivalent — all 10
-   `PreToolUse` entries in `hooks/hooks.json` are permission gates, none do output-shaping. This is
-   real, but **kbg ships as a public plugin** — a hook silently truncating every installer's test
-   output (not just this machine's) moves it from "cheap addition" to "needs an opt-in design," and
-   no session incident has surfaced the need yet (Rule 2).
+1. **`agents/summarizer.md` (bucket: utility) — routed to `model: haiku`, then quality-tested.**
+   `costs.md` explicitly recommends `model: haiku` for "simple subagent tasks." It was the
+   strongest currently-mis-routed candidate in the fleet (0 of 20 agents on haiku before this: 13
+   sonnet, 7 opus). Because `summarizer.md`'s actual job — BLUF structuring, source-fidelity,
+   density calibration — is judgment work, the user's answer was to flip it AND verify quality, not
+   flip and walk away. **Verification:** dispatched a `model: haiku` agent carrying the
+   summarizer's own instructions against a real source built to stress the specific failure modes
+   the agent's own Phase 6 fidelity check guards against — a billing-mode-dependent range
+   ("1 hour on subscription, 5 minutes once drawing on usage credits") that must not collapse into
+   one number, and an explicit epistemic hedge ("not determinable... no snapshot exists to diff
+   against") that must not resolve into false certainty. The haiku output preserved both: the
+   conditional range stayed intact, the hedge stayed a hedge, no fact was invented, and the
+   `flagged_ambiguity` field correctly named the one genuine unresolved point in the source. Model
+   changed in `agents/summarizer.md` (`model: opus` → `model: haiku`).
+2. **A `PreToolUse:Bash` output-filtering hook** (costs.md's worked example: rewrite `npm test` to
+   failure-only output via `updatedInput`) — kbg had zero equivalent. User's answer: design it via
+   plan mode first rather than skip or build ahead of a plan. Plan built with a dispatched `Plan`
+   agent, fixing 3 real correctness bugs the `costs.md` example itself has along the way
+   (exit-code masking by `head`, a silent-failure ambiguity between "all green" and "the hook
+   broke," and an unrewritten compound-command path closing an undocumented sibling-gate
+   precedence risk). Then adversarially reviewed by `kbg:plan-reviewer` before any code was
+   written (required — the plan touches `hooks/gates/**`, the verifier-protected surface). The
+   review's Critical finding killed the plan outright: this repo's own pre-existing docs
+   (`worktree-guard.py`'s header comment, `hook-lifecycle-contracts.md` line 49) already state that
+   a raw Bash command can't be rewritten via `updatedInput` — directly contradicting the plan's
+   foundational premise and `costs.md`'s own worked example. The reviewer had no way to confirm
+   which source was right (no live doc access in its sandbox); I resolved it by fetching
+   `code.claude.com/docs/en/hooks.md` directly. See "`costs.md`'s worked example doesn't work" below
+   — **the hook was never built.** Nothing shipped under this item beyond the doc correction it
+   produced.
 
-Both are named for the user's decision, not queued as work.
+## `costs.md`'s worked example doesn't work
+
+The most valuable finding in this cycle turned out to be about Anthropic's own docs, not kbg's.
+`costs.md`'s "Reduce tool output" section walks through building a `PreToolUse:Bash` hook that
+uses `hookSpecificOutput.updatedInput.command` to rewrite `npm test` into a failure-only-output
+form, and gives a specific verification method: run `claude --debug`, run `npm test`, and check the
+debug log for `modified tool input keys: [command]`.
+
+`hooks.md` — the actual hooks reference, checked directly 2026-08-20 — states the opposite in a
+plain bulleted field list:
+
+> **`updatedInput`**: object
+> - Modifies the tool's input before execution
+> - Only works for file-path-based tools: `Edit`, `Write`, `Delete`, `Rename`, `Read`, `Glob`,
+>   `Grep`, and `Notebook`
+> - **Does not work for `Bash` or other command tools**
+
+Three independent sources agree with `hooks.md` against `costs.md`'s example: `hooks.md`'s own
+field list, `worktree-guard.py`'s pre-existing header comment in this repo (predates this session),
+and `hook-lifecycle-contracts.md` line 49 (predates this session, now annotated with this
+confirmation). That's not a coin flip between two equally-weighted docs — `costs.md`'s worked
+example is the outlier, and it's most likely stale (a capability the example was written against
+that was since restricted, with the cost-optimization doc's own worked example never re-verified
+against a change to the hooks reference doc it depends on). Not something to guess at further or
+spend a live spike resolving: the evidence already points one way, consistently, from multiple
+independent angles.
+
+**No workaround was substituted.** A `permissionDecision: "deny"` pattern that tells Claude to
+re-run a filtered command itself was considered and rejected — it would convert a silent
+optimization into a mandatory two-round-trip interruption on every `npm test`/`pytest`/`go test`
+call, in a public plugin, for a Rule-2 item with no observed cost incident behind it yet. The
+feature is dropped, not redesigned. If a real cost incident from unfiltered test output shows up
+later, this section and the adversarially-reviewed (if now-moot) design work in this session's
+history are the starting point — not a green light to rebuild without a proven need.
 
 ## How this cycle was run
 
@@ -141,9 +192,15 @@ incorporated directly into this document and the fixes above, not treated as a s
 
 ## Bottom line
 
-Three of five candidate fixes were small, well-evidenced, and low-risk enough to implement in this
-same pass (deep-audit parity caution, env-vars.md cache-lifetime row, Rule 13 + CLAUDE.md's Compact
-instructions block). One existing memory needed correction, not deletion — its core claim survives,
-its supporting citation didn't. Two items are real but involve either unmeasured quality risk or a
-new surface with public-plugin blast-radius considerations wide enough to warrant asking rather than
-deciding.
+Three of five candidate fixes were small, well-evidenced, and low-risk enough to implement
+unilaterally (deep-audit parity caution, env-vars.md cache-lifetime row, Rule 13 + CLAUDE.md's
+Compact instructions block). One existing memory needed correction, not deletion — its core claim
+survives, its supporting citation didn't. Two items involved either unmeasured quality risk or
+public-plugin blast-radius considerations wide enough to ask rather than decide — both were put to
+the user rather than decided unilaterally. One shipped: `summarizer.md` on haiku, with a real
+quality check behind it, not a flip-and-walk-away. The other — the output-filter hook — did **not**
+ship: the plan-mode design process the user asked for (design → adversarial `kbg:plan-reviewer`
+pass before any code existed) caught that its core mechanism doesn't exist on this platform, before
+a single line of hook code was written. That's the review process working exactly as intended, not
+a failure of this pass — the actual deliverable from that branch of work is the vendor-doc
+contradiction recorded above, not a shipped hook.
