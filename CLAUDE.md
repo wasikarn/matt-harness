@@ -172,3 +172,10 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 - **`orchestrate` vs `kbg:decide`:** orchestrate decides whether/how to spend effort on an ask (inline/parallel/sequential/drop, which surface receives it) *before* it's understood as a bounded decision; `decide` reasons through a bounded question once you're already committed to answering it. A pile of competing asks routes through `orchestrate` first; a single reversible-choice question goes straight to `decide`.
 - **`SKILL.md` frontmatter ≠ `agents/*.md` frontmatter:** the real skill-file field for tool control is `allowed-tools` (pre-approves without asking; skills have no hard-restriction field), not `tools:` — that's the `agents/*.md` subagent field (hard-restricts to a fixed set). Confirmed against the official `skills.md` reference and the CLI binary's compiled schema keys. `metadata` / `metadata.origin` / `disable-model-invocation-reason` are non-standard-but-harmless kbg conventions — unrecognized frontmatter keys warn, never error, and carry zero behavioral effect.
 - **`/goal` vs `goal-craft`:** `/goal` is Claude Code's own native completion-condition loop (v2.1.139+, judged each turn by a separate small model). kbg never wraps or auto-invokes `/goal` — the user always types it themselves, no exceptions (prose-only; holds because no fleet surface is written to call it). `skills/goal-craft` only composes a paste-ready condition string (one-way-door screen + turn bound); model-invocable since 2026-07-08, but the string is inert until the user pastes it after `/goal`. Auto-dispatch (`claude -p "/goal ..."`) stays a deliberate non-goal — it reopens the retired "no model self-start" invariant.
+
+# Compact instructions
+
+When compacting, preserve: which files are staged/committed vs. still pending this session, the
+current plugin version state (bumped or not since the last shipped-surface edit), any open
+plan-mode approval, and file:line citations already independently verified this session. Drop
+resolved tool-call output and superseded draft text.

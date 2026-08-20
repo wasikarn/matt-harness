@@ -44,6 +44,16 @@ Do not assume the current implementation is correct. Treat the entire session ou
     -   Likelihood
     -   Confidence
     -   Effort to fix
+
+    **Zero or few findings is a valid outcome of this step, not evidence the pass was too shallow.**
+    Do not manufacture findings — filler nits, speculative "consider using X," or a hypothetical
+    edge case with no concrete trigger — to give step 5 something to fix. This matches the standard
+    already held elsewhere in this fleet: `agents/code-reviewer.md`'s "It Is Acceptable And Expected
+    To Return Zero Findings" and `agents/blind-spot-hunter.md`'s severity-earning discipline
+    (no finding ships without a traced path to an earned severity). An already-high baseline score
+    is a legitimate baseline. This doesn't relax the Critical Rule below — if the score genuinely
+    doesn't improve, say so explicitly; it just means "nothing worth fixing" and "under-audited" are
+    not the same finding, and only evidence tells them apart.
 5.  **Implement improvements**
     Make the necessary changes to address the identified weaknesses.
 
