@@ -20,16 +20,13 @@ session_id=$(printf '%s' "$payload" | jq -r '.session_id // "default"' 2>/dev/nu
 metrics_dir="$HOME/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 
-# Sonnet 5 runs introductory pricing ($2/$10/$2.50/$0.20 per MTok) through
-# 2026-08-31; standard pricing ($3/$15/$3.75/$0.30, unchanged from prior
-# Sonnet generations) resumes 2026-09-01. Confirmed live against
-# platform.claude.com/docs/en/about-claude/pricing, 2026-07-31 —
-# docs/research/official-docs-audit-2026-07-31.md.
-if [[ "$(date -u +%Y%m%d)" -lt 20260901 ]]; then
-  sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
-else
-  sonnet_rate='{"i":3.0,"o":15.0,"cw":3.75,"cr":0.30}'
-fi
+# Sonnet 5 pricing: $2/$10/$2.50/$0.20 per MTok. Originally introductory
+# through 2026-08-31 with a scheduled reversion to $3/$15/$3.75/$0.30 on
+# 2026-09-01 — that reversion was cancelled. Confirmed live against
+# platform.claude.com/docs/en/about-claude/pricing, 2026-08-20: "The $2/$10
+# ... pricing for Claude Sonnet 5 ... is now the standard price. The
+# previously scheduled increase ... will not occur."
+sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
 
 # build_type_map <transcript-file>...
 # Maps each subagent transcript to the `agentType` from its sibling

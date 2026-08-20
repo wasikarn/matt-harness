@@ -193,6 +193,18 @@ Revisit if: the key turns out to be a test-only placeholder already rotated out 
   const apiKey = process.env.API_KEY;   // GOOD
 ```
 
+**`Reviewer-Confidence: NN%`** — an optional field, added only when the dispatch prompt puts
+`code-reviewer` in **coverage mode** (`kbg:review-pr` Phase 4 step 2.6). In coverage mode, report
+down to 40% confidence instead of the default 80% floor, and tag every finding with this field so
+`kbg:review-pr-tier`'s downstream tiering has a real number to filter on — the whole point of
+coverage mode is surfacing findings a downstream stage can triage, not silently dropping them
+before they're ever written down. Outside coverage mode (standalone/ad-hoc invocation, no
+downstream tier), the default `>80%` pre-report gate applies as before and this field is omitted —
+nothing below 80% ever reaches this template in that case. Named `Reviewer-Confidence` (not just
+`Confidence`) to avoid collision with `kbg:review-pr-tier`'s own, differently-scaled `confidence:
+0.0-1.0` field (the step-3.5 adversarial verifier's confidence in its own refutation) — the two can
+appear on the same presented finding and measure different things.
+
 ### Summary Format
 
 End every review with:

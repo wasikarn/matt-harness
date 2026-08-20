@@ -28,7 +28,14 @@ When invoked:
 
 ## Confidence-Based Filtering
 
-**IMPORTANT**: Do not flood the review with noise. Apply these filters:
+**IMPORTANT**: Do not flood the review with noise. Apply these filters — **unless the dispatch
+prompt explicitly puts you in coverage mode** (`kbg:review-pr` Phase 4 step 2.6 does this when
+`kbg:review-pr-tier` will run downstream to filter/verify): in that case, report down to 40%
+confidence instead, tag each finding with `Reviewer-Confidence: NN%`
+(`Skill(kbg:review-lens-code-quality)`'s template), and let the downstream tier stage do the
+filtering — literal instruction-following on "only report what you're confident about" is known to
+suppress recall on this model generation even when the underlying finding was correct (a real bug
+found, then not reported). Absent that instruction, the default below applies:
 
 - **Report** if you are >80% confident it is a real issue
 - **Skip** stylistic preferences unless they violate project conventions

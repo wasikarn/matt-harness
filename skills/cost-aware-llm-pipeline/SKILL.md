@@ -108,6 +108,8 @@ def call_with_retry(func, *, max_retries: int = _MAX_RETRIES):
 
 **Add jitter to the backoff for concurrent batch callers.** Pure `2 ** attempt` is synchronized across N parallel requests hitting the same 429 — they retry in lockstep at 1s/2s/4s and amplify the rate limit, wasting wall-clock and compute on attempts that never reach the API (and therefore never produce a `CostRecord`). Use `time.sleep((2 ** attempt) + random.uniform(0, base))` to decorrelate; AWS SDKs add full jitter (`random.uniform(0, base)`) by default in standard/adaptive retry mode for exactly this reason.
 
+**A refusal isn't an exception — check `stop_reason` before tracking cost.** Sonnet-5-and-later models can decline a request for safety reasons and still return a normal HTTP 200 with `stop_reason: "refusal"`, so `call_with_retry` never sees it (nothing raised, nothing to retry — that part is already correct). What it doesn't guard is cost tracking: a refused-before-any-output request isn't billed, so building a `CostRecord` for one overcounts spend. Check `response.stop_reason != "refusal"` before adding to the tracker (see Composition step 4).
+
 ### 4. Prompt Caching
 
 Cache long system prompts to avoid resending them on every request.
@@ -168,9 +170,10 @@ def process(text: str, config: Config, tracker: CostTracker) -> tuple[Result, Co
         output_config={"effort": config.effort},
     ))
 
-    # 4. Track cost (immutable)
-    record = CostRecord(model=model, input_tokens=..., output_tokens=..., cost_usd=...)
-    tracker = tracker.add(record)
+    # 4. Track cost (immutable) — skip refusals, they aren't billed
+    if response.stop_reason != "refusal":
+        record = CostRecord(model=model, input_tokens=..., output_tokens=..., cost_usd=...)
+        tracker = tracker.add(record)
 
     return parse_result(response), tracker
 ```
@@ -194,6 +197,8 @@ skill owns the routing pattern, not the price sheet.
 - **Log model selection decisions** so you can tune thresholds based on real data
 - **Use prompt caching** for system prompts over the model's minimum cacheable prefix — saves both cost and latency. The minimum is model-dependent, not a flat 1024 tokens: 512 for Claude Opus 5, 1024 for Sonnet 5/Sonnet 4.6/Opus 4.8, but 4,096 for Claude Haiku 4.5 — a prompt sized for Sonnet's threshold routed to Haiku by this skill's own routing logic would silently fail to cache (no error, `cache_creation_input_tokens` stays 0). Check the target model's actual minimum before sizing the cached prefix.
 - **Never retry on authentication or validation errors** — only transient failures (network, rate limit, server error)
+- **For latency-sensitive callers, stream the response** (`stream=True`) instead of waiting for the full completion — improves perceived responsiveness even though total generation time is unchanged
+- **Set `max_tokens` as a latency lever, not just a cost one** — a lower cap bounds worst-case response time, at the cost of a hard cutoff (the response is truncated, possibly mid-sentence, if it hits the limit)
 
 ## Anti-Patterns to Avoid
 

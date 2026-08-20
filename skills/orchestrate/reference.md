@@ -169,9 +169,11 @@ var `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` no longer documented) — a rubber-s
 Agent tool can now run further before hitting any platform ceiling. The remaining
 `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` cap of 20 rate-limits, doesn't total-limit, and is waived
 during ultracode/Workflow sessions — the same tool-mode as the 44→105 incident above, though no
-primary record confirms that specific run had ultracode active. The hard cap of 5 plus Step 4's
-`AskUserQuestion` gate is now the entire mechanical defense on the Agent-tool axis, not one layer
-of two.**
+primary record confirms that specific run had ultracode active. A separate env var,
+`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` (Claude Code 2.1.217+), limits nesting depth — it wouldn't
+have stopped the 44→105 incident, which was a breadth problem, not a depth one, so it doesn't
+change the conclusion below. The hard cap of 5 plus Step 4's `AskUserQuestion` gate is now the
+entire mechanical defense on the Agent-tool's *breadth* axis, not one layer of two.**
 
 **This is doctrine, not preference (Workflow tool).** The code-level clamp isn't a style choice —
 without it as a hard number in code, the next Workflow author writes the same soft "don't
