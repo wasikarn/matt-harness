@@ -36,10 +36,15 @@ fi
 # the sourced-files boundary and flags both as unused. Disable SC2034 here.
 # shellcheck disable=SC2034
 SETTINGS="$CLAUDE_DIR/settings.json"
-# MEMORY_DIR is the per-project memory dir derived from REPO_ROOT; reserved for
-# future hooks that need to write audit findings into session memory.
+# MEMORY_DIR is the per-project auto-memory dir Claude Code itself uses —
+# keyed by git-repo path with "/" replaced by "-" (code.claude.com/docs/en/
+# memory.md:358, confirmed 2026-08-20: "derived from the git repository").
+# The prior formula here never resolved to a real path (stripped the literal
+# substring "claude" out of REPO_ROOT, then keyed by "_" not "-"), so check 13
+# (13-memory-index-drift.sh), the only consumer, silently read nothing every
+# run.
 # shellcheck disable=SC2034
-MEMORY_DIR="${REPO_ROOT//claude/}/.claude/projects/${REPO_ROOT//\//_}/memory"
+MEMORY_DIR="$HOME/.claude/projects/${REPO_ROOT//\//-}/memory"
 
 # AUDIT-2: --only <id> — run exactly ONE check by id against the resolved scope
 # (so tests/skills/harness-audit/test-harness-audit.sh can prove a known-bad

@@ -96,6 +96,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime
 
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
 NAME_RE = re.compile(r"(?m)^name:\s*(.+)$")
@@ -128,15 +129,78 @@ STUB_TEMPLATE = "- [{}](_archive/{}/{}) — archived on-demand"
 # anyway — the user is explicitly saying "this entry is closed, browse on-demand."
 
 
+def _auto_memory_directory_setting():
+    # memory.md:362 — `autoMemoryDirectory` in settings.json overrides the
+    # whole storage location. Read from any scope; project scope wins over
+    # user scope, matching Claude Code's own most-specific-wins precedence
+    # (same simplification harness-audit check 47 already makes — full
+    # local/policy/--settings scopes aren't relevant to this CLI's own usage).
+    for path in (
+        os.path.join(".claude", "settings.local.json"),
+        os.path.join(".claude", "settings.json"),
+        os.path.expanduser("~/.claude/settings.json"),
+    ):
+        try:
+            with open(path) as f:
+                value = json.load(f).get("autoMemoryDirectory")
+        except (OSError, json.JSONDecodeError):
+            continue
+        if value:
+            return value
+    return None
+
+
 def memory_dir(positional):
     if positional:
         return positional
-    # Match CC's own project-directory keying (launch CWD, not git toplevel) —
-    # see skills/learn/scripts/find-transcript.sh, the sibling script this must
-    # agree with. Using git toplevel here diverged from that convention and
-    # pointed at the wrong memory dir whenever CC launched from a subdirectory.
-    enc = os.getcwd().replace("/", "-")
+    auto_dir = _auto_memory_directory_setting()
+    if auto_dir:
+        return os.path.expanduser(auto_dir)
+    # Match Claude Code's own auto-memory keying, not raw cwd: the official
+    # doc (code.claude.com/docs/en/memory.md:358, confirmed 2026-08-20) states
+    # the <project> path is "derived from the git repository, so all worktrees
+    # and subdirectories within the same repo share one auto memory directory."
+    # A prior version of this function keyed by raw os.getcwd() instead,
+    # reasoning it had to "agree with skills/learn/scripts/find-transcript.sh"
+    # — but that script keys *session transcripts*, a separate CC mechanism
+    # with its own cwd-based rule per the same doc; the two were wrongly
+    # assumed to need one shared convention. Falls back to raw cwd outside a
+    # git repo, matching the doc's "Outside a git repo, the project root is
+    # used instead."
+    # CLAUDE_CODE_PROJECT_DIR_NAME (memory.md:360, requires CC v2.1.234+)
+    # overrides just the <project> name component, letting several repos
+    # share one memory dir when launched under the same config dir.
+    project_dir_name = os.environ.get("CLAUDE_CODE_PROJECT_DIR_NAME")
+    if project_dir_name:
+        enc = project_dir_name
+    else:
+        try:
+            root = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True, text=True, check=True,
+            ).stdout.strip()
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            root = os.getcwd()
+        enc = root.replace("/", "-")
     return os.path.join(os.path.expanduser("~/.claude/projects"), enc, "memory")
+
+
+FRONTMATTER_BLOCK_RE = re.compile(r"\A---\n.*?\n---\n?", re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def measured_index(idx):
+    """Byte/line count of MEMORY.md the way Claude Code's own load-budget check
+    measures it: YAML frontmatter and block-level HTML comments stripped before
+    counting (code.claude.com/docs/en/memory.md:394, confirmed 2026-08-20).
+    MEMORY.md carries no frontmatter today, so that half is a no-op in
+    practice — kept for correctness if that ever changes, and so a maintainer
+    wrapping a trimmed section in `<!-- -->` (Tier 3, official-docs audit
+    2026-08-20) doesn't get double-counted against the cap that move exists to
+    relieve."""
+    stripped = FRONTMATTER_BLOCK_RE.sub("", idx, count=1)
+    stripped = HTML_COMMENT_RE.sub("", stripped)
+    return len(stripped.encode("utf-8")), stripped.count("\n") + 1
 
 
 def link_target(raw):
@@ -273,7 +337,7 @@ def detector_findings(state):
                 findings.append(f"STALE POINTER: MEMORY.md → ({ref}) but file missing")
 
         # 4. load budget
-        idx_bytes, idx_lines = len(idx.encode("utf-8")), idx.count("\n") + 1
+        idx_bytes, idx_lines = measured_index(idx)
         pct = int(max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP) * 100)
         if idx_lines > LINE_CAP or idx_bytes > BYTE_CAP:
             findings.append(f"OVER-BUDGET: MEMORY.md {idx_lines}L/{idx_bytes}B exceeds the 200-line/25KB load cap — trailing index entries WON'T load; fold closed entries into a topic-file/ledger + archive (only MEMORY.md loads — splitting into multiple indexes won't help)")
@@ -298,13 +362,37 @@ def superseded_stems(state):
     return stems
 
 
-def staleness_findings(state, stale_days):
-    """mtime-based staleness — advisory only, never counted toward exit code.
+MODIFIED_FIELD_RE = re.compile(r"(?m)^modified:\s*(\S+)")
 
-    A memory file's mtime is the only durable "last touched" signal this store
-    has; there's no per-memory last-verified field (and adding one means
-    migrating every existing file — not worth it for a lint-surface add-on).
-    An old memory isn't wrong by default, just worth a human glance.
+
+def _modified_timestamp(text):
+    """Parse the native `modified:` frontmatter field Claude Code itself writes
+    (v2.1.214+, code.claude.com/docs/en/memory.md:404, confirmed 2026-08-20) —
+    stamped whenever CC writes to a memory file that already has frontmatter.
+    Returns a unix timestamp, or None if the field is absent or unparseable."""
+    m = MODIFIED_FIELD_RE.search(text)
+    if not m:
+        return None
+    try:
+        return datetime.fromisoformat(m.group(1).strip().replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def staleness_findings(state, stale_days):
+    """Staleness — advisory only, never counted toward exit code.
+
+    Prefers the native `modified:` frontmatter timestamp when present, falling
+    back to filesystem mtime when it isn't. mtime alone is a weaker signal than
+    it looks for this store specifically: the store is a git repo that gets
+    cloned across machines by design (memory `memory-store-autopush-hook-
+    intentional`), and a checkout resets mtimes to checkout time regardless of
+    when a memory was actually last touched — so mtime can measure a git
+    operation instead of an edit. `modified:` doesn't have that failure mode.
+    Still advisory either way: an old memory isn't wrong by default, just
+    worth a human glance, and there's no per-memory last-verified field
+    distinct from last-touched (adding one means migrating every existing
+    file — not worth it for a lint-surface add-on).
     """
     now = time.time()
     skip = superseded_stems(state)
@@ -312,10 +400,18 @@ def staleness_findings(state, stale_days):
     for f in sorted(state["files"]):
         if f[:-3] in skip:
             continue
+        path = os.path.join(state["d"], f)
         try:
-            age_days = int((now - os.path.getmtime(os.path.join(state["d"], f))) / 86400)
+            text = open(path, encoding="utf-8").read()
         except OSError:
             continue
+        ts = _modified_timestamp(text)
+        if ts is None:
+            try:
+                ts = os.path.getmtime(path)
+            except OSError:
+                continue
+        age_days = int((now - ts) / 86400)
         if age_days >= stale_days:
             stale.append({"file": f, "age_days": age_days})
     stale.sort(key=lambda x: -x["age_days"])
@@ -827,8 +923,7 @@ def run_detector(state, as_json, stale_days):
         }, indent=2))
         sys.exit(0 if not findings else len(findings))
 
-    idx_bytes = len(state["idx"].encode("utf-8"))
-    idx_lines = state["idx"].count("\n") + 1
+    idx_bytes, idx_lines = measured_index(state["idx"])
     pct = int(max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP) * 100)
     print(f"=== memory-lint: {state['d']} ===")
     print(f"memories: {len(state['files'])} | links: {total_links} | "
@@ -943,8 +1038,7 @@ def class_b_near_budget_collapse(state):
     if not state["idx"]:
         return plan
     # Match the 200L/25KB cap threshold
-    idx_bytes = len(state["idx"].encode("utf-8"))
-    idx_lines = state["idx"].count("\n") + 1
+    idx_bytes, idx_lines = measured_index(state["idx"])
     pct = int(max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP) * 100)
     if pct < 80:
         return plan
@@ -1071,8 +1165,7 @@ def class_d_count_fold(state, exclude_files):
     estimated_impact sum used by A/B/C, which mixes savings-sign conventions
     across classes; D reports its own delta separately."""
     plan = []
-    idx_bytes = len(state["idx"].encode("utf-8"))
-    idx_lines = state["idx"].count("\n") + 1
+    idx_bytes, idx_lines = measured_index(state["idx"])
     pct = max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP)
     if pct < FOLD_TRIGGER_PCT:
         return plan
@@ -1209,8 +1302,7 @@ def apply_action_plan(state, plan):
 
 
 def print_plan(state, plan, estimated_impact):
-    idx_bytes = len(state["idx"].encode("utf-8"))
-    idx_lines = state["idx"].count("\n") + 1
+    idx_bytes, idx_lines = measured_index(state["idx"])
     pct_now = int(max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP) * 100)
     new_bytes = max(idx_bytes + estimated_impact, 0)
     pct_after = int(new_bytes / BYTE_CAP * 100)

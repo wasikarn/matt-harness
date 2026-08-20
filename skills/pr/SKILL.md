@@ -27,6 +27,8 @@ and Phase 6 reported the number + URL + CI state.
 
 **Input**: optional base-branch name and/or flags (e.g., `--draft`), from the user's request.
 
+**Needs**: the `gh` CLI installed and authenticated (`gh auth status`) — `allowed-tools` above grants permission to call it, not proof it's installed or logged in.
+
 **Parse the request**:
 - Extract any recognized flags (`--draft`).
 - Treat remaining non-flag text as the base branch name.

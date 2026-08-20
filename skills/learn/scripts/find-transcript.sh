@@ -13,6 +13,10 @@
 # read" problem the audit found in this fleet's fan-out/synthesis steps.
 set -uo pipefail
 
+# Claude Code deletes checkpoints along with sessions 30 days after the last
+# activity (settings.json `cleanupPeriodDays`, default 30). An exit-1 here on
+# an older session may just mean the transcript was already swept, not a
+# real lookup failure — say so if the skill surfaces this to the user.
 CWD="${1:-$PWD}"
 SLUG="${CWD//\//-}"
 DIR="$HOME/.claude/projects/$SLUG"

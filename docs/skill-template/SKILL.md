@@ -41,14 +41,14 @@ One-line summary of what this skill does and why it exists.
 Input Contract / Output Format / Failure Modes" rule was retired 2026-06-16
 (audit #31.1) — it manufactured byte-identical filler across 29/37 skills.
 Include a section ONLY where the skill has a real I/O contract worth stating
-(CLAUDE.md § "Adding a new component"). Default copy = frontmatter + title +
+(CLAUDE.md § "Adding or removing a surface"). Default copy = frontmatter + title +
 When-to-use. Delete what you don't fill in. -->
 
 ## Input Contract
 
 What this skill consumes, and what to do when an input is missing — never assume the user pasted everything.
 
-- **Needs:** <inputs the skill consumes — file paths, a diff, an error message>
+- **Needs:** <inputs the skill consumes — file paths, a diff, an error message. If the skill also depends on an external tool or connector to function at all (an authenticated `gh` CLI, an issue-tracker MCP server, a browser-rendering path), name it here too — `allowed-tools` only grants permission to call a tool, it says nothing about whether that tool is installed or authenticated. Only add this when a real prerequisite exists; most skills have none.>
 - **When an input is missing:** gather it autonomously (read the file, run `git diff`) OR ask once with a specific question — never silently guess.
 - **Defaults:** <what the skill assumes when unspecified, e.g. "review unstaged `git diff` by default">
 

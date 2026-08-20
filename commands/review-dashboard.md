@@ -16,6 +16,11 @@ already wrote; this command adds no new tracking.
 `should-continue-loop.sh` all resolve one already-known PR#/branch. This is
 the first surface that lists what's actually in flight.
 
+**Complementary native command**: this dashboard answers "what's the status of PR N's
+review." `claude --from-pr <N>` answers the follow-up — it opens the session picker
+filtered to whichever Claude Code sessions are linked to that PR, so you can reopen the
+one that actually produced the review instead of starting fresh.
+
 ## Default: list every active review
 
 Extracted to `skills/review-pr/scripts/render-dashboard.sh` (2026-08-15 — this was the

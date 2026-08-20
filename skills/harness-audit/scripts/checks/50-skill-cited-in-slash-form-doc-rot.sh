@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # 50. Skill cited in slash form (should be `kbg:<name>`, never `/<name>`).
-# CLAUDE.md's "Suggested next step footers" section documents this exact bug
-# shipping TWICE before a manual survey caught it (v0.35.0: `commands/pr.md`,
+# docs/skill-authoring-conventions.md's "Suggested next step footers" section
+# (referenced, not duplicated, from CLAUDE.md's Skill authoring doctrine —
+# confirmed 2026-08-20 no such section lives in CLAUDE.md itself) documents
+# this exact bug shipping TWICE before a manual survey caught it (v0.35.0: `commands/pr.md`,
 # `diagnosing-bugs/SKILL.md`) — and it noted check 40 structurally can't see
 # it, since check 40's regex only fires on the `kbg:` token to begin with. A
 # skill mis-cited as `` `/name` `` reads as a real command to anyone following

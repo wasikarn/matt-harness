@@ -8,6 +8,8 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 # Ship Merge
 
+**Needs**: the `gh` CLI installed and authenticated (`gh auth status`) — every phase below merges and validates through it.
+
 ## Phase 1: Validate
 
 **Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.

@@ -261,6 +261,19 @@
           }
         ]
       }
+    ],
+    "InstructionsLoaded": [
+      {
+        "id": "session:instructions-loaded-journal",
+        "description": "Journal every CLAUDE.md / .claude/rules/*.md load (file_path, memory_type, load_reason, session_id) to ~/.local/share/kbg/metrics/instructions-loaded.jsonl. This event has no decision control — output is discarded — so this is audit logging only, never surfaced in-session.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/instructions-loaded-journal.sh"]
+          }
+        ]
+      }
     ]
   }
 }

@@ -49,6 +49,13 @@ find skills -name SKILL.md | xargs wc -l | sort -rn | head -20
 # CLAUDE.md chain — flag combined total >300 lines
 wc -l ~/.claude/CLAUDE.md CLAUDE.md .claude/CLAUDE.md 2>/dev/null
 
+# @path imports (memory.md: resolve anywhere in a file, up to 4 hops, and
+# load in full at launch — they don't reduce context, only organize it).
+# The fixed 3-path wc -l above can't see this: any @file pulled in by one of
+# those files adds real tokens this scan will silently miss. Grep for the
+# cascade before trusting the fixed-path total:
+grep -rhoE '@[^[:space:]`]+' ~/.claude/CLAUDE.md CLAUDE.md .claude/CLAUDE.md 2>/dev/null
+
 # Memory index — the ONE piece of native auto-memory overhead this repo can
 # actually measure. MEMORY.md loads whole into every session (no scoped/
 # on-demand loading exists — see docs/research/agent-memory-engineering-2026-08-07.md

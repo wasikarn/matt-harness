@@ -12,6 +12,8 @@ argument-hint: "The freeform task description to turn into a /goal condition"
 
 Compact a freeform task description into a single, paste-ready completion-condition string for Claude Code's native `/goal` command. `/goal`'s evaluator is a separate small model that reads only the transcript and calls no tools — a vague condition gets rubber-stamped, an unbounded one loops forever, an irreversible action baked in executes without review. This skill produces the string only; it never invokes `/goal`, shells out, or spawns a process — the user pastes the output themselves, every time.
 
+**Scope note for scheduled/unattended use:** the output here is only the "what does success look like" half of an unattended prompt. If this condition is going into a scheduled task (Routine, desktop scheduled task, GitHub Action, or `/loop`), the prompt still needs its own separate instruction for what to do with the results once the loop stops — post a summary, leave a comment, open a PR — since nothing runs to read a stop condition back to anyone. This skill doesn't produce that clause; say so if the user's task reads as scheduled/unattended and they haven't stated one.
+
 ## Procedure
 
 1. **Intake**

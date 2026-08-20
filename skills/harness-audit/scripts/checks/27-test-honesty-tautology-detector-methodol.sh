@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # 27. Test-honesty / tautology detector — static check that tests verify intent, not just shape.
 # Catches "test that can't fail when behavior changes" by greppable patterns
-# in test files only. Paired with claude/rules/test-honesty.md (write-time hint)
-# and `/ship` Phase 5 TDD default (workflow gate).
+# in test files only. Paired with the operator's user-level Claude Code rule at
+# ~/.claude/rules/test-honesty.md (write-time hint, `paths: "**/*.py"` — loads
+# into every session, not just this repo; symlinked in from dotfiles, not
+# shipped or tracked here — confirmed 2026-08-20 the prior "claude/rules/"
+# path never existed in this repo) and `/ship` Phase 5 TDD default (workflow
+# gate).
 while IFS= read -r f; do
   [ -e "$f" ] || continue
   rel="${f#$REPO_ROOT/}"
