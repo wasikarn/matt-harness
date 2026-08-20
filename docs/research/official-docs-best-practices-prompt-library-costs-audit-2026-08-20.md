@@ -135,49 +135,88 @@ design question — not the kind of thing to flip unilaterally. Both were put to
    broke," and an unrewritten compound-command path closing an undocumented sibling-gate
    precedence risk). Then adversarially reviewed by `kbg:plan-reviewer` before any code was
    written (required — the plan touches `hooks/gates/**`, the verifier-protected surface). The
-   review's Critical finding killed the plan outright: this repo's own pre-existing docs
-   (`worktree-guard.py`'s header comment, `hook-lifecycle-contracts.md` line 49) already state that
-   a raw Bash command can't be rewritten via `updatedInput` — directly contradicting the plan's
-   foundational premise and `costs.md`'s own worked example. The reviewer had no way to confirm
-   which source was right (no live doc access in its sandbox); I resolved it by fetching
-   `code.claude.com/docs/en/hooks.md` directly. See "`costs.md`'s worked example doesn't work" below
-   — **the hook was never built.** Nothing shipped under this item beyond the doc correction it
-   produced.
+   reviewer flagged that this repo's own docs (`worktree-guard.py`'s header comment,
+   `hook-lifecycle-contracts.md` line 49) assume a raw Bash command can't be rewritten via
+   `updatedInput`, contradicting the plan's premise and `costs.md`'s own worked example — but had
+   no live doc access to resolve which side was right. **I then resolved it wrong.** A `WebFetch`
+   call I made to check `hooks.md` returned a specific, four-bullet "only works for file-path-based
+   tools... does not work for Bash" quote that I treated as an authoritative vendor citation and
+   used to kill the plan. It was fabricated by the fetch tool's own summarization step — a direct
+   re-fetch of the raw content (see below) shows no such text exists anywhere on that page. The
+   plan was killed on a citation that doesn't exist. **The hook still wasn't built in this pass**
+   (Rule 2 — no proven cost incident, and the actual question is now open, not closed), but not for
+   the reason originally recorded. See "The `updatedInput`-on-Bash question is actually unresolved"
+   below for what's real, and "A fabricated citation shipped and was pushed" for how this happened
+   and what it cost.
 
-## `costs.md`'s worked example doesn't work
+## The `updatedInput`-on-Bash question is actually unresolved
 
-The most valuable finding in this cycle turned out to be about Anthropic's own docs, not kbg's.
-`costs.md`'s "Reduce tool output" section walks through building a `PreToolUse:Bash` hook that
-uses `hookSpecificOutput.updatedInput.command` to rewrite `npm test` into a failure-only-output
-form, and gives a specific verification method: run `claude --debug`, run `npm test`, and check the
-debug log for `modified tool input keys: [command]`.
+What's actually known, after two verifiers (this cycle's own `V2` compliance check, and a direct
+re-fetch of the raw page) checked every source involved:
 
-`hooks.md` — the actual hooks reference, checked directly 2026-08-20 — states the opposite in a
-plain bulleted field list:
+- **`worktree-guard.py:23-26`** (commit `8818495a`, 2026-07-16) — a real, pre-existing, but
+  **uncited** engineering assumption in this repo: *"a raw shell command's target can't be
+  transparently rewritten via updatedInput."* Never checked against a vendor source at the time it
+  was written.
+- **`hook-lifecycle-contracts.md:49`** (commit `7ed97b22`, 2026-08-14) — restates the same
+  assumption during a documentation-inventory sweep, not an independent re-derivation. Counting
+  this as a second source double-counts the same origin.
+- **`code.claude.com/docs/en/hooks.md`** — checked twice, live, on 2026-08-20 (once via a raw
+  `firecrawl_scrape`-backed fetch, once via a targeted `WebFetch` explicitly asked to quote every
+  `updatedInput` occurrence verbatim). Both found the page **silent** on tool-type scope for
+  `updatedInput` — it appears twice, both times as a bare field name in a list of available
+  JSON-output keys, with no restriction language anywhere on the page. Neither a denial nor a
+  confirmation.
+- **`costs.md`** — confirmed present verbatim (fetched fresh, cross-checked by two independent
+  fetch paths): a worked example that affirmatively rewrites a Bash `command` field via
+  `updatedInput`, plus a concrete verification method (`claude --debug`, look for `modified tool
+  input keys: [command]` in the debug log).
 
-> **`updatedInput`**: object
-> - Modifies the tool's input before execution
-> - Only works for file-path-based tools: `Edit`, `Write`, `Delete`, `Rename`, `Read`, `Glob`,
->   `Grep`, and `Notebook`
-> - **Does not work for `Bash` or other command tools**
+So the actual evidence, stripped of the fabricated quote, is **one uncited internal assumption
+against one affirmative vendor example with a checkable verification method** — closer to the
+opposite lean from what this doc previously claimed. The only way to actually resolve it is the
+live smoke test the original plan already specified as its own step 8: wire the hook behind
+`KBG_TEST_OUTPUT_FILTER`, run a deliberately-failing test command, check whether the rewrite lands.
+That requires writing to `hooks/gates/**` — a decision the user owns, not something to do
+unilaterally while correcting this record. **Not built in this pass.** Rule 2 still applies (no
+proven cost incident) independent of whichever way the mechanism question resolves.
 
-Three independent sources agree with `hooks.md` against `costs.md`'s example: `hooks.md`'s own
-field list, `worktree-guard.py`'s pre-existing header comment in this repo (predates this session),
-and `hook-lifecycle-contracts.md` line 49 (predates this session, now annotated with this
-confirmation). That's not a coin flip between two equally-weighted docs — `costs.md`'s worked
-example is the outlier, and it's most likely stale (a capability the example was written against
-that was since restricted, with the cost-optimization doc's own worked example never re-verified
-against a change to the hooks reference doc it depends on). Not something to guess at further or
-spend a live spike resolving: the evidence already points one way, consistently, from multiple
-independent angles.
+## A fabricated citation shipped and was pushed
 
-**No workaround was substituted.** A `permissionDecision: "deny"` pattern that tells Claude to
-re-run a filtered command itself was considered and rejected — it would convert a silent
-optimization into a mandatory two-round-trip interruption on every `npm test`/`pytest`/`go test`
-call, in a public plugin, for a Rule-2 item with no observed cost incident behind it yet. The
-feature is dropped, not redesigned. If a real cost incident from unfiltered test output shows up
-later, this section and the adversarially-reviewed (if now-moot) design work in this session's
-history are the starting point — not a green light to rebuild without a proven need.
+The failure mode, precisely: `WebFetch`'s own tool description says it "processes the content with
+a small, fast model" and returns that model's response, not raw page text. Asked whether `hooks.md`
+restricts `updatedInput` to certain tool types, that intermediate model returned a specific,
+well-formatted, plausible four-bullet answer — exact tool names (`Edit`, `Write`, `Delete`,
+`Rename`, `Read`, `Glob`, `Grep`, `Notebook`), bold emphasis on the punchline, the shape of a real
+vendor spec — that does not exist anywhere in the source document. I treated that answer as a
+verbatim quote, without independently checking the raw page, and committed it into
+`hook-lifecycle-contracts.md:49` as "vendor-confirmed, not just an inference." It was reviewed by
+`advisor()` before that commit and endorsed as settled. It was then pushed to `origin/develop`,
+publicly, in a plugin repo other people may install.
+
+The compliance audit dispatched immediately after (see "Presented to the user" above) is what
+caught it — a fresh-context verifier (`V2`) independently fetched the same page via a different
+tool path (`firecrawl_scrape`, which returns raw content rather than a model summary) and found
+the quote absent. I then re-fetched `hooks.md` myself with `WebFetch`, this time asking it to quote
+every `updatedInput` occurrence verbatim rather than answer a yes/no question, and got a
+consistent, correctly-negative result.
+
+**The durable lesson, worth more than either version of the hook question:** a `WebFetch` answer
+is not a primary-source quote, even when it's formatted like one — it's a summarizing model's
+output over fetched content, and that model can and did fabricate specific, confident, well-shaped
+text that isn't in the source. Where a claim will be committed as a citation (not just used to
+inform a judgment call), verify it through a raw-content path, or ask the fetch explicitly to quote
+verbatim and treat even that with more skepticism than a first read invites. `advisor()`, dispatched
+subagents, and prior confidence in a claim don't substitute for this — the fabricated quote passed
+through an `advisor()` review and a `kbg:plan-reviewer` pass (which correctly flagged it as
+unresolved and out of its own reach) before the error was mine, in how I resolved it.
+
+**No workaround was substituted for the hook feature itself**, independent of this correction. A
+`permissionDecision: "deny"` pattern that tells Claude to re-run a filtered command itself was
+considered and rejected — it would convert a silent optimization into a mandatory two-round-trip
+interruption on every `npm test`/`pytest`/`go test` call, in a public plugin, for a Rule-2 item
+with no observed cost incident behind it yet. The feature is dropped, not redesigned, and the
+mechanism question stays open per the section above.
 
 ## How this cycle was run
 
@@ -198,9 +237,19 @@ Compact instructions block). One existing memory needed correction, not deletion
 survives, its supporting citation didn't. Two items involved either unmeasured quality risk or
 public-plugin blast-radius considerations wide enough to ask rather than decide — both were put to
 the user rather than decided unilaterally. One shipped: `summarizer.md` on haiku, with a real
-quality check behind it, not a flip-and-walk-away. The other — the output-filter hook — did **not**
-ship: the plan-mode design process the user asked for (design → adversarial `kbg:plan-reviewer`
-pass before any code existed) caught that its core mechanism doesn't exist on this platform, before
-a single line of hook code was written. That's the review process working exactly as intended, not
-a failure of this pass — the actual deliverable from that branch of work is the vendor-doc
-contradiction recorded above, not a shipped hook.
+quality check behind it, not a flip-and-walk-away.
+
+The other — the output-filter hook — did **not** ship, correctly, but the path there was not clean.
+The plan-mode design process the user asked for worked on its first layer: adversarial
+`kbg:plan-reviewer` review before any code existed caught a real contradiction between the plan's
+premise and this repo's own docs, before a single line of hook code was written. It did **not**
+work on its second layer: resolving that contradiction against a live vendor source, which I did
+myself via `WebFetch`, produced a fabricated quote that I mistook for a verbatim citation and
+shipped into a committed, pushed file as "vendor-confirmed." A follow-up compliance audit's
+fresh-context verifier caught that error using a different fetch path minutes later, before any
+further work built on it. Net effect: the *decision* not to build the hook happened to land in the
+same place either way (Rule 2 — no proven incident — was never satisfied regardless of the
+mechanism question), but the *reasoning* recorded for it was wrong and had to be corrected in a
+second pass. The actual load-bearing deliverable from this branch of work is not "the mechanism
+doesn't exist" — it's now genuinely unresolved — but the fabrication-caught-by-independent-fetch
+finding in "A fabricated citation shipped and was pushed" above.

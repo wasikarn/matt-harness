@@ -191,7 +191,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-20T04:11:50Z_
+_Generated: 2026-08-20T08:58:57Z_
 
 ---
 
