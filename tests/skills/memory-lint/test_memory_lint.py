@@ -737,6 +737,53 @@ def test_find_patterns_cli_boundary_at_exact_cap_size():
         assert "exacthub" in result.stdout, f"the size-5 cluster's content must appear: {result.stdout}"
 
 
+def test_memory_dir_project_dir_name_requires_config_dir():
+    """Regression test for a bug memory_dir() shipped and had to fix twice in
+    one session: the round-1 fix honored CLAUDE_CODE_PROJECT_DIR_NAME whenever
+    it was set, citing memory.md — which doesn't mention that Claude Code
+    "ignores this variable when CLAUDE_CONFIG_DIR is unset" (env-vars.md:326).
+    Round-2 fixed it but was verified only in an ad-hoc scratch dir, leaving
+    no committed coverage to catch a future re-regression of the same bug."""
+    with tempfile.TemporaryDirectory() as repo, tempfile.TemporaryDirectory() as cfg:
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "init"], cwd=repo, check=True)
+        toplevel = subprocess.run(
+            ["git", "-C", repo, "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        git_enc = toplevel.replace("/", "-")
+
+        saved_cwd = os.getcwd()
+        saved_env = {k: os.environ.get(k) for k in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PROJECT_DIR_NAME")}
+        try:
+            os.chdir(repo)
+            for k in saved_env:
+                os.environ.pop(k, None)
+
+            neither = memory_lint.memory_dir(None)
+            assert neither == os.path.join(os.path.expanduser("~/.claude/projects"), git_enc, "memory"), neither
+
+            os.environ["CLAUDE_CODE_PROJECT_DIR_NAME"] = "myrepo"
+            dirname_alone = memory_lint.memory_dir(None)
+            assert dirname_alone == neither, \
+                f"CLAUDE_CODE_PROJECT_DIR_NAME must be ignored without CLAUDE_CONFIG_DIR, got {dirname_alone}"
+
+            os.environ["CLAUDE_CONFIG_DIR"] = cfg
+            both = memory_lint.memory_dir(None)
+            assert both == os.path.join(cfg, "projects", "myrepo", "memory"), both
+
+            os.environ.pop("CLAUDE_CODE_PROJECT_DIR_NAME", None)
+            config_dir_alone = memory_lint.memory_dir(None)
+            assert config_dir_alone == os.path.join(cfg, "projects", git_enc, "memory"), config_dir_alone
+        finally:
+            os.chdir(saved_cwd)
+            for k, v in saved_env.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -767,4 +814,5 @@ if __name__ == "__main__":
     test_find_patterns_reports_hidden_count_when_everything_is_capped_out()
     test_find_patterns_json_prompt_includes_prompts()
     test_find_patterns_cli_boundary_at_exact_cap_size()
+    test_memory_dir_project_dir_name_requires_config_dir()
     print("OK")
