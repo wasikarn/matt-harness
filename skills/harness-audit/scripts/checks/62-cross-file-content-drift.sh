@@ -33,19 +33,35 @@
 # silently orphaned allowlist entry. Acceptable for a WARN-only advisory check.
 #
 # Second known ceiling, confirmed by a live miss (2026-08-21): when 3+ files
-# share one byte-identical block, `seen`'s dedup-by-hash-pair prints only ONE
-# pair from that cluster, so the WARN line names two files when more share the
-# drift. This already produced a wrong artifact: GH #74 was filed naming only
-# python-reviewer.md's Approve-tier wording, because nextjs-reviewer.md's
-# identical block rode along under the same hash and never surfaced as its own
-# WARN — found after the fact by a fresh-context compliance-audit verifier
-# reading the raw files, not this check's output. A human triaging a WARN here
-# should grep the snippet across the fleet before scoping a fix to the two
-# named files.
+# share one token-set-identical block (same de-duped 4+-letter words — not
+# necessarily byte-identical; a reordered or reformatted duplicate qualifies
+# too), `seen`'s dedup-by-hash-pair prints only ONE pair from that cluster, so
+# the WARN line names two files when more share the drift. This already
+# produced a wrong artifact: GH #74 was filed naming only python-reviewer.md's
+# Approve-tier wording, because nextjs-reviewer.md's identical block rode
+# along under the same hash and never surfaced as its own WARN — found after
+# the fact by a fresh-context compliance-audit verifier reading the raw files,
+# not this check's output. A human triaging a WARN here should grep the
+# snippet across the fleet before scoping a fix to the two named files.
 #
 # Third known ceiling: the markdown-table skip (`b.lstrip().startswith("|")`)
 # drops a whole block on ANY leading `|`, not per-line — a block that mixes a
 # table with surrounding prose loses the prose too, not just the table rows.
+#
+# Fourth known ceiling, confirmed empirically 2026-08-21 by an adversarial
+# audit (brute-force O(n^2) vs. the prefiltered candidate set, run against
+# this fleet's real 1497 qualifying blocks — 19 hits both ways, 0 missed
+# today): the RARE_DF=40 inverted-index prefilter can, in principle, miss a
+# real near-duplicate pair whose entire vocabulary consists of words common
+# enough (df > 40 fleet-wide) to never enter the index — neither member would
+# ever become a candidate. Nothing here re-checks that this stays true as the
+# fleet grows; a full-fleet brute-force comparison is the only way to verify
+# it, and defeats the point of prefiltering if run routinely. MIN_LEN=120,
+# MIN_TOKENS=12, and J_LOW/J_HIGH=0.60/0.95 are also unvalidated design-phase
+# choices, not measured against real precision/recall data the way
+# memory-lint.py's own --find-contradictions threshold was (that one has a
+# documented 296-candidates-vs-4 hand-run comparison in its own docstring;
+# this check's constants don't have an equivalent).
 if command -v python3 >/dev/null 2>&1; then
   # One python pass over the whole fleet; emits "<fileA>\t<fileB>\t<jaccard>\t<snippet>"
   # per unallowlisted drift candidate. Process substitution (not a pipe) keeps
@@ -154,14 +170,24 @@ for lst in idx.values():
 allow = set()
 allow_path = os.path.join(root, "skills", "harness-audit", "accepted-duplication.tsv")
 if os.path.isfile(allow_path):
-    with open(allow_path, encoding="utf-8") as fh:
-        for line in fh:
-            line = line.rstrip("\n")
-            if not line or line.startswith("#"):
-                continue
-            parts = line.split("\t")
-            if len(parts) >= 2:
-                allow.add((parts[0], parts[1]))
+    try:
+        with open(allow_path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.rstrip("\n")
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    allow.add((parts[0], parts[1]))
+    except Exception as e:
+        # Fail loud, not silent-clean: an unhandled read error here would
+        # crash the whole python3 invocation before any print() runs, which
+        # bash's `<(...)` never surfaces as a nonzero exit — the check would
+        # report 0 WARNs (looks clean) instead of "the allowlist is broken."
+        # Swallowing narrowly here means a malformed accepted-duplication.tsv
+        # instead makes EVERY previously-allowlisted pair re-fire — loud and
+        # actionable, not silent.
+        print(f"# accepted-duplication.tsv unreadable ({e}) — allowlist not applied this run", file=sys.stderr)
 
 seen = set()
 for i, j in cand:
