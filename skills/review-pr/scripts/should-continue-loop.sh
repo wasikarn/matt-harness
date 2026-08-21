@@ -181,6 +181,37 @@ print("continue")
 ' "$STATE_FILE" "$EXPECTED_SHA")
 
 echo "$DECISION"
+
+# Persist the verdict into the state file for gate:skill:review-pr-loop to
+# read (hooks/gates/review-pr-loop-gate.sh) — the gate must never re-derive
+# the decision (that would be a 3rd copy of the condition; ADR 0009). Strictly
+# best-effort AFTER the stdout lines above: a full disk / read-only dir /
+# malformed file must never change this script's stdout+exit contract, hence
+# try/except-everything inside, tmp+os.replace (no torn reads for
+# convergence-merge-gate.sh), and the trailing `|| true` against set -e.
+python3 -c '
+import json, os, sys
+state_file, decision_text = sys.argv[1], sys.argv[2]
+try:
+    with open(state_file) as f:
+        d = json.load(f)
+    if not isinstance(d, dict):
+        raise ValueError("not a dict")
+    lines = decision_text.splitlines()
+    d["loop_decision"] = lines[0] if lines else "stop"
+    d["loop_reason"] = (
+        lines[1][len("reason="):]
+        if len(lines) > 1 and lines[1].startswith("reason=")
+        else ""
+    )
+    tmp = state_file + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(d, f)
+    os.replace(tmp, state_file)
+except Exception:
+    pass
+' "$STATE_FILE" "$DECISION" 2>/dev/null || true
+
 case "$DECISION" in
   continue*) exit 0 ;;
   *) exit 1 ;;

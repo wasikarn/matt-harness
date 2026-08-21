@@ -154,6 +154,41 @@ for round_ceil_check in 0 1 2; do
   done
 done
 
+# --- Case 13: verdict persistence (2026-08-21, feeds gate:skill:review-pr-loop).
+# The script writes loop_decision/loop_reason back into the state file after
+# printing — and MUST NOT change the stdout/exit contract even when it can't. ---
+
+# 13a: stop verdict persisted with its reason token
+write "$(base 5 true progressing '["a.ts"]')"
+run
+assert_eq "case13a: ceiling stop persists loop_decision" \
+  "$(python3 -c 'import json;d=json.load(open("'"$STATE_FILE"'"));print(d.get("loop_decision"),d.get("loop_reason"))')" \
+  "stop ceiling"
+
+# 13b: continue verdict persisted with empty reason
+write "$(base 1 false progressing '["a.ts"]')"
+run
+assert_eq "case13b: continue persists loop_decision" \
+  "$(python3 -c 'import json;d=json.load(open("'"$STATE_FILE"'"));print(d.get("loop_decision"),repr(d.get("loop_reason")))')" \
+  "continue ''"
+
+# 13c: malformed state file is NOT rewritten (persist skipped, bytes identical)
+write '{broken json'
+before="$(cat "$STATE_FILE")"
+run
+assert_eq "case13c: malformed state left untouched (exit)" "$GOT_EXIT" "1"
+assert_eq "case13c: malformed state left untouched (reason)" "$GOT_REASON" "malformed-state"
+assert_eq "case13c: malformed state left untouched (bytes)" "$(cat "$STATE_FILE")" "$before"
+
+# 13d: read-only state dir — stdout/exit contract unchanged (the plan-review
+# High finding: a persist failure must never flip a continue into a stop)
+write "$(base 1 false progressing '["a.ts"]')"
+chmod a-w "$STATEDIR"
+run
+chmod u+w "$STATEDIR"
+assert_eq "case13d: read-only dir, continue still continues (exit)" "$GOT_EXIT" "0"
+assert_eq "case13d: read-only dir, continue still continues (reason)" "$GOT_REASON" ""
+
 echo ""
 echo "=== should-continue-loop.sh: $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

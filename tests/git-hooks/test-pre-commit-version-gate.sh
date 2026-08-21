@@ -62,11 +62,13 @@ out=$(run_hook 2>&1); rc=$?
 check "scripts/-only, no bump → blocked" $?
 reset_fixture
 
-# 2. scripts/ staged + both manifests bumped → passes
+# 2. scripts/ staged + both manifests bumped → passes, and provably not
+# because the layer never ran (assert absence of the block message too)
 echo 'echo hi' > "$FIX/scripts/tool.sh"
 write_manifests v0.0.2
 git -C "$FIX" add scripts/tool.sh .claude-plugin
-run_hook >/dev/null 2>&1
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out"
 check "scripts/ + both manifests bumped → allowed" $?
 reset_fixture
 
@@ -107,6 +109,18 @@ echo 'note' > "$FIX/docs/note.md"
 git -C "$FIX" add docs/note.md
 run_hook >/dev/null 2>&1
 check "non-shipped docs/ file, no bump → allowed" $?
+reset_fixture
+
+# 8. Manifest-only staged at the SAME version → allowed, and the layer DID run
+# (guards the deliberate B-vs-C asymmetry: .claude-plugin/* triggers the
+# version layer's mismatch check without demanding a bump — a future edit
+# adding .claude-plugin/* to the bump-demand list breaks every release-prep
+# manifest-only commit; this case is the tripwire)
+printf '{"name":"fix","version":"v0.0.1","x":1}\n' > "$FIX/.claude-plugin/plugin.json"
+git -C "$FIX" add .claude-plugin/plugin.json
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out"
+check "manifest-only, same version → allowed (B-vs-C asymmetry held)" $?
 reset_fixture
 
 echo

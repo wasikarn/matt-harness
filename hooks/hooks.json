@@ -136,6 +136,18 @@
         ]
       },
       {
+        "id": "gate:skill:review-pr-loop",
+        "matcher": "Skill",
+        "description": "Gate (ask-tier): a Skill(kbg:review-pr) call while review-last.json's persisted loop verdict says the auto-loop died exhausted (loop_reason ceiling/regressed/churning/stalled, or force_human=true) AND the state still describes the current HEAD+branch gets permissionDecision ask — ADR 0009's human-at-exhaustion made computational. Allows on: converged/clean stops (success path), missing/malformed/stale state, HEAD moved, other branch, any git error (fail-open — re-review is recoverable cost). Journals matched decisions to ~/.local/share/kbg/metrics/review-pr-loop-gate.jsonl. Escape for headless: KBG_SKIP_LOOP_GATE=1.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/review-pr-loop-gate.sh"]
+          }
+        ]
+      },
+      {
         "id": "gate:skill:jira-acli-engage",
         "matcher": "Skill",
         "description": "Marks the session jira-acli-engaged when a jira-acli:* skill loads (writes ~/.local/share/kbg/jira-acli-sessions/<session_id>), so the companion gate:mcp:atlassian-cold-start gate can allow-list it. Never blocks Skill itself.",

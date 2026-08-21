@@ -80,12 +80,19 @@ matched to stakes, never a hard-coded gate." Multi-tier review itself was never 
 forbade — only an unattended push/ship decision made purely by an LLM's say-so is what conflicts
 with kbg's live doctrine, and that doctrine lives in the current `CLAUDE.md`, not the deleted ADR.
 
-## Known gap, not fixed this pass
+## Known gap — CLOSED same day (v0.68.423)
 
-`skills/review-pr/scripts/should-continue-loop.sh` computes a real deterministic stop decision and
-exit code, but nothing hook-enforces a model actually obeying it — a model could read "stop" and
-re-invoke `review-pr` anyway. Fixing this needs a `PreToolUse` hook, not a reference-doc edit, and
-is out of scope for this pass. Flagged here so it isn't lost.
+`skills/review-pr/scripts/should-continue-loop.sh` computed a real deterministic stop decision,
+but nothing hook-enforced a model actually obeying it — a model could read "stop" and re-invoke
+`review-pr` anyway. Closed 2026-08-21 by `gate:skill:review-pr-loop`
+(`hooks/gates/review-pr-loop-gate.sh`): the loop script now persists its verdict
+(`loop_decision`/`loop_reason`) into the state file it already owns (no third copy of the
+condition — the gate reads, never re-derives), and a `PreToolUse` Skill-matcher gate emits
+`permissionDecision: ask` on a re-invocation only at genuine exhaustion (`ceiling`/`regressed`/
+`churning`/`stalled` or `force_human`) on the exact reviewed HEAD and branch. Ask, not deny — a
+human deliberately requesting another round stays one click, per this doc's own "human at
+exhaustion" framing; converged/clean stops never ask (a plan-review pass caught that an
+unconditional version would fire on the success path). Known limits stated in the gate header.
 
 ## Relationship to ADR 0009
 
