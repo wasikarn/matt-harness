@@ -121,6 +121,19 @@ j="$TMP/.local/share/kbg/metrics/review-pr-loop-gate.jsonl"
 [ -f "$j" ] && grep -q '"decision": "ask"' "$j" && grep -q '"decision": "allow"' "$j"
 check "journal captured matched decisions (observability)" $?
 
+# 12. Sync-seam pin (compliance-audit advisory 2026-08-22): the gate's
+# EXHAUSTED tuple duplicates should-continue-loop.sh's reason tokens with no
+# shared source — a token rename there would silently dis-arm the gate
+# ("stalled" has no force_human backstop). Machine-pin both sides.
+seam=0
+LOOP_SCRIPT="$ROOT/skills/review-pr/scripts/should-continue-loop.sh"
+for tok in ceiling regressed churning stalled; do
+  grep -q "$tok" "$LOOP_SCRIPT" || { echo "    token '$tok' missing from should-continue-loop.sh" >&2; seam=1; }
+done
+grep -q 'EXHAUSTED = ("ceiling", "regressed", "churning", "stalled")' "$GATE" \
+  || { echo "    gate EXHAUSTED tuple changed — re-pin against loop script tokens" >&2; seam=1; }
+check "EXHAUSTED tokens machine-pinned to loop script (sync-seam)" $seam
+
 echo
 echo "review-pr-loop-gate: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

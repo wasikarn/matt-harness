@@ -180,6 +180,14 @@ assert_eq "case13c: malformed state left untouched (exit)" "$GOT_EXIT" "1"
 assert_eq "case13c: malformed state left untouched (reason)" "$GOT_REASON" "malformed-state"
 assert_eq "case13c: malformed state left untouched (bytes)" "$(cat "$STATE_FILE")" "$before"
 
+# 13e: missing state — persist must not conjure a file into existence
+rm -f "$STATE_FILE"
+run
+assert_eq "case13e: missing state still stops (exit)" "$GOT_EXIT" "1"
+assert_eq "case13e: missing state still stops (reason)" "$GOT_REASON" "missing-state"
+[ ! -f "$STATE_FILE" ]
+assert_eq "case13e: persist created no file" "$?" "0"
+
 # 13d: read-only state dir — stdout/exit contract unchanged (the plan-review
 # High finding: a persist failure must never flip a continue into a stop)
 write "$(base 1 false progressing '["a.ts"]')"

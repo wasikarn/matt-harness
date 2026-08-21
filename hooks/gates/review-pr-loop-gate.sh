@@ -65,7 +65,7 @@ if d.get("tool_name") != "Skill":
 skill = str((d.get("tool_input") or {}).get("skill") or "")
 # Anchored both ways: unqualified "review-pr" matches (payload shape not
 # observed live), review-pr-finish / review-pr-tier can never match.
-if not re.match(r"^(kbg:)?review-pr$", skill):
+if not re.match(r"^(kbg:)?review-pr\Z", skill):
     sys.exit(0)
 
 def journal(decision, why):
@@ -91,6 +91,10 @@ except Exception:
     journal("allow", "no-or-malformed-state")
     sys.exit(0)
 
+# Sync-seam: these tokens are a copy of should-continue-loop.sh reason tokens
+# (test-review-pr-loop-gate.sh case 12 machine-pins the two lists together —
+# a rename there would silently dis-arm this gate; "stalled" is the one token
+# with no force_human backstop).
 EXHAUSTED = ("ceiling", "regressed", "churning", "stalled")
 stopped_exhausted = (st.get("loop_decision") == "stop"
                      and st.get("loop_reason") in EXHAUSTED)
