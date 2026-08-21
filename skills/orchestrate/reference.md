@@ -215,9 +215,9 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 # Validate end-to-end with py_compile / tsc / bash -n before integration
 ```
 
-## Spawn-prompt template (gates F3) — full text
+## Spawn-prompt template (F9) — full text
 
-Supplementary detail for `SKILL.md § Spawn-prompt template (gates F3)`.
+Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
 
 **The single most common sub-agent failure is the under-specified spawn prompt.** Four articles (`agent-teams-best-practices`, `agent-teams-setup-usage-2026`, `agent-teams-workflow-plan-to-production`, `team-orchestration-builder-validator`) converge on the same template. When you dispatch an inline subagent (the Agent tool) for a non-trivial task, every spawn prompt MUST use this shape — without it, subagents guess, hallucinate ownership, and conflict on shared files.
 
@@ -285,7 +285,7 @@ the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktre
 
 ## Spawn-prompt template — why each slot matters, and its anti-pattern
 
-Supplementary detail for `SKILL.md § Spawn-prompt template (gates F3)`.
+Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
 
 **Why this shape works:**
 

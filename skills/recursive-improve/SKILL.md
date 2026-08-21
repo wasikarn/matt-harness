@@ -121,12 +121,12 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - Route each candidate to the cheapest correct executor (inline for trivial; a matching senior
   agent for specialized work, gated per `orchestrate`). Give each a **done-when** — an observable
   output, not a topic.
-- **Repeated failure escalates, it does not retry** (the escalate-not-retry principle — two
-  identical failures means the session is guessing, not fixing). A candidate's executor caps at
-  one retry; on hitting the same failure it does **not** re-attempt — it records not-done with
-  the verbatim failure signal, surfaced at Step 6. No failure counter: Step 4 runs each
-  candidate **once**; a retry-count would normalize silent unattended iterations. Escalate to
-  the human gate instead.
+- **Repeated failure escalates, it does not retry** (the escalate-not-retry principle — trying
+  the same candidate again after a failure is guessing, not fixing, so retrying isn't on the
+  table). A candidate's executor gets exactly **one** attempt; on hitting a failure it records
+  not-done with the verbatim failure signal, surfaced at Step 6, and does not re-attempt. No
+  failure counter, because there's nothing to count — a retry-count would normalize silent
+  unattended iterations. Escalate to the human gate instead.
 - Apply changes one candidate at a time so Verify attributes the metric delta.
 - **Success criterion:** each candidate's done-when is met, or recorded not-done with a reason
   (no silent drop).

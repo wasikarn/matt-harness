@@ -201,8 +201,6 @@ via `Skill(kbg:review-lens-code-quality)`.
 - **Warning**: HIGH issues only (can merge with caution)
 - **Block**: CRITICAL issues found — must fix before merge
 
-Do not withhold approval to appear rigorous. If the diff is clean, approve it.
-
 ## Project-Specific Guidelines
 
 Check project-specific conventions from `CLAUDE.md` or project rules (file size limits, emoji

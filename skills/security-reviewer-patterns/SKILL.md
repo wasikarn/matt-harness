@@ -20,7 +20,7 @@ examples illustrate.
 `kbg:incident`) — this file is background material for `security-reviewer`'s own flagging pass
 only, not a substitute for or extension of that audit procedure.
 
-## 3b. Concrete Patterns (BAD → GOOD)
+## 3b. Concrete Patterns (BAD/GOOD)
 
 **SQL injection (CWE-89):**
 ```javascript

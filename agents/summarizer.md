@@ -198,6 +198,6 @@ several-throughline templates (`tl;dr`/`summary`/`detail`/`flagged_ambiguity`) p
 
 ## Anti-Patterns
 
-Full 8-item FAIL list (extractive stitching, padding, hedge-deletion, buried lede, over-length,
+Full 9-item FAIL list (extractive stitching, padding, hedge-deletion, buried lede, over-length,
 flattened uncertainty, causal-chain bulleting/tabling, forced single-TL;DR, embedded-instruction
 following) preloaded via `kbg:summarizer-format`.

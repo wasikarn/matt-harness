@@ -163,7 +163,7 @@ When reviewing backend code:
 - **Unoptimized images** — Large images without compression or lazy loading
 - **Synchronous I/O** — Blocking operations in async contexts
 - **Deeper algorithmic fix beyond the O(n^2) flag above** (heap/priority-queue, sliding window,
-  binary search, backtracking) once a real bottleneck is confirmed → hand off to
+  binary search, backtracking) once a real bottleneck is confirmed, hand off to
   `performance-optimizer` rather than prescribing the specific data-structure rewrite here.
 
 ## Best Practices (LOW)

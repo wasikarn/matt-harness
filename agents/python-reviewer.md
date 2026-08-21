@@ -133,7 +133,7 @@ exactly what Pydantic exists to replace.
 - `value == None` — use `value is None`
 - Shadowing builtins (`list`, `dict`, `str`)
 
-## Concrete Patterns (BAD → GOOD)
+## Concrete Patterns (BAD/GOOD)
 
 **Mutable default argument:** the default is created once, at function-definition time, and
 shared across every call that doesn't pass an explicit value.

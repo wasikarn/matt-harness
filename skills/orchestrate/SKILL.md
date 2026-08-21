@@ -37,9 +37,9 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
    - **Answer status questions from what you already know — never by pulling an agent's raw transcript into the main thread.** Wait for the completion notification; if asked "how's it going" first, say what was dispatched and what's still outstanding. Need an agent's actual result? `Read` the file it was told to write (the Deliverable slot's path). A raw transcript dump is tens of thousands of tokens of intermediate reasoning riding along in every subsequent turn — the exact disposable-reasoning leak subagents exist to prevent.
    - **Report** the final allocation: delegated to whom, inline with the user, scheduled, dropped — and why.
 
-## Spawn-prompt template (gates F3)
+## Spawn-prompt template (F9)
 
-**The most common sub-agent failure is an under-specified spawn prompt — read `reference.md` § Spawn-prompt template (gates F3) — full text before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Miss a required slot and the subagent guesses wrong.
+**The most common sub-agent failure is an under-specified spawn prompt — read `reference.md` § Spawn-prompt template (F9) — full text before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Miss a required slot and the subagent guesses wrong. ("F9" names this fix's entry in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`'s gap taxonomy — not a step number.)
 
 **Cross-references:** this template is the per-task contract; the validation chain (`addBlockedBy`) gates ordering. Enforce both at your dispatch boundary — the spawn prompt IS the contract.
 

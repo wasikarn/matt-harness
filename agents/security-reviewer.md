@@ -52,7 +52,7 @@ npx eslint . --plugin security
 - Search for hardcoded secrets
 - Review high-risk areas: auth, API endpoints, DB queries, file uploads, payments, webhooks
 
-### 2. OWASP Top 10 Check (with CWE references)
+### 2. Security Checklist: OWASP Top 10 plus SSRF and ReDoS (with CWE references)
 
 Work the full numbered list below on every review, even after finding a headline CRITICAL —
 verified live that stopping early is a real failure mode: a run that correctly caught and
@@ -96,7 +96,7 @@ Flag these patterns immediately:
 | Regex with nested quantifiers on user input | CWE-1333 | HIGH | Rewrite to avoid backtracking, or use a linear-time engine (RE2) |
 | Format/regex validator called on unchecked input type | CWE-20 | MEDIUM | Add a `typeof x === 'string'` (or equivalent) guard before any `.test()`/format check — `RegExp.test()` and similar coerce non-string arguments via `ToString()`, so `undefined`/`null`/objects can silently pass a character-class check that was meant to validate a string |
 
-### 3b. Concrete Patterns (BAD → GOOD)
+### 3b. Concrete Patterns (BAD/GOOD)
 
 Full BAD/GOOD code examples for SQL injection, IDOR (including the raw `!==` type-coercion trap),
 JWT `alg` confusion, mass assignment, SSRF, and ReDoS preloaded via `kbg:security-reviewer-patterns`

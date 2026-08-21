@@ -67,12 +67,14 @@ if err != nil {
 
 **Deliberate vs accidental suppression:** before flagging, check for a nearby comment at the
 suppression site explaining *why* it's safe (`// intentionally ignored: metrics push is
-best-effort`), a `void` prefix, or a named variable (`_ = err // best-effort, logged
-upstream`) — those are a documented decision, not a silent failure. A comment *elsewhere*
-claiming a failure is already handled is a claim to verify against the actual caller code (see
-"Check it isn't already handled one frame up" in the Evidence Gate below), not evidence on its
-own — and a comment that only narrates the code's mechanics, without saying why the suppression
-is safe, doesn't count as documented either. An
+best-effort`) or a `void` prefix — those are a documented decision, not a silent failure. A bare
+discard with no such comment (`_ = err`, `_, _ = fn()`, `let _ = fallible_call();`) is the same
+idiom the Hunt Targets table above flags as BAD — the comment is what makes it documented, not
+the discard shape itself, so don't treat an uncommented discard as safe on sight. A comment
+*elsewhere* claiming a failure is already handled is a claim to verify against the actual caller
+code (see "Check it isn't already handled one frame up" in the Evidence Gate below), not evidence
+on its own — and a comment that only narrates the code's mechanics, without saying why the
+suppression is safe, doesn't count as documented either. An
 *undocumented* suppression is the actual finding; a documented one is a design choice you can
 note but shouldn't block on — a documented-suppression note isn't a finding, so it sits outside
 the severity count and doesn't turn a `CLEAN` verdict into a non-clean one.
@@ -136,7 +138,12 @@ false-positive flood this agent exists to avoid.
 A fallback, swallowed exception, or fail-open path can be genuinely safe under a single-caller
 assumption and silently unsafe once multiple callers/sessions can race on the same resource —
 check whether the code's safety argument (a comment, a design doc, the fallback's own logic)
-actually depends on running alone, and whether that assumption holds where this code runs.
+actually depends on running alone, and whether that assumption holds where this code runs. Check
+the deployment shape for that: replica/instance count (`docker-compose.yml`, a k8s manifest, a
+process-manager config), serverless (each invocation isolated, no shared in-memory state) vs. a
+long-lived process (state shared across requests), or a worker-pool/queue config implying
+multiple concurrent consumers. If none of that is visible, say so and flag the fallback anyway
+with the concurrency assumption stated as a caveat — same rule as Section 4's runtime check.
 
 - a caught exception whose fallback is documented safe for "this can't really happen" reasons,
   where a concurrent caller racing on the same file/lock/resource is exactly how it happens

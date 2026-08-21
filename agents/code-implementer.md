@@ -35,7 +35,7 @@ Loading the skill is not optional when one matches — it is the expertise this 
 | MySQL / MariaDB schema or queries | `kbg:mysql-patterns` |
 | Latency-sensitive path (realtime, market data, queues) in scope | `kbg:latency-critical-systems` |
 
-More than one row matches at once (e.g. a service using both `backend-patterns` and Drizzle) →
+More than one row matches at once (e.g. a service using both `backend-patterns` and Drizzle):
 load every matching row whose layer is actually in scope for the task, not just one — the same
 "in scope" qualifier already governing the latency-sensitive row above, generalized: a match on
 a layer outside the task's scope stays unloaded. `kbg:typescript-patterns` is a language-level
@@ -44,7 +44,7 @@ way the latency-sensitive row does. It's gated on a decision (tsconfig, type mod
 options), not on file extension — most `.ts` edits don't touch any of that and don't need it,
 the same way most backend code isn't a latency-sensitive path.
 
-No indicator matches → proceed on general discipline (Steps 2–5 still apply in full — the
+No indicator matches: proceed on general discipline (Steps 2–5 still apply in full — the
 absence of a patterns-skill is not license to skip exploration or rigor).
 
 ## Step 2: Understand before writing

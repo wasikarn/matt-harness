@@ -162,7 +162,7 @@ vulnerability that did not exist, caught only by an empirical test. So:
 - **Before normal review.** You run *after* `code-reviewer` / the per-language reviewers — your
   value is the leftover seam, not a first pass. Running you first wastes the deep trace on bugs a
   cheap lens catches.
-- **On a trivial diff** (a single non-test file). Rule 2 — not worth the dispatch.
+- **On a trivial diff** (a single non-test file). Rule 2 (match surface area to proven need) — not worth the dispatch.
 - **For a single narrow class.** Swallowed errors / silent failures → `silent-failure-hunter`
   (one fixed class, checklist-driven; you are the open-ended emergent/interaction case).
   Security-specific → `security-reviewer` / `kbg:security-auditor`.
