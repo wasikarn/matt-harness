@@ -48,8 +48,8 @@ _sync_triple() {
   echo "synced: ${f#"$REPO_ROOT"/} (anchor '$anchor')"
 }
 
-_sync_triple "$REPO_ROOT/.claude-plugin/plugin.json" "skills ·"
-_sync_triple "$REPO_ROOT/.claude-plugin/marketplace.json" "skills ·"
+# .claude-plugin manifests dropped 2026-08-22 — descriptions reworded to
+# count-free feature text (sync-seam: mirrors check 48's location list).
 _sync_triple "$REPO_ROOT/README.md" "real current fleet:"
 _sync_triple "$REPO_ROOT/README.md" "| kbg-native |"
 

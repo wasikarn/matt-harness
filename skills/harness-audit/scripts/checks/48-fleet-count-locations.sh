@@ -9,11 +9,15 @@
 # false-positive pattern from 3 sweeps during this check's own design). WARN,
 # not CRIT — doc-rot degrades gracefully, it is not irrecoverable.
 #
-# Sync-seam: the 4 full-triple anchors below mirror the sed targets in
+# Sync-seam: the 2 full-triple anchors below mirror the sed targets in
 # skills/inventory/scripts/sync-fleet-counts.sh — an edit to one location list
 # should prompt a check of the other. `sync-fleet-counts.sh` auto-fixes any
 # WARN from a _check_triple location; the 2 _check_agent_count (prose-only)
 # locations are check-only, no auto-write (see plan rationale, CHANGELOG v0.68.0).
+# The two .claude-plugin manifests were dropped 2026-08-22: their description
+# was rewritten as a feature-oriented text with no counts (deliberate — counts
+# drift), so the anchors went permanently stale; reword-not-track, same as the
+# prose spots below.
 # docs/onboarding.md was deliberately NOT added as a 5th location — its mention
 # is one narrative sentence, not a structured manifest, and reads worse forced
 # into the "N skills · M agents · P commands" template; deleted to prose instead
@@ -77,8 +81,6 @@ if [ "$_is_kbg" = "1" ]; then
     esac
   }
 
-  _check_triple "$CLAUDE_DIR/.claude-plugin/plugin.json" "skills ·"
-  _check_triple "$CLAUDE_DIR/.claude-plugin/marketplace.json" "skills ·"
   _check_triple "$CLAUDE_DIR/README.md" "real current fleet:"
   _check_triple "$CLAUDE_DIR/README.md" "| kbg-native |"
   _check_agent_count "$CLAUDE_DIR/skills/orchestrate/reference.md" "-agent survivor set"
