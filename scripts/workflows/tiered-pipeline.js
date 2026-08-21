@@ -90,10 +90,15 @@ const FINAL = {
 }
 
 // Fail-closed: a missing/malformed verdict is a rejection, never a pass.
-const failClosed = (v, who) =>
-  v && typeof v.pass === 'boolean' && Array.isArray(v.findings) && typeof v.confidence === 'number'
-    ? v
-    : { pass: false, findings: [{ severity: 'critical', description: `${who}: verdict missing or malformed — fail-closed` }], confidence: 0, scope_ok: false }
+// Number.isFinite (not typeof) — typeof NaN === 'number' would slip through.
+// scope_ok=false demotes a pass: out-of-scope edits are a failure with a named finding.
+const failClosed = (v, who) => {
+  if (!(v && typeof v.pass === 'boolean' && Array.isArray(v.findings) && Number.isFinite(v.confidence) && typeof v.scope_ok === 'boolean'))
+    return { pass: false, findings: [{ severity: 'critical', description: `${who}: verdict missing or malformed — fail-closed` }], confidence: 0, scope_ok: false }
+  if (v.pass && !v.scope_ok)
+    return { ...v, pass: false, findings: [...v.findings, { severity: 'major', description: `${who}: scope_ok=false — out-of-scope changes flagged; revert or justify them` }] }
+  return v
+}
 
 phase('Plan')
 const plan = await agent(
@@ -193,7 +198,9 @@ const minConfidence = Math.min(...confidences)
 const contested = fixAttempts > 0 || minConfidence < CONF_FLOOR
 const forced = args && args.finalReview === 'always'
 let finalReview
+let finalRan = false // script-local discriminant — approval must never read a field a model reply could also carry
 if (contested || forced) {
+  finalRan = true
   const why = forced && !contested ? 'forced by args.finalReview=always' : `contested: ${fixAttempts} fix attempt(s), min confidence ${minConfidence}`
   log(`Final fable review runs — ${why}`)
   const fr = await agent(
@@ -215,7 +222,7 @@ Independently spot-check the highest-risk parts on disk (read files, re-run the 
   finalReview = { skipped: true, reason: `uncontested: 0 fix attempts, min confidence ${minConfidence} >= ${CONF_FLOOR}` }
 }
 
-const approved = finalReview.skipped === true || finalReview.approve === true
+const approved = finalRan ? finalReview.approve === true : true
 return {
   status: approved ? 'approved' : 'needs-human',
   plan,
