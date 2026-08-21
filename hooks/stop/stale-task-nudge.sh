@@ -35,11 +35,16 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 payload=$(cat)
 
-stop_hook_active=$(printf '%s' "$payload" | jq -r '.stop_hook_active // false' 2>/dev/null)
+# One jq call for all three fields instead of three (this hook runs on
+# every turn). Pre-init so a malformed payload (jq exits non-zero, `read`
+# gets nothing) still leaves these "" under `set -u`, same fail-safe as the
+# old per-field `$(...)` calls.
+stop_hook_active='' transcript='' session_id=''
+IFS=$'\t' read -r stop_hook_active transcript session_id < <(
+  printf '%s' "$payload" | jq -r '[(.stop_hook_active // false), (.transcript_path // ""), (.session_id // "default")] | @tsv' 2>/dev/null
+)
 [[ "$stop_hook_active" == "true" ]] && exit 0
 
-transcript=$(printf '%s' "$payload" | jq -r '.transcript_path // empty' 2>/dev/null)
-session_id=$(printf '%s' "$payload" | jq -r '.session_id // "default"' 2>/dev/null)
 [[ -n "$transcript" && -f "$transcript" ]] || exit 0
 
 # Last-write-wins status per taskId, filtered to in_progress. TaskUpdate

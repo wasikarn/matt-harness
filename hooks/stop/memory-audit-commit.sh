@@ -27,11 +27,14 @@ MEMDIR="$HOME/.claude/projects/$ENC/memory"
 command -v git >/dev/null 2>&1 || exit 0
 
 # Dirty check first (cheap) — skip the add/commit round-trip when clean.
-if git -C "$MEMDIR" diff --quiet -- . 2>/dev/null \
-  && git -C "$MEMDIR" diff --cached --quiet -- . 2>/dev/null \
-  && [ -z "$(git -C "$MEMDIR" ls-files --others --exclude-standard 2>/dev/null)" ]; then
-  exit 0
-fi
+# One `git status --porcelain` covers unstaged, staged, and untracked in a
+# single call (same three states the old diff/diff-cached/ls-files trio
+# checked separately). -unormal pins untracked-file reporting on regardless
+# of any status.showUntrackedFiles=no set globally or in this repo — the old
+# `ls-files --others` path always reported untracked files, so silently
+# deferring to that config here would turn this hook into a no-op for new
+# memory files on a machine with that setting.
+[ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- . 2>/dev/null)" ] && exit 0
 
 git -C "$MEMDIR" add -A -- . 2>/dev/null
 git -C "$MEMDIR" commit -m "auto-snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)" --quiet 2>/dev/null

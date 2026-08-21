@@ -75,7 +75,6 @@ set -uo pipefail
 # 2026-08-14). If either file's normalize step changes, check the other.
 _input="$(cat)"
 _ws="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ')"
-_norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"
 _run=1
 # Match the quoted tool_name value precisely (the "Bash" is the JSON value, not
 # a substring of a longer word) so a Write to a file_path that happens to
@@ -85,6 +84,7 @@ _run=1
 # syntax-error lockout on the first attempt). The regex tolerates the optional
 # space after the colon in both JSON serializations.
 if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
+  _norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"
   case "$_norm" in
     *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
     *tee*|*sed*|*perl*|*cp*|*mv*|*install*|*rsync*|*dd*|*rm*|*trash*|*">"*)

@@ -68,14 +68,15 @@ set -uo pipefail
 IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
 # IMPL without `build`/`building` — used by the carve-out to tell a
 # build-failure report (only `build` matched) from a real impl prompt
-# (another verb matched too).
-IMPL_NO_BUILD='implement(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
+# (another verb matched too). Derived from IMPL (not retyped) so the two
+# stay in sync by construction.
+IMPL_NO_BUILD="${IMPL/build\(ing\)\?|/}"
 # IMPL without `create`/`creating` — used by the PR-intent carve-out below to
 # tell a pure "create a PR" ask (route to kbg:pr) from an impl-heavy prompt
 # that also happens to mention a PR ("build X then open a PR" → still wants
 # the plan-first nudge). `create` is dropped because it's the one IMPL verb
-# that overlaps PR_INTENT.
-IMPL_NO_PR_CREATE='implement(ing)?|build(ing)?|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
+# that overlaps PR_INTENT. Derived from IMPL for the same reason as above.
+IMPL_NO_PR_CREATE="${IMPL/creat\(e\|ing\)|/}"
 # Thai impl-verb detection. Bare substring alternation, NO \b and NO -i: Thai
 # has no ASCII word-boundary characters (\b never matches Thai script) and is
 # caseless. Proven pattern copied from jira-route-nudge.sh:51. `ทำ` (do/make)
@@ -91,7 +92,8 @@ THAI_IMPL='สร้าง|พัฒนา|เพิ่ม|แก้ไข|ป�
 # IMPL_NO_PR_CREATE above: สร้าง overlaps the Thai PR-creation verb, so a pure
 # "สร้าง PR ให้หน่อย" ask must not also count as an impl verb blocking the
 # carve-out (same reasoning as `create` being dropped from IMPL_NO_PR_CREATE).
-THAI_IMPL_NO_PR_CREATE='พัฒนา|เพิ่ม|แก้ไข|ปรับปรุง|ติดตั้ง|ผสาน|ออกแบบ|ย้าย'
+# Derived from THAI_IMPL for the same reason as IMPL_NO_PR_CREATE above.
+THAI_IMPL_NO_PR_CREATE="${THAI_IMPL/สร้าง|/}"
 THAI_PR_VERB='สร้าง|เปิด'
 
 emit_pr_nudge() {

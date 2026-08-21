@@ -547,6 +547,7 @@ if clean is True:
     sys.path.insert(0, lib_dir)
     try:
         from _codeowners_match import evaluate, discover_live
+        from _hook_output import emit_ask
     except Exception:
         # Cannot confirm CODEOWNER approval without the matcher -- fail
         # closed, same as every other cannot-confirm branch in this file.
@@ -647,17 +648,11 @@ if clean is True:
             # wall (kbg:plan-reviewer Critical #1, 2026-08-15). STOP above
             # stays a hard block -- it means "verified no," not "unknown."
             detail = " ".join(line.strip() for line in detail_lines)
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": "PreToolUse",
-                    "permissionDecision": "ask",
-                    "permissionDecisionReason": (
-                        "CODEOWNER entry requires an unverifiable team/email"
-                        " approval (" + reason + ") -- confirm a real owner"
-                        " has approved before merging. " + detail
-                    ),
-                }
-            }))
+            emit_ask(
+                "CODEOWNER entry requires an unverifiable team/email"
+                " approval (" + reason + ") -- confirm a real owner"
+                " has approved before merging. " + detail
+            )
             sys.exit(0)
         # verdict == "PASS" -> fall through to the allow below.
 
