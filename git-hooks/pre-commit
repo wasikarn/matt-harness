@@ -89,14 +89,19 @@ run_syntax_layer() {
   return "$rc"
 }
 
-# Decide whether the audit layer needs to run.
+# Decide whether the audit layer needs to run. Own scan, NOT ${STAGED[@]}:
+# the audit must also fire when a shipped file is renamed OUT of its dir or
+# deleted — --no-renames surfaces the rename's D side, and no --diff-filter
+# (ACMR would re-drop that D side even with --no-renames; verified
+# empirically, blind-spot find 2026-08-22). STAGED keeps ACMR above because
+# the lint loop reads file contents, which deletions don't have.
 ecosystem_staged=0
-for f in "${STAGED[@]}"; do
+while IFS= read -r f; do
   case "$f" in
     agents/*|skills/*|commands/*|hooks/*|scripts/*)
       ecosystem_staged=1 ;;
   esac
-done
+done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
 
 # ---- Layer 2: harness-audit (CRITICAL only) ----
 run_audit_layer() {

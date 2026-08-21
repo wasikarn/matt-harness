@@ -118,6 +118,9 @@ run_hook_tests() {
   if [ -f "$ROOT/tests/skills/compress-docs/test_verify_preserved.py" ]; then
     python3 "$ROOT/tests/skills/compress-docs/test_verify_preserved.py" 2>&1 || rc=1
   fi
+  if [ -f "$ROOT/scripts/workflows/tiered-pipeline.test.js" ]; then
+    node "$ROOT/scripts/workflows/tiered-pipeline.test.js" 2>&1 || rc=1
+  fi
   return "$rc"
 }
 

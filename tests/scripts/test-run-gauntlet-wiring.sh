@@ -3,8 +3,11 @@
 # runner wired to it ships silently broken (2026-08-17 bug sweep:
 # tests/skills/compress-docs/test_verify_preserved.py existed but was
 # invoked nowhere — no CI, no Makefile, no pytest config, no gauntlet
-# reference). Enumerates every test-*.sh / test_*.py file under tests/ from
-# disk and asserts each is referenced in run_hook_tests()'s LIVE (non-comment)
+# reference). Enumerates every test-*.sh / test_*.py / *.test.js file under
+# tests/ AND scripts/ from disk (2026-08-22: tiered-pipeline.test.js sat in
+# scripts/workflows/ with a .test.js name — doubly invisible to the original
+# tests/-only, sh/py-only sweep — and shipped with no runner for a day) and
+# asserts each is referenced in run_hook_tests()'s LIVE (non-comment)
 # body — a hardcoded name list would only catch regressions on files someone
 # remembered to list here; this catches any test file, present or future,
 # that ships with no runner (2026-08-17 code-reviewer finding: the first cut
@@ -30,10 +33,10 @@ missing=()
 while IFS= read -r f; do
   rel="${f#"$REPO_ROOT/"}"
   printf '%s\n' "$BODY" | grep -qF "$rel" || missing+=("$rel")
-done < <(find "$REPO_ROOT/tests" \( -name "test-*.sh" -o -name "test_*.py" \) | sort)
+done < <(find "$REPO_ROOT/tests" "$REPO_ROOT/scripts" \( -name "test-*.sh" -o -name "test_*.py" -o -name "*.test.js" \) | sort)
 
 if [ "${#missing[@]}" -eq 0 ]; then
-  ok "run_hook_tests() wires every test-*.sh / test_*.py file found under tests/"
+  ok "run_hook_tests() wires every test-*.sh / test_*.py / *.test.js file found under tests/ and scripts/"
 else
   bad "run_hook_tests() does NOT reference: ${missing[*]} — these ship with no runner"
 fi

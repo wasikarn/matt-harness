@@ -93,8 +93,9 @@ except Exception:
 
 # Sync-seam: these tokens are a copy of should-continue-loop.sh reason tokens
 # (test-review-pr-loop-gate.sh case 12 machine-pins the two lists together —
-# a rename there would silently dis-arm this gate; "stalled" is the one token
-# with no force_human backstop).
+# a rename there would silently dis-arm this gate; "stalled" at round < ceiling
+# AND "regressed" at round 2 have no force_human backstop — the force formula
+# in write-review-state.sh only trips regressed at round >= 3).
 EXHAUSTED = ("ceiling", "regressed", "churning", "stalled")
 stopped_exhausted = (st.get("loop_decision") == "stop"
                      and st.get("loop_reason") in EXHAUSTED)

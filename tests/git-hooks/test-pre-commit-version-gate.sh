@@ -41,7 +41,7 @@ write_manifests() { # write_manifests <version>
 # committed so the rename-out case below has something to move.
 write_manifests v0.0.1
 mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/scripts" "$FIX/contexts" "$FIX/docs"
-printf '#!/usr/bin/env bash\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
+printf '#!/usr/bin/env bash\ntouch "$(dirname "$0")/audit-ran"\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
 printf 'echo base\n' > "$FIX/scripts/base.sh"
 git -C "$FIX" add .claude-plugin skills scripts/base.sh
 git -C "$FIX" commit -qm baseline
@@ -144,6 +144,19 @@ git -C "$FIX" add "scripts/ไฟล์.sh"
 out=$(run_hook 2>&1); rc=$?
 [ "$rc" -ne 0 ] && grep -q "shipped-surface files staged" <<<"$out"
 check "non-ASCII scripts/ filename, no bump → blocked (quotepath closed)" $?
+reset_fixture
+
+# 11. Rename OUT of a shipped dir must still launch the AUDIT layer, not just
+# the version layer (blind-spot find 2026-08-22: ecosystem_staged was derived
+# from the ACMR-filtered STAGED list, which drops the rename's D side — the
+# CRITICAL harness-audit silently skipped on exactly the commit shape that
+# removes a guarded file). The stub audit drops a witness file when invoked.
+rm -f "$FIX/skills/harness-audit/scripts/audit-ran"
+mkdir -p "$FIX/tools"
+git -C "$FIX" mv scripts/base.sh tools/base.sh
+run_hook >/dev/null 2>&1
+[ -f "$FIX/skills/harness-audit/scripts/audit-ran" ]
+check "git mv scripts/→tools/ still launches the audit layer (witness file)" $?
 reset_fixture
 
 echo

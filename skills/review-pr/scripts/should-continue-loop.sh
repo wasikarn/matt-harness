@@ -189,14 +189,22 @@ echo "$DECISION"
 # malformed file must never change this script's stdout+exit contract, hence
 # try/except-everything inside, tmp+os.replace (no torn reads for
 # convergence-merge-gate.sh), and the trailing `|| true` against set -e.
+# Off-label callers never clobber the live verdict: persist only when the
+# state's last_sha matches the sha THIS run was asked about — a read-only
+# consumer passing a different sha (e.g. /review-dashboard preferring the
+# remote headRefOid) would otherwise overwrite an armed loop_reason like
+# "regressed" with "stale-sha" and silently dis-arm the gate (blind-spot
+# find, 2026-08-22).
 python3 -c '
 import json, os, sys
-state_file, decision_text = sys.argv[1], sys.argv[2]
+state_file, decision_text, expected_sha = sys.argv[1], sys.argv[2], sys.argv[3]
 try:
     with open(state_file) as f:
         d = json.load(f)
     if not isinstance(d, dict):
         raise ValueError("not a dict")
+    if d.get("last_sha") != expected_sha:
+        raise ValueError("off-label caller — sha mismatch, leave the persisted verdict alone")
     lines = decision_text.splitlines()
     d["loop_decision"] = lines[0] if lines else "stop"
     d["loop_reason"] = (
@@ -210,7 +218,7 @@ try:
     os.replace(tmp, state_file)
 except Exception:
     pass
-' "$STATE_FILE" "$DECISION" 2>/dev/null || true
+' "$STATE_FILE" "$DECISION" "$EXPECTED_SHA" 2>/dev/null || true
 
 case "$DECISION" in
   continue*) exit 0 ;;

@@ -19,8 +19,9 @@
 // Usage, installed plugin (any project): the relative path won't resolve —
 // point scriptPath into the versioned cache, e.g.
 //   ~/.claude/plugins/cache/kobig/kbg/<installed-version>/scripts/workflows/tiered-pipeline.js
-// (scripts/ ships in the cache but is NOT version-bump-gated: any scripts/
-// change must ride a manifest bump or the installed copy silently stays stale.)
+// (scripts/ ships in the cache and — since v0.68.421 — any scripts/ change is
+// version-bump-gated by git-hooks/pre-commit, so a committed change always
+// rides a manifest bump and the installed copy tracks the repo.)
 export const meta = {
   name: 'tiered-pipeline',
   description: 'Fable plans, Sonnet executes, Opus reviews with capped fixes, Opus bug-hunts, gated Fable final review',
@@ -97,13 +98,19 @@ const FINAL = {
 }
 
 // Fail-closed: a missing/malformed verdict is a rejection, never a pass.
-// Number.isFinite (not typeof) — typeof NaN === 'number' would slip through.
-// scope_ok=false demotes a pass: out-of-scope edits are a failure with a named finding.
+// Number.isFinite (not typeof) — typeof NaN === 'number' would slip through;
+// confidence must also sit inside the schema's declared [0,1] (a 0-100 mis-scale
+// like 50 would otherwise defeat the CONF_FLOOR triage gate as "very confident").
+// pass:true is demoted on either internal contradiction: scope_ok=false, or a
+// critical/major finding riding alongside it (the hunt prompt's own "minor-only
+// findings still allow pass=true" invariant, enforced here, not just declared).
 const failClosed = (v, who) => {
-  if (!(v && typeof v.pass === 'boolean' && Array.isArray(v.findings) && Number.isFinite(v.confidence) && typeof v.scope_ok === 'boolean'))
+  if (!(v && typeof v.pass === 'boolean' && Array.isArray(v.findings) && Number.isFinite(v.confidence) && v.confidence >= 0 && v.confidence <= 1 && typeof v.scope_ok === 'boolean'))
     return { pass: false, findings: [{ severity: 'critical', description: `${who}: verdict missing or malformed — fail-closed` }], confidence: 0, scope_ok: false }
   if (v.pass && !v.scope_ok)
     return { ...v, pass: false, findings: [...v.findings, { severity: 'major', description: `${who}: scope_ok=false — out-of-scope changes flagged; revert or justify them` }] }
+  if (v.pass && v.findings.some((f) => f && (f.severity === 'critical' || f.severity === 'major')))
+    return { ...v, pass: false, findings: [...v.findings, { severity: 'major', description: `${who}: pass=true contradicted by a critical/major finding — demoted, fail-closed` }] }
   return v
 }
 
@@ -117,7 +124,8 @@ ${cwdLine}
 Survey whatever context you need — READ-ONLY, do not create or edit any file. Produce an implementation plan: concrete ordered steps, and acceptance criteria a reviewer can verify mechanically (a file exists, a command exits 0, input X yields Y) — never vibes. List real risks if any.`,
   { model: 'fable', label: 'plan:fable', phase: 'Plan', schema: PLAN },
 )
-if (!plan) return { status: 'escalated', stage: 'plan', reason: 'planner returned nothing — fail-closed' }
+if (!plan || !Array.isArray(plan.steps) || !Array.isArray(plan.acceptance_criteria))
+  return { status: 'escalated', stage: 'plan', reason: 'planner result missing or malformed — fail-closed' }
 log(`Plan: ${plan.steps.length} steps, ${plan.acceptance_criteria.length} acceptance criteria`)
 
 phase('Execute')
@@ -131,7 +139,8 @@ ${cwdLine}
 Do the work now — create/edit files, run commands. Then verify EVERY acceptance criterion yourself and report each with observed evidence (actual command output, not "should work").`,
   { model: 'sonnet', label: 'execute:sonnet', phase: 'Execute', schema: EXEC },
 )
-if (!exec) return { status: 'escalated', stage: 'execute', reason: 'executor returned nothing — fail-closed', plan }
+if (!exec || !Array.isArray(exec.files_changed))
+  return { status: 'escalated', stage: 'execute', reason: 'executor result missing or malformed — fail-closed', plan }
 
 const reviewPrompt = (round) =>
   `You are the review tier, round ${round}. Independently verify the work below — do NOT trust the executor's report; re-read the files and re-run the checks yourself.

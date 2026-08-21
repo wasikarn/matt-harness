@@ -124,12 +124,17 @@ check "journal captured matched decisions (observability)" $?
 # 12. Sync-seam pin (compliance-audit advisory 2026-08-22): the gate's
 # EXHAUSTED tuple duplicates should-continue-loop.sh's reason tokens with no
 # shared source — a token rename there would silently dis-arm the gate
-# ("stalled" has no force_human backstop). Machine-pin both sides.
+# ("stalled" at round < ceiling AND "regressed" at round 2 have no force_human
+# backstop). Pin the loop script's CODE forms — the CANONICAL tuple and the
+# ceiling emit line — not bare words, which comments alone would satisfy
+# (blind-spot find 2026-08-22: the first cut was vacuous for exactly that
+# reason; every token also appears in a comment).
 seam=0
 LOOP_SCRIPT="$ROOT/skills/review-pr/scripts/should-continue-loop.sh"
-for tok in ceiling regressed churning stalled; do
-  grep -q "$tok" "$LOOP_SCRIPT" || { echo "    token '$tok' missing from should-continue-loop.sh" >&2; seam=1; }
-done
+grep -qF 'CANONICAL = ("converged", "regressed", "churning", "stalled", "progressing")' "$LOOP_SCRIPT" \
+  || { echo "    loop-script CANONICAL tuple changed — re-pin the gate EXHAUSTED tuple against it" >&2; seam=1; }
+grep -qF 'print("reason=ceiling")' "$LOOP_SCRIPT" \
+  || { echo "    loop-script ceiling emit changed — re-pin the gate EXHAUSTED tuple against it" >&2; seam=1; }
 grep -q 'EXHAUSTED = ("ceiling", "regressed", "churning", "stalled")' "$GATE" \
   || { echo "    gate EXHAUSTED tuple changed — re-pin against loop script tokens" >&2; seam=1; }
 check "EXHAUSTED tokens machine-pinned to loop script (sync-seam)" $seam

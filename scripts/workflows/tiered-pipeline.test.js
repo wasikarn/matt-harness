@@ -12,7 +12,10 @@ const src = fs.readFileSync(path.join(__dirname, 'tiered-pipeline.js'), 'utf8')
 const body = src.replace(/^export const meta = \{[\s\S]*?\n\}\n/m, '')
 assert.ok(!body.includes('export const meta'), 'meta block strip failed')
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-const pipeline = new AsyncFunction('agent', 'phase', 'log', 'args', 'parallel', 'workflow', 'budget', body)
+// 'use strict' prepended: the shipped file is an ES module (implicitly strict);
+// a sloppy-mode AsyncFunction body would let a bare-assignment typo pass here
+// while throwing ReferenceError in the real Workflow run (2026-08-22 review).
+const pipeline = new AsyncFunction('agent', 'phase', 'log', 'args', 'parallel', 'workflow', 'budget', "'use strict';\n" + body)
 
 // Stub: routes on the label each agent() call declares; counts calls per label prefix.
 function makeAgent(replies, calls) {
@@ -94,6 +97,68 @@ async function run(replies) {
     assert.strictEqual(result.status, 'escalated', `T6: got ${result.status}`)
     assert.strictEqual(result.stage, 'execute', 'T6 wrong stage')
     console.log('PASS: T6 null exec escalates with stage=execute')
+  }
+
+  // T7 — pass:true contradicted by a critical finding must be demoted, not trusted.
+  // Bug-hunt leg deliberately: un-demoted it would skip the final tier and approve
+  // with no tier ever having looked at the contradiction (2026-08-22 HIGH finding).
+  {
+    const { result, calls } = await run({
+      'plan:': PLAN, 'execute:': EXEC, 'fix:': EXEC,
+      'review:': OK(0.9),
+      'bughunt:': () => ({ pass: true, findings: [{ severity: 'critical', description: 'SQLi still present' }], confidence: 0.9, scope_ok: true }),
+    })
+    assert.strictEqual(result.status, 'escalated', `T7 pass+critical sailed through: got ${result.status}`)
+    assert.strictEqual(result.stage, 'bug-hunt', 'T7 wrong stage')
+    assert.strictEqual(calls.filter((l) => l.startsWith('fix:')).length, 3, 'T7 demotion did not drive the fix loop')
+    console.log('PASS: T7 pass:true + critical finding is demoted, never approved')
+  }
+
+  // T8 — confidence outside the schema's [0,1] (e.g. a 0-100 mis-scale) is malformed:
+  // 50 must not defeat the CONF_FLOOR triage gate by reading as "very confident".
+  {
+    const { result } = await run({
+      'plan:': PLAN, 'execute:': EXEC, 'fix:': EXEC,
+      'review:': () => ({ pass: true, findings: [], confidence: 50, scope_ok: true }),
+    })
+    assert.strictEqual(result.status, 'escalated', `T8 out-of-range confidence trusted: got ${result.status}`)
+    assert.strictEqual(result.stage, 'review', 'T8 wrong stage')
+    console.log('PASS: T8 confidence outside [0,1] fails closed')
+  }
+
+  // T9/T10 — truthy-but-malformed plan/exec (missing required arrays) escalates
+  // structurally, same contract as the null case in T5/T6 — never a crash, never
+  // a silent "undefined" spliced into downstream prompts.
+  {
+    const { result } = await run({ 'plan:': () => ({ objective: 'x' }) })
+    assert.strictEqual(result.status, 'escalated', `T9: got ${result.status}`)
+    assert.strictEqual(result.stage, 'plan', 'T9 wrong stage')
+    console.log('PASS: T9 plan missing required arrays escalates with stage=plan')
+  }
+  {
+    const { result } = await run({
+      'plan:': PLAN, 'execute:': () => ({ summary: 's', criteria_results: [] }),
+      'review:': OK(0.95), 'bughunt:': OK(0.95),
+    })
+    assert.strictEqual(result.status, 'escalated', `T10: got ${result.status}`)
+    assert.strictEqual(result.stage, 'execute', 'T10 wrong stage')
+    console.log('PASS: T10 exec missing files_changed escalates with stage=execute')
+  }
+
+  // T11 — the fix cap is SHARED across review and bug-hunt: review burns 1 attempt,
+  // bug-hunt gets only the remaining 2 before escalating. A future split into
+  // per-stage caps (4+ total fixes) must fail here.
+  {
+    const FAILV = () => ({ pass: false, findings: [{ severity: 'major', description: 'd' }], confidence: 0.9, scope_ok: true })
+    const { result, calls } = await run({
+      'plan:': PLAN, 'execute:': EXEC, 'fix:': EXEC,
+      'review:': (label) => (label.endsWith(':r1') ? FAILV() : OK(0.9)()),
+      'bughunt:': FAILV,
+    })
+    assert.strictEqual(result.status, 'escalated', `T11: got ${result.status}`)
+    assert.strictEqual(result.stage, 'bug-hunt', 'T11 wrong stage')
+    assert.strictEqual(calls.filter((l) => l.startsWith('fix:')).length, 3, 'T11 shared cap exceeded — per-stage caps snuck in')
+    console.log('PASS: T11 fix cap is shared across review and bug-hunt, total never exceeds 3')
   }
 
   console.log('ALL GREEN')

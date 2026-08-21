@@ -46,6 +46,13 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 | `KBG_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
 | `KBG_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
+## Gate valves (per-run escapes, not standing config)
+
+| Var | Default | Effect |
+|---|---|---|
+| `KBG_SKIP_LOOP_GATE` | unset | `=1` disarms `hooks/gates/review-pr-loop-gate.sh`'s exhaustion `ask` on `Skill(kbg:review-pr)`. For headless runs (`claude -p`, cron) where an `ask` would hang — the one valve here that's legitimate standing config, but only in a headless environment; interactively, answer the ask. |
+| `KBG_SKIP_VERSION_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s version-bump layer for one commit (the amend flow). One-off escape — never pre-populate in `env`; a standing skip re-opens the same-version stale-cache trap the layer exists to close. |
+
 ## Token-optimization settings (set in `~/.claude/settings.json` → `env`)
 
 Recommended values for context/cost efficiency, sourced from ECC token-optimization guide:

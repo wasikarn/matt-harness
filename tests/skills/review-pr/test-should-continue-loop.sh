@@ -188,6 +188,19 @@ assert_eq "case13e: missing state still stops (reason)" "$GOT_REASON" "missing-s
 if [ -f "$STATE_FILE" ]; then created="yes"; else created="no"; fi
 assert_eq "case13e: persist created no file" "$created" "no"
 
+# 13f: off-label caller (wrong sha — e.g. the read-only /review-dashboard
+# passing a remote headRefOid) must NOT clobber an armed persisted verdict:
+# overwriting loop_reason="regressed" with "stale-sha" would silently dis-arm
+# gate:skill:review-pr-loop (blind-spot find 2026-08-22).
+write "$(base 3 false regressed '["a.ts"]')"
+run                    # matching sha → persists loop_decision=stop, loop_reason=regressed
+run "remote-tip-sha"   # stale-sha path — stdout contract holds, persist must skip
+assert_eq "case13f: stale-sha run still stops (exit)" "$GOT_EXIT" "1"
+assert_eq "case13f: stale-sha run still stops (reason)" "$GOT_REASON" "stale-sha"
+assert_eq "case13f: armed verdict survives an off-label caller" \
+  "$(python3 -c 'import json;d=json.load(open("'"$STATE_FILE"'"));print(d.get("loop_decision"),d.get("loop_reason"))')" \
+  "stop regressed"
+
 # 13d: read-only state dir — stdout/exit contract unchanged (the plan-review
 # High finding: a persist failure must never flip a continue into a stop)
 write "$(base 1 false progressing '["a.ts"]')"
