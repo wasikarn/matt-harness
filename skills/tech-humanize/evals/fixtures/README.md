@@ -1,6 +1,6 @@
 # Eval fixtures
 
-The 3 input drafts that `evals.json` evaluates the model against. Each fixture matches the `DRAFT:` block of its eval prompt verbatim, extracted into a standalone file so:
+The 4 input drafts that `evals.json` evaluates the model against. Each fixture matches the `DRAFT:` block of its eval prompt verbatim, extracted into a standalone file so:
 
 1. **Diffing inputs across versions is trivial** — `git diff evals/fixtures/` shows exactly what changed.
 2. **Eval runners can hydrate prompts at runtime** — load fixture, append humanize instruction, send to model.

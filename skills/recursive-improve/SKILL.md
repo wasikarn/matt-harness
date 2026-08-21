@@ -58,7 +58,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — inline, don't
   delegate to `kbg:orchestrate`). Can't name the boundary between two candidates? They're
   entangled — split or sequence them.
-- Rank by impact × cost × risk. State per candidate: what changes, who executes (inline or
+- Rank by impact, cost, and risk. State per candidate: what changes, who executes (inline or
   agent), blast radius (low/med/high — e.g. `hooks/gates/**` = high, doc-only = low),
   dependencies (none/chain). **If the touched surface is unclear, the candidate hasn't cleared
   the scope guard below — treat it as "too big — route to /ship"; don't guess a blast-radius
@@ -104,7 +104,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   authorization, not information-gathering — an unambiguous ranking answers "what's best," not
   "do you approve." If the answer feels settled enough to skip, that feeling is exactly what the
   invariant above exists to override. (Contrast: `references/step-rationale.md`.)
-- A planning request is **not** authorization to execute. **Denial ≠ approval.** If
+- A planning request is **not** authorization to execute. **A denial is not an approval.** If
   `AskUserQuestion` is denied (dontAsk / headless `-p`), render the question(s) as numbered prose
   and stop — the question(s) go on record, not an active poll loop; there's no live channel to
   wait on inside one headless dispatch. Per-ask: a denial on one (HIGH-alone or LOW/MED-batch)

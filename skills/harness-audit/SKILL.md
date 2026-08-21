@@ -56,9 +56,9 @@ Produces exit code = count of findings. Zero = clean.
 | **Tool-grant tokens** | Each agent `tools:` token is a real Claude Code tool (typo guard) |
 | **Eval-target freshness** | Every `**/evals.json` / baseline-eval driver carries a `last_reviewed:` (or `last_reviewed_reason:` to defer); older than 180d emits info (#30) |
 | **Skill-ref resolution** | Each agent `skills:` ref resolves to a repo or installed skill |
-| **Test-honesty / tautology** | Test files (`*.test.*`, `test_*.py`, `*_test.py`) lack greppable anti-patterns: tautological `assert True/False`, identity/repr assertions, `test_<placeholder>` names, `pass`/`,` skeletons (tests that can't fail when logic changes are wrong) |
+| **Test-honesty / tautology** | Test files (`*.test.*`, `test_*.py`, `*_test.py`) lack greppable anti-patterns: tautological `assert True/False`, identity/repr assertions, `test_<placeholder>` names, bare stub bodies (Python `pass`, JS `it(...., () => {})`, or a lone `,`-only placeholder assertion) (tests that can't fail when logic changes are wrong) |
 
-The bottom nine are validated against `code.claude.com/docs` (hooks 31-event set,
+The bottom eleven are validated against `code.claude.com/docs` (hooks 31-event set,
 skills/sub-agents 1536-char limit, model-config aliases). They are **WARN**, not
 CRIT: vendor docs lag features, so an unrecognized event or type may be
 real-but-undocumented — flagged for a human, not failed (Rule 1; surfaced, not silently dropped).

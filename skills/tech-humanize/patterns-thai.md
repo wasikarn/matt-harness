@@ -1,6 +1,8 @@
 # Thai-Specific Patterns (extends SKILL.md §1-§30)
 
 > ไฟล์นี้ extend catalog ใน `SKILL.md` เพิ่มอีก 12 top-level patterns (§31-§42) ที่จำเป็นสำหรับ Thai text เท่านั้น — terminology & calque, anti-fabrication, connectives, register matrix, code-switching tells, AI-leaked closers. อ่าน `SKILL.md` §0 Thai Foundations ก่อน แล้วค่อยกลับมาที่นี่.
+>
+> ❌/✅ ด้านล่างคือ notation สำหรับ bad/good example (เหมือน code // BAD/// GOOD) ไม่ใช่ decorative emoji ที่ §18 ใน `SKILL.md` สอนให้ตัดออกจากงานเขียนจริง.
 
 ---
 

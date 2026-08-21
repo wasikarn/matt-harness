@@ -73,7 +73,7 @@ grep -r "memory.*admit\|long.*term.*update\|persist.*memory" --include="*.py" --
 grep -r "fallback\|retry.*llm\|repair.*prompt\|rewrite.*response" --include="*.py" --include="*.ts"
 ```
 
-**Phase 3 — Failure mapping:** for each finding: symptom → mechanism → source layer → root cause → evidence (file:line) → confidence (0–1).
+**Phase 3 — Failure mapping:** for each finding: symptom, mechanism, source layer, root cause, evidence (file:line), and confidence (0–1).
 
 **Phase 4 — Fix strategy** (code-first, not prompt-first):
 
@@ -115,7 +115,7 @@ finding is that the model was fine and a wrapper layer introduced the defect.
 
 ## Completion criterion
 
-Every finding carries symptom → mechanism → source layer → root cause → evidence (file:line) →
+Every finding carries symptom, mechanism, source layer, root cause, evidence (file:line), and
 confidence — a diagnosis without file:line evidence is a guess, not a finding. The fix plan is
 code-first (Phase 4): a fix that only edits prompt text doesn't close a Layer 6/7 tool-discipline
 finding, since that's the exact gap the finding named.

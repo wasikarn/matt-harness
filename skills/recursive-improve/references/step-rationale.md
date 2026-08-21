@@ -52,16 +52,17 @@ to prevent.
 
 ## Integration Notes — full detail
 
-- **METHODOLOGY:** Rule 4 (this skill *is* the loop-until-verified instrument for the harness) ·
-  surface conflicts, don't average (drift guard picks the measured audit delta over the optimistic
-  claim) · fail loud (surface flat/negative deltas and regressions, never bury them) · Rule 13
-  (decompose → route → verify → combine, inline).
-- **Composes:** `orchestrate` (the decompose/route/verify pattern, inlined) · `harness-audit`
-  (both the candidate-detail signal and the deterministic verification metric — its exit count is
-  the loop's branchable score) · the witness scripts under `inventory/` (pre/post attestation) ·
-  `/ship` (escrow for over-scope candidates) · the harness-decay cadence
-  (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its
-  `## Permission re-audit` section for tool-grant decay candidates).
+- **METHODOLOGY:**
+  - Rule 4 (this skill *is* the loop-until-verified instrument for the harness)
+  - surface conflicts, don't average (drift guard picks the measured audit delta over the optimistic claim)
+  - fail loud (surface flat/negative deltas and regressions, never bury them)
+  - Rule 13 (decompose, route, verify, combine — inline)
+- **Composes:**
+  - `orchestrate` (the decompose/route/verify pattern, inlined)
+  - `harness-audit` (both the candidate-detail signal and the deterministic verification metric — its exit count is the loop's branchable score)
+  - the witness scripts under `inventory/` (pre/post attestation)
+  - `/ship` (escrow for over-scope candidates)
+  - the harness-decay cadence (`docs/harness-decay-cadence.md`, the build-to-delete counterpart to this add/fix loop, and its `## Permission re-audit` section for tool-grant decay candidates)
 - **Reads, never writes, the journal.** This skill does not emit a journal event. Iteration
   evidence is the witness BOUNDARY diff + a memory entry, not a journal stream (kept minimal per
   Rule 2 — revisit only if a durable per-iteration history is actually needed).

@@ -113,7 +113,7 @@ obvious from the snippets. Omit principles you checked but didn't need to change
 | Principle | Before | After |
 | --- | --- | --- |
 | Concentric radius | Same radius on parent and child | Parent radius accounts for padding |
-| Tabular numbers | Counter shifts as digits change | Counter uses `tabular-nums` |
+| Text wrapping (tabular nums) | Counter shifts as digits change | Counter uses `tabular-nums` |
 | Transition scope | `transition: all` | Explicit transition properties |
 
 ## Checklist

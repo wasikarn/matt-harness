@@ -83,8 +83,8 @@ in practice if `aria-live` timing or focus order doesn't match what the markup i
 ## Related
 
 - Skill: `kbg:frontend-patterns` — already covers the keyboard-nav combobox
-  (`reference.md#keyboard-navigation`) and modal focus-restoration (`reference.md#focus-management`)
-  examples; this skill doesn't duplicate those.
+  (`kbg:frontend-patterns/reference.md#keyboard-navigation`) and modal focus-restoration
+  (`kbg:frontend-patterns/reference.md#focus-management`) examples; this skill doesn't duplicate those.
 - Skill: `kbg:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
   skill's checklist.
 - Agent: `kbg:a11y-architect` — dispatch for a dedicated accessibility audit pass on a component

@@ -114,7 +114,9 @@ Potential savings: ~XX,XXX tokens (XX% of current overhead)
 
 ## kbg baseline
 
-Owner global `skillOverrides.maxSkills = 0.08` → ~2.25× headroom vs default.
+Owner global `skillOverrides.maxSkills = 0.08` — the platform default isn't documented anywhere
+in this repo, so the "headroom vs default" comparison isn't independently verifiable from here;
+check the current CLI's own default before quoting a multiplier.
 For the live surface count, run the inventory (`bash skills/inventory/scripts/inventory.sh`) rather than trusting a hardcoded snapshot — the count drifts.
 MCP is the dominant variable — check active server count with `/doctor`.
 

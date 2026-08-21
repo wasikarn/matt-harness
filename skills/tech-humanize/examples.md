@@ -2,6 +2,8 @@
 
 > ตัวอย่างการ apply 30 universal + 12 Thai-specific top-level patterns ใน `SKILL.md` + `patterns-thai.md` แบบเต็มรอบ: draft → "still-AI" bullets → final rewrite. ใช้เป็น reference ตอน stuck.
 >
+> ❌/✅ below = bad/good notation, not the decorative emoji §18 tells you to cut from real writing.
+>
 > **Language coverage:** Examples A–D below are Thai (or Thai↔EN mixed). The section after the side-by-side table covers **monolingual English** so the same rules apply when no Thai is in the draft.
 
 ---

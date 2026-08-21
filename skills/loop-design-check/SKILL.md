@@ -40,7 +40,7 @@ This is the same crux as this repo's `CLAUDE.md` § Architecture ("the gate is a
 
 ### Step 0 · Subtract first: should you even build it? (4-condition gate, any miss = veto)
 
-① the task repeats weekly or more　② verification can be automated　③ the token budget can take it　④ the agent has tools that actually *run and see the result*
+① the task repeats weekly or more; ② verification can be automated; ③ the token budget can take it; ④ the agent has tools that actually *run and see the result*
 
 Miss any one → **don't build a loop**; do it by hand or another way. If the read on any condition is genuinely contested rather than a clean miss, that's a decision worth scoring explicitly — escalate to `score-decision` rather than talking yourself past a veto.
 

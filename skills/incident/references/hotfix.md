@@ -6,7 +6,8 @@ The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-
 
 - **Stop the bleeding first.** Rollback or kill-switch is always faster than code. Only hotfix when rollback is impossible or insufficient.
 - **Branch from the production branch — resolve it first.** The production branch is the one prod deploys/tags actually cut from (check repo CLAUDE.md → deploy config → latest release tag). Never assume the repo default branch: in gitflow-style repos the default is the integration branch (`develop`), and a hotfix based there ships unreleased work. `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`. The PR targets `<prod-branch>` — never the integration branch. After merge: backmerge `<prod-branch>` → `develop` (merge, not rebase) if an integration branch exists.
-- **Severity drives speed.** P0 = ship in <15 min. P1 = <1 hr. P2 = <4 hr.
+- **Severity drives speed.** P0 = ship in <15 min. P1 = <1 hr. P2 = <4 hr. Maps 1:1 to kbg:incident's
+  S-tier by MTTR: S1↔P0, S2↔P1, S3↔P2 (S4/noise never reaches this path).
 - **Smallest possible change.** One file, one line if possible. No refactors, no cleanups.
 - **Server-side merge only.** Never `git merge` locally + push. Use `gh pr merge --admin`.
 - **Post-merge watch, not hope.** Verify CI + monitor for 10 minutes. Be ready to revert.

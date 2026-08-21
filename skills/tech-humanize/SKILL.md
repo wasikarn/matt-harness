@@ -52,7 +52,7 @@ Pick genre **and** language (orthogonal — choose each independently; match wha
 
 **Fabrication boundary (don't fake grit).** Never invent a ticket, metric, cause, or source — pull specifics only from the source or context. **Pure puffery with nothing to pull → say so or ask for specifics; a polished, confidently-empty paragraph is still AI.**
 
-**A single unverifiable claim inside an otherwise real draft differs from a hollow source** — don't drop it (deletes what the user told you) or invent a replacement (fabricates evidence). Use Tier-2 hedge (§32.1): keep the claim, strip unbacked certainty-intensifiers (`เรียบร้อยแล้ว`, "completely," "fully"), and ask what was checked where the genre allows.
+**A single unverifiable claim inside an otherwise real draft differs from a hollow source** — don't drop it (deletes what the user told you) or invent a replacement (fabricates evidence). Use Tier-2 hedge (§32.1): keep the claim, strip unbacked certainty-intensifiers (`เรียบร้อยแล้ว`, "completely," "fully"), and ask what was checked where the genre allows. (§32.1's 3-tier logic — drop/hedge/cite — applies in any language; `patterns-thai.md` has the worked table with Thai examples, but the English equivalent is the same shape: unverifiable → drop, heard-but-unconfirmed → hedge once, sourced → cite.)
 
 Worked "soulless vs alive" example (same facts, neutral report → real voice): `examples.md` §
 Grit Gate: Soulless vs Alive.
