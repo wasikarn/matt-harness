@@ -159,7 +159,7 @@ tested end to end.
 Lead with one sentence:
 
 ```text
-Production audit: 76/100, launchable with caveats, with webhook idempotency and rollback docs as the two risks to fix before public launch.
+Production audit: 76/100, launchable with caveats, with missing E2E coverage and stale API docs as the two risks to fix before public launch.
 ```
 
 Then list:

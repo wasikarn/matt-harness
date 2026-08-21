@@ -65,7 +65,7 @@ git -C <repo> log -1 --format='%s (%ad)' --date=short <branch>  # what actually 
 grep -rl "<claimed-flag>: true" <skills-or-surfaces-dir>    # does the count in prose match a fresh grep?
 ```
 
-This is the direct analogue of the paper's BGPD funnel: the last step never trusts a located candidate, it re-checks it against the actual current source. A claim can be internally consistent across every doc that cites it and still be wrong — 3a alone won't catch that, only 3b will.
+Same principle as Test 3 above, applied here: a claim can be internally consistent across every doc that cites it and still be wrong — 3a alone won't catch that, only 3b will.
 
 Report a finding either way — a wrong "canonical" doc, or a doc that's merely internally consistent but stale, can both be actively followed into a wrong operational decision.
 

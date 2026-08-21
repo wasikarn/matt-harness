@@ -18,7 +18,7 @@ That's it. No env var, no path argument, no setup. From inside a git repo you ge
 
 ### Boundary map (committed snapshot)
 
-For the canonical repo-local artifact map — agents, skills, hooks, with plugin-delivered / project-local markers and the witness trail — regenerate `BOUNDARY.md` from the script's STDOUT:
+For the canonical repo-local artifact map — agents, skills, hooks, grouped by `bucket:` under `### <bucket>` subheads, plus the witness trail — regenerate `BOUNDARY.md` from the script's STDOUT (a different script than `inventory.sh` below; `BOUNDARY.md` carries no `◇` markers, those are `inventory.sh`'s own output convention only):
 
 ```bash
 bash "${CLAUDE_SKILL_DIR}/scripts/inventory-boundary.sh" --repo-only > BOUNDARY.md

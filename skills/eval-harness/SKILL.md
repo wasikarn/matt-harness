@@ -183,6 +183,7 @@ Status: SHIP IT
 
 - `.claude/evals/<feature>.md` definition
 - `.claude/evals/<feature>.log` run history
+- `.claude/evals/baseline.json` regression baselines (when the eval has a regression variant)
 - `docs/releases/<version>/eval-summary.md` release snapshot
 
 ## Completion criterion

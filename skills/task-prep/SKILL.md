@@ -16,7 +16,7 @@ Run before publishing. Each item must be checkable. See CLAUDE.md § "Skill auth
 - [x] **≤25 words** in description (25).
 - [x] **One trigger** per branch in description (use: non-trivial task; don't: idea, one-liner).
 - [x] **Completion criterion** — "a paste-ready prompt whose `<done-when>` a context-poor reader can name + a check Claude can run."
-- [x] **No-op test** — a genuinely gap-free draft → no manufactured/padding edits; emit unchanged. Field-complete ≠ gap-free — Step 3.5/9 surfacing a real latent gap on a filled draft is the skill working as intended, not a broken guarantee.
+- [x] **No-op test** — a genuinely gap-free draft → no manufactured/padding edits; emit unchanged. Field-complete is not gap-free — Step 3.5/9 surfacing a real latent gap on a filled draft is the skill working as intended, not a broken guarantee.
 - [x] **Two-cut check** — routing gate (router-first) + template-fill are sequential cuts, each earning its keep; not split by invocation.
 - [x] **Failure mode** named inline at the drift step (padding, idea-forcing, re-asking filled fields).
 - [x] **Provenance** — `metadata.origin: kbg-native` (ECC `prompt-optimizer`: Phase-0 stack-sniff skeleton + consult-only invariant, adapted not copied).
@@ -85,7 +85,7 @@ The 9 fields and their intent (canonical: `docs/reference/task-handoff-template.
 - `<output>` — format/length/audience.
 - `<edge-cases>` — gotchas you foresee, or "interview me for edge cases first."
 
-For each field, mark: **present** (in draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap). Present ≠ adequate — a too-thin field is Step 9's call, not this step's; the assembler can't catch its own vagueness.
+For each field, mark: **present** (in draft) / **derivable** (from code or CLAUDE.md) / **absent** (a real gap). Present is not adequate — a too-thin field is Step 9's call, not this step's; the assembler can't catch its own vagueness.
 
 **Success criterion:** a 9-row map with present/derivable/absent per field.
 

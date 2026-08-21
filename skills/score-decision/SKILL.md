@@ -120,7 +120,7 @@ A Decision Score table with every criterion scored (or explicitly blocked), a we
 - **Scoring without evidence.** A criterion score must cite why; "looks right" is not a reason.
 - **Guessing past missing data.** If you cannot honestly score a criterion, block — do not fill the gap with a vibe.
 - **Weighted sum without the floor.** A 75 weighted score with one criterion at 20 is not a pass — the floor is a gate, not a suggestion.
-- **Scoring a non-decision.** Applying the rubric to a trivial/already-made choice manufactures ceremony (the #31.1 trap). Exit early.
+- **Scoring a non-decision.** Applying the rubric to a trivial/already-made choice manufactures ceremony (the #31.1 trap — harness-audit's check for manufactured/ceremony content). Exit early.
 - **Ranking by weighted sum alone.** A top-ranked option that fails the per-option floor is disqualified — do not recommend it. The floor is a gate in ranking too, not a tiebreaker.
 
 ## Don't duplicate canon
