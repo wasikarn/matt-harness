@@ -82,5 +82,19 @@ async function run(replies) {
     console.log('PASS: T4 NaN confidence fails closed')
   }
 
+  // T5/T6 — a null plan or executor result escalates structurally, never throws.
+  {
+    const { result } = await run({ 'plan:': () => null })
+    assert.strictEqual(result.status, 'escalated', `T5: got ${result.status}`)
+    assert.strictEqual(result.stage, 'plan', 'T5 wrong stage')
+    console.log('PASS: T5 null plan escalates with stage=plan')
+  }
+  {
+    const { result } = await run({ 'plan:': PLAN, 'execute:': () => null })
+    assert.strictEqual(result.status, 'escalated', `T6: got ${result.status}`)
+    assert.strictEqual(result.stage, 'execute', 'T6 wrong stage')
+    console.log('PASS: T6 null exec escalates with stage=execute')
+  }
+
   console.log('ALL GREEN')
 })().catch((e) => { console.error('FAIL:', e.message); process.exit(1) })

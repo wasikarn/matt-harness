@@ -117,7 +117,7 @@ ${cwdLine}
 Survey whatever context you need — READ-ONLY, do not create or edit any file. Produce an implementation plan: concrete ordered steps, and acceptance criteria a reviewer can verify mechanically (a file exists, a command exits 0, input X yields Y) — never vibes. List real risks if any.`,
   { model: 'fable', label: 'plan:fable', phase: 'Plan', schema: PLAN },
 )
-if (!plan) throw new Error('planner returned nothing')
+if (!plan) return { status: 'escalated', stage: 'plan', reason: 'planner returned nothing — fail-closed' }
 log(`Plan: ${plan.steps.length} steps, ${plan.acceptance_criteria.length} acceptance criteria`)
 
 phase('Execute')
@@ -131,7 +131,7 @@ ${cwdLine}
 Do the work now — create/edit files, run commands. Then verify EVERY acceptance criterion yourself and report each with observed evidence (actual command output, not "should work").`,
   { model: 'sonnet', label: 'execute:sonnet', phase: 'Execute', schema: EXEC },
 )
-if (!exec) throw new Error('executor returned nothing')
+if (!exec) return { status: 'escalated', stage: 'execute', reason: 'executor returned nothing — fail-closed', plan }
 
 const reviewPrompt = (round) =>
   `You are the review tier, round ${round}. Independently verify the work below — do NOT trust the executor's report; re-read the files and re-run the checks yourself.
