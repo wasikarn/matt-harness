@@ -3,7 +3,7 @@ name: ideate
 description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
 argument-hint: Problem statement to ideate on
 disable-model-invocation: false
-disable-model-invocation-reason: Auto-fire on vague open-ended prompts is the load-bearing use case (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout in this command's body — NOT by this flag.
+disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout below — NOT by this flag.
 ---
 
 # Ideate
@@ -62,8 +62,7 @@ cognitive frames with explicit trap detection, run `/ideate <your problem>`."*
 
 A SessionStart hook may inject `<ideate-rotation index="N">` with 5 frame
 names — prefer those (already covers the 1-wild minimum, rotated vs. prior
-sessions). If absent (fresh install, hook disabled, malformed), fall back
-to [Picking frames](#picking-frames).
+sessions). If absent, fall back to [Picking frames](#picking-frames).
 
 Step 0 already honours an `<ideate-convergence status="warning">` block;
 its capture side (SessionEnd embedding hook + `convergence.sh`) is **not
@@ -73,7 +72,7 @@ advisory-only until rebuilt.
 Past runs are searchable via `/ideate-search <query>` (Thai OK), backed by
 the `ideate-memory` qmd collection — read-only, doesn't affect the
 algorithm, only makes runs recallable. Its capture hook is also not wired;
-search only returns runs captured other ways until rebuilt. Full mechanics:
+search only returns runs captured other ways until rebuilt. Mechanics:
 `references/provenance.md` §"Advisory hooks — full mechanics".
 
 ## 2-wave fan-out (load-bearing)
@@ -203,8 +202,7 @@ size.
 
 Code-shaped problems: pick 4 frames tagged `code` or `design`, plus 1
 tagged `wild`. Open product/strategy problems: a mix from all tags. Vary
-picks across sessions so the same problem produces different candidate
-sets when re-run.
+picks across sessions so re-runs produce different candidates.
 
 ## 3-axis scoring rubric
 
@@ -218,15 +216,13 @@ total = novelty * 0.35 + viability * 0.40 + fit * 0.25
 failure mode — viability is the gatekeeper, novelty is the reason we're
 here, fit is the tie-breaker.
 
-**`trap` is a free-text reason field, NOT a score threshold.** The score
-pass attaches `trap: "<one-line reason>"` to ideas that look attractive but
-have a hidden cost. Trapped ideas are EXCLUDED from the top-K shortlist but
+**`trap` mechanics:** the score pass attaches `trap: "<one-line reason>"` to
+ideas that look attractive but have a hidden cost. Trapped ideas are EXCLUDED from the top-K shortlist but
 REPORTED separately so the user sees why — a machine-claim ("3 traps, 1
 unscalable, 1 premature abstraction, 1 false economy") plus the one-line
 reasons, not a silent `if (total < 5) drop` heuristic.
 
-**Score chip rendering:** show as `[N7 V8 F9]` next to each idea in the
-Wide set.
+**Score chip rendering:** show as `[N7 V8 F9]` next to each idea in the Wide set.
 
 Source: `references/provenance.md` §"3-axis scoring rubric source".
 
@@ -271,7 +267,7 @@ the structure is the point.
 1. **Brief + cost estimate.** 1-2 lines on the problem/reframe, then:
    *"Cost estimate: ~8–10 Agent calls, ~3k–8k input tokens, ~1k–3k output
    tokens. Actuals vary by problem size."* Advisory heuristic, not a metered
-   bill — reminds the operator ideate is intentionally expensive.
+   bill.
 2. **Wide set.** Full pool grouped by cluster and angle, one short phrase
    per idea, score chips like `[N7 V8 F9]`. If the critic ran, render its
    `frameCount` next to any cluster ≥3 ("3 frames converged here") — same

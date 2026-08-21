@@ -1,5 +1,5 @@
 ---
-description: Generate a local Claude Code cost report from the ECC cost-tracker metrics log.
+description: Generate a local Claude Code cost report from the cost-tracker metrics log.
 name: cost-report
 argument-hint: [csv]
 ---
@@ -52,10 +52,9 @@ a fabricated $53,883, since old rows are whole-session snapshots, so summing sev
 double- and triple-counts the same tokens. This hook change makes (`session_id`,
 `model`) dedup correct, for `model_scoped` rows only.
 
-Neither design gives a correct *dollar* total on its own: a model that doesn't match
-`haiku`/`opus`/`sonnet` in the tracker's rate table falls back to the Sonnet rate as a
-guess (`rate_verified: false`) — on 2026-07-28's data (still mostly old-format rows)
-that was over half the total, $17,510 of $34,698. The report's `(rate unverified)`
+Neither design gives a correct *dollar* total on its own: `rate_verified: false` rows
+(see below) are priced at a Sonnet-rate guess — on 2026-07-28's data (still mostly
+old-format rows) that was over half the total, $17,510 of $34,698. The report's `(rate unverified)`
 tag on each affected model is the only
 signal; treat any total as "correctly summed," not "correctly priced," until
 every model in the rate table has a verified rate.

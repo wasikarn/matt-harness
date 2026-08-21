@@ -14,7 +14,6 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 **Gate**: ANY check fails → STOP. Tell user what's blocking. Don't merge.
 
-
 1. Resolve PR: `gh pr view` (current branch) or `gh pr view <n>`.
 2. Check branch protection rules once, upfront — drives steps 3–4, the scored table below, and Phase 2's merge flags: `gh api repos/{owner}/{repo}/branches/<base>/protection 2>/dev/null` (404/error → no protection at all; treat `required_status_checks`/`required_pull_request_reviews` as absent, record "no protection" for Phase 2 step 4). Also check `gh api repos/{owner}/{repo} --jq .allow_squash_merge` once — `false` means Phase 2's `--squash` will fail; Phase 2 step 4 stops on this before attempting it, not mid-merge.
 3. Check CI: `gh pr checks <n>`. No `required_status_checks` **and** zero registered checks (not pending/red — genuinely none) → repo has no CI at all, record **N/A**, not a failure. Otherwise all required checks must pass — this records the signal; step 6's scored table is where it gates (not-green here doesn't stop Phase 1, it flows to step 6).
@@ -22,7 +21,7 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 5. Check mergeable state: no conflicts, no "requirements not met" flags.
 6. **Review check — scored gate (`kbg:score-decision`)**: a bare `review-last.json.clean` boolean isn't a measurable quality gate (METHODOLOGY Rule 14) — it collapses tier, freshness, and CI signal into one bit, indistinguishable between "reviewed, 3 unresolved Criticals," "never reviewed," and "reviewed, but 5 pushes ago." Score it instead:
 
-   Read `${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-<n>.json` if it exists — `review-pr-finish` Phase 7 keys PR-by-number reviews per PR so two reviews run close together (e.g. #357, #358) don't clobber a shared file. Fall back to `review-last.json` (the unkeyed file for own-branch/author-flow reviews) only if the keyed file is absent. Either way, cross-check `last_sha` against the PR's current HEAD SHA (`gh pr view <n> --json headRefOid`) — a review from an earlier commit certifies different code, not this merge.
+   Read `${REVIEW_PR_STATE_DIR:-$HOME/.claude/state}/review-pr-<n>.json` if it exists — `review-pr-finish` Phase 7 keys PR-by-number reviews per PR so two reviews run close together don't clobber a shared file. Fall back to `review-last.json` (the unkeyed file for own-branch/author-flow reviews) only if the keyed file is absent. Either way, cross-check `last_sha` against the PR's current HEAD SHA (`gh pr view <n> --json headRefOid`) — a review from an earlier commit certifies different code, not this merge.
 
    | Criterion | Wt | Measures |
    |---|---|---|
@@ -31,7 +30,7 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
    | Review freshness | 20 | the review-state file's `last_sha` matches the PR's current HEAD SHA |
    | Review coverage | 10 | a review actually ran (`review-pr-<n>.json` or a matching `review-last.json` exists for this PR) |
 
-   See `references/scored-gate-guards.md` for the floor rule, verified-N/A handling, the incomplete-review/non-convergence/automation-bias guards, and the maintainer margin-invariant note — everything between the table above and the Gate line below.
+   See `references/scored-gate-guards.md` for the floor rule, verified-N/A handling, the incomplete-review/non-convergence/automation-bias guards, and the maintainer margin-invariant note.
 
    **Gate**: FAIL (below the 70 threshold, or below the 40 floor on any criterion per the floor rule above — no exemption unless one is named) → STOP, tell the user which criterion failed and why. PASS → proceed to step 7.
 
@@ -69,7 +68,6 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 ## Phase 2: Merge (GitHub Server-Side Only)
 
 **Rule**: Merge must happen via GitHub (`gh pr merge`). Never run `git merge` locally and push the result.
-
 
 1. Fetch latest: `git fetch origin`
 2. Rebase onto base branch: `git rebase origin/<base-branch>`
@@ -110,10 +108,9 @@ disable-model-invocation-reason: irreversible external — merges a PR server-si
 
 ## Phase 4: Monitor
 
-
 1. If CI was verified-N/A in Phase 1 step 3, skip to step 3 — nothing to monitor. Otherwise check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
 2. Failures post-merge → be ready to revert or invoke `kbg:incident` (hotfix path).
-3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status (or "N/A — no CI configured"). Keep the merge/release note factual, free of AI-flavor tells (no self-congratulation, no hedging filler).
+3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status (or "N/A — no CI configured"). Keep the merge/release note factual, free of AI-flavor tells (no self-congratulation, no hedging).
 4. **Suggested next step:**
    - Fix worth recording        → /post-mortem while context is warm
    - Last change before release → /ship-release
