@@ -280,9 +280,9 @@ Stack-specific pattern skills, kbg-native.
 ```text
 kbg-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
-├── agents/               # 20 specialist subagents (.md each)
-├── skills/               # 36 workflow skills (SKILL.md per directory)
-├── commands/             # 23 slash commands
+├── agents/               # specialist subagents (.md each)
+├── skills/               # workflow skills (SKILL.md per directory)
+├── commands/             # slash commands
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
 ├── output-styles/        # staff-eng — sole live-response register
 ├── contexts/             # dev / review / research session frames

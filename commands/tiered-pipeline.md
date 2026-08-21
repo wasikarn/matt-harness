@@ -31,20 +31,28 @@ pushes, or ships — the result returns to the human.
 2. A task with no verifiable acceptance criteria in it is still runnable — the
    Fable plan stage derives mechanical criteria itself — but if the task text is
    empty, stop and ask for one; never invent a task.
-3. Invoke the Workflow tool:
+3. Resolve the script path first — `${KBG_PLUGIN_ROOT}` is a shell env var
+   (bridged at SessionStart by `command-root-anchor.sh`), and the Workflow
+   tool's `scriptPath` is a plain JSON parameter that no shell ever expands.
+   Never paste the unexpanded variable into the tool call:
+
+   ```bash
+   echo "${KBG_PLUGIN_ROOT}/scripts/workflows/tiered-pipeline.js"
+   ```
+
+   Then invoke the Workflow tool with the literal absolute path that printed:
 
    ```
    Workflow({
-     scriptPath: "${KBG_PLUGIN_ROOT}/scripts/workflows/tiered-pipeline.js",
+     scriptPath: "<the absolute path printed above>",
      args: { task: "<task text>", cwd: "<absolute path of the current project>", finalReview: "always"? }
    })
    ```
 
-   `${KBG_PLUGIN_ROOT}` is bridged at SessionStart by `command-root-anchor.sh`:
-   in an installed session it resolves to the versioned plugin cache (so the
-   script always matches the installed version), and in the kbg-harness dev repo
-   it resolves to the repo itself. Always pass `cwd` — the pipeline's agents work
-   there, not in the session's own working directory.
+   In an installed session the path lands in the versioned plugin cache (so
+   the script always matches the installed version); in the kbg-harness dev
+   repo it resolves to the repo itself. Always pass `cwd` — the pipeline's
+   agents work there, not in the session's own working directory.
 4. The Workflow runs in the background; report its result when the completion
    notification arrives — never predict it.
 5. Relay the returned object honestly:
