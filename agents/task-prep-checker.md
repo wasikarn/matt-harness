@@ -66,7 +66,7 @@ Answer the 4 pre-send questions as a reader who has **only** this prompt (no con
 
 1. What does "done" look like? — is there a check in `<done-when>`?
 2. Which files are in / out of scope? — is `<scope>` filled?
-3. Do they have the actual artifact (error/log/screenshot), or only a description?
+3. Do they have the actual artifact (error/log/screenshot), or only a description? — is `<artifacts>` filled?
 4. Do they know what pattern to follow? — is `<reference>` pointed at one?
 
 Any "no" maps to a costly gap. The most expensive "no" is #1.

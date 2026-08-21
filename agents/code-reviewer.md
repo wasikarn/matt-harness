@@ -196,10 +196,10 @@ via `Skill(kbg:review-lens-code-quality)`.
 
 ## Approval Criteria
 
-- **Approve**: No CRITICAL or HIGH issues, including clean reviews with zero
+- **Approve**: No CRITICAL, HIGH, or MEDIUM issues, including clean reviews with zero
   findings. This is a valid and expected outcome.
-- **Warning**: HIGH issues only (can merge with caution)
-- **Block**: CRITICAL issues found — must fix before merge
+- **Warning**: MEDIUM issues only (can merge with caution)
+- **Block**: CRITICAL or HIGH issues found — must fix before merge
 
 ## Project-Specific Guidelines
 

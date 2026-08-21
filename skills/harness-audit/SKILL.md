@@ -54,14 +54,18 @@ Produces exit code = count of findings. Zero = clean.
 | **Hook context length** | Static `additionalContext` ≤ 10000 chars |
 | **Name format** | Skill/agent `name` is lowercase/digits/hyphens, ≤ 64 chars |
 | **Tool-grant tokens** | Each agent `tools:` token is a real Claude Code tool (typo guard) |
-| **Eval-target freshness** | Every `**/evals.json` / baseline-eval driver carries a `last_reviewed:` (or `last_reviewed_reason:` to defer); older than 180d emits info (#30) |
 | **Skill-ref resolution** | Each agent `skills:` ref resolves to a repo or installed skill |
 | **Test-honesty / tautology** | Test files (`*.test.*`, `test_*.py`, `*_test.py`) lack greppable anti-patterns: tautological `assert True/False`, identity/repr assertions, `test_<placeholder>` names, bare stub bodies (Python `pass`, JS `it(...., () => {})`, or a lone `,`-only placeholder assertion) (tests that can't fail when logic changes are wrong) |
+| **Cross-file content drift** | Near-duplicate prose (token-set Jaccard 0.60-0.95) across agent/skill/command body content, not in `accepted-duplication.tsv` — advisory pre-filter for a human to read, same register as `memory-lint`'s `--find-contradictions`, never a verdict |
 
-The bottom eleven are validated against `code.claude.com/docs` (hooks 31-event set,
-skills/sub-agents 1536-char limit, model-config aliases). They are **WARN**, not
-CRIT: vendor docs lag features, so an unrecognized event or type may be
-real-but-undocumented — flagged for a human, not failed (Rule 1; surfaced, not silently dropped).
+Of these, 9 are validated directly against `code.claude.com/docs`: Description length,
+Agent model value, Hook event name, Hook handler type, Hook matcher regex, Hook context
+length, Name format, Tool-grant tokens, Skill-ref resolution (hooks 31-event set,
+skills/sub-agents 1536-char limit, model-config aliases). They are **WARN**, not CRIT:
+vendor docs lag features, so an unrecognized event or type may be real-but-undocumented —
+flagged for a human, not failed (Rule 1; surfaced, not silently dropped). Test-honesty /
+tautology and Cross-file content drift are kbg-native invariants, not vendor-doc-derived —
+don't count them into "the bottom N are vendor-validated" claims.
 
 ## Output
 
