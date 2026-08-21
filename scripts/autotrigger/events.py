@@ -12,6 +12,10 @@ from datetime import datetime
 from pathlib import Path
 
 PROJECTS_ROOT = Path.home() / ".claude" / "projects"
+# Claude Code encodes a project's cwd as its dir name by replacing '/' with '-'.
+# Derive the prefix from $HOME rather than hardcoding this machine's home path,
+# so this script stays portable.
+HOME_ENC = str(Path.home()).replace("/", "-")
 CMD_NAME_RE = re.compile(r"<command-name>\s*/?([\w:-]+)\s*</command-name>")
 # Nudge content names its target as '/foo' (command) or 'foo' (skill).
 NUDGE_TARGET_RE = re.compile(
@@ -212,9 +216,9 @@ def iter_project_dirs(scope: str, projects: list):
         # sessions). Verified 2026-05-30: that dir contributes ZERO custom-skill
         # invocations post-nudge, so kobig == all for the rate while scanning
         # ~10x fewer files. Use --scope all to re-confirm that holds.
-        yield from (str(d) for d in PROJECTS_ROOT.glob("-Users-kobig-*") if d.is_dir())
+        yield from (str(d) for d in PROJECTS_ROOT.glob(f"{HOME_ENC}-*") if d.is_dir())
     else:  # dotfiles
-        yield str(PROJECTS_ROOT / "-Users-kobig-Codes-Personals-dotfiles")
+        yield str(PROJECTS_ROOT / f"{HOME_ENC}-Codes-Personals-dotfiles")
 
 
 def segment_turns(events: list):

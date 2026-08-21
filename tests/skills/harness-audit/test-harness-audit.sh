@@ -109,7 +109,7 @@ fi
 # and asserting the run completes (prints a Summary) instead of aborting.
 FAKE_HOME_NO_CACHE=$(mktemp -d)
 CHECK25_OUT=$(HOME="$FAKE_HOME_NO_CACHE" bash "$AUDIT" "$HERE/../../.." --only 25 2>&1 || true)
-rm -rf "$FAKE_HOME_NO_CACHE"
+trash "$FAKE_HOME_NO_CACHE" 2>/dev/null || true
 if printf '%s\n' "$CHECK25_OUT" | grep -q "=== Summary"; then
   ok "check-25 survives a \$HOME with no plugin cache (no pipefail abort)"
 else
@@ -173,7 +173,7 @@ cat > "$FAKE43/docs/common-mistakes.md" <<'EOF'
 Self-check: `grep -c "this-pattern-does-not-exist-anywhere" "skills/orchestrate/SKILL.md"`
 EOF
 CHECK43_OUT=$(bash "$AUDIT" "$FAKE43" --only 43 2>&1 || true)
-rm -rf "$FAKE43"
+trash "$FAKE43" 2>/dev/null || true
 if printf '%s\n' "$CHECK43_OUT" | grep -q "=== Summary"; then
   ok "check-43 survives a zero-match self-check pattern (no pipefail abort)"
 else

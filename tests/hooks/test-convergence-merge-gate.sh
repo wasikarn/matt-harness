@@ -41,7 +41,7 @@ check() { # check <desc> <ok:0|1>
 }
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+trap 'trash "$WORK" 2>/dev/null || true' EXIT
 mkdir -p "$WORK/state" "$WORK/fakebin"
 
 # A fake `gh` dispatching on subcommand, driven entirely by env vars so each

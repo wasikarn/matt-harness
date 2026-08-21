@@ -12,7 +12,7 @@ pass=0
 fail=0
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/wtguard.XXXXXX")
-trap 'rm -rf "$TMP"' EXIT
+trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
 WS="$TMP/ws"
 WT="$TMP/wt"

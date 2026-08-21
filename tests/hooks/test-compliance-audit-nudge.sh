@@ -9,7 +9,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/advisory/compliance-audit-nudge.sh"
 WORKDIR=$(mktemp -d)
-trap 'rm -rf "$WORKDIR"' EXIT
+trap 'trash "$WORKDIR" 2>/dev/null || true' EXIT
 
 pass=0
 fail=0

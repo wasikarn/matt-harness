@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/advisory/learn-nudge.sh"
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-learn-nudge-test.XXXXXX")
-trap 'rm -rf "$TMP"' EXIT
+trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
 pass=0
 fail=0

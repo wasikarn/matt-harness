@@ -47,7 +47,7 @@ assert() {
 }
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+trap 'trash "$WORK" 2>/dev/null || true' EXIT
 
 python3 -c "import ast; ast.parse(open('$CM_LIB/_codeowners_match.py').read())" 2>/dev/null
 assert "_codeowners_match.py is syntactically valid python" "$([[ $? -eq 0 ]] && echo 1 || echo 0)"

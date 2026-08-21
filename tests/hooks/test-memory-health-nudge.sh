@@ -12,7 +12,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/session/memory-health-nudge.sh"
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-memory-health-nudge-test.XXXXXX")
-trap 'rm -rf "$TMP"' EXIT
+trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
 pass=0
 fail=0
@@ -28,7 +28,7 @@ MEMDIR="$FAKE_HOME/.claude/projects/$ENC/memory"
 _git() { git -C "$MEMDIR" "$@" >/dev/null 2>&1; }
 
 init_memdir() {
-  rm -rf "$MEMDIR"
+  trash "$MEMDIR" 2>/dev/null || true
   mkdir -p "$MEMDIR"
 }
 
@@ -128,7 +128,7 @@ OUT=$(run_hook)
 # assertion doubles as coverage that template-gap alone never trips the gate.
 assert_not_contains "clean store (incl. template-gap-only) stays fully silent" "[memory-lint]" "$OUT"
 
-rm -rf "$FAKE_HOME/.claude/projects"
+trash "$FAKE_HOME/.claude/projects" 2>/dev/null || true
 OUT=$(run_hook)
 assert_not_contains "no memory dir at all stays silent" "[memory-lint]" "$OUT"
 

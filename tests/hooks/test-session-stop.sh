@@ -72,7 +72,7 @@ out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_present" bash "$DOCTRINE" 2>/d
 rc=$?
 [[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
 assert "silent when mattpocock-skills plugin cache is present" "$ok"
-rm -rf "$fake_home_present"
+trash "$fake_home_present" 2>/dev/null || true
 
 fake_home_absent=$(mktemp -d)
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_absent" bash "$DOCTRINE" 2>/dev/null)
@@ -81,7 +81,7 @@ rc=$?
   && echo "$out" | /usr/bin/grep -q 'mattpocock-skills@mattpocock' \
   && echo "$out" | /usr/bin/grep -q '<!-- /kbg:mattpocock-preflight -->' && ok=1 || ok=0
 assert "warns when mattpocock-skills plugin cache is absent" "$ok"
-rm -rf "$fake_home_absent"
+trash "$fake_home_absent" 2>/dev/null || true
 
 fake_home_disabled=$(mktemp -d)
 mkdir -p "$fake_home_disabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
@@ -93,7 +93,7 @@ rc=$?
 [[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:mattpocock-preflight -->' \
   && echo "$out" | /usr/bin/grep -qi 'installed but disabled' && ok=1 || ok=0
 assert "warns when mattpocock-skills plugin cache is present but disabled in settings.json" "$ok"
-rm -rf "$fake_home_disabled"
+trash "$fake_home_disabled" 2>/dev/null || true
 
 fake_home_enabled=$(mktemp -d)
 mkdir -p "$fake_home_enabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
@@ -104,7 +104,7 @@ out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_enabled" bash "$DOCTRINE" 2>/d
 rc=$?
 [[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
 assert "stays silent when mattpocock-skills is present and explicitly enabled" "$ok"
-rm -rf "$fake_home_enabled"
+trash "$fake_home_enabled" 2>/dev/null || true
 
 echo ""
 echo "=== command-root-anchor hook (SessionStart) ==="
@@ -181,7 +181,7 @@ rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, silent) when CLAUDE_PLUGIN_ROOT is unset" "$ok"
 
-rm -rf "$fake_home" "$clean_dir" "$dirty_dir" "$nodir"
+trash "$fake_home" "$clean_dir" "$dirty_dir" "$nodir" 2>/dev/null || true
 
 echo ""
 echo "=== cost-tracker hook (Stop) ==="
@@ -201,7 +201,7 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
   && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
   && printf '%s' "$row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "echoes payload through + appends one compact JSONL cost row for a valid transcript" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 fake_home=$(mktemp -d)
 payload=$(python3 -c 'import json; print(json.dumps({"transcript_path": "/nonexistent/transcript.jsonl", "session_id": "test-session"}))')
@@ -210,7 +210,7 @@ rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, echoes payload, no metrics row) for a missing transcript" "$ok"
-rm -rf "$fake_home"
+trash "$fake_home" 2>/dev/null || true
 
 # Adversarial: malformed (non-JSON) transcript content. The jq `try fromjson`
 # filter skips unparseable lines → usage is null → no row. Must fail safe.
@@ -223,7 +223,7 @@ rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, no metrics row) for a malformed-JSON transcript" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # Adversarial: assistant line carries usage: null. The jq
 # `select((.message // {}).usage != null)` filter drops it → usage is null → no row.
@@ -240,7 +240,7 @@ rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, no metrics row) when usage is null" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # Adversarial: multi-line transcript (two assistant lines) must aggregate into ONE
 # compact JSONL row with summed tokens, not one row per line.
@@ -260,7 +260,7 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
   && printf '%s' "$row" | /usr/bin/grep -q '"output_tokens":130' \
   && printf '%s' "$row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "aggregates a multi-line transcript into one summed JSONL cost row" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # Adversarial: multi-MODEL transcript (two assistant lines, different `.message.model`)
 # must write ONE row PER MODEL, each model_scoped:true, each carrying only that
@@ -286,7 +286,7 @@ sonnet_row=$(/usr/bin/grep '"model":"claude-sonnet-5"' "$metrics_file" 2>/dev/nu
   && printf '%s' "$opus_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
   && printf '%s' "$sonnet_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "multi-model transcript writes one model_scoped row per model with that model's own tokens" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # Orchestrator-tax split. Claude Code writes the main session to
 # <project>/<session-id>.jsonl and each subagent to its own file under the sibling
@@ -323,7 +323,7 @@ sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
   && printf '%s' "$orch_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
   && printf '%s' "$sub_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "counts subagent transcripts and tags each row with stream + turns + cache_read_per_turn" "$ok"
-rm -rf "$fake_home" "$sess_dir"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 # Fails safe when there is no subagents/ dir at all (the common single-agent session):
 # one orchestrator row, no empty subagent row, no crash from the empty glob.
@@ -340,7 +340,7 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
   && /usr/bin/grep -q '"stream":"orchestrator"' "$metrics_file" \
   && ! /usr/bin/grep -q '"stream":"subagent"' "$metrics_file" && ok=1 || ok=0
 assert "no subagents/ dir → one orchestrator row, no empty subagent row" "$ok"
-rm -rf "$fake_home" "$sess_dir"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 # Per-agent-type breakdown. Claude Code writes an agent-<id>.meta.json sibling next to
 # every agent-<id>.jsonl carrying the real `agentType` (the Agent tool's subagent_type
@@ -372,7 +372,7 @@ orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
   && printf '%s' "$reviewer_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null \
   && printf '%s' "$explore_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "subagent rows split by agent_type (from meta.json sibling) even on the same model; orchestrator row carries agent_type:null" "$ok"
-rm -rf "$fake_home" "$sess_dir"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 # Missing meta.json sibling (older sessions, or a subagent that never got one) must
 # fail safe to agent_type:"unknown" — never drop the row, never crash.
@@ -391,7 +391,7 @@ sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
   && printf '%s' "$sub_row" | /usr/bin/grep -q '"agent_type":"unknown"' \
   && printf '%s' "$sub_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
 assert "subagent transcript with no .meta.json sibling falls back to agent_type:\"unknown\" (fails safe, no crash)" "$ok"
-rm -rf "$fake_home" "$sess_dir"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 # Claude-only tracking (2026-08-07, operator request): a session can run non-Claude
 # models (e.g. via a proxy that swaps ANTHROPIC_BASE_URL — confirmed real in
@@ -412,7 +412,7 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
   && /usr/bin/grep -q '"input_tokens":100' "$metrics_file" \
   && ! /usr/bin/grep -qi 'minimax' "$metrics_file" && ok=1 || ok=0
 assert "non-Claude model turns (minimax-m3) are silently dropped — only the claude-sonnet-5 row is written, with its own tokens, not inflated by the dropped turn" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # A transcript with ONLY non-Claude turns must write no row at all (not a crash, not
 # an empty/garbage row) — the existing "no usage → no row" fail-safe path.
@@ -425,7 +425,7 @@ rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "an all-non-Claude transcript (glm-5.2 only) writes no metrics row at all" "$ok"
-rm -rf "$fake_home" "$transcript"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
@@ -474,7 +474,7 @@ porcelain2=$(cd "$mem_dir" && git status --porcelain)
 [[ "$rc" == "0" && "$log_count2" == "3" && -z "$porcelain2" ]] && ok=1 || ok=0
 assert "edit to an already-tracked file → auto-committed, working tree clean after" "$ok"
 
-rm -rf "$fake_home" "$proj_noopt" "$proj"
+trash "$fake_home" "$proj_noopt" "$proj" 2>/dev/null || true
 
 echo ""
 echo "=== stale-task-nudge hook (Stop) ==="
@@ -542,7 +542,7 @@ rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
 assert "same path-traversal-shaped taskId, fired again → silent (dedup still works, not bypassed by sanitization)" "$ok"
 
-rm -rf "$nudge_fix" "$nudge_home"
+trash "$nudge_fix" "$nudge_home" 2>/dev/null || true
 
 echo ""
 total=$((pass + fail))

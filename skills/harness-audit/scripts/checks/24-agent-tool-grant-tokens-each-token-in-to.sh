@@ -17,10 +17,7 @@ done < <(
     tv=$(fm_get "$f" "tools" --block)
     [ -n "$tv" ] || continue
     for tok in $(echo "$tv" | tr ',' ' '); do
-      # Strip JSON-array brackets and double-quotes so upstream ECC bracket
-      # syntax (`["Read", "Write"]`) validates as `Read Write`.
-      tok="${tok#[}"; tok="${tok%]}"; tok="${tok%\"}"; tok="${tok#\"}"
-      base="${tok%%(*}"
+      base="$(strip_tool_token "$tok")"
       # MCP tools (mcp__<server>__<tool>) are first-class per Claude Code
       # tools-reference — any `mcp__X__Y` token is valid by namespace, not by
       # whitelist. Accept them so agents like docs-lookup (mcp__context7__*) pass.

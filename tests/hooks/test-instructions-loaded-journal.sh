@@ -14,7 +14,7 @@ pass=0
 fail=0
 
 TMP_HOME="$(mktemp -d)"
-trap 'rm -rf "$TMP_HOME"' EXIT
+trap 'trash "$TMP_HOME" 2>/dev/null || true' EXIT
 LOG_FILE="$TMP_HOME/.local/share/kbg/metrics/instructions-loaded.jsonl"
 
 run_hook() {

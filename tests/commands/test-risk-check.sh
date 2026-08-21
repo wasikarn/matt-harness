@@ -43,7 +43,7 @@ assert() {
 }
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+trap 'trash "$WORK" 2>/dev/null || true' EXIT
 
 # --- Extract the embedded python3 classifier (invoked as
 #     `python3 -c '...' "$PR_JSON"`) ---

@@ -82,7 +82,7 @@ rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "7.0000" ]] && ok=1 || ok=0
 assert "legacy streamless row (\$5) + post-fix orchestrator row (\$7, same session+model) dedup to the NEWER row only, not summed (got total=\$${total:-?}, want \$7.0000)" "$ok"
-rm -rf "$fake_home"
+trash "$fake_home" 2>/dev/null || true
 
 # Positive case: two DIFFERENT streams for the same session+model must NOT
 # collide — orchestrator and subagent are genuinely separate spend and both
@@ -99,7 +99,7 @@ rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "5.0000" ]] && ok=1 || ok=0
 assert "orchestrator + subagent rows (same session+model, DIFFERENT stream) both survive dedup and sum (got total=\$${total:-?}, want \$5.0000)" "$ok"
-rm -rf "$fake_home"
+trash "$fake_home" 2>/dev/null || true
 
 # Adversarial case (2026-08-07, agent_type breakdown): two subagent rows, same
 # session+model+stream, DIFFERENT agent_type. Must NOT collide — a kbg:code-reviewer
@@ -122,7 +122,7 @@ total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9
   && printf '%s' "$out" | /usr/bin/grep -q 'kbg:code-reviewer' \
   && printf '%s' "$out" | /usr/bin/grep -q 'Explore' && ok=1 || ok=0
 assert "two subagent rows (same session+model+stream, DIFFERENT agent_type) both survive dedup, sum to \$10, and appear in the By agent type section (got total=\$${total:-?})" "$ok"
-rm -rf "$fake_home"
+trash "$fake_home" 2>/dev/null || true
 
 # Regression (found live, 2026-08-07, running this exact report against real
 # production data): the report's `by()` helper groups over the FULL `latest` array
@@ -152,7 +152,7 @@ agent_section=$(printf '%s' "$out" | awk '/=== By agent type/{f=1;next} /^$/{f=0
   && ! printf '%s' "$out" | /usr/bin/grep -qE '\(unknown\)\s*$' \
   && ! printf '%s' "$out" | /usr/bin/grep -q '(unknown)  ' && ok=1 || ok=0
 assert "By agent type shows only the typed subagent row's own \$2.0000, never the untyped orchestrator row's \$1000, and never prints an (unknown) line" "$ok"
-rm -rf "$fake_home"
+trash "$fake_home" 2>/dev/null || true
 
 echo ""
 total_t=$((pass + fail))

@@ -139,3 +139,13 @@ fm_hook_desc() {
     END { if (!printed && buf != "") print buf }
   ' "$1"
 }
+
+# strip_tool_token — normalize one token from an agent's `tools:` frontmatter
+# value: strips a (specifier) suffix (`Bash(git:*)` -> `Bash`) and JSON-array
+# brackets/quotes (`["Read"]` item -> `Read`, the upstream ECC convention).
+# Shared by checks 24 and 45, which both validate tool-grant tokens.
+strip_tool_token() {
+  local tok="$1"
+  tok="${tok#[}"; tok="${tok%]}"; tok="${tok%\"}"; tok="${tok#\"}"
+  printf '%s' "${tok%%(*}"
+}

@@ -20,7 +20,7 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-gauntlet.XXXXXX")
-trap 'rm -rf "$WORK_TMP"' EXIT
+trap 'trash "$WORK_TMP" 2>/dev/null || true' EXIT
 
 fail=0
 

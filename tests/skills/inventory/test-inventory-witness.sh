@@ -66,7 +66,7 @@ body
 EOF
 
 FIXTURE_OUT=$(bash "$BOUNDARY" "$FIXTURE" 2>/dev/null)
-rm -rf "$FIXTURE"
+trash "$FIXTURE" 2>/dev/null || true
 
 if printf '%s\n' "$FIXTURE_OUT" | grep -qx '### alpha' && printf '%s\n' "$FIXTURE_OUT" | grep -qx '### beta'; then
   ok "distinct bucket subheads (### alpha, ### beta) are grouped, not flattened into one table"

@@ -34,9 +34,17 @@ command -v git >/dev/null 2>&1 || exit 0
 # `ls-files --others` path always reported untracked files, so silently
 # deferring to that config here would turn this hook into a no-op for new
 # memory files on a machine with that setting.
-[ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- . 2>/dev/null)" ] && exit 0
+#
+# Scoped to '*.md' rather than '.' (repo convention is "stage by explicit
+# name, never -A") — this directory's entire designed content is memory .md
+# files the assistant writes, so the glob covers everything the hook is
+# meant to commit (verified: git's glob pathspec recurses into subdirs like
+# _archive/, and also stages deletions of tracked .md files, not just adds).
+# A non-.md file dropped here by hand for the user's own reference is never
+# swept in.
+[ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- '*.md' 2>/dev/null)" ] && exit 0
 
-git -C "$MEMDIR" add -A -- . 2>/dev/null
+git -C "$MEMDIR" add -- '*.md' 2>/dev/null
 git -C "$MEMDIR" commit -m "auto-snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)" --quiet 2>/dev/null
 
 exit 0
