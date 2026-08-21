@@ -236,7 +236,7 @@ per the format above — the priority reasoning belongs only in `Issue:`, never 
 
 ## Approval Criteria
 
-- **Approve**: No CRITICAL or HIGH issues
+- **Approve**: No CRITICAL, HIGH, or MEDIUM issues
 - **Warning**: MEDIUM issues only (can merge with caution)
 - **Block**: CRITICAL or HIGH issues found
 

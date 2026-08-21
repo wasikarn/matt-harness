@@ -104,7 +104,7 @@ route-table ground-truth note preloaded via `kbg:review-lens-nextjs-routing`.
 
 ## Approval Criteria
 
-- **Approve**: No CRITICAL or HIGH issues
+- **Approve**: No CRITICAL, HIGH, or MEDIUM issues
 - **Warning**: MEDIUM issues only (can merge with caution)
 - **Block**: CRITICAL or HIGH issues found
 
