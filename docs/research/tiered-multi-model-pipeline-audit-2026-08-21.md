@@ -108,3 +108,15 @@ diff vs. fix attempts on one static finding set are different task shapes.
 
 Full research (8 primary sources, 4 parallel subagent passes, plus the follow-up pass covered
 here) lives in the llm-wiki dossier cited above — not duplicated here.
+
+## Addendum (2026-08-22): jury framing corrected
+
+The follow-up pass's favorable jury/panel citations (LLMs-as-a-Jury, PoLL) assumed
+error-diverse, cross-family panels. A targeted gap-fill the next day —
+`judge-panel-correlation-vs-tiered-final-review-2026-08-22.md` — found arXiv:2605.29800
+(missed here despite predating this audit): 9 frontier judges across 7 families carry ~2
+effective votes' worth of information, and the best single judge matches or beats the full
+panel in all tested conditions; RoPoLL (arXiv:2606.30931) gives N_eff = N/(1+(N−1)γ),
+saturating around N=3 at typical correlation. For kbg — every tier Claude-family — a panel
+substitute for the gated final review is the worst-case shape of that idea and stays dropped;
+the triage-gated single reviewer is now the evidence-backed choice, not just the default.

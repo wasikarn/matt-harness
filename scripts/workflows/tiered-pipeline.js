@@ -210,6 +210,10 @@ if (!hunt.pass) {
 }
 
 phase('Final')
+// One gated strong judge, not a panel: same-family voters correlate (9 judges ~ 2 effective
+// votes; best single judge >= full panel — arXiv:2605.29800), so a Claude-only panel here
+// would buy ~1 vote of signal for 3x the review cost. See
+// docs/research/judge-panel-correlation-vs-tiered-final-review-2026-08-22.md.
 const minConfidence = Math.min(...confidences)
 const contested = fixAttempts > 0 || minConfidence < CONF_FLOOR
 const forced = args && args.finalReview === 'always'
