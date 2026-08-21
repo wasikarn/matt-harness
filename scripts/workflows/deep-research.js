@@ -20,6 +20,15 @@ export const meta = {
 
 const VOTES_PER_CLAIM = 3
 const REFUTATIONS_REQUIRED = 2
+// Identical prompts to same-family voters produce correlated votes — a 9-judge panel measured
+// ~2 effective votes, with the best single judge >= the full panel (arXiv:2605.29800; see
+// docs/research/judge-panel-correlation-vs-tiered-final-review-2026-08-22.md). Giving each
+// voter a distinct PRIMARY lens decorrelates the panel at zero extra cost.
+const VOTER_LENSES = [
+  "check #1 — is the claim actually supported by the quote, or an overreach/misread?",
+  "check #2 — WebSearch for contradicting evidence from credible sources.",
+  "check #3 — is the source quality sufficient for the claim's strength?",
+]
 const MAX_FETCH = 15
 const MAX_VERIFY_CLAIMS = 25
 
@@ -194,6 +203,7 @@ const FETCH_PROMPT = (source, angle) =>
 const VERIFY_PROMPT = (claim, v) =>
   "## Adversarial Claim Verifier (voter " + (v + 1) + "/" + VOTES_PER_CLAIM + ")\n\n" +
   "Be SKEPTICAL. Try to REFUTE this claim. ≥" + REFUTATIONS_REQUIRED + "/" + VOTES_PER_CLAIM + " refutations kill it.\n\n" +
+  "Your PRIMARY lens — weight it above the rest of the checklist: " + VOTER_LENSES[v % VOTER_LENSES.length] + "\n\n" +
   "## Research question\n" + QUESTION + "\n\n" +
   "## Claim under review\n\"" + claim.claim + "\"\n\n" +
   "**Source:** " + claim.sourceUrl + " (" + claim.sourceQuality + ")\n" +

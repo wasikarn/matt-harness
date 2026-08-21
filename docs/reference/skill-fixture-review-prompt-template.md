@@ -31,6 +31,17 @@ skill produced it — that still needs separate evidence (e.g. a same-topic base
 that got it right unprompted is counter-evidence to "the rule wasn't sticky enough," not
 supporting evidence).
 
+**Second caveat (2026-08-22, research-sourced):** convergence carries weight in proportion
+to how *different* the two routes were. The backend-patterns example above counted because
+the reviewers arrived via different verification paths (package type declarations vs
+Context7 docs). Two same-model-family reviewers reaching the same verdict through the same
+route is one signal counted twice, not two votes — measured directly: 9 same-question
+frontier judges carried ~2 effective votes' worth of information, and the best single judge
+matched or beat the full panel (arXiv:2605.29800; see
+`docs/research/judge-panel-correlation-vs-tiered-final-review-2026-08-22.md`). Rule 4 below
+records the in-repo instance of the same effect (two reviewers double-flagging one shared
+paraphrase). The per-agent PRIMARY lens below exists to force route diversity.
+
 ## When to use it (and when not)
 
 | Situation | Use |
@@ -189,14 +200,24 @@ reviewer's take, so be concrete and specific (line-level where it matters) rathe
 vague.
 ```
 
-**Append this to agent 2's copy only** — the one line that turns "2 copies of the same
-prompt" into genuinely complementary coverage instead of coincidentally-overlapping one:
+**Append a PRIMARY-lens line to EACH copy — a different lens per agent.** One appended
+sentence on one agent is a nudge, not a lens split: same-family models given near-identical
+prompts converge on the same reads (correlation caveat above), so each agent gets a
+distinct primary emphasis while keeping the full instructions for coverage — the same
+mechanism as `scripts/workflows/deep-research.js`'s `VOTER_LENSES`:
 
 ```text
-Pay particular attention to [ONE specific domain angle agent 1's prompt above doesn't
-name — e.g. concurrency/race conditions across the replicas mentioned in eval-0's
-prompt, or whether the rate limiter in eval-2 is atomic under concurrent requests (a
-classic read-then-write race in a naive Redis INCR-without-expire implementation)].
+[agent 1's copy] Your PRIMARY lens — weight it above everything else: assertion-vs-code
+verification. Trace each stated assertion through the actual code path and test checkable
+claims empirically; treat prose claims about behavior as unverified until the code shows it.
+```
+
+```text
+[agent 2's copy] Your PRIMARY lens — weight it above everything else: [ONE specific domain
+failure-mode angle the assertions don't name — e.g. concurrency/race conditions across
+the replicas mentioned in eval-0's prompt, or whether the rate limiter in eval-2 is
+atomic under concurrent requests (a classic read-then-write race in a naive Redis
+INCR-without-expire implementation)].
 ```
 
 Picking that angle takes judgment — read the eval prompts and name the failure mode
@@ -242,8 +263,11 @@ names, assertions) change every time; these five don't:
 
 Reconcile before touching the target file:
 
-- A finding **both** agents hit independently → high confidence it's real; still separate
-  "the bug exists" from "here's why the target caused it" (see caveat above).
+- A finding **both** agents hit independently → high confidence *when they arrived via
+  different routes/lenses* (different evidence, different verification path); a same-route
+  double-hit from two same-family reviewers is one signal counted twice, not two (see the
+  correlation caveat above) — treat it as single-sourced with two copies. Either way, still
+  separate "the bug exists" from "here's why the target caused it."
 - A finding **one** agent hit → record it, but it's single-sourced — worth fixing if it
   traces to a specific clause in the target file, worth noting as fixture-only otherwise.
 - Before crediting any finding to the target itself, grep the current target file for the

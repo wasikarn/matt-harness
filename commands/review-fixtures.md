@@ -169,14 +169,18 @@ the note.
 Dispatch both as `Agent` tool calls with `subagent_type: general-purpose` (needs
 Read/Grep/Glob/Bash — Bash for the "verify empirically" instruction, e.g. a quick Node
 snippet to check a numeric/timing claim) **in the same message**, so they run independently
-with no shared context. Separate turns defeat the point of independent review.
+with no shared context. Separate turns defeat the point of independent review. Each copy
+carries its own PRIMARY-lens line per the reference template — two identical prompts to
+two same-family agents is one reviewer counted twice, not two.
 
 ### 7. Reconcile
 
 Once both return, follow the reference doc's "After both agents return" section:
 
-- Both agents hit it independently → high confidence it's real; still separate "the bug
-  exists" from "here's why the target caused it."
+- Both agents hit it independently *via different routes/lenses* → high confidence it's
+  real; a same-route double-hit is one signal counted twice (same-family reviewers
+  correlate — see the reference doc's correlation caveat). Still separate "the bug exists"
+  from "here's why the target caused it."
 - Only one agent hit it → record it, single-sourced.
 - Before crediting anything to the target, grep the *current* target file (Step 1) for the
   relevant example/rule. No trace found → fixture artifact, not a real gap.
