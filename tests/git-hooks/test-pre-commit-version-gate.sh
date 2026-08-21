@@ -155,8 +155,20 @@ rm -f "$FIX/skills/harness-audit/scripts/audit-ran"
 mkdir -p "$FIX/tools"
 git -C "$FIX" mv scripts/base.sh tools/base.sh
 run_hook >/dev/null 2>&1
-[ -f "$FIX/skills/harness-audit/scripts/audit-ran" ]
-check "git mv scripts/→tools/ still launches the audit layer (witness file)" $?
+if [ -f "$FIX/skills/harness-audit/scripts/audit-ran" ]; then witness=0; else witness=1; fi
+check "git mv scripts/→tools/ still launches the audit layer (witness file)" "$witness"
+reset_fixture
+
+# 12. Same version but DIFFERENT descriptions across the two manifests →
+# blocked (sync-seam: the description string lives in both files with no
+# shared source; drifted for real 2026-08-22 — marketplace.json rewritten,
+# plugin.json left carrying a stale count).
+printf '{"name":"fix","version":"v0.0.1","description":"new text"}\n' > "$FIX/.claude-plugin/plugin.json"
+printf '{"plugins":[{"name":"fix","version":"v0.0.1","description":"old text"}]}\n' > "$FIX/.claude-plugin/marketplace.json"
+git -C "$FIX" add .claude-plugin
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -ne 0 ] && grep -q "description mismatch" <<<"$out"
+check "manifest description mismatch → blocked (sync-seam)" $?
 reset_fixture
 
 echo

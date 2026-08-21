@@ -173,6 +173,17 @@ run_version_layer() {
     echo "  manifest version mismatch: plugin.json $staged_v vs marketplace.json $market_v" >&2
     rc=1
   fi
+  # Description sync-seam: the same description string lives in BOTH manifests
+  # with no shared source — drifted for real on 2026-08-22 (marketplace.json
+  # rewritten, plugin.json left carrying a stale count). Index copies compared,
+  # so staging a description edit in only one file blocks here.
+  local staged_d market_d
+  staged_d="$(git show :.claude-plugin/plugin.json 2>/dev/null | jq -r '.description // ""')"
+  market_d="$(git show :.claude-plugin/marketplace.json 2>/dev/null | jq -r '.plugins[0].description // ""')"
+  if [ "$staged_d" != "$market_d" ]; then
+    echo "  manifest description mismatch: plugin.json and marketplace.json must carry the identical description string" >&2
+    rc=1
+  fi
   local shipped=0
   # Runtime-served content beyond the 6 surface dirs counts as shipped:
   # doctrine-bootstrap injects docs/METHODOLOGY.md and decide/score-decision
