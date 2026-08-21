@@ -6,10 +6,12 @@
 // Verdicts are schema-forced; every branch decision is computed in this script,
 // never taken from model prose (CLAUDE.md § Architecture, maker≠checker).
 // Nothing here commits, pushes, or ships — the result returns to a human.
-// KNOWN LIMIT (verified 2026-08-21, 5-form probe): this environment runs every
-// subagent — Workflow opts.model, opts.agentType's own model pin, and the plain
-// Agent tool's model param alike — on the session default model. The pins below
-// are declared intent, honored only where the platform supports per-agent override.
+// KNOWN LIMIT (root-caused 2026-08-21, 6-form probe + official docs): when the
+// CLAUDE_CODE_SUBAGENT_MODEL env var is set (this operator's dotfiles set it to
+// "sonnet"), it overrides opts.model, opts.agentType's pin, and Agent-tool model
+// params for EVERY subagent — documented as first in the resolution order
+// (code.claude.com/docs/en/sub-agents.md). Set it to "inherit" or unset it to
+// restore the per-stage pins below; they are correct declared intent either way.
 // The load-bearing separation (fresh context per stage, deterministic branching,
 // capped retries, triage-gated final tier) holds regardless of which model runs.
 // Usage: Workflow({scriptPath: 'scripts/workflows/tiered-pipeline.js',
