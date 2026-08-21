@@ -31,6 +31,21 @@
 # splits or merges a block produces an unseen hash — either a spurious re-fire
 # on unchanged content, or (if a half now falls under the size floor) a
 # silently orphaned allowlist entry. Acceptable for a WARN-only advisory check.
+#
+# Second known ceiling, confirmed by a live miss (2026-08-21): when 3+ files
+# share one byte-identical block, `seen`'s dedup-by-hash-pair prints only ONE
+# pair from that cluster, so the WARN line names two files when more share the
+# drift. This already produced a wrong artifact: GH #74 was filed naming only
+# python-reviewer.md's Approve-tier wording, because nextjs-reviewer.md's
+# identical block rode along under the same hash and never surfaced as its own
+# WARN — found after the fact by a fresh-context compliance-audit verifier
+# reading the raw files, not this check's output. A human triaging a WARN here
+# should grep the snippet across the fleet before scoping a fix to the two
+# named files.
+#
+# Third known ceiling: the markdown-table skip (`b.lstrip().startswith("|")`)
+# drops a whole block on ANY leading `|`, not per-line — a block that mixes a
+# table with surrounding prose loses the prose too, not just the table rows.
 if command -v python3 >/dev/null 2>&1; then
   # One python pass over the whole fleet; emits "<fileA>\t<fileB>\t<jaccard>\t<snippet>"
   # per unallowlisted drift candidate. Process substitution (not a pipe) keeps
