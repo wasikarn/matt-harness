@@ -1,6 +1,8 @@
 ---
 description: Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent.
 name: summarize
+model: inherit
+effort: low
 ---
 
 # Summarize

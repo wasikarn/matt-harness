@@ -4,6 +4,8 @@ description: Diagnosis + design for latency-sensitive systems, realtime dashboar
 bucket: patterns
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Latency Critical Systems

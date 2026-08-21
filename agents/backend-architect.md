@@ -4,6 +4,7 @@ description: Backend systems architect — API contracts, service boundaries, da
 bucket: design
 model: opus
 tools: [Read, Grep, Glob, Bash]
+effort: high
 ---
 
 ## Prompt Defense Baseline

@@ -4,6 +4,8 @@ description: Fowler smells, React/Next.js & Node.js patterns, false positives, a
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Code-Quality Baseline Reference

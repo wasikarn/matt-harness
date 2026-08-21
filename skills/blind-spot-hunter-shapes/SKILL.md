@@ -4,6 +4,8 @@ description: Catalog of 7 highest-yield blind-spot shapes (cross-file, framework
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Blind-Spot Hunt Shapes Reference

@@ -1,6 +1,8 @@
 ---
 name: kbg-help
 description: "kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'."
+model: inherit
+effort: low
 ---
 
 # /kbg-help — kbg-harness quick reference

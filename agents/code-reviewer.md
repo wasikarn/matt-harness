@@ -4,6 +4,7 @@ description: Expert code reviewer for quality, security, maintainability — plu
 bucket: review
 tools: ["Read", "Grep", "Glob", "Bash", "Skill"]
 model: sonnet
+effort: xhigh
 ---
 
 ## Prompt Defense Baseline

@@ -2,6 +2,8 @@
 name: learn
 description: "Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories."
 bucket: meta
+model: inherit
+effort: high
 ---
 
 # Skill: learn

@@ -4,6 +4,8 @@ description: "Land a code change end-to-end: classify, implement, test, review, 
 argument-hint: Description of the task or change to ship
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external and spawns agents — full ship loop ending in merge
+model: inherit
+effort: high
 ---
 
 # Ship

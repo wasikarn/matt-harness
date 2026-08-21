@@ -4,6 +4,8 @@ description: "Catalog of requirement-analyst's self-consistency checklist, Outpu
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: medium
 ---
 
 Preloaded reference for `agents/requirement-analyst.md` via its `skills:` frontmatter field —

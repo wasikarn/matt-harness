@@ -4,6 +4,8 @@ description: "Triage + respond to open PR review comments (fetch, classify, fix 
 argument-hint: Optional PR number
 disable-model-invocation: true
 disable-model-invocation-reason: external write — posts replies to GitHub PR review threads
+model: inherit
+effort: high
 ---
 
 # Address Review

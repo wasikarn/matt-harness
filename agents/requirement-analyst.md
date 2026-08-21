@@ -6,6 +6,7 @@ tools: ["Read", "Grep", "Glob"]
 model: opus
 skills:
   - kbg:requirement-analyst-format
+effort: medium
 ---
 
 ## Tool guardrails

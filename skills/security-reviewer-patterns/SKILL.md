@@ -4,6 +4,8 @@ description: Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, 
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Security-Reviewer Concrete Patterns Reference

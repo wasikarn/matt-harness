@@ -4,6 +4,8 @@ description: "Drizzle ORM patterns: schema, type inference, migrations, query bu
 bucket: patterns
 metadata:
   origin: kbg
+model: inherit
+effort: high
 ---
 
 # Drizzle ORM Patterns

@@ -2,6 +2,8 @@
 name: orchestrate
 description: "Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review."
 bucket: workflow
+model: inherit
+effort: high
 ---
 
 # Orchestrate

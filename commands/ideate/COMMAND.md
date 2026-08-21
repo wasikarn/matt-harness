@@ -4,6 +4,8 @@ description: "Parallel divergent ideation (5 isolated agents, rotating frames, n
 argument-hint: Problem statement to ideate on
 disable-model-invocation: false
 disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout below — NOT by this flag.
+model: inherit
+effort: high
 ---
 
 # Ideate

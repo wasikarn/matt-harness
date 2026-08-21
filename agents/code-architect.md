@@ -2,8 +2,9 @@
 name: code-architect
 description: Designs feature architectures by analyzing existing codebase patterns and conventions, then providing implementation blueprints with concrete files, interfaces, data flow, and build order.
 bucket: design
-model: sonnet
+model: opus
 tools: [Read, Grep, Glob, Bash]
+effort: high
 ---
 
 ## Prompt Defense Baseline

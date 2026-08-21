@@ -2,6 +2,8 @@
 name: review-pr
 description: "Scan a PR review (quality/tests/security/types/db) via multiple agents. Use when a PR is ready, by number/branch. Don't use for quick diffs. Thai: 'รีวิว PR'."
 bucket: review
+model: inherit
+effort: high
 ---
 
 # Comprehensive PR Review

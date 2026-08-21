@@ -4,6 +4,8 @@ description: Frontend architecture, component design, and rendering optimization
 bucket: patterns
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Frontend Development Patterns

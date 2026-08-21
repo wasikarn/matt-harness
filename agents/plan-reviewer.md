@@ -9,6 +9,7 @@ model: opus
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - kbg:plan-reviewer-format
+effort: xhigh
 ---
 
 ## Prompt Defense Baseline

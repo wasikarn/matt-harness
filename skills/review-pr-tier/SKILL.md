@@ -4,6 +4,8 @@ description: "Tier and scrutinize kbg:review-pr's findings (SCRUTINIZE-4, advers
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Comprehensive PR Review — Tier Findings (Phase 5)

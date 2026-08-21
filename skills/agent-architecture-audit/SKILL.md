@@ -4,6 +4,8 @@ description: Scan 12-layer agent stacks, regression, memory pollution, tool disc
 bucket: meta
 metadata:
   origin: oh-my-agent-check (via ECC)
+model: inherit
+effort: high
 ---
 
 # Agent Architecture Audit

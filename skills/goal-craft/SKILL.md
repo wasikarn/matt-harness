@@ -6,6 +6,8 @@ metadata:
   origin: kbg-native
   adapted-from: "goal-spec (retired a518ad1, orphaned from c35afcc)"
 argument-hint: "The freeform task description to turn into a /goal condition"
+model: inherit
+effort: high
 ---
 
 # Goal Craft

@@ -9,6 +9,7 @@ tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - kbg:spec-miner-anti-patterns
+effort: high
 ---
 
 ## Tool guardrails

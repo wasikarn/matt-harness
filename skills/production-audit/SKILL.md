@@ -4,6 +4,8 @@ description: Scan production readiness pre-launch. Use when asked whether an app
 bucket: review
 metadata:
   origin: community
+model: inherit
+effort: high
 ---
 
 # Production Audit

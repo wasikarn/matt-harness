@@ -9,6 +9,7 @@ model: sonnet
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - kbg:performance-optimizer-algorithms
+effort: high
 ---
 
 ## Prompt Defense Baseline

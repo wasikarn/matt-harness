@@ -4,6 +4,8 @@ description: "Draft a post-mortem for a resolved bug (trigger/mechanism/patch/va
 argument-hint: Optional bug ID, Jira key, or summary
 disable-model-invocation: true
 disable-model-invocation-reason: writes a canonical doc (and optional tracker post) — user decides to record
+model: inherit
+effort: high
 ---
 
 # Post-Mortem

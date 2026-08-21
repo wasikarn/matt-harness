@@ -4,6 +4,8 @@ description: Scan a design system for token/visual consistency and AI-slop detec
 bucket: design
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Design System — Generate & Audit Visual Systems

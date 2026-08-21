@@ -6,6 +6,8 @@ model_limitation: "lexical-tell catalog currency (assumes current-gen LLM output
 metadata:
   origin: kbg-native
   restored-from: "c452102 reset (last shipped v0.2.109, df012d8, 2026-06-20)"
+model: inherit
+effort: high
 ---
 
 # Tech-Humanize: Remove AI Writing Patterns from Dev/Tech Writing (EN + TH)

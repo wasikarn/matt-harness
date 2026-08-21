@@ -4,6 +4,8 @@ description: Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: medium
 ---
 
 # Next.js App Router Conventions & Middleware Reference

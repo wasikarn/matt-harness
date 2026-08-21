@@ -4,6 +4,8 @@ description: Catalog of plan-reviewer's Output Format YAML template and Anti-Pat
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Plan-Reviewer Output Format & Anti-Patterns Reference

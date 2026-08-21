@@ -4,6 +4,8 @@ description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge
 argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — cuts a release (tag/merge/publish)
+model: inherit
+effort: high
 ---
 
 # Ship Release

@@ -4,6 +4,8 @@ description: "Pre-flight gate + review checklist against loop failure modes — 
 bucket: meta
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Loop Design + Review

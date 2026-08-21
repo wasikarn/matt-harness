@@ -4,6 +4,8 @@ description: "Fix-authenticity checklist for code-reviewer's fix: dispatch. Use 
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Fix-Authenticity Lens

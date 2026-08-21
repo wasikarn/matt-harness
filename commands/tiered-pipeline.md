@@ -3,6 +3,8 @@ name: tiered-pipeline
 description: "Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Don't use for quick edits or PR review."
 disable-model-invocation: true
 disable-model-invocation-reason: Spawns a multi-agent Workflow that edits real files with no in-flow AskUserQuestion gate, and the Workflow tool's own doctrine requires explicit user opt-in for multi-agent orchestration — the typed command IS that opt-in. Ambient prose like "run the pipeline on this" must never trigger 4-10 agents unprompted.
+model: inherit
+effort: low
 ---
 
 # The tiered-pipeline command

@@ -4,6 +4,8 @@ description: Catalog of UI-polish details — spacing, borders, shadows, motion,
 bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
+model: inherit
+effort: high
 ---
 
 # Make Interfaces Feel Better

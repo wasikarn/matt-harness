@@ -4,6 +4,8 @@ description: Eval-driven development (EDD) framework for Claude Code. Use when s
 bucket: meta
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Eval Harness Skill

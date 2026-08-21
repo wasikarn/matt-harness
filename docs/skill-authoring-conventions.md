@@ -73,6 +73,24 @@ assumes current-gen LLM output still carries the enumerated tells (em dash, delv
 rule-of-three), which decays across model generations. No shell check enforces re-verification
 today — it's a human-cadence pointer, not a gate.
 
+**Explicit `model:` + `effort:` on every surface (fleet convention, v0.68.430):** every file in
+`agents/`, `commands/*.md` + `commands/*/COMMAND.md`, and `skills/*/SKILL.md` carries both keys
+explicitly — a new surface must ship with them. Rules: skills/commands always use
+`model: inherit` (a main-thread `model:` value switches the session model for the REST OF THE
+TURN — official skills.md frontmatter reference — so a concrete pin there is a footgun unless the
+skill runs `context: fork`); effort tiers are low = script wrapper/display, medium =
+deterministic tooling + bounded interpretation, high = normal judgment (the doc default), xhigh =
+reserved for surfaces whose own procedure contains an independent re-check step (fresh-context
+refute, re-score, drift guard) — the falsifiable membership test from the 2026-08-22 verifier
+round. A support skill that an agent preloads via `skills:` frontmatter OR runtime-`Skill()`-loads
+must carry the SAME effort as its host agent (preload-vs-agent effort precedence is undocumented
+platform behavior — matching values moots it). Deliberate exceptions: `frontend-patterns` and
+`typescript-patterns` stay `high` despite medium reviewer hosts (dual-use; main-thread coding
+dominates). The 26 command entrypoints only — `commands/*/references/*.md` fragments stay
+unstamped. Scope facts: skill/command `effort:` applies only while the surface is active;
+`CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
+harness-audit check 21 accepts `inherit` as an agent model value.
+
 **Escalation to `AskUserQuestion`:** a branch belongs in the passive footer only while it's
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
 every branch is already true/decidable right now and there's no sensible default, that's a

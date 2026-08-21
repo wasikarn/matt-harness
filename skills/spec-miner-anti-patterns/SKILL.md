@@ -4,6 +4,8 @@ description: Catalog of spec-miner's 10 Anti-Patterns FAIL list. Auto-loads when
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: high
 ---
 
 # Spec-Miner Anti-Patterns Reference

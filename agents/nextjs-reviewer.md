@@ -10,6 +10,7 @@ model: sonnet
 skills:
   - kbg:frontend-patterns
   - kbg:review-lens-nextjs-routing
+effort: medium
 ---
 
 ## Prompt Defense Baseline

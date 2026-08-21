@@ -2,6 +2,8 @@
 description: Generate a local Claude Code cost report from the cost-tracker metrics log.
 name: cost-report
 argument-hint: [csv]
+model: inherit
+effort: low
 ---
 
 # Cost Report

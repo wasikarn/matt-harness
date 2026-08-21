@@ -3,6 +3,8 @@ name: ask-kbg
 description: "Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (the user types /mattpocock-skills:ask-matt)."
 disable-model-invocation: true
 disable-model-invocation-reason: explicit discovery aid — auto-firing would compete with kbg:inventory and /kbg-help for the same routing-language triggers; the user asks by name when they want a live recommendation or the narrative map
+model: inherit
+effort: high
 ---
 
 # Ask KBG

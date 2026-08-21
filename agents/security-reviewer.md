@@ -3,12 +3,13 @@ name: security-reviewer
 description: Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth.
 bucket: review
 tools: ["Read", "Bash", "Grep", "Glob"]
-model: sonnet
+model: opus
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
 # independent of the Skill tool. Do NOT remove as "inert" — check 54 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - kbg:security-reviewer-patterns
+effort: xhigh
 ---
 
 ## Prompt Defense Baseline

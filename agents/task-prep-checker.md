@@ -4,6 +4,7 @@ description: "Fresh-context verifier for a task-prep prompt. Runs the golden-rul
 bucket: analysis
 model: opus
 tools: ["Read", "Glob", "Grep"]
+effort: medium
 ---
 
 ## Tool guardrails

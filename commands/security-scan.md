@@ -3,6 +3,8 @@ description: Run AgentShield against agent, hook, MCP, permission, and secret su
 name: security-scan
 metadata:
   origin: ECC
+model: inherit
+effort: medium
 ---
 
 # Security Scan Command

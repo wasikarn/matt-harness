@@ -4,6 +4,8 @@ description: "gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, Ty
 bucket: patterns
 metadata:
   origin: kbg
+model: inherit
+effort: high
 ---
 
 # gRPC Patterns for Node.js / Bun

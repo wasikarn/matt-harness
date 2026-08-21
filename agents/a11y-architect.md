@@ -4,6 +4,7 @@ description: Accessibility specialist, audits UI/design systems for WCAG 2.2 AA 
 bucket: review
 model: sonnet
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
+effort: medium
 ---
 
 ## Prompt Defense Baseline

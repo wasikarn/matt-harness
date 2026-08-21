@@ -2,6 +2,8 @@
 name: review-dashboard
 description: "List every in-flight PR review's status in one table, or drill into one PR/branch. Don't use for merge decisions (/ship-merge) or running a review (kbg:review-pr)."
 argument-hint: "[pr-number|branch]"
+model: inherit
+effort: medium
 ---
 
 # Review Dashboard

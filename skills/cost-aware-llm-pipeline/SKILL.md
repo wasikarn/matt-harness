@@ -4,6 +4,8 @@ description: "Compact LLM-pipeline cost: model routing, prompt caching, retry. U
 bucket: patterns
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Cost-Aware LLM Pipeline

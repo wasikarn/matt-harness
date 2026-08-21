@@ -4,6 +4,8 @@ description: WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for form
 bucket: patterns
 metadata:
   origin: ECC + community (via ECC)
+model: inherit
+effort: high
 ---
 
 # Accessibility (WCAG 2.2)

@@ -4,6 +4,8 @@ description: Scan context-window consumption across agents/skills/MCP/rules; fla
 bucket: meta
 metadata:
   origin: ECC
+model: inherit
+effort: medium
 ---
 
 # Context Budget

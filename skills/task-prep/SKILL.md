@@ -6,6 +6,8 @@ argument-hint: "[draft prompt or 'interview me']"
 allowed-tools: AskUserQuestion Agent Read Glob Grep
 metadata:
   origin: kbg-native
+model: inherit
+effort: high
 ---
 
 ## Design checks (matt-pocock authoring doctrine)

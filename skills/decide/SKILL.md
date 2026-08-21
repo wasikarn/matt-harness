@@ -8,6 +8,8 @@ metadata:
     - docs/reference/judgment-ladder.md
     - docs/reference/decision-doctrine-map.md
     - docs/reference/strategic-judgment.md
+model: inherit
+effort: xhigh
 ---
 
 # decide

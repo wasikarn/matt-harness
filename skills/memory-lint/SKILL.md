@@ -2,6 +2,8 @@
 name: memory-lint
 description: "Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health."
 bucket: meta
+model: inherit
+effort: medium
 ---
 
 # memory-lint

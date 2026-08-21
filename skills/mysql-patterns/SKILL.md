@@ -4,6 +4,8 @@ description: MySQL/MariaDB schema, query, indexing, transaction, replication, an
 bucket: patterns
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # MySQL Patterns

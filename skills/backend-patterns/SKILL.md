@@ -4,6 +4,8 @@ description: Backend architecture, API design, and DB optimization for Node.js/N
 bucket: patterns
 metadata:
   origin: ECC
+model: inherit
+effort: high
 ---
 
 # Backend Development Patterns

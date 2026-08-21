@@ -9,6 +9,7 @@ tools: [Read, Grep, Glob, Bash]
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - kbg:blind-spot-hunter-shapes
+effort: xhigh
 ---
 
 ## Prompt Defense Baseline

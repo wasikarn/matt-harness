@@ -3,6 +3,8 @@ name: ideate-search
 description: "Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research)."
 disable-model-invocation: true
 disable-model-invocation-reason: This is a user-only slash command. The model should never invoke it unprompted; the user explicitly asks for a memory search. The command is a read-only reporter against local state, so it is safe for the model to run when the user types it.
+model: inherit
+effort: low
 ---
 
 # The ideate-search command

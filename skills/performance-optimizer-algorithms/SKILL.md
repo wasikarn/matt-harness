@@ -4,6 +4,8 @@ description: Catalog of performance-optimizer's 14-row algorithmic-complexity pa
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: high
 ---
 
 # Performance Optimizer — Algorithmic Analysis Reference

@@ -2,6 +2,8 @@
 name: harness-audit
 description: "Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (kbg:security-auditor)."
 bucket: meta
+model: inherit
+effort: medium
 ---
 
 # Harness Audit

@@ -2,6 +2,8 @@
 name: risk-check
 description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /kbg:ship-merge for the decision."
 argument-hint: "[pr-number|branch]"
+model: inherit
+effort: low
 ---
 
 # Risk Check

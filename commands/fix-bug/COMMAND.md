@@ -2,6 +2,8 @@
 name: fix-bug
 description: "Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean)."
 argument-hint: Optional bug description or repro steps
+model: inherit
+effort: high
 ---
 
 # Fix Bug

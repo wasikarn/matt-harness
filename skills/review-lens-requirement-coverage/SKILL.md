@@ -4,6 +4,8 @@ description: Requirement-coverage checklist for code-reviewer's ticket-gap dispa
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Requirement-Coverage Lens

@@ -4,6 +4,8 @@ description: DB/SQL query-safety checklist for code-reviewer's db-aspect dispatc
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # DB/SQL Query Safety Lens

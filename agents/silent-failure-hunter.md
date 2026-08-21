@@ -4,6 +4,7 @@ description: Review code for silent failures, swallowed errors, bad fallbacks, a
 bucket: review
 model: sonnet
 tools: [Read, Grep, Glob, Bash]
+effort: high
 ---
 
 ## Prompt Defense Baseline

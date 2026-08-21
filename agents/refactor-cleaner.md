@@ -4,6 +4,7 @@ description: Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Id
 bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
+effort: high
 ---
 
 ## Prompt Defense Baseline

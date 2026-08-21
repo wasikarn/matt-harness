@@ -4,6 +4,8 @@ description: "Merge a PR safely: validate, server-side merge, cleanup, monitor C
 argument-hint: Optional PR number or branch name
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — merges a PR server-side
+model: inherit
+effort: high
 ---
 
 # Ship Merge

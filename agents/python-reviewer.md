@@ -4,6 +4,7 @@ description: "Expert Python reviewer: PEP 8, Pythonic idioms, type hints, securi
 bucket: review
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
+effort: medium
 ---
 
 ## Prompt Defense Baseline

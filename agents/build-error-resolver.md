@@ -4,6 +4,7 @@ description: Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, 
 bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
+effort: medium
 ---
 
 ## Prompt Defense Baseline

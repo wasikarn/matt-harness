@@ -4,6 +4,8 @@ description: Catalog of summarizer's Output Format templates, word-level compres
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: medium
 ---
 
 # Summarizer Output Format & Compression Reference

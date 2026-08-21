@@ -4,6 +4,8 @@ description: Catalog of code-implementer's Failure modes to avoid and Report for
 bucket: agent-support
 metadata:
   origin: kbg
+model: inherit
+effort: xhigh
 ---
 
 # Code-Implementer Failure Modes & Report Format Reference

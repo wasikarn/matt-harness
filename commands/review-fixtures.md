@@ -2,6 +2,8 @@
 name: review-fixtures
 description: "Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (kbg:code-reviewer) or skill-creator's own quantitative grading/benchmark step."
 argument-hint: <skill/agent/command-name> [iteration-path]
+model: inherit
+effort: high
 ---
 
 # /review-fixtures — 2-agent independent fixture review

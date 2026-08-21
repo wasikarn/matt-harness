@@ -4,6 +4,8 @@ description: "Frontend-design-direction: typography, layout, tone, and motion. U
 bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
+model: inherit
+effort: high
 ---
 
 # Frontend Design Direction

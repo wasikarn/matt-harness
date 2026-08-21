@@ -2,6 +2,8 @@
 name: security-auditor
 description: "Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review."
 bucket: review
+model: inherit
+effort: xhigh
 ---
 
 # Security Auditor

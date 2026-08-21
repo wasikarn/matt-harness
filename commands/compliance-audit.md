@@ -4,6 +4,8 @@ description: "Audit a completed implementation against its approved plan via fre
 argument-hint: Optional path to the plan file, PR number, or commit range
 disable-model-invocation: true
 disable-model-invocation-reason: costly multi-agent fan-out that gates a done-declaration — user decides when the audit runs, not the model
+model: inherit
+effort: xhigh
 ---
 
 # Implementation Compliance Audit

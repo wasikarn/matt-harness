@@ -2,6 +2,8 @@
 name: add-surface
 description: Build or remove a plugin surface (agent, skill, command, hook, output-style, theme). Use when creating one in an auto-discovered directory. Don't use for editing content.
 bucket: meta
+model: inherit
+effort: medium
 ---
 
 **Auto-discovered directories:** `agents/`, `skills/`, `commands/`, `hooks/`, `output-styles/`, `themes/`.

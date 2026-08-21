@@ -4,6 +4,8 @@ description: "Bounded, human-gated improve loop for a skill/agent/command's SKIL
 argument-hint: <skill/agent/command-name> [iteration-path]
 disable-model-invocation: true
 disable-model-invocation-reason: mutates real, shipped skill content — user-only per CLAUDE.md's no-model-self-start invariant
+model: inherit
+effort: high
 ---
 
 # /iterate-skill — bounded improve loop for body content

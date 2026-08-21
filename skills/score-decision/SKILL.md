@@ -5,6 +5,8 @@ bucket: meta
 disable-model-invocation: true
 disable-model-invocation-reason: on-demand formal scorer — the model applies Decision Scoring (METHODOLOGY Rule 14) inline by default; this skill is the explicit, structured artifact the operator requests when a decision needs a traceable verdict
 argument-hint: "The pending decision to score"
+model: inherit
+effort: high
 ---
 
 # Score a Decision

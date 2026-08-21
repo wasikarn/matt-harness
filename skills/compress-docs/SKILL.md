@@ -4,6 +4,8 @@ description: "Compact a bloated markdown doc for tokens; verify-before-overwrite
 bucket: meta
 metadata:
   origin: JuliusBrussee/caveman (caveman-compress skill, safety pattern adapted — compression technique is kbg-native, not caveman-grammar)
+model: inherit
+effort: medium
 ---
 
 # Compress Docs

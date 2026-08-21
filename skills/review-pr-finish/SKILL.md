@@ -4,6 +4,8 @@ description: "Finish kbg:review-pr's tiered findings — decide submit/fix, writ
 bucket: review
 metadata:
   origin: kbg
+model: inherit
+effort: high
 ---
 
 # Comprehensive PR Review — Present + Summary (Phases 6-7)
