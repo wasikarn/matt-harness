@@ -185,8 +185,8 @@ rm -f "$STATE_FILE"
 run
 assert_eq "case13e: missing state still stops (exit)" "$GOT_EXIT" "1"
 assert_eq "case13e: missing state still stops (reason)" "$GOT_REASON" "missing-state"
-[ ! -f "$STATE_FILE" ]
-assert_eq "case13e: persist created no file" "$?" "0"
+if [ -f "$STATE_FILE" ]; then created="yes"; else created="no"; fi
+assert_eq "case13e: persist created no file" "$created" "no"
 
 # 13d: read-only state dir — stdout/exit contract unchanged (the plan-review
 # High finding: a persist failure must never flip a continue into a stop)
