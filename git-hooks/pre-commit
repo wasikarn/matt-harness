@@ -2,7 +2,7 @@
 # Pre-commit gate for the kbg-harness plugin repo.
 #
 # This repo is the single source of truth for the harness fleet (agents/,
-# skills/, commands/, hooks/, scripts/, output-styles/, themes/) — the flat
+# skills/, commands/, hooks/, scripts/, contexts/, output-styles/, themes/) — the flat
 # (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
@@ -32,7 +32,7 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-mapfile -t STAGED < <(git diff --cached --name-only --diff-filter=ACMR)
+mapfile -t STAGED < <(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR)
 
 fail=0
 
@@ -130,14 +130,19 @@ run_audit_layer() {
 # Decide whether the version-bump layer needs to run. Uses a full staged list
 # (no --diff-filter): deleting a shipped file invalidates the plugin cache the
 # same as editing one, so deletions must count here even though STAGED above
-# filters them out.
+# filters them out. --no-renames: a `git mv scripts/a.sh tools/a.sh` otherwise
+# emits ONLY the destination path, so a rename OUT of a shipped dir would skip
+# the layer while still removing cached content (compliance-audit adversarial
+# find, 2026-08-21, verified empirically). core.quotepath=false: a non-ASCII
+# filename is otherwise emitted as a "quoted" literal that defeats the case
+# patterns (same audit).
 version_check_needed=0
 while IFS= read -r f; do
   case "$f" in
     agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*)
       version_check_needed=1 ;;
   esac
-done < <(git diff --cached --name-only)
+done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
 
 # ---- Layer 3: version-bump gate ----
 # Shipped-surface content staged ⇒ plugin.json version must differ from HEAD
@@ -175,7 +180,7 @@ run_version_layer() {
     case "$f" in
       agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
     esac
-  done < <(git diff --cached --name-only)
+  done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
   if [ "$shipped" -eq 1 ]; then
     head_v="$(git show HEAD:.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
     if [ -n "$head_v" ] && [ "$head_v" != "null" ] && [ "$staged_v" = "$head_v" ]; then

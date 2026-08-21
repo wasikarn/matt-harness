@@ -37,11 +37,13 @@ write_manifests() { # write_manifests <version>
 }
 
 # Baseline: manifests at v0.0.1 + a stub audit so the layer-2 $HOME fallback
-# (a real, slow audit against the fixture) never fires.
+# (a real, slow audit against the fixture) never fires. scripts/base.sh exists
+# committed so the rename-out case below has something to move.
 write_manifests v0.0.1
 mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/scripts" "$FIX/contexts" "$FIX/docs"
 printf '#!/usr/bin/env bash\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
-git -C "$FIX" add .claude-plugin skills
+printf 'echo base\n' > "$FIX/scripts/base.sh"
+git -C "$FIX" add .claude-plugin skills scripts/base.sh
 git -C "$FIX" commit -qm baseline
 
 run_hook() { # run_hook [extra env K=V ...] — cwd fixture, ambient skip-valve neutralized
@@ -68,8 +70,8 @@ echo 'echo hi' > "$FIX/scripts/tool.sh"
 write_manifests v0.0.2
 git -C "$FIX" add scripts/tool.sh .claude-plugin
 out=$(run_hook 2>&1); rc=$?
-[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out"
-check "scripts/ + both manifests bumped → allowed" $?
+[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out" && grep -q "version-bump" <<<"$out"
+check "scripts/ + both manifests bumped → allowed (layer provably ran)" $?
 reset_fixture
 
 # 3. contexts/-only staged, no bump → blocked
@@ -107,8 +109,9 @@ reset_fixture
 # 7. Control: non-shipped docs file staged, no bump → passes (layer not demanded)
 echo 'note' > "$FIX/docs/note.md"
 git -C "$FIX" add docs/note.md
-run_hook >/dev/null 2>&1
-check "non-shipped docs/ file, no bump → allowed" $?
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -eq 0 ] && ! grep -q "version-bump" <<<"$out"
+check "non-shipped docs/ file, no bump → allowed (layer provably not launched)" $?
 reset_fixture
 
 # 8. Manifest-only staged at the SAME version → allowed, and the layer DID run
@@ -119,8 +122,28 @@ reset_fixture
 printf '{"name":"fix","version":"v0.0.1","x":1}\n' > "$FIX/.claude-plugin/plugin.json"
 git -C "$FIX" add .claude-plugin/plugin.json
 out=$(run_hook 2>&1); rc=$?
-[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out"
-check "manifest-only, same version → allowed (B-vs-C asymmetry held)" $?
+[ "$rc" -eq 0 ] && ! grep -q "shipped-surface files staged" <<<"$out" && grep -q "version-bump" <<<"$out"
+check "manifest-only, same version → allowed (mismatch layer provably ran)" $?
+reset_fixture
+
+# 9. Rename OUT of a shipped dir, no bump → blocked (adversarial find 2026-08-21:
+# with rename detection on, `git diff --cached --name-only` emits only the
+# destination path and both lists miss it — --no-renames closes this)
+mkdir -p "$FIX/tools"
+git -C "$FIX" mv scripts/base.sh tools/base.sh
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -ne 0 ] && grep -q "shipped-surface files staged" <<<"$out"
+check "git mv scripts/→tools/, no bump → blocked (rename-out closed)" $?
+reset_fixture
+
+# 10. Non-ASCII filename under scripts/, no bump → blocked (adversarial find:
+# default core.quotepath wraps the path in a quoted literal that defeats the
+# case patterns — -c core.quotepath=false closes this)
+printf 'echo th\n' > "$FIX/scripts/ไฟล์.sh"
+git -C "$FIX" add "scripts/ไฟล์.sh"
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -ne 0 ] && grep -q "shipped-surface files staged" <<<"$out"
+check "non-ASCII scripts/ filename, no bump → blocked (quotepath closed)" $?
 reset_fixture
 
 echo
