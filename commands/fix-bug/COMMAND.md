@@ -57,7 +57,7 @@ Initial report: $ARGUMENTS
 **Goal**: Narrow the code surface involved.
 
 **Actions**:
-1. Use `code-review-graph` MCP for structural queries — callers, callees, impact radius from the failing function/symbol.
+1. Use `code-review-graph` MCP for structural queries — callers, callees, impact radius from the failing function/symbol. Check `mcp__code-review-graph__list_repos_tool` first; if the repo's graph isn't built, fall back to Grep.
 2. `git log -S '<symbol>'` or `git log -p <file>` to see when the behavior changed — the last commit to touch it is often the suspect.
 3. Read the suspect files end-to-end (not just grep snippets).
 4. Wide surface (>3 files)? Spawn 1-2 `Explore` agents in parallel, each on a different angle (call sites / data flow / similar past bugs).

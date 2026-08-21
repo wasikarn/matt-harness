@@ -13,7 +13,7 @@ Detailed reference for the deterministic verification gate `/ship` runs in Phase
 - **Never auto-ship.** This gate reports; it does not merge, push, or release.
 - **One task at a time.** A single criteria set per `/ship` invocation.
 
-## Phase 1 — Run the deterministic gates
+## Step 1 — Run the deterministic gates
 
 1. **Test suite** — auto-detect the runner and run it from the repo root:
 
@@ -37,7 +37,7 @@ Detailed reference for the deterministic verification gate `/ship` runs in Phase
    | Go | `go vet ./...` |
    | Rust | `cargo check` |
 
-## Phase 2 — Cross-check the Phase 3 criteria
+## Step 2 — Cross-check the outer `/ship` Phase 3 criteria
 
 For each Phase 3 criterion, confirm a deterministic signal satisfies it (a test that passed, a clean type-check, a file now present). Mark each PASS / MANUAL / FAIL:
 
@@ -45,7 +45,7 @@ For each Phase 3 criterion, confirm a deterministic signal satisfies it (a test 
 - **MANUAL**: the criterion is inherently human (visual/UX, a runbook step, a doc review) — surfaced for the user.
 - **FAIL**: a signal contradicts it (a test failed, the type-check errors, the expected file is absent).
 
-## Phase 3 — Report + gate
+## Step 3 — Report + gate
 
 ```markdown
 ## Pre-Ship Verification: <task-name>
@@ -74,7 +74,7 @@ back to Phase 4 or explicitly accept the risk and note it in the audit trail.
   until Phase 8** (`/ship-merge` hard-requires one); if none exists yet, that's handled there
   via `kbg:pr`, not here.
 
-## Phase 4 — Audit trail
+## Step 4 — Audit trail
 
 Append to `.scratch/<slug>/verification-log.jsonl`:
 

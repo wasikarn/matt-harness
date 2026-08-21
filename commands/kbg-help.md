@@ -26,7 +26,7 @@ You don't need to memorize every surface — describe what you're doing, and the
 
 ### ...and which specialist (agent) per stage
 
-The 12-agent fleet is grouped by what each one **owns** — not by project phase — so they can run in parallel without stepping on each other's concerns. Viewed through the same stages anyway, here's the lens for reaching for a specialist on purpose:
+The agent fleet is grouped by what each one **owns** — not by project phase — so they can run in parallel without stepping on each other's concerns. Viewed through the same stages anyway, here's the lens for reaching for a specialist on purpose:
 
 | Stage | Agent specialists |
 |-------|-------------------|
@@ -69,7 +69,7 @@ bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: f
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
 ```
 
-The `run-gauntlet.sh` shortcut above already runs the 13-file hook behavioral suite (`tests/hooks/*.sh` + `tests/skills/harness-audit/test-harness-audit.sh` + `tests/skills/review-pr/test-write-review-state.sh` + `tests/commands/*.sh`) as its own layer. The old critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`) — see `CLAUDE.md`'s Validation section for current coverage.
+The `run-gauntlet.sh` shortcut above already runs the 21-shell-file + 2-Python-file behavioral test suite as its own layer (see `CLAUDE.md`'s Validation section for the exact file list). The old critical-hooks suite and eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`) — see `CLAUDE.md`'s Validation section for current coverage.
 
 ## Update the plugin after surface changes
 

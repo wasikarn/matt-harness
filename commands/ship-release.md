@@ -142,7 +142,7 @@ took — state explicitly which case applies rather than silently assuming one.
 
 ## Anti-Patterns
 
-- **Tag before review** — Never tag before `review-pr` Phase 3 passes.
+- **Tag before review** — Never tag before this command's own Phase 3 Gate (zero Critical findings) is satisfied.
 - **Git log as changelog** — Raw commits are not a changelog. Curate and categorize.
 - **Forgetting to monitor** — The release isn't done at push. Watch telemetry.
 - **Patch-level breaking changes** — If a breaking change sneaks in, bump minor or major, not patch.

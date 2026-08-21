@@ -49,7 +49,9 @@ For each under-covered file, generate tests following this priority:
 
 1. Run the full test suite — all tests must pass
 2. Re-run coverage — verify improvement
-3. If still below 80%, repeat Step 3 for remaining gaps
+3. If still below 80%, repeat Step 3 for remaining gaps — unless the shortfall is dead/generated
+   code inflating the denominator (already flagged in Step 2.4) or a genuinely untestable branch;
+   in that case, say so and stop rather than looping
 
 ## Step 5: Report
 

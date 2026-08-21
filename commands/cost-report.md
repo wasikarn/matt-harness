@@ -7,7 +7,8 @@ argument-hint: [csv]
 # Cost Report
 
 Summarize local Claude Code spend by day, model, and session from the metrics
-log that ECC's `stop:cost-tracker` hook writes.
+log that `hooks/stop/cost-tracker.sh` writes (ported from ECC originally, but it
+lives and runs in this repo).
 
 ## Where the data lives
 

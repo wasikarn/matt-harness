@@ -146,7 +146,7 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 ## Integration Notes (Project-Specific)
 
 - **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 8 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
-- **Gate revisit trigger (Rule 1)**: the Phase 1 four-input refusal gate is unvalidated against any real run — no repo-committed post-mortem exists yet, and it's the likeliest reason a user abandons the draft. If usage shows people bouncing off it, loosen the gate before adding more structure elsewhere.
+- **Gate revisit trigger (Rule 1)**: 3 repo-committed post-mortems now exist under `docs/post-mortems/` — re-check whether the Phase 1 four-input gate still causes abandonment, or drop this caveat. If usage shows people bouncing off it, loosen the gate before adding more structure elsewhere.
 - **Post-/fix-bug workflow**: `/fix-bug` Phase 7 produces a summary (what broke, root cause, fix shape, regression test, files touched). That summary IS the input to `/post-mortem` Phase 1. Run `/post-mortem` immediately after `/fix-bug` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity; otherwise it's standard.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces, not CLAUDE.md/METHODOLOGY.md directly.

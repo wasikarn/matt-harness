@@ -30,7 +30,10 @@ crossed; an `<ideate-convergence status="warning">` block means recent runs
 on similar problems are converging (same shape, same frames). Either one:
 **don't auto-fire from Step 2**; let the self-judge gate abort and answer
 directly. If Step 1 matches (explicit `/ideate`), still proceed to Phase 1
-but surface the warning in the brief.
+but surface the warning in the brief. (kbg ships no producer for
+`<ideate-budget>` currently: `hooks/session/` has no ideate-related hook and
+`hooks.json` has no ideate entry — check for one before relying on Step 0
+seeing it, same caveat as `<ideate-convergence>` below.)
 
 **Step 1. Explicit invocation check.**
 

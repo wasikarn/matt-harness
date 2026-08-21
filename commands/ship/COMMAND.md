@@ -135,7 +135,7 @@ Detailed test-runner auto-detect and the criteria cross-check are in `commands/s
 **Actions**:
 1. Invoke `kbg:review-pr`. For high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests), run `kbg:security-auditor` first — the `security-reviewer` pass inside `kbg:review-pr` covers routine auth/secrets-touching diffs; don't run both.
 2. SCRUTINIZE-4 gate in Phase 5 of that skill filters false positives.
-3. Phase 7 of that skill writes `~/.claude/state/review-last.json`.
+3. Phase 7 of that skill writes `${REVIEW_PR_STATE_DIR:-~/.claude/state}/review-last.json`.
 
 **Gate**: `review-last.json: clean: true`. If Critical findings → fix inline or return to Phase 4 for scope-narrowed fix → re-run Phase 6.
 
