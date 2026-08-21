@@ -1,6 +1,6 @@
 ---
 name: frame
-description: "Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style."
+description: "Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker."
 argument-hint: dev | review | research
 ---
 

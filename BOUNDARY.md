@@ -52,7 +52,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | cost-report | Generate a local Claude Code cost report from the ECC cost-tracker metrics log. |
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see /kbg:review-pr. |
-| frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /output-style. |
+| frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
 | iterate-skill | Bounded, human-gated improve loop for a skill/agent/command's SKILL.md-style body content, using kbg:review-fixtures as the quality signal. Use after a review-fixtures pass has target-attributable findings you want to act on. Don't use for description-only tuning (skill-creator's own run_loop.py) or a single one-off fix (just edit the file). |
 | kbg-help | kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'. |
@@ -193,7 +193,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-20T11:13:15Z_
+_Generated: 2026-08-21T03:35:11Z_
 
 ---
 
