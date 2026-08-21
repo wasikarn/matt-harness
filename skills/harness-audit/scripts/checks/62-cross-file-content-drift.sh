@@ -6,12 +6,20 @@
 # yield (everything repeated verbatim is repeated on purpose — the Prompt
 # Defense Baseline, catalog pointers). The real signal is NEAR-duplication —
 # two passages that used to say the same thing and have since drifted apart.
-# Confirmed catch on first run (2026-08-21): agents/code-reviewer.md's Block
-# threshold had silently diverged from nextjs/python/typescript-reviewer's —
-# a real behavioral inconsistency 4 batches of manual review missed.
+# Confirmed catches on first real run (2026-08-21, 19 WARNs on this fleet):
+# task-prep-checker.md's field-name list had dropped `<artifacts>` vs
+# task-prep/SKILL.md's, and plan-reviewer-format/summarizer-format shared a
+# copy-paste "review's own output" line where summarizer isn't a review —
+# both fixed same day. NOT a catch of this mechanism, despite an earlier draft
+# of this comment claiming otherwise: agents/code-reviewer.md's Block-tier
+# drift vs. nextjs/python/typescript-reviewer (also fixed 2026-08-21) scores
+# J=0.35-0.48 against all three — below this check's own 0.60 floor. That one
+# was found by a manual grep run alongside this check's design, not by the
+# Jaccard pipeline; corrected here after the real run exposed the gap.
 #
-# Precision is honestly ~40% on a measured n=10 (GH #72). WARN only, never CRIT
-# — this is a pre-filter for a human to read, same register as memory-lint's
+# Precision is honestly ~15% on a measured n=19 (GH #72), not the ~40%/n=10
+# an earlier design-phase estimate claimed. WARN only, never CRIT — this is a
+# pre-filter for a human to read, same register as memory-lint's
 # --find-contradictions ("Read each pair by hand; never auto-merge"), not a
 # verdict. No same-kind (agent-vs-skill-vs-command) restriction on purpose —
 # unlike memory-lint's type: filter, the block-level unit here has no `type:`
