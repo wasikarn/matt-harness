@@ -89,7 +89,10 @@ platform behavior — matching values moots it). Deliberate exceptions: `fronten
 dominates). The 26 command entrypoints only — `commands/*/references/*.md` fragments stay
 unstamped. Scope facts: skill/command `effort:` applies only while the surface is active;
 `CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
-harness-audit check 21 accepts `inherit` as an agent model value.
+harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 63 WARNs on
+any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill/command
+`model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
+judgment call retiered via normal version-bumped edits.
 
 **Escalation to `AskUserQuestion`:** a branch belongs in the passive footer only while it's
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
