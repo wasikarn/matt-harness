@@ -14,8 +14,13 @@
 // restore the per-stage pins below; they are correct declared intent either way.
 // The load-bearing separation (fresh context per stage, deterministic branching,
 // capped retries, triage-gated final tier) holds regardless of which model runs.
-// Usage: Workflow({scriptPath: 'scripts/workflows/tiered-pipeline.js',
-//   args: {task: '...', cwd: '/abs/path'?, finalReview: 'always'?}})
+// Usage, repo dev (cwd = kbg-harness): Workflow({scriptPath:
+//   'scripts/workflows/tiered-pipeline.js', args: {task, cwd?, finalReview?}}).
+// Usage, installed plugin (any project): the relative path won't resolve —
+// point scriptPath into the versioned cache, e.g.
+//   ~/.claude/plugins/cache/kobig/kbg/<installed-version>/scripts/workflows/tiered-pipeline.js
+// (scripts/ ships in the cache but is NOT version-bump-gated: any scripts/
+// change must ride a manifest bump or the installed copy silently stays stale.)
 export const meta = {
   name: 'tiered-pipeline',
   description: 'Fable plans, Sonnet executes, Opus reviews with capped fixes, Opus bug-hunts, gated Fable final review',
