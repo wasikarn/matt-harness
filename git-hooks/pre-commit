@@ -11,12 +11,15 @@
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
-#   4. shipped-surface files staged (the 6 per-version cached dirs) →
-#      plugin.json version must change in this commit, and both manifests'
-#      version fields must agree (same-version edits are cache no-ops).
+#   4. shipped-surface files staged (6 surface dirs + scripts/ + contexts/ +
+#      docs/METHODOLOGY.md + docs/reference/** — everything loaded or sourced
+#      from the per-version plugin cache at runtime) → plugin.json version must
+#      change in this commit, and both manifests' version fields must agree
+#      (same-version edits are cache no-ops).
 #
 # The heavy layers above run in parallel so the commit gate stays fast.
-# The pre-push gauntlet adds the 9-file hook behavioral suite. The old
+# The pre-push gauntlet adds the behavioral test suite (file list lives in
+# scripts/run-gauntlet.sh — no count here, counts drift). The old
 # eval/run-eval.py fixture gate was deleted, not rebuilt, in the c452102
 # reset (2026-06-27) — this file used to carry a Layer 3 that re-checked
 # for it on every commit and no-op'd when absent; removed 2026-08-01 since
@@ -131,7 +134,7 @@ run_audit_layer() {
 version_check_needed=0
 while IFS= read -r f; do
   case "$f" in
-    agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*)
+    agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*)
       version_check_needed=1 ;;
   esac
 done < <(git diff --cached --name-only)
@@ -161,12 +164,16 @@ run_version_layer() {
     rc=1
   fi
   local shipped=0
-  # Runtime-served doctrine counts as shipped: doctrine-bootstrap injects
-  # docs/METHODOLOGY.md and decide/score-decision cat docs/reference/* from
-  # the versioned plugin cache — same stale-cache class as the 6 surface dirs.
+  # Runtime-served content beyond the 6 surface dirs counts as shipped:
+  # doctrine-bootstrap injects docs/METHODOLOGY.md and decide/score-decision
+  # cat docs/reference/* from the versioned cache; shipped skill scripts source
+  # scripts/_lib/*.sh relative out of the cache; frame.md cats contexts/*.md
+  # via ${KBG_PLUGIN_ROOT}. Same stale-cache class for all of them (the
+  # scripts/+contexts/ gap bit for real on 2026-08-21 — 3 scripts/-only
+  # commits never reached the installed cache until a manual bump).
   while IFS= read -r f; do
     case "$f" in
-      agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
+      agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
     esac
   done < <(git diff --cached --name-only)
   if [ "$shipped" -eq 1 ]; then
