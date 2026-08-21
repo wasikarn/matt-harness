@@ -1,6 +1,6 @@
 ---
 name: review-lens-code-quality
-description: Fowler smells, React/Next.js & Node.js patterns, false positives, and output templates for code-reviewer's checklist. code-reviewer loads it via Skill() mid-run. Don't use for db/fix-authenticity/requirement-coverage or standalone review.
+description: Fowler smells, React/Next.js & Node.js patterns, false positives, output templates. Use when code-reviewer runs its checklist via Skill(). Don't use for db/fix-authenticity/requirement-coverage lenses.
 bucket: review
 metadata:
   origin: kbg
