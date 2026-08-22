@@ -138,9 +138,10 @@ quarantine flaky tests before trusting survivor counts.
 > attribute coverage through `spec_from_file_location`-loaded SUTs — the probe used
 > domohuhn/mutation-test instead.
 
-1. **Cheapest first probe:** `mutmut` on `skills/memory-lint/scripts/memory-lint.py` — 48% of
-   the tested surface, 1s suite, zero custom code, answers "do this repo's tests have weak
-   oracles" with an off-the-shelf tool in under an hour of wall time.
+1. **Cheapest first probe:** `mutmut` on `skills/memory-lint/scripts/memory-lint.py` — ~33% of
+   the tested surface (the Python trio combined is ~48%; this single file is ~33%), 1s suite,
+   answers "do this repo's tests have weak oracles" with an off-the-shelf tool in under an hour
+   of wall time.
 2. **If the probe finds real survivors:** trial `domohuhn/mutation-test` over 1–2 gate scripts
    with string/echo mutations excluded (the ~27% FP lesson), before considering a custom loop.
 3. **Node file:** fold into whichever loop the bash side uses; skip the Stryker dependency.

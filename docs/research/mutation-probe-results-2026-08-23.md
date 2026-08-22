@@ -160,6 +160,19 @@ Highest-severity clusters (all fail-open unless noted):
 `git stash list`, `dd if=/dev/zero of=/tmp/x`, worktree-add in sentinel-less non-kbg repos) are
 lower-risk (annoyance, not a security hole) but equally untested.
 
+**Compliance-audit correction (2026-08-23, fresh-context verifier):** the precise 36-fail-open /
+17-fail-closed split among the 37 un-re-verified gate-criticals is NOT reliable — "survives the
+suite" (established) ≠ "fail-open" (a separate targeted-probe determination the triage did not
+independently confirm for all members). An audit verifier tested the `i=0`→`i!=0` wrapper-unwrap
+mutants the triage labeled fail-open (152 env, 167 nice, 177 sudo) and found them **fail-CLOSED**
+in the single-command case: unbound `i` → `NameError` → the 431/433 backstop fires → exit 2. The
+triage's fail-open label for those rests on a "multi-window global-`i` persistence" precondition
+never independently reproduced. **What IS independently confirmed:** the wrapper-unwrap fail-open
+CLASS is real — the same verifier reproduced line 180 (`>=`→`<`, sudo-unwrap) as a true fail-open
+(`sudo rm -rf` baseline deny → mutant ALLOW, full suite still green). Treat "36 fail-open" as an
+upper bound on the un-re-verified 37; the ≥19 full-suite-re-verified floor stands, and the
+untested-deny-path gap (the actionable finding) is unaffected either way.
+
 Note the 3 equivalents (258a/258b/280) and 16 not-covered non-critical (crash-to-backstop edges
 that preserve fail-closed) — real survivors, no action needed.
 
@@ -178,7 +191,7 @@ that preserve fail-closed) — real survivors, no action needed.
 
 ## Verdict & recommendation
 
-**The probe paid for itself.** Across 4 SUTs (351 mutants) it surfaced defects no line-coverage
+**The probe paid for itself.** Across 4 SUTs (451 mutants) it surfaced defects no line-coverage
 number would show — the strongest being in the two safety-critical gates, which is exactly where
 Uncle Bob's "score, not read" thesis predicts weak oracles hide.
 
