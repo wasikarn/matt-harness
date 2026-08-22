@@ -198,16 +198,25 @@ def test_template_compliance_flags_feedback_memory_missing_both_fields():
                        "just a rule, no Why or How")
         _write_memory(d, "full-template.md", "feedback", "another lesson",
                        "a rule\n\n**Why:** because\n\n**How to apply:** do the thing")
+        # A second BOTH-present memory makes the fixture asymmetric: without it,
+        # present-count == missing-count == 1, so `if not has_why` / `if not has_how`
+        # (L452/L454) score identically to their inverted mutants. With it,
+        # present=2 vs missing=1, so the inversion flips the counts.
+        _write_memory(d, "also-full.md", "feedback", "third lesson",
+                       "a rule\n\n**Why:** cuz\n\n**How to apply:** do it")
         # A reference-typed memory should never count toward the scoped total —
         # the template contract only applies to feedback/project.
         _write_memory(d, "a-reference.md", "reference", "not scoped", "n/a")
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [no-template](no-template.md) — x\n"
                      "- [full-template](full-template.md) — y\n"
+                     "- [also-full](also-full.md) — w\n"
                      "- [a-reference](a-reference.md) — z\n")
         state = memory_lint.collect_state(d)
         result = memory_lint.template_compliance_findings(state)
-        assert result["scoped_total"] == 2, f"reference-typed memory leaked into scoped_total: {result}"
+        assert result["scoped_total"] == 3, f"reference-typed memory leaked into scoped_total: {result}"
+        # Asymmetric fixture (2 with each field, 1 without) makes these load-bearing:
+        # the inverted-condition mutants would report 2, not 1.
         assert result["missing_why"] == 1
         assert result["missing_how"] == 1
         assert result["missing_both"] == ["no-template.md"]
@@ -784,6 +793,233 @@ def test_memory_dir_project_dir_name_requires_config_dir():
                     os.environ[k] = v
 
 
+# --- 2026-08-23 mutation-testing probe: 13 weak-oracle survivors ---
+# Each function below closes a mutant the probe found surviving: the code line
+# was executed by some test, but no assertion observed the mutated behavior.
+# Verified with per-mutant mutation-thinking (apply the flip, confirm the test
+# now fails). See docs/research/mutation-probe-results-2026-08-23.md.
+
+def test_measured_index_line_count_is_newlines_plus_one():
+    # L208: `count("\n") + 1`. No prior test asserted the line-count half of the
+    # (bytes, lines) tuple -- every caller ran with LINE_CAP huge so it never bound.
+    b, lines = memory_lint.measured_index("a\nb\nc")
+    assert lines == 3, lines   # 2 newlines -> 2+1==3; mutated 2-1==1
+    assert b == 5, b
+
+
+def test_near_budget_finding_fires_at_exactly_80_percent():
+    # L349: `pct >= 80`. The NEAR-BUDGET finding differs from `pct > 80` only when
+    # the integer pct lands on exactly 80. Set BYTE_CAP off the real index size so
+    # the byte ratio is exactly 0.80 without hand-counting.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            _write_memory(d, "one.md", "project", "first pointer", "n/a")
+            _write_memory(d, "two.md", "project", "second pointer", "n/a")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("- [one](one.md) — a pointer hook for topic one here\n"
+                         "- [two](two.md) — a pointer hook for topic two here\n")
+            state = memory_lint.collect_state(d)
+            memory_lint.LINE_CAP = 100_000     # keep the line ratio ~0, never over budget
+            idx_bytes, idx_lines = memory_lint.measured_index(state["idx"])
+            memory_lint.BYTE_CAP = int(idx_bytes / 0.80)   # byte ratio == 0.80 -> pct == 80
+            pct = int(max(idx_lines / memory_lint.LINE_CAP,
+                          idx_bytes / memory_lint.BYTE_CAP) * 100)
+            assert pct == 80, (idx_bytes, memory_lint.BYTE_CAP, pct)   # loud setup guard
+            findings, *_ = memory_lint.detector_findings(state)
+            near = [f for f in findings if f.startswith("NEAR-BUDGET")]
+            assert len(near) == 1, findings
+            assert "at 80%" in near[0], near[0]   # interpolated pct, not the hardcoded cap string
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_contradiction_candidates_excludes_stopwords_from_overlap():
+    # L468: `w not in STOPWORDS`. A pair sharing ONLY a stopword must not surface.
+    # Guards the documented 296-false-candidate regression the token filter prevents.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "alpha-db.md", "feedback", "alpha database indexing always", "rule one")
+        _write_memory(d, "beta-fe.md", "feedback", "beta frontend rendering always", "rule two")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [alpha-db](alpha-db.md) — x\n- [beta-fe](beta-fe.md) — y\n")
+        state = memory_lint.collect_state(d)
+        pairset = lambda cands: {frozenset((c["a"], c["b"])) for c in cands}
+        pair = frozenset(("alpha-db.md", "beta-fe.md"))
+        # positive control: the pair IS reachable when the threshold can't exclude it
+        # (else the oracle below would pass vacuously on a pipeline/type-match drift)
+        assert pair in pairset(memory_lint.contradiction_candidates(state, min_overlap=0.0)), \
+            "pipeline/type-match sanity"
+        # oracle: only shared token is the stopword "always" -> correct overlap 0.0 fails 0.35;
+        # mutated (keep-only-stopwords) overlap 1.0 clears it
+        assert pair not in pairset(memory_lint.contradiction_candidates(state, min_overlap=0.35))
+
+
+def test_contradiction_candidates_includes_pair_at_exact_overlap_threshold():
+    # L515: `overlap >= min_overlap`. A pair whose overlap equals the threshold
+    # exactly is included by `>=` but dropped by `>`. Tokens = stem + description:
+    # A {alpha, keyword, banana}, B {beta, keyword, banana} -> 2/4 == 0.5 exact.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "alpha.md", "feedback", "keyword banana", "rule")
+        _write_memory(d, "beta.md", "feedback", "keyword banana", "rule")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [alpha](alpha.md) — x\n- [beta](beta.md) — y\n")
+        state = memory_lint.collect_state(d)
+        cands = memory_lint.contradiction_candidates(state, min_overlap=0.5)
+        assert frozenset(("alpha.md", "beta.md")) in {frozenset((c["a"], c["b"])) for c in cands}, cands
+
+
+def test_find_patterns_resolves_shared_link_by_slug_not_only_stem():
+    # L582: `t in stems or t in slug_set`. A [[link]] to a name-slug that differs
+    # from the filename stem must still resolve (OR), not require both (AND).
+    with tempfile.TemporaryDirectory() as d:
+        for stem in ("a", "b", "c"):
+            with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                f.write(f"---\nname: {stem}\n---\nsee [[hubslug]]\n")
+        # hub file: stem 'hub-file' != slug 'hubslug', so the link resolves via slug only
+        with open(os.path.join(d, "hub-file.md"), "w") as f:
+            f.write("---\nname: hubslug\n---\na commonly cited hub\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [a](a.md) — x\n- [b](b.md) — y\n- [c](c.md) — z\n"
+                     "- [hub-file](hub-file.md) — h\n")
+        state = memory_lint.collect_state(d)
+        clusters = memory_lint.pattern_clusters(state, 3)
+        assert len(clusters) == 1, clusters   # mutated (AND): 'hubslug' not in stems -> no cluster
+        assert set(clusters[0]["members"]) == {"a.md", "b.md", "c.md"}, clusters[0]
+
+
+def test_find_patterns_shared_link_includes_target_linked_by_exactly_two_members():
+    # L623: `sum(...) >= 2`. A target linked by exactly 2 cluster members belongs
+    # in shared_links under `>=2` but is dropped by `>2`.
+    with tempfile.TemporaryDirectory() as d:
+        bodies = {"a": "see [[mainhub]] and [[pairtarget]]",
+                  "b": "see [[mainhub]] and [[pairtarget]]",
+                  "c": "see [[mainhub]]"}
+        for stem, body in bodies.items():
+            with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                f.write(f"---\nname: {stem}\n---\n{body}\n")
+        for hub in ("mainhub", "pairtarget"):
+            with open(os.path.join(d, f"{hub}.md"), "w") as f:
+                f.write(f"---\nname: {hub}\n---\nn/a\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [a](a.md) — x\n- [b](b.md) — y\n- [c](c.md) — z\n"
+                     "- [mainhub](mainhub.md) — m\n- [pairtarget](pairtarget.md) — p\n")
+        state = memory_lint.collect_state(d)
+        clusters = memory_lint.pattern_clusters(state, 3)
+        assert len(clusters) == 1, clusters
+        # mainhub links a,b,c (3); pairtarget links a,b (exactly 2) -> both are signatures
+        assert "pairtarget" in clusters[0]["shared_links"], clusters[0]["shared_links"]
+
+
+def test_git_fold_commits_credits_only_removed_pointers_not_added_or_context():
+    # L777: the diff-scan guard `not line.startswith("-")`. A pointer that only ever
+    # appeared as an ADDED or CONTEXT line must NOT be credited as a fold; only a
+    # genuinely REMOVED pointer counts. Fold attribution is --classify-unindexed's
+    # whole safety claim, and prior tests only truthy-checked the returned sha.
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        _write_memory(d, "keeper.md", "project", "stays indexed", "n/a")
+        _write_memory(d, "gone.md", "project", "temporary", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [keeper](keeper.md) — stays\n")
+        _git_commit(d, "add keeper pointer")   # keeper appears as an ADDED line
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [keeper](keeper.md) — stays\n- [gone](gone.md) — temp\n")
+        _git_commit(d, "add gone pointer")      # keeper now a CONTEXT line
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [keeper](keeper.md) — stays\n")
+        _git_commit(d, "fold: remove gone pointer")   # gone is REMOVED; keeper context
+        folds, ok = memory_lint._git_fold_commits(d)
+        assert ok
+        assert "gone.md" in folds, folds        # positive control: a real removal IS credited
+        assert "keeper.md" not in folds, folds   # oracle: added/context pointer must NOT be credited
+
+
+def test_class_d_count_fold_skips_files_named_in_exclude_files():
+    # L1187: `fname in exclude_files or fname not in state["files"]`. A file already
+    # claimed by plan A/B (exclude_files) must be skipped. The missing-file half is
+    # masked by the getmtime OSError guard, so only a nonempty exclude_files naming
+    # an EXISTING file discriminates the `or`->`and` flip.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10_000
+        memory_lint.BYTE_CAP = 480
+        with tempfile.TemporaryDirectory() as d:
+            now = 2_000_000_000
+            idx_lines = []
+            for i in range(6):
+                stem = f"topic-{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\nsome memory content about topic {i}\n")
+                os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
+                idx_lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(idx_lines) + "\n")
+            state = memory_lint.collect_state(d)
+            # topic-0 is the OLDEST (lowest mtime) -> the first fold candidate; excluding it
+            # must remove it from the plan entirely.
+            plan = memory_lint.class_d_count_fold(state, exclude_files={"topic-0.md"})
+            assert plan, "fixture must actually fire Class D above the trigger"   # anti-vacuous
+            assert "topic-0.md" not in [e["file"] for e in plan], plan
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_d_break_is_inclusive_at_exact_byte_target():
+    # L1199: `remaining_bytes <= target_bytes`. Inclusive stop at remaining==target.
+    # BYTE_CAP=154 -> target_bytes=int(154*0.65)==100; index==200B in 24B lines,
+    # 25B freed/fold: 200->175->150->125->100, break at 100<=100 after 4 folds.
+    # Mutated (<): folds a 5th. Lines never bind (LINE_CAP huge).
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10_000_000
+        memory_lint.BYTE_CAP = 154
+        with tempfile.TemporaryDirectory() as d:
+            lines = []
+            for i in range(8):
+                stem = f"t{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\ncontent\n")
+                lines.append(f"- [{stem}]({stem}.md)" + "x" * 11)   # 13 + 11 == 24 bytes
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(lines) + "\n")   # 8*24 + 8 newlines == 200 bytes
+            state = memory_lint.collect_state(d)
+            idx_bytes, _ = memory_lint.measured_index(state["idx"])
+            assert idx_bytes == 200, idx_bytes   # loud fixture guard
+            assert int(memory_lint.BYTE_CAP * memory_lint.FOLD_TARGET_PCT) == 100
+            plan = memory_lint.class_d_count_fold(state, exclude_files=set())
+            assert len(plan) == 4, [e["file"] for e in plan]   # mutated (<) -> 5
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_d_break_is_inclusive_at_exact_line_target():
+    # L1199: `remaining_lines <= target_lines` (the line half; needs its own fixture
+    # because only one cap binds at a time). LINE_CAP=10 -> target_lines==6; index
+    # is 9 lines, 1 dropped/fold: 9->8->7->6, break at 6<=6 after 3 folds.
+    # Mutated (<): folds a 4th. Bytes never bind (BYTE_CAP huge).
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10
+        memory_lint.BYTE_CAP = 10_000_000
+        with tempfile.TemporaryDirectory() as d:
+            lines = []
+            for i in range(8):
+                stem = f"t{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\ncontent\n")
+                lines.append(f"- [{stem}]({stem}.md) — a pointer hook for topic {i}")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(lines) + "\n")   # 8 pointer lines -> 9 logical lines
+            state = memory_lint.collect_state(d)
+            _, idx_lines = memory_lint.measured_index(state["idx"])
+            assert idx_lines == 9, idx_lines   # loud fixture guard
+            assert int(memory_lint.LINE_CAP * memory_lint.FOLD_TARGET_PCT) == 6
+            plan = memory_lint.class_d_count_fold(state, exclude_files=set())
+            assert len(plan) == 3, [e["file"] for e in plan]   # mutated (<) -> 4
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -815,4 +1051,15 @@ if __name__ == "__main__":
     test_find_patterns_json_prompt_includes_prompts()
     test_find_patterns_cli_boundary_at_exact_cap_size()
     test_memory_dir_project_dir_name_requires_config_dir()
+    # 2026-08-23 mutation-probe weak-oracle closers
+    test_measured_index_line_count_is_newlines_plus_one()
+    test_near_budget_finding_fires_at_exactly_80_percent()
+    test_contradiction_candidates_excludes_stopwords_from_overlap()
+    test_contradiction_candidates_includes_pair_at_exact_overlap_threshold()
+    test_find_patterns_resolves_shared_link_by_slug_not_only_stem()
+    test_find_patterns_shared_link_includes_target_linked_by_exactly_two_members()
+    test_git_fold_commits_credits_only_removed_pointers_not_added_or_context()
+    test_class_d_count_fold_skips_files_named_in_exclude_files()
+    test_class_d_break_is_inclusive_at_exact_byte_target()
+    test_class_d_break_is_inclusive_at_exact_line_target()
     print("OK")

@@ -85,6 +85,15 @@ Equivalent: L1180 ×2 (guard at L1175 already returned; state unreachable — ar
 False survivor: L713 (`capture_output=True→False`) — straight re-run kills it; engine
 over-report, consistent with the verify-preserved false-survivor pair.
 
+**RESOLVED 2026-08-23:** all 13 weak-oracle survivors closed — 10 new tests + 1 extended
+(asymmetric template fixture) in `tests/skills/memory-lint/test_memory_lint.py`. Each was
+mutation-thinking-verified: applying the exact flip to a SUT copy makes the strengthened suite
+fail (all 13 KILLED, pristine suite green). Notable closers: L468 stopword filter (guards the
+296-false-candidate regression), L777 fold-attribution (assert only REMOVED pointers are credited,
+not added/context), and boundary fixtures landing exactly ON each threshold (pct==80, overlap==0.5,
+exactly-2 linkers, byte/line fold targets). The 37 not-covered survivors (the `--auto-archive`
+action path) remain a whole-feature gap, out of scope for this pass.
+
 ## Phase E — bash/gate probe results
 
 Gate opened on evidence: verify-preserved's 90% survival control + confirmed weak oracles in
@@ -188,6 +197,13 @@ that preserve fail-closed) — real survivors, no action needed.
    everywhere checked.
 3. Kill-rate is inflated by trivially-dying syntax-invalid mutants (text-level engine) — survivors
    are the actionable metric, kill % is secondary by design.
+4. **Full-probe survivor count is non-deterministic** (discovered 2026-08-23 re-running the
+   memory-lint probe: 53 / 49 / 47 across three identical invocations, though the UNMUTATED suite
+   passes 5/5). A handful of git-commit-timestamp / mtime-timing-sensitive mutant kills flip
+   run-to-run. Consequence: the survivor *total* is a noisy signal — do NOT use "count dropped by
+   N" as the closure oracle. Per-mutant verification (apply the exact flip, confirm the specific
+   test fails) is deterministic and is what was used to confirm both the gate tests and the 13
+   memory-lint weak-oracle closures.
 
 ## Verdict & recommendation
 
