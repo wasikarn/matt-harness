@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Main probe: full memory-lint.py against its 30-test suite.
+     Run from the probe root: mutation_test -r rules.xml -f md -o report-memory-lint input-memory-lint.xml -->
+<mutations version="1.2">
+  <files>
+    <file>skills/memory-lint/scripts/memory-lint.py</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="60">python3 tests/skills/memory-lint/test_memory_lint.py</command>
+  </commands>
+</mutations>

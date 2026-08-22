@@ -1,0 +1,4 @@
+1ea3051c0727525cf3652d3aaa2862eeed4af0f7  skills/memory-lint/scripts/memory-lint.py
+9e3c018ade4e142dd7ba6ea255b3aa8912a73e6d  skills/compress-docs/scripts/verify-preserved.py
+96748fb24780f19e1ca20e274cf7fab84ab77a08  tests/skills/memory-lint/test_memory_lint.py
+7435d10ce678966586c229286e91fb2e41501128  tests/skills/compress-docs/test_verify_preserved.py

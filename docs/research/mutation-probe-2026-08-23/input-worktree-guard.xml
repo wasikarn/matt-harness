@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Python-in-bash-harness probe: worktree-guard.py against its shell test.
+     Uses the PYTHON rules: mutation_test -r rules.xml -f md -o report-worktree-guard input-worktree-guard.xml -->
+<mutations version="1.2">
+  <files>
+    <file>hooks/gates/worktree-guard.py</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="90">bash tests/hooks/test-worktree-guard.sh</command>
+  </commands>
+</mutations>

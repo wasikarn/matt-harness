@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Positive control: test_verify_preserved.py:53 asserts only `is not None` on
+     diff_counts, so mutants inside diff_counts that still return a value are
+     PREDICTED to survive. Zero survivors here = broken harness, not a strong suite.
+     Run from the probe root: mutation_test -r rules.xml -f md -o report-verify-preserved input-verify-preserved.xml -->
+<mutations version="1.2">
+  <files>
+    <file>skills/compress-docs/scripts/verify-preserved.py</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="30">python3 tests/skills/compress-docs/test_verify_preserved.py</command>
+  </commands>
+</mutations>

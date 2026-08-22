@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Python mutation rules for the kbg-harness probe (2026-08-23).
+     Curated per plan: space/word-boundary-anchored operator flips only.
+     Excludes restated locally (builtin excludes are dropped by "-r"):
+     strings, comments/docstrings, print/log lines, while-loop conditions. -->
+<mutations version="1.2">
+  <exclude>
+    <!-- comments -->
+    <token begin="#" end="\n"/>
+    <!-- docstrings / triple-quoted strings -->
+    <regex pattern="&quot;&quot;&quot;.*?&quot;&quot;&quot;" dotAll="true"/>
+    <regex pattern="'''.*?'''" dotAll="true"/>
+    <!-- single-line string literals (the ~27% FP lesson: string mutants are noise) -->
+    <regex pattern="&quot;[^&quot;\n]*&quot;"/>
+    <regex pattern="'[^'\n]*'"/>
+    <!-- print/log output lines -->
+    <regex pattern="print\([^\n]*"/>
+    <!-- while conditions: hang prevention (builtin loop-guard equivalent) -->
+    <regex pattern="while [^\n]*"/>
+  </exclude>
+  <rules>
+    <!-- comparison flips -->
+    <literal text=" == " id="py.eq"><mutation text=" != "/></literal>
+    <literal text=" != " id="py.neq"><mutation text=" == "/></literal>
+    <literal text=" &lt;= " id="py.leq"><mutation text=" &lt; "/></literal>
+    <literal text=" &gt;= " id="py.geq"><mutation text=" &gt; "/></literal>
+    <literal text=" &lt; " id="py.lt"><mutation text=" &gt;= "/></literal>
+    <literal text=" &gt; " id="py.gt"><mutation text=" &lt;= "/></literal>
+    <!-- boolean flips -->
+    <literal text=" and " id="py.and"><mutation text=" or "/></literal>
+    <literal text=" or " id="py.or"><mutation text=" and "/></literal>
+    <literal text=" is not None" id="py.isnotnone"><mutation text=" is None"/></literal>
+    <literal text=" is None" id="py.isnone"><mutation text=" is not None"/></literal>
+    <literal text=" not " id="py.notdrop"><mutation text=" "/></literal>
+    <regex pattern="\bTrue\b" id="py.true"><mutation text="False"/></regex>
+    <regex pattern="\bFalse\b" id="py.false"><mutation text="True"/></regex>
+    <!-- arithmetic flips (space-anchored: skips unary signs and slices) -->
+    <literal text=" + " id="py.add"><mutation text=" - "/></literal>
+    <literal text=" - " id="py.sub"><mutation text=" + "/></literal>
+  </rules>
+  <threshold failure="0">
+    <rating over="80" name="A"/>
+    <rating over="60" name="B"/>
+    <rating over="40" name="C"/>
+    <rating over="20" name="D"/>
+    <rating over="0" name="F"/>
+  </threshold>
+</mutations>

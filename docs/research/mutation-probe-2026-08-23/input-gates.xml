@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bash probe: irrecoverable.sh (deny gate) against the full gates suite.
+     Run from the probe root: mutation_test -r rules-bash.xml -f md -o report-gates input-gates.xml -->
+<mutations version="1.2">
+  <files>
+    <file>hooks/gates/irrecoverable.sh</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="120">bash tests/hooks/test-gates.sh</command>
+  </commands>
+</mutations>

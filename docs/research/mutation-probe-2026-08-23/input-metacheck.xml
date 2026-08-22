@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Meta-check: lines-scoped to link_target() only (memory-lint.py:211-214).
+     Expectation: every generated mutant is KILLED by the intact suite.
+     Run from the probe root: mutation_test -r rules.xml -f md -o report-metacheck input-metacheck.xml -->
+<mutations version="1.2">
+  <files>
+    <file>skills/memory-lint/scripts/memory-lint.py
+      <lines begin="248" end="248"/>
+    </file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="60">python3 tests/skills/memory-lint/test_memory_lint.py</command>
+  </commands>
+</mutations>

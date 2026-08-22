@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bash mutation rules for the kbg-harness probe (2026-08-23).
+     Tight set aimed at gate logic: condition operators + exit codes.
+     Excludes: comments, echo/printf output lines (FP noise), while conditions (hang guard). -->
+<mutations version="1.2">
+  <exclude>
+    <token begin="#" end="\n"/>
+    <regex pattern="echo [^\n]*"/>
+    <regex pattern="printf [^\n]*"/>
+    <regex pattern="while [^\n]*"/>
+  </exclude>
+  <rules>
+    <literal text="&amp;&amp;" id="sh.and"><mutation text="||"/></literal>
+    <literal text="||" id="sh.or"><mutation text="&amp;&amp;"/></literal>
+    <literal text=" -eq " id="sh.eq"><mutation text=" -ne "/></literal>
+    <literal text=" -ne " id="sh.ne"><mutation text=" -eq "/></literal>
+    <literal text=" -lt " id="sh.lt"><mutation text=" -ge "/></literal>
+    <literal text=" -gt " id="sh.gt"><mutation text=" -le "/></literal>
+    <literal text=" -ge " id="sh.ge"><mutation text=" -lt "/></literal>
+    <literal text=" -le " id="sh.le"><mutation text=" -gt "/></literal>
+    <literal text=" -z " id="sh.z"><mutation text=" -n "/></literal>
+    <literal text=" -n " id="sh.n"><mutation text=" -z "/></literal>
+    <literal text=" = " id="sh.streq"><mutation text=" != "/></literal>
+    <literal text=" != " id="sh.strneq"><mutation text=" = "/></literal>
+    <literal text="exit 0" id="sh.exit0"><mutation text="exit 2"/></literal>
+    <literal text="exit 2" id="sh.exit2"><mutation text="exit 0"/></literal>
+    <literal text="exit 1" id="sh.exit1"><mutation text="exit 0"/></literal>
+  </rules>
+  <!-- no <threshold> here: rules.xml carries it, and the engine allows only one
+       across all inputs when rule files are combined (-r rules-bash.xml -r rules.xml) -->
+</mutations>
