@@ -237,6 +237,51 @@ test_deny "$IRRECOVERABLE" "git checkout HEAD~1 file (tree-ish + path)" \
 test_allow "$IRRECOVERABLE" "git checkout main (1 nonflag = branch switch)" \
   "$(bash_payload 'git checkout main')"
 
+# 2026-08-23 mutation-testing probe (docs/research/mutation-probe-results-2026-08-23.md):
+# the gate correctly denies each idiom below TODAY, but no test held the deny path,
+# so a mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic
+# survived the whole suite (fail-open, undetected). These lock the current behavior.
+# --- prefix-wrapper unwrap: a destructive command hidden behind sudo/env/nice/xargs/docker ---
+test_deny  "$IRRECOVERABLE" "sudo rm -rf (wrapper unwrap)" \
+  "$(bash_payload 'sudo rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "env VAR=val rm -rf (env-assignment wrapper)" \
+  "$(bash_payload 'env FOO=1 rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "env -u VAR rm -rf (env-unset-flag wrapper)" \
+  "$(bash_payload 'env -u FOO rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "nice -n 5 rm -rf (nice with value flag)" \
+  "$(bash_payload 'nice -n 5 rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "nice rm -rf (bare nice wrapper)" \
+  "$(bash_payload 'nice rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "xargs rm -rf (rm via xargs)" \
+  "$(bash_payload 'echo /tmp/x | xargs rm -rf')"
+test_deny  "$IRRECOVERABLE" "docker exec CONTAINER rm -rf (unwrap inner destructive)" \
+  "$(bash_payload 'docker exec c1 rm -rf /data')"
+# --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---
+test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
+  "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"
+test_deny  "$IRRECOVERABLE" "git -ccore.hooksPath= (hook bypass, joined form)" \
+  "$(bash_payload 'git -ccore.hooksPath=/tmp/evil commit -m x')"
+test_allow "$IRRECOVERABLE" "git -c user.name= (benign -c config, must not over-block)" \
+  "$(bash_payload 'git -c user.name=x commit -m y')"
+# --- git branch force-delete: discards unmerged commits ---
+test_deny  "$IRRECOVERABLE" "git branch -D (force-delete short flag)" \
+  "$(bash_payload 'git branch -D featurex')"
+test_deny  "$IRRECOVERABLE" "git branch --delete --force (long-flag force-delete)" \
+  "$(bash_payload 'git branch --delete --force featurex')"
+test_deny  "$IRRECOVERABLE" "git branch -fD (bundled force-delete flags)" \
+  "$(bash_payload 'git branch -fD featurex')"
+test_allow "$IRRECOVERABLE" "git branch newbranch (create, must not over-block)" \
+  "$(bash_payload 'git branch newbranch')"
+test_allow "$IRRECOVERABLE" "git branch featureD (name containing D, must not over-block)" \
+  "$(bash_payload 'git branch featureD')"
+# --- review-pr allowlist is dead code: a disguised detached worktree must still deny ---
+test_deny  "$IRRECOVERABLE" "git worktree add --detach -b into a review-pr-looking path (allowlist is dead code)" \
+  "$(bash_payload 'git worktree add --detach -b evil /tmp/review-pr-1')"
+# --- fail-closed internal-error backstop (irrecoverable.sh:431-433): a payload that makes the
+# Python raise (command is a JSON array, not a string) must still exit 2, never fall open. ---
+test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
+  '{"tool_name":"Bash","tool_input":{"command":["rm","-rf","/x"]}}'
+
 echo ""
 echo "=== verifier-protect Bash gate (redirect/tee/sed-i writes to verifier surfaces) ==="
 VP_BASH="$ROOT/hooks/gates/verifier-protect.sh"

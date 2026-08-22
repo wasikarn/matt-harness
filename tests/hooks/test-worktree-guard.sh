@@ -368,6 +368,49 @@ out=$( (cd "$TMP" && echo "$(payload_bash "git apply $BENIGN_DIFF")" \
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "git apply against a diff outside the workspace: exit 0, no false deny" "$ok"
 
+# 2026-08-23 mutation-testing probe (docs/research/mutation-probe-results-2026-08-23.md):
+# bash_write_targets() detects each in-place-edit idiom below TODAY, but no test held it,
+# so a mutation to the sed/cp/tar/dd extraction survived the suite (fail-open, undetected).
+# Each writes to repo1 (a protected develop main-checkout) run from $WS -> must deny exit 2.
+for idiom_case in \
+  "sed --in-place 's/x/y/' repo1/f.txt|sed --in-place (GNU long form)" \
+  "sed -i -e 's/x/y/' repo1/f.txt|sed -i -e (routine -e script form)" \
+  "cp -t repo1 secret.txt|cp -t <protected-dir> (target via -t, not source)" \
+  "cp -at repo1 secret.txt|cp -at <protected-dir> (combined flags, space -t value)" \
+  "dd if=/dev/zero of=repo1/f.txt|dd of=<protected-file>" \
+  "tar -x -C repo1 -f /tmp/a.tar|tar -x -C <protected-dir>"; do
+  cmd=${idiom_case%%|*}; desc=${idiom_case##*|}
+  out=$( (cd "$WS" && echo "$(payload_bash "$cmd")" \
+    | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "in-place idiom writes to protected checkout -> deny exit 2: $desc" "$ok"
+done
+
+# 2026-08-23 probe, highest-severity cluster: classify()'s worktree/branch decision. The gate
+# treats a repo's MAIN checkout as shared-tree (redirect) REGARDLESS of branch, and a real
+# worktree as safe ONLY on a non-protected branch. Mutations inverting either condition
+# fail-open (a shared checkout on a feature branch, or a protected-branch worktree, slips
+# through) with no test noticing. Build the three distinguishing fixtures and lock each verdict.
+CLS="$TMP/cls"; mkdir -p "$CLS"
+# (a) sub-repo whose MAIN checkout is on a NON-protected branch, inside the workspace.
+mkrepo "$WS/repofeat" develop; git -C "$WS/repofeat" switch -q -c feature
+out=$(run_guard "$(payload "$WS/repofeat/f.txt" sesscla)" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"updatedInput"' && ok=0
+check "(a) main checkout on a non-protected branch is still shared-tree -> redirect (not silent-allow)" "$ok"
+# (b) a REAL worktree checked out on a PROTECTED branch (develop), inside the workspace. The
+# main checkout must be off develop so git will let the worktree take it.
+mkrepo "$WS/repowt" develop; git -C "$WS/repowt" switch -q -c feature
+git -C "$WS/repowt" worktree add -q "$WS/wt-dev" develop 2>/dev/null
+out=$(run_guard "$(payload "$WS/wt-dev/f.txt" sessclb)" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"updatedInput"' && ok=0
+check "(b) worktree on a protected branch inside the workspace -> redirect (not silent-allow)" "$ok"
+# (c) a real worktree on a NON-protected branch inside the workspace -> genuinely safe, must
+# NOT be redirected or denied (guards against over-blocking legit feature worktrees).
+git -C "$WS/repowt" worktree add -q -b feat-c "$WS/wt-featc" 2>/dev/null
+out=$(run_guard "$(payload "$WS/wt-featc/f.txt" sessclc)" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "(c) worktree on a non-protected branch inside the workspace -> allow, no redirect (not over-blocked)" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
