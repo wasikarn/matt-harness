@@ -66,6 +66,25 @@ path (`class_b_near_budget_collapse`, `class_c_dangling_link_rewrite`, `apply_ac
 `print_plan`, `run_action_mode`) = 30 of 37 not-covered survivors; the other 7 are
 staleness-advisory, `run_detector` text output, and the `--classify-unindexed` CLI path.
 
+**RESOLVED 2026-08-23** (the 37 not-covered `--auto-archive` survivors): 29 new tests cover the
+whole action path — class A/B/C/D plan builders, `apply_action_plan` (asserting the real
+filesystem effect: files moved to `_archive/<date>/`, never deleted), dry-run/JSON output,
+and `run_action_mode` orchestration (apply vs dry-run, concurrent-edit abort, no-op hint).
+Per-mutant verified: **35 of 37 killed**. The 2 not killed are correctly uncovered:
+- **L1420** (`if dry_run and not apply_now` → `or`) is a **proven equivalent mutant** — both
+  states where the connective would matter (`dry_run ∧ apply_now`, `¬dry_run ∧ ¬apply_now`) are
+  unreachable given the L1360-1361 flag derivation.
+- **L1424** (`apply_now = True` under `--dry-run --yes`) is a **design decision, left uncovered
+  deliberately**: `--auto-archive --dry-run --yes` currently APPLIES (`--yes` overrides
+  `--dry-run`). Pinning that as spec would cement a footgun (convention: the safety flag should
+  win). Flagged to the operator to decide fix-precedence vs pin-behavior rather than silently
+  encoding the current behavior in a test.
+
+Boundary fixtures land exactly ON each threshold (class_b topic-size 5120/5121, pointer-length
+249/250, first-para-proxy pointer==1.2×first_para; staleness age==threshold). Highlighted defensive
+branches also covered: the git-failure `ok=False` path, the concurrent-edit mtime/hash guard (hash
+half; the mtime half is an untestable 50ms race, documented not-killed).
+
 Top weak-oracles (each names its missing assertion):
 
 1. **L777 ×2 — fold-attribution truthy-only** (`_git_fold_commits`): `or`→`and` flips that credit

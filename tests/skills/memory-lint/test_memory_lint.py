@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Self-check for the dangling-link did-you-mean suggestion. Run directly: python3 test_memory_lint.py"""
+import argparse
+import contextlib
+import datetime
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -1020,6 +1024,512 @@ def test_class_d_break_is_inclusive_at_exact_line_target():
         memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
 
 
+# --- 2026-08-23 mutation-probe: --auto-archive action-path coverage (37 not-covered survivors) ---
+# The action mode (class A/B/C/D plan build, apply, dry-run/JSON output, orchestration)
+# had zero test coverage. Each test below carries a `# L###:` comment naming the mutant it
+# kills; every fs-mutating test uses its own tempdir (shared-working-tree discipline), every
+# cap patch restores under try/finally, and stdin-reaching subprocesses pass input="".
+
+SCRIPT = os.path.join(HERE, "..", "..", "..", "skills", "memory-lint", "scripts", "memory-lint.py")
+
+
+def _class_a_fixture(d, stems=("stale-topic",)):
+    """Write N SUPERSEDED memory files (0 inbound) + a MEMORY.md that triggers Class A."""
+    lines = []
+    for stem in stems:
+        _write_memory(d, f"{stem}.md", "project", "a finished audit", "n/a")
+        lines.append(f"- [{stem}]({stem}.md) — **SUPERSEDED** by [[new-topic]]")
+    with open(os.path.join(d, "MEMORY.md"), "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+def test_memory_dir_falls_back_to_cwd_when_not_a_git_repo():
+    # L185: memory_dir shells `git rev-parse --show-toplevel` with check=True; in a non-repo
+    # cwd git exits 128 -> except -> root=cwd. Mutated check=False swallows the failure and
+    # derives the path from empty stdout instead.
+    orig_cwd = os.getcwd()
+    saved = {k: os.environ.pop(k, None) for k in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PROJECT_DIR_NAME")}
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            os.chdir(d)
+            result = memory_lint.memory_dir(None)
+            expected = os.path.join(os.path.expanduser("~/.claude/projects"),
+                                    os.getcwd().replace("/", "-"), "memory")
+            assert result == expected, result
+    finally:
+        os.chdir(orig_cwd)
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
+
+
+def test_staleness_prefers_modified_frontmatter_over_mtime():
+    # L414: `if ts is None:` gates whether mtime OVERWRITES the frontmatter timestamp. An old
+    # `modified:` field on a fresh-mtime file must still read as old. Mutated (is not None)
+    # overwrites with the fresh mtime -> age~0 -> excluded.
+    with tempfile.TemporaryDirectory() as d:
+        old = datetime.datetime.fromtimestamp(time.time() - 100 * 86400, datetime.timezone.utc)
+        with open(os.path.join(d, "modstamp.md"), "w") as f:
+            f.write(f'---\nname: modstamp\nmodified: {old.strftime("%Y-%m-%dT%H:%M:%SZ")}\n---\nbody\n')
+        os.utime(os.path.join(d, "modstamp.md"), (time.time(), time.time()))  # fresh mtime
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [modstamp](modstamp.md) — x\n")
+        state = memory_lint.collect_state(d)
+        res = memory_lint.staleness_findings(state, 30)
+        hit = [r for r in res if r["file"] == "modstamp.md"]
+        assert len(hit) == 1, res
+        assert hit[0]["age_days"] == 100, hit
+
+
+def test_staleness_threshold_is_inclusive_at_exact_age():
+    # L419 age arithmetic + L420 `age_days >= stale_days` (inclusive at age == threshold).
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "old.md", "project", "no modified field", "body")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [old](old.md) — x\n")
+        stamp = time.time() - 30 * 86400
+        os.utime(os.path.join(d, "old.md"), (stamp, stamp))
+        state = memory_lint.collect_state(d)
+        res = memory_lint.staleness_findings(state, 30)
+        hit = [r for r in res if r["file"] == "old.md"]
+        assert len(hit) == 1, res            # positive control (anti-vacuous)
+        assert hit[0]["age_days"] == 30, hit  # L419 arithmetic; L420 30>=30 True vs 30>30 False
+
+
+def test_git_fold_commits_returns_not_ok_on_non_git_dir():
+    # L769: `if out.returncode != 0: return {}, False`. A non-repo dir makes git exit non-zero;
+    # ok must be False (distinct from "ran fine, found nothing"). folds=={} does NOT discriminate
+    # -- only `ok is False` flips under `!= 0` -> `== 0`.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [x](x.md)\n")
+        folds, ok = memory_lint._git_fold_commits(d)
+        assert ok is False, (folds, ok)
+
+
+def test_git_fold_commits_returns_not_ok_on_oserror():
+    # L767: `except (OSError, TimeoutExpired): return {}, False`. Boundary mock: git binary
+    # missing must read as failure, not empty-found. (Mock-dependent -- the only way to reach
+    # this branch deterministically.)
+    orig = memory_lint.subprocess.run
+    try:
+        memory_lint.subprocess.run = lambda *a, **k: (_ for _ in ()).throw(OSError("no git"))
+        assert memory_lint._git_fold_commits("/nonexistent") == ({}, False)
+    finally:
+        memory_lint.subprocess.run = orig
+
+
+def test_run_classify_unindexed_json_buckets_folded_vs_never():
+    # L859: buckets = {b: [r ... if r["bucket"] == b] ...}. Two files landing in DIFFERENT
+    # buckets so `== b` -> `!= b` mis-buckets observably. Driven end-to-end (also covers main()).
+    with tempfile.TemporaryDirectory() as d:
+        _init_git_repo(d)
+        _write_memory(d, "folded.md", "project", "a finished audit", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [folded](folded.md) — a finished audit\n")
+        _git_commit(d, "add folded pointer")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("")  # fold: remove the pointer, keep the backing file
+        _git_commit(d, "baseline after fold")
+        _write_memory(d, "newer.md", "project", "written after baseline", "n/a")  # never-indexed
+        r = subprocess.run(["python3", SCRIPT, d, "--classify-unindexed", "--json"],
+                           input="", capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        out = json.loads(r.stdout)
+        folded = [x["file"] for x in out["buckets"]["folded-confirmed"]]
+        never = [x["file"] for x in out["buckets"]["never-indexed"]]
+        assert folded == ["folded.md"], out["buckets"]
+        assert "newer.md" in never and "folded.md" not in never, out["buckets"]
+
+
+def _build_topic(path, total_bytes):
+    # Short first paragraph (blank line after) so class_b's L1066 first-para proxy accepts the
+    # candidate, then pad to an exact byte size for the boundary tests.
+    header = "---\nname: t\n---\nintro\n\n"
+    body = total_bytes - len(header.encode("utf-8"))
+    with open(path, "w") as f:
+        f.write(header + "x" * body)
+    assert os.path.getsize(path) == total_bytes   # loud setup guard
+
+
+def _verbose_pointer(nchars):
+    base = "- [t](t.md) — "
+    return base + "x" * (nchars - len(base))
+
+
+def _class_b_state(d, topic_bytes, pointer_chars):
+    _build_topic(os.path.join(d, "t.md"), topic_bytes)
+    with open(os.path.join(d, "MEMORY.md"), "w") as f:
+        f.write(_verbose_pointer(pointer_chars) + "\n")
+    return memory_lint.collect_state(d)
+
+
+def test_class_b_collapses_verbose_pointer_over_thresholds():
+    # L1058 (fname in files), L1066 (pointer >= 1.2x first-para proxy), L1081 (delta_bytes),
+    # and the L1048/L1043 early-returns -- all exercised by producing a non-empty plan.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 300
+        with tempfile.TemporaryDirectory() as d:
+            state = _class_b_state(d, topic_bytes=6000, pointer_chars=260)
+            plan = memory_lint.class_b_near_budget_collapse(state)
+            assert len(plan) == 1, plan
+            e = plan[0]
+            stub = "- [t](t.md) — see [[t]] for full record"
+            assert e["action"] == "rewrite_pointer" and e["to"] == stub, e
+            assert e["delta_bytes"] == len(stub.encode()) - len(e["from"].encode()), e  # L1081
+            assert e["delta_bytes"] < 0, e   # collapse saves bytes
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_b_topic_size_boundary_is_exclusive_at_5120():
+    # L1061: `topic_size <= 5*1024`. 5120 excluded, 5121 included. Mutated (<) includes 5120.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 300
+        with tempfile.TemporaryDirectory() as d5120:
+            s = _class_b_state(d5120, topic_bytes=5120, pointer_chars=260)
+            assert memory_lint.class_b_near_budget_collapse(s) == []   # 5120<=5120 skipped
+        with tempfile.TemporaryDirectory() as d5121:
+            s = _class_b_state(d5121, topic_bytes=5121, pointer_chars=260)
+            assert len(memory_lint.class_b_near_budget_collapse(s)) == 1
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_b_pointer_length_boundary_is_inclusive_at_250():
+    # L1056: `len(pointer) < 250` skip. 249 skipped, 250 kept. Mutated (<=) skips 250 too.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 300
+        with tempfile.TemporaryDirectory() as d249:
+            s = _class_b_state(d249, topic_bytes=6000, pointer_chars=249)
+            assert memory_lint.class_b_near_budget_collapse(s) == []
+        with tempfile.TemporaryDirectory() as d250:
+            s = _class_b_state(d250, topic_bytes=6000, pointer_chars=250)
+            assert len(memory_lint.class_b_near_budget_collapse(s)) == 1
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_b_first_para_proxy_is_inclusive_at_exact_1_2x():
+    # L1066: `len(full_line) >= 1.2 * max(len(first_para), 1)`. A pointer exactly 1.2x its topic's
+    # first paragraph must collapse (inclusive `>=`); mutated `>` drops the exact-boundary case.
+    # first_para == 210 (frontmatter+194 body chars) -> pointer must be 252 (== 1.2*210).
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 300
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "t.md"), "w") as f:
+                f.write("---\nname: t\n---\n" + "y" * 194 + "\n\n" + "x" * 5200)  # first_para len 210
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write(_verbose_pointer(252) + "\n")   # 252 == 1.2 * 210 exactly
+            state = memory_lint.collect_state(d)
+            fp = memory_lint.read_file(d, "t.md").split("\n\n", 1)[0]
+            assert len(fp) == 210 and 252 == 1.2 * len(fp), (len(fp), 1.2 * len(fp))  # loud boundary guard
+            assert len(memory_lint.class_b_near_budget_collapse(state)) == 1   # 252>=252 keeps; >252 drops
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_b_returns_nothing_under_budget_trigger():
+    # L1048: `pct < 80` early return. Well under the cap -> no plan regardless of verbosity.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 1_000_000
+        with tempfile.TemporaryDirectory() as d:
+            s = _class_b_state(d, topic_bytes=6000, pointer_chars=260)
+            assert memory_lint.class_b_near_budget_collapse(s) == []
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_class_c_rewrites_dangling_wikilink_to_ledger():
+    # L1122 (f not in files), L1125 (resolvable skip), L1128 (dangling-vs-archived fork).
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "src.md", "project", "has a dangling link", "see [[ghost-topic]]")
+        _write_memory(d, "project_external_evals_ledger.md", "project", "the ledger", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [src](src.md) — x\n- [project_external_evals_ledger](project_external_evals_ledger.md) — l\n")
+        state = memory_lint.collect_state(d)
+        plan = memory_lint.class_c_dangling_link_rewrite(state)
+        assert plan == [{"action": "rewrite_wikilink", "file": "src.md", "old": "[[ghost-topic]]",
+                         "new": "[[project_external_evals_ledger]]", "reason": "dangling-target"}], plan
+
+
+def test_class_c_rewrites_archived_link_to_supersedence_target():
+    # L1109 (`if not m: continue` on SUPERSEDED lines), L1113 (`if not pm: continue`),
+    # L1128 (archived branch). Only test that executes the SUPERSEDED-line parse.
+    with tempfile.TemporaryDirectory() as d:
+        os.makedirs(os.path.join(d, "_archive", "2026-01-01"))
+        _write_memory(os.path.join(d, "_archive", "2026-01-01"), "old-topic.md", "project", "archived", "n/a")
+        _write_memory(d, "new-topic.md", "project", "the successor", "n/a")
+        _write_memory(d, "src.md", "project", "links an archived topic", "see [[old-topic]]")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [old-topic](old-topic.md) — **SUPERSEDED** by [[new-topic]]\n"
+                     "- [new-topic](new-topic.md) — y\n- [src](src.md) — z\n")
+        state = memory_lint.collect_state(d)
+        e = [x for x in memory_lint.class_c_dangling_link_rewrite(state) if x["file"] == "src.md"][0]
+        assert e["old"] == "[[old-topic]]" and e["new"] == "[[new-topic]]", e
+        assert e["reason"] == "archived-with-supersedence", e
+
+
+def test_class_c_ignores_link_that_resolves_by_slug_only():
+    # L1125: `t in stems or t in slug_set`. A link resolving via name-slug only (not stem) must
+    # be skipped (continue). Mutated (and) treats it as unresolved -> spurious rewrite entry.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "hub-file.md"), "w") as f:
+            f.write("---\nname: hubslug\n---\na hub\n")  # slug hubslug != stem hub-file
+        _write_memory(d, "resolver.md", "project", "resolves via slug", "see [[hubslug]]")
+        _write_memory(d, "dangler.md", "project", "dangles", "see [[ghost-x]]")
+        _write_memory(d, "project_external_evals_ledger.md", "project", "ledger", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [hub-file](hub-file.md) — h\n- [resolver](resolver.md) — r\n"
+                     "- [dangler](dangler.md) — d\n"
+                     "- [project_external_evals_ledger](project_external_evals_ledger.md) — l\n")
+        state = memory_lint.collect_state(d)
+        plan = memory_lint.class_c_dangling_link_rewrite(state)
+        files = {e["file"] for e in plan}
+        assert "dangler.md" in files, plan       # positive control (else vacuous)
+        assert "resolver.md" not in files, plan   # slug-resolved link must not be rewritten
+
+
+def test_run_detector_text_reports_template_percentages_and_gap():
+    # L959 why_pct, L960 how_pct, L969 template_gap = missing_why + missing_how - len(missing_both).
+    # Asymmetric fixture (missing_why=1, missing_how=2, missing_both=1) makes all three distinct.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "m1.md", "feedback", "both", "r\n\n**Why:** a\n\n**How to apply:** b")
+        _write_memory(d, "m2.md", "feedback", "why only", "r\n\n**Why:** a")
+        _write_memory(d, "m3.md", "feedback", "neither", "just a rule")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [m1](m1.md) — x\n- [m2](m2.md) — y\n- [m3](m3.md) — z\n")
+        r = subprocess.run(["python3", SCRIPT, d], input="", capture_output=True, text=True)
+        assert "**Why:** present: 2/3 (66%)" in r.stdout, r.stdout          # L959
+        assert "**How to apply:** present: 1/3 (33%)" in r.stdout, r.stdout  # L960
+        assert "advisory: 0 stale, 2 template-gap" in r.stdout, r.stdout     # L969: 1+2-1==2
+
+
+def test_apply_action_plan_moves_superseded_files_and_stubs_pointers():
+    # L1237 (os.makedirs archive_dir, exist_ok=True -- 2 entries prove no FileExistsError),
+    # L1255 (bytes_saved delta). Asserts the REAL fs effect: files moved (mv, not rm), pointer stubbed.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d, stems=("stale-topic", "stale-topic2"))
+        state = memory_lint.collect_state(d)
+        plan = {"A": memory_lint.class_a_stale_superseded(state), "B": [], "C": [], "D": []}
+        assert len(plan["A"]) == 2, plan   # positive control
+        saved, applied = memory_lint.apply_action_plan(state, plan)
+        today = time.strftime("%Y-%m-%d")
+        for fn in ("stale-topic.md", "stale-topic2.md"):
+            assert not os.path.exists(os.path.join(d, fn)), fn                    # src removed
+            assert os.path.exists(os.path.join(d, "_archive", today, fn)), fn     # moved -> mv not rm
+        idx_after = open(state["index_path"]).read()
+        assert "**SUPERSEDED**" not in idx_after, idx_after                        # pointer stubbed
+        exp = 0
+        for e in plan["A"]:
+            new_line = memory_lint.STUB_TEMPLATE.format(e["from"][:-3], today, e["from"])
+            exp += len(e["old_pointer_line"].encode()) - len(new_line.encode())
+        assert saved == exp, (saved, exp)   # L1255
+
+
+def test_apply_action_plan_rewrites_dangling_wikilink_on_disk():
+    # L1286: Class C bytes_saved + the atomic_write of the rewritten file.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "src.md", "project", "dangling", "see [[ghost-topic]]")
+        _write_memory(d, "project_external_evals_ledger.md", "project", "ledger", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [src](src.md) — x\n- [project_external_evals_ledger](project_external_evals_ledger.md) — l\n")
+        state = memory_lint.collect_state(d)
+        plan = {"A": [], "B": [], "C": memory_lint.class_c_dangling_link_rewrite(state), "D": []}
+        assert len(plan["C"]) == 1, plan   # positive control
+        saved, applied = memory_lint.apply_action_plan(state, plan)
+        src_after = open(os.path.join(d, "src.md")).read()
+        assert "[[project_external_evals_ledger]]" in src_after, src_after
+        assert "[[ghost-topic]]" not in src_after, src_after
+        assert saved == len("[[ghost-topic]]".encode()) - len("[[project_external_evals_ledger]]".encode())  # L1286
+        assert len(applied["C"]) == 1, applied
+
+
+def test_print_plan_projects_post_trim_size():
+    # L1312: `new_bytes = max(idx_bytes + estimated_impact, 0)`. Two cases: clamp inert (arithmetic
+    # governs -> kills '+'->'-') and clamp active (only max(...,0) makes it 0 -> kills removing max).
+    state = {"idx": "- [x](x.md) — " + "z" * 180 + "\n", "d": "/tmp/x"}
+    ib, _ = memory_lint.measured_index(state["idx"])
+
+    def render(est):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            memory_lint.print_plan(state, {"A": [], "B": [], "C": [], "D": []}, est)
+        return buf.getvalue()
+
+    assert f"→ {ib - 50}B" in render(-50), render(-50)     # clamp inert
+    assert "→ 0B" in render(-(ib + 100)), render(-(ib + 100))   # clamp active
+
+
+def test_print_plan_reports_class_d_savings_separately():
+    # L1335: d_bytes_saved = sum(len(old_pointer_line.encode()) + 1 for plan_d).
+    line = "- [x](x.md) — a short pointer hook"
+    plan = {"A": [], "B": [], "C": [], "D": [{"action": "deindex", "file": "x.md", "old_pointer_line": line}]}
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        memory_lint.print_plan({"idx": line + "\n", "d": "/tmp/x"}, plan, 0)
+    assert f"-{len(line.encode()) + 1}B" in buf.getvalue(), buf.getvalue()
+
+
+def _run_action_json(state, dry_run, yes):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        memory_lint.run_action_mode(state, argparse.Namespace(dry_run=dry_run, yes=yes, json=True))
+    return json.loads(buf.getvalue())
+
+
+def test_auto_archive_yes_applies_and_moves_file():
+    # L1361 apply_now path + concurrent-guard PASS: --yes with no drift moves the Class A file.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        state = memory_lint.collect_state(d)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = memory_lint.run_action_mode(state, argparse.Namespace(dry_run=False, yes=True, json=False))
+        today = time.strftime("%Y-%m-%d")
+        assert rc == 0, buf.getvalue()
+        assert os.path.exists(os.path.join(d, "_archive", today, "stale-topic.md"))
+        assert not os.path.exists(os.path.join(d, "stale-topic.md"))
+        assert "=== Applied ===" in buf.getvalue()
+
+
+def test_auto_archive_concurrent_edit_aborts_with_code_2():
+    # L1441: concurrent-edit guard (hash half). MEMORY.md changed since scan -> abort rc 2, no apply.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        state = memory_lint.collect_state(d)
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("DRIFTED FIRST LINE — changed since scan\n")   # first-200-char hash drift
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = memory_lint.run_action_mode(state, argparse.Namespace(dry_run=False, yes=True, json=False))
+        assert rc == 2, buf.getvalue()
+        assert os.path.exists(os.path.join(d, "stale-topic.md"))   # apply never ran
+
+
+def test_auto_archive_dry_run_prompts_and_does_not_mutate():
+    # L1360 (default-dry-run), L1420 prompt guard, confirm-EOF (input="" -> "n"). Class A fires but
+    # the dry run must NOT move the file, and the "Apply?" prompt must appear (mutated L1360 skips it).
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        r = subprocess.run(["python3", SCRIPT, d, "--auto-archive"],
+                           input="", capture_output=True, text=True)
+        assert os.path.exists(os.path.join(d, "stale-topic.md")), "dry run must not move"
+        assert not os.path.isdir(os.path.join(d, "_archive"))
+        assert "Apply?" in r.stdout, r.stdout   # mutated L1360 -> dry_run False -> no prompt
+
+
+def test_auto_archive_json_dry_run_reports_impact_without_mutating():
+    # L1355 (Class A impact term) + L1360 mode string (dry_run=False,yes=False -> the combo that
+    # flips under or->and: correct mode "dry-run", mutated "apply"). JSON returns before any apply.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        state = memory_lint.collect_state(d)
+        out = _run_action_json(state, dry_run=False, yes=False)
+        assert out["mode"] == "auto-archive-dry-run", out["mode"]   # L1360
+        e = memory_lint.class_a_stale_superseded(state)[0]
+        stub = memory_lint.STUB_TEMPLATE.format(e["from"][:-3], e["to_archive_subdir"], e["from"])
+        assert out["estimated_impact_bytes"] == len(e["old_pointer_line"]) - len(stub), out  # L1355
+        assert os.path.exists(os.path.join(d, "stale-topic.md"))   # JSON never mutates
+
+
+def test_auto_archive_json_apply_mode_returns_before_mutation():
+    # --json with --yes still returns before apply (informational). Mode string reflects apply.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        state = memory_lint.collect_state(d)
+        out = _run_action_json(state, dry_run=False, yes=True)
+        assert out["mode"] == "auto-archive-apply", out["mode"]
+        assert os.path.exists(os.path.join(d, "stale-topic.md"))   # --json never mutates even with --yes
+
+
+def test_auto_archive_json_impact_includes_class_b_term():
+    # L1356: `+ sum(delta_bytes for B)`. class_b fires; A and C empty so the estimate is B's sum.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 300
+        with tempfile.TemporaryDirectory() as d:
+            state = _class_b_state(d, topic_bytes=6000, pointer_chars=260)
+            out = _run_action_json(state, dry_run=False, yes=False)
+            exp = sum(e["delta_bytes"] for e in memory_lint.class_b_near_budget_collapse(state))
+            assert exp != 0, "class_b must fire"
+            assert out["estimated_impact_bytes"] == exp, out
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_auto_archive_json_reports_class_d_savings():
+    # L1405: d_count_fold_bytes_saved = sum(len(old_pointer_line.encode())+1 for plan_d).
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 480
+        with tempfile.TemporaryDirectory() as d:
+            now = 2_000_000_000
+            lines = []
+            for i in range(6):
+                stem = f"topic-{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\ncontent about topic {i}\n")
+                os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
+                lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(lines) + "\n")
+            state = memory_lint.collect_state(d)
+            out = _run_action_json(state, dry_run=False, yes=False)
+            d_exp = sum(len(e["old_pointer_line"].encode()) + 1
+                        for e in memory_lint.class_d_count_fold(state, set()))
+            assert d_exp > 0, "class_d must fire"
+            assert out["d_count_fold_bytes_saved"] == d_exp, out
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
+def test_auto_archive_json_impact_includes_class_c_term():
+    # L1357: `+ sum(len(old) - len(new) for C if e.get("new"))`. A resolvable ledger target is present.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "src.md", "project", "dangling", "see [[ghost-topic]]")
+        _write_memory(d, "project_external_evals_ledger.md", "project", "ledger", "n/a")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [src](src.md) — x\n- [project_external_evals_ledger](project_external_evals_ledger.md) — l\n")
+        state = memory_lint.collect_state(d)
+        out = _run_action_json(state, dry_run=False, yes=False)
+        assert out["estimated_impact_bytes"] == len("[[ghost-topic]]") - len("[[project_external_evals_ledger]]"), out
+
+
+def test_auto_archive_json_impact_skips_class_c_with_no_target():
+    # L1357 the `if e.get("new")` guard: a dangling link with NO ledger target has new=None and must
+    # be skipped. Mutated (drop guard) -> len(None) -> TypeError -> crash -> json.loads fails.
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "src.md", "project", "dangling no ledger", "see [[ghost-topic]]")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [src](src.md) — x\n")
+        state = memory_lint.collect_state(d)
+        out = _run_action_json(state, dry_run=False, yes=False)   # must not raise
+        assert out["estimated_impact_bytes"] == 0, out
+
+
+def test_auto_archive_no_actions_hint_only_without_yes():
+    # L1416: the "re-run with --yes" hint shows only when not apply_now. Two mutually-linked,
+    # both-indexed files -> A/B/C/D all empty (clean store).
+    with tempfile.TemporaryDirectory() as d:
+        _write_memory(d, "a.md", "project", "alpha", "see [[b]]")
+        _write_memory(d, "b.md", "project", "beta", "see [[a]]")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [a](a.md) — x\n- [b](b.md) — y\n")
+        r_no = subprocess.run(["python3", SCRIPT, d, "--auto-archive"],
+                              input="", capture_output=True, text=True)
+        r_yes = subprocess.run(["python3", SCRIPT, d, "--auto-archive", "--yes"],
+                               input="", capture_output=True, text=True)
+        assert "No actions proposed" in r_no.stdout, r_no.stdout   # positive control (else vacuous)
+        assert "re-run with --yes" in r_no.stdout, r_no.stdout      # L1416: hint shown
+        assert "re-run with --yes" not in r_yes.stdout, r_yes.stdout  # apply_now -> hint suppressed
+
+
 if __name__ == "__main__":
     test_typo_link_gets_suggestion()
     test_unrelated_dangling_link_gets_no_suggestion()
@@ -1062,4 +1572,34 @@ if __name__ == "__main__":
     test_class_d_count_fold_skips_files_named_in_exclude_files()
     test_class_d_break_is_inclusive_at_exact_byte_target()
     test_class_d_break_is_inclusive_at_exact_line_target()
+    # 2026-08-23 --auto-archive action-path coverage
+    test_memory_dir_falls_back_to_cwd_when_not_a_git_repo()
+    test_staleness_prefers_modified_frontmatter_over_mtime()
+    test_staleness_threshold_is_inclusive_at_exact_age()
+    test_git_fold_commits_returns_not_ok_on_non_git_dir()
+    test_git_fold_commits_returns_not_ok_on_oserror()
+    test_run_classify_unindexed_json_buckets_folded_vs_never()
+    test_run_detector_text_reports_template_percentages_and_gap()
+    test_class_b_collapses_verbose_pointer_over_thresholds()
+    test_class_b_topic_size_boundary_is_exclusive_at_5120()
+    test_class_b_pointer_length_boundary_is_inclusive_at_250()
+    test_class_b_first_para_proxy_is_inclusive_at_exact_1_2x()
+    test_class_b_returns_nothing_under_budget_trigger()
+    test_class_c_rewrites_dangling_wikilink_to_ledger()
+    test_class_c_rewrites_archived_link_to_supersedence_target()
+    test_class_c_ignores_link_that_resolves_by_slug_only()
+    test_apply_action_plan_moves_superseded_files_and_stubs_pointers()
+    test_apply_action_plan_rewrites_dangling_wikilink_on_disk()
+    test_print_plan_projects_post_trim_size()
+    test_print_plan_reports_class_d_savings_separately()
+    test_auto_archive_yes_applies_and_moves_file()
+    test_auto_archive_concurrent_edit_aborts_with_code_2()
+    test_auto_archive_dry_run_prompts_and_does_not_mutate()
+    test_auto_archive_json_dry_run_reports_impact_without_mutating()
+    test_auto_archive_json_apply_mode_returns_before_mutation()
+    test_auto_archive_json_impact_includes_class_b_term()
+    test_auto_archive_json_reports_class_d_savings()
+    test_auto_archive_json_impact_includes_class_c_term()
+    test_auto_archive_json_impact_skips_class_c_with_no_target()
+    test_auto_archive_no_actions_hint_only_without_yes()
     print("OK")
