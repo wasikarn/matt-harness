@@ -8,7 +8,7 @@
 > committed XMLs after any gate edit) remains the standing mechanism. See the review section below.
 > **This ADR is the record of *why* the un-park was declined — do not re-litigate without new
 > evidence that answers the three convergent findings.**
-> **Date:** 2026-08-23 · **Decider:** Operator (pending) · **Supersedes:** narrowly, the
+> **Date:** 2026-08-23 · **Decider:** Operator (ruled 2026-08-23 — stay parked) · **Supersedes:** narrowly, the
 > *park verdict* recorded in `docs/research/mutation-probe-results-2026-08-23.md` ("PARK the
 > tool"), and only for the on-demand perimeter-scoped slice below. **Retains:** the park's two
 > load-bearing halves — mutation-score is NOT a gauntlet/pre-commit gate, and the number comes
@@ -140,4 +140,4 @@ delta over the park's already-standing Recommendation #3 (periodic hand-run, reu
 after any gate edit) is a convenience wrapper — and it adds new costs the hand-run doesn't have
 (gauntlet-wiring pressure, supply-chain steady-state, model-invocation ambiguity). The park's Rec #3
 already captures the value at lower risk. This is the plan's explicit "steelman wins → stop, stay
-parked" branch. Final ruling is the operator's.
+parked" branch. The operator ruled stay parked on 2026-08-23; this ADR stands as the record of why.
