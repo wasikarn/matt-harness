@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Regression test for commands/cost-report.md's embedded "## Report" node script.
-# Extracts the script the same way a user would run it (the first ```bash fence),
-# points it at a synthetic HOME so it never touches the real
+# Regression test for the /cost-report dedup script,
+# scripts/workflows/cost-report-dedup.js (extracted 2026-08-23 from the
+# command body's embedded fence — 200-LOC cap refactor; this file now runs the
+# real bundled script directly instead of extracting a fence, so there is no
+# separate maintained copy to drift from the command). Points it at a
+# synthetic HOME so it never touches the real
 # ~/.local/share/kbg/metrics/costs.jsonl, and checks the dedup math.
 #
 # Covers a live bug found 2026-08-07 by an adversarial code-correctness review of
@@ -14,16 +17,15 @@
 # Fixed by defaulting the missing `stream` to `"orchestrator"` in the dedup key.
 #
 # Note on what proves what (found by a second-round adversarial review,
-# 2026-08-07): checking out the pre-fix commit (a9e4cce) and running this same
-# extraction against it does fail — but because the embedded script also carried
-# a literal NUL byte at the time and throws a JS SyntaxError before any dedup
-# logic runs, not because the dedup fixtures below exercise the bug. The actual
-# proof that these fixtures discriminate the fix from the bug is the mutation
-# test: manually reverting `(r.stream||"orchestrator")` to `(r.stream||"")` in a
-# scratch copy of cost-report.md and rerunning this file — case 1 then fails with
-# a wrong total instead of a crash. That's not automated here (it would require
-# checking out and mutating the file under test, which this suite intentionally
-# doesn't do); re-run it by hand if this test's fixtures are ever revised.
+# 2026-08-07): the actual proof that these fixtures discriminate the fix from
+# the bug is the mutation test: manually reverting `(r.stream||"orchestrator")`
+# to `(r.stream||"")` in a scratch copy of scripts/workflows/
+# cost-report-dedup.js and pointing REPORT_JS at it — case 1 then fails with a
+# wrong total instead of a crash. That's not automated here (it would require
+# mutating the file under test, which this suite intentionally doesn't do);
+# re-run it by hand if this test's fixtures are ever revised. (The pre-2026-08-23
+# fenced-script version of this recipe mutated a scratch copy of
+# commands/cost-report.md instead — same mutation, different file.)
 # Extended 2026-08-07 for the agent_type breakdown (docs/research/
 # orchestrator-tax-gap-analysis-2026-08-07.md, "Re-read audit" G1 follow-up): the
 # dedup key widened again, from (session_id, stream, model) to (session_id, stream,
@@ -33,7 +35,8 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-COST_REPORT_MD="$ROOT/commands/cost-report.md"
+REPORT_JS="$ROOT/scripts/workflows/cost-report-dedup.js"
+COMMAND_MD="$ROOT/commands/cost-report/COMMAND.md"
 
 pass=0
 fail=0
@@ -49,18 +52,21 @@ assert() {
   fi
 }
 
-# Extract the first ```bash fenced block (the "## Report" script) the same way a
-# user copy-pastes it — no separate maintained copy to drift from the doc. The
-# block itself is a complete `node -e '...'` shell command, so it's executed
-# directly as bash, not re-wrapped inside another `node -e`.
-extract_report_script() {
-  awk '/^```bash$/{f++; if (f==1) {p=1; next}} /^```$/{if (p) {p=0}} p' "$COST_REPORT_MD"
-}
-REPORT_SCRIPT=$(extract_report_script)
-[[ -n "$REPORT_SCRIPT" ]] || { echo "FATAL: could not extract the report script from $COST_REPORT_MD" >&2; exit 1; }
-[[ "$REPORT_SCRIPT" == node* ]] || { echo "FATAL: extracted block doesn't start with 'node' — extraction grabbed the wrong fence or cost-report.md's script shape changed" >&2; exit 1; }
+[[ -f "$REPORT_JS" ]] || { echo "FATAL: $REPORT_JS not found — the /cost-report script moved without updating this test" >&2; exit 1; }
+[[ -f "$COMMAND_MD" ]] || { echo "FATAL: $COMMAND_MD not found — the command moved without updating this test" >&2; exit 1; }
 
-echo "=== cost-report.md dedup (stream-aware) ==="
+echo "=== cost-report dedup (stream-aware) ==="
+
+# Wiring guard (plan-review finding, 2026-08-23): the command body must invoke
+# the script via ${KBG_PLUGIN_ROOT} — the hook-only ${CLAUDE_PLUGIN_ROOT}
+# expands EMPTY in a command body (hooks/session/command-root-anchor.sh's own
+# header says command bodies must not name it), which would ENOENT for every
+# installed-plugin user while this suite still passes green against the repo
+# path. No other gate sees that mismatch, so pin it here.
+cpr_refs=$(/usr/bin/grep -c 'CLAUDE_PLUGIN_ROOT' "$COMMAND_MD") || true
+kpr_refs=$(/usr/bin/grep -c 'KBG_PLUGIN_ROOT.*cost-report-dedup\.js' "$COMMAND_MD") || true
+[[ "$cpr_refs" == "0" && "$kpr_refs" -ge 1 ]] && ok=1 || ok=0
+assert "COMMAND.md invokes cost-report-dedup.js via \${KBG_PLUGIN_ROOT} and never names the hook-only \${CLAUDE_PLUGIN_ROOT} (got $kpr_refs KBG refs, $cpr_refs CLAUDE refs)" "$ok"
 
 # Adversarial case: a session_id with a pre-stream legacy row (model_scoped:true,
 # no `stream` field — always meant the orchestrator total) and a post-fix
@@ -77,7 +83,7 @@ cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-01T00:00:00Z","session_id":"upgrade-span","transcript_path":"/t","model":"claude-opus-4-8","model_scoped":true,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":5.0}
 {"timestamp":"2026-08-07T00:00:00Z","session_id":"upgrade-span","transcript_path":"/t","model":"claude-opus-4-8","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":7.0}
 EOF
-out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "7.0000" ]] && ok=1 || ok=0
@@ -94,7 +100,7 @@ cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-07T00:00:00Z","session_id":"two-streams","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":3.0}
 {"timestamp":"2026-08-07T00:00:01Z","session_id":"two-streams","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","turns":4,"input_tokens":50,"output_tokens":25,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":2.0}
 EOF
-out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "5.0000" ]] && ok=1 || ok=0
@@ -114,7 +120,7 @@ cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-07T00:00:00Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"kbg:code-reviewer","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":4.0}
 {"timestamp":"2026-08-07T00:00:01Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":4,"input_tokens":50,"output_tokens":25,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":6.0}
 EOF
-out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "10.0000" ]] \
@@ -142,7 +148,7 @@ cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-07T00:00:00Z","session_id":"unknown-leak","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":1000.0}
 {"timestamp":"2026-08-07T00:00:01Z","session_id":"unknown-leak","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":1,"input_tokens":5,"output_tokens":2,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":2.0}
 EOF
-out=$(HOME="$fake_home" bash -c "$REPORT_SCRIPT" 2>&1)
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
 agent_section=$(printf '%s' "$out" | awk '/=== By agent type/{f=1;next} /^$/{f=0} f')
 [[ "$rc" == "0" ]] \

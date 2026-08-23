@@ -1,0 +1,69 @@
+#!/usr/bin/env node
+// cost-report-dedup.js — the /cost-report slash command's report + CSV logic.
+// Extracted verbatim from commands/cost-report.md's two embedded fences
+// (2026-08-23, 200-LOC cap refactor) so the command body stays under cap and
+// this logic is directly testable: tests/commands/test-cost-report.sh runs
+// this file, not a fence extraction. Dedup semantics and their incident
+// history: commands/cost-report/references/schema-history.md.
+// Usage: node cost-report-dedup.js        -> summary report
+//        node cost-report-dedup.js csv    -> CSV of the last 100 raw rows
+const fs=require("fs"),os=require("os"),path=require("path");
+const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
+
+if(process.argv[2]==="csv"){
+  if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
+  const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
+  console.log("timestamp,session_id,model,model_scoped,stream,agent_type,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
+  for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
+  process.exit(0);
+}
+
+if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
+const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
+const bySession=new Map();
+for(const r of rows){const k=r.session_id||r.transcript_path||r.timestamp;if(!bySession.has(k))bySession.set(k,[]);bySession.get(k).push(r);}
+const latest=[];
+for(const rs of bySession.values()){
+  const scoped=rs.filter(r=>r.model_scoped===true);
+  if(scoped.length){
+    const byModel=new Map();
+    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"")+" "+(r.agent_type||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    latest.push(...byModel.values());
+  }else{
+    let best=null;
+    for(const r of rs){if(!best||String(r.timestamp)>String(best.timestamp))best=r;}
+    if(best)latest.push(best);
+  }
+}
+const cost=r=>Number(r.estimated_cost_usd)||0;
+const fmtLocal=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+const day=r=>fmtLocal(new Date(r.timestamp));
+const today=fmtLocal(new Date());
+const d=fmtLocal(new Date(Date.now()-864e5));
+const sum=a=>a.reduce((s,r)=>s+cost(r),0);
+const f4=n=>"$"+n.toFixed(4);
+console.log("=== Cost summary ===");
+console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
+console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
+const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));
+console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
+const by=(key)=>{const m=new Map();for(const r of latest){const k=key(r)||"(unknown)";m.set(k,(m.get(k)||0)+cost(r));}return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
+const unverified=new Set(latest.filter(r=>r.rate_verified===false).map(r=>r.model||"(unknown)"));
+console.log("\n=== By model ===");for(const [k,v] of by(r=>r.model))console.log(f4(v).padStart(12)+"  "+k+(unverified.has(k)?"  (rate unverified)":""));
+const tagged=latest.filter(r=>r.stream);
+if(tagged.length){
+  console.log("\n=== By stream (rows tagged 2026-08-07+; older rows are orchestrator-only and excluded) ===");
+  for(const [k,v] of by(r=>r.stream)){if(k==="(unknown)")continue;console.log(f4(v).padStart(12)+"  "+k);}
+  const orch=tagged.filter(r=>r.stream==="orchestrator");
+  const turns=orch.reduce((s,r)=>s+(Number(r.turns)||0),0);
+  const cr=orch.reduce((s,r)=>s+(Number(r.cache_read_tokens)||0),0);
+  if(turns)console.log("\norchestrator context carried per turn: "+Math.round(cr/turns).toLocaleString()+" tokens  (re-read every turn — the rent meter)");
+}
+const typed=latest.filter(r=>r.stream==="subagent"&&r.agent_type);
+if(typed.length){
+  console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+) ===");
+  for(const [k,v] of by(r=>r.agent_type)){if(k==="(unknown)")continue;console.log(f4(v).padStart(12)+"  "+k);}
+}
+console.log("\n=== Last 7 days ===");
+const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}
+[...days.entries()].sort((a,b)=>b[0]<a[0]?-1:1).slice(0,7).forEach(([k,v])=>console.log(k+"  "+f4(v)));
