@@ -1406,7 +1406,7 @@ def run_action_mode(state, args):
             "apply_command": "memory-lint.py --auto-archive --yes",
         }
         print(json.dumps(out, indent=2))
-        return 0 if dry_run else 0  # JSON mode is informational; exit 0
+        return 0  # JSON mode is informational; exit 0 regardless of dry_run
 
     print_plan(state, plan, estimated_impact)
 
