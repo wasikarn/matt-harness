@@ -165,9 +165,9 @@ per the format above — the priority reasoning belongs only in `Issue:`, never 
 
 ## Approval Criteria
 
-- **Approve**: No CRITICAL, HIGH, or MEDIUM issues
+- **Approve**: No CRITICAL, HIGH, or MEDIUM issues — including clean zero-finding reviews
 - **Warning**: MEDIUM issues only (can merge with caution)
-- **Block**: CRITICAL or HIGH issues found
+- **Block**: CRITICAL or HIGH issues found — must fix before merge
 
 ## Framework Checks
 
