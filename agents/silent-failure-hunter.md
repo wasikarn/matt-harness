@@ -34,37 +34,9 @@ its idiom differs by language. Check for the language-specific shape, not just `
 | Rust | `let _ = fallible_call();`, `.unwrap_or_default()` masking the error variant, `.ok()` discarding `Err` |
 | Java/Kotlin | `catch (Exception e) {}`, catching `Throwable` broadly and no-op'ing |
 
-```javascript
-// BAD: error identity is gone — caller can't tell "empty" from "failed"
-async function getUserOrders(id) {
-  try {
-    return await db.orders.find({ userId: id });
-  } catch {
-    return [];
-  }
-}
-
-// GOOD: caller can distinguish failure from a genuinely empty result
-async function getUserOrders(id) {
-  try {
-    return await db.orders.find({ userId: id });
-  } catch (err) {
-    logger.error("failed to fetch orders", { userId: id, err });
-    throw err; // or a typed error the caller can branch on
-  }
-}
-```
-
-```go
-// BAD: error silently discarded, code proceeds on a possibly-invalid state
-data, _ := os.ReadFile(path)
-
-// GOOD: error checked, propagated with context
-data, err := os.ReadFile(path)
-if err != nil {
-    return fmt.Errorf("reading config %s: %w", path, err)
-}
-```
+The fix shape is the same everywhere: log with context AND re-throw (or return a typed
+error/wrapped error the caller can branch on — Go: `fmt.Errorf("...: %w", err)`) so the
+caller can distinguish "failed" from "genuinely empty/zero result".
 
 **Deliberate vs accidental suppression:** before flagging, check for a nearby comment at the
 suppression site explaining *why* it's safe (`// intentionally ignored: metrics push is

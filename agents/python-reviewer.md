@@ -24,14 +24,21 @@ When invoked:
 ## Review Priorities
 
 ### CRITICAL — Security
-- **SQL Injection**: f-strings in queries — use parameterized queries
+- **SQL Injection**: f-strings in queries — use parameterized queries. Placeholder syntax is
+  driver-specific (PEP 249 leaves paramstyle to the module): `%s` is psycopg2/MySQLdb/PyMySQL,
+  but stdlib `sqlite3` uses `?` and errors on `%s` (`OperationalError: near "%"`, verified
+  against `sqlite3.paramstyle`) — check which driver the code imports before suggesting the
+  fix verbatim.
 - **Command Injection**: unvalidated input in shell commands — use subprocess with list args
 - **Path Traversal**: user-controlled paths — validate with normpath, reject `..`
 - **Eval/exec abuse**, **unsafe deserialization**, **hardcoded secrets**
 - **Weak crypto** (MD5/SHA1 for security), **YAML unsafe load**
 
 ### CRITICAL — Error Handling
-- **Bare except**: `except: pass` — catch specific exceptions
+- **Bare except**: `except: pass` swallows `KeyboardInterrupt`, `SystemExit`, and every bug
+  alike — catch the specific exceptions you can handle, let the rest propagate. In the
+  handler, don't presume the failed value's shape (`record.id` on a plain dict raises
+  `AttributeError` and masks the real error).
 - **Swallowed exceptions**: silent failures — log and handle
 - **Missing context managers**: manual file/resource management — use `with`
 
@@ -70,7 +77,9 @@ exactly what Pydantic exists to replace.
 - Use `isinstance()` not `type() ==`
 - Use `Enum` not magic numbers
 - Use `"".join()` not string concatenation in loops
-- **Mutable default arguments**: `def f(x=[])` — use `def f(x=None)`
+- **Mutable default arguments**: `def f(x=[])` — the default is created once at
+  function-definition time and shared across every call that doesn't pass a value; use the
+  `None` sentinel (`def f(x=None)` + fresh list inside)
 
 ### HIGH — Code Quality
 - Functions > 50 lines, > 5 parameters (use dataclass)
@@ -88,32 +97,11 @@ exactly what Pydantic exists to replace.
   for CPU-bound parallelism, `threading`/`asyncio` for I/O-bound concurrency.
 - **A blocking call inside a coroutine stalls the entire event loop**, not just that request —
   `requests.get()`, `time.sleep()`, or sync file I/O inside an `async def` blocks every other
-  concurrently-running coroutine, not just the caller.
-  ```python
-  # BAD: requests.get is synchronous — blocks the whole event loop
-  async def fetch_user(user_id):
-      resp = requests.get(f"/users/{user_id}")
-      return resp.json()
-
-  # GOOD: async-native client, or run_in_executor for unavoidable sync calls
-  async def fetch_user(user_id):
-      async with httpx.AsyncClient() as client:
-          resp = await client.get(f"/users/{user_id}")
-          return resp.json()
-  ```
+  concurrently-running coroutine, not just the caller. Fix: an async-native client (httpx), or
+  `run_in_executor` for unavoidable sync calls.
 - **Sequential `await` for independent work wastes the concurrency `asyncio` offers** — use
-  `asyncio.gather` when the calls don't depend on each other.
-  ```python
-  # BAD: three round-trips, one after another
-  user = await fetch_user(uid)
-  orders = await fetch_orders(uid)
-  prefs = await fetch_prefs(uid)
-
-  # GOOD: concurrent — total latency is the slowest one, not the sum
-  user, orders, prefs = await asyncio.gather(
-      fetch_user(uid), fetch_orders(uid), fetch_prefs(uid)
-  )
-  ```
+  `asyncio.gather` when the calls don't depend on each other; total latency becomes the
+  slowest call, not the sum.
 - **A forgotten `await` doesn't error, it silently returns a coroutine object** — `fetch_user(uid)`
   without `await` never runs to completion; the bug surfaces as "empty/wrong data," not a
   traceback. Flag any coroutine-returning call whose result isn't awaited, assigned to a
@@ -131,70 +119,10 @@ exactly what Pydantic exists to replace.
 - List comprehensions over C-style loops — no functional difference, so this
   is Noise Control's "skip stylistic preferences" territory unless the loop
   body is doing something a comprehension can't express cleanly
-- `value == None` — use `value is None`
+- `value == None` — use `value is None`: `==` can be overridden by `__eq__` and silently
+  return the wrong answer for a class with custom equality; `is` checks identity and is
+  always correct for the `None` singleton
 - Shadowing builtins (`list`, `dict`, `str`)
-
-## Concrete Patterns (BAD/GOOD)
-
-**Mutable default argument:** the default is created once, at function-definition time, and
-shared across every call that doesn't pass an explicit value.
-```python
-# BAD: every call without an argument shares and mutates the SAME list
-def add_item(item, items=[]):
-    items.append(item)
-    return items
-
-# GOOD: sentinel None, fresh list per call
-def add_item(item, items=None):
-    if items is None:
-        items = []
-    items.append(item)
-    return items
-```
-
-**Bare except / overly broad except:** swallows `KeyboardInterrupt`, `SystemExit`, and every
-bug alike, hiding real failures behind silent success.
-```python
-# BAD: catches everything, including the bug you didn't expect
-try:
-    process(record)
-except:
-    pass
-
-# GOOD: catch what you can actually handle, let the rest propagate
-try:
-    process(record)
-except (ValueError, KeyError) as e:
-    # record just proved malformed — don't presume its shape (e.g. record.id
-    # raises AttributeError if record is a plain dict, masking the real error)
-    logger.warning("skipping malformed record: %s", e)
-```
-
-**SQL injection via f-string:**
-```python
-# BAD: user input interpolated directly into the query
-cursor.execute(f"SELECT * FROM users WHERE email = '{email}'")
-
-# GOOD: parameterized — the driver escapes it, not string formatting
-cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-```
-Placeholder syntax is driver-specific (PEP 249 leaves paramstyle to the module) — `%s` is
-psycopg2/MySQLdb/PyMySQL, but stdlib `sqlite3` uses `?` and errors on `%s`
-(`OperationalError: near "%": syntax error`, verified against `sqlite3.paramstyle`). Check
-which driver the code actually imports before suggesting this fix verbatim.
-
-**`is None` vs `== None`:** `==` can be overridden by `__eq__`, so it can silently return an
-unexpected result for a class with custom equality; `is` checks identity and is always correct
-for the `None` singleton.
-```python
-# BAD: works today, breaks the day someone adds a custom __eq__
-if value == None:
-    ...
-
-# GOOD
-if value is None:
-    ...
-```
 
 ## Diagnostic Commands
 

@@ -135,19 +135,6 @@ Write the `description` in the frontmatter to include a summary of the module's 
 
 ---
 
-### Requirement: [another behavior name]
-<!-- id: FileName.methodName -->
-<!-- entities: EntityC -->
-<!-- enforced: OtherFile.otherMethod() -->
-
-[Description...]
-
-#### Scenario: [name]
-- **WHEN** [...]
-- **THEN** [...]
-
----
-
 ### Invariant: [invariant name]
 <!-- entities: EntityA -->
 <!-- enforced: FileName.methodName() -->
@@ -156,15 +143,10 @@ Write the `description` in the frontmatter to include a summary of the module's 
 [What must ALWAYS be true, regardless of triggers. Use SHALL.]
 
 > Last verified: YYYY-MM-DD (commit abc1234)
-
----
-
-### Invariant: [another invariant name]
-<!-- entities: EntityB, EntityC -->
-<!-- enforced: OtherFile.otherMethod() -->
-
-[Description...]
 ```
+
+(Repeat `### Requirement:` / `### Invariant:` blocks, separated by `---`, for every behavior
+mined — same shape as the two above.)
 
 ### Format Rules
 

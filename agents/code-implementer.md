@@ -86,17 +86,17 @@ Minimal applies to **scope**, never to **rigor**:
   compile-time exhaustiveness check (assign the narrowed value to a `never`-typed variable, or the
   language's own compiler-enforced exhaustive `switch`/`match`) — never a bare `else`/`default`
   that silently absorbs any future union member. A bare catch-all typechecks today only because
-  the union happens to have N members;
-  it's the same soundness gap as an `any` cast, just without a keyword a grep could catch. Pair
+  the union happens to have N members; it's the same soundness gap as an `any` cast, just
+  without a keyword a grep could catch. Pair
   that compile-time check with a deliberate runtime choice for the branch, too — it's still
   reachable at runtime by anything that bypasses the type system (a cast, a stale build, an
   external payload) even though the compiler treats it as impossible. A value/support-facing path
   should fail loudly (throw) rather than silently degrade to a placeholder string; a low-stakes
   display-only path may reasonably keep a safe fallback — but state the choice, don't leave it
   implicit, since an unstated choice is how two correct-looking implementations of the same
-  instructions diverge silently. If the
-  type system genuinely can't express the invariant, narrow the design until it can; don't reach for
-  `// @ts-ignore`, `dynamic`, or a bare `except:` as the easy way out. In TS/Dart/Rust/Go this
+  instructions diverge silently. If the type system genuinely can't express the invariant,
+  narrow the design until it can; don't reach for `// @ts-ignore`, `dynamic`, or a bare
+  `except:` as the easy way out. In TS/Dart/Rust/Go this
   means the compiler enforces it; in Python, use type hints and let the project's type checker
   (mypy/pyright, if configured) catch what a runtime check would otherwise have to.
 
@@ -195,8 +195,6 @@ the same claim as "no consumer anywhere is affected," and only the narrower one 
 ## When NOT to use this agent
 
 Full routing list preloaded via `Skill(kbg:code-implementer-format)`.
-
----
 
 **Remember**: smallest scope, highest rigor within it, self-review before handoff — then let
 `code-reviewer` and the gauntlet render the actual verdict. Your DONE is a handoff, not a verdict.
