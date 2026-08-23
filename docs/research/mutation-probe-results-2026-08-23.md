@@ -74,11 +74,14 @@ Per-mutant verified: **35 of 37 killed**. The 2 not killed are correctly uncover
 - **L1420** (`if dry_run and not apply_now` → `or`) is a **proven equivalent mutant** — both
   states where the connective would matter (`dry_run ∧ apply_now`, `¬dry_run ∧ ¬apply_now`) are
   unreachable given the L1360-1361 flag derivation.
-- **L1424** (`apply_now = True` under `--dry-run --yes`) is a **design decision, left uncovered
-  deliberately**: `--auto-archive --dry-run --yes` currently APPLIES (`--yes` overrides
-  `--dry-run`). Pinning that as spec would cement a footgun (convention: the safety flag should
-  win). Flagged to the operator to decide fix-precedence vs pin-behavior rather than silently
-  encoding the current behavior in a test.
+- **L1424** (`apply_now = True` under `--dry-run --yes`) surfaced a real **footgun**, not just a
+  test gap: `--auto-archive --dry-run --yes` used to APPLY (`--yes` silently overrode `--dry-run`).
+  Operator chose fix-precedence over pin-behavior. **FIXED v0.68.435**: an explicit `--dry-run` is
+  now a hard stop (print plan, exit — matching the "preview" role SKILL.md documents), so
+  `--dry-run` wins over `--yes`; the footgun `if args.yes: apply_now = True` override was removed.
+  Regression test `test_auto_archive_dry_run_wins_over_yes` pins it (verified: fails against the
+  old code, passes against the fix). This is the one SUT-code change in the whole probe follow-up;
+  everything else was pure test coverage.
 
 Boundary fixtures land exactly ON each threshold (class_b topic-size 5120/5121, pointer-length
 249/250, first-para-proxy pointer==1.2×first_para; staleness age==threshold). Highlighted defensive

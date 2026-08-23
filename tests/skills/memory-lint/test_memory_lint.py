@@ -1513,6 +1513,20 @@ def test_auto_archive_json_impact_skips_class_c_with_no_target():
         assert out["estimated_impact_bytes"] == 0, out
 
 
+def test_auto_archive_dry_run_wins_over_yes():
+    # L1424 fix (2026-08-23): `--auto-archive --dry-run --yes` must NOT mutate -- an explicit
+    # --dry-run is a hard stop that wins over --yes. Previously --yes overrode --dry-run and
+    # applied (a footgun); this pins the fixed precedence. Fails against the old code.
+    with tempfile.TemporaryDirectory() as d:
+        _class_a_fixture(d)
+        r = subprocess.run(["python3", SCRIPT, d, "--auto-archive", "--dry-run", "--yes"],
+                           input="", capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        assert os.path.exists(os.path.join(d, "stale-topic.md")), "dry-run+yes must NOT move the file"
+        assert not os.path.isdir(os.path.join(d, "_archive")), r.stdout
+        assert "=== Applied ===" not in r.stdout, r.stdout   # never reached the apply block
+
+
 def test_auto_archive_no_actions_hint_only_without_yes():
     # L1416: the "re-run with --yes" hint shows only when not apply_now. Two mutually-linked,
     # both-indexed files -> A/B/C/D all empty (clean store).
@@ -1601,5 +1615,6 @@ if __name__ == "__main__":
     test_auto_archive_json_reports_class_d_savings()
     test_auto_archive_json_impact_includes_class_c_term()
     test_auto_archive_json_impact_skips_class_c_with_no_target()
+    test_auto_archive_dry_run_wins_over_yes()
     test_auto_archive_no_actions_hint_only_without_yes()
     print("OK")

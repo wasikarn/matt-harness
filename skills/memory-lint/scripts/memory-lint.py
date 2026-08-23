@@ -1417,17 +1417,22 @@ def run_action_mode(state, args):
             print("  (re-run with --yes to exit cleanly without re-checking)")
         return 0
 
+    # An explicit --dry-run is a hard stop: print the plan and exit, never apply
+    # or prompt. --dry-run wins over --yes (safety-flag precedence) — otherwise
+    # `--auto-archive --dry-run --yes` silently applied, defeating the preview
+    # SKILL.md documents --dry-run for. The default (bare --auto-archive) keeps
+    # the prompt below; --yes alone still applies directly (dry_run is False).
+    if args.dry_run:
+        return 0
+
     if dry_run and not apply_now:
         print()
         print("Apply? [y/N] (use --yes to skip)")
-        if args.yes:
-            apply_now = True
-        else:
-            try:
-                ans = input("> ").strip().lower()
-            except EOFError:
-                ans = "n"
-            apply_now = ans in ("y", "yes")
+        try:
+            ans = input("> ").strip().lower()
+        except EOFError:
+            ans = "n"
+        apply_now = ans in ("y", "yes")
 
     if apply_now:
         # Concurrent-edit guard: compare mtime + first-200-chars hash of MEMORY.md
