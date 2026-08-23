@@ -10,10 +10,10 @@ effort: medium
 
 # Create Pull Request
 
-Create a GitHub PR from the current branch with a **consistent, templated body** that the
-user sees and approves **before** the PR exists. The preview-confirm gate (Phase 4) is the
-point of this skill: it enforces the body format and is the in-flow confirmation an
-unflagged external-write surface requires (same posture as `kbg:review-pr`'s submit gate).
+Create a GitHub PR from the current branch with a **consistent, templated body** the user
+approves **before** the PR exists. The preview-confirm gate (Phase 4) is the point of this
+skill: it enforces the body format and is the in-flow confirmation an unflagged
+external-write surface requires (same posture as `kbg:review-pr`'s submit gate).
 
 **Use when** the user says "create/open/raise a PR", "เปิด PR", "PR ให้หน่อย", or asks to
 turn the current branch's commits into a pull request.
@@ -23,9 +23,9 @@ turn the current branch's commits into a pull request.
 - Replying to reviewer comments → `/address-review`.
 - Reviewing a PR's code → `kbg:review-pr`.
 
-**Done when:** a PR exists on the base branch with a body that matches the template below (or
-the repo's `.github` template merged with it), the user confirmed the body before creation,
-and Phase 6 reported the number + URL + CI state.
+**Done when:** a PR exists on the base branch with a body that matches the template
+(`reference.md#pr-body-structure-phase-41`, or the repo's `.github` template merged with it),
+the user confirmed the body before creation, and Phase 6 reported the number + URL + CI state.
 
 **Input**: optional base-branch name and/or flags (e.g., `--draft`), from the user's request.
 
@@ -35,25 +35,18 @@ and Phase 6 reported the number + URL + CI state.
 - Extract any recognized flags (`--draft`).
 - Treat remaining non-flag text as the base branch name.
 - **Hotfix guard:** if the current branch matches `hotfix/*` and no base branch was given —
-  STOP and ask for the base **before doing anything else** (don't proceed into Phase 2 to
-  build a title/body/command and present the missing base as a footnote on an
-  otherwise-finished recommendation — a fully-built, ready-to-fire PR anchors a skimming user
-  toward agreeing with whatever base you guessed, which defeats the point of asking). A
-  hotfix PR targets the **production branch** it was cut from (usually `main`); the repo
-  default branch is often the integration branch (`develop`) or a stale legacy branch, so a
-  silent default misroutes the fix just as effectively as a persuasive wrong guess does.
+  STOP and ask for the base **before doing anything else**, not as a footnote on an
+  already-built recommendation. A hotfix PR targets the **production branch** it was cut from
+  (usually `main`), not the repo default. Why: `reference.md#hotfix-guard-rationale`.
 - If no base branch given (non-hotfix), resolve the repo's actual default branch (don't
-  assume `main`) via `skills/pr/scripts/resolve-default-branch.sh` (2026-08-15 extraction —
-  the full fallback chain this bullet used to describe inline, now shared with
-  `skills/review-pr/SKILL.md`, which previously only had the first 2 lines of it):
+  assume `main`) via the shared script (provenance: `reference.md`):
   ```bash
   bash skills/pr/scripts/resolve-default-branch.sh
   ```
-  Exit 0 → stdout is the resolved branch name, use it directly. Exit 1 → stdout starts
-  `AMBIGUOUS: ...` — more than one candidate is equally plausible after the
-  `git merge-base` disambiguation; ask the user rather than picking one silently, same as
-  the hotfix guard's wrong-default cost above. Exit 2 → stdout is `UNRESOLVED` — no usable
-  candidate at all; surface that rather than guessing.
+  Exit 0 → stdout is the branch name, use it. Exit 1 → stdout starts `AMBIGUOUS: ...` —
+  more than one candidate survives the `git merge-base` disambiguation; ask the user rather
+  than picking silently (same wrong-default cost as the hotfix guard). Exit 2 → `UNRESOLVED`
+  — no usable candidate; surface that rather than guessing.
 
 ---
 
@@ -90,16 +83,10 @@ Search for a repo PR template in order:
 3. `.github/pull_request_template.md`
 4. `docs/pull_request_template.md`
 
-If a repo template is found, **merge** it with the kbg body structure below — don't silently
-defer to it and don't discard it. Fill the repo template's sections from the commit/file
-analysis; if it's missing a section the kbg structure has (e.g. **Testing**), append that
-section. If a repo section already covers the same ground as a kbg section (e.g. a repo
-"Why?" vs kbg's Summary, or "What changed?" vs Changes), fold the kbg content into the
-repo's section rather than keeping both — that still counts as "merge," not deletion; Phase
-4's "preserve every section" rule means don't drop a kbg section that has no repo-template
-equivalent, not that every kbg heading must appear verbatim alongside a repo heading covering
-the same thing. (Reason: a `gh pr create --body` call overrides GitHub's auto-inserted template
-entirely, so "just let the repo template apply" loses the structure for model-created PRs.)
+If a repo template is found, **merge** it with the kbg body structure — never silently defer
+to it, never discard it: fill its sections from the analysis below, append kbg sections it
+lacks, fold kbg content into repo sections covering the same ground. Full merge semantics and
+why `--body` overrides GitHub's auto-template: `reference.md#template-merge-rationale-phase-2`.
 
 ### Commit Analysis
 
@@ -109,12 +96,11 @@ git log origin/<base>..HEAD --format="%h %s" --reverse
 
 Determine:
 - **PR title**: conventional-commit format with a type prefix — `feat: ...`, `fix: ...`, etc.
-  - If multiple types, use the dominant one **by commit count** — name the runner-up type(s) and
-    the count that decided it in the body's Summary section (e.g. "3 `fix:` commits vs 1 `docs:`
-    commit — `fix` wins"). **On a tie**, don't silently pick one: state the tie in the Summary and
-    choose the type that matches what the commit subjects (from the `git log` output above) show
-    as the primary change — read the actual messages, not a section that hasn't been written yet
-    (Conventional Commits defines no fixed severity order between types).
+  - If multiple types, use the dominant one **by commit count** — name the runner-up type(s)
+    and the deciding count in the body's Summary (e.g. "3 `fix:` vs 1 `docs:` — `fix` wins").
+    **On a tie**, don't silently pick one: state the tie in the Summary and choose the type the
+    commit subjects (from the `git log` above) show as the primary change — read the actual
+    messages (Conventional Commits defines no fixed severity order between types).
   - If a single commit, use its message as-is.
 - **Change summary**: group commits by type/area.
 
@@ -158,35 +144,9 @@ This is the format-enforcement gate. Build the body, show it, get one confirmati
 
 ### 1. Build the body
 
-Fill this structure (or the merged repo template from Phase 2) from the Phase 2 analysis.
-Preserve every section — leave a section as `N/A` rather than deleting it. (A kbg section
-already folded into an equivalent repo-template section per Phase 2 isn't "deleted" — see
-Phase 2's merge guidance.)
-
-```markdown
-## Summary
-
-<1-2 sentence description of what this PR does and why>
-
-## Changes
-
-<bulleted list of changes grouped by area>
-
-## Files Changed
-
-<one-line summary categorized by area, e.g. "3 migrations, 2 config files, 1 test file" —
-not a per-file list; GitHub's own "Files changed" tab already shows that. At exactly one
-changed file, the category count and the file name carry the same information — either form
-is fine there.>
-
-## Testing
-
-<how the changes were tested, or "Needs testing">
-
-## Related Issues
-
-<Closes/Fixes/Relates to #N, or "None">
-```
+Read `reference.md#pr-body-structure-phase-41` and fill that structure (or the merged repo
+template from Phase 2) from the Phase 2 analysis. Preserve every section — `N/A` rather than
+deleted. (A kbg section folded into an equivalent repo-template section isn't "deleted".)
 
 ### 2. Confirm (the gate)
 
@@ -201,35 +161,10 @@ On "Edit", apply the user's change and re-render once; on "Cancel", stop.
 
 ### 3. Create
 
-Write the confirmed body to a temp file and pass it via `--body-file` — don't inline it with
-`--body "<text>"`. Bash double quotes don't stop backtick or `$()` expansion, and a PR body
-describing code almost always contains backtick-wrapped inline code (standard markdown); an
-inlined `--body` breaks or executes shell content straight out of the diff/commit text, on
-completely ordinary input, no adversarial commit message required. The same risk applies to
-the title (it's a commit subject, and commit subjects can contain the same characters) — lower
-odds since conventional-commit titles are short and rarely carry backticks, but the fix costs
-nothing, so capture it into a variable through the same quoted-heredoc technique instead of
-inlining it either.
-
-```bash
-body_file="$(mktemp)"
-cat > "$body_file" <<'PR_BODY_EOF'
-<confirmed PR body>
-PR_BODY_EOF
-
-title="$(cat <<'PR_TITLE_EOF'
-<PR title>
-PR_TITLE_EOF
-)"
-
-gh pr create \
-  --title "$title" \
-  --base <base-branch> \
-  --body-file "$body_file"
-  # Add --draft if the --draft flag was parsed from the request
-
-rm -f "$body_file"
-```
+Write the confirmed body to a temp file and pass it via `--body-file` — never inline it with
+`--body "<text>"` — and capture the title via a quoted heredoc, not an inlined argument.
+Exact commands: `reference.md#create-commands-phase-43`; why inlining breaks or executes shell
+content on ordinary input: `reference.md#why---body-file-never-inline---body-phase-43`.
 
 ---
 
@@ -244,19 +179,7 @@ gh pr checks --json name,state,bucket 2>/dev/null || true
 
 ## Phase 6 — OUTPUT
 
-Report to the user:
-
-```
-PR #<number>: <title>
-URL: <url>
-Branch: <head> → <base>
-Changes: +<additions> -<deletions> across <changedFiles> files
-
-CI Checks: <status summary or "pending" or "none configured">
-
-Artifacts referenced:
-  - <any PRDs/plans linked in PR body>
-```
+Report to the user using `reference.md#output-report-template-phase-6`.
 
 **Suggested next step:**
 - Needs review           → `kbg:review-pr`
@@ -268,12 +191,7 @@ Artifacts referenced:
 
 ## Edge Cases
 
-- **No `gh` CLI**: Stop with: "GitHub CLI (`gh`) is required. Install: <https://cli.github.com/>"
-- **Not authenticated**: Stop with: "Run `gh auth login` first."
-- **Force push needed**: after a clean rebase use `git push --force-with-lease` (never `--force`).
-- **Multiple PR templates**: if `.github/PULL_REQUEST_TEMPLATE/` has multiple files, list them
-  and ask the user to choose.
-- **Large PR (>20 files)**: warn about size; suggest splitting if changes are logically separable.
+Worked list (no `gh`, unauthenticated, force-push-after-rebase, multiple templates, >20-file PR): `reference.md#edge-cases`.
 
 ## Design checks
 

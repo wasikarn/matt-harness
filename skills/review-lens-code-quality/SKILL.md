@@ -11,11 +11,10 @@ effort: xhigh
 # Code-Quality Baseline Reference
 
 Extracted from `agents/code-reviewer.md` (2026-08-18, harness-audit check 60 threshold) to keep
-the agent body under 20,000 chars. Referenced inline from the Code Quality, Security,
-React/Next.js Patterns, and Node.js/Backend Patterns sections there — this file is background
-material for that checklist, not a separately-triggered review pass. Read it alongside
-`agents/code-reviewer.md`: references below to "above," "this section," and the Pre-Report
-Gate/HIGH-CRITICAL proof gate point back to that file, not to this one.
+the agent body under 20,000 chars — background material for that agent's checklist, not a
+separately-triggered review pass. Read it alongside `agents/code-reviewer.md`: references below
+to "above," "this section," and the Pre-Report Gate/HIGH-CRITICAL proof gate point back to that
+file, not to this one.
 
 ## Fowler smell baseline
 
@@ -50,8 +49,7 @@ itself earns, using the normal Pre-Report Gate.
 - **Middle Man** — a class or function that mostly just delegates onward. → cut it, call the real target direct.
 - **Refused Bequest** — a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
-(Duplicated Code and Long Method are already covered above as Duplicated
-helper/util and Large functions — not repeated here.)
+(Duplicated Code and Long Method are already covered above as Duplicated helper/util and Large functions — not repeated here.)
 
 **Sync seam:** `skills/review-pr/reference.md` §Fowler Smell Baseline carries the
 full 12-smell table (including Duplicated Code) as background for the `code`
@@ -67,16 +65,14 @@ When reviewing AI-generated changes, prioritize:
 3. Hidden coupling or accidental architecture drift
 4. Unnecessary model-cost-inducing complexity
 
-Cost-awareness check:
-- Flag workflows that escalate to higher-cost models without clear reasoning need.
-- Recommend defaulting to lower-cost tiers for deterministic refactors.
+Cost-awareness check: flag workflows that escalate to higher-cost models without clear
+reasoning need; recommend defaulting to lower-cost tiers for deterministic refactors.
 
 ## BAD/GOOD examples appendix
 
-Illustrative pairs for checklist items already stated in prose bullets in `agents/code-reviewer.md`
-— read that file's bullets first; these examples are supporting detail, not new rules. Full pairs
-(Security/SQL injection, Code Quality/deep nesting, React-Next.js/missing deps, Node.js/N+1 query)
-moved to `examples.md` to clear this file's own check-60 threshold — read it alongside this section.
+Illustrative pairs for checklist items already stated as prose bullets in
+`agents/code-reviewer.md` — read that file's bullets first; the full pairs (Security/SQL
+injection, deep nesting, React missing deps, Node N+1) live in `examples.md`, read alongside.
 
 ## Common False Positives - Skip These
 
@@ -179,50 +175,13 @@ When reviewing backend code:
 ## Review Output Format — templates
 
 **Lead with the verdict.** Before the per-issue findings, print a one-line verdict headline —
-`Verdict: <PASS|WARNING|BLOCKED> — <one-line reason>` — using the same severity counts and
-wording as the Summary Format's `Verdict:` line below. The full Summary Format block still closes
-the review with the detailed table; the headline just gives a reader the outcome first, matching
-the Minto/BLUF discipline this fleet already applies elsewhere (`agents/summarizer.md`).
-
-```
-[CRITICAL] Hardcoded API key in source
-File: src/api/client.ts:42
-Issue: API key "sk-abc..." exposed in source code. This will be committed to git history.
-Fix: Move to environment variable and add to .gitignore/.env.example
-Revisit if: the key turns out to be a test-only placeholder already rotated out of production use
-
-  const apiKey = "sk-abc123";           // BAD
-  const apiKey = process.env.API_KEY;   // GOOD
-```
-
-**`Reviewer-Confidence: NN%`** — an optional field, added only when the dispatch prompt puts
-`code-reviewer` in **coverage mode** (`kbg:review-pr` Phase 4 step 2.6). In coverage mode, report
-down to 40% confidence instead of the default 80% floor, and tag every finding with this field so
-`kbg:review-pr-tier`'s downstream tiering has a real number to filter on — the whole point of
-coverage mode is surfacing findings a downstream stage can triage, not silently dropping them
-before they're ever written down. Outside coverage mode (standalone/ad-hoc invocation, no
-downstream tier), the default `>80%` pre-report gate applies as before and this field is omitted —
-nothing below 80% ever reaches this template in that case. Named `Reviewer-Confidence` (not just
-`Confidence`) to avoid collision with `kbg:review-pr-tier`'s own, differently-scaled `confidence:
-0.0-1.0` field (the step-3.5 adversarial verifier's confidence in its own refutation) — the two can
-appear on the same presented finding and measure different things.
-
-### Summary Format
-
-End every review with:
-
-```
-## Review Summary
-
-| Severity | Count | Status |
-|----------|-------|--------|
-| CRITICAL | 0     | pass   |
-| HIGH     | 2     | warn   |
-| MEDIUM   | 3     | info   |
-| LOW      | 1     | note   |
-
-Verdict: WARNING — 2 HIGH issues should be resolved before merge.
-```
+`Verdict: <PASS|WARNING|BLOCKED> — <one-line reason>` — matching the Summary Format table's
+`Verdict:` line that still closes the review. Read
+`examples.md#review-output-format--templates` before writing the review output: it carries
+both full templates (per-finding block with `Revisit if:` line, closing Review Summary table)
+and the coverage-mode `Reviewer-Confidence: NN%` field contract (`kbg:review-pr` Phase 4
+step 2.6 dispatch: report down to 40% and tag every finding; otherwise the default >80% gate
+applies and the field is omitted).
 
 ## Project-Specific Guidelines — full checklist
 

@@ -174,26 +174,9 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 ## Output Format
 
-```
-recursive-improve — iteration <N> report
-  observed:        <reader summary: gaps across N sessions> · <audit: C/W/I counts>
-  proposed:        <N candidates>   routed_to_ship: <N — never reached Step 3, scope guard>
-  approved:        <N>   (approve | revise | reject | unreachable; if Step 3 ran two asks,
-                    report each outcome — e.g. "HIGH: unreachable, LOW/MED: approve")
-  executed:        <N>   dropped: <N — and why>
-  per candidate:
-    - <name> · file:line | session | audit-id
-        executor:  inline | <agent>
-        done_when: <observable check>
-        status:    done | not-done (<reason>)
-        delta:     <metric moved? gaps N→M / audit X→Y / n/a>
-  drift_guard:     improved | flat | regressed | n/a (Verify not reached) (rollback: none|reverted|tuned|accepted+why)
-  witness_diff:    <fleet changes, or "none">
-  backlog:         <candidates past the cap / deferred, or "none">
-```
-
-See `references/output-format-disambiguation.md` for `not-done`/`routed_to_ship`/`dropped`/
-`drift_guard: n/a` — easy to conflate, worked cases there.
+The Step 6 iteration-report template lives in `references/output-format.md` — read it before
+emitting the report. See `references/output-format-disambiguation.md` for
+`not-done`/`routed_to_ship`/`dropped`/`drift_guard: n/a` — easy to conflate, worked cases there.
 
 ## Failure Modes to Avoid
 
