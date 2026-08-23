@@ -1470,7 +1470,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                     help="Print plan, do not mutate (default ON with --auto-archive)")
     ap.add_argument("--yes", action="store_true",
-                    help="Skip y/N confirm and apply mutations (implies --no-dry-run)")
+                    help="Skip y/N confirm and apply mutations (an explicit --dry-run overrides this)")
     ap.add_argument("--json", action="store_true", help="Machine-readable output")
     ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT,
                     help=f"Advisory staleness threshold in days (default: {STALE_DAYS_DEFAULT})")
