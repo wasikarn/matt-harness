@@ -250,7 +250,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   _xref3_table_agents=(code-architect typescript-reviewer python-reviewer
     security-reviewer silent-failure-hunter spec-miner refactor-cleaner
     build-error-resolver performance-optimizer ideate-critic
-    a11y-architect backend-architect blind-spot-hunter code-implementer
+    a11y-architect backend-architect blind-spot-hunter
     nextjs-reviewer requirement-analyst summarizer)
   if [ -d "$_boundary_base/agents" ]; then
     for _af in "$_boundary_base/agents"/*.md; do
@@ -287,7 +287,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship` (single-agent) instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/mattpocock-skills:implement` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -321,7 +321,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
-| `code-implementer` | any file | yes | Feature implementer — direct Write/Edit + Bash + Skill |
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
 | `requirement-analyst` | none (read-only) | no | Requirement analysis from tickets/specs (Read/Glob/Grep only — no Bash) |
 | `summarizer` | none (read-only) | no | Condenses text/docs/transcripts (Read/Glob/Grep only — no Bash) |
@@ -396,8 +395,8 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X", "scope this change" | `/ship` | Classify → implement → review → merge |
-| "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
+| "build one feature", "implement X", "scope this change" | `/mattpocock-skills:implement` | Implement a spec/tickets with TDD where possible → `mattpocock-skills:code-review` → commit |
+| "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
 | "release now", "cut a release" | `/ship-release` | Release ceremony |

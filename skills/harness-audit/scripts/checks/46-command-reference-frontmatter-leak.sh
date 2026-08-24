@@ -2,17 +2,19 @@
 # 46. Reference-file frontmatter leak (commands/ and skills/).
 #
 # A directory-form command (`commands/<name>/COMMAND.md` + a `references/`
-# subfolder, e.g. `ship`/`ideate`) or a skill's `references/` subfolder
+# subfolder, e.g. `ideate`) or a skill's `references/` subfolder
 # (`incident`, `memory-lint`, `harness-audit`, etc.) is meant to keep its
 # supporting files inert — read only via an explicit path pointer in the
 # parent COMMAND.md/SKILL.md's prose, never invoked on their own. Confirmed
 # via a live `claude -p "..." --debug-file <path>` capture (2026-07-20
-# commands/deep-research pass): `commands/ship/references/classify.md` and
-# `pre-ship-verify.md`, both carrying their own `name:`/`description:`
+# commands/deep-research pass): two files that lived in the now-removed
+# `commands/ship/references/` directory (`classify.md` and
+# `pre-ship-verify.md`; `ship` was retired in the matt-harness migration,
+# 2026-08-24 ticket #86), both carrying their own `name:`/`description:`
 # frontmatter, loaded as fully independent skills
 # (`kbg:ship:references:classify`, userFacingName="ship-classify") even
-# though `/ship` only ever reads them by file path. `commands/ideate/
-# references/frames.md` carries no frontmatter and correctly did NOT leak —
+# though `ship/COMMAND.md` only ever read them by file path. `commands/ideate/
+# references/frames.md` carries no frontmatter and correctly does NOT leak —
 # proving the rule is precise: any `.md` under `commands/` (other than a
 # command's own `COMMAND.md` entrypoint) that carries a `description:` in
 # frontmatter becomes its own accidental command, regardless of directory

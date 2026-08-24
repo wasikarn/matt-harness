@@ -48,7 +48,7 @@ if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ] || [ -f "$CLAUDE_DIR/commands/shi
   emit "H  ship-merge.md             disable-model-invocation (human-only merge flow)"
   _h=$((_h + 1))
 fi
-# (ship-release, ship, post-mortem, recursive-improve, address-review,
+# (ship-release, post-mortem, recursive-improve, address-review,
 #  ideate-search, wiki-ingest, tiered-pipeline, score-decision — all H by
 #  doctrine; listed compactly, not exhaustively grepped to keep the script readable.)
 
@@ -56,9 +56,9 @@ fi
 emit "X  address-review Phase 5 auto-resolve  external write (resolve reviewer thread)"
 emit "X  incident mitigation              irreversible — only escalate auto-selectable"
 
-# 3. J: judgment-bound — fix-bug Phase 3/4, address-review triage. Not deterministically
-#    computable; can never be G without re-treading the L2–L5 ladder.
-emit "J  fix-bug Phase 3/4                judgment (hypothesis, fix-shape)"
+# 3. J: judgment-bound — diagnosing-bugs Phase 3/5, address-review triage. Not
+#    deterministically computable; can never be G without re-treading the L2–L5 ladder.
+emit "J  diagnosing-bugs Phase 3/5       judgment (hypothesis ranking, fix shape)"
 emit "J  address-review Phase 2 triage    judgment (thread classification)"
 
 # --- Score -------------------------------------------------------------------

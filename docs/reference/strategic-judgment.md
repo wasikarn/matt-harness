@@ -10,7 +10,7 @@ Use it when the diagnosis is contested, the rivals adapt, the resources are cons
 | --- | --- | --- |
 | Goal-setting | A destination without a diagnosis or policy | — |
 | Operational decision-making | Analyzable trade-offs inside an existing frame | METHODOLOGY Rule 1 triad + `advisor()`, `docs/reference/judgment-ladder.md` |
-| Execution planning | Sequencing tasks after the strategy is set | `/ship`, `mattpocock-skills:domain-modeling` |
+| Execution planning | Sequencing tasks after the strategy is set | `/mattpocock-skills:implement`, `mattpocock-skills:domain-modeling` |
 | Chaos response | Stabilize first, decide fast | `kbg:incident` |
 | Research | Gathering intelligence before committing | `mattpocock-skills:research` |
 

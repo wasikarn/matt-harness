@@ -704,7 +704,7 @@ test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path 
 test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \
   "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users')"
 test_nopython_allow "$TASK_COMPLETE" "task-complete-separation: subagent completion passes with note" \
-  "$(taskupdate_payload 'completed' 'code-implementer')"
+  "$(taskupdate_payload 'completed' 'refactor-cleaner')"
 test_nopython_allow "$ATLASSIAN_GATE" "atlassian gate: cold Atlassian call passes with note (jira-acli present in fixture HOME)" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' 'nopy-session')" \
   "HOME=$NOPY_AG_HOME"

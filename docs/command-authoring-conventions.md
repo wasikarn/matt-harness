@@ -32,18 +32,20 @@ directory only earns its cost when the content genuinely doesn't fit in one file
 
 `commands/<name>/COMMAND.md` + a `references/` subfolder is a recognized Claude Code
 loader category — `getSkills` reports a distinct `N skill dir commands` bucket separate
-from flat plugin skills (confirmed via a live `--debug-file` capture). Only `ship` and
-`ideate` use it today, both because their procedures outgrew a single file's reasonable
-token budget (the same size concern documented elsewhere for `SKILL.md` bodies).
+from flat plugin skills (confirmed via a live `--debug-file` capture). Several commands
+use it today (e.g. `ideate`, `ship-merge`), each because its procedure outgrew a single
+file's reasonable token budget (the same size concern documented elsewhere for
+`SKILL.md` bodies).
 
 **The rule this doc exists to state:** any `.md` file under `commands/` — at any depth —
 that carries its own YAML frontmatter with a `description:` becomes an independently
 loadable command, regardless of directory nesting or author intent. This was confirmed
-directly: `commands/ship/references/classify.md` and `pre-ship-verify.md` both had
-`name:`/`description:` frontmatter and were loaded as standalone commands
-(`ship-classify`, `pre-ship-verify`) even though `ship/COMMAND.md` only ever reads them
-by file path. `commands/ideate/references/frames.md` carries no frontmatter and
-correctly does **not** leak.
+directly: two files that lived in the now-removed `commands/ship/references/`
+directory (`classify.md` and `pre-ship-verify.md`; `ship` was retired in the
+2026-08-24 matt-harness migration, ticket #86) both had `name:`/`description:`
+frontmatter and were loaded as standalone commands (`ship-classify`, `pre-ship-verify`)
+even though `ship/COMMAND.md` only ever read them by file path. `commands/ideate/
+references/frames.md` carries no frontmatter and correctly does **not** leak.
 
 **A `references/` file must never carry a `--- ... ---` frontmatter block.** Point to
 `frames.md` as the correct shape: a plain heading, prose, and tables — nothing else.
@@ -59,7 +61,7 @@ Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-rea
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
 gates a done-declaration. Several commands already do this
-(`ship`, `ship-merge`, `ship-release`, `post-mortem`, `address-review`,
+(`ship-merge`, `ship-release`, `post-mortem`, `address-review`,
 `ideate-search`). `harness-audit` checks 30
 (reason presence, WARN) and 44 (`ship-merge` specifically, CRIT) enforce this.
 
@@ -97,7 +99,7 @@ whether the task is better served as a skill (bundled scripts/reference files/`p
 scoping — see §2 above for when that's actually warranted) or an agent (a specialist a
 command delegates to, per `agent-authoring-conventions.md`).
 
-**Why:** Rule 2 (CLAUDE.md) — the same discipline that merged the former `/ship-task` and `kbg:ship-change` surfaces into one `/ship` once the two-surfaces-for-one-tail problem was named, rather than letting the fleet carry both indefinitely.
+**Why:** Rule 2 (CLAUDE.md) — the same discipline that merged the former `/ship-task` and `kbg:ship-change` surfaces into one `/ship` once the two-surfaces-for-one-tail problem was named, rather than letting the fleet carry both indefinitely. (`/ship` itself was later retired in the 2026-08-24 matt-harness migration, ticket #86, once `/mattpocock-skills:implement` covered the same job — the principle the merge illustrates outlived the surface.)
 
 ## When authoring a new command — quick checklist
 

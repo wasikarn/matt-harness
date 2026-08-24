@@ -1,13 +1,13 @@
 # recursive-improve — iteration report template
 
 Moved verbatim from SKILL.md § Output Format (2026-08-23, 200-LOC cap refactor). Field
-disambiguation (`not-done`/`routed_to_ship`/`dropped`/`drift_guard: n/a`) stays in
+disambiguation (`not-done`/`routed_to_implement`/`dropped`/`drift_guard: n/a`) stays in
 `output-format-disambiguation.md` — read both when emitting the Step 6 report.
 
 ```
 recursive-improve — iteration <N> report
   observed:        <reader summary: gaps across N sessions> · <audit: C/W/I counts>
-  proposed:        <N candidates>   routed_to_ship: <N — never reached Step 3, scope guard>
+  proposed:        <N candidates>   routed_to_implement: <N — never reached Step 3, scope guard>
   approved:        <N>   (approve | revise | reject | unreachable; if Step 3 ran two asks,
                     report each outcome — e.g. "HIGH: unreachable, LOW/MED: approve")
   executed:        <N>   dropped: <N — and why>

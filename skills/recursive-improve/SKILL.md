@@ -27,7 +27,7 @@ context-exhaustion backstop. See CLAUDE.md's Operating model (§Architecture):
 
 **When to use / not:** the user asks to improve/fix/audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap — not for a
-single named bug (`/fix-bug`), a new capability (`/ship`), or anything unattended. Can't present
+single named bug (`mattpocock-skills:diagnosing-bugs`), a new capability (`/mattpocock-skills:implement`), or anything unattended. Can't present
 the proposal to a human and wait? **Stop** — don't proceed plan-only into execution.
 
 ---
@@ -63,23 +63,23 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - Rank by impact, cost, and risk. State per candidate: what changes, who executes (inline or
   agent), blast radius (low/med/high — e.g. `hooks/gates/**` = high, doc-only = low),
   dependencies (none/chain). **If the touched surface is unclear, the candidate hasn't cleared
-  the scope guard below — treat it as "too big — route to /ship"; don't guess a blast-radius
+  the scope guard below — treat it as "too big — route to /mattpocock-skills:implement"; don't guess a blast-radius
   tier to get it past the gate.**
 - **Named bias guard — anchoring.** The first finding scanned isn't necessarily highest-impact;
   rank the full set before committing to an order, don't just work top-to-bottom. Escalation
   options: `references/step-rationale.md`.
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
-  **≤ 5 files / ≤ 200 lines** — bigger than that is not a loop iteration, hand it to `/ship`;
+  **≤ 5 files / ≤ 200 lines** — bigger than that is not a loop iteration, hand it to `/mattpocock-skills:implement`;
   don't smuggle a large change through. (File count is a proxy for risk, not the risk itself —
   `references/step-rationale.md`.) **There is no override that lets a >5-file/>200-line
   candidate execute through this loop even when you judge it mechanical and low-risk; it still
-  routes to `/ship`, where a human decides with full context, not this ritual.**
+  routes to `/mattpocock-skills:implement`, where a human decides with full context, not this ritual.**
 - **Cross-iteration evasion guard.** Before ranking a new candidate, check it against Step 6's
-  routed-to-`/ship` memory entries for root-cause overlap with anything previously excluded on
+  routed-to-`/mattpocock-skills:implement` memory entries for root-cause overlap with anything previously excluded on
   scope grounds — if it shares a root cause with a deferred systemic finding, name that
   explicitly at the gate instead of as ordinary new work. Why: `references/step-rationale.md`.
 - **Success criterion:** a ranked candidate list ready to present, each within the scope guard
-  or explicitly flagged as "too big — route to /ship".
+  or explicitly flagged as "too big — route to /mattpocock-skills:implement".
 
 ### 3. ASK — the gate (mandatory)
 
@@ -166,7 +166,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   memory entry — don't bury the regression. **Accept-as-new-baseline isn't permanent** — name a
   re-open condition in that entry (e.g. "revisit if this `file:line` resurfaces").
 - Emit the iteration report (Output Format below), and capture any durable WHY (a decision, a
-  deferred candidate, a regression accepted) in memory. **A candidate routed to `/ship` for
+  deferred candidate, a regression accepted) in memory. **A candidate routed to `/mattpocock-skills:implement` for
   exceeding the scope guard must be captured with its full member-file list** — Step 2's evasion
   guard checks later candidates against it.
 - **Iteration cap: 5 per session** (soft — the human gates each iteration anyway; only a
@@ -176,7 +176,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 The Step 6 iteration-report template lives in `references/output-format.md` — read it before
 emitting the report. See `references/output-format-disambiguation.md` for
-`not-done`/`routed_to_ship`/`dropped`/`drift_guard: n/a` — easy to conflate, worked cases there.
+`not-done`/`routed_to_implement`/`dropped`/`drift_guard: n/a` — easy to conflate, worked cases there.
 
 ## Failure Modes to Avoid
 
@@ -189,7 +189,7 @@ emitting the report. See `references/output-format-disambiguation.md` for
 - **Claiming success without a measured delta** — Step 5's drift guard: flat delta did not help.
 - **Silent rollback** — auto-reverting hides the signal; surface + ask (Step 6).
 - **Scope creep through the side door** — routing a >5-file/>200-line candidate here instead of
-  `/ship` (Step 2).
+  `/mattpocock-skills:implement` (Step 2).
 
 ## Integration Notes (Project-Specific)
 

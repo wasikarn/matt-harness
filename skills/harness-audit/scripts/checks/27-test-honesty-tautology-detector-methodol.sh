@@ -5,8 +5,8 @@
 # ~/.claude/rules/test-honesty.md (write-time hint, `paths: "**/*.py"` — loads
 # into every session, not just this repo; symlinked in from dotfiles, not
 # shipped or tracked here — confirmed 2026-08-20 the prior "claude/rules/"
-# path never existed in this repo) and `/ship` Phase 5 TDD default (workflow
-# gate).
+# path never existed in this repo) and `mattpocock-skills:tdd`'s red-green-
+# refactor default (workflow gate; `/ship` retired 2026-08-24, ticket #86).
 while IFS= read -r f; do
   [ -e "$f" ] || continue
   rel="${f#$REPO_ROOT/}"

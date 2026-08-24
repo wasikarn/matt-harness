@@ -16,7 +16,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - If yes → disable it. STOP hotfix. Done.
    - If no → continue.
 3. **Scope check — production-wide vs subset:** Does the issue affect **all users / the entire service**, or only a subset (e.g., "3 enterprise clients", "iOS users", "users in region X")?
-   - If subset → **decline hotfix**. Redirect to `/fix-bug`. A subset issue is a bug, not an incident. Hotfix risk (emergency `--admin` merge, bypassed review, rollback debt) is not justified when the majority of users are unaffected.
+   - If subset → **decline hotfix**. Redirect to `mattpocock-skills:diagnosing-bugs`. A subset issue is a bug, not an incident. Hotfix risk (emergency `--admin` merge, bypassed review, rollback debt) is not justified when the majority of users are unaffected.
    - If production-wide → continue.
 4. **Document why rollback/kill-switch was insufficient** in the PR body.
 
@@ -30,10 +30,10 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 
 **Actions**:
 1. Parse user input. Extract severity tier.
-2. Reproduce deterministically. If you can't, STOP — escalate to `/fix-bug`.
+2. Reproduce deterministically. If you can't, STOP — escalate to `mattpocock-skills:diagnosing-bugs`.
 3. Document the one-liner repro command for the PR.
 
-**Gate**: No repro in 5 min → abort hotfix, route to `/fix-bug`.
+**Gate**: No repro in 5 min → abort hotfix, route to `mattpocock-skills:diagnosing-bugs`.
 
 ---
 
@@ -50,7 +50,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - P0: Write test if possible in <3 min. If not, document manual verification steps.
    - P1/P2: Write minimal regression test. No exceptions.
 
-**Gate**: Change touches >3 files or requires structural rework → abort hotfix, route to `/fix-bug`.
+**Gate**: Change touches >3 files or requires structural rework → abort hotfix, route to `mattpocock-skills:diagnosing-bugs`.
 
 ---
 
@@ -71,7 +71,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 - P1: 10 minutes for review.
 - P2: 15 minutes for review.
 
-**Gate**: Block items exist and can't be fixed in timebox → abort hotfix, route to `/fix-bug`.
+**Gate**: Block items exist and can't be fixed in timebox → abort hotfix, route to `mattpocock-skills:diagnosing-bugs`.
 
 ---
 
@@ -189,7 +189,7 @@ default-recommendation sentence too, keyed to its own rebase-freshness signal
 
 ## Output Format
 
-**If declining the hotfix** (subset scope, non-urgent, kill-switch sufficient): produce a clear decline message without the ledger. State the Phase 0 gate that was hit, why it's not a hotfix, and the correct route (`/fix-bug`, normal PR, or "kill-switch applied — no code needed").
+**If declining the hotfix** (subset scope, non-urgent, kill-switch sufficient): produce a clear decline message without the ledger. State the Phase 0 gate that was hit, why it's not a hotfix, and the correct route (`mattpocock-skills:diagnosing-bugs`, normal PR, or "kill-switch applied — no code needed").
 
 **If proceeding with the hotfix:** produce a running ledger in this format:
 
@@ -211,7 +211,7 @@ Phase 6: <post-mortem scheduled Y/N | due date>
 - **"Fix forward without trying rollback"** — The fastest fix is usually the previous commit. Try it first.
 - **Hotfix PR to the integration branch** — basing on `develop` (or PR-ing a main-cut branch to `develop`) ships nothing to production and drags unreleased work into the release. Cut from the production branch; PR back to the same branch.
 - **"While I'm here..."** — Hotfix is not the time for cleanup. Every extra line increases rollback risk.
-- **"Subset of users = hotfix"** — Affecting only some users (even enterprise ones) is a bug, not an incident. Route to `/fix-bug`.
+- **"Subset of users = hotfix"** — Affecting only some users (even enterprise ones) is a bug, not an incident. Route to `mattpocock-skills:diagnosing-bugs`.
 - **Skipping repro** — "I know what the bug is" without reproducing is a guess. Repro first.
 - **Waiting for full review** — If Block items are resolved, merge. Don't wait for Minor nits.
 - **No follow-up** — Every hotfix needs a post-mortem. Without it, the same bug will hotfix again.

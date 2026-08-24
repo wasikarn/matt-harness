@@ -16,8 +16,8 @@
 # "former/formerly `kbg:X`" lines are also excluded — an established,
 # legitimate convention in this repo for documenting a rename (found live in
 # 3 files on first run of this check: skills/harness-audit, skills/incident,
-# commands/ship). Same shape as check 37/38's own false-positive guards:
-# don't nag on a clean, explicitly-historical pattern.
+# and the now-removed commands/ship). Same shape as check 37/38's own
+# false-positive guards: don't nag on a clean, explicitly-historical pattern.
 #
 # Scan list widened 2026-08-17 (deep-audit pass) to include the
 # `skills/*/references/*.md` and `commands/*/references/*.md` subfolder

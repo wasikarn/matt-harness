@@ -28,7 +28,7 @@ rationale). Grant only what the role needs:
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
   `requirement-analyst`, `spec-miner`, `summarizer`): `Read`, `Grep`,
   `Glob`, sometimes `Bash` for inspection (`git log`, `git diff`). Never `Write`/`Edit`.
-- **Mutating implementers** (`code-implementer`, `build-error-resolver`, `refactor-cleaner`,
+- **Mutating implementers** (`build-error-resolver`, `refactor-cleaner`,
   `performance-optimizer`): add `Write`/`Edit` on top of the read-only set.
 - **`Agent` is never granted.** No agent in this fleet re-orchestrates (Rule 13,
   CLAUDE.md's Staff-Engineer Thinking Loop) — a dispatched subagent returns scoped output to

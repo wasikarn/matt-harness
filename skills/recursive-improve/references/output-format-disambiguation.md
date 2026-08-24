@@ -3,8 +3,8 @@ enum: never entered Act (gate came back unreachable/reject, or this candidate wa
 this iteration) versus entered Act and failed (retry cap spent, per Step 4's escalate-not-retry
 rule). Say which one happened in the reason string every time.
 
-**`routed_to_ship`, `dropped`, and a gate-unreachable stop are three different things — keep
-them apart.** `routed_to_ship` counts candidates that never reached Step 3 at all, because
+**`routed_to_implement`, `dropped`, and a gate-unreachable stop are three different things — keep
+them apart.** `routed_to_implement` counts candidates that never reached Step 3 at all, because
 Step 2's scope guard excluded them before any ask — they are not part of the Step-3 candidate
 set `proposed` reflects being offered, and they are not `dropped`; they go straight to
 `backlog` with their full member-file list (Step 6). `dropped` counts only candidates that

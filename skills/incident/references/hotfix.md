@@ -1,6 +1,6 @@
 # Hotfix path (reference for `kbg:incident`)
 
-The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `/fix-bug` + fast review + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
+The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `mattpocock-skills:diagnosing-bugs` + fast review + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
 
 ## Core Principles
 
@@ -33,7 +33,7 @@ Infer from user input or ask explicitly.
 | Phase | Goal | Gate |
 |-------|------|------|
 | 0 | Rollback / kill-switch first | Resolves? STOP. Subset scope? Decline |
-| 1 | Reproduce in <5 min | No repro → abort to `/fix-bug` |
+| 1 | Reproduce in <5 min | No repro → abort to `mattpocock-skills:diagnosing-bugs` |
 | 2 | Smallest surgical fix | >3 files / structural rework → abort |
 | 3 | Fast review (parallel) | Block items unresolved → abort |
 | 4 | Server-side merge via `gh pr merge --admin` | Never merge locally + push |

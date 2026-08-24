@@ -106,7 +106,7 @@ before removing.
   report — do not run `git commit` yourself. This harness's global rule is that commits only
   happen when the user (or the orchestrating session) explicitly asks for one; being
   dispatched to clean up dead code is not that ask, and no other write-capable agent in this
-  fleet (`build-error-resolver`, `performance-optimizer`, `code-implementer`) auto-commits
+  fleet (`build-error-resolver`, `performance-optimizer`) auto-commits
   either. Committing per batch autonomously would also defeat batching's actual purpose here
   — a human reviewing each category before it lands, not after.
 

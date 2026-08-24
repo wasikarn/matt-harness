@@ -1,6 +1,6 @@
 ---
 name: production-audit
-description: Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship).
+description: Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement).
 bucket: review
 metadata:
   origin: community

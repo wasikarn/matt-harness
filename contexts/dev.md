@@ -36,7 +36,7 @@ Never simplify away input validation at trust boundaries, error handling that pr
 loss, security, or accessibility — laziness stops there.
 
 ## Route to a specialist agent when the work fits one
-- A feature that needs a design pass first → `code-architect` for the blueprint, then `code-implementer` to write it
+- A feature that needs a design pass first → `code-architect` for the blueprint, then `/mattpocock-skills:implement` to write it
 - Build/compile failure → `build-error-resolver`
 - Dead code, unused exports, duplication → `refactor-cleaner`
 - Bottleneck, bundle size, render/memory issue → `performance-optimizer`
@@ -47,4 +47,4 @@ loss, security, or accessibility — laziness stops there.
 - Grep, Glob for finding code
 
 ## Not this frame's job
-A full spec→ship pipeline is a skill or command (`code-implementer`, `/ship`), not this frame — `/frame dev` only sets posture for the current conversation, it doesn't replace those workflows.
+A full spec→ship pipeline is a skill or command (`/mattpocock-skills:implement`), not this frame — `/frame dev` only sets posture for the current conversation, it doesn't replace those workflows.

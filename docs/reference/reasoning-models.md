@@ -148,7 +148,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | reversibility | `thinking-reversibility` | applied | domain-modeling, the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule |
 | debiasing | `thinking-debiasing` | considered | — | Check yourself — anti-self-deception frame; its former kbg home was deleted 2026-08-24, no live anchor |
 | socratic | `thinking-socratic` | considered | — | named-method questioning + "Socratic Trap" failure mode; its former kbg home was deleted 2026-08-24, no live anchor |
-| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
+| scientific-method | `thinking-scientific-method` | applied | diagnosing-bugs, commands/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
 | red-team | `thinking-red-team` | considered | — | Skeptic role: argue AGAINST and find risks; its former kbg home (review-pr) was deleted 2026-08-24 #82, no live anchor |
 | steel-manning | `thinking-steel-manning` | applied | skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives (its former review-pr home was deleted 2026-08-24 #82) |
@@ -158,8 +158,8 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | opportunity-cost | `thinking-opportunity-cost` | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
 | circle-of-competence | `thinking-circle-of-competence` | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
 | jobs-to-be-done | `thinking-jobs-to-be-done` | considered | — | user-story-vs-job-to-be-done tradeoff is thematic; agents/product-analyst (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
-| bayesian | `thinking-bayesian` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
-| probabilistic | `thinking-probabilistic` | considered | commands/fix-bug, skills/incident | likelihood ranking is present, but model name is not used |
+| bayesian | `thinking-bayesian` | considered | diagnosing-bugs, skills/incident | likelihood ranking is present, but model name is not used |
+| probabilistic | `thinking-probabilistic` | considered | diagnosing-bugs, skills/incident | likelihood ranking is present, but model name is not used |
 | bounded-rationality | `thinking-bounded-rationality` | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
 | margin-of-safety | `thinking-margin-of-safety` | considered | — | its former kbg home, agents/inferential-structural-judge, was deleted in the v0.6.3 Wave-B cut; measured to hurt accuracy −10pp in eval, not re-proposed |
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
@@ -212,9 +212,9 @@ They are read-only framing labels, not dispatch instructions.
 | **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `triage` |
 | **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `research` |
 | **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `mattpocock-skills:code-review`, `mattpocock-skills:grilling` |
-| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `domain-modeling`, `/ship` scoping |
+| **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `domain-modeling` |
 | **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix) |
-| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |
+| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `mattpocock-skills:diagnosing-bugs`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that
 surface — don't invoke a model name separately. The model names are useful when

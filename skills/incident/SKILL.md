@@ -42,7 +42,7 @@ Run a production incident from first alert to resolution. **Incident response is
 
 5. **Communicate** — Initial status within 5 min. Updates every 5 min during active incident. Audience scales with severity.
 
-6. **Fix Forward** — If mitigation ≠ rollback, run the hotfix path from `references/hotfix.md` (S1/S2) or hand off to `/fix-bug` (S3). Severity reassessment belongs in step 2, not here.
+6. **Fix Forward** — If mitigation ≠ rollback, run the hotfix path from `references/hotfix.md` (S1/S2) or hand off to `mattpocock-skills:diagnosing-bugs` (S3). Severity reassessment belongs in step 2, not here.
 
 7. **Resolve & Monitor** — Verify fix in production. Monitor window: S1=1hr, S2=30min, S3=10min. Close incident, schedule post-mortem if S1/S2. For S3/S4, if this was an alert misfire or threshold is too sensitive, include alert tuning in the close notes.
 
@@ -97,7 +97,7 @@ Produce at close:
 ## Related
 
 - `references/hotfix.md` — hotfix path when rollback/kill-switch is insufficient (formerly `kbg:hotfix`)
-- `/fix-bug` — non-urgent root cause fix after mitigation
+- `mattpocock-skills:diagnosing-bugs` — non-urgent root cause fix after mitigation
 - `/post-mortem` — after resolution, blameless analysis
 - `/ship-merge` — deploying fix PR after resolution
 

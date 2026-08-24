@@ -158,8 +158,9 @@ Order the implementation by dependency:
 
 ## Handoff
 
-Once the blueprint is approved, dispatch `code-implementer` to build it — it detects the stack,
-loads the matching `*-patterns` skill, and implements against this blueprint's build sequence.
+Once the blueprint is approved, hand it to `/mattpocock-skills:implement` — the user types
+that literal string themselves; it's `disable-model-invocation: true`, so this agent cannot
+invoke it directly — to build against this blueprint's build sequence.
 
 ## Related
 

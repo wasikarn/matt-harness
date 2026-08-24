@@ -14,7 +14,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
 | build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
-| code-implementer | Feature implementer — detects the stack, loads the matching kbg:*-patterns skill, writes the smallest-scope highest-rigor diff, verifies. Not for design or review. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill"] | yes |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 
@@ -48,7 +47,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
-| post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
+| post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /kbg:ship-merge for the decision. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor. |
@@ -59,17 +58,14 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (kbg:learn). |
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (/ship-merge). |
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. |
-| fix-bug | Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean). |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident). |
-| ship | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or a PR already ready to merge (/ship-merge). |
 
 ## Skills — Repo
 ### agent-support
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| code-implementer-format | Catalog of code-implementer's Failure modes to avoid and Report format template. Use when code-implementer runs. Don't use for other agents or standalone implementation. | inline | auto |
 | performance-optimizer-algorithms | Catalog of performance-optimizer's 14-row algorithmic-complexity pattern table. Auto-loads when performance-optimizer runs. Don't use for other agents. | inline | auto |
 | requirement-analyst-format | Catalog of requirement-analyst's self-consistency checklist, Output Format template, and Anti-Patterns list. Auto-loads when requirement-analyst runs. Don't use for other reviewer agents or standalone requirement analysis. | inline | auto |
 | spec-miner-anti-patterns | Catalog of spec-miner's 10 Anti-Patterns FAIL list. Auto-loads when spec-miner runs. Don't use for other agents or standalone spec authoring. | inline | auto |
@@ -117,7 +113,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 |---|---|---|---|
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`). | inline | auto |
-| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /ship). | inline | auto |
+| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
@@ -131,7 +127,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) before editing, with the heavyweight spec flow (mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /ship; to-spec/to-tickets are disable-model-invocation upstream) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are silently swallowed. […] |
+| flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) before editing, with the heavyweight spec flow (mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement; to-spec/to-tickets/implement are all disable-model-invocation upstream) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are […] |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge routing through the jira-acli plugin's skills (jira-acli:acli, jira-acli:jira-content, jira-acli:confluence-content) before any direct mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit hook. Output -> plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"); never blocks, always exits 0. Errors are silently swallowed. |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
 | atlassian-mcp-gate.sh | Gate: block a direct Atlassian/Jira/Confluence MCP call (any mcp__*atlassian*/ mcp__*rovo* tool -- both a locally-configured/plugin MCP server, e.g. mcp__plugin_atlassian_atlassian__*, and a claude.ai-hosted connector, e.g. mcp__claude_ai_Atlassian_Rovo__*) before a jira-acli:* skill has loaded this session. Escalates ~/.claude/CLAUDE.md's "route through jira-acli first" doctrine + the advisory/jira-route-nudge.sh UserPromptSubmit reminder from prose to a computational PreToolUse gate -- both proved insufficient in practice (2026-07-15: still routing straight to the Atlassian MCP). |
@@ -167,7 +163,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-24T12:46:52Z_
+_Generated: 2026-08-24T13:22:11Z_
 
 ---
 
@@ -190,7 +186,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 ### Wave balancing
 - **Wave 1:** 3-5 tasks (foundational setup — schemas, contracts, migrations).
 - **Wave 2+:** 2-4 tasks each (implementation layers that consume prior contracts).
-- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/ship` (single-agent) instead.
+- **Total waves:** 3-5. More = plan is too coarse; fewer = use `/mattpocock-skills:implement` (single-agent) instead.
 - **F8.5 hard cap:** > 5 tasks in any wave → split or merge. Clamp in code, not prose.
 
 ### Splitting oversized tasks
@@ -224,7 +220,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
-| `code-implementer` | any file | yes | Feature implementer — direct Write/Edit + Bash + Skill |
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
 | `requirement-analyst` | none (read-only) | no | Requirement analysis from tickets/specs (Read/Glob/Grep only — no Bash) |
 | `summarizer` | none (read-only) | no | Condenses text/docs/transcripts (Read/Glob/Grep only — no Bash) |
@@ -279,8 +274,8 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Single-task workflows
 | User says | Dispatch | Why |
 |---|---|---|
-| "build one feature", "implement X", "scope this change" | `/ship` | Classify → implement → review → merge |
-| "fix this bug", "debug this" | `/fix-bug` | Bug ceremony |
+| "build one feature", "implement X", "scope this change" | `/mattpocock-skills:implement` | Implement a spec/tickets with TDD where possible → `mattpocock-skills:code-review` → commit |
+| "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `/address-review` | PR review response |
 | "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
 | "release now", "cut a release" | `/ship-release` | Release ceremony |
