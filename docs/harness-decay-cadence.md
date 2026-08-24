@@ -158,7 +158,7 @@ discussion. The full comparison lives in
 
 The corpus converges on a class-name: **irreversible actions** (destructive
 commands, hardcoded-path leaks, edits to the code that judges the model)
-deserve a human gate. kbg-harness currently has 7 gate scripts under
+deserve a human gate. matt-harness currently has 7 gate scripts under
 `hooks/gates/` (10 PreToolUse hook entries — three gates register on two
 matchers each):
 

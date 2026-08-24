@@ -142,7 +142,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     be invoked manually, so they are excluded from the auto-rate denominator.
 
     Plugin-cache fallback (opt-in via use_plugin_cache_fallback=True): if
-    --repo-root has no claude/{skills,commands}/ (post-cutover kbg-harness
+    --repo-root has no claude/{skills,commands}/ (post-cutover matt-harness
     layout, symlink-farm retired 2026-06-11), walk the cache for the user's own
     plugins — kbg (kobig/kbg) and jira-acli (wasikarn/jira-acli) — taking the
     latest installed version of each and merging. Avoids the /tmp symlink
@@ -154,7 +154,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     cdir = repo_root / "claude" / "commands"
     used_fallback = False
 
-    # Repo-root walk (no-op for post-cutover kbg-harness; kept for dotfiles/other).
+    # Repo-root walk (no-op for post-cutover matt-harness; kept for dotfiles/other).
     if sdir.is_dir():
         for d in sdir.iterdir():
             if d.is_dir() and not d.name.startswith("_") and (d / "SKILL.md").exists():

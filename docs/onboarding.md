@@ -1,6 +1,6 @@
-# kbg-harness — First 10 minutes
+# matt-harness — First 10 minutes
 
-A cold-start for working in (or with) the kbg-harness repo. If you read this
+A cold-start for working in (or with) the matt-harness repo. If you read this
 file and nothing else, you can name what the repo is, where doctrine lives, and
 the three commands you'll use most. Stays ≤500 tokens on purpose — in-repo,
 in-context, no scroll.

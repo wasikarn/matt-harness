@@ -1,12 +1,18 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.455-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.456-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
+[![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
 A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get a fleet of specialist agents, workflow skills, and slash commands (see [What You Get](#what-you-get) for current counts), plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the underlying backend stack demands it.
+
+> **Unofficial project — not affiliated with Matt Pocock.** matt-harness is an independent,
+> community-built harness. It wraps [Matt Pocock's `mattpocock-skills`
+> plugin](https://github.com/mattpocock/skills) as its primary skill source (see Quick Start
+> step 4), but it is not an official Matt Pocock project, and Matt Pocock is not affiliated
+> with or endorsing this repo. Full upstream credit list: [Attribution](#attribution).
 
 ---
 
@@ -27,7 +33,7 @@ Built on the **composer-not-creator** principle: the best upstream harness tools
 
 ## Why It's Built This Way
 
-kbg-harness isn't just a folder of skills and agents — its one structural rule is a strict
+matt-harness isn't just a folder of skills and agents — its one structural rule is a strict
 split between what's allowed to **block** an action and what's only allowed to **advise**
 on it:
 
@@ -54,7 +60,7 @@ Run these commands inside Claude Code:
 
 ```text
 # 1. Register the marketplace source (once per machine)
-/plugin marketplace add wasikarn/kbg-harness
+/plugin marketplace add wasikarn/matt-harness
 
 # 2. Install (default scope is user-wide — see the scope note below before
 #    trying kbg out on just one repo)
@@ -131,7 +137,7 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 ## Engineering Doctrine
 
-kbg-harness's design draws on three named disciplines for coding-agent systems. Each was
+matt-harness's design draws on three named disciplines for coding-agent systems. Each was
 independently researched (primary sources cited below, not paraphrased secondhand) before
 anything was adopted — and each was adopted to a different degree. This section is here so
 that anyone evaluating the harness before installing it knows exactly what's structural,
@@ -271,7 +277,7 @@ Stack-specific pattern skills, kbg-native.
 ## Repository Layout
 
 ```text
-kbg-harness/
+matt-harness/
 ├── .claude-plugin/       # plugin.json + marketplace.json (both must be bumped on each release)
 ├── agents/               # specialist subagents (.md each)
 ├── skills/               # workflow skills (SKILL.md per directory)
@@ -348,7 +354,7 @@ git config core.hooksPath git-hooks
 
 ## Attribution
 
-kbg-harness aggregates components from these upstream projects under their respective licenses.
+matt-harness aggregates components from these upstream projects under their respective licenses.
 
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a

@@ -20,7 +20,7 @@ citation-integrity resolution) regardless of whether qmd is available.
 
 ## Graceful-skip preflight
 
-This skill must degrade silently when the vault isn't present — kbg-harness
+This skill must degrade silently when the vault isn't present — matt-harness
 is a public plugin, and most installs will not have `~/llm-wiki`:
 
 ```bash
@@ -134,7 +134,7 @@ commands standalone, outside this skill's own preflight block, confirm
    argument defaulting to `.` (the caller's own cwd). Invoked the same way
    as the two documented scripts (`bash "$VAULT/scripts/lint-wiki.sh"`, no
    argument), it would silently scan wherever the invoking shell happens to
-   be — kbg-harness itself, in a normal session — and print confident,
+   be — matt-harness itself, in a normal session — and print confident,
    plausible-looking, and completely meaningless orphan/broken-link counts.
    `lint-scan.sh` is the actively-maintained successor; this one is unused
    by the vault's own docs and exists only from the original import commit.

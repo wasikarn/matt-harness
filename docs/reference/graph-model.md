@@ -1,6 +1,6 @@
 # Orchestration Graph Model
 
-Formalizes kbg-harness's existing dispatch/verification structure as an explicit graph — nodes,
+Formalizes matt-harness's existing dispatch/verification structure as an explicit graph — nodes,
 typed edges, anchors — instead of leaving it scattered across `skills/orchestrate/SKILL.md`,
 `BOUNDARY.md`, and per-skill "Boundary with X" notes. **This document adds no new mechanism.** It
 names what already runs today; where prior art (GraphBit, LangGraph) enforces something kbg only
@@ -19,7 +19,7 @@ the marketing framing.
 
 ## Nodes
 
-kbg-harness's node inventory is already tracked, auto-generated, and canonical in `BOUNDARY.md` —
+matt-harness's node inventory is already tracked, auto-generated, and canonical in `BOUNDARY.md` —
 this doc doesn't duplicate that table, it names the node *types* the edges below connect.
 
 | Node type | Defined in | Computational role |
@@ -64,7 +64,7 @@ actually has:
 eval set the harness didn't author, or a real usage metric (which skills actually reduce rework,
 say), would be a true external anchor in the eigent.ai sense. Today's anchors check "did this
 action violate an internal rule" — not "did this actually work, according to something the
-harness can't rewrite." Whether closing this gap is worth it depends on whether kbg-harness's
+harness can't rewrite." Whether closing this gap is worth it depends on whether matt-harness's
 domain (a Claude Code plugin, evaluated mostly via fixture loops) has a real equivalent of
 "banked revenue" to anchor against — an open question, not resolved by this doc.
 
@@ -81,7 +81,7 @@ GraphBit's typed edges are enforced by a Rust engine at runtime: a node cannot r
 typed input exists, checked mechanically. kbg's `depends-on` edge enforces *ordering* the same
 way (the gate above) but not *payload correctness* — nothing catches the lead pasting an
 incomplete or wrong upstream artifact into the next spawn prompt. This is a deliberate trade-off,
-not an oversight: kbg-harness is a prompt-driven fleet governed by Rule 13 (orchestrators
+not an oversight: matt-harness is a prompt-driven fleet governed by Rule 13 (orchestrators
 delegate; they don't implement tooling), not a compiled DAG engine, so building a schema-validator
 for spawn-prompt payloads would be new infrastructure against no proven failure yet (Rule 2). Name
 it here so a future author doesn't assume it's already mechanically checked.

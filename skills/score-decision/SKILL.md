@@ -38,7 +38,7 @@ Score each 0–100 with a one-line reason anchored to evidence. **If the data is
 
 **No-conflict is scored by search, not recall, when a search tool is available:** if a `qmd`-style
 MCP is configured, query it (lex + vec) with the decision's scenario, scoped to the project's
-memory + research collections (`kbg-memory` + `kbg-research` in kbg-harness; other projects' own
+memory + research collections (`kbg-memory` + `kbg-research` in matt-harness; other projects' own
 collections per `qmd status`), and cite the hit — or `no precedent found for "<query>"`, naming the
 query string actually run — as that criterion's evidence. An uncited "no precedent found" is
 unverifiable self-report and doesn't count. A settled precedent with no new evidence in the

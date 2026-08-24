@@ -22,7 +22,7 @@ REPO_ROOT="${1:-$(cd -P "$SCRIPT_DIR/../../.." && pwd)}"
 # shellcheck source=../../../scripts/_lib/err.sh
 . "$SCRIPT_DIR/../../../scripts/_lib/err.sh"
 
-[ -f "$REPO_ROOT/.claude-plugin/plugin.json" ] || err_die "not a kbg-harness checkout (no .claude-plugin/plugin.json under $REPO_ROOT)"
+[ -f "$REPO_ROOT/.claude-plugin/plugin.json" ] || err_die "not a matt-harness checkout (no .claude-plugin/plugin.json under $REPO_ROOT)"
 
 # Live counts — duplicates check-01's / check-44's methodology directly (3
 # short finds); not worth a shared lib for this size.

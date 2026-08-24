@@ -82,7 +82,7 @@ test_silent "bare jira no verb"            "what does jira look like"
 test_silent "meta: know the plugin (FP1)"  "บอกให้ claude รู้จัก plugins jira-acli เหมือน @RTK ดีมั้ย"
 test_silent "meta: use plugin power (FP2)" "ทำอย่างไรให้ CC ใช้ plugin jira-acli ให้เต็มประสิทธิภาพ"
 test_silent "meta: jira-acli plugin skill" "the jira-acli plugin skill hook config"
-test_silent "meta: kbg-harness + jira"     "kbg-harness and jira-acli are both plugins"
+test_silent "meta: matt-harness + jira"    "matt-harness and jira-acli are both plugins"
 
 echo ""
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)

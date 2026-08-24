@@ -31,7 +31,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 REPO_ROOT="${REPO_ROOT:-$(cd -P "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
-# Layout: dotfiles nests the harness under claude/; the extracted kbg-harness
+# Layout: dotfiles nests the harness under claude/; the extracted matt-harness
 # plugin repo is flat (agents/, skills/, … at the root). Resolve CLAUDE_DIR to
 # whichever holds the fleet so one audit.sh serves both checkouts.
 if [ -d "$REPO_ROOT/claude" ]; then
@@ -97,7 +97,7 @@ fi
 # (default ~/.claude/plugins/cache/kobig/kbg/<version>/) and Claude Code loads
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
-# plugin-delivered component as a false positive (62 CRITs on kbg-harness).
+# plugin-delivered component as a false positive (62 CRITs on matt-harness).
 # --plugin-cache <path> overrides the default for testing (see tests/skills/harness-audit/known-bad/).
 # Resolve to the latest installed version of the kbg plugin in the cache,
 # so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable

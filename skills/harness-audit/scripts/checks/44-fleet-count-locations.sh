@@ -27,8 +27,8 @@
 # against (dotfiles-nested vs. this flat plugin repo), and this check ships
 # inside the plugin cache. A file that EXISTS in another valid context
 # without ever carrying the anchor would false-WARN at anyone not running
-# kbg-harness — so gate the whole fragment on this being the real
-# kbg-harness checkout.
+# matt-harness — so gate the whole fragment on this being the real
+# matt-harness checkout.
 _is_kbg=0
 if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]; then
   [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "kbg" ] && _is_kbg=1

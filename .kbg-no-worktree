@@ -1,4 +1,4 @@
-# kbg-harness doctrine: no new non-develop branches via worktree (single branch develop only).
+# matt-harness doctrine: no new non-develop branches via worktree (single branch develop only).
 # This file is the opt-in sentinel for the gate:worktree:develop-only + gate:bash:irrecoverable:git-worktree-add
 # hooks. While present, both deny `git worktree add -b <new-branch>` where <new-branch> != "develop".
 # See CLAUDE.md § Branching and docs/reference/hook-lifecycle-contracts.md.

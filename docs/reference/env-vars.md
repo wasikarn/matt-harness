@@ -1,4 +1,4 @@
-# Environment variables — kbg-harness reference
+# Environment variables — matt-harness reference
 
 Every operator-tunable env var the harness reads, with its default and the surface that reads it.
 Re-derive the live set with:

@@ -2,7 +2,7 @@
 # 11. Orphaned hooks (in filesystem but not in settings.json)
 # NOTE: this used to be wrapped in `if [ -f "$SETTINGS" ]; then ... fi`, which
 # silently skipped the ENTIRE check body whenever settings.json doesn't exist
-# -- true for kbg-harness's own flat plugin-mode layout (this repo carries no
+# -- true for matt-harness's own flat plugin-mode layout (this repo carries no
 # settings.json at all). That meant check 11 never actually ran in real
 # pre-commit/pre-push here, independent of any wiring-match precision issue.
 # Found 2026-08-19 during a deep-audit falsification test. Fixed by dropping

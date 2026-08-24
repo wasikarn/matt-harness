@@ -1,6 +1,6 @@
 # Reasoning models — common references
 
-Single catalog of the named mental models the kbg-harness **already applies** or
+Single catalog of the named mental models the matt-harness **already applies** or
 **deliberately references without adopting**, with a pointer to where each one lives.
 This is a *reference*, not a set of skills. kbg does **not** ship the models as
 invokable skills — porting 39 thinking skills would violate METHODOLOGY Rule 2
@@ -166,7 +166,7 @@ model's upstream dir is `thinking-systems`, so its file is
 
 ## kbg-native reasoning scaffolds
 
-The kbg-harness ships its own structured-reasoning scaffolds alongside the vendored
+The matt-harness ships its own structured-reasoning scaffolds alongside the vendored
 cc-thinking-skills models. These are kbg-native processes, not part of the upstream
 39-model catalog, and are read as reference docs and applied inline.
 

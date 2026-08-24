@@ -21,7 +21,7 @@ rendered as numbered prose, and wait for an explicit reply. Denial is **not** ap
 fail open. If no user can answer (background / headless run), **stop at plan-only**; do not
 dispatch any write-capable agent.
 
-**Tool-pattern convention:** kbg-harness uses `tools:` (allowlist), not `disallowedTools:`
+**Tool-pattern convention:** matt-harness uses `tools:` (allowlist), not `disallowedTools:`
 (denylist), for agent tool grants (see `docs/agent-tool-patterns.md`) — the "agent holds Bash"
 classification above reads the `tools:` line, not the runtime default.
 

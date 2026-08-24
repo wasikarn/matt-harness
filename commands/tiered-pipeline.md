@@ -52,7 +52,7 @@ pushes, or ships — the result returns to the human.
    ```
 
    In an installed session the path lands in the versioned plugin cache (so
-   the script always matches the installed version); in the kbg-harness dev
+   the script always matches the installed version); in the matt-harness dev
    repo it resolves to the repo itself. Always pass `cwd` — the pipeline's
    agents work there, not in the session's own working directory.
 4. The Workflow runs in the background; report its result when the completion

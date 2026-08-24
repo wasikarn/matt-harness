@@ -7,9 +7,9 @@ The Claude Code vendor schema offers two patterns for restricting an agent's too
 - **`tools:` (allowlist)** — list the tools the agent **may** use. Anything not listed is implicitly blocked.
 - **`disallowedTools:` (denylist)** — list the tools the agent **may not** use. Everything else is implicitly available.
 
-The kbg-harness convention is to prefer **`tools:` (allowlist)** for new agents. This document explains why, when to consider the denylist alternative, and what each pattern looks like in practice.
+The matt-harness convention is to prefer **`tools:` (allowlist)** for new agents. This document explains why, when to consider the denylist alternative, and what each pattern looks like in practice.
 
-## 1. `tools:` (allowlist) — the kbg-harness default
+## 1. `tools:` (allowlist) — the matt-harness default
 
 **What it is:** an explicit list in the agent's YAML frontmatter.
 
@@ -45,7 +45,7 @@ tools: Read, Grep, Glob, Bash
 
 **What it is:** an explicit list of tools the agent may **not** use.
 
-**Example** (hypothetical; kbg-harness does not currently use this pattern):
+**Example** (hypothetical; matt-harness does not currently use this pattern):
 
 ```yaml
 disallowedTools: Write, Edit, NotebookEdit
@@ -61,7 +61,7 @@ disallowedTools: Write, Edit, NotebookEdit
 - The agent is a generalist (multi-domain) and the team does not want to enumerate the full capability set in the frontmatter.
 - The vendor schema explicitly supports it (it does — see `code.claude.com/docs/en/sub-agents`, the actual subagent frontmatter reference), and the team is OK with the implicit-inheritance tradeoff.
 
-**Why kbg-harness does not currently use it:**
+**Why matt-harness does not currently use it:**
 
 - Our agents are specialists, not generalists. The allowlist is shorter to write, not longer.
 - The "implicit inheritance" property is an antipattern for us: when the vendor adds a new tool (e.g. a new MCP bridge), we want a human to decide whether each existing agent should pick it up. Allowlist makes that decision visible in the PR; denylist hides it.

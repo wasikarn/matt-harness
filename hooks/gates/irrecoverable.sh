@@ -421,7 +421,7 @@ for w in windows:
                     # review pipeline, 2026-08-24 #82 — it was dead code
                     # anyway: this branch only runs when -b/-B/--branch is
                     # present, and the allowlist required its absence.)
-                    deny("git worktree add -b new-branch blocked by kbg-harness doctrine "
+                    deny("git worktree add -b new-branch blocked by matt-harness doctrine "
                          "(no new non-develop branches via worktree; single branch develop only); "
                          "use detached worktrees, develop, or an existing branch. "
                          "Remove /.kbg-no-worktree to allow")

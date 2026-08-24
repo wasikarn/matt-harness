@@ -32,7 +32,7 @@
 #   - jira/confluence token => fire only with a work verb (create/file/write/
 #     edit/update/comment/transition/publish/search/view/find/list/query/
 #     export/check/post + Thai สร้าง/แก้/อัปเดต/ย้าย/เขียน/ค้น/หา/ดู/เช็ค/โพสต์)
-#     AND no harness-meta signal (plugin|jira-acli|kbg-harness|hook|skill|
+#     AND no harness-meta signal (plugin|jira-acli|matt-harness|hook|skill|
 #     doctrine) -- the meta signal means the prompt is ABOUT the plugin system,
 #     not a Jira/Confluence task. "acli" alone is NOT meta (raw acli is the
 #     bypass this nudge catches).
@@ -53,7 +53,7 @@ if /usr/bin/grep -qiE '\btp-[0-9]+\b' <<< "$INPUT"; then
   : # fall through to emit
 elif /usr/bin/grep -qiE '\b(jira|confluence)\b' <<< "$INPUT"; then
   # harness-meta signal = discussion about the plugin/harness, not jira work.
-  if /usr/bin/grep -qiE '\b(plugin|jira-acli|kbg-harness|hooks?|skills?|doctrine)\b' <<< "$INPUT"; then
+  if /usr/bin/grep -qiE '\b(plugin|jira-acli|matt-harness|hooks?|skills?|doctrine)\b' <<< "$INPUT"; then
     exit 0
   fi
   # require a work verb (EN + TH); bare mention without one is not work intent.

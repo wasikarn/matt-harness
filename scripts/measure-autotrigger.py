@@ -82,7 +82,7 @@ def main():
                    help="dotfiles repo root for custom skill/command enumeration")
     p.add_argument("--use-plugin-cache-fallback", action="store_true",
                    help="if --repo-root has no claude/{skills,commands}/ (post-cutover "
-                        "kbg-harness layout), walk ~/.claude/plugins/cache/kobig/kbg/ "
+                        "matt-harness layout), walk ~/.claude/plugins/cache/kobig/kbg/ "
                         "for the latest version. Avoids the /tmp symlink workaround.")
     p.add_argument("--out", type=Path, help="write report dir (md + json) here")
     p.add_argument("--json", action="store_true", help="print raw json to stdout")

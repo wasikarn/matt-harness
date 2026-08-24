@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit gate for the kbg-harness plugin repo.
+# Pre-commit gate for the matt-harness plugin repo.
 #
 # This repo is the single source of truth for the harness fleet (agents/,
 # skills/, commands/, hooks/, scripts/, contexts/, output-styles/, themes/) — the flat

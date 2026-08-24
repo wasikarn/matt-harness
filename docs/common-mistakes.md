@@ -1,6 +1,6 @@
 # Common mistakes when building custom agents
 
-**Status:** Convention reference. Adapted from the claudefa.st *Custom Commands* article for the kbg-harness plugin.  
+**Status:** Convention reference. Adapted from the claudefa.st *Custom Commands* article for the matt-harness plugin.  
 **Last verified:** 2026-06-12
 
 The claudefa.st corpus documents four mistakes that crop up when teams build custom agents. This document adds a fifth (plan-without-validation) that the harness's orchestrate workflow specifically guards against. Each section maps the vendor mistake to a harness-native fix, with a one-line self-check you can run to verify the guard is in place.

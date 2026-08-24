@@ -7,7 +7,7 @@ The question this doc answers: **when a user types `/<personality>`, what should
 
 ## 1. The default: don't build a personality command
 
-**The kbg-harness default is: do not add a slash command just to invoke an agent's personality.** The agent's `## Voice` block (shipped in F5) is already the personality. Adding a command on top creates three problems:
+**The matt-harness default is: do not add a slash command just to invoke an agent's personality.** The agent's `## Voice` block (shipped in F5) is already the personality. Adding a command on top creates three problems:
 
 1. **Surface bloat** — every personality command is a discoverability weight. The user has to remember `/architect` exists, then remember what it routes to. Routing the request to `code-architect` directly (via the orchestrator or the user typing `@code-architect`) already gets the personality.
 2. **Personality drift** — the command's frontmatter and the agent's voice block can diverge silently. The F5 contract says "personality is in the agent's `## Voice` block." A command wrapper is a second place to keep in sync.
@@ -84,7 +84,7 @@ allowed-tools: <smallest set the command needs; usually Read-only>
 - **Do not add a new `## Voice` block to the command.** Commands don't have personalities; agents do. The personality comes from `agent:` routing.
 - **Do not skip the orchestrator.** If the command could route through `orchestrate` (which picks the right agent by domain), let it. The personality command is a shortcut, not a parallel router.
 
-## 4. Worked examples (per the D6 spec, mapped to kbg-harness)
+## 4. Worked examples (per the D6 spec, mapped to matt-harness)
 
 The 2026-06-12 audit spec (delta-vs-REPORT-v2.md:109) named three example personality commands: `/debug`, `/architect`, `/perspectives`. Per owner decision (2026-06-12), **none of these are shipped as commands.** Below is the recipe if/when they ever are.
 

@@ -74,7 +74,7 @@ collided with matt's own `engineering/implement` skill, caught by the user, not 
 
 ### Issue tracker
 
-GitHub Issues on `wasikarn/kbg-harness` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `wasikarn/matt-harness` via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -128,7 +128,7 @@ CWE-1333/CWE-400 pairing contradicting MITRE's own page. -->
 
 ## Architecture
 
-The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
+The plugin ships as `kbg@kobig` from the `wasikarn/matt-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
 
 The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
 
@@ -162,7 +162,7 @@ PR/feature-branch flow; *when* to push still follows the global confirm-before-p
 
 **Computationally enforced for the Bash entry point only** by the `git worktree add -b` block in
 `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel —
-present in the kbg-harness repo, absent from other client/ECC/scratch repos (which keep their
+present in the matt-harness repo, absent from other client/ECC/scratch repos (which keep their
 existing `gate:write:worktree-guard` redirect). (The former allowlist for detached `review-pr-<N>`
 worktrees was removed with the review pipeline, 2026-08-24 #82.)
 

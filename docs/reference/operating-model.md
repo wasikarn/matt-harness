@@ -1,6 +1,6 @@
 # Operating Model
 
-kbg-harness's core operating model — the gate-vs-advisory split and the verifier-separation
+matt-harness's core operating model — the gate-vs-advisory split and the verifier-separation
 principle behind it. This is a self-contained excerpt of CLAUDE.md's own "Architecture" section,
 built for surfaces that read it at runtime via Bash
 (`cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`) without pulling in the rest of

@@ -14,7 +14,7 @@
 # comparison reads clearer than forcing it through 44's substring shape.
 #
 # Repo-identity gate: mirrors check 44 — ships inside the plugin cache, so
-# gate on this being a real kbg-harness checkout before reading CLAUDE_DIR
+# gate on this being a real matt-harness checkout before reading CLAUDE_DIR
 # paths that only make sense there.
 _is_kbg=0
 if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]; then
