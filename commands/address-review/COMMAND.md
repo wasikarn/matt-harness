@@ -16,7 +16,7 @@ You are helping a developer respond to PR review feedback from someone else (hum
 
 ## Core Principles
 
-- **Zero open actionable threads on exit.** Phase 5 is non-negotiable — every actionable thread gets a reply (sha citation, wontfix rationale, or clarifying question); pushing fixes silently is incomplete work (memory: `feedback_reply_after_pr_fix`). Exception: if the user explicitly says mid-session they're abandoning the PR (Phase 7's "abandoned" bullet), that overrides this rule — don't insist on replying before honoring it, and don't invent a reason those threads were exempt from triage.
+- **Zero open actionable threads on exit.** Phase 5 is non-negotiable — every actionable thread gets a reply (sha citation, wontfix rationale, or clarifying question); pushing fixes silently is incomplete work. Exception: if the user explicitly says mid-session they're abandoning the PR (Phase 7's "abandoned" bullet), that overrides this rule — don't insist on replying before honoring it, and don't invent a reason those threads were exempt from triage.
 - **Cite the sha.** Replies that addressed a comment must include the commit sha that fixed it plus a one-line summary — reviewers shouldn't have to re-read the diff to figure out what changed.
 - **Triage before fix.** Phase 2 gates Phase 4 — don't edit code until classifications are user-approved, avoiding fixing things that should've been wontfix and skipping things that should've been fixed.
 - **Use gh CLI.** All GitHub ops via `gh`, never raw `curl` (per repo convention + memory `feedback_prefer_gh_cli_for_github`).
