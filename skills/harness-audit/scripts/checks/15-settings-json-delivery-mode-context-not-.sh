@@ -9,7 +9,7 @@ if [ -f "$SETTINGS" ]; then
   _missing=""
   for _k in commands agents skills; do
     # $SETTINGS/$_k passed via argv, not spliced into the -c source string —
-    # matches the fleet convention after the 2026-08-06 check-47 injection fix.
+    # matches the fleet convention after the 2026-08-06 check-43 injection fix.
     python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))

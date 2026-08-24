@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-# ship-merge.md may live flat or directory-form — mirror harness-audit check 44's
+# ship-merge.md may live flat or directory-form — mirror harness-audit check 40's
 # own path resolution (both are valid per docs/command-authoring-conventions.md).
 SHIP_MERGE_MD="$ROOT/commands/ship-merge.md"
 [[ -f "$ROOT/commands/ship-merge/COMMAND.md" ]] && SHIP_MERGE_MD="$ROOT/commands/ship-merge/COMMAND.md"

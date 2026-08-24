@@ -133,7 +133,7 @@ def _auto_memory_directory_setting():
     # memory.md:362 — `autoMemoryDirectory` in settings.json overrides the
     # whole storage location. Read from any scope; project scope wins over
     # user scope, matching Claude Code's own most-specific-wins precedence
-    # (same simplification harness-audit check 47 already makes — full
+    # (same simplification harness-audit check 43 already makes — full
     # local/policy/--settings scopes aren't relevant to this CLI's own usage).
     for path in (
         os.path.join(".claude", "settings.local.json"),

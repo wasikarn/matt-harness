@@ -49,7 +49,7 @@ references/frames.md` carries no frontmatter and correctly does **not** leak.
 
 **A `references/` file must never carry a `--- ... ---` frontmatter block.** Point to
 `frames.md` as the correct shape: a plain heading, prose, and tables — nothing else.
-`harness-audit` check 46 enforces this mechanically (WARN on any offending file).
+`harness-audit` check 42 enforces this mechanically (WARN on any offending file).
 
 **Why:** the loader has no concept of "this file is private support material" — frontmatter
 presence is the only signal it uses to decide what's independently invocable. Encapsulation
@@ -63,7 +63,7 @@ cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out
 gates a done-declaration. Several commands already do this
 (`ship-merge`, `ship-release`, `post-mortem`, `address-review`,
 `ideate-search`). `harness-audit` checks 30
-(reason presence, WARN) and 44 (`ship-merge` specifically, CRIT) enforce this.
+(reason presence, WARN) and 40 (`ship-merge` specifically, CRIT) enforce this.
 
 **Why:** this is the only mechanism blocking the model from self-invoking a real,
 irreversible external action — a human must type the literal `/name` themselves. It
@@ -111,7 +111,7 @@ command delegates to, per `agent-authoring-conventions.md`).
    an unpaired `agent:` into a new command.
 5. Run `bash skills/harness-audit/scripts/audit.sh` — checks 06 (frontmatter
    completeness), 20 (description length + duplicate-surface), 30 (disable-model-invocation
-   reason), 46 (reference-file frontmatter leak) all touch new commands directly.
+   reason), 42 (reference-file frontmatter leak) all touch new commands directly.
 6. Bump `.claude-plugin/plugin.json` + `marketplace.json` per root `CLAUDE.md`
    § "Adding or removing a surface".
 

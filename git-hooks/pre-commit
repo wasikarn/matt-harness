@@ -19,7 +19,7 @@
 #   5. brand-new agents/*.md, commands/*.md, commands/*/COMMAND.md, or
 #      skills/*/SKILL.md over 200 lines → hard-blocked (new-file LOC gate).
 #      Editing an existing one past the cap stays WARN-only (harness-audit
-#      check 64) — deliberate grandfather, see the gate's own comment block.
+#      check 56) — deliberate grandfather, see the gate's own comment block.
 #
 # The heavy layers above run in parallel so the commit gate stays fast.
 # The pre-push gauntlet adds the behavioral test suite (file list lives in
@@ -220,12 +220,12 @@ run_version_layer() {
 
 # ---- Layer 4: new-file LOC gate (hard block) ----
 # Cap: 200 lines via `git show ":$f" | wc -l` — the STAGED INDEX content, not
-# the worktree. That matches what will actually land; check 64 below reads a
+# the worktree. That matches what will actually land; check 56 below reads a
 # checked-out tree because it audits at pre-push, which is the right read
 # for it but the wrong one here (stage, keep editing, forget to re-`git add`
 # → a worktree read would score the trimmed file and miss the committed one).
-# Same 4 patterns and same cap as harness-audit check 64
-# (skills/harness-audit/scripts/checks/64-loc-cap-auto-loaded-surfaces.sh) —
+# Same 4 patterns and same cap as harness-audit check 56
+# (skills/harness-audit/scripts/checks/56-loc-cap-auto-loaded-surfaces.sh) —
 # kept in sync by tests/git-hooks/test-pre-commit-loc-gate.sh, not a shared
 # file (git-hooks/ isn't a shipped surface; scripts/_lib/ is, and pulling the
 # constant there would drag an unrelated version bump into every
@@ -233,13 +233,13 @@ run_version_layer() {
 #
 # Only blocks BRAND-NEW files. Editing an existing file past the cap, or
 # `git mv`-ing an already-in-scope file to a new in-scope path (e.g. the
-# reference-split migration check 64's own message recommends), stays
-# WARN-only via check 64 — a deliberate grandfather (2026-08-24 grilling:
-# don't reopen check 64's "WARN not CRIT" call from one day earlier). Known
+# reference-split migration check 56's own message recommends), stays
+# WARN-only via check 56 — a deliberate grandfather (2026-08-24 grilling:
+# don't reopen check 56's "WARN not CRIT" call from one day earlier). Known
 # gap, accepted rather than closed: `git commit --amend` growing a file past
 # cap that the commit-being-amended itself added — `--diff-filter=A` diffs
 # the index against HEAD, which already includes that add, so this reads as
-# an edit, not a new file. check 64's pre-push WARN is the backstop there.
+# an edit, not a new file. check 56's pre-push WARN is the backstop there.
 #
 # KBG_SKIP_LOC_GATE (mirrors KBG_SKIP_VERSION_GATE) is checked FIRST, before
 # the detection scan below runs at all — so a bug in the scan itself can't

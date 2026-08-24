@@ -33,7 +33,7 @@ rationale). Grant only what the role needs:
 - **`Agent` is never granted.** No agent in this fleet re-orchestrates (Rule 13,
   CLAUDE.md's Staff-Engineer Thinking Loop) — a dispatched subagent returns scoped output to
   its caller, it doesn't spawn its own. `harness-audit` check 09 (CRIT) catches a missing
-  `tools:` line outright; check 45 (WARN) catches an explicit `Agent` grant. Do not add
+  `tools:` line outright; check 41 (WARN) catches an explicit `Agent` grant. Do not add
   `Agent` to a new agent's `tools:` line — if a task seems to need one agent calling another,
   that's the orchestrator's job, not the agent's.
 
@@ -153,7 +153,7 @@ mining production data to discover it after.
 7. If the agent returns a branchable status (not just findings prose): define it as a closed
    set of terminal first-token codes in `## Output Format`.
 8. Add the agent to `skills/orchestrate/reference.md`'s routing table.
-9. Run `bash skills/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/45 all touch new
+9. Run `bash skills/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/41 all touch new
    agents directly.
 
 ## Cross-references

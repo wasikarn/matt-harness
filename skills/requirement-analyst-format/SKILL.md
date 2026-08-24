@@ -11,7 +11,7 @@ effort: medium
 Preloaded reference for `agents/requirement-analyst.md` via its `skills:` frontmatter field —
 this content is always loaded at agent-spawn time, identical to being inline in the agent
 body. It was extracted purely to keep the agent file's own size under the fleet's per-file
-convention (harness-audit check 60); this agent carries no `Skill` tool (deliberately, to
+convention (harness-audit check 52); this agent carries no `Skill` tool (deliberately, to
 preserve its Jira/Confluence no-self-fetch guardrail), so unlike `Skill()`-invoked lenses
 this is not conditional loading and saves no runtime tokens — it is a file-size split only.
 

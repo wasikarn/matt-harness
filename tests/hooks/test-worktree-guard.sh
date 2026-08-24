@@ -145,7 +145,7 @@ check "KBG_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
 # extract-and-eval a JSON string in isolation -- it resolves the args path
 # hooks.json declares and runs that file, which is what actually happens at
 # runtime. $ROOT passed via argv, not spliced into source -- matches the
-# fleet convention after the 2026-08-06 check-47 injection fix.
+# fleet convention after the 2026-08-06 check-43 injection fix.
 WRAPPER_SCRIPT=$(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))

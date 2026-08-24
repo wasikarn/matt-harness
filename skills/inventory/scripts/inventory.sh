@@ -33,7 +33,7 @@ print_section() {
   local items=()
   case "$mode" in
     skill-dir)  for d in "$path"/[!_]*/; do items+=("${d%/}"); done ;;  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit
-    md-file)    for f in "$path"/*.md "$path"/*/COMMAND.md; do [ -f "$f" ] && items+=("$f"); done ;;  # top-level *.md + one-level-nested */COMMAND.md (mirrors audit check 37's command glob; excludes nested references/*.md)
+    md-file)    for f in "$path"/*.md "$path"/*/COMMAND.md; do [ -f "$f" ] && items+=("$f"); done ;;  # top-level *.md + one-level-nested */COMMAND.md (mirrors audit check 01's command glob; excludes nested references/*.md — pre-existing mis-citation of check 35 corrected 2026-08-25, ticket 87: 35 is dead-script-pointer-doc-rot, not the fleet-count glob)
     hook-file)  while IFS= read -r f; do items+=("$f"); done < <(find "$path" -type f \( -name '*.sh' -o -name '*.py' \) | sort) ;;  # recursive: real hooks live under gates/advisory/session/stop/tests, not flat in hooks/; .py included (worktree-guard.py)
   esac
   shopt -u nullglob

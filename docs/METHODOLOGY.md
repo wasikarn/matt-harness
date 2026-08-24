@@ -85,7 +85,7 @@ Decompose → route → verify → combine.
 
 - **Combine ≠ blend.** When N sub-agent outputs feed one synthesis call, surface agreement and conflict explicitly and drop malformed entries by a stated rule — never by the synthesizing model's own unaided judgment (prose-only — see CLAUDE.md §Architecture, "Same crux, N-worker fan-in," for the enforcing detail and the code-vs-instruction distinction).
 - Orchestrators delegate; they never implement (prose-only — no gate stops an orchestrator from self-implementing; the phase-gates bullet below covers the one piece of this that IS enforced).
-- A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 45 (`45-agent-tool-grant-must-not-include-agent.sh`).
+- A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 41 (`41-agent-tool-grant-must-not-include-agent.sh`).
 - Phase gates: a sub-agent can never self-mark a task complete (enforced by `gate:task:complete-separation`); Quality never ships without passing Orchestration's review (prose-only — no check blocks a skipped review).
 - Any line in this file or CLAUDE.md that asserts a limit or gate must name its enforcing file, or say "(prose-only)" if none exists — an unenforced "non-negotiable" reads as a computational guarantee it isn't.
 

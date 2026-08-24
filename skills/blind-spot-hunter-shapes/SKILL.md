@@ -10,7 +10,7 @@ effort: xhigh
 
 # Blind-Spot Hunt Shapes Reference
 
-Extracted from `agents/blind-spot-hunter.md` (2026-08-18, harness-audit check 60 threshold) to keep
+Extracted from `agents/blind-spot-hunter.md` (2026-08-18, harness-audit check 52 threshold) to keep
 the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field (preloaded
 at spawn, independent of the Skill tool — `blind-spot-hunter` carries no `Skill` tool grant) — this
 file is the hunt-shape catalog, not a separately-triggered pass. Read it alongside

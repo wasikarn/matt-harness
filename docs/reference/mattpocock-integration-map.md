@@ -1,9 +1,9 @@
 # mattpocock-skills integration map
 
-**Status:** Machine-parsed ledger. Harness-audit check 55 (sub-check C) parses this table: every
+**Status:** Machine-parsed ledger. Harness-audit check 51 (sub-check C) parses this table: every
 skill promoted by the installed plugin's own `plugin.json` `skills` array must have a row here, and
 the `invocation` column must match the installed frontmatter (`user` ⟺ `disable-model-invocation:
-true`, else `model`). Upstream adds/renames a skill → check 55 WARNs until this file routes it or
+true`, else `model`). Upstream adds/renames a skill → check 51 WARNs until this file routes it or
 records why not. Re-verify whenever the `mattpocock-skills` cache version changes (same habit as
 the third-party same-version stale trap in root `CLAUDE.md`).
 

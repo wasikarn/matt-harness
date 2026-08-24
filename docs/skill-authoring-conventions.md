@@ -20,7 +20,7 @@ The ≤25-word description cap is kbg's own token-budget rule (root `CLAUDE.md` 
 mechanics), not matt's — misattributed to matt here until 2026-08-10.
 
 The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks`
-section — but `harness-audit` check 36 does **not** check for that heading's presence. It checks
+section — but `harness-audit` check 34 does **not** check for that heading's presence. It checks
 the doctrine via INFO-only regex proxies against each skill's live
 description/body (leading-word vocabulary, ≤25-word count [the kbg-native cap], completion-criterion
 phrasing, a no-op-test line-count heuristic); "two-cuts" and "failure-mode guard" have no shell check — a
@@ -35,7 +35,7 @@ template's checklist is documentation, not an enforced requirement.
 `mattpocock-skills:writing-for-agents`. One operative sentence: delete the line — does agent
 behavior change on a real branch of the skill's own worked examples? If not, prunable regardless
 of what the char count says; if so, load-bearing regardless of char count. Applies to every trim
-driven by any of the six size checks — 20, 36, 42, 47, 51, 60 — not just 36. It's the required
+driven by any of the six size checks — 20, 34, 38, 43, 47, 52 — not just 34. It's the required
 pair to `skills/compress-docs/scripts/verify-preserved.py`, which checks structural preservation
 only (fenced code blocks, headings, inline code spans, link URLs, frontmatter) and never prose
 comprehension: a compression pass can pass that script at 100% green while still turning
@@ -54,7 +54,7 @@ cc-thinking-skills repo it links to — kbg does not vendor them locally.
 **Suggested next step footers:** a workflow surface (command or workflow skill run as a discrete
 step) may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched
 (`situation → action`), citing skills as `kbg:<name>` and commands as `/<name>`. Skills are ALWAYS
-cited `kbg:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 40
+cited `kbg:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 37
 only catches rename/deletion drift on refs already in `kbg:` form, it does **not** scan for a skill
 mis-cited in slash form (confirmed: this exact bug shipped twice — `commands/pr.md` and
 `diagnosing-bugs/SKILL.md` both cited a skill as `/name` undetected until a manual survey caught
@@ -90,7 +90,7 @@ platform behavior — matching values moots it). Deliberate exceptions: `fronten
 dominates). The 26 command entrypoints only — `commands/*/references/*.md` fragments stay
 unstamped. Scope facts: skill/command `effort:` applies only while the surface is active;
 `CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
-harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 63 WARNs on
+harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 55 WARNs on
 any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill/command
 `model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
 judgment call retiered via normal version-bumped edits.

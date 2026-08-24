@@ -11,7 +11,7 @@
 # Appropriateness stays semantic + advisory (human review of the reasons); this
 # check only enforces that the reason EXISTS, which is deterministic. WARN (not
 # CRIT): a missing reason is a doc gap, not a safety regression — the one
-# safety-load-bearing flag (recursive-improve) is CRIT-guarded by #39.
+# safety-load-bearing flag (recursive-improve) is CRIT-guarded by #36.
 for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/commands"/*/COMMAND.md "$CLAUDE_DIR/skills"/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac

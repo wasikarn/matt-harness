@@ -5,7 +5,7 @@
 # skills/inventory/scripts/, run manually — not wired into a hook).
 #
 # Sync-seam: the 4 anchors below mirror the _check_triple anchors in
-# skills/harness-audit/scripts/checks/48-fleet-count-locations.sh — an edit to
+# skills/harness-audit/scripts/checks/44-fleet-count-locations.sh — an edit to
 # one location list should prompt a check of the other.
 #
 # Scoped to ONLY these 4 locations, each patched via its own anchor line, not
@@ -24,7 +24,7 @@ REPO_ROOT="${1:-$(cd -P "$SCRIPT_DIR/../../.." && pwd)}"
 
 [ -f "$REPO_ROOT/.claude-plugin/plugin.json" ] || err_die "not a kbg-harness checkout (no .claude-plugin/plugin.json under $REPO_ROOT)"
 
-# Live counts — duplicates check-01's / check-48's methodology directly (3
+# Live counts — duplicates check-01's / check-44's methodology directly (3
 # short finds); not worth a shared lib for this size.
 SKILLS=$(find "$REPO_ROOT/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace' | wc -l | tr -d ' ')
 AGENTS=$(find "$REPO_ROOT/agents" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')
@@ -49,7 +49,7 @@ _sync_triple() {
 }
 
 # .claude-plugin manifests dropped 2026-08-22 — descriptions reworded to
-# count-free feature text (sync-seam: mirrors check 48's location list).
+# count-free feature text (sync-seam: mirrors check 44's location list).
 _sync_triple "$REPO_ROOT/README.md" "real current fleet:"
 _sync_triple "$REPO_ROOT/README.md" "| kbg-native |"
 

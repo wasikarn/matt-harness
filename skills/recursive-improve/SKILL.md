@@ -3,7 +3,7 @@ name: recursive-improve
 description: "Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces."
 bucket: meta
 disable-model-invocation: true
-disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture), NOT taste — guarded by audit #39 CRIT; do not weaken via the CLAUDE.md selection criterion
+disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture), NOT taste — guarded by audit #36 CRIT; do not weaken via the CLAUDE.md selection criterion
 model: inherit
 effort: xhigh
 ---

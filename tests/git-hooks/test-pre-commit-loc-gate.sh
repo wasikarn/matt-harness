@@ -18,7 +18,7 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/git-hooks/pre-commit"
-CHECK64="$ROOT/skills/harness-audit/scripts/checks/64-loc-cap-auto-loaded-surfaces.sh"
+CHECK56="$ROOT/skills/harness-audit/scripts/checks/56-loc-cap-auto-loaded-surfaces.sh"
 
 pass=0
 fail=0
@@ -124,7 +124,7 @@ out=$(run_hook 2>&1); rc=$?
 check "git mv docs/big.md→agents/big.md (out-of-scope→in-scope) → blocked" $?
 reset_fixture
 
-# 6. New reference.md at 500 lines → allowed (on-demand exemption, same as check 64)
+# 6. New reference.md at 500 lines → allowed (on-demand exemption, same as check 56)
 mkfile skills/newthing/reference.md 500
 bump_and_add skills/newthing/reference.md
 out=$(run_hook 2>&1); rc=$?
@@ -133,7 +133,7 @@ check "new skills/newthing/reference.md at 500 lines → allowed (exempt)" $?
 reset_fixture
 
 # 7. New nested SKILL.md (one directory level too deep) at 400 lines → allowed.
-# Negative control for the glob-vs-regex parity claim: check 64's real
+# Negative control for the glob-vs-regex parity claim: check 56's real
 # filesystem glob (skills/[!_]*/SKILL.md) never crosses a `/`; this pins that
 # the hook's regex doesn't either.
 mkfile skills/foo/deep/SKILL.md 400
@@ -144,7 +144,7 @@ check "new nested skills/foo/deep/SKILL.md at 400 lines → allowed (glob-parity
 reset_fixture
 
 # 8. New SKILL.md under an underscore-prefixed dir at 400 lines → allowed.
-# Pins the [!_] exemption check 64 also carries.
+# Pins the [!_] exemption check 56 also carries.
 mkfile skills/_lib/SKILL.md 400
 bump_and_add skills/_lib/SKILL.md
 out=$(run_hook 2>&1); rc=$?
@@ -160,13 +160,13 @@ out=$(run_hook KBG_SKIP_LOC_GATE=1 2>&1); rc=$?
 check "KBG_SKIP_LOC_GATE=1 → skip valve honored" $?
 reset_fixture
 
-# 10. Sync guard: the cap value here must match check 64's cap value —
+# 10. Sync guard: the cap value here must match check 56's cap value —
 # the pattern SET is asserted structurally above (cases 1/2/6/7/8); this
 # pins the numeric constant the two scripts don't share a source for.
 hook_cap=$(grep -m1 '^LOC_CAP=' "$HOOK" | cut -d= -f2)
-check64_cap=$(grep -m1 '^LOC_CAP=' "$CHECK64" | cut -d= -f2)
-[ -n "$hook_cap" ] && [ "$hook_cap" = "$check64_cap" ]
-check "git-hooks/pre-commit LOC_CAP ($hook_cap) matches check 64's LOC_CAP ($check64_cap)" $?
+check56_cap=$(grep -m1 '^LOC_CAP=' "$CHECK56" | cut -d= -f2)
+[ -n "$hook_cap" ] && [ "$hook_cap" = "$check56_cap" ]
+check "git-hooks/pre-commit LOC_CAP ($hook_cap) matches check 56's LOC_CAP ($check56_cap)" $?
 
 echo
 echo "pre-commit-loc-gate: $pass passed, $fail failed"

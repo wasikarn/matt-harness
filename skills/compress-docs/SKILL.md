@@ -26,7 +26,7 @@ filler, keep full sentences.
 
 Use on a markdown doc (skill, command, `CLAUDE.md`-shaped file, any prose doc) that's grown bloated
 — restated sentences, redundant examples, filler connectives — especially one harness-audit already
-flagged over its 20K-char threshold (checks 42/51).
+flagged over its 20K-char threshold (checks 38/47).
 
 Don't use for:
 - Grading a `CLAUDE.md`'s content completeness or currency — `claude-md-management:claude-md-improver`
