@@ -28,7 +28,7 @@ Hooks live in `git-hooks/` (not `.git/hooks/`). Wire once per clone:
 git config core.hooksPath git-hooks
 ```
 
-pre-commit: fast gate — syntax/lint (`bash -n` + shellcheck), JSON validation, CRITICAL harness-audit (graceful-skip if absent).
+pre-commit: fast gate — syntax/lint (`bash -n` + shellcheck), JSON validation, CRITICAL harness-audit (graceful-skip if absent), new-file LOC gate (hard-blocks a brand-new `agents/*.md`, `commands/*.md`, `commands/*/COMMAND.md`, or `skills/*/SKILL.md` over 200 lines — editing an existing one past the cap stays WARN-only via harness-audit check 64; `KBG_SKIP_LOC_GATE=1` is the rescue valve).
 pre-push: full gauntlet (all validation layers in parallel).
 
 ## Composer-not-creator doctrine

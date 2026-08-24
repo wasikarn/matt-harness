@@ -291,7 +291,7 @@ kbg-harness/
 ├── docs/
 │   ├── onboarding.md     # 10-minute cold-start
 │   └── reference/        # thinking-skills library, reasoning-models.md, env-vars.md
-├── git-hooks/            # pre-commit (lint + JSON + syntax) · pre-push (gauntlet)
+├── git-hooks/            # pre-commit (lint + JSON + syntax + new-file LOC gate) · pre-push (gauntlet)
 ├── CLAUDE.md             # Project instructions for Claude Code instances
 └── CHANGELOG.md          # Release notes
 ```
@@ -322,7 +322,7 @@ git config core.hooksPath git-hooks
 
 | Hook | What it runs |
 |---|---|
-| `pre-commit` | `bash -n` + shellcheck, JSON validation, harness-audit |
+| `pre-commit` | `bash -n` + shellcheck, JSON validation, harness-audit, new-file LOC gate |
 | `pre-push` | Full gauntlet |
 
 ### Adding a Component

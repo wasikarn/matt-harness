@@ -66,7 +66,7 @@ You rarely name an agent directly — `kbg:review-pr` and `kbg:orchestrate` spaw
 These validation commands resolve paths from `${KBG_PLUGIN_ROOT}` and work from any CWD:
 
 ```bash
-bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + CRITICAL harness-audit
+bash "${KBG_PLUGIN_ROOT}/git-hooks/pre-commit"                    # commit-time: syntax/lint + CRITICAL harness-audit + new-file LOC gate
 bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"                 # push-time: full parallel gauntlet (validate + lint + JSON + audit + hook suites)
 bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh"     # self-audit only (defaults to plugin root)
 ```

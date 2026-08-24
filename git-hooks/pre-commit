@@ -16,6 +16,10 @@
 #      from the per-version plugin cache at runtime) → plugin.json version must
 #      change in this commit, and both manifests' version fields must agree
 #      (same-version edits are cache no-ops).
+#   5. brand-new agents/*.md, commands/*.md, commands/*/COMMAND.md, or
+#      skills/*/SKILL.md over 200 lines → hard-blocked (new-file LOC gate).
+#      Editing an existing one past the cap stays WARN-only (harness-audit
+#      check 64) — deliberate grandfather, see the gate's own comment block.
 #
 # The heavy layers above run in parallel so the commit gate stays fast.
 # The pre-push gauntlet adds the behavioral test suite (file list lives in
@@ -208,6 +212,83 @@ run_version_layer() {
   return "$rc"
 }
 
+# ---- Layer 4: new-file LOC gate (hard block) ----
+# Cap: 200 lines via `git show ":$f" | wc -l` — the STAGED INDEX content, not
+# the worktree. That matches what will actually land; check 64 below reads a
+# checked-out tree because it audits at pre-push, which is the right read
+# for it but the wrong one here (stage, keep editing, forget to re-`git add`
+# → a worktree read would score the trimmed file and miss the committed one).
+# Same 4 patterns and same cap as harness-audit check 64
+# (skills/harness-audit/scripts/checks/64-loc-cap-auto-loaded-surfaces.sh) —
+# kept in sync by tests/git-hooks/test-pre-commit-loc-gate.sh, not a shared
+# file (git-hooks/ isn't a shipped surface; scripts/_lib/ is, and pulling the
+# constant there would drag an unrelated version bump into every
+# git-hooks/-only change).
+#
+# Only blocks BRAND-NEW files. Editing an existing file past the cap, or
+# `git mv`-ing an already-in-scope file to a new in-scope path (e.g. the
+# reference-split migration check 64's own message recommends), stays
+# WARN-only via check 64 — a deliberate grandfather (2026-08-24 grilling:
+# don't reopen check 64's "WARN not CRIT" call from one day earlier). Known
+# gap, accepted rather than closed: `git commit --amend` growing a file past
+# cap that the commit-being-amended itself added — `--diff-filter=A` diffs
+# the index against HEAD, which already includes that add, so this reads as
+# an edit, not a new file. check 64's pre-push WARN is the backstop there.
+#
+# KBG_SKIP_LOC_GATE (mirrors KBG_SKIP_VERSION_GATE) is checked FIRST, before
+# the detection scan below runs at all — so a bug in the scan itself can't
+# strand a broken gate with no other way out (--no-verify and
+# `-c core.hooksPath=` are both deny-gated in this harness).
+LOC_CAP=200
+loc_gate_needed=0
+LOC_ADDED=()
+LOC_RENAMES=()
+if [ -n "${KBG_SKIP_LOC_GATE:-}" ]; then
+  echo "  new-file LOC gate skipped (KBG_SKIP_LOC_GATE set — rescue use only)"
+else
+  mapfile -t LOC_ADDED < <(git -c core.quotepath=false diff --cached --name-only --no-renames --diff-filter=A)
+  mapfile -t LOC_RENAMES < <(git -c core.quotepath=false diff --cached --diff-filter=R --name-status)
+  [ "${#LOC_ADDED[@]}" -gt 0 ] && loc_gate_needed=1
+fi
+
+is_capped_surface() {
+  local p="$1"
+  [[ "$p" =~ ^agents/[^/]+\.md$ ]] && return 0
+  [[ "$p" =~ ^commands/[^/]+\.md$ ]] && return 0
+  [[ "$p" =~ ^commands/[^/]+/COMMAND\.md$ ]] && return 0
+  [[ "$p" =~ ^skills/[^_][^/]*/SKILL\.md$ ]] && return 0
+  return 1
+}
+
+# A rename's destination shows up in LOC_ADDED (--no-renames was used for
+# that scan); find its ORIGINAL path in the separate rename-detecting pass
+# above and skip if that original path was already in-scope (grandfathered).
+was_renamed_from_in_scope() {
+  local dest="$1" line old new
+  for line in "${LOC_RENAMES[@]}"; do
+    IFS=$'\t' read -r _ old new <<< "$line"
+    if [ "$new" = "$dest" ]; then
+      is_capped_surface "$old" && return 0
+      return 1
+    fi
+  done
+  return 1
+}
+
+run_loc_gate() {
+  local rc=0 f lines
+  for f in "${LOC_ADDED[@]}"; do
+    is_capped_surface "$f" || continue
+    was_renamed_from_in_scope "$f" && continue
+    lines=$(git show ":$f" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$lines" -gt "$LOC_CAP" ]; then
+      echo "  new file '$f' is $lines lines (cap $LOC_CAP) — move detail to the surface's reference file before committing (skills: reference.md; commands: references/ via directory form; agents: compress)" >&2
+      rc=1
+    fi
+  done
+  return "$rc"
+}
+
 # Start all applicable layers in parallel.
 echo "pre-commit: running staged checks in parallel..." >&2
 
@@ -222,6 +303,11 @@ fi
 if [ "$version_check_needed" -eq 1 ]; then
   run_version_layer > "$WORK_TMP/version.log" 2>&1 &
   PID_VERSION=$!
+fi
+
+if [ "$loc_gate_needed" -eq 1 ]; then
+  run_loc_gate > "$WORK_TMP/locgate.log" 2>&1 &
+  PID_LOC=$!
 fi
 
 # Wait and report.
@@ -239,6 +325,7 @@ wait_layer() {
 wait_layer "syntax/lint" "$PID_SYNTAX" "$WORK_TMP/syntax.log"
 [ -n "${PID_AUDIT:-}" ] && wait_layer "harness-audit" "$PID_AUDIT" "$WORK_TMP/audit.log"
 [ -n "${PID_VERSION:-}" ] && wait_layer "version-bump" "$PID_VERSION" "$WORK_TMP/version.log"
+[ -n "${PID_LOC:-}" ] && wait_layer "new-file LOC gate" "$PID_LOC" "$WORK_TMP/locgate.log"
 
 if [ "$fail" -ne 0 ]; then
   echo "" >&2
