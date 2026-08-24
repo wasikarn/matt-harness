@@ -2,17 +2,17 @@
 
 **Strategic judgment** is the discipline of choosing under ambiguity when commitments are hard to reverse and the payoff horizon is long. It is not the same as operational decision-making, long-term planning, or goal-setting.
 
-Use it when the diagnosis is contested, the rivals adapt, the resources are constrained, and undoing the choice later would be costly or impossible. For analyzable, reversible choices, use `kbg:decide` and the Judgment Ladder instead.
+Use it when the diagnosis is contested, the rivals adapt, the resources are constrained, and undoing the choice later would be costly or impossible. For analyzable, reversible choices, use the Judgment Ladder (`docs/reference/judgment-ladder.md`) instead.
 
 ## What strategic judgment is not
 
 | Not strategic judgment | What it actually is | kbg surface |
 | --- | --- | --- |
 | Goal-setting | A destination without a diagnosis or policy | — |
-| Operational decision-making | Analyzable trade-offs inside an existing frame | `kbg:decide` |
+| Operational decision-making | Analyzable trade-offs inside an existing frame | METHODOLOGY Rule 1 triad + `advisor()`, `docs/reference/judgment-ladder.md` |
 | Execution planning | Sequencing tasks after the strategy is set | `/ship`, `mattpocock-skills:domain-modeling` |
 | Chaos response | Stabilize first, decide fast | `kbg:incident` |
-| Research | Gathering intelligence before committing | `mattpocock-skills:research`, `kbg:decide` probe mode |
+| Research | Gathering intelligence before committing | `mattpocock-skills:research` |
 
 ## Core model: Rumelt's kernel
 
@@ -90,27 +90,27 @@ Philip Tetlock's research on expert political judgment and superforecasting adds
 
 This is not a substitute for the Rumelt/Martin framework, but it sharpens the estimate step inside the strategy loop.
 
-## kbg-native scaffold: `kbg:decide (strategize mode)`
+## Applying this reference: the six-step loop
 
-The harness applies this reference through the `kbg:decide (strategize mode)` skill, which walks six steps:
+The harness applies this reference inline (no dedicated skill wrapper), walking six steps:
 
 1. Diagnose the situation
 2. Choose the guiding policy
 3. Design coherent actions
 4. Map irreversibilities and real options
-5. Red-team the strategy
+5. Red-team the strategy — `mattpocock-skills:grilling` is the surface for this step when the strategy needs a relentless external skeptic
 6. Commit to the strategy loop
 
-## When to reach for `kbg:decide (strategize mode)` vs. `kbg:decide`
+## When to reach for this loop vs. the Judgment Ladder
 
 | Signal | Reach for |
 | --- | --- |
-| The choice is analyzable, reversible, and time-pressured | `kbg:decide` |
-| The commitment is large, long-lived, and hard to reverse | `kbg:decide (strategize mode)` |
-| The diagnosis is contested and the best option is not computable | `kbg:decide (strategize mode)` |
-| Rivals, markets, or stakeholders will adapt in response | `kbg:decide (strategize mode)` |
-| The question is "which of these known options is best?" | `kbg:decide` |
-| The question is "what game are we playing, and how do we win it?" | `kbg:decide (strategize mode)` |
+| The choice is analyzable, reversible, and time-pressured | Judgment Ladder (`judgment-ladder.md`) |
+| The commitment is large, long-lived, and hard to reverse | this loop |
+| The diagnosis is contested and the best option is not computable | this loop |
+| Rivals, markets, or stakeholders will adapt in response | this loop |
+| The question is "which of these known options is best?" | Judgment Ladder (`judgment-ladder.md`) |
+| The question is "what game are we playing, and how do we win it?" | this loop |
 
 ## Strategic judgment in software engineering
 
@@ -125,15 +125,15 @@ Software strategy is not about picking technologies. It is about choosing commit
 | Language / framework commitment | What ecosystem, hiring market, and runtime constraints bind us? | Standardize on one primary stack; allow escape hatches for proven needs | Prototype in a non-critical service; training pipeline; deprecation policy |
 
 **Mapping to the kbg flow:**
-1. `kbg:decide (strategize mode)` answers "what game are we playing and how do we win it?" and produces a guiding policy.
-2. `kbg:decide` answers "which known option is best?" inside that policy.
+1. This loop answers "what game are we playing and how do we win it?" and produces a guiding policy.
+2. The Judgment Ladder (`judgment-ladder.md`) answers "which known option is best?" inside that policy.
 3. `mattpocock-skills:domain-modeling` records the commitment, the tripwires, and the loop that revisits it.
 
-## Related kbg surfaces
+## Related surfaces and references
 
-- `kbg:decide` — Judgment Ladder for operational/consequential choices
+- `docs/reference/judgment-ladder.md` — Judgment Ladder for operational/consequential choices
 - `mattpocock-skills:domain-modeling` — record a committed decision once the strategy is set (owns the ADR rule)
-- `kbg:decide` probe mode — deep investigation of a slice before diagnosing
+- `mattpocock-skills:grilling` — adversarial stress-test of a contested plan, decision, or diagnosis
 - `mattpocock-skills:research` — external and competitive intelligence, including mining a strategy article or book chapter for doctrine
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.

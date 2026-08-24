@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.450-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.451-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -118,7 +118,7 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 47 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Skills** | 46 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 18 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
 | **Commands** | 22 | `/kbg:<command>` — e.g. `/kbg:ship`, `/kbg:address-review`, `/kbg:fix-bug` (namespaced identically to skills — see Quick Start step 7) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
@@ -229,7 +229,6 @@ predates the term, and the doc is explicit that this is naming, not new capabili
 | Skill | When to reach for it |
 |---|---|
 | `kbg:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
-| `kbg:decide` | Judgment Ladder: `clarify` / `probe` / `decide` / `strategize` / `critique` modes |
 | `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
 | `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building |
 | `kbg:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
@@ -358,7 +357,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 47 skills · 18 agents · 22 commands).
+> `ls commands/` (real current fleet: 46 skills · 18 agents · 22 commands).
 
 | Source | License | Adopted |
 |---|---|---|
@@ -369,7 +368,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance-machinery rubric adapted into a new Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130) |
-| kbg-native | MIT | 47 skills · 18 agents · 22 commands |
+| kbg-native | MIT | 46 skills · 18 agents · 22 commands |
 
 ---
 

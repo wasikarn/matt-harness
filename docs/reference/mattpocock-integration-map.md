@@ -22,7 +22,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | code-review | model | deferred — ask-matt's map owns it; kbg's native review path is `kbg:code-reviewer` / `kbg:review-pr` |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `kbg:code-architect` / `kbg:backend-architect` |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md` |
-| domain-modeling | model | `skills/decide` (ADR handoff), `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
+| domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
 | grill-with-docs | user | `docs/agents/domain.md` (path into domain-modeling) |
 | implement | user | `agents/code-implementer.md` (boundary: kbg agent implements autonomously; matt's is user-typed) |
 | improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling) |

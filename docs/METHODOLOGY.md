@@ -38,9 +38,9 @@ plan is what the user spends their review cycle on.
 
 ### Pressure-test before committing
 
-Run the triad inline, then call `advisor()` before substantive work and before declaring done — `advisor()` is the check that's actually load-bearing in practice (measured 2026-07-02: `kbg:decide` invoked 0 times vs. `advisor()` 55 times, across 182 sessions). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.
+Run the triad inline, then call `advisor()` before substantive work and before declaring done — `advisor()` is the check that's actually load-bearing in practice (measured 2026-07-02: the since-deleted `decide` skill invoked 0 times vs. `advisor()` 55 times, across 182 sessions). When a decision is consequential — wide blast radius or a one-way door — close it with a **written revisit trigger and progress metric**, not just a verdict. A decision without a re-open condition is not finished.
 
-For a genuinely hard, contested-diagnosis choice where the reasoning itself needs building from scratch (not just pressure-testing an existing call), `kbg:decide` is available on-demand — 5 modes (clarify/probe/decide/critique/strategize); load it by name (it resolves from any CWD — don't rely on a repo-relative path, which misses when the session runs in a foreign project). Reach for it when `advisor()`-level pressure-testing isn't enough, not as a routine step.
+For a genuinely hard or contested call where `advisor()`-level pressure-testing isn't enough, escalate to `mattpocock-skills:grilling` — relentless adversarial stress-testing of the plan, decision, or diagnosis. On-demand, not a routine step.
 
 ### disable-model-invocation surfaces are user-only
 
@@ -122,7 +122,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 - A rank/recommend verdict names the runner-up and why it lost — a pick with no stated alternative is unfalsifiable.
 - Evidence > assumption · measurement > feeling · verification > opinion.
 - If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
-- **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`; the structured flow lives in `kbg:decide` § Precedent check.)
+- **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`.)
 
 The `kbg:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
 

@@ -196,8 +196,8 @@ run_version_layer() {
   fi
   local shipped=0
   # Runtime-served content beyond the 6 surface dirs counts as shipped:
-  # doctrine-bootstrap injects docs/METHODOLOGY.md and decide/score-decision
-  # cat docs/reference/* from the versioned cache; shipped skill scripts source
+  # doctrine-bootstrap injects docs/METHODOLOGY.md and score-decision
+  # cats docs/reference/* from the versioned cache; shipped skill scripts source
   # scripts/_lib/*.sh relative out of the cache; frame.md cats contexts/*.md
   # via ${KBG_PLUGIN_ROOT}. Same stale-cache class for all of them (the
   # scripts/+contexts/ gap bit for real on 2026-08-21 — 3 scripts/-only

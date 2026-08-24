@@ -392,7 +392,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` critique mode | Skeptic + Steel-man + Synthesis stress-test |
 | "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows

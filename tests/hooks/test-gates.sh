@@ -608,7 +608,7 @@ test_allow "$ATLASSIAN_GATE" "same-session MCP call allowed once jira-acli:acli 
 test_allow "$ATLASSIAN_GATE" "same-session confluence-content fallback (page create) also allowed once engaged" \
   "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__createConfluencePage' "$AG_ENGAGED")"
 test_allow "$ATLASSIAN_GATE" "Skill(other:x) load is never itself blocked" \
-  "$(skill_payload 'kbg:decide' "$AG_WRONGSKILL")"
+  "$(skill_payload 'kbg:orchestrate' "$AG_WRONGSKILL")"
 test_deny  "$ATLASSIAN_GATE" "a non-jira-acli skill does not engage the session" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__getJiraIssue' "$AG_WRONGSKILL")"
 test_deny  "$ATLASSIAN_GATE" "a different, still-cold session stays blocked (marker is per-session)" \

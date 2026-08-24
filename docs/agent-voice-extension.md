@@ -124,7 +124,7 @@ allowed-tools: Read, Grep, Glob
 ---
 ```
 
-The command's value is the **output shape** (ADR-shaped critique), not a new capability — `kbg:decide`'s critique mode already stress-tests reasoning (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent — it's a `decide` mode). The risk: this overlaps with the existing `domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually to extend `kbg:decide`'s critique mode or invoke `domain-modeling` instead.
+The command's value is the **output shape** (ADR-shaped critique), not a new capability — `mattpocock-skills:grilling` already stress-tests reasoning adversarially (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent). The risk: this overlaps with the existing `domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually `mattpocock-skills:grilling` or `domain-modeling` instead.
 
 ## 5. Cross-references
 

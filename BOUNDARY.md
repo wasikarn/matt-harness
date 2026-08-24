@@ -134,7 +134,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### workflow
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| decide | Doctrine-backed decision support for hard/contested-diagnosis choices past advisor()-level pressure-testing. Trigger on 'stuck between'/'hard call', Thai 'ตัดสินใจยาก'/'เลือกไม่ลง'. Don't use for routine decisions: default triad + advisor(). | inline | auto |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 
@@ -181,7 +180,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-24T11:30:07Z_
+_Generated: 2026-08-24T11:59:44Z_
 
 ---
 
@@ -289,7 +288,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "pros and cons", "which is better", "should we use X or Y" | `kbg:decide` critique mode | Skeptic + Steel-man + Synthesis stress-test |
 | "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows

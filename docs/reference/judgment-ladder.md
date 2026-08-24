@@ -186,7 +186,7 @@ The ladder is not universal. Match the process to the domain:
 
 ## Using the ladder in software engineering
 
-Use the ladder for **implementation and design choices inside an established architecture**, not for architecture-level bets. The latter belong in `kbg:decide (strategize mode)` first.
+Use the ladder for **implementation and design choices inside an established architecture**, not for architecture-level bets. The latter belong in the strategic-judgment loop (`strategic-judgment.md`) first.
 
 | Coding decision | Rung to stress | Typical bias trap |
 |---|---|---|
@@ -197,8 +197,8 @@ Use the ladder for **implementation and design choices inside an established arc
 | Hotfix vs. proper fix | Recognize | Treating an incident as a normal decision; use `kbg:incident` instead |
 
 **Quick coding flow:**
-1. Is the decision hard to reverse or long-lived? → `kbg:decide (strategize mode)`.
-2. Is it reversible within days and analyzable? → climb the ladder with `kbg:decide`.
+1. Is the decision hard to reverse or long-lived? → the strategic-judgment loop (`strategic-judgment.md`).
+2. Is it reversible within days and analyzable? → climb the ladder inline (this reference).
 3. Is the answer already committed and only needs a record? → `mattpocock-skills:domain-modeling` (owns the ADR rule).
 
 ## Connection to Decision Quality
@@ -242,14 +242,11 @@ work). Use them as a cross-check at the rung where each one is most dangerous.
 | Estimate risk | Planning fallacy, base-rate neglect, false precision | Use 90% confidence intervals and reference-class forecasting |
 | Decide, commit & follow through | Sunk-cost fallacy, groupthink, soft commitment, **automation bias** (trusting a self-generated score/tool output without independent re-derivation), **survivorship bias** (judging "improved" only by what the existing verifier happens to measure) | Set kill criteria and action owners before leaving the room; for a score you didn't independently re-derive, ask who verified it and how |
 
-## kbg surfaces
+## Related surfaces and references
 
-- `kbg:decide` — interactive walk through the ladder
 - `mattpocock-skills:domain-modeling` — record the decision as an ADR after the ladder
-- `kbg:decide` probe mode — systems-thinking analysis before the ladder
-- `kbg:decide` clarify mode — when the decision itself is still ambiguous
-- `kbg:decide` critique mode — stress-test reasoning in a decision or ADR
-- `kbg:decide (strategize mode)` — upstream lens for irreversible / long-horizon commitments
+- `mattpocock-skills:grilling` — adversarial stress-test of the reasoning in a decision or ADR
+- `docs/reference/strategic-judgment.md` — upstream lens for irreversible / long-horizon commitments
 
 > **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
 

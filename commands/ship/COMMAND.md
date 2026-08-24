@@ -20,7 +20,7 @@ Merges the former `/ship-task` (blank-slate, 9-step) and `kbg:ship-change` (alre
 |-------|----------------------|--------------------------|
 | 0 | **Entry classification** — which path | **Entry classification** — which path |
 | 1 | **Explore** — `Explore` agent, read-only recon | *skipped — scope already known* |
-| 2 | **Clarify** — `kbg:decide`, 3-step scope gate | *skipped — escalate inline only if Phase 4 surfaces new ambiguity* |
+| 2 | **Clarify** — inline 3-step scope gate | *skipped — escalate inline only if Phase 4 surfaces new ambiguity* |
 | 3 | **Define done** — full checkable criteria list | **Define done** — 1-2 items, stated inline from the Phase 0 boundary |
 | 4 | **Classify + Implement** — bug→`/fix-bug` · feature→inline TDD · refactor→`/refactor-clean` | same |
 | 5 | **Test** — project test-suite + type-check | same |
@@ -71,8 +71,8 @@ Both paths converge at Phase 4 and share every phase after it verbatim.
 **Goal**: Resolve unstated assumptions before designing.
 
 **Actions**:
-1. Invoke `kbg:decide` — it runs the 3-step (Analyze → Recommend → Ask) gate.
-2. Answer its questions; redirect scope if needed.
+1. Run the 3-step gate inline: Analyze the ambiguities → Recommend a default per ambiguity → Ask (one `AskUserQuestion` round, recommended defaults pre-filled) only for the ambiguities genuinely expensive to guess wrong.
+2. Apply the answers; redirect scope if needed.
 
 **Gate**: all ambiguities resolved. Scope spanning independent subsystems → split into separate `/ship` runs.
 

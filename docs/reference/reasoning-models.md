@@ -89,11 +89,12 @@ just apply it — don't route.** This catalog is for the reverse direction — w
 is doing something and you want the named handle for it (to combine lenses, to explain a
 move, or to teach the harness's reasoning to someone new).
 
-**Which scaffold for which situation?** That router is the METHODOLOGY scaffold menu ("Reach for a
-reasoning scaffold when the call is hard," added v0.3.5) — `clarify-first` / `probe` / `decide` /
-`strategize` / `critical-eval` / `doubt-driven`, split by reversibility. This catalog and its
+**Which scaffold for which situation?** That router is
+`docs/reference/decision-doctrine-map.md` (situation → scaffold → owning rule, picked by
+reversibility). This catalog and its
 tables below (model→home, workflow-pattern→models) are **reference**, not a competing
-situation-router; for the 9 reference-only frames that no kbg skill applies, the on-demand path is
+situation-router; for the reference-only frames that no kbg skill applies (the model→home table
+below marks each), the on-demand path is
 `BOUNDARY.md` (the generated capability map — the `inventory` skill wrapper was removed
 2026-08-24 #80) + `docs/reference/thinking-skills/`.
 
@@ -127,32 +128,30 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 
 ## Unified 39-model index
 
-> **Granularity note (probe mode rows).** `skills/decide`'s probe mode is a generic
-> 4-step scaffold (map the system → name leverage points → stress-test the diagnosis
-> → output a memo) — it does not walk through model-specific sub-steps for every
-> model mapped to it below. Several rows below are marked `considered` rather than
-> `applied` for this reason: the model fits one of probe mode's 4 generic steps if
-> pulled in manually, but isn't a distinct operationalized step in probe mode's own
-> text. Found and corrected 2026-07-20 during a `kbg:decide` design audit — see
-> `kbg-decide-zero-real-world-invocations-2026-07-02.md` for the full finding.
+> **Former-home note.** Several rows below carried the since-deleted `skills/decide`
+> skill as their kbg home (deleted 2026-08-24, ticket 79 — `mattpocock-skills:grilling`
+> is now the fleet's adversarial pressure-testing surface). Those rows now read
+> `considered` / `—`, the same convention as the v0.6.0-reset rows. Statuses were
+> last recalibrated 2026-07-20 — see
+> `kbg-decide-zero-real-world-invocations-2026-07-02.md` for that audit.
 
 | Model | Upstream dir | kbg status | kbg home | How it shows up |
 | --- | --- | --- | --- | --- |
-| systems-thinking | `thinking-systems` | applied | skills/decide (probe mode) | probe mode step 1 ("map the system: actors, flows, feedback loops, delays") is this lens applied generically — no distinct sub-steps for reinforcing/balancing loops in probe mode's own text |
-| feedback-loops | `thinking-feedback-loops` | considered | skills/decide (probe mode) | covered by probe mode's generic step 1 (map flows/feedback loops); the reinforcing-vs-balancing distinction is a reference frame to pull in manually, not a step probe mode's own text spells out |
-| first-principles | `thinking-first-principles` | considered | skills/decide (probe mode) (Root Why) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; "probe one level deeper" isn't a step in probe mode's own 4-bullet text |
-| second-order | `thinking-second-order` | considered | skills/decide (probe mode) (What-if) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; the 10x/fail/nothing branches aren't in probe mode's own text |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/decide (probe mode), skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in review-pr/post-mortem; in probe mode it's a reference frame for step 3, not a distinct step |
-| five-whys-plus | `thinking-five-whys-plus` | considered | skills/decide (probe mode) | fits probe mode's step 3 (stress-test the diagnosis) if pulled in manually; Root Why probing isn't a step in probe mode's own text |
-| thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame; in probe mode it's a reference frame, not a distinct step |
+| systems-thinking | `thinking-systems` | considered | — | map-the-system lens (actors, flows, feedback loops, delays); its former kbg home was deleted 2026-08-24, no live anchor |
+| feedback-loops | `thinking-feedback-loops` | considered | — | reinforcing-vs-balancing loops as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
+| first-principles | `thinking-first-principles` | considered | — | "probe one level deeper" Root-Why frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
+| second-order | `thinking-second-order` | considered | — | 10x/fail/nothing what-if branches as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in review-pr/post-mortem |
+| five-whys-plus | `thinking-five-whys-plus` | considered | — | Root-Why probing as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
+| thought-experiment | `thinking-thought-experiment` | applied | /ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule; in probe mode it's a reference frame, not a distinct step |
-| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception frame; in probe mode it's a reference frame, not a distinct step |
-| socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
+| reversibility | `thinking-reversibility` | applied | domain-modeling, the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule |
+| debiasing | `thinking-debiasing` | considered | — | Check yourself — anti-self-deception frame; its former kbg home was deleted 2026-08-24, no live anchor |
+| socratic | `thinking-socratic` | considered | — | named-method questioning + "Socratic Trap" failure mode; its former kbg home was deleted 2026-08-24, no live anchor |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
-| red-team | `thinking-red-team` | applied | skills/decide (critique mode), skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode), skills/review-pr, skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives |
+| red-team | `thinking-red-team` | applied | skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
+| steel-manning | `thinking-steel-manning` | applied | skills/review-pr, skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -182,12 +181,12 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 
 The kbg-harness ships its own structured-reasoning scaffolds alongside the vendored
 cc-thinking-skills models. These are kbg-native processes, not part of the upstream
-39-model catalog, and are invoked as kbg skills or read as reference docs.
+39-model catalog, and are read as reference docs and applied inline.
 
 | Scaffold | kbg surface | What it adds |
 | --- | --- | --- |
-| **judgment-ladder** | `kbg:decide` + `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide, commit, and follow through. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
-| **strategic-judgment** | `kbg:decide` strategize mode + `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
+| **judgment-ladder** | `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide, commit, and follow through. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
+| **strategic-judgment** | `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
 
 Read the full scaffold with Bash:
 
@@ -210,11 +209,11 @@ They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
-| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `triage`, `kbg:decide` clarify mode |
-| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `kbg:decide` probe mode, `research` |
-| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:decide` critique mode, `kbg:review-pr` |
+| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `triage` |
+| **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `research` |
+| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:review-pr`, `mattpocock-skills:grilling` |
 | **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `domain-modeling`, `/ship` scoping |
-| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix), `kbg:decide` critique mode |
+| **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix) |
 | **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that

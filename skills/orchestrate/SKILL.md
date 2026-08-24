@@ -94,11 +94,11 @@ Orchestrator's Tax* — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.
 
 - **Eisenhower (Urgency × Important)** — real-world work with genuine time pressure (deadlines, people waiting, incidents).
 - **Impact × Effort** — backlog with no real urgency. If everything is "not urgent," urgency is a degenerate axis — switch.
-- **Value × Risk** — architecture decisions, framework adoption, release planning, or any task where uncertainty is the primary concern. When the question is "should we build/adopt this at all?" rather than "when should we do it?" Once research/analysis produces real trade-off data for a high-value/high-risk item, the actual build/adopt call routes to `kbg:decide`, not back through this matrix — orchestrate stops at "get the data," it doesn't make the reversible-choice call itself.
+- **Value × Risk** — architecture decisions, framework adoption, release planning, or any task where uncertainty is the primary concern. When the question is "should we build/adopt this at all?" rather than "when should we do it?" Once research/analysis produces real trade-off data for a high-value/high-risk item, the actual build/adopt call is made under METHODOLOGY Rule 1 (triad + `advisor()`; `mattpocock-skills:grilling` for a hard/contested call), not back through this matrix — orchestrate stops at "get the data," it doesn't make the reversible-choice call itself.
 
 A mechanical, deterministically-verified item (a linter or dependency-checker's output, say) doesn't inherit the rest of the batch's matrix just because it arrived in the same message — score it on its own shape, usually Impact×Effort's quick-win cell, even inside an otherwise Value×Risk-dominant batch.
 
-"Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 1, `clarify-first` — `kbg:decide` clarify mode).
+"Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 1, clarify-first).
 
 Full routing tables, agent fleet mapping, scripted execution details, and delegation guardrail: `reference.md`
 
@@ -106,7 +106,7 @@ Full routing tables, agent fleet mapping, scripted execution details, and delega
 
 A worked 5-task triage (prod outage, auth refactor, a CSV pull, pnpm-migration research, and a
 low-priority toggle) showing quadrant, route, agent, and gating end to end, plus this skill's
-routing boundary with `kbg:decide` and `/mattpocock-skills:wayfinder`: `reference.md` §
+routing boundary with the decision doctrine (METHODOLOGY Rule 1) and `/mattpocock-skills:wayfinder`: `reference.md` §
 Full triage example.
 
 ## Output Format

@@ -11,14 +11,15 @@ The reasoning scaffolds are framing tools, **not** a proven accuracy boost — s
 `reasoning-models.md` for the honesty caveat. Pick by **reversibility**, the axis
 the Staff-Engineer Thinking Loop implies.
 
-**`kbg:decide` is de-scoped from the default path (2026-07-02).** It was originally
-presented here as the bound mechanism for most rows below. Measured evidence said
-otherwise: 0 invocations across 182 real production sessions and this repo's own
-dogfooding session, against 55 `advisor()` calls and 100 calls to other `kbg:` skills
-in the same corpus — `advisor()` + inline reasoning is what's actually load-bearing.
-The skill still exists (`skills/decide/SKILL.md`, not deleted) for the genuinely hard,
-contested-diagnosis case; it's no longer the default row for routine non-trivial
-decisions.
+**The former `decide` skill was de-scoped from the default path (2026-07-02) and
+deleted (2026-08-24, ticket 79).** It was originally presented here as the bound mechanism
+for most rows below. Measured evidence said otherwise: 0 invocations across 182
+real production sessions and this repo's own dogfooding session, against 55
+`advisor()` calls and 100 calls to other `kbg:` skills in the same corpus —
+`advisor()` + inline reasoning is what's actually load-bearing. The genuinely
+hard, contested-diagnosis case now escalates to `mattpocock-skills:grilling`
+(adversarial pressure-testing), backed by the `judgment-ladder.md` /
+`strategic-judgment.md` references.
 
 ## Decision-sizing triad (run before any non-trivial act)
 
@@ -38,10 +39,10 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 
 | Situation | Scaffold | Bound to (real surface) | Owning doctrine |
 |---|---|---|---|
-| any non-trivial decision — pressure-test before committing | triad + `advisor()` | `advisor()` tool — measured load-bearing (55 calls across 182 real sessions vs. 0 for `kbg:decide` in the same corpus) | METHODOLOGY Rule 1 |
+| any non-trivial decision — pressure-test before committing | triad + `advisor()` | `advisor()` tool — measured load-bearing (55 calls across 182 real sessions vs. 0 for the since-deleted `decide` skill in the same corpus) | METHODOLOGY Rule 1 |
 | closing a consequential / hard-to-reverse decision | revisit trigger + progress metric | stated in the closing message — no dedicated artifact required | METHODOLOGY Rule 1 |
-| genuinely hard, contested diagnosis — reasoning needs building from scratch, not just pressure-testing | `kbg:decide` (clarify/probe/decide/critique/strategize) | `skills/decide/SKILL.md` — on-demand, not a routine step | METHODOLOGY Rule 1 + `judgment-ladder.md` / `strategic-judgment.md` |
-| disprove a confident output in fresh context before committing | `doubt-driven` (external) | spawn a fresh-context skeptic with no view of the work — not a `kbg:decide` mode, canonical instance is the adversarial pass in `kbg:review-pr` | METHODOLOGY Rule 1 |
+| genuinely hard, contested diagnosis — reasoning needs building from scratch, not just pressure-testing | `mattpocock-skills:grilling` — relentless adversarial grilling of the plan, decision, or diagnosis | `mattpocock-skills:grilling` (installed plugin, not kbg-native) — on-demand, not a routine step | METHODOLOGY Rule 1 + `judgment-ladder.md` / `strategic-judgment.md` |
+| disprove a confident output in fresh context before committing | `doubt-driven` (external) | spawn a fresh-context skeptic with no view of the work — not an invokable surface; canonical instance is the adversarial pass in `kbg:review-pr` | METHODOLOGY Rule 1 |
 | a mutation or ship | the harness **denies the irrecoverable set computationally** (`hooks/gates/irrecoverable.sh` — destructive Bash/git/SQL patterns) and **advises on the rest** (`hooks/advisory/flow-nudge.sh`); the **operator is the authority at every irreversible boundary** | `CLAUDE.md`'s Operating model (under §Architecture) |
 | editing the code that judges the model (a gate, `hooks.json`, or the audit verifier) | `hooks/gates/verifier-protect.sh` — `permissionDecision: ask`, no env-var bypass | `CLAUDE.md`'s "Why — the unifying crux" (verifier-separation) |
 | a db write | `hooks/gates/db-write-gate.sh` — `permissionDecision: ask` on non-SELECT `mcp__<server>__execute_sql*` calls, any server; no-op when no such MCP server is configured | `docs/harness-decay-cadence.md` §"Irreversible-action class" |

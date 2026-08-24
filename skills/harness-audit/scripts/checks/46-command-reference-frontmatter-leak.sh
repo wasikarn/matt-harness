@@ -3,7 +3,7 @@
 #
 # A directory-form command (`commands/<name>/COMMAND.md` + a `references/`
 # subfolder, e.g. `ship`/`ideate`) or a skill's `references/` subfolder
-# (`decide`, `memory-lint`, `harness-audit`, etc.) is meant to keep its
+# (`incident`, `memory-lint`, `harness-audit`, etc.) is meant to keep its
 # supporting files inert — read only via an explicit path pointer in the
 # parent COMMAND.md/SKILL.md's prose, never invoked on their own. Confirmed
 # via a live `claude -p "..." --debug-file <path>` capture (2026-07-20
