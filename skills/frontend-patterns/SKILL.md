@@ -1,6 +1,6 @@
 ---
 name: frontend-patterns
-description: Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (kbg:backend-patterns), or WCAG/a11y audits (kbg:accessibility).
+description: Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility).
 bucket: patterns
 metadata:
   origin: ECC
@@ -16,11 +16,11 @@ code for every pattern below lives in `reference.md` — this file carries the t
 conditions and the gotchas that aren't obvious from the code alone.
 
 **Not this skill's job:** Next.js App Router rendering/caching, Server Actions, middleware,
-route handlers, or the metadata API — that's `kbg:nextjs-reviewer`. TypeScript compiler
-choices and `tsconfig.json` underneath these patterns — that's `kbg:typescript-patterns`
+route handlers, or the metadata API — that's `mh:nextjs-reviewer`. TypeScript compiler
+choices and `tsconfig.json` underneath these patterns — that's `mh:typescript-patterns`
 (composes with this skill; a component using both loads this skill for the React layer and
 that one for the TS layer underneath). Post-hoc review of a diff — that's
-`mattpocock-skills:code-review`/`kbg:typescript-reviewer`. Non-React UI frameworks (Vue, Svelte, Angular)
+`mattpocock-skills:code-review`/`mh:typescript-reviewer`. Non-React UI frameworks (Vue, Svelte, Angular)
 have a different component model entirely and aren't covered here.
 
 ## When to Activate
@@ -163,9 +163,9 @@ Choose patterns that fit your project complexity.
 
 ## Related
 
-- Agent: `kbg:performance-optimizer` - once a client-side computation (not just rendering) is
+- Agent: `mh:performance-optimizer` - once a client-side computation (not just rendering) is
   the confirmed bottleneck, for the algorithmic fix underneath it
-- Skill: `kbg:accessibility` — the WCAG conformance layer and generic React a11y fixes (forms,
+- Skill: `mh:accessibility` — the WCAG conformance layer and generic React a11y fixes (forms,
   labels, ARIA) this file's own Accessibility Patterns section doesn't cover
 
 ## Verify before use

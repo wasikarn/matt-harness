@@ -29,7 +29,7 @@ Once inside plan mode, the analysis is the deliverable, not a formality before t
 real work starts. Read the files the task touches and trace the actual flow before
 drafting — a plan built from the request text alone, without opening the code, is a
 guess wearing a plan's shape. For a multi-file or architectural change, dispatch
-`kbg:code-architect` for the blueprint (pattern analysis, layer-direction check,
+`mh:code-architect` for the blueprint (pattern analysis, layer-direction check,
 DI-style check, test-impact check) — it does that same reading systematically
 rather than ad hoc, and its output format (Design Decisions, Trade-offs, Build
 Sequence, Risks, Success Criteria) is the plan.
@@ -44,7 +44,7 @@ For a genuinely hard or contested call where `advisor()`-level pressure-testing 
 
 ### disable-model-invocation surfaces are user-only
 
-A command or skill carrying `disable-model-invocation: true` (irreversible-external actions — merging a PR, transitioning a ticket) cannot be invoked by the model, period. A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/kbg:<name>` (plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-07-15) — never imply you'll do it once they confirm.
+A command or skill carrying `disable-model-invocation: true` (irreversible-external actions — merging a PR, transitioning a ticket) cannot be invoked by the model, period. A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/mh:<name>` (plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-07-15) — never imply you'll do it once they confirm.
 
 This section is mirrored in the operator's global `~/.claude/CLAUDE.md` (kept self-contained here on purpose — this file ships inside the plugin and must read standalone for anyone who installs it, not just this operator). If you edit the rule here, the global copy needs the matching edit too.
 
@@ -56,7 +56,7 @@ Don't build it until there's a real failure that demands it. Three similar lines
 
 A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. It's optimized to sound right on the surface, not to survive an edge case.
 
-**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `kbg:requirement-analyst`.
+**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `mh:requirement-analyst`.
 
 The same discipline applies to any incoming claim — a bug report before you fix it, an idea before you spec it, a diff before you merge it. See `docs/reference/decision-doctrine-map.md` for which surface owns each.
 
@@ -124,7 +124,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 - If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
 - **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`.)
 
-The `kbg:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
+The `mh:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
 
 ## Governing constraint
 

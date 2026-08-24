@@ -1,8 +1,8 @@
-# Mode: `kbg:harness-audit --health`
+# Mode: `mh:harness-audit --health`
 
 Read-only query layer over `~/.local/share/kbg/metrics/costs.jsonl` — the live cost ledger the `cost-tracker` Stop hook appends one row per session (see `hooks/stop/cost-tracker.sh`).
 
-The verdict + staleness lenses that previously read `~/.claude/governance-events.jsonl` and `hooks/sensors.json` were retired in the v0.6.0 cut reconciliation — both sources are gone (no hook writes the journal; the sensor registry was deleted). `--health` now surfaces the one live signal: per-session token usage and estimated cost. Deep cost reporting lives in `kbg:cost-report`.
+The verdict + staleness lenses that previously read `~/.claude/governance-events.jsonl` and `hooks/sensors.json` were retired in the v0.6.0 cut reconciliation — both sources are gone (no hook writes the journal; the sensor registry was deleted). `--health` now surfaces the one live signal: per-session token usage and estimated cost. Deep cost reporting lives in `mh:cost-report`.
 
 This mode is **advisory only**: it never writes, never emits a `permissionDecision`, never invokes an LLM. Stdlib only, no subprocess.
 
@@ -14,10 +14,10 @@ This mode is **advisory only**: it never writes, never emits a `permissionDecisi
 
 ## When NOT to use
 
-- **Deep cost report / historical trends** → use `kbg:cost-report`.
+- **Deep cost report / historical trends** → use `mh:cost-report`.
 - **Fleet-level audit** (schema/manifest drift, plugin-cache freshness, tool-grant scoping) → use `harness-audit` default (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`).
 - **Deep PR review** → use `mattpocock-skills:code-review`.
-- **Security posture** → defer to `kbg:security-auditor`.
+- **Security posture** → defer to `mh:security-auditor`.
 
 ## Quick start
 
@@ -80,5 +80,5 @@ ledger: ~/.local/share/kbg/metrics/costs.jsonl
 ## See also
 
 - **Writer:** `hooks/stop/cost-tracker.sh` (appends one row per session; the rate table).
-- **Deep cost report:** `kbg:cost-report` (historical trends, not just last-N).
+- **Deep cost report:** `mh:cost-report` (historical trends, not just last-N).
 - **Sibling skill:** `skills/harness-audit/SKILL.md` — fleet-level audit; this is the cost counterpart.

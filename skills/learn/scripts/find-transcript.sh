@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # find-transcript.sh — print the path and byte size of the current project's
-# most recent Claude Code session transcript (.jsonl), for kbg:learn to mine.
+# most recent Claude Code session transcript (.jsonl), for mh:learn to mine.
 #
 # CC stores transcripts at ~/.claude/projects/<cwd-with-/-as->/<session>.jsonl
 # (the project path with every "/" replaced by "-", NOT lowercased). Best-effort:

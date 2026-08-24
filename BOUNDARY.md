@@ -1,5 +1,5 @@
 # Boundary Map
-_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md` where `<matt-harness>` is the matt-harness repo root and `<dotfiles>` is the target repo root (or from the plugin cache: `bash ~/.claude/plugins/cache/kobig/kbg/$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only`)._
+_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md` where `<matt-harness>` is the matt-harness repo root and `<dotfiles>` is the target repo root (or from the plugin cache: `bash ~/.claude/plugins/cache/kobig/mh/$(ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only`)._
 _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatter key under `### <bucket>` subheads, replacing the single flat table each; v4 added Commands table and dropped the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented "Boundary map" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._
 
 ## Agents — Repo
@@ -26,7 +26,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### review
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| a11y-architect | Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (kbg:frontend-patterns). | ["Read", "Write", "Edit", "Grep", "Glob"] | yes |
+| a11y-architect | Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (mh:frontend-patterns). | ["Read", "Write", "Edit", "Grep", "Glob"] | yes |
 | blind-spot-hunter | Post-review adversarial hunter for emergent/interaction defects that survived normal review — cross-file, framework-behavior, data-flow-asymmetry blind spots. Traces each to an earned severity. Use after code review. | [Read, Grep, Glob, Bash] | yes |
 | nextjs-reviewer | Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
@@ -49,18 +49,18 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
-| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /kbg:ship-merge for the decision. |
-| security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor. |
-| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (kbg:incident). |
+| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /mh:ship-merge for the decision. |
+| security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
+| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (mh:incident). |
 | summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
 | test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Don't use for quick edits or PR review. |
-| wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (kbg:learn). |
+| wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). |
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (/ship-merge). |
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
-| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident). |
+| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). |
 
 ## Skills — Repo
 ### agent-support
@@ -75,8 +75,8 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | design-system | Scan a design system for token/visual consistency and AI-slop detection, or generate one. Use when starting a project. Don't use for scraping other sites. | inline | auto |
-| frontend-design-direction | Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
-| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (kbg:frontend-design-direction). | inline | auto |
+| frontend-design-direction | Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (mh:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
+| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (mh:frontend-design-direction). | inline | auto |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
 
 ### meta
@@ -87,22 +87,22 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
-| harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (kbg:security-auditor). | inline | auto |
+| harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
 | loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
-| wiki-scan | Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (kbg:memory-lint) or semantic search (qmd). | inline | auto |
+| wiki-scan | Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (mh:memory-lint) or semantic search (qmd). | inline | auto |
 
 ### patterns
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| accessibility | WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (kbg:frontend-patterns). | inline | auto |
-| backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (kbg:frontend-patterns). | inline | auto |
+| accessibility | WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (mh:frontend-patterns). | inline | auto |
+| backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (mh:frontend-patterns). | inline | auto |
 | cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
-| frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (kbg:backend-patterns), or WCAG/a11y audits (kbg:accessibility). | inline | auto |
+| frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility). | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
 | latency-critical-systems | Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline. | inline | auto |
 | mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
@@ -129,7 +129,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 |---|---|
 | flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) before editing, with the heavyweight spec flow (mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement; to-spec/to-tickets/implement are all disable-model-invocation upstream) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are […] |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge routing through the jira-acli plugin's skills (jira-acli:acli, jira-acli:jira-content, jira-acli:confluence-content) before any direct mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit hook. Output -> plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"); never blocks, always exits 0. Errors are silently swallowed. |
-| learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
+| learn-nudge.sh | Advisory: remind the operator that mh:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's mh:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
 | atlassian-mcp-gate.sh | Gate: block a direct Atlassian/Jira/Confluence MCP call (any mcp__*atlassian*/ mcp__*rovo* tool -- both a locally-configured/plugin MCP server, e.g. mcp__plugin_atlassian_atlassian__*, and a claude.ai-hosted connector, e.g. mcp__claude_ai_Atlassian_Rovo__*) before a jira-acli:* skill has loaded this session. Escalates ~/.claude/CLAUDE.md's "route through jira-acli first" doctrine + the advisory/jira-route-nudge.sh UserPromptSubmit reminder from prose to a computational PreToolUse gate -- both proved insufficient in practice (2026-07-15: still routing straight to the Atlassian MCP). |
 | db-write-gate.sh | Gate: ask on any MCP execute_sql-shaped call (mcp__<server>__execute_sql*) unless the statement is provably a simple read. Generic — matches any server, no config needed. |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
@@ -139,7 +139,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated write (redirect, tee, sed -i, perl -i, cp, mv, rm, trash) — to the verifier surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, AND the non-model audit verifier (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot neuter the deny-gates, silently turn an advisory sensor into something that emits permissionDecision, OR weaken the audit checks that judge it without an in-session human approval (the tamper-resistance principle: the agent cannot edit the code that judges it). hooks/advisory/** added 2026-08-06: previously unprotected, meaning a sensor could be edited into a real gate with zero prompt (found by a blind-spot sweep). A gate/check the model can silently disable is not a computational deny — and a half-protected perimeter is worse than none, so […] |
 | worktree-guard-dispatch.sh | Shared early-exit prelude for gate:write:worktree-guard and gate:bash:worktree-guard. Both hooks.json entries pointed the same inline `bash -c` one-liner at worktree-guard.py -- extracted here so the two matchers (Write|Edit|NotebookEdit vs Bash) stay separate registrations with their own descriptions (redirect vs deny is a real behavioral difference, decided inside worktree-guard.py by tool_name), while the identical no-op-unless-guarded check isn't duplicated as a JSON string literal twice. |
-| worktree-guard.py | ponytail: generic worktree guard (moved from dotfiles 2026-07-02). Redirects Edit/Write on a SUB-repo's main checkout so parallel terminals can't clobber one shared working tree. Branch alone can't fix this — one repo dir = one working tree regardless of branch; the worktree is the isolation. Auto-creates a session-scoped worktree under WT_ROOT and transparently redirects the edit there via PreToolUse updatedInput. ponytail: branch name is `wip/<session-id>` — session_id is the only stable identifier this hook has. Rename the branch to your ticket key before opening a PR. Base selection: KBG_WORKTREE_BASE=<branch> fetches origin/<branch> and bases the auto-worktree there (hotfix sessions: KBG_WORKTREE_BASE=main). Unset = current HEAD of the main checkout, which can lag origin; prefer an explicit worktree for hotfix work. Fetch failure falls back to HEAD — never blocks editing on network. Guarded workspace is opt-in and unset by default: KBG_GUARDED_WORKSPACE has NO default, […] |
+| worktree-guard.py | ponytail: generic worktree guard (moved from dotfiles 2026-07-02). Redirects Edit/Write on a SUB-repo's main checkout so parallel terminals can't clobber one shared working tree. Branch alone can't fix this — one repo dir = one working tree regardless of branch; the worktree is the isolation. Auto-creates a session-scoped worktree under WT_ROOT and transparently redirects the edit there via PreToolUse updatedInput. ponytail: branch name is `wip/<session-id>` — session_id is the only stable identifier this hook has. Rename the branch to your ticket key before opening a PR. Base selection: MH_WORKTREE_BASE=<branch> fetches origin/<branch> and bases the auto-worktree there (hotfix sessions: MH_WORKTREE_BASE=main). Unset = current HEAD of the main checkout, which can lag origin; prefer an explicit worktree for hotfix work. Fetch failure falls back to HEAD — never blocks editing on network. Guarded workspace is opt-in and unset by default: MH_GUARDED_WORKSPACE has NO default, […] |
 | command-root-anchor.sh | command-root-anchor.sh — matcher-less SessionStart hook |
 | doctrine-bootstrap.sh | SessionStart: inject METHODOLOGY.md doctrine into the session context. Output goes to stdout → CC injects it as system context for the session. |
 | instructions-loaded-journal.sh | InstructionsLoaded: journal every CLAUDE.md / `.claude/rules/*.md` load to ~/.local/share/kbg/metrics/instructions-loaded.jsonl. This event has no decision control — Claude Code discards any stdout/JSON output it produces and uses it for observability only — so a log file is the only useful side effect. Exists to answer "did this file load, when, and why" with a deterministic record instead of forensic reconstruction after the fact. |
@@ -155,7 +155,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | test-memory-health-nudge.sh | memory-health-nudge unit tests: focused on the --classify-unindexed wiring added on top of the pre-existing detector-findings nudge. Isolates a fake $HOME and a fake project cwd so real ~/.claude/projects state is never touched; the hook derives its memory dir from `pwd -P` (physical path, slashes -> dashes) the same way memory-lint.py's own memory_dir() does, so fixtures must be planted at that exact computed path. Run standalone: bash tests/hooks/test-memory-health-nudge.sh |
 | test-session-stop.sh | Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart), command-root-anchor (SessionStart), memory-health-nudge (SessionStart), cost-tracker (Stop), memory-audit-commit (Stop). These hooks never block (no permissionDecision) — tests assert exit 0 + expected side effect (stdout injection / env-file append / metrics-file append), and that each fails safe (exit 0, no side effect) when its required env var is unset. Run standalone: bash tests/hooks/test-session-stop.sh |
 | test-verifier-protect.sh | Behavioral tests for verifier-protect.sh (always-on gate — no opt-in condition, unlike worktree-guard.py — fires on every Bash/Write/Edit call in every repo running this plugin). Had zero automated coverage before 2026-08-04: this file was added the same day as the round-3 port of worktree-guard.py's heredoc/ANSI-C/newline/$VAR/~ fixes into this gate's own embedded generator, specifically to close that gap. Run standalone: bash tests/hooks/test-verifier-protect.sh |
-| test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect). Uses the KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT env seams to run against throwaway repos — never touches any real workspace or ~/.worktrees. Run standalone: bash tests/hooks/test-worktree-guard.sh |
+| test-worktree-guard.sh | Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect). Uses the MH_GUARDED_WORKSPACE / MH_WORKTREE_ROOT env seams to run against throwaway repos — never touches any real workspace or ~/.worktrees. Run standalone: bash tests/hooks/test-worktree-guard.sh |
 
 ## Output styles — Repo
 | Style | Description |
@@ -163,13 +163,13 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-24T18:28:29Z_
+_Generated: 2026-08-24T19:35:43Z_
 
 ---
 
 ## Task sizing guidance
 
-Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `kbg:orchestrate` plan time, before fan-out dispatch.
+Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `mh:orchestrate` plan time, before fan-out dispatch.
 
 ### The 5-6 rule
 5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
@@ -253,12 +253,12 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
 - **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
-- **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
+- **Cache:** `~/.claude/plugins/cache/kobig/mh/<version>/` (rebuilt on `claude plugin update mh@kobig`)
 
 ### Verification
-- `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
-- `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
-- `bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 14-file hook suite)
+- `bash "${MH_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
+- `claude plugin validate --strict "${MH_PLUGIN_ROOT}"` — exit 0
+- `bash "${MH_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 14-file hook suite)
 
 ---
 
@@ -269,7 +269,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
+| "what should I work on", "prioritize these", "plan this pile of work" | `mh:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows
 | User says | Dispatch | Why |
@@ -285,12 +285,12 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "research this", "deep dive on X", "how does Y work" | `research` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `mattpocock-skills:code-review` skill | Standards + spec review since the kbg review pipeline retired (2026-08-24 #82) |
-| "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
+| "audit the harness", "check health" | `mh:harness-audit` skill | Self-audit |
 
 ### Incident & post-mortem
 | User says | Dispatch | Why |
 |---|---|---|
-| "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
+| "incident", "alerts firing", "monitors red" | `mh:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
 | "save my session", "hand off" | `handoff` | Session state capture |
 
@@ -299,7 +299,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 
 ## Reference docs
 
-These files live in the plugin cache, not the project CWD. Read them via Bash with `KBG_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
+These files live in the plugin cache, not the project CWD. Read them via Bash with `MH_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
 
-- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 named cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each; points to the upstream repo for full write-ups.
+- **Reasoning-models catalog** — `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 named cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each; points to the upstream repo for full write-ups.
 

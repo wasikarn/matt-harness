@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Advisory: remind the operator that kbg:learn exists when a session had
+# Advisory: remind the operator that mh:learn exists when a session had
 # enough activity to plausibly contain a durable learning worth capturing.
 # SessionEnd hook. Never blocks (SessionEnd has no decision control at all),
 # never writes memory, never judges WHAT the learnings are — that's
-# kbg:learn's job, gated by its own AskUserQuestion. This hook only decides
+# mh:learn's job, gated by its own AskUserQuestion. This hook only decides
 # whether to say "consider running it."
 #
 # SessionEnd stdout is discarded by Claude Code; stderr IS shown to the user
@@ -33,7 +33,7 @@
 # nothing here; nudging on every `/clear` is nag-fatigue noise, not signal).
 set -uo pipefail
 
-MIN_TURNS="${KBG_LEARN_NUDGE_MIN_TURNS:-3}"
+MIN_TURNS="${MH_LEARN_NUDGE_MIN_TURNS:-3}"
 
 INPUT=$(cat)
 [ -n "$INPUT" ] || exit 0
@@ -51,5 +51,5 @@ TRANSCRIPT=$(printf '%s' "$INPUT" | sed -n 's/.*"transcript_path"[[:space:]]*:[[
 TURNS=$(/usr/bin/grep -c '"type":"user"' "$TRANSCRIPT" 2>/dev/null)
 [ "${TURNS:-0}" -ge "$MIN_TURNS" ] || exit 0
 
-echo "[kbg:learn-nudge] Session had activity worth a look — if anything here is worth remembering next time, run kbg:learn before you close out." >&2
+echo "[mh:learn-nudge] Session had activity worth a look — if anything here is worth remembering next time, run mh:learn before you close out." >&2
 exit 0

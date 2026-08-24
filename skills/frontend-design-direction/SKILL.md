@@ -1,6 +1,6 @@
 ---
 name: frontend-design-direction
-description: "Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (kbg:frontend-patterns) or HTML artifacts (plannotator-effective-html)."
+description: "Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (mh:frontend-patterns) or HTML artifacts (plannotator-effective-html)."
 bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
@@ -83,9 +83,9 @@ landing-page composition onto a tool built for repeated daily use.
 
 ## Related
 
-- Skill: `kbg:design-system` — once a direction is chosen, audit or generate the token set that
+- Skill: `mh:design-system` — once a direction is chosen, audit or generate the token set that
   encodes it project-wide.
-- Skill: `kbg:make-interfaces-feel-better` — the polish-detail checklist for after the direction
+- Skill: `mh:make-interfaces-feel-better` — the polish-detail checklist for after the direction
   is set and the components exist.
-- Skill: `kbg:frontend-patterns` — the React component/state/rendering architecture underneath
+- Skill: `mh:frontend-patterns` — the React component/state/rendering architecture underneath
   whatever this skill decides the UI should look like.

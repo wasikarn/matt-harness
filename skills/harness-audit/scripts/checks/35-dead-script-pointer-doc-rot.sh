@@ -35,7 +35,7 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
   while IFS= read -r _line; do
     [ -z "$_line" ] && continue
     # A reference resolving against an external vault (e.g. $VAULT/scripts/...,
-    # ${KBG_WIKI_VAULT:-...}/scripts/...) wraps llm-wiki's own scripts by design
+    # ${MH_WIKI_VAULT:-...}/scripts/...) wraps llm-wiki's own scripts by design
     # — CLAUDE.md's "wrap the vault's scripts, never reimplement" constraint.
     # Those scripts live outside this repo on purpose and can never resolve via
     # `find "$CLAUDE_DIR"`; that's not doc-rot, so skip before the existence check.

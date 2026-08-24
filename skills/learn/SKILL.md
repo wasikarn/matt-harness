@@ -14,7 +14,7 @@ reusable** things worth keeping — corrections the operator made, conventions t
 workflows that repeated, decisions and their *why* — then let the operator pick which to save
 before anything is written.
 
-This is the human-gated, propose-only counterpart of `kbg:recursive-improve`: that skill closes
+This is the human-gated, propose-only counterpart of `mh:recursive-improve`: that skill closes
 the loop on the *harness's health*; this one closes it on *what the operator taught you this
 session*. The store already exists (Claude Code's file-based memory system, `memory/<slug>.md` +
 `MEMORY.md`); this skill is one of two things that write to it.
@@ -27,7 +27,7 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
   (a correction just happened, a preference was stated). That's the same store, same format, same
   `MEMORY.md` index this skill writes to — verified against `code.claude.com/docs/en/memory` and,
   empirically, this project's own transcripts (132 memory files across 53 sessions in this repo's
-  own store vs. `/kbg:learn` itself invoked in 3 sessions here, as of 2026-07-20 — the native path
+  own store vs. `/mh:learn` itself invoked in 3 sessions here, as of 2026-07-20 — the native path
   still accounts for the large majority of writes, and a quality spot-check of several
   ambiently-written files found them well-structured, non-duplicative, correctly filtered).
   Native ambient capture is real, it works, and kbg cannot gate, disable-per-write, or reroute it —
@@ -130,20 +130,20 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
    apply:**; link related memories with `[[name]]`). Add a one-line pointer to `MEMORY.md`. Convert
    relative dates to absolute. Follow the memory rules in the system prompt verbatim.
 
-6. **Lint.** Run `kbg:memory-lint` to catch dangling `[[links]]`, orphans, and index drift.
+6. **Lint.** Run `mh:memory-lint` to catch dangling `[[links]]`, orphans, and index drift.
 
 ## When NOT to use
 
 - You already know the single fact to record → just write the memory file directly (or let native
   auto-memory catch it — it will, for an in-the-moment trigger).
-- Harness health / self-improvement → `kbg:recursive-improve`.
-- Cleaning or trimming existing memory → `kbg:memory-lint` (use `--trim` to archive bloat).
+- Harness health / self-improvement → `mh:recursive-improve`.
+- Cleaning or trimming existing memory → `mh:memory-lint` (use `--trim` to archive bloat).
 - Unprompted, mid-task → don't; this is a deliberate end-of-work reflection, operator-initiated.
 
 ## See also
 
-- `kbg:recursive-improve` — the `kbg:harness-audit` sibling for harness health (mutation loop, flagged, human-gated), vs. this skill's operator-taught learnings.
-- `kbg:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
+- `mh:recursive-improve` — the `mh:harness-audit` sibling for harness health (mutation loop, flagged, human-gated), vs. this skill's operator-taught learnings.
+- `mh:memory-lint` — memory bookkeeping (with `--trim` mode) the write step relies on.
 - The memory rules in the session system prompt — the authoritative format + what-to-save contract, and the source of the native auto-memory behavior this skill complements.
 
 ## Done when

@@ -11,11 +11,11 @@ effort: high
 This covers the **language and compiler** layer — type-system idioms and `tsconfig.json`
 choices — underneath whichever framework skill also applies. It composes with those; it
 doesn't replace them. A service using both `backend-patterns` and Drizzle loads
-`kbg:backend-patterns` and `kbg:drizzle-patterns` for their frameworks, plus this skill for
+`mh:backend-patterns` and `mh:drizzle-patterns` for their frameworks, plus this skill for
 the TypeScript underneath.
 
 **Not this skill's job:** API/DB architecture on a plain Node/Express/Next.js backend —
-that's `kbg:backend-patterns`. Post-hoc review of a diff — that's `kbg:typescript-reviewer`.
+that's `mh:backend-patterns`. Post-hoc review of a diff — that's `mh:typescript-reviewer`.
 This skill is what informs the code at write time; the reviewer checks it afterward.
 
 ## When to Activate

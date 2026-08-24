@@ -8,7 +8,7 @@
 # cover the highest-silence-risk checks and prove the self-test mechanism; a
 # full fleet-wide fixture suite is speculative):
 #   36 — recursive-improve disable-model-invocation flag (CRIT)
-#   37 — dead `kbg:` reference doc-rot (WARN; exit stays 0 — asserted via the
+#   37 — dead `mh:` reference doc-rot (WARN; exit stays 0 — asserted via the
 #        Warnings line, not the exit code)
 #   45 — score-decision disable-model-invocation flag (CRIT; added 2026-07-23
 #        alongside check 45 itself — the other safety-load-bearing instance of
@@ -62,7 +62,7 @@ else
   bad "check-36 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
-# Check 37 — WARN must fire on a dead kbg: ref, stay silent when it resolves.
+# Check 37 — WARN must fire on a dead mh: ref, stay silent when it resolves.
 run_check 37 "$FIX/check-37-bad"
 if [ "$WARN_FOUND" -ge 1 ]; then
   ok "check-37 bad fixture fires WARN (warn=$WARN_FOUND)"
@@ -122,9 +122,9 @@ fi
 
 # Check 51 — mattpocock-skills integration refs (A refs resolve / B flag
 # claims / C coverage ledger / D gated-ref phrasing). The check reads the
-# mattpocock plugin cache from $KBG_MATT_CACHE when set (fixture override;
+# mattpocock plugin cache from $MH_MATT_CACHE when set (fixture override;
 # real runs default to ~/.claude/plugins/cache/mattpocock/mattpocock-skills).
-export KBG_MATT_CACHE="$FIX/check-51-bad/fake-matt-cache"
+export MH_MATT_CACHE="$FIX/check-51-bad/fake-matt-cache"
 run_check 51 "$FIX/check-51-bad"
 if [ "$WARN_FOUND" -ge 3 ] && [ "$INFO_FOUND" -ge 2 ]; then
   ok "check-51 bad fixture fires A+B+C WARNs and D INFOs incl. marker-masking regression (warn=$WARN_FOUND info=$INFO_FOUND)"
@@ -135,14 +135,14 @@ fi
 # skills array in an unrecognized format (object entries) must FAIL CLOSED —
 # a parse-blind WARN — never a vacuous sub-check-C pass. Same fixture also
 # carries a duplicate ledger row, which must fire its own WARN.
-export KBG_MATT_CACHE="$FIX/check-51-bad-manifest-drift/fake-matt-cache"
+export MH_MATT_CACHE="$FIX/check-51-bad-manifest-drift/fake-matt-cache"
 run_check 51 "$FIX/check-51-bad-manifest-drift"
 if [ "$WARN_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
   ok "check-51 manifest-drift fixture fails closed (parse-blind + duplicate-row WARNs, warn=$WARN_FOUND)"
 else
   bad "check-51 manifest-drift fixture did NOT fail closed (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=2 — 0 means sub-check C went vacuously green on a drifted manifest)"
 fi
-export KBG_MATT_CACHE="$FIX/check-51-good/fake-matt-cache"
+export MH_MATT_CACHE="$FIX/check-51-good/fake-matt-cache"
 run_check 51 "$FIX/check-51-good"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -eq 0 ]; then
   ok "check-51 good fixture silent"
@@ -151,14 +151,14 @@ else
 fi
 # Graceful skip: no mattpocock cache at all → INFO note only, never WARN/CRIT,
 # and the run completes (same class of guard as the check-25 nullglob test).
-export KBG_MATT_CACHE="$FIX/check-51-good/no-such-cache"
+export MH_MATT_CACHE="$FIX/check-51-good/no-such-cache"
 run_check 51 "$FIX/check-51-good"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then
   ok "check-51 gracefully skips when no mattpocock cache exists (info=$INFO_FOUND)"
 else
   bad "check-51 missing-cache run not a graceful skip (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
-unset KBG_MATT_CACHE
+unset MH_MATT_CACHE
 
 # Check 39 — grep -c pipefail-abort regression guard (2026-08-17 bug sweep).
 # `_count=$(grep -c ... 2>/dev/null)` with no `|| true` dies under set -e when

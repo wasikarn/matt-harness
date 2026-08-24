@@ -438,19 +438,19 @@ echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-c
 # (agent_type present) calling TaskUpdate(completed) is blocked at exit 2.
 # The main session (no agent_type) and any non-completion status pass.
 test_deny  "$TASK_COMPLETE" "subagent marks completed (maker self-grade)" \
-  "$(taskupdate_payload completed kbg:build-error-resolver)"
+  "$(taskupdate_payload completed mh:build-error-resolver)"
 test_allow "$TASK_COMPLETE" "main session marks completed (no agent_type)" \
   "$(taskupdate_payload completed '')"
 test_allow "$TASK_COMPLETE" "subagent sets in_progress (not completion)" \
-  "$(taskupdate_payload in_progress kbg:build-error-resolver)"
+  "$(taskupdate_payload in_progress mh:build-error-resolver)"
 test_allow "$TASK_COMPLETE" "subagent sets pending (not completion)" \
-  "$(taskupdate_payload pending kbg:build-error-resolver)"
+  "$(taskupdate_payload pending mh:build-error-resolver)"
 test_allow "$TASK_COMPLETE" "subagent subject/desc update (no status field)" \
-  "$(taskupdate_payload '' kbg:build-error-resolver)"
+  "$(taskupdate_payload '' mh:build-error-resolver)"
 test_allow "$TASK_COMPLETE" "malformed stdin (fail-safe allow)" \
   '{not valid json'
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
-  "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"kbg:build-error-resolver"}))')"
+  "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 
 echo ""
 echo "=== db-write-gate (ask on non-SELECT execute_sql-shaped MCP calls, any server) ==="
@@ -481,7 +481,7 @@ test_ask   "$DB_WRITE_GATE" "leading block comment before a write verb" \
 test_allow "$DB_WRITE_GATE" "leading block comment before a read stays allowed" \
   "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/* comment */ SELECT * FROM users')"
 # v0.49.0: quote-aware comment stripping — two silent-allow bypasses that shipped
-# in v0.40.0's regex stripper, caught exercising kbg:review-pr. String-literal
+# in v0.40.0's regex stripper, caught exercising mh:review-pr. String-literal
 # blindness: a /* (or --) inside one string literal paired with a */ in a later
 # literal erased a stacked write. MySQL /*! ... */ executable comments: the body
 # runs on the server but was deleted as if inert. (SQL uses "..." literals so the
@@ -503,7 +503,7 @@ test_ask   "$DB_WRITE_GATE" "MySQL /*! read hint prepends a non-read token -> sa
 # strings and nested /* */ comments. The first cut of this fix sliced the body
 # with a raw find("*/"), which closed early on an inner */ and left the write verb
 # non-leading -> silent allow. Caught against a live MariaDB while exercising
-# kbg:review-pr on the fix itself; these lock the second-order fix in.
+# mh:review-pr on the fix itself; these lock the second-order fix in.
 test_ask   "$DB_WRITE_GATE" "/*! body with a nested block comment before the write verb" \
   "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!50000 /* x */ DELETE FROM t2 */')"
 test_ask   "$DB_WRITE_GATE" "/*! body with a */ hidden inside a string literal" \
@@ -609,7 +609,7 @@ test_allow "$ATLASSIAN_GATE" "same-session MCP call allowed once jira-acli:acli 
 test_allow "$ATLASSIAN_GATE" "same-session confluence-content fallback (page create) also allowed once engaged" \
   "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__createConfluencePage' "$AG_ENGAGED")"
 test_allow "$ATLASSIAN_GATE" "Skill(other:x) load is never itself blocked" \
-  "$(skill_payload 'kbg:orchestrate' "$AG_WRONGSKILL")"
+  "$(skill_payload 'mh:orchestrate' "$AG_WRONGSKILL")"
 test_deny  "$ATLASSIAN_GATE" "a non-jira-acli skill does not engage the session" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__getJiraIssue' "$AG_WRONGSKILL")"
 test_deny  "$ATLASSIAN_GATE" "a different, still-cold session stays blocked (marker is per-session)" \
@@ -620,9 +620,9 @@ test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (code-review-graph) out of scop
   "$(mcp_session_payload 'mcp__code-review-graph__query_graph_tool' "$AG_COLD")"
 test_allow "$ATLASSIAN_GATE" "malformed stdin (fail-safe allow)" \
   '{not valid json'
-test_allow "$ATLASSIAN_GATE" "escape hatch KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
+test_allow "$ATLASSIAN_GATE" "escape hatch MH_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ESCAPE")" \
-  "KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1"
+  "MH_ALLOW_DIRECT_ATLASSIAN_MCP=1"
 
 # Portability (#93): without the jira-acli plugin installed anywhere in the
 # cache, a cold Atlassian call must pass untouched — blocking would prescribe
@@ -710,7 +710,7 @@ test_nopython_allow "$ATLASSIAN_GATE" "atlassian gate: cold Atlassian call passe
   "HOME=$NOPY_AG_HOME"
 test_nopython_allow "$ROOT/hooks/gates/worktree-guard-dispatch.sh" "worktree-guard-dispatch: guarded workspace passes with note" \
   "$(bash_payload 'echo x')" \
-  "KBG_GUARDED_WORKSPACE=/tmp/kbg-nopy-ws" "CLAUDE_PROJECT_DIR=/tmp/kbg-nopy-ws" "CLAUDE_PLUGIN_ROOT=$ROOT"
+  "MH_GUARDED_WORKSPACE=/tmp/kbg-nopy-ws" "CLAUDE_PROJECT_DIR=/tmp/kbg-nopy-ws" "CLAUDE_PLUGIN_ROOT=$ROOT"
 
 # trash-fallback deny message (#93): with python3 present but NO trash CLI on
 # PATH, the rm -rf deny must still fire (rc=2) and the message must route to

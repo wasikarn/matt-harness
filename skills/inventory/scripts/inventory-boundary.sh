@@ -184,7 +184,7 @@ echo "# Boundary Map"
 # own location is the only path needed; output dir is whatever the caller wants.
 # Cache path stays literal because it IS host-relative (under $HOME) — that's
 # the only stable form across machines for that one command.
-echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<matt-harness>\` is the matt-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/kbg/\$(ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
+echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<matt-harness>\` is the matt-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/mh/\$(ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
 echo "_Schema version: v5 (Skills and Agents tables now grouped by \`bucket:\` frontmatter key under \`### <bucket>\` subheads, replacing the single flat table each; v4 added Commands table and dropped the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented \"Boundary map\" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._"
 
 # Resolve repo root via git (works regardless of where the script is invoked from).
@@ -270,7 +270,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
 
 ## Task sizing guidance
 
-Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `kbg:orchestrate` plan time, before fan-out dispatch.
+Derived from the task-sizing guidance + article `agent-teams-best-practices`. Apply at `mh:orchestrate` plan time, before fan-out dispatch.
 
 ### The 5-6 rule
 5-6 tasks per agent is the sweet spot. < 3 = under-utilization; > 8 = context thrashing. This is per-agent, not per-plan.
@@ -369,12 +369,12 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
 - **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
-- **Cache:** `~/.claude/plugins/cache/kobig/kbg/<version>/` (rebuilt on `claude plugin update kbg@kobig`)
+- **Cache:** `~/.claude/plugins/cache/kobig/mh/<version>/` (rebuilt on `claude plugin update mh@kobig`)
 
 ### Verification
-- `bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${KBG_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
-- `claude plugin validate --strict "${KBG_PLUGIN_ROOT}"` — exit 0
-- `bash "${KBG_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 14-file hook suite)
+- `bash "${MH_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
+- `claude plugin validate --strict "${MH_PLUGIN_ROOT}"` — exit 0
+- `bash "${MH_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 14-file hook suite)
 XREF2
 
 # Trigger phrases for harness use cases (added 2026-06-12).
@@ -390,7 +390,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 ### Decisions & debate
 | User says | Dispatch | Why |
 |---|---|---|
-| "what should I work on", "prioritize these", "plan this pile of work" | `kbg:orchestrate` skill | Prioritize + route to cheapest correct executor |
+| "what should I work on", "prioritize these", "plan this pile of work" | `mh:orchestrate` skill | Prioritize + route to cheapest correct executor |
 
 ### Single-task workflows
 | User says | Dispatch | Why |
@@ -406,12 +406,12 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "research this", "deep dive on X", "how does Y work" | `research` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `mattpocock-skills:code-review` skill | Standards + spec review since the kbg review pipeline retired (2026-08-24 #82) |
-| "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
+| "audit the harness", "check health" | `mh:harness-audit` skill | Self-audit |
 
 ### Incident & post-mortem
 | User says | Dispatch | Why |
 |---|---|---|
-| "incident", "alerts firing", "monitors red" | `kbg:incident` skill | Live incident response |
+| "incident", "alerts firing", "monitors red" | `mh:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
 | "save my session", "hand off" | `handoff` | Session state capture |
 
@@ -430,9 +430,9 @@ XREF4
 
 ## Reference docs
 
-These files live in the plugin cache, not the project CWD. Read them via Bash with `KBG_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
+These files live in the plugin cache, not the project CWD. Read them via Bash with `MH_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
 
-- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 named cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each; points to the upstream repo for full write-ups.
+- **Reasoning-models catalog** — `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 named cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each; points to the upstream repo for full write-ups.
 
 XREF5
 fi

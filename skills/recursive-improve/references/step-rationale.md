@@ -6,9 +6,9 @@ SKILL.md — this file only expands the *why* and the escalation options.
 
 ## Step 2 — Named bias guard: anchoring (escalation options)
 
-For a numeric, traceable verdict instead of an ordinal rank, apply the `kbg:score-decision`
+For a numeric, traceable verdict instead of an ordinal rank, apply the `mh:score-decision`
 rubric (METHODOLOGY Rule 14) inline — the skill is `disable-model-invocation: true`, so it can't
-be invoked mid-loop; tell the operator to run `/kbg:score-decision` directly if a formal artifact
+be invoked mid-loop; tell the operator to run `/mh:score-decision` directly if a formal artifact
 is what's needed. For a candidate set >3, ranking is still a same-context, same-pass judgment (the
 anchoring risk isn't fully closed by a prose reminder) — optionally dispatch a fresh-context agent
 with only the candidate list (no Observe-phase narrative) to independently re-rank before

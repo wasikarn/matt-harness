@@ -122,8 +122,8 @@ run_audit_layer() {
     if [ -f "$AUDIT" ]; then
       local audit_out
       local audit_cmd="bash $AUDIT $ROOT"
-      if [ -n "${KBG_GAUNTLET_PLUGIN_CACHE:-}" ]; then
-        audit_cmd="$audit_cmd --plugin-cache $KBG_GAUNTLET_PLUGIN_CACHE"
+      if [ -n "${MH_GAUNTLET_PLUGIN_CACHE:-}" ]; then
+        audit_cmd="$audit_cmd --plugin-cache $MH_GAUNTLET_PLUGIN_CACHE"
       fi
       audit_out="$(eval "$audit_cmd" 2>&1)"
       local crit_n
@@ -169,8 +169,8 @@ run_version_layer() {
   # Amend valve: `git commit --amend` re-runs this hook with HEAD already AT
   # the bumped commit, so staged==HEAD reads as "no bump" and blocks a
   # legitimate amend (--no-verify is deny-gated in this harness). Scoped skip:
-  if [ -n "${KBG_SKIP_VERSION_GATE:-}" ]; then
-    echo "  version-bump gate skipped (KBG_SKIP_VERSION_GATE set — amend/rescue use only)"
+  if [ -n "${MH_SKIP_VERSION_GATE:-}" ]; then
+    echo "  version-bump gate skipped (MH_SKIP_VERSION_GATE set — amend/rescue use only)"
     return 0
   fi
   staged_v="$(git show :.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
@@ -199,7 +199,7 @@ run_version_layer() {
   # doctrine-bootstrap injects docs/METHODOLOGY.md and score-decision
   # cats docs/reference/* from the versioned cache; shipped skill scripts source
   # scripts/_lib/*.sh relative out of the cache; frame.md cats contexts/*.md
-  # via ${KBG_PLUGIN_ROOT}. Same stale-cache class for all of them (the
+  # via ${MH_PLUGIN_ROOT}. Same stale-cache class for all of them (the
   # scripts/+contexts/ gap bit for real on 2026-08-21 — 3 scripts/-only
   # commits never reached the installed cache until a manual bump).
   while IFS= read -r f; do
@@ -241,7 +241,7 @@ run_version_layer() {
 # the index against HEAD, which already includes that add, so this reads as
 # an edit, not a new file. check 56's pre-push WARN is the backstop there.
 #
-# KBG_SKIP_LOC_GATE (mirrors KBG_SKIP_VERSION_GATE) is checked FIRST, before
+# MH_SKIP_LOC_GATE (mirrors MH_SKIP_VERSION_GATE) is checked FIRST, before
 # the detection scan below runs at all — so a bug in the scan itself can't
 # strand a broken gate with no other way out (--no-verify and
 # `-c core.hooksPath=` are both deny-gated in this harness).
@@ -249,8 +249,8 @@ LOC_CAP=200
 loc_gate_needed=0
 LOC_ADDED=()
 LOC_RENAMES=()
-if [ -n "${KBG_SKIP_LOC_GATE:-}" ]; then
-  echo "  new-file LOC gate skipped (KBG_SKIP_LOC_GATE set — rescue use only)"
+if [ -n "${MH_SKIP_LOC_GATE:-}" ]; then
+  echo "  new-file LOC gate skipped (MH_SKIP_LOC_GATE set — rescue use only)"
 else
   # while-read, not mapfile — bash-3.2 compat, same rationale as STAGED above.
   while IFS= read -r _f; do LOC_ADDED+=("$_f"); done < <(git -c core.quotepath=false diff --cached --name-only --no-renames --diff-filter=A)

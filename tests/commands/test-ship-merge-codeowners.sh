@@ -6,7 +6,7 @@
 #
 # MIGRATED 2026-08-15: the matcher and discovery loop used to be embedded
 # in ship-merge.md's markdown and extracted via regex here. A
-# kbg:plan-reviewer pass on a plan to add CODEOWNERS awareness to
+# mh:plan-reviewer pass on a plan to add CODEOWNERS awareness to
 # hooks/gates/convergence-merge-gate.sh (needs-revision, High #2) flagged
 # that leaving the discovery loop unshared -- reimplemented independently
 # in the hook -- repeated the exact "same logic in 2+ files, no
@@ -253,7 +253,7 @@ if [[ -s "$WORK/discovery.sh" ]]; then
     # $1: fake gh script body
     printf '%s' "$1" > "$WORK/fakebin/gh"
     chmod +x "$WORK/fakebin/gh"
-    sed "s|\${KBG_PLUGIN_ROOT}|$ROOT|; s|\"<head_sha>\"|abc123|" "$WORK/discovery.sh" > "$WORK/discovery-runnable.sh"
+    sed "s|\${MH_PLUGIN_ROOT}|$ROOT|; s|\"<head_sha>\"|abc123|" "$WORK/discovery.sh" > "$WORK/discovery-runnable.sh"
     PATH="$WORK/fakebin:$PATH" bash -c "$(cat "$WORK/discovery-runnable.sh"); echo FOUND=\$CODEOWNERS_FOUND CONTENT=[\$CODEOWNERS_CONTENT] ERROR=[\$CODEOWNERS_ERROR]"
   }
 

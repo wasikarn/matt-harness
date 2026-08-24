@@ -52,10 +52,10 @@
 # subagent, diff its hook payload's session_id against the parent's) before
 # relying on this for anything higher-stakes than the current cold-start nudge.
 #
-# Escape hatch: KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 (precedent:
-# worktree-guard.py's KBG_ALLOW_MAIN_EDIT=1) -- cheap insurance if the
+# Escape hatch: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1 (precedent:
+# worktree-guard.py's MH_ALLOW_MAIN_EDIT=1) -- cheap insurance if the
 # marker ever misfires; not documented in docs/reference/env-vars.md, same
-# as KBG_ALLOW_MAIN_EDIT isn't -- both are one-off manual overrides, not
+# as MH_ALLOW_MAIN_EDIT isn't -- both are one-off manual overrides, not
 # operator-tunable knobs.
 set -uo pipefail
 
@@ -80,7 +80,7 @@ done
 # Portability guard (#93): announced fail-open when python3 is missing;
 # doctrine-bootstrap.sh names the missing dep once at SessionStart.
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "[kbg:gate] python3 not found — atlassian-routing gate cannot run; allowing (install python3 to restore jira-acli routing)" >&2
+  echo "[mh:gate] python3 not found — atlassian-routing gate cannot run; allowing (install python3 to restore jira-acli routing)" >&2
   exit 0
 fi
 
@@ -99,7 +99,7 @@ try:
 except Exception:
     sys.exit(0)  # cannot parse -- fail open, matches worktree-guard.py convention
 
-if os.environ.get("KBG_ALLOW_DIRECT_ATLASSIAN_MCP") == "1":
+if os.environ.get("MH_ALLOW_DIRECT_ATLASSIAN_MCP") == "1":
     sys.exit(0)
 
 tool = d.get("tool_name", "") or ""
@@ -124,13 +124,13 @@ if os.path.exists(mpath):
     sys.exit(0)  # jira-acli already engaged this session -- allow
 
 print(
-    "[kbg:gate] BLOCKED: direct Atlassian/Jira MCP call (" + tool + ") before "
+    "[mh:gate] BLOCKED: direct Atlassian/Jira MCP call (" + tool + ") before "
     "jira-acli loaded this session. Load jira-acli:acli (mechanical/query/bulk "
     "ops), jira-acli:jira-content (Bug/Story/Task/Epic/Sub-task templates), or "
     "jira-acli:confluence-content (Spec/PRD pages) first -- they own the "
     "ADF/template standard, and this exact MCP call is already their own "
     "documented fallback path when acli genuinely cannot. One-off override: "
-    "KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1",
+    "MH_ALLOW_DIRECT_ATLASSIAN_MCP=1",
     file=sys.stderr,
 )
 sys.exit(2)

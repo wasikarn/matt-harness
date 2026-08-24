@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Behavioral tests for the worktree-guard gate (opt-in, generic PreToolUse redirect).
-# Uses the KBG_GUARDED_WORKSPACE / KBG_WORKTREE_ROOT env seams to run against throwaway
+# Uses the MH_GUARDED_WORKSPACE / MH_WORKTREE_ROOT env seams to run against throwaway
 # repos — never touches any real workspace or ~/.worktrees.
 # Run standalone: bash tests/hooks/test-worktree-guard.sh
 set -uo pipefail
@@ -37,10 +37,10 @@ payload_bash() { # payload_bash <command>
 
 run_guard() { # run_guard <payload> [extra env as K=V ...]
   local p="$1"; shift
-  # KBG_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
+  # MH_ALLOW_MAIN_EDIT= resets the escape hatch so an ambient export (e.g. a
   # dev's own shell profile) can't silently no-op every deny/redirect assertion
   # below; env's last-wins semantics let "$@" still opt back in when a test wants it.
-  echo "$p" | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= "$@" python3 "$GUARD"
+  echo "$p" | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= "$@" python3 "$GUARD"
 }
 
 check() { # check <desc> <ok:0|1>
@@ -72,9 +72,9 @@ ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "outside workspace: exit 0, no output" "$ok"
 
 # Escape hatch
-out=$(run_guard "$(payload "$WS/repo1/f.txt" sess1234)" KBG_ALLOW_MAIN_EDIT=1 2>/dev/null); rc=$?
+out=$(run_guard "$(payload "$WS/repo1/f.txt" sess1234)" MH_ALLOW_MAIN_EDIT=1 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "KBG_ALLOW_MAIN_EDIT=1: exit 0, no output" "$ok"
+check "MH_ALLOW_MAIN_EDIT=1: exit 0, no output" "$ok"
 
 # Workspace-root repo exempt
 out=$(run_guard "$(payload "$WS/notes.md" sess1234)" 2>/dev/null); rc=$?
@@ -102,22 +102,22 @@ out=$(run_guard "$(payload "$WT/repo1-wip-sessabcd/f.txt" sessabcd)" 2>/dev/null
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "edit inside the auto-worktree: no re-redirect" "$ok"
 
-# KBG_WORKTREE_BASE=main → worktree based on origin/main, not the develop checkout
-out=$(run_guard "$(payload "$WS/repo2/f.txt" sessbase)" KBG_WORKTREE_BASE=main 2>/dev/null); rc=$?
+# MH_WORKTREE_BASE=main → worktree based on origin/main, not the develop checkout
+out=$(run_guard "$(payload "$WS/repo2/f.txt" sessbase)" MH_WORKTREE_BASE=main 2>/dev/null); rc=$?
 got=$(git -C "$WT/repo2-wip-sessbase" rev-parse HEAD 2>/dev/null)
 ok=1
 [ "$rc" -eq 0 ] && [ "$got" = "$MAIN_SHA" ] && echo "$out" | /usr/bin/grep -q 'base origin/main' && ok=0
-check "KBG_WORKTREE_BASE=main: worktree HEAD == origin/main tip, message names base" "$ok"
+check "MH_WORKTREE_BASE=main: worktree HEAD == origin/main tip, message names base" "$ok"
 
-# Bogus KBG_WORKTREE_BASE → fetch fails → fail-open to HEAD (still redirects)
-out=$(run_guard "$(payload "$WS/repo1/g.txt" sessbogus)" KBG_WORKTREE_BASE=no-such-branch 2>/dev/null); rc=$?
+# Bogus MH_WORKTREE_BASE → fetch fails → fail-open to HEAD (still redirects)
+out=$(run_guard "$(payload "$WS/repo1/g.txt" sessbogus)" MH_WORKTREE_BASE=no-such-branch 2>/dev/null); rc=$?
 ok=1
 [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"updatedInput"' \
   && echo "$out" | /usr/bin/grep -q 'base current HEAD' && ok=0
-check "bogus KBG_WORKTREE_BASE: fail-open to current HEAD, still redirects" "$ok"
+check "bogus MH_WORKTREE_BASE: fail-open to current HEAD, still redirects" "$ok"
 
 # Kill-switch discriminator: CWD == the fake workspace root itself, but
-# KBG_GUARDED_WORKSPACE is unset. Without the "if not WORKSPACE or not isabs(...): return
+# MH_GUARDED_WORKSPACE is unset. Without the "if not WORKSPACE or not isabs(...): return
 # None" guard in classify(), under(fp, "") resolves against CWD and would wrongly protect
 # repo1 (on develop, a protected branch) even though nothing is configured. With the
 # guard: total no-op regardless of CWD. This is the real regression witness for that
@@ -125,16 +125,16 @@ check "bogus KBG_WORKTREE_BASE: fail-open to current HEAD, still redirects" "$ok
 # path returns None earlier via the "not a git repo" branch, and a path at the repo root
 # hits the pre-existing workspace-root exemption either way).
 out=$(cd "$WS" && echo "$(payload "$WS/repo1/f.txt" sesskill)" \
-  | env -u KBG_GUARDED_WORKSPACE -u KBG_WORKTREE_ROOT -u KBG_WORKTREE_BASE -u KBG_ALLOW_MAIN_EDIT \
+  | env -u MH_GUARDED_WORKSPACE -u MH_WORKTREE_ROOT -u MH_WORKTREE_BASE -u MH_ALLOW_MAIN_EDIT \
   python3 "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "KBG_GUARDED_WORKSPACE unset, cwd==fake workspace root: still exit 0 (kill-switch, not cwd-guard)" "$ok"
+check "MH_GUARDED_WORKSPACE unset, cwd==fake workspace root: still exit 0 (kill-switch, not cwd-guard)" "$ok"
 
 # Unset in the ordinary case (no adversarial cwd either) -> total no-op.
 out=$(echo "$(payload "$TMP/elsewhere2.txt" sessnorm)" \
-  | env -u KBG_GUARDED_WORKSPACE python3 "$GUARD" 2>/dev/null); rc=$?
+  | env -u MH_GUARDED_WORKSPACE python3 "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "KBG_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
+check "MH_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
 
 # Wrapper-script test: gate:bash:worktree-guard's hooks.json entry points
 # `command`/`args` at a real file (hooks/gates/worktree-guard-dispatch.sh,
@@ -157,14 +157,14 @@ for blk in d["hooks"]["PreToolUse"]:
 ok=1; [ -n "$WRAPPER_SCRIPT" ] && ok=0
 check "wrapper script path extracted from hooks.json" "$ok"
 
-out=$( (unset KBG_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR
+out=$( (unset MH_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR
   export CLAUDE_PLUGIN_ROOT="$ROOT"
   echo '{}' | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "wrapper script: var unset -> exit 0, no output (python never spawned)" "$ok"
 
 bashpayload=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "echo x >> $WS/repo1/f.txt")
-out=$( (export KBG_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE_PLUGIN_ROOT="$ROOT"
+out=$( (export MH_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE_PLUGIN_ROOT="$ROOT"
   echo "$bashpayload" | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "wrapper script: var set + Bash write to protected checkout -> deny exit 2" "$ok"
@@ -187,7 +187,7 @@ check "wrapper script: var set + Bash write to protected checkout -> deny exit 2
 HEREDOC_CMD=$(printf 'cat <<%s > "repo1/notes file.txt"\nit%ss here\nEOF' "'EOF'" "'")
 bashpayload_heredoc=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$HEREDOC_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_heredoc" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "heredoc body w/ unbalanced quote + quoted spaced target -> deny exit 2 (not a silent bypass)" "$ok"
 
@@ -198,7 +198,7 @@ check "heredoc body w/ unbalanced quote + quoted spaced target -> deny exit 2 (n
 ANSIC_CMD="echo x > \$'repo1/notes file.txt'"
 bashpayload_ansic=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$ANSIC_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_ansic" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "ANSI-C \$'...' quoted target -> deny exit 2 (not a silent bypass)" "$ok"
 
@@ -212,7 +212,7 @@ check "ANSI-C \$'...' quoted target -> deny exit 2 (not a silent bypass)" "$ok"
 NEWLINE_CMD=$(printf 'echo hello\nsed -i "" "s/x/y/" repo1/f.txt')
 bashpayload_newline=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$NEWLINE_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_newline" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "write on 2nd line of a newline-joined command -> deny exit 2 (not a silent bypass)" "$ok"
 
@@ -225,7 +225,7 @@ check "write on 2nd line of a newline-joined command -> deny exit 2 (not a silen
 HYPHEN_HEREDOC_CMD=$(printf 'cat <<MY-EOF\nsome content\nMY-EOF\nsed -i "" "s/x/y/" repo1/f.txt')
 bashpayload_hyphenhd=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$HYPHEN_HEREDOC_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_hyphenhd" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "hyphenated heredoc delimiter + write statement after it -> deny exit 2 (not silently eaten)" "$ok"
 
@@ -242,7 +242,7 @@ check "hyphenated heredoc delimiter + write statement after it -> deny exit 2 (n
 COMMENT_CMD=$(printf 'echo hi # just a note\nsed -i "" "s/x/y/" repo1/f.txt')
 bashpayload_comment=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$COMMENT_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_comment" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "write on a line after a '#' comment -> deny exit 2 (not swallowed as one giant comment)" "$ok"
 
@@ -252,7 +252,7 @@ check "write on a line after a '#' comment -> deny exit 2 (not swallowed as one 
 BENIGN_COMMENT_CMD="ls -la # see repo1/notes.txt for details"
 bashpayload_benign=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$BENIGN_COMMENT_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_benign" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "comment mentioning a workspace-looking path, no real write -> exit 0 (not a false deny)" "$ok"
 
@@ -264,14 +264,14 @@ check "comment mentioning a workspace-looking path, no real write -> exit 0 (not
 VARWRITE_CMD='echo x >> $MYVAR/repo1/f.txt'
 bashpayload_var=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$VARWRITE_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_var" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= MYVAR="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= MYVAR="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "unquoted \$VAR redirect target resolving into the workspace -> deny exit 2" "$ok"
 
 TILDEWRITE_CMD='echo x >> ~/repo1/f.txt'
 bashpayload_tilde=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$TILDEWRITE_CMD")
 out=$( (cd "$WS" && echo "$bashpayload_tilde" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= HOME="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= HOME="$WS" python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "unquoted ~ redirect target resolving into the workspace -> deny exit 2" "$ok"
 
@@ -333,7 +333,7 @@ DIFF_FILE="$TMP/evil.diff"
 printf -- '--- a/f.txt\n+++ b/f.txt\n@@ -1,1 +1,1 @@\n-x\n+evil\n' > "$DIFF_FILE"
 
 out=$( (cd "$WS/repo1" && echo "$(payload_bash "git apply $DIFF_FILE")" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "git apply: real target lives in diff content (+++ b/f.txt), not argv -> deny exit 2" "$ok"
 
@@ -342,7 +342,7 @@ check "git apply: real target lives in diff content (+++ b/f.txt), not argv -> d
 # confirmed the hard way while building this round's fix, not assumed clean. Run from $WS
 # itself (the exempt workspace root) so a naive cwd-relative resolution would silently pass.
 out=$( (cd "$WS" && echo "$(payload_bash "git -C $WS/repo1 apply $DIFF_FILE")" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -> deny exit 2" "$ok"
 
@@ -350,13 +350,13 @@ check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -
 # bug as git -C above. Run from $TMP (neutral, outside any repo) so a naive cwd-relative
 # resolution would silently pass.
 out=$( (cd "$TMP" && echo "$(payload_bash "patch --directory=$WS/repo1 -p1 < $DIFF_FILE")" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "patch --directory=: real target resolves against it, not bare cwd -> deny exit 2" "$ok"
 
 # tar xf with no -C writes into cwd; the branch used to yield nothing at all for this form.
 out=$( (cd "$WS/repo1" && echo "$(payload_bash "tar xf archive.tar")" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "tar xf, no -C: cwd itself is the implicit target -> deny exit 2" "$ok"
 
@@ -364,7 +364,7 @@ check "tar xf, no -C: cwd itself is the implicit target -> deny exit 2" "$ok"
 BENIGN_DIFF="$TMP/benign.diff"
 printf -- '--- a/README.md\n+++ b/README.md\n@@ -1,1 +1,1 @@\n-old\n+new\n' > "$BENIGN_DIFF"
 out=$( (cd "$TMP" && echo "$(payload_bash "git apply $BENIGN_DIFF")" \
-  | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "git apply against a diff outside the workspace: exit 0, no false deny" "$ok"
 
@@ -381,7 +381,7 @@ for idiom_case in \
   "tar -x -C repo1 -f /tmp/a.tar|tar -x -C <protected-dir>"; do
   cmd=${idiom_case%%|*}; desc=${idiom_case##*|}
   out=$( (cd "$WS" && echo "$(payload_bash "$cmd")" \
-    | env KBG_GUARDED_WORKSPACE="$WS" KBG_WORKTREE_ROOT="$WT" KBG_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+    | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
   ok=1; [ "$rc" -eq 2 ] && ok=0
   check "in-place idiom writes to protected checkout -> deny exit 2: $desc" "$ok"
 done

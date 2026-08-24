@@ -1,6 +1,6 @@
 ---
 name: wiki-scan
-description: "Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (kbg:memory-lint) or semantic search (qmd)."
+description: "Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (mh:memory-lint) or semantic search (qmd)."
 bucket: meta
 model: inherit
 effort: medium
@@ -24,7 +24,7 @@ This skill must degrade silently when the vault isn't present — matt-harness
 is a public plugin, and most installs will not have `~/llm-wiki`:
 
 ```bash
-VAULT="${KBG_WIKI_VAULT:-$HOME/llm-wiki}"
+VAULT="${MH_WIKI_VAULT:-$HOME/llm-wiki}"
 export VAULT
 [ -d "$VAULT/wiki" ] || { echo "llm-wiki vault not found at $VAULT — skipping"; exit 0; }
 ```
@@ -38,9 +38,9 @@ splitting the assignment out is what makes the later reference correct.
 `lint-scan.sh`/`stats.sh` via `bash "$VAULT/scripts/..."` — that correctly
 picks *which script file* runs, but each script independently re-derives its
 own `VAULT` from its own environment (`VAULT="${VAULT:-$HOME/llm-wiki}"`
-internally, not from this skill's `KBG_WIKI_VAULT`). An unexported `VAULT`
+internally, not from this skill's `MH_WIKI_VAULT`). An unexported `VAULT`
 never reaches that child process, so the script silently falls back to its
-own `$HOME/llm-wiki` default regardless of what `KBG_WIKI_VAULT` pointed at
+own `$HOME/llm-wiki` default regardless of what `MH_WIKI_VAULT` pointed at
 — confirmed live: the fallback happens to equal the real vault at the
 default path, so this reads as working every time, and breaks silently the
 one time the vault lives somewhere else. A clean exit code doesn't catch
@@ -119,7 +119,7 @@ commands standalone, outside this skill's own preflight block, confirm
 1. **`lint.sh` is not `lint-scan.sh` despite the similar name.** `lint.sh`
    mutates — it appends a summary line to `log.md` on every run, even though
    nothing about the name suggests that. Never invoke it from this skill.
-2. **`ingest.sh` needs an absolute source path** — see `kbg:wiki-ingest` for
+2. **`ingest.sh` needs an absolute source path** — see `mh:wiki-ingest` for
    why; not this skill's concern beyond knowing it if `stats.sh` is being
    used to sanity-check a recent ingest.
 3. **Never invoke `check-citations.py` directly.** It only `chdir`s to the
@@ -143,8 +143,8 @@ commands standalone, outside this skill's own preflight block, confirm
 
 - Does not search vault content — use `qmd`.
 - Does not mutate the vault — `lint.sh` and `ingest.sh` are user-invoked only
-  (`kbg:wiki-ingest`), never run from here.
-- Does not manage kbg's own memory store — use `kbg:memory-lint`.
+  (`mh:wiki-ingest`), never run from here.
+- Does not manage kbg's own memory store — use `mh:memory-lint`.
 - Does not check for broken `[[wikilink]]`s — that check only exists in the
   excluded, mutating `lint.sh`. If a user specifically asks about broken
   links, say so explicitly rather than silently answering only the

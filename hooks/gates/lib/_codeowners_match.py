@@ -8,7 +8,7 @@
 # fixed same day in cdd3cbd: case-fold-independent path matching was never
 # the issue here, but the discovery loop's exit-code-vs-content-emptiness
 # bug, the COMMENTED-after-APPROVED bug, and the email-owner dead-end all
-# were) -- carried over as-is, not re-derived. A kbg:plan-reviewer pass on
+# were) -- carried over as-is, not re-derived. A mh:plan-reviewer pass on
 # the extraction plan (needs-revision, 2 Critical) is why discover() exists
 # as a shared function too: the first draft only shared the matcher and left
 # the discovery loop as a second, unshared reimplementation -- the exact
@@ -262,7 +262,7 @@ if __name__ == "__main__":
         # fetch error, fail closed. Keeps the discovery loop itself as ONE
         # shared implementation (discover() above) instead of a second,
         # independent bash reimplementation -- the exact gap a
-        # kbg:plan-reviewer pass caught in the first draft of this file.
+        # mh:plan-reviewer pass caught in the first draft of this file.
         head_sha = sys.argv[2]
         content, found, error = discover_live(head_sha)
         if error:

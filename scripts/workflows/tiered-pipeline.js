@@ -18,7 +18,7 @@
 //   'scripts/workflows/tiered-pipeline.js', args: {task, cwd?, finalReview?}}).
 // Usage, installed plugin (any project): the relative path won't resolve —
 // point scriptPath into the versioned cache, e.g.
-//   ~/.claude/plugins/cache/kobig/kbg/<installed-version>/scripts/workflows/tiered-pipeline.js
+//   ~/.claude/plugins/cache/kobig/mh/<installed-version>/scripts/workflows/tiered-pipeline.js
 // (scripts/ ships in the cache and — since v0.68.421 — any scripts/ change is
 // version-bump-gated by git-hooks/pre-commit, so a committed change always
 // rides a manifest bump and the installed copy tracks the repo.)

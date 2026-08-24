@@ -1,6 +1,6 @@
 ---
 name: harness-audit
-description: "Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (kbg:security-auditor)."
+description: "Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor)."
 bucket: meta
 model: inherit
 effort: medium
@@ -90,8 +90,8 @@ Exit: 2
 
 ## Plugin delivery (F1 is plugin-aware)
 
-When `kbg@kobig` is enabled and its plugin cache is populated
-(`~/.claude/plugins/cache/kobig/kbg/<version>/{agents,skills,commands,hooks,output-styles}/`),
+When `mh@kobig` is enabled and its plugin cache is populated
+(`~/.claude/plugins/cache/kobig/mh/<version>/{agents,skills,commands,hooks,output-styles}/`),
 F1 ("not symlinked to `~/.claude/…`") treats plugin-delivered components as
 loadable and does **not** fire — Claude Code resolves them via
 the plugin cache at runtime, not via a symlink. The audit emits an
@@ -100,7 +100,7 @@ symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
 The cache path can be overridden with `--plugin-cache <path>` (used by the
 test fixtures in `tests/skills/harness-audit/known-bad/`, which point at fake caches so the F1
 check is exercised without a live install). The live cache version is
-auto-detected via `ls ~/.claude/plugins/cache/kobig/kbg/ | sort -V | tail -1` — do not hardcode.
+auto-detected via `ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1` — do not hardcode.
 
 ## Integration
 

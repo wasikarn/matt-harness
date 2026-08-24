@@ -20,7 +20,7 @@ Spawn parallel agents to hunt for small, concrete bugs across the codebase — r
 ## Procedure
 
 1. **Partition the scope.** Split the target path into up to `count` distinct areas — separate top-level directories, or separate review lenses (correctness, security, silent-failure/error-handling, type-safety) if the target is too small to split by directory. Never let two agents cover the same files — that wastes a dispatch on a duplicate finding.
-2. **Dispatch in one message.** Launch all agents as parallel Agent tool calls in a single response, not sequential. Reuse an existing specialized reviewer agent (e.g. `kbg:security-reviewer`, `kbg:silent-failure-hunter`, or a language-specific reviewer) when its lens fits the assigned area; fall back to `general-purpose` otherwise.
+2. **Dispatch in one message.** Launch all agents as parallel Agent tool calls in a single response, not sequential. Reuse an existing specialized reviewer agent (e.g. `mh:security-reviewer`, `mh:silent-failure-hunter`, or a language-specific reviewer) when its lens fits the assigned area; fall back to `general-purpose` otherwise.
 3. **Constrain each agent's brief**, verbatim in the prompt:
    - Find **exactly one** small, concrete, verifiable bug in `<assigned area>` — not a style nit, not a hypothetical, not a "could be improved."
    - Report `file:line`, the concrete failure scenario (input/state → wrong output), and a minimal fix.

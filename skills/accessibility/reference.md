@@ -1,7 +1,7 @@
 # Accessibility — React/Next.js code reference
 
 Full code for the patterns `SKILL.md` triggers on. Keyboard-nav combobox and modal
-focus-restoration examples live in `kbg:frontend-patterns/reference.md` instead of here — see that
+focus-restoration examples live in `mh:frontend-patterns/reference.md` instead of here — see that
 skill's `#keyboard-navigation` and `#focus-management` anchors.
 
 ## Form Accessibility

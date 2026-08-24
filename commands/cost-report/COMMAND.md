@@ -47,13 +47,13 @@ never read a pre/post difference as a spending change.
    `tests/commands/test-cost-report.sh` against this same file):
 
 ```bash
-node "${KBG_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js"
+node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js"
 ```
 
 3. For CSV export (`/cost-report csv` — last 100 raw rows):
 
 ```bash
-node "${KBG_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
+node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
 ```
 
 ## Report format

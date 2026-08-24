@@ -8,7 +8,7 @@ model: sonnet
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:performance-optimizer-algorithms
+  - mh:performance-optimizer-algorithms
 effort: high
 ---
 
@@ -26,7 +26,7 @@ Scope: profiling (slow paths, leaks, bottlenecks), bundle size (lazy loading, co
 splitting), runtime/algorithmic efficiency, React rendering, database/network (queries, API
 calls, caching), and memory management (leak detection, cleanup).
 
-**Named model** (cc-thinking-skills): the "bottleneck → optimize" sequence is *theory-of-constraints* (profile first to find the actual constraint; don't optimize the 95% that's not the rate-limiter) + *leverage-points* (a small number of places have outsized effect — find them before tuning the rest). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+**Named model** (cc-thinking-skills): the "bottleneck → optimize" sequence is *theory-of-constraints* (profile first to find the actual constraint; don't optimize the 95% that's not the rate-limiter) + *leverage-points* (a small number of places have outsized effect — find them before tuning the rest). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 
 ## Analysis Commands
 
@@ -85,7 +85,7 @@ npx lighthouse https://your-app.com --only-categories=performance
 ### 2. Algorithmic Analysis
 
 Full 14-row pattern → complexity → better-alternative table (plus the hidden-constants
-caveat) preloaded via `kbg:performance-optimizer-algorithms` (see `skills:` frontmatter).
+caveat) preloaded via `mh:performance-optimizer-algorithms` (see `skills:` frontmatter).
 
 ### 3. React Performance Checklist
 

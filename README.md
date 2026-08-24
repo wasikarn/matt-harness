@@ -1,10 +1,10 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.456-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.457-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
-A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`kbg@kobig`). Drop it in and you get a fleet of specialist agents, workflow skills, and slash commands (see [What You Get](#what-you-get) for current counts), plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
+A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness packaged as an installable plugin (`mh@kobig`). Drop it in and you get a fleet of specialist agents, workflow skills, and slash commands (see [What You Get](#what-you-get) for current counts), plus matt-pocock's skills installed as their own plugin (`mattpocock-skills@mattpocock`, see Quick Start), an output-style register, and a terminal theme. No symlink farm, no manual wiring: components auto-discover from the plugin cache.
 
 Built on the **composer-not-creator** principle: the best upstream harness tools ([ECC](https://github.com/affaan-m/everything-claude-code), [mattpocock/skills](https://github.com/mattpocock/skills)) bundled into one plugin, extended only where the underlying backend stack demands it.
 
@@ -64,11 +64,11 @@ Run these commands inside Claude Code:
 
 # 2. Install (default scope is user-wide — see the scope note below before
 #    trying kbg out on just one repo)
-/plugin install kbg@kobig
+/plugin install mh@kobig
 
 # 3. Enable (from a terminal — needs Claude Code v2.1.154+; earlier versions
 #    auto-enable on install and can skip this step):
-claude plugin enable kbg@kobig
+claude plugin enable mh@kobig
 
 # 4. Required — install matt-pocock's skills as their own plugin (kbg's hooks,
 #    commands, and remaining skills route to these by namespaced name; they
@@ -85,12 +85,12 @@ claude plugin enable kbg@kobig
 
 # 6. Restart Claude Code (plugin cache loads on startup)
 
-# 7. Smoke-test — plugin commands are namespaced like skills, /kbg:<name> not /<name>
-/kbg:cost-report
+# 7. Smoke-test — plugin commands are namespaced like skills, /mh:<name> not /<name>
+/mh:cost-report
 
 # 8. Verify the install actually took (from a terminal, no session needed):
-claude plugin list                # kbg@kobig AND mattpocock-skills@mattpocock both "enabled"
-claude plugin details kbg@kobig   # component inventory + token cost — folds all flat-file
+claude plugin list                # mh@kobig AND mattpocock-skills@mattpocock both "enabled"
+claude plugin details mh@kobig   # component inventory + token cost — folds all flat-file
                                    # commands/*.md into one "Skills" count and doesn't list
                                    # directory-form commands (ship/ideate/address-review) at
                                    # all, so this won't confirm those 3 specifically; use
@@ -111,10 +111,10 @@ claude plugin details kbg@kobig   # component inventory + token cost — folds a
 > `git add -A`/`git add .`, `--no-verify`, hardcoded `/Users/<name>` paths)
 > then apply to **every** project you open in Claude Code, not just the one
 > you're evaluating kbg against. To try it scoped to one repo first, use
-> `/plugin install kbg@kobig --scope project` (or `--scope local`) instead.
+> `/plugin install mh@kobig --scope project` (or `--scope local`) instead.
 
-**Uninstall:** `/plugin uninstall kbg@kobig`  
-**Disable (keep installed):** `claude plugin disable kbg@kobig`
+**Uninstall:** `/plugin uninstall mh@kobig`  
+**Disable (keep installed):** `claude plugin disable mh@kobig`
 
 After changing any surface, follow the release cycle in [Adding a Component](#development) below (bump both manifest versions → validate → commit → push → update → restart).
 
@@ -124,9 +124,9 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 38 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Skills** | 38 | `mh:<skill>` — e.g. `mh:pr`, `mh:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 16 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 19 | `/kbg:<command>` — e.g. `/kbg:ship-merge`, `/kbg:address-review`, `/kbg:cost-report` (namespaced identically to skills — see Quick Start step 7) |
+| **Commands** | 19 | `/mh:<command>` — e.g. `/mh:ship-merge`, `/mh:address-review`, `/mh:cost-report` (namespaced identically to skills — see Quick Start step 7) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -180,7 +180,7 @@ verification loop / event-driven loop / hill-climbing loop) and
   rejects both sources' endpoint: an L3/L4 loop that restarts itself with no human turn.
   This is the "no-model-self-start" rule (CLAUDE.md's Operating model), and it's why the
   earlier L2–L5 "bounded-autonomy ratchet" build was retired rather than finished.
-- Concretely: `/kbg:ship`'s Phase 7 fix loop is explicit that "there is no autonomous loop —
+- Concretely: `/mh:ship`'s Phase 7 fix loop is explicit that "there is no autonomous loop —
   each iteration requires explicit user re-invocation." Rule 4 ("define done, loop until
   verified") governs the *inside* of one bounded pass, never a chain of passes that starts
   itself.
@@ -225,22 +225,22 @@ predates the term, and the doc is explicit that this is naming, not new capabili
 
 | Command | What it does |
 |---|---|
-| `/kbg:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
-| `/kbg:ship-merge` · `/kbg:ship-release` | Pre-merge gate · end-to-end release ceremony |
+| `/mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
+| `/mh:ship-merge` · `/mh:ship-release` | Pre-merge gate · end-to-end release ceremony |
 
 ### Skills
 
 | Skill | When to reach for it |
 |---|---|
-| `kbg:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
-| `kbg:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
+| `mh:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
+| `mh:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
 | `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building |
-| `kbg:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
-| `kbg:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops |
-| `kbg:context-budget` | Token usage audit — finds bloat and produces prioritized savings |
-| `kbg:security-auditor` | OWASP Top 10, secrets scanning, threat-model + remediation |
-| `kbg:production-audit` | Local-evidence production readiness check — no external service required |
-| `kbg:harness-audit` | Deterministic fleet/schema/structural audit of this plugin |
+| `mh:orchestrate` | Triage competing tasks → route each to inline / parallel / sequential / drop |
+| `mh:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops |
+| `mh:context-budget` | Token usage audit — finds bloat and produces prioritized savings |
+| `mh:security-auditor` | OWASP Top 10, secrets scanning, threat-model + remediation |
+| `mh:production-audit` | Local-evidence production readiness check — no external service required |
+| `mh:harness-audit` | Deterministic fleet/schema/structural audit of this plugin |
 
 ### Agents
 
@@ -260,7 +260,7 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `typescript-reviewer` · `python-reviewer` · `nextjs-reviewer` | Language/framework-specific review — type safety, idioms, async correctness, Next.js App Router rendering/caching |
 | `build-error-resolver` | Fixes build/type errors with minimal diffs |
 | `summarizer` | Clarity/compression specialist — condenses long content into filler-free output for any audience |
-| `ideate-critic` | Fresh-context critic for `/kbg:ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
+| `ideate-critic` | Fresh-context critic for `/mh:ideate` Phase 2 — scores, clusters, and deepens divergent ideas |
 
 ### Backend Stack Patterns
 
@@ -268,9 +268,9 @@ Stack-specific pattern skills, kbg-native.
 
 | Skill | When to reach for it |
 |---|---|
-| `kbg:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / MySQL / SQLite |
-| `kbg:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes |
-| `kbg:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns |
+| `mh:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / MySQL / SQLite |
+| `mh:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes |
+| `mh:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns |
 
 ---
 
@@ -333,7 +333,7 @@ git config core.hooksPath git-hooks
 2. Bump `version` in **both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
 3. `claude plugin validate --strict .`
 4. Commit and push.
-5. `claude plugin update kbg@kobig` → restart Claude Code.
+5. `claude plugin update mh@kobig` → restart Claude Code.
 
 ---
 

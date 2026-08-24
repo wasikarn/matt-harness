@@ -53,9 +53,9 @@ cc-thinking-skills repo it links to — kbg does not vendor them locally.
 
 **Suggested next step footers:** a workflow surface (command or workflow skill run as a discrete
 step) may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched
-(`situation → action`), citing skills as `kbg:<name>` and commands as `/<name>`. Skills are ALWAYS
-cited `kbg:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 37
-only catches rename/deletion drift on refs already in `kbg:` form, it does **not** scan for a skill
+(`situation → action`), citing skills as `mh:<name>` and commands as `/<name>`. Skills are ALWAYS
+cited `mh:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 37
+only catches rename/deletion drift on refs already in `mh:` form, it does **not** scan for a skill
 mis-cited in slash form (confirmed: this exact bug shipped twice — `commands/pr.md` and
 `diagnosing-bugs/SKILL.md` both cited a skill as `/name` undetected until a manual survey caught
 it, v0.35.0). Passive suggestion only — never "invoke X now" / auto-chain (that collides with the

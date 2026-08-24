@@ -34,7 +34,7 @@ for _f in "$CLAUDE_DIR"/agents/*.md; do
   if [ "$_chars" -gt "$SIZE_THRESHOLD_CHARS" ]; then
     _tokens=$((_chars / 4))
     _agent=$(basename "$_f" .md)
-    info "'$_agent' agent body is ${_chars} chars (~${_tokens} tokens, fleet threshold ${SIZE_THRESHOLD_CHARS}) — consider a token-optimizer pass, or extracting a section into a companion skill: via \`Skill()\` runtime calls if this agent carries the Skill tool (conditional load, saves runtime tokens), or via \`skills:\` frontmatter preload otherwise (file-size split only — still fully loaded at spawn, see kbg:requirement-analyst-format for a worked example)"
+    info "'$_agent' agent body is ${_chars} chars (~${_tokens} tokens, fleet threshold ${SIZE_THRESHOLD_CHARS}) — consider a token-optimizer pass, or extracting a section into a companion skill: via \`Skill()\` runtime calls if this agent carries the Skill tool (conditional load, saves runtime tokens), or via \`skills:\` frontmatter preload otherwise (file-size split only — still fully loaded at spawn, see mh:requirement-analyst-format for a worked example)"
   fi
 done
 unset _f _chars _tokens _agent SIZE_THRESHOLD_CHARS

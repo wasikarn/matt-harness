@@ -110,7 +110,7 @@ printf '%s' "$OUT" | command grep -qE 'findings: [1-9]' || exit 0
 # 2026-08-17: a fixture with 1 dangling-link finding + 1 stale file leaked
 # "STALE: <file> — 100d since last edit" straight into the nudge, the same
 # bury-the-actual-finding bug this section was written to fix in the first
-# place, one section over). `kbg:memory-lint` still surfaces both on demand.
+# place, one section over). `mh:memory-lint` still surfaces both on demand.
 # The trailing "advisory: N stale, M template-gap" line (kept below) already
 # carries both counts, so nothing is lost by collapsing the two sections.
 FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Staleness/,/^advisory:/{' -e '/^advisory:/!d' -e '}')
@@ -118,7 +118,7 @@ FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Staleness/,/^advisory:/{
 printf '%s\n' \
   "[memory-lint] The memory store has findings (dangling links / orphans / index drift / near-budget):" \
   "$FILTERED" \
-  "Run \`kbg:memory-lint\` for detail, or fix inline. Advisory only — not a gate."
+  "Run \`mh:memory-lint\` for detail, or fix inline. Advisory only — not a gate."
 
 # UNINDEXED findings conflate two states: an authoring oversight vs. the fold
 # rule's own correct end-state (pointer removed, file kept — see

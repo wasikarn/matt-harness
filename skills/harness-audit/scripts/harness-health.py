@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # harness-health.py — read-only query surface over the live cost ledger.
-# Part of `kbg:harness-audit --health`; see skills/harness-audit/SKILL.md for the contract.
+# Part of `mh:harness-audit --health`; see skills/harness-audit/SKILL.md for the contract.
 # The cost-tracker Stop hook appends one row per session to costs.jsonl
 # (see hooks/stop/cost-tracker.sh). Stdlib only, no subprocess, no LLM in the loop.
 #

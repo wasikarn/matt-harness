@@ -22,7 +22,7 @@ already applies a given model, then read the upstream repo directly for its full
 
 > **Path note:** internal paths shown as code-spans elsewhere in this file (e.g. in the
 > "kbg-native reasoning scaffolds" section below) are read via Bash, not a `Read` tool call
-> on a literal `${KBG_PLUGIN_ROOT}` path — the variable expands only in shell context and is
+> on a literal `${MH_PLUGIN_ROOT}` path — the variable expands only in shell context and is
 > only set after a successful SessionStart (`hooks/session/command-root-anchor.sh`).
 
 ## The honesty caveat — read this first
@@ -178,14 +178,14 @@ cc-thinking-skills models. These are kbg-native processes, not part of the upstr
 Read the full scaffold with Bash:
 
 ```bash
-cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
+cat "${MH_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 ```
 
 ## Mapping models to Claude Code workflow patterns
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`).
+unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
@@ -196,12 +196,12 @@ They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
-| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `triage` |
+| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `mh:orchestrate`, `triage` |
 | **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `research` |
 | **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `mattpocock-skills:code-review`, `mattpocock-skills:grilling` |
 | **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `domain-modeling` |
 | **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix) |
-| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `mattpocock-skills:diagnosing-bugs`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |
+| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `mattpocock-skills:diagnosing-bugs`, `mh:recursive-improve` (human-gated), `mh:orchestrate` per-task validation chain |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that
 surface — don't invoke a model name separately. The model names are useful when
@@ -212,4 +212,4 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`). It may still appear as *framing* inside an applied surface.

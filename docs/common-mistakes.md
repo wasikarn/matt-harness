@@ -34,7 +34,7 @@ The orchestrate skill's routing table (`skills/orchestrate/SKILL.md` § Procedur
 **Self-check:**
 
 ```bash
-grep -L "## Cross-role boundaries" "${KBG_PLUGIN_ROOT}/agents"/*.md
+grep -L "## Cross-role boundaries" "${MH_PLUGIN_ROOT}/agents"/*.md
 ```
 
 Any file that appears in the output is missing the boundary guard.
@@ -52,7 +52,7 @@ The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead
 **Self-check:**
 
 ```bash
-grep -r "file finder\|search codebase\|where is" "${KBG_PLUGIN_ROOT}/commands" "${KBG_PLUGIN_ROOT}/skills" "${KBG_PLUGIN_ROOT}/agents" | grep -v "Explore\|deep-dive"
+grep -r "file finder\|search codebase\|where is" "${MH_PLUGIN_ROOT}/commands" "${MH_PLUGIN_ROOT}/skills" "${MH_PLUGIN_ROOT}/agents" | grep -v "Explore\|deep-dive"
 ```
 
 If the grep finds a command or agent whose description overlaps with an existing specialist, it is a candidate for consolidation.
@@ -75,7 +75,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${KBG_PLUGIN_ROOT}/agents"/{code-architect,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
+  "${MH_PLUGIN_ROOT}/agents"/{code-architect,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
 ```
 
 The grep should return no files — if it does, a validator-class agent picked up a mutation tool and the frontmatter needs fixing.
@@ -100,7 +100,7 @@ The orchestrator's verification step greps for these observables before starting
 **Self-check:**
 
 ```bash
-grep -c "^## Done-when" "${KBG_PLUGIN_ROOT}/skills/orchestrate/reference.md"
+grep -c "^## Done-when" "${MH_PLUGIN_ROOT}/skills/orchestrate/reference.md"
 ```
 
 The count should be > 0 — orchestrate's F9 template embeds the Done-when contract. This checks
@@ -122,7 +122,7 @@ A dedicated pre-flight plan linter and a standalone test-claim hook were previou
 **Self-check:**
 
 ```bash
-grep -c "^## Validation chain" "${KBG_PLUGIN_ROOT}/skills/orchestrate/reference.md"
+grep -c "^## Validation chain" "${MH_PLUGIN_ROOT}/skills/orchestrate/reference.md"
 ```
 
 Should be non-zero. If it's zero, the one real gate this section describes is gone from the

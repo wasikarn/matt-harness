@@ -1,6 +1,6 @@
 ---
 name: a11y-architect
-description: Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (kbg:frontend-patterns).
+description: Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (mh:frontend-patterns).
 bucket: review
 model: sonnet
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
@@ -36,7 +36,7 @@ than improvising platform code this agent wasn't built to verify.
 
 ### 2. Strategic Implementation
 
-- Load `kbg:accessibility` for the concrete ARIA/React patterns underneath the fix.
+- Load `mh:accessibility` for the concrete ARIA/React patterns underneath the fix.
 - Map the focus flow explicitly — how does a keyboard or screen-reader user move through this
   interface?
 - Verify every interactive element meets the minimum 24×24 CSS pixel target size (WCAG 2.2 SC
@@ -85,7 +85,7 @@ For every component or page reviewed, give:
 
 ## Related
 
-- Skill: `kbg:accessibility` — the concrete ARIA/React pattern reference this agent's fixes draw
+- Skill: `mh:accessibility` — the concrete ARIA/React pattern reference this agent's fixes draw
   from; load it directly for inline work that doesn't need a dedicated audit pass.
-- Skill: `kbg:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
+- Skill: `mh:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
   agent's WCAG checklist.

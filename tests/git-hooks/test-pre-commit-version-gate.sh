@@ -47,7 +47,7 @@ git -C "$FIX" add .claude-plugin skills scripts/base.sh
 git -C "$FIX" commit -qm baseline
 
 run_hook() { # run_hook [extra env K=V ...] — cwd fixture, ambient skip-valve neutralized
-  (cd "$FIX" && env KBG_SKIP_VERSION_GATE= "$@" bash "$HOOK")
+  (cd "$FIX" && env MH_SKIP_VERSION_GATE= "$@" bash "$HOOK")
 }
 
 reset_fixture() {
@@ -99,11 +99,11 @@ out=$(run_hook 2>&1); rc=$?
 check "manifest version mismatch → blocked" $?
 reset_fixture
 
-# 6. KBG_SKIP_VERSION_GATE set → same no-bump staging passes (amend valve)
+# 6. MH_SKIP_VERSION_GATE set → same no-bump staging passes (amend valve)
 echo 'echo hi' > "$FIX/scripts/tool.sh"
 git -C "$FIX" add scripts/tool.sh
-run_hook KBG_SKIP_VERSION_GATE=1 >/dev/null 2>&1
-check "KBG_SKIP_VERSION_GATE=1 → skip valve honored" $?
+run_hook MH_SKIP_VERSION_GATE=1 >/dev/null 2>&1
+check "MH_SKIP_VERSION_GATE=1 → skip valve honored" $?
 reset_fixture
 
 # 7. Control: non-shipped docs file staged, no bump → passes (layer not demanded)

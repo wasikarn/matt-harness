@@ -114,9 +114,9 @@ test_nudge "reason=logout, 20 user turns (real close-out, must still fire)" \
   "$(session_end_payload "$TMP/t20b.jsonl" "logout")"
 
 echo ""
-echo "--- KBG_LEARN_NUDGE_MIN_TURNS override ---"
+echo "--- MH_LEARN_NUDGE_MIN_TURNS override ---"
 make_transcript "$TMP/t1.jsonl" 1
-test_nudge "1 user turn with MIN_TURNS=1 override" "$(session_end_payload "$TMP/t1.jsonl")" "KBG_LEARN_NUDGE_MIN_TURNS=1"
+test_nudge "1 user turn with MIN_TURNS=1 override" "$(session_end_payload "$TMP/t1.jsonl")" "MH_LEARN_NUDGE_MIN_TURNS=1"
 
 echo ""
 total=$((pass + fail))

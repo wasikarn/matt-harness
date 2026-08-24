@@ -101,7 +101,7 @@ This task is [entirely a manual action / too vague to name a mechanical check] �
 
 ### Worked example
 
-Input: `kbg:goal-craft "fix auth bug แล้ว deploy ให้ด้วย"`
+Input: `mh:goal-craft "fix auth bug แล้ว deploy ให้ด้วย"`
 
 Output:
 ```

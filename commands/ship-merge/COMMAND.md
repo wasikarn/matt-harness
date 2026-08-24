@@ -1,9 +1,9 @@
 ---
 name: ship-merge
-description: "Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident)."
+description: "Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident)."
 argument-hint: Optional PR number or branch name
 disable-model-invocation: true
-disable-model-invocation-reason: external, irreversible action — executes a server-side PR merge on GitHub that cannot be undone; only a human-typed /kbg:ship-merge, confirmed through Phase 2's explicit go/no-go, may trigger it
+disable-model-invocation-reason: external, irreversible action — executes a server-side PR merge on GitHub that cannot be undone; only a human-typed /mh:ship-merge, confirmed through Phase 2's explicit go/no-go, may trigger it
 model: inherit
 effort: high
 ---
@@ -27,7 +27,7 @@ effort: high
 
    **Locate CODEOWNERS pinned to this PR's head SHA** (not the local working tree — Phase 2's rebase hasn't run yet), via GitHub's search order (`.github/`, root, `docs/` — first found wins). Resolve `<head_sha>` once (`gh pr view <n> --json headRefOid --jq .headRefOid`) and reuse it for both calls below — never a value captured earlier in Phase 1 (a new commit landing between captures would let a review pinned to the older SHA still pass, the staleness issue #50 fixed):
    ```bash
-   CODEOWNERS_CONTENT=$(python3 "${KBG_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" --discover "<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
+   CODEOWNERS_CONTENT=$(python3 "${MH_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" --discover "<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
    DISCOVER_RC=$?
    CODEOWNERS_FOUND=0
    CODEOWNERS_ERROR=""
@@ -44,13 +44,13 @@ effort: high
    ```bash
    CHANGED_FILES=$(gh pr diff <n> --name-only)
    REVIEWS_JSON=$(gh pr view <n> --json reviews -q .reviews)
-   python3 "${KBG_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON" "<head_sha>"
+   python3 "${MH_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON" "<head_sha>"
    ```
    `tests/commands/test-ship-merge-codeowners.sh` exercises this shared script directly — see `references/codeowners-gate-detail.md` for the matching grammar and fixture list.
 
    **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (an unsatisfied `@username` entry, an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure; render the reason + detail lines. `DEFERRED` (every remaining entry is `@org/team` or a bare email — unresolvable against the reviews API's usernames) → don't stop; carry the detail lines into Phase 2 step 5's prompt for human acknowledgment (same pattern as the branch-protection `--admin` bypass) — proceed to Phase 2.
 
-   `KBG_SKIP_CODEOWNERS_GATE=1` is the escape hatch for a repo with no CODEOWNERS policy; detail in `references/codeowners-gate-detail.md`. (The former `convergence-merge-gate.sh` hook that intercepted a raw `gh pr merge` outside this flow was retired with the review pipeline, 2026-08-24 #82 — this command's in-flow gates are now the only merge-door protection.)
+   `MH_SKIP_CODEOWNERS_GATE=1` is the escape hatch for a repo with no CODEOWNERS policy; detail in `references/codeowners-gate-detail.md`. (The former `convergence-merge-gate.sh` hook that intercepted a raw `gh pr merge` outside this flow was retired with the review pipeline, 2026-08-24 #82 — this command's in-flow gates are now the only merge-door protection.)
 
 ---
 
@@ -98,12 +98,12 @@ effort: high
 ## Phase 4: Monitor
 
 1. If CI was verified-N/A in Phase 1 step 3, skip to step 3 — nothing to monitor. Otherwise check CI on the merged commit: `gh run list --branch <target>` or `gh pr checks` on the closed PR.
-2. Failures post-merge → be ready to revert or invoke `kbg:incident` (hotfix path).
+2. Failures post-merge → be ready to revert or invoke `mh:incident` (hotfix path).
 3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status (or "N/A — no CI configured"). Keep the merge/release note factual, free of AI-flavor tells (no self-congratulation, no hedging).
 4. **Suggested next step:**
    - Fix worth recording        → /post-mortem while context is warm
    - Last change before release → /ship-release
-   - Base-branch CI red         → kbg:incident (per step 2)
+   - Base-branch CI red         → mh:incident (per step 2)
    - Otherwise                  → done; pick up the next task
 
 **Done.**

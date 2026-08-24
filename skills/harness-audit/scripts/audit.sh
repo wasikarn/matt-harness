@@ -60,7 +60,7 @@ MEMORY_DIR="$HOME/.claude/projects/${REPO_ROOT//\//-}/memory"
 # (below), where CLAUDE_DIR / fm_get / crit / warn are all in scope. Works for
 # any check id that resolves to exactly one fragment (not a hardcoded
 # allowlist) — used so far for 39 (recursive-improve disable-model-invocation
-# flag — CRIT), 40 (dead kbg: doc-rot — WARN), 48 (fleet-count doc-rot — WARN).
+# flag — CRIT), 40 (dead mh: doc-rot — WARN), 48 (fleet-count doc-rot — WARN).
 # A miss (0 or >1 matches) → err_die (unsupported, not silent).
 
 # Source the shared libraries.
@@ -92,9 +92,9 @@ if [ -f "$LOCK_FILE" ] && command -v jq >/dev/null 2>&1; then
   while IFS= read -r s; do LOCKED_SKILLS+=("$s"); done < <(jq -r '.skills | keys[]' "$LOCK_FILE")
 fi
 
-# Plugin delivery (kbg-cutover 2026-06-11). The kbg@kobig plugin installs
+# Plugin delivery (kbg-cutover 2026-06-11). The mh@kobig plugin installs
 # agents/skills/commands/hooks/output-styles into the user-scope plugin cache
-# (default ~/.claude/plugins/cache/kobig/kbg/<version>/) and Claude Code loads
+# (default ~/.claude/plugins/cache/kobig/mh/<version>/) and Claude Code loads
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on matt-harness).
@@ -103,17 +103,17 @@ fi
 # so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable
 # F1 plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
 if [ -z "$PLUGIN_CACHE_ARG" ]; then
-  # KBG_CACHE_DIR (docs/reference/env-vars.md) overrides the versionless cache
+  # MH_CACHE_DIR (docs/reference/env-vars.md) overrides the versionless cache
   # ROOT; the highest-semver subdir is still picked below. --plugin-cache (a
   # full versioned path) wins over both. Wired 2026-08-24 (#93) — the knob was
   # documented but never read.
-  _KBG_CACHE_DIR="${KBG_CACHE_DIR:-$HOME/.claude/plugins/cache/kobig/kbg}"
-  if [ -d "$_KBG_CACHE_DIR" ]; then
+  _MH_CACHE_DIR="${MH_CACHE_DIR:-$HOME/.claude/plugins/cache/kobig/mh}"
+  if [ -d "$_MH_CACHE_DIR" ]; then
     # Glob + for-loop (avoiding SC2010 ls|grep). Picks the highest semver of any
     # subdirectory matching X.Y.Z or vX.Y.Z, so a version bump (0.1.0 -> 0.1.1
     # -> 0.1.2) never silently disables F1 plugin-aware bypass. The `v` prefix
     # matches what `claude plugin install` writes to the cache.
-    _LATEST=$(for _entry in "$_KBG_CACHE_DIR"/*/; do
+    _LATEST=$(for _entry in "$_MH_CACHE_DIR"/*/; do
       [ -d "$_entry" ] || continue
       _ver=$(basename "$_entry")
       _norm="${_ver#v}"   # strip optional 'v' prefix for comparison
@@ -121,17 +121,17 @@ if [ -z "$PLUGIN_CACHE_ARG" ]; then
       echo "$_ver"
     done | sort -V | tail -1)
     if [ -n "$_LATEST" ]; then
-      PLUGIN_CACHE="$_KBG_CACHE_DIR/$_LATEST"
+      PLUGIN_CACHE="$_MH_CACHE_DIR/$_LATEST"
     else
-      PLUGIN_CACHE="${_KBG_CACHE_DIR}/0.1.0"  # fallback for empty/missing cache
+      PLUGIN_CACHE="${_MH_CACHE_DIR}/0.1.0"  # fallback for empty/missing cache
     fi
   else
-    PLUGIN_CACHE="${_KBG_CACHE_DIR}/0.1.0"  # fallback when no cache dir
+    PLUGIN_CACHE="${_MH_CACHE_DIR}/0.1.0"  # fallback when no cache dir
   fi
 else
   PLUGIN_CACHE="$PLUGIN_CACHE_ARG"
 fi
-unset _KBG_CACHE_DIR _LATEST _ver _entry _norm
+unset _MH_CACHE_DIR _LATEST _ver _entry _norm
 # PLUGIN_ACTIVE is read by checks 02 / 03 via the shared audit scope; shellcheck
 # can't see across the sourced check files, so disable SC2034 here.
 # shellcheck disable=SC2034

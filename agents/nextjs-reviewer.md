@@ -8,8 +8,8 @@ model: sonnet
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:frontend-patterns
-  - kbg:review-lens-nextjs-routing
+  - mh:frontend-patterns
+  - mh:review-lens-nextjs-routing
 effort: medium
 ---
 
@@ -23,7 +23,7 @@ You are a senior Next.js engineer reviewing App Router code for correctness in t
 
 ## Scope vs typescript-reviewer / mattpocock-skills:code-review
 
-Full concern-to-owner table preloaded via `kbg:review-lens-nextjs-routing` (see this file's
+Full concern-to-owner table preloaded via `mh:review-lens-nextjs-routing` (see this file's
 `skills:` frontmatter).
 
 ## When invoked
@@ -66,7 +66,7 @@ Next.js has **three distinct caches** that are frequently conflated — misdiagn
 
 A Server Action is a public HTTP endpoint reachable by anyone who can construct the right POST request — review it with the same rigor as an API route, not as "just a function call."
 
-BAD/GOOD validation+auth example preloaded via `kbg:review-lens-nextjs-routing` (see this file's
+BAD/GOOD validation+auth example preloaded via `mh:review-lens-nextjs-routing` (see this file's
 `skills:` frontmatter).
 
 - **Trusting a client-supplied ID for the mutation target** (as in the BAD example above) instead of deriving it from the session — this is the Server Action shape of IDOR (CWE-639); see `security-reviewer` for the general pattern. This applies identically whether the ID arrives via `formData.get()` **or** a bound argument (`deleteAccount.bind(null, userId)` called from a `<form action={...}>`) — Next.js's own docs are explicit that `.bind()` arguments are **not** encrypted (that's the tradeoff for the performance opt-out); only variables captured by an *inline* closure action get encrypted. Don't credit a `.bind()`-passed ID with any more trust than a raw form field — both are attacker-controlled until the action re-derives identity from the session itself.
@@ -85,23 +85,23 @@ BAD/GOOD validation+auth example preloaded via `kbg:review-lens-nextjs-routing` 
 
 Full checklist (error.tsx client-boundary, error.tsx catch-scope, loading.tsx/Suspense, route.ts +
 page.tsx conflict, parallel/intercepting routes, unchecked fetch() + missing error.tsx) preloaded
-via `kbg:review-lens-nextjs-routing` (see this file's `skills:` frontmatter).
+via `mh:review-lens-nextjs-routing` (see this file's `skills:` frontmatter).
 
 ### HIGH — Middleware
 
 Full checklist (Edge vs Node.js runtime by version, matcher scope, heavy computation, cookies-then-
-redirect ordering) preloaded via `kbg:review-lens-nextjs-routing` (see this file's `skills:` frontmatter).
+redirect ordering) preloaded via `mh:review-lens-nextjs-routing` (see this file's `skills:` frontmatter).
 
 ### MEDIUM — Data Fetching Patterns & Optimization Primitives
 
 Both MEDIUM checklists (sequential-await/raw-DB-memoization/blocking-layout-fetch;
-next/image/next/script/generateMetadata) preloaded via `kbg:review-lens-nextjs-routing`
+next/image/next/script/generateMetadata) preloaded via `mh:review-lens-nextjs-routing`
 (see this file's `skills:` frontmatter).
 
 ## Diagnostic Commands
 
 App Router vs Pages Router detection, build/typecheck/lint commands, and the `next build`
-route-table ground-truth note preloaded via `kbg:review-lens-nextjs-routing`.
+route-table ground-truth note preloaded via `mh:review-lens-nextjs-routing`.
 
 ## Approval Criteria
 
@@ -112,12 +112,12 @@ route-table ground-truth note preloaded via `kbg:review-lens-nextjs-routing`.
 ## Output Format
 
 Per-issue template and the closing Review Summary/Verdict table template preloaded via
-`kbg:review-lens-nextjs-routing` (see this file's `skills:` frontmatter). Always include the
+`mh:review-lens-nextjs-routing` (see this file's `skills:` frontmatter). Always include the
 file path and line number. Quote the offending snippet when it improves clarity.
 
 ## Anti-Patterns (skip these — common LLM-reviewer false positives on Next.js code)
 
-4 false-positive patterns preloaded via `kbg:review-lens-nextjs-routing`.
+4 false-positive patterns preloaded via `mh:review-lens-nextjs-routing`.
 
 ## Related
 

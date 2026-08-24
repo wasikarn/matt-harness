@@ -49,8 +49,8 @@ rc=$?
 # pass on an empty/rotted injection (silent doctrine-content rot). "Decision-sizing
 # triad" is Rule 1's heading in docs/METHODOLOGY.md — its presence proves the
 # body was injected, not just the wrapper.
-[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:doctrine-bootstrap -->' \
-  && echo "$out" | /usr/bin/grep -q '<!-- /kbg:doctrine-bootstrap -->' \
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- mh:doctrine-bootstrap -->' \
+  && echo "$out" | /usr/bin/grep -q '<!-- /mh:doctrine-bootstrap -->' \
   && echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' && ok=1 || ok=0
 assert "injects METHODOLOGY.md wrapped in markers when plugin root is valid" "$ok"
 
@@ -89,16 +89,16 @@ fake_home_present=$(mktemp -d)
 mkdir -p "$fake_home_present/.claude/plugins/cache/mattpocock/mattpocock-skills"
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_present" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
-[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
+[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'mh:mattpocock-preflight' && ok=1 || ok=0
 assert "silent when mattpocock-skills plugin cache is present" "$ok"
 trash "$fake_home_present" 2>/dev/null || true
 
 fake_home_absent=$(mktemp -d)
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_absent" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
-[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:mattpocock-preflight -->' \
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- mh:mattpocock-preflight -->' \
   && echo "$out" | /usr/bin/grep -q 'mattpocock-skills@mattpocock' \
-  && echo "$out" | /usr/bin/grep -q '<!-- /kbg:mattpocock-preflight -->' && ok=1 || ok=0
+  && echo "$out" | /usr/bin/grep -q '<!-- /mh:mattpocock-preflight -->' && ok=1 || ok=0
 assert "warns when mattpocock-skills plugin cache is absent" "$ok"
 trash "$fake_home_absent" 2>/dev/null || true
 
@@ -109,7 +109,7 @@ cat > "$fake_home_disabled/.claude/settings.json" <<'EOF'
 EOF
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_disabled" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
-[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- kbg:mattpocock-preflight -->' \
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- mh:mattpocock-preflight -->' \
   && echo "$out" | /usr/bin/grep -qi 'installed but disabled' && ok=1 || ok=0
 assert "warns when mattpocock-skills plugin cache is present but disabled in settings.json" "$ok"
 trash "$fake_home_disabled" 2>/dev/null || true
@@ -121,7 +121,7 @@ cat > "$fake_home_enabled/.claude/settings.json" <<'EOF'
 EOF
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_enabled" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
-[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'kbg:mattpocock-preflight' && ok=1 || ok=0
+[[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'mh:mattpocock-preflight' && ok=1 || ok=0
 assert "stays silent when mattpocock-skills is present and explicitly enabled" "$ok"
 trash "$fake_home_enabled" 2>/dev/null || true
 
@@ -131,7 +131,7 @@ echo "=== command-root-anchor hook (SessionStart) ==="
 envfile=$(mktemp)
 CLAUDE_PLUGIN_ROOT="/some/plugin/root/" CLAUDE_ENV_FILE="$envfile" bash "$ROOT_ANCHOR" 2>/dev/null
 rc=$?
-[[ "$rc" == "0" ]] && /usr/bin/grep -qx 'export KBG_PLUGIN_ROOT=/some/plugin/root' "$envfile" && ok=1 || ok=0
+[[ "$rc" == "0" ]] && /usr/bin/grep -qx 'export MH_PLUGIN_ROOT=/some/plugin/root' "$envfile" && ok=1 || ok=0
 assert "strips trailing slash and appends export to CLAUDE_ENV_FILE" "$ok"
 rm -f "$envfile"
 
@@ -186,7 +186,7 @@ rc=$?
 [[ "$rc" == "0" ]] \
   && printf '%s' "$out" | /usr/bin/grep -q '\[memory-lint\]' \
   && printf '%s' "$out" | /usr/bin/grep -q 'UNINDEXED: orphan-note.md' \
-  && printf '%s' "$out" | /usr/bin/grep -q 'kbg:memory-lint' && ok=1 || ok=0
+  && printf '%s' "$out" | /usr/bin/grep -q 'mh:memory-lint' && ok=1 || ok=0
 assert "emits a one-line advisory naming the finding when the store has drift" "$ok"
 
 nodir=$(mktemp -d)
@@ -380,7 +380,7 @@ trash "$fake_home" "$sess_dir" 2>/dev/null || true
 # every agent-<id>.jsonl carrying the real `agentType` (the Agent tool's subagent_type
 # param) — confirmed shape against a real transcript, 2026-08-07. Two subagent files on
 # the SAME model but DIFFERENT agentType must produce two rows, not collapse into one:
-# a kbg:code-reviewer dispatch and an Explore dispatch on the same model are different
+# a mh:code-reviewer dispatch and an Explore dispatch on the same model are different
 # populations of work, exactly the reasoning behind the earlier stream split.
 fake_home=$(mktemp -d)
 sess_dir=$(mktemp -d)
@@ -388,14 +388,14 @@ transcript="$sess_dir/types.jsonl"
 mkdir -p "$sess_dir/types/subagents"
 make_transcript_line claude-sonnet-5 100 50 > "$transcript"
 make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/types/subagents/agent-aaa.jsonl"
-printf '{"agentType":"kbg:code-reviewer","description":"x","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/types/subagents/agent-aaa.meta.json"
+printf '{"agentType":"mh:code-reviewer","description":"x","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/types/subagents/agent-aaa.meta.json"
 make_transcript_line claude-sonnet-5 20 8 > "$sess_dir/types/subagents/agent-bbb.jsonl"
 printf '{"agentType":"Explore","description":"y","toolUseId":"t2","spawnDepth":1}' > "$sess_dir/types/subagents/agent-bbb.meta.json"
 payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "types"}))' "$transcript")
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
 rc=$?
 metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
-reviewer_row=$(/usr/bin/grep '"agent_type":"kbg:code-reviewer"' "$metrics_file" 2>/dev/null)
+reviewer_row=$(/usr/bin/grep '"agent_type":"mh:code-reviewer"' "$metrics_file" 2>/dev/null)
 explore_row=$(/usr/bin/grep '"agent_type":"Explore"' "$metrics_file" 2>/dev/null)
 orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" && -f "$metrics_file" \

@@ -132,7 +132,7 @@ When this skill is used for review, return:
 ## Related
 
 - Skill: `backend-patterns` - API and service-layer patterns
-- Skill: `kbg:security-auditor` - secret handling, auth, and least privilege
+- Skill: `mh:security-auditor` - secret handling, auth, and least privilege
 - Skill: `mattpocock-skills:code-review` - broader review workflow
 - Agent: `performance-optimizer` - once a query-level bottleneck is confirmed, for the
   application-side fix (batching, caching, in-memory structure) around it

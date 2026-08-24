@@ -73,7 +73,7 @@ IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|w
 # stay in sync by construction.
 IMPL_NO_BUILD="${IMPL/build\(ing\)\?|/}"
 # IMPL without `create`/`creating` — used by the PR-intent carve-out below to
-# tell a pure "create a PR" ask (route to kbg:pr) from an impl-heavy prompt
+# tell a pure "create a PR" ask (route to mh:pr) from an impl-heavy prompt
 # that also happens to mention a PR ("build X then open a PR" → still wants
 # the plan-first nudge). `create` is dropped because it's the one IMPL verb
 # that overlaps PR_INTENT. Derived from IMPL for the same reason as above.
@@ -100,7 +100,7 @@ THAI_PR_VERB='สร้าง|เปิด'
 emit_pr_nudge() {
   cat <<'EOF'
 
-[kbg:flow-nudge] PR creation → use kbg:pr
+[mh:flow-nudge] PR creation → use mh:pr
   It builds a consistent, templated body and previews it for your confirmation
   before creating the PR — instead of a free-hand `gh pr create` with an ad-hoc body.
 The nudge is advisory; the model judges.
@@ -111,7 +111,7 @@ EOF
 emit_address_review_nudge() {
   cat <<'EOF'
 
-[kbg:flow-nudge] Replying to PR review feedback → tell the user to type `/address-review`
+[mh:flow-nudge] Replying to PR review feedback → tell the user to type `/address-review`
   It triages every open thread, fixes in clusters, and replies per-thread with a commit
   sha citation — instead of an ad-hoc `gh pr comment`/`gh api` reply with no fixed shape.
   `/address-review` is user-invocation-only (disable-model-invocation: true) — the model
@@ -144,7 +144,7 @@ INPUT=$(printf '%s' "$(cat)" | jq -r '.prompt // empty' 2>/dev/null)
 # prompt. Only used for Thai matching — English checks stay on raw $INPUT.
 INPUT_TH="${INPUT//เพิ่มเติม/}"
 
-# PR-creation intent → route to kbg:pr and skip the generic plan-first nudge
+# PR-creation intent → route to mh:pr and skip the generic plan-first nudge
 # (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
 # the IMPL gate because the PR verbs open/raise/make aren't in IMPL — the gate
 # would otherwise silence "open a PR". Fires only on a PURE PR ask: if another
@@ -153,7 +153,7 @@ INPUT_TH="${INPUT//เพิ่มเติม/}"
 # word boundary, so "PRD" (create a PRD) never matches — it's not a pull request.
 # English/romanized verbs. CC emits `prompt` as real UTF-8 (not \u-escaped —
 # see the THAI_IMPL comment above), so a Thai PR ask is handled by the
-# parallel THAI_PR_VERB check right below, not left to kbg:pr's own
+# parallel THAI_PR_VERB check right below, not left to mh:pr's own
 # description-match fallback.
 PR_INTENT='(creat|open|rais|mak|submit|put up|cut).{0,12}(pull request|\bPRs?\b)'
 if /usr/bin/grep -qiE "$PR_INTENT" <<< "$INPUT" \
@@ -285,11 +285,11 @@ fi
 
 cat <<'EOF'
 
-[kbg:flow-nudge] Non-trivial work detected — interrogate the requirement, then plan before you edit.
+[mh:flow-nudge] Non-trivial work detected — interrogate the requirement, then plan before you edit.
   Multi-file / unfamiliar / architectural / hard-to-reverse?
     → enter plan mode (Shift+Tab, or EnterPlanMode) first, or stress-test the ask with mattpocock-skills:grilling.
   A new feature to spec out? → mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement (all three are user-invoked only — never Skill-call them)
-  Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see kbg:orchestrate).
+  Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see mh:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.
 EOF
@@ -308,7 +308,7 @@ EOF
 TICKET_KEY='\btp-[0-9]+\b'
 if /usr/bin/grep -qiE "$TICKET_KEY" <<< "$INPUT"; then
   cat <<'EOF'
-  Ticket reference detected — before implementing, dispatch kbg:requirement-analyst
+  Ticket reference detected — before implementing, dispatch mh:requirement-analyst
   on the ticket text first (functional_requirements / business_trace / open_questions),
   then fold its output into the implementer's spawn prompt.
 EOF

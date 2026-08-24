@@ -5,7 +5,7 @@
 # dead refs in CLAUDE.md + docs/skill-authoring-conventions.md, caught
 # 2026-08-10 by the survey that built this check — checks 25/37 structurally
 # could not see it: 25 reads only agents' `skills:` YAML arrays, 37 only
-# `kbg:` tokens). Four sub-checks against the INSTALLED mattpocock cache:
+# `mh:` tokens). Four sub-checks against the INSTALLED mattpocock cache:
 #   A (WARN) every `mattpocock-skills:<name>` token in live surfaces resolves
 #     to an installed skill. Bucket prefixes are stripped and resolution is
 #     depth-agnostic (find, not skills/<bucket>/<name> paths) — upstream's
@@ -29,11 +29,11 @@
 # Historical names must be cited UNPREFIXED (plain `writing-great-skills`,
 # no `mattpocock-skills:` namespace) so A stays a live-ref check — matching
 # the former/removed convention checks 37/46 use for retired kbg names.
-# Cache root override for tests: KBG_MATT_CACHE. Missing cache → INFO skip
+# Cache root override for tests: MH_MATT_CACHE. Missing cache → INFO skip
 # (an uninstalled companion plugin is doctrine-bootstrap.sh's warning to own
 # — that session hook is the repo's informative-skip precedent, not check 25,
 # which silently shrinks its known-skills set when the cache is absent).
-_matt_root="${KBG_MATT_CACHE:-$HOME/.claude/plugins/cache/mattpocock/mattpocock-skills}"
+_matt_root="${MH_MATT_CACHE:-$HOME/.claude/plugins/cache/mattpocock/mattpocock-skills}"
 _matt_ver=""
 if [ -d "$_matt_root" ]; then
   _matt_ver=$(find "$_matt_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sed 's|.*/||' | sort -V | tail -1)

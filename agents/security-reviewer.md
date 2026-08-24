@@ -8,7 +8,7 @@ model: opus
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:security-reviewer-patterns
+  - mh:security-reviewer-patterns
 effort: xhigh
 ---
 
@@ -94,7 +94,7 @@ Flag these patterns immediately:
 ### 3b. Concrete Patterns (BAD/GOOD)
 
 Full BAD/GOOD code examples for SQL injection, IDOR (including the raw `!==` type-coercion trap),
-JWT `alg` confusion, mass assignment, SSRF, and ReDoS preloaded via `kbg:security-reviewer-patterns`
+JWT `alg` confusion, mass assignment, SSRF, and ReDoS preloaded via `mh:security-reviewer-patterns`
 (see this file's `skills:` frontmatter).
 
 ### 3c. Attack Chains — Vulnerabilities Rarely Live Alone
@@ -188,7 +188,7 @@ If you find a CRITICAL vulnerability:
 ## Reference
 
 Detailed vulnerability patterns and code examples: this file's `skills:` frontmatter preloads
-`kbg:security-reviewer-patterns`. For a dedicated, comprehensive deep-audit (threat model →
+`mh:security-reviewer-patterns`. For a dedicated, comprehensive deep-audit (threat model →
 remediation plan → re-audit) rather than this agent's own flagging pass, see skill:
 `security-auditor`.
 

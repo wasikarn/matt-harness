@@ -101,7 +101,7 @@ Produce at close:
 - `/post-mortem` — after resolution, blameless analysis
 - `/ship-merge` — deploying fix PR after resolution
 
-**Named model** (cc-thinking-skills): the detect → assess → mitigate → monitor loop is *ooda* (observe-orient-decide-act under time pressure). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+**Named model** (cc-thinking-skills): the detect → assess → mitigate → monitor loop is *ooda* (observe-orient-decide-act under time pressure). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 
 ## Done when
 

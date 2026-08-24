@@ -24,13 +24,13 @@ both — don't assume Skill-side names apply to an Agent or Command target.
 ### 0. Read the reference doc first
 
 **Why 2 agents, not 1**, and the exact prompt skeleton this command fills in: read
-`${KBG_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5 —
+`${MH_PLUGIN_ROOT}/docs/reference/skill-fixture-review-prompt-template.md` before Step 5 —
 the single source of truth for the prompt text, the fixture-construction hygiene checklist,
 and the 5 instructions that must not be cut; this command only orchestrates around it.
 
 ### 1. Parse arguments and resolve the target surface
 
-`$1` = skill/agent/command name (strip a leading `kbg:` if present). `$2` = optional iteration path.
+`$1` = skill/agent/command name (strip a leading `mh:` if present). `$2` = optional iteration path.
 
 **Via the `Skill` tool's `args` param (not a typed slash command), `$2` may not populate** —
 a whitespace-containing `args` string can bind wholly to `$1` (confirmed on `deep-audit`,
@@ -53,7 +53,7 @@ and `eval-*/` conventions are identical across all three surface types.
 
 Workspace root is `<skill-name>-workspace/` relative to the repo root — a dev-workspace
 sibling of `skills/<skill-name>/`, not inside the installed plugin; never resolve it from
-`${KBG_PLUGIN_ROOT}`.
+`${MH_PLUGIN_ROOT}`.
 
 - If `$2` was given, use it as the iteration path directly.
 - Otherwise glob `iteration-*` under the workspace root and pick the highest N.

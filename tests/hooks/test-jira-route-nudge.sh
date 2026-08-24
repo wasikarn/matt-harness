@@ -17,7 +17,7 @@ fail=0
 # depend on whether this runner actually has jira-acli installed.
 FAKE_JIRA_CACHE="$(mktemp -d)"
 trap 'rm -rf "$FAKE_JIRA_CACHE"' EXIT
-export KBG_JIRA_ACLI_CACHE="$FAKE_JIRA_CACHE"
+export MH_JIRA_ACLI_CACHE="$FAKE_JIRA_CACHE"
 
 user_prompt_payload() {
   # ensure_ascii=False mirrors CC's real payload: Node JSON.stringify writes
@@ -83,6 +83,7 @@ test_silent "meta: know the plugin (FP1)"  "บอกให้ claude รู้�
 test_silent "meta: use plugin power (FP2)" "ทำอย่างไรให้ CC ใช้ plugin jira-acli ให้เต็มประสิทธิภาพ"
 test_silent "meta: jira-acli plugin skill" "the jira-acli plugin skill hook config"
 test_silent "meta: matt-harness + jira"    "matt-harness and jira-acli are both plugins"
+test_silent "meta: kbg-harness + jira"     "kbg-harness and jira-acli are both plugins"
 
 echo ""
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)
@@ -98,7 +99,7 @@ fi
 echo ""
 echo "--- jira-acli not installed (must stay silent regardless of content) ---"
 NOT_INSTALLED_CACHE="$FAKE_JIRA_CACHE/nonexistent"
-out=$(KBG_JIRA_ACLI_CACHE="$NOT_INSTALLED_CACHE" bash -c "echo '$(user_prompt_payload "create a Jira ticket for this bug")' | bash '$HOOK'" 2>/dev/null)
+out=$(MH_JIRA_ACLI_CACHE="$NOT_INSTALLED_CACHE" bash -c "echo '$(user_prompt_payload "create a Jira ticket for this bug")' | bash '$HOOK'" 2>/dev/null)
 rc=$?
 if [[ "$rc" == "0" && -z "$out" ]]; then
   echo "  ✅ SILENT: jira-acli plugin cache absent"

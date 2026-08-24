@@ -66,7 +66,7 @@ overcount on one real session, 2026-08-07).
 ## `agent_type` (added 2026-08-07)
 
 `agent_type` is the Agent tool's `subagent_type` value (`"general-purpose"`, `"Explore"`,
-`"kbg:typescript-reviewer"`, …), read from the `agentType` field in each subagent's
+`"mh:typescript-reviewer"`, …), read from the `agentType` field in each subagent's
 `agent-<id>.meta.json` sibling. `null` on every orchestrator row (the main thread has no
 subagent type); `"unknown"` on a subagent row whose meta.json was missing or unreadable, so a
 lookup gap never silently drops spend. The dedup key widens to (`session_id`, `stream`,

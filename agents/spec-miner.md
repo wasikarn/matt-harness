@@ -8,7 +8,7 @@ tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:spec-miner-anti-patterns
+  - mh:spec-miner-anti-patterns
 effort: high
 ---
 
@@ -191,4 +191,4 @@ mined — same shape as the two above.)
 
 ## Anti-Patterns
 
-Full 10-item FAIL list preloaded via `kbg:spec-miner-anti-patterns` (see `skills:` frontmatter).
+Full 10-item FAIL list preloaded via `mh:spec-miner-anti-patterns` (see `skills:` frontmatter).

@@ -22,7 +22,7 @@ set -uo pipefail
 # Portability guard (#93): announced fail-open when python3 is missing;
 # doctrine-bootstrap.sh names the missing dep once at SessionStart.
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "[kbg:gate] python3 not found — task-complete-separation gate cannot run; allowing (install python3 to restore maker/checker separation)" >&2
+  echo "[mh:gate] python3 not found — task-complete-separation gate cannot run; allowing (install python3 to restore maker/checker separation)" >&2
   exit 0
 fi
 
@@ -35,13 +35,13 @@ try:
 except Exception as e:
     # Fail-safe = ALLOW. Completion is recoverable; a parse error must not
     # stall all task completion (opposite of verifier-protect'"'"'s fail-to-ask).
-    print(f"[kbg:gate] task-complete-separation: unparseable stdin, allowing ({e})", file=sys.stderr)
+    print(f"[mh:gate] task-complete-separation: unparseable stdin, allowing ({e})", file=sys.stderr)
     sys.exit(0)
 
 if not isinstance(d, dict):
     # A valid-JSON-but-non-object payload (e.g. a bare list) crashed here
     # too, one level above the tool_input guard below (found 2026-08-06).
-    print("[kbg:gate] task-complete-separation: non-object payload, allowing", file=sys.stderr)
+    print("[mh:gate] task-complete-separation: non-object payload, allowing", file=sys.stderr)
     sys.exit(0)
 
 if d.get("tool_name") != "TaskUpdate":
@@ -66,7 +66,7 @@ agent_type = d.get("agent_type")
 if not agent_type:
     sys.exit(0)
 
-print(f"[kbg:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — "
+print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — "
       f"return to main session for completion (maker≠checker)", file=sys.stderr)
 sys.exit(2)
 '

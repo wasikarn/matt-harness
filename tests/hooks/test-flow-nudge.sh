@@ -152,7 +152,7 @@ test_silent "Thai: 'explain more?' (guards เพิ่มเติม/เพิ
 test_silent "Thai: 'help me write an email' (guards เขียน exclusion)" "ช่วยเขียนอีเมลให้หน่อย"
 
 echo ""
-echo "--- PR-creation intent (routes to kbg:pr, not plan-first) ---"
+echo "--- PR-creation intent (routes to mh:pr, not plan-first) ---"
 # open/raise aren't in IMPL, so these would be silenced by the generic gate
 # without the PR branch that runs before it.
 test_nudge  "create a PR (pure ask)"        "create a PR for these changes"
@@ -162,34 +162,34 @@ test_nudge  "make me a PR"                   "make me a PR from these commits"
 test_silent "review a PR is not creation"   "review this PR"
 # Thai PR-creation intent (found false-firing to the generic nudge 2026-07-16,
 # fixed via THAI_PR_VERB — see flow-nudge.sh). Mirrors the English PR_INTENT
-# carve-out above: a pure "สร้าง PR" ask routes to kbg:pr, not plan-first.
+# carve-out above: a pure "สร้าง PR" ask routes to mh:pr, not plan-first.
 test_nudge  "Thai: create a PR (สร้าง PR)" "สร้าง PR ให้หน่อย"
 # 'PRD' must never read as 'PR' (word boundary) — to-prd fires the generic nudge,
 # never the PR nudge.
 prd_out=$(echo "$(user_prompt_payload "to-prd this idea about usage metering")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$prd_out" | /usr/bin/grep -qi "kbg:pr\b"; then
-  echo "  ❌ CONTENT: 'PRD' wrongly routed to kbg:pr nudge: <$(printf '%s' "$prd_out" | head -c 120)>" >&2
+if printf '%s' "$prd_out" | /usr/bin/grep -qi "mh:pr\b"; then
+  echo "  ❌ CONTENT: 'PRD' wrongly routed to mh:pr nudge: <$(printf '%s' "$prd_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 else
   echo "  ✅ CONTENT: 'PRD' does not route to the PR nudge"
   pass=$((pass + 1))
 fi
-# Pure PR ask names kbg:pr.
+# Pure PR ask names mh:pr.
 pr_out=$(echo "$(user_prompt_payload "open a PR for the current branch")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$pr_out" | /usr/bin/grep -qi "kbg:pr"; then
-  echo "  ✅ CONTENT: pure PR ask names 'kbg:pr'"
+if printf '%s' "$pr_out" | /usr/bin/grep -qi "mh:pr"; then
+  echo "  ✅ CONTENT: pure PR ask names 'mh:pr'"
   pass=$((pass + 1))
 else
-  echo "  ❌ CONTENT EXPECTED 'kbg:pr': <$(printf '%s' "$pr_out" | head -c 120)>" >&2
+  echo "  ❌ CONTENT EXPECTED 'mh:pr': <$(printf '%s' "$pr_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 fi
-# Thai pure PR ask also names kbg:pr (content, not just fire/silent).
+# Thai pure PR ask also names mh:pr (content, not just fire/silent).
 thai_pr_out=$(echo "$(user_prompt_payload "สร้าง PR ให้หน่อย")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$thai_pr_out" | /usr/bin/grep -qi "kbg:pr"; then
-  echo "  ✅ CONTENT: Thai PR ask names 'kbg:pr'"
+if printf '%s' "$thai_pr_out" | /usr/bin/grep -qi "mh:pr"; then
+  echo "  ✅ CONTENT: Thai PR ask names 'mh:pr'"
   pass=$((pass + 1))
 else
-  echo "  ❌ CONTENT EXPECTED 'kbg:pr' (Thai): <$(printf '%s' "$thai_pr_out" | head -c 120)>" >&2
+  echo "  ❌ CONTENT EXPECTED 'mh:pr' (Thai): <$(printf '%s' "$thai_pr_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 fi
 # Impl-heavy prompt that also mentions a PR still gets the plan-first nudge.
@@ -318,7 +318,7 @@ echo "--- requirement-interrogation reminder (content contract, v0.66.0 widened 
 # the widened signal. The base nudge deliberately does NOT name
 # 'requirement-analyst' directly (the plan explicitly rejected a standalone
 # 5th route naming it — that would just stack a 4th/5th route onto an already
-# crowded nudge; the kbg:task-prep route that used to carry the deep pass was
+# crowded nudge; the mh:task-prep route that used to carry the deep pass was
 # removed with the surface itself 2026-08-24 (#78) — the base route now points
 # at plan mode / mattpocock-skills:grilling instead). The ticket-SPECIFIC
 # addendum ("Ticket reference detected", naming requirement-analyst directly)

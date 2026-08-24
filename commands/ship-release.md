@@ -1,6 +1,6 @@
 ---
 name: ship-release
-description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (kbg:incident)."
+description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (mh:incident)."
 argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — cuts a release (tag/merge/publish)
@@ -137,7 +137,7 @@ took — state explicitly which case applies rather than silently assuming one.
 
 **Actions**:
 1. Tell user: "Monitor for 30 minutes post-deploy. Check error rates, latency, and critical user journeys."
-2. If anomalies detected, be ready to invoke `kbg:incident` (hotfix path) or rollback — then `/post-mortem` once resolved.
+2. If anomalies detected, be ready to invoke `mh:incident` (hotfix path) or rollback — then `/post-mortem` once resolved.
 3. Summarize: version shipped, tag sha, deploy status, monitoring checklist.
 
 **Done.**

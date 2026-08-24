@@ -87,4 +87,4 @@ End with a one-line verdict: `BLOCK` (any Critical/Important open) or `PASS`.
 
 - `mattpocock-skills:code-review` — general code review
 - `mattpocock-skills:diagnosing-bugs` — after security bug fix, audit before merge
-- `kbg:incident` — production security patch / live incident response first
+- `mh:incident` — production security patch / live incident response first

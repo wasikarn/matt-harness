@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# 46. Skill cited in slash form (should be `kbg:<name>`, never `/<name>`).
+# 46. Skill cited in slash form (should be `mh:<name>`, never `/<name>`).
 # docs/skill-authoring-conventions.md's "Suggested next step footers" section
 # (referenced, not duplicated, from CLAUDE.md's Skill authoring doctrine —
 # confirmed 2026-08-20 no such section lives in CLAUDE.md itself) documents
 # this exact bug shipping TWICE before a manual survey caught it (v0.35.0: `commands/pr.md`,
 # `diagnosing-bugs/SKILL.md`) — and it noted check 37 structurally can't see
-# it, since check 37's regex only fires on the `kbg:` token to begin with. A
+# it, since check 37's regex only fires on the `mh:` token to begin with. A
 # skill mis-cited as `` `/name` `` reads as a real command to anyone following
-# the doc; the doctrine ("Skills are ALWAYS cited `kbg:`-form") is stated but
+# the doc; the doctrine ("Skills are ALWAYS cited `mh:`-form") is stated but
 # nothing enforced it. Found a THIRD live instance while building this check
 # (`commands/post-mortem.md`, citing `` `/incident` `` — `incident` is
 # skill-only, no command counterpart) — fixed alongside this guard.
@@ -52,7 +52,7 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
     [ -z "$_name" ] && continue
     [ -n "${_known_skills50[$_name]:-}" ] || continue
     [ -n "${_known_commands50[$_name]:-}" ] && continue
-    warn "skill cited in slash form in ${_f#"$CLAUDE_DIR"/}: '/$_name' should be 'kbg:$_name' — '$_name' is a skill, not a command (doc-rot, misleads readers)"
+    warn "skill cited in slash form in ${_f#"$CLAUDE_DIR"/}: '/$_name' should be 'mh:$_name' — '$_name' is a skill, not a command (doc-rot, misleads readers)"
   done < <(grep -viE 'former|removed' "$_f" 2>/dev/null | grep -hoE '`/[a-zA-Z][a-zA-Z0-9_-]*`' | tr -d '`/' | sort -u)
 done
 unset _f _name _known_skills50 _known_commands50

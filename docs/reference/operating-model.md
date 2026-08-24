@@ -3,7 +3,7 @@
 matt-harness's core operating model — the gate-vs-advisory split and the verifier-separation
 principle behind it. This is a self-contained excerpt of CLAUDE.md's own "Architecture" section,
 built for surfaces that read it at runtime via Bash
-(`cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`) without pulling in the rest of
+(`cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`) without pulling in the rest of
 CLAUDE.md's repo-development guidance (contributor workflow, this machine's tool-composer clone
 paths, etc.) — none of which a plugin user's session needs. CLAUDE.md itself stays the canonical
 source for anyone developing this repo directly.

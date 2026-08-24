@@ -78,7 +78,7 @@ run_audit() {
     return 0
   fi
   local audit_cmd="bash $AUDIT $ROOT"
-  [ -n "${KBG_GAUNTLET_PLUGIN_CACHE:-}" ] && audit_cmd="$audit_cmd --plugin-cache $KBG_GAUNTLET_PLUGIN_CACHE"
+  [ -n "${MH_GAUNTLET_PLUGIN_CACHE:-}" ] && audit_cmd="$audit_cmd --plugin-cache $MH_GAUNTLET_PLUGIN_CACHE"
   eval "$audit_cmd" 2>&1
 }
 

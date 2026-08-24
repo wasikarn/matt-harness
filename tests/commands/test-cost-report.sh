@@ -58,15 +58,15 @@ assert() {
 echo "=== cost-report dedup (stream-aware) ==="
 
 # Wiring guard (plan-review finding, 2026-08-23): the command body must invoke
-# the script via ${KBG_PLUGIN_ROOT} — the hook-only ${CLAUDE_PLUGIN_ROOT}
+# the script via ${MH_PLUGIN_ROOT} — the hook-only ${CLAUDE_PLUGIN_ROOT}
 # expands EMPTY in a command body (hooks/session/command-root-anchor.sh's own
 # header says command bodies must not name it), which would ENOENT for every
 # installed-plugin user while this suite still passes green against the repo
 # path. No other gate sees that mismatch, so pin it here.
 cpr_refs=$(/usr/bin/grep -c 'CLAUDE_PLUGIN_ROOT' "$COMMAND_MD") || true
-kpr_refs=$(/usr/bin/grep -c 'KBG_PLUGIN_ROOT.*cost-report-dedup\.js' "$COMMAND_MD") || true
+kpr_refs=$(/usr/bin/grep -c 'MH_PLUGIN_ROOT.*cost-report-dedup\.js' "$COMMAND_MD") || true
 [[ "$cpr_refs" == "0" && "$kpr_refs" -ge 1 ]] && ok=1 || ok=0
-assert "COMMAND.md invokes cost-report-dedup.js via \${KBG_PLUGIN_ROOT} and never names the hook-only \${CLAUDE_PLUGIN_ROOT} (got $kpr_refs KBG refs, $cpr_refs CLAUDE refs)" "$ok"
+assert "COMMAND.md invokes cost-report-dedup.js via \${MH_PLUGIN_ROOT} and never names the hook-only \${CLAUDE_PLUGIN_ROOT} (got $kpr_refs KBG refs, $cpr_refs CLAUDE refs)" "$ok"
 
 # Adversarial case: a session_id with a pre-stream legacy row (model_scoped:true,
 # no `stream` field — always meant the orchestrator total) and a post-fix
@@ -108,7 +108,7 @@ assert "orchestrator + subagent rows (same session+model, DIFFERENT stream) both
 trash "$fake_home" 2>/dev/null || true
 
 # Adversarial case (2026-08-07, agent_type breakdown): two subagent rows, same
-# session+model+stream, DIFFERENT agent_type. Must NOT collide — a kbg:code-reviewer
+# session+model+stream, DIFFERENT agent_type. Must NOT collide — a mh:code-reviewer
 # dispatch and an Explore dispatch on the same model are different populations of
 # work, same reasoning as the stream split above. Differing costs ($4/$6) so only
 # "both survive, sum to $10" passes — a buggy dedup key that ignores agent_type
@@ -117,7 +117,7 @@ fake_home=$(mktemp -d)
 metrics_dir="$fake_home/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 cat > "$metrics_dir/costs.jsonl" <<'EOF'
-{"timestamp":"2026-08-07T00:00:00Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"kbg:code-reviewer","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":4.0}
+{"timestamp":"2026-08-07T00:00:00Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"mh:code-reviewer","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":4.0}
 {"timestamp":"2026-08-07T00:00:01Z","session_id":"two-types","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":4,"input_tokens":50,"output_tokens":25,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":6.0}
 EOF
 out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
@@ -125,7 +125,7 @@ rc=$?
 total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
 [[ "$rc" == "0" && "$total" == "10.0000" ]] \
   && printf '%s' "$out" | /usr/bin/grep -q 'By agent type' \
-  && printf '%s' "$out" | /usr/bin/grep -q 'kbg:code-reviewer' \
+  && printf '%s' "$out" | /usr/bin/grep -q 'mh:code-reviewer' \
   && printf '%s' "$out" | /usr/bin/grep -q 'Explore' && ok=1 || ok=0
 assert "two subagent rows (same session+model+stream, DIFFERENT agent_type) both survive dedup, sum to \$10, and appear in the By agent type section (got total=\$${total:-?})" "$ok"
 trash "$fake_home" 2>/dev/null || true

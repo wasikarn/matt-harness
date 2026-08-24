@@ -6,7 +6,7 @@
 # content). Threshold is the fleet's own distribution, not an imported one —
 # picked 2026-07-17 from n=33 (p90 ~15K chars); the two skills currently above
 # it are the two that already needed a manual token-optimizer pass this
-# session. Gap this closes: no fleet-native surface (`kbg:inventory`,
+# session. Gap this closes: no fleet-native surface (`mh:inventory`,
 # `--health`) reports SKILL.md body size — `--health` is session token COST,
 # inventory lists surfaces with no size field at all.
 SIZE_THRESHOLD_CHARS=20000

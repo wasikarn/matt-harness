@@ -5,7 +5,7 @@ bucket: analysis
 tools: ["Read", "Grep", "Glob"]
 model: opus
 skills:
-  - kbg:requirement-analyst-format
+  - mh:requirement-analyst-format
 effort: medium
 ---
 
@@ -103,7 +103,7 @@ One of:
 ### Before finalizing: self-consistency pass, then Output Format
 
 The 4-check self-consistency pass and the full Output Format template (structure + the
-`ready`-alongside-empty-lists closing rule) are preloaded via `kbg:requirement-analyst-format`
+`ready`-alongside-empty-lists closing rule) are preloaded via `mh:requirement-analyst-format`
 (see this file's `skills:` frontmatter) — run the checks, then emit the report in that
 template's shape.
 
@@ -117,5 +117,5 @@ template's shape.
 
 ## Anti-Patterns
 
-Six FAIL examples preloaded via `kbg:requirement-analyst-format` (see this file's `skills:`
+Six FAIL examples preloaded via `mh:requirement-analyst-format` (see this file's `skills:`
 frontmatter).

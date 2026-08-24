@@ -21,7 +21,7 @@ Auto-discovered directories: `agents/`, `skills/`, `commands/`, `hooks/`, `outpu
 3. Bump both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` versions — same-version edits to a cached plugin are silent no-ops.
 4. Run `bash skills/inventory/scripts/sync-fleet-counts.sh` to patch the "N skills · M agents · P commands" triple into `plugin.json`/`marketplace.json`/`README.md`. A new **agent** also needs two hand edits the script can't reach: `skills/orchestrate/reference.md`'s named routing table + "N-agent survivor set" count, and the count mention in `docs/agent-voice-extension.md`.
 5. Run `claude plugin validate . --strict`, then `bash skills/harness-audit/scripts/audit.sh` and fix any WARN — a CRIT F1 ("not loadable") for a brand-new component is expected here and clears at step 6.
-6. `claude plugin update kbg@kobig` **before** committing — the pre-commit hook's harness-audit F1 check only sees the latest *cached* plugin version, so a brand-new file blocks as CRIT F1 until this refreshes the cache.
+6. `claude plugin update mh@kobig` **before** committing — the pre-commit hook's harness-audit F1 check only sees the latest *cached* plugin version, so a brand-new file blocks as CRIT F1 until this refreshes the cache.
 7. Regenerate `BOUNDARY.md` (see the regen gotcha under "Plugin lifecycle & install" below), commit, push, restart Claude Code.
 
 ## Finding a surface
@@ -36,7 +36,7 @@ Hooks live in `git-hooks/` (not `.git/hooks/`). Wire once per clone:
 git config core.hooksPath git-hooks
 ```
 
-pre-commit: fast gate — syntax/lint (`bash -n` + shellcheck), JSON validation, CRITICAL harness-audit (graceful-skip if absent), new-file LOC gate (hard-blocks a brand-new `agents/*.md`, `commands/*.md`, `commands/*/COMMAND.md`, or `skills/*/SKILL.md` over 200 lines — editing an existing one past the cap stays WARN-only via harness-audit check 56; `KBG_SKIP_LOC_GATE=1` is the rescue valve).
+pre-commit: fast gate — syntax/lint (`bash -n` + shellcheck), JSON validation, CRITICAL harness-audit (graceful-skip if absent), new-file LOC gate (hard-blocks a brand-new `agents/*.md`, `commands/*.md`, `commands/*/COMMAND.md`, or `skills/*/SKILL.md` over 200 lines — editing an existing one past the cap stays WARN-only via harness-audit check 56; `MH_SKIP_LOC_GATE=1` is the rescue valve).
 pre-push: full gauntlet (all validation layers in parallel).
 
 ## Composer-not-creator doctrine
@@ -106,8 +106,8 @@ lives here so it survives the next resync and applies to every research-shaped t
 
 **Cross-project reach:** this file only loads when cwd is `kbg-harness`, so the
 operator's own `~/.claude/CLAUDE.md` (dotfiles-owned, not shipped with this plugin) carries a
-thinner mirror of the `llm-wiki` half. `/kbg:wiki-ingest` (user-invoked write path, `disable-model-invocation`) and
-`kbg:wiki-scan` (read-only health check) are the vault-touching surfaces; doctrine reasoning lives
+thinner mirror of the `llm-wiki` half. `/mh:wiki-ingest` (user-invoked write path, `disable-model-invocation`) and
+`mh:wiki-scan` (read-only health check) are the vault-touching surfaces; doctrine reasoning lives
 in their own files.
 
 <!-- Added v0.68.106. Live-fire confirmed 2026-07-30: a foreign-project session reached for `qmd`
@@ -128,7 +128,7 @@ CWE-1333/CWE-400 pairing contradicting MITRE's own page. -->
 
 ## Architecture
 
-The plugin ships as `kbg@kobig` from the `wasikarn/matt-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
+The plugin ships as `mh@kobig` from the `wasikarn/matt-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/mh/<version>/` at startup. Nothing is symlinked.
 
 The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
 
@@ -161,9 +161,11 @@ PR/feature-branch flow; *when* to push still follows the global confirm-before-p
 (`~/.claude/CLAUDE.md` § Background Session Git Discipline).
 
 **Computationally enforced for the Bash entry point only** by the `git worktree add -b` block in
-`gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel —
-present in the matt-harness repo, absent from other client/ECC/scratch repos (which keep their
-existing `gate:write:worktree-guard` redirect). (The former allowlist for detached `review-pr-<N>`
+`gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via a `/.kbg-no-worktree` or
+`/.mh-no-worktree` sentinel (the gate accepts either name — expand, not rename, so a sentinel
+file already dropped into some other repo under the old name keeps working) — present in the
+matt-harness repo, absent from other client/ECC/scratch repos (which keep their existing
+`gate:write:worktree-guard` redirect). (The former allowlist for detached `review-pr-<N>`
 worktrees was removed with the review pipeline, 2026-08-24 #82.)
 
 **Not covered: the native `claude --worktree <name>` CLI flag**
@@ -215,8 +217,8 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 
 ### Plugin lifecycle & install
 
-- **`defaultEnabled: false`:** plugin ships disabled. After install, add `"kbg@kobig": true` to Claude Code `settings.json`, then restart.
-- **Cache-invalidation:** same-version edits are no-ops. Always bump both manifests before `claude plugin update` (enforced by `git-hooks/pre-commit`'s version-bump layer: shipped-surface files staged ⇒ `plugin.json` version must change in the same commit, and both manifests' versions must agree — deletions count too). CLAUDE.md-only edits skip the bump — dev-facing repo guidance, **deliberately outside the gate even though** two shipped skills do cat it from the cache (`recursive-improve/SKILL.md`, `orchestrate/reference.md`), so their cached copy can lag the repo; that staleness window is the accepted trade for not bumping on every guidance edit (documented 2026-08-21, compliance-audit finding). Runtime-loaded means the 6 surface dirs (`agents/`/`skills/`/`commands/`/`hooks/`/`output-styles/`/`themes/`) **plus** `scripts/**`, `contexts/`, `docs/METHODOLOGY.md`, and `docs/reference/**` — doctrine-bootstrap and decide/score-decision read the docs from the versioned cache at runtime, shipped skill scripts source `scripts/_lib/*.sh` relative out of the cache, workflow runners under `scripts/workflows/` are invoked by cache path from other projects, and `frame.md` cats `contexts/*.md` via `${KBG_PLUGIN_ROOT}` — so the gate covers all of them (scripts/+contexts/ added 2026-08-21 after three scripts/-only commits silently never reached the installed cache); other cached content sits outside the gate with the same accepted staleness window: `BOUNDARY.md` (its former cache-readers, `kbg-help` and `inventory`'s wrapper docs, were removed 2026-08-24 #80) and `docs/research/kbg-vs-adhd.md` (cache-read by `ideate`'s provenance references) — known gap, widen the gate only as a deliberate policy change, not silently.
+- **`defaultEnabled: false`:** plugin ships disabled. After install, add `"mh@kobig": true` to Claude Code `settings.json`, then restart.
+- **Cache-invalidation:** same-version edits are no-ops. Always bump both manifests before `claude plugin update` (enforced by `git-hooks/pre-commit`'s version-bump layer: shipped-surface files staged ⇒ `plugin.json` version must change in the same commit, and both manifests' versions must agree — deletions count too). CLAUDE.md-only edits skip the bump — dev-facing repo guidance, **deliberately outside the gate even though** two shipped skills do cat it from the cache (`recursive-improve/SKILL.md`, `orchestrate/reference.md`), so their cached copy can lag the repo; that staleness window is the accepted trade for not bumping on every guidance edit (documented 2026-08-21, compliance-audit finding). Runtime-loaded means the 6 surface dirs (`agents/`/`skills/`/`commands/`/`hooks/`/`output-styles/`/`themes/`) **plus** `scripts/**`, `contexts/`, `docs/METHODOLOGY.md`, and `docs/reference/**` — doctrine-bootstrap and decide/score-decision read the docs from the versioned cache at runtime, shipped skill scripts source `scripts/_lib/*.sh` relative out of the cache, workflow runners under `scripts/workflows/` are invoked by cache path from other projects, and `frame.md` cats `contexts/*.md` via `${MH_PLUGIN_ROOT}` — so the gate covers all of them (scripts/+contexts/ added 2026-08-21 after three scripts/-only commits silently never reached the installed cache); other cached content sits outside the gate with the same accepted staleness window: `BOUNDARY.md` (its former cache-readers, `kbg-help` and `inventory`'s wrapper docs, were removed 2026-08-24 #80) and `docs/research/kbg-vs-adhd.md` (cache-read by `ideate`'s provenance references) — known gap, widen the gate only as a deliberate policy change, not silently.
 
 <!-- Gate enforced since 2026-08-09. -->
 
@@ -226,7 +228,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 
 - **`BOUNDARY.md` regen:** `bash skills/inventory/scripts/inventory-witness.sh [<output-path>]` — it writes the snapshot directly to `<output-path>` (default `claude/BOUNDARY.md`, relative to cwd); only status messages go to its own stdout. Pass the real target path explicitly (e.g. `... inventory-witness.sh BOUNDARY.md` from repo root) — don't redirect stdout, that captures only the status lines, not the boundary content. Drift is caught (not prevented) by harness-audit check 16 (`16-boundary-md-drift-committed-capability-m.sh`), which WARNs.
 - **The same-version stale trap applies to third-party plugins too, not just kbg's own.** Confirmed 2026-08-01: `mattpocock-skills` was 3 commits behind its own upstream while `claude plugin update` reported "already at the latest version" — upstream hadn't bumped its `plugin.json` version string, so the version-keyed update correctly saw nothing to do. Fix: `claude plugin uninstall` → `trash ~/.claude/plugins/cache/<publisher>/<plugin>/<version>` → `claude plugin install` (verify `gitCommitSha` in `installed_plugins.json` against the local clone's `git rev-parse HEAD`). Worth running periodically for any plugin whose upstream doesn't reliably bump versions on content changes.
-- **Output style:** `output-styles/staff-eng.md` is the sole live-response register — its internal "Calibrate to stakes" rule self-calibrates terse vs full decision-framing (the old two-file split was collapsed 2026-07-02). `force-for-plugin: true` auto-activates it whenever `kbg@kobig` is enabled, overriding the user's own `outputStyle` setting — you can't run a different style while this plugin is on without disabling it first.
+- **Output style:** `output-styles/staff-eng.md` is the sole live-response register — its internal "Calibrate to stakes" rule self-calibrates terse vs full decision-framing (the old two-file split was collapsed 2026-07-02). `force-for-plugin: true` auto-activates it whenever `mh@kobig` is enabled, overriding the user's own `outputStyle` setting — you can't run a different style while this plugin is on without disabling it first.
 
 ### Session environment quirks
 

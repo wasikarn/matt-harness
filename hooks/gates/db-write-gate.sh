@@ -5,7 +5,7 @@
 # THIS HOOK IS A BEST-EFFORT NUDGE, NOT THE SECURITY BOUNDARY. Classifying
 # arbitrary SQL as read-vs-write from the string is not something a hand-rolled
 # scanner can do airtight -- three rounds of adversarial review against a live
-# MariaDB (2026-07-13, while exercising kbg:review-pr) each found a silent-allow
+# MariaDB (2026-07-13, while exercising mh:review-pr) each found a silent-allow
 # bypass in the previous "block the write verbs" design: string-literal-blind
 # comment stripping, /*! executable-comment mis-scan, the -- needs-whitespace
 # lexer rule, and writes reachable by verbs/indirection off the list (LOAD,
@@ -30,7 +30,7 @@ set -uo pipefail
 # Portability guard (#93): announced fail-open when python3 is missing;
 # doctrine-bootstrap.sh names the missing dep once at SessionStart.
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "[kbg:gate] python3 not found — db-write gate cannot run; allowing (install python3 to restore SQL-write asks)" >&2
+  echo "[mh:gate] python3 not found — db-write gate cannot run; allowing (install python3 to restore SQL-write asks)" >&2
   exit 0
 fi
 

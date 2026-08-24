@@ -91,7 +91,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    Write the body to a temp file first (the Write tool, not a bash heredoc or quoted string —
    real hotfix content routinely contains apostrophes/backticks that break inline shell-string
    construction; `--body-file` sidesteps quoting entirely), matching this structure — mirrors
-   `kbg:pr`'s Summary/Changes/Testing/Related-Issues headings (see `skills/pr/SKILL.md` Phase 4)
+   `mh:pr`'s Summary/Changes/Testing/Related-Issues headings (see `skills/pr/SKILL.md` Phase 4)
    plus a hotfix-only **Rollback** section:
 
    ```markdown
@@ -121,7 +121,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    ```bash
    gh pr create --base <prod-branch> --title "hotfix(P0): ..." --body-file <path-to-file> --label "hotfix" --label "P0"
    ```
-   A hotfix skips `kbg:pr`'s own preview-confirm gate for speed (Phase 0-3 already are the review), but
+   A hotfix skips `mh:pr`'s own preview-confirm gate for speed (Phase 0-3 already are the review), but
    the body shape stays the same so a hotfix PR reads like every other PR in this repo.
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?" Recommend whichever option this incident's actual severity favors — P0/P1 favors Merge now (production stays broken every minute you wait, and Phase 0 already ruled out rollback/kill-switch as sufficient); P2 favors Wait for normal CI — and render that pick as the literal `(Recommended)` tag on the matching option below, replacing its `(best when X)` clause at render time; the template below spans all severities, it isn't fixed text to paste verbatim.
    - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge. Bypasses branch protection.

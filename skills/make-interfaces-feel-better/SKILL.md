@@ -1,6 +1,6 @@
 ---
 name: make-interfaces-feel-better
-description: Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (kbg:frontend-design-direction).
+description: Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (mh:frontend-design-direction).
 bucket: design
 metadata:
   origin: community PR #1659 (via ECC)
@@ -139,7 +139,7 @@ hit areas or wrapping) before marking the checklist item done.
 
 ## Related
 
-- Skill: `kbg:frontend-design-direction` — run that first to set the overall visual/interaction
+- Skill: `mh:frontend-design-direction` — run that first to set the overall visual/interaction
   direction; this skill polishes the details once components already exist.
-- Skill: `kbg:accessibility` — hit-area and focus-indicator requirements here overlap WCAG SC
+- Skill: `mh:accessibility` — hit-area and focus-indicator requirements here overlap WCAG SC
   2.5.8 (Target Size, AA) and SC 2.4.13 (Focus Appearance, AAA) — check both when either applies.

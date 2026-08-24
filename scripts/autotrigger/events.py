@@ -144,9 +144,9 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     Plugin-cache fallback (opt-in via use_plugin_cache_fallback=True): if
     --repo-root has no claude/{skills,commands}/ (post-cutover matt-harness
     layout, symlink-farm retired 2026-06-11), walk the cache for the user's own
-    plugins — kbg (kobig/kbg) and jira-acli (wasikarn/jira-acli) — taking the
+    plugins — mh (kobig/mh) and jira-acli (wasikarn/jira-acli) — taking the
     latest installed version of each and merging. Avoids the /tmp symlink
-    workaround. Version dirs may carry a leading 'v' (kbg ships v0.43.3); the
+    workaround. Version dirs may carry a leading 'v' (mh ships v0.43.3); the
     regex tolerates it.
     """
     skills, commands = {}, {}
@@ -169,7 +169,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
         # ponytail: explicit pair list (not a walk of all cache/*/*/) keeps the
         # "custom" headline = the user's own plugins, comparable to the 38%
         # baseline; adding a plugin = one line here.
-        pairs = [("kobig", "kbg"), ("wasikarn", "jira-acli")]
+        pairs = [("kobig", "mh"), ("wasikarn", "jira-acli")]
         ver_re = re.compile(r"^v?(\d+\.\d+\.\d+)")
         for vendor, plugin in pairs:
             pdir = cache_root / vendor / plugin

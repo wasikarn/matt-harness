@@ -29,12 +29,12 @@
 # without ever carrying the anchor would false-WARN at anyone not running
 # matt-harness — so gate the whole fragment on this being the real
 # matt-harness checkout.
-_is_kbg=0
+_is_mh=0
 if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]; then
-  [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "kbg" ] && _is_kbg=1
+  [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "mh" ] && _is_mh=1
 fi
 
-if [ "$_is_kbg" = "1" ]; then
+if [ "$_is_mh" = "1" ]; then
   # Live counts — duplicates check-01's methodology directly (3 short finds);
   # not worth a shared lib for this size, matching the sync script's own copy.
   _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
@@ -89,4 +89,4 @@ if [ "$_is_kbg" = "1" ]; then
   unset -f _check_triple _check_agent_count
   unset _LIVE_SKILLS _LIVE_AGENTS _LIVE_COMMANDS _EXPECT_TRIPLE
 fi
-unset _is_kbg
+unset _is_mh

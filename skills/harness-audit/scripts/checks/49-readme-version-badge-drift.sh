@@ -16,12 +16,12 @@
 # Repo-identity gate: mirrors check 44 — ships inside the plugin cache, so
 # gate on this being a real matt-harness checkout before reading CLAUDE_DIR
 # paths that only make sense there.
-_is_kbg=0
+_is_mh=0
 if command -v jq >/dev/null 2>&1 && [ -f "$CLAUDE_DIR/.claude-plugin/plugin.json" ]; then
-  [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "kbg" ] && _is_kbg=1
+  [ "$(jq -r '.name // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)" = "mh" ] && _is_mh=1
 fi
 
-if [ "$_is_kbg" = "1" ] && command -v jq >/dev/null 2>&1; then
+if [ "$_is_mh" = "1" ] && command -v jq >/dev/null 2>&1; then
   _readme="$CLAUDE_DIR/README.md"
   _manifest_version=$(jq -r '.version // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)
   if [ -n "$_manifest_version" ] && [ -f "$_readme" ]; then
@@ -37,4 +37,4 @@ if [ "$_is_kbg" = "1" ] && command -v jq >/dev/null 2>&1; then
   fi
   unset _readme _manifest_version _badge_line
 fi
-unset _is_kbg
+unset _is_mh

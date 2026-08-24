@@ -1,5 +1,5 @@
 ---
-description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use kbg:security-auditor.
+description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor.
 name: security-scan
 metadata:
   origin: ECC
@@ -69,7 +69,7 @@ Return:
 4. Lower-confidence findings grouped separately.
 5. A remediation order.
 6. Commands run and whether the scan was local, CI, or npx-backed.
-7. Suggested next step: critical/high findings in application code → kbg:security-auditor for a deeper code-vulnerability pass; clean scan or only lower-confidence inventory items → done.
+7. Suggested next step: critical/high findings in application code → mh:security-auditor for a deeper code-vulnerability pass; clean scan or only lower-confidence inventory items → done.
 
 ## CI Pattern
 
@@ -85,7 +85,7 @@ Use AgentShield in GitHub Actions for enforced gates:
 
 ## Links
 
-- Deeper code-vulnerability pass: `kbg:security-auditor` (matches this file's own description and Output Contract step 7 — not `agents/security-reviewer.md`, a different surface)
+- Deeper code-vulnerability pass: `mh:security-auditor` (matches this file's own description and Output Contract step 7 — not `agents/security-reviewer.md`, a different surface)
 - Scanner: <https://github.com/affaan-m/agentshield>
 
 ## Arguments

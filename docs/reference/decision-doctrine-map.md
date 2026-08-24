@@ -15,7 +15,7 @@ the Staff-Engineer Thinking Loop implies.
 deleted (2026-08-24, ticket 79).** It was originally presented here as the bound mechanism
 for most rows below. Measured evidence said otherwise: 0 invocations across 182
 real production sessions and this repo's own dogfooding session, against 55
-`advisor()` calls and 100 calls to other `kbg:` skills in the same corpus —
+`advisor()` calls and 100 calls to other `mh:` skills in the same corpus —
 `advisor()` + inline reasoning is what's actually load-bearing. The genuinely
 hard, contested-diagnosis case now escalates to `mattpocock-skills:grilling`
 (adversarial pressure-testing), backed by the `judgment-ladder.md` /
@@ -47,7 +47,7 @@ Match rigor to stakes; trivial/lookup tasks skip the triad.
 | editing the code that judges the model (a gate, `hooks.json`, or the audit verifier) | `hooks/gates/verifier-protect.sh` — `permissionDecision: ask`, no env-var bypass | `CLAUDE.md`'s "Why — the unifying crux" (verifier-separation) |
 | a db write | `hooks/gates/db-write-gate.sh` — `permissionDecision: ask` on non-SELECT `mcp__<server>__execute_sql*` calls, any server; no-op when no such MCP server is configured | `docs/harness-decay-cadence.md` §"Irreversible-action class" |
 | an Atlassian (Jira/Confluence) operation | route through `jira-acli`'s skills (`jira-acli:acli`, `jira-acli:jira-content`, `jira-acli:confluence-content`) per `~/.claude/CLAUDE.md`; `hooks/advisory/jira-route-nudge.sh` reminds on a Jira/Confluence-shaped prompt (non-blocking — the Atlassian MCP tool schemas are the documented fallback for jira-acli's own closed-gap list) | n/a |
-| approve / reject / rank / score a consequential decision | `kbg:score-decision` — stated criteria + weights, pass threshold + fatal-weakness floor | `skills/score-decision/SKILL.md` | METHODOLOGY Rule 14 |
+| approve / reject / rank / score a consequential decision | `mh:score-decision` — stated criteria + weights, pass threshold + fatal-weakness floor | `skills/score-decision/SKILL.md` | METHODOLOGY Rule 14 |
 
 ## Interrogate the incoming claim (Rule 3)
 
@@ -59,14 +59,14 @@ kbg-native (this plugin's own fleet) unless noted.
 
 | Incoming claim → action | kbg-native critical-thinking surface |
 |---|---|
-| Requirement → build | `kbg:requirement-analyst` — ambiguity/gap/edge-case/testability sweep, readiness verdict |
-| Diff → merge | `mattpocock-skills:code-review`, `kbg:blind-spot-hunter`, `kbg:ship-merge`'s in-flow gates |
-| Idea → spec | `kbg:ideate-critic` (`/ideate` Phase 2 fresh-context critic) |
-| Task prompt → dispatch | `kbg:orchestrate`'s F9 spawn-prompt discipline — the dedicated prep skill + fresh-context checker agent were retired 2026-08-24 (#78), and the 9-field handoff-template doc followed 2026-08-24 (#80) |
-| Task/requirement → plan authoring | `kbg:code-architect` — codebase-grounded blueprint (pattern analysis, layer-direction check, DI-style check, test-impact check) for a multi-file or architectural plan-mode draft; its output format (Design Decisions, Trade-offs, Build Sequence, Risks, Success Criteria) is the plan. Named in METHODOLOGY Rule 1's plan-mode section since v0.68.297 — doctrine text only, no deterministic hook (a `PostToolUse:EnterPlanMode` hook was considered and rejected: Shift+Tab, the common entry path, never calls that tool, so the hook would miss most real entries) |
+| Requirement → build | `mh:requirement-analyst` — ambiguity/gap/edge-case/testability sweep, readiness verdict |
+| Diff → merge | `mattpocock-skills:code-review`, `mh:blind-spot-hunter`, `mh:ship-merge`'s in-flow gates |
+| Idea → spec | `mh:ideate-critic` (`/ideate` Phase 2 fresh-context critic) |
+| Task prompt → dispatch | `mh:orchestrate`'s F9 spawn-prompt discipline — the dedicated prep skill + fresh-context checker agent were retired 2026-08-24 (#78), and the 9-field handoff-template doc followed 2026-08-24 (#80) |
+| Task/requirement → plan authoring | `mh:code-architect` — codebase-grounded blueprint (pattern analysis, layer-direction check, DI-style check, test-impact check) for a multi-file or architectural plan-mode draft; its output format (Design Decisions, Trade-offs, Build Sequence, Risks, Success Criteria) is the plan. Named in METHODOLOGY Rule 1's plan-mode section since v0.68.297 — doctrine text only, no deterministic hook (a `PostToolUse:EnterPlanMode` hook was considered and rejected: Shift+Tab, the common entry path, never calls that tool, so the hook would miss most real entries) |
 | Plan → implement | plan mode itself is the checkpoint — stress-test a consequential plan (multi-file, one-way door, unfamiliar subsystem) with `mattpocock-skills:grilling` before approving. The dedicated pre-code plan-review agent and its `ExitPlanMode` nudge hook were retired 2026-08-24 (#78) |
 | Implementation → verify | the former `compliance-audit` command (plan-as-ground-truth conformance check) and its post-commit nudge hook were retired 2026-08-24 (#80) — `mattpocock-skills:code-review`'s diff-as-ground-truth standards/spec lenses are the remaining verify layer |
-| Bug report → fix | `kbg:silent-failure-hunter` + the root-cause-not-symptom reflex (`ponytail@ponytail`, a separate installed plugin, not kbg-native) — covered by Rule 3's general reflex; no bug-report-*specific* rung or nudge yet, deliberately deferred (METHODOLOGY Rule 2), revisit if a symptom-patch incident surfaces. Narrower and unrelated to this deferral: `flow-nudge.sh`'s *generic* plan-first nudge now also fires on a complex/systemic bug fix (bug-language + breadth-language co-occurrence, e.g. "race condition ... across every service") since 2026-08-05 — see `docs/research/plan-mode-nudge-audit-2026-08-05.md`. That's Rule 1's plan-mode criteria applying to a bug fix like any other code edit, not a bug-report-specific route; this row's deferral still stands. |
+| Bug report → fix | `mh:silent-failure-hunter` + the root-cause-not-symptom reflex (`ponytail@ponytail`, a separate installed plugin, not kbg-native) — covered by Rule 3's general reflex; no bug-report-*specific* rung or nudge yet, deliberately deferred (METHODOLOGY Rule 2), revisit if a symptom-patch incident surfaces. Narrower and unrelated to this deferral: `flow-nudge.sh`'s *generic* plan-first nudge now also fires on a complex/systemic bug fix (bug-language + breadth-language co-occurrence, e.g. "race condition ... across every service") since 2026-08-05 — see `docs/research/plan-mode-nudge-audit-2026-08-05.md`. That's Rule 1's plan-mode criteria applying to a bug fix like any other code edit, not a bug-report-specific route; this row's deferral still stands. |
 
 ## Who owns which doctrine surface
 

@@ -23,7 +23,7 @@ multi-iteration, unattended mode — every iteration stops at an `AskUserQuestio
 mutation. The skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and the human is the loop's real stop condition at the per-mutation gate; the iteration cap is a
 context-exhaustion backstop. See the Operating model doctrine (self-contained excerpt of
-CLAUDE.md's §Architecture): `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`.
+CLAUDE.md's §Architecture): `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`.
 
 **When to use / not:** the user asks to improve/fix/audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap — not for a
@@ -58,7 +58,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 ### 2. Propose — decompose + rank (model judgment)
 
 - Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — inline, don't
-  delegate to `kbg:orchestrate`). Can't name the boundary between two candidates? They're
+  delegate to `mh:orchestrate`). Can't name the boundary between two candidates? They're
   entangled — split or sequence them.
 - Rank by impact, cost, and risk. State per candidate: what changes, who executes (inline or
   agent), blast radius (low/med/high — e.g. `hooks/gates/**` = high, doc-only = low),

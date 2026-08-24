@@ -67,10 +67,10 @@ of real breakpoints and confirm they actually render as scored before calling th
 
 ## Related
 
-- Skill: `kbg:frontend-design-direction` — the design-judgment layer this skill's tokens and
+- Skill: `mh:frontend-design-direction` — the design-judgment layer this skill's tokens and
   audit scores get measured against; run that first when there's no direction yet to audit
   against.
-- Skill: `kbg:make-interfaces-feel-better` — concrete polish fixes for dimension 10 (Polish)
+- Skill: `mh:make-interfaces-feel-better` — concrete polish fixes for dimension 10 (Polish)
   findings.
 - Skill: `firecrawl-website-design-clone` — extracting a *different* site's design system from
   its live pages. This skill only reads the current project's own codebase.

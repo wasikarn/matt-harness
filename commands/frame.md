@@ -17,13 +17,13 @@ Read the requested mode file and adopt that working posture for the rest of the 
    - `dev` — implementation posture
    - `review` — reviewer posture
    - `research` — exploration posture (read-before-write, cite evidence, no edits)
-3. Read the frame file via Bash (the Read tool does not expand env vars): `cat "${KBG_PLUGIN_ROOT}/contexts/<mode>.md"` and adopt the frame it describes for subsequent turns. Confirm in one line which frame is now active.
+3. Read the frame file via Bash (the Read tool does not expand env vars): `cat "${MH_PLUGIN_ROOT}/contexts/<mode>.md"` and adopt the frame it describes for subsequent turns. Confirm in one line which frame is now active.
 
 Read-only posture-setter — it loads a frame, it does not run a workflow or edit files. The frame persists until another is loaded or the session ends.
 
 ## Relation to other surfaces
 
-- **Skills** are the heavier mode entry-points that *do the work* (`research`, `mattpocock-skills:code-review`, `kbg:backend-patterns`); `/frame` just sets the frame.
+- **Skills** are the heavier mode entry-points that *do the work* (`research`, `mattpocock-skills:code-review`, `mh:backend-patterns`); `/frame` just sets the frame.
 - **output-styles** (`staff-eng`) set the *voice register*; `/frame` sets the *task posture*. Orthogonal — combine them freely.
 
 > Renamed from `/context` (v0.4.6) — it shadowed Claude Code's built-in `/context`

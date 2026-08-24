@@ -105,7 +105,7 @@ fi
 # cannot classify the call at all; doctrine-bootstrap.sh names the missing
 # dep once at SessionStart.
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "[kbg:gate] python3 not found — verifier-protect gate cannot run; allowing (install python3 to restore verifier-surface protection)" >&2
+  echo "[mh:gate] python3 not found — verifier-protect gate cannot run; allowing (install python3 to restore verifier-surface protection)" >&2
   exit 0
 fi
 
@@ -134,7 +134,7 @@ PROTECTED_REASON = (
 SQ = chr(39)
 
 # Ported from worktree-guard.py 2026-08-04, after a subagent_type
-# kbg:silent-failure-hunter re-verification dispatch confirmed this generator
+# mh:silent-failure-hunter re-verification dispatch confirmed this generator
 # — despite the header comment above claiming a straight port in the other
 # direction — never received three fixes worktree-guard.py needed across two
 # earlier rounds the same day: heredoc-body mistokenization, ANSI-C quote
@@ -475,7 +475,7 @@ try:
         for edit in ti.get("edits") or []:
             content += "\n" + (edit.get("new_string") or "")
         if re.search(r"/Users/[a-zA-Z]", content):
-            print("[kbg:gate] BLOCKED: hardcoded /Users/ path in " + fp +
+            print("[mh:gate] BLOCKED: hardcoded /Users/ path in " + fp +
                   " — use $HOME or ~ instead", file=sys.stderr)
             sys.exit(2)
 

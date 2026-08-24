@@ -1,9 +1,9 @@
 ---
 name: wiki-ingest
-description: "Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (kbg:learn)."
+description: "Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn)."
 argument-hint: <absolute/path/to/source.md> [topic]
 disable-model-invocation: true
-disable-model-invocation-reason: mutates the operator's personal vault outside this repo — copies into raw/, creates a wiki/ page, and appends to log.md (and, when the guard allows it, hotcache.md). A human must type /kbg:wiki-ingest themselves.
+disable-model-invocation-reason: mutates the operator's personal vault outside this repo — copies into raw/, creates a wiki/ page, and appends to log.md (and, when the guard allows it, hotcache.md). A human must type /mh:wiki-ingest themselves.
 model: inherit
 effort: medium
 ---
@@ -18,7 +18,7 @@ append-only-by-design rather than cleanly reversible.
 ## Usage
 
 ```
-/kbg:wiki-ingest /abs/path/to/source.md [topic]
+/mh:wiki-ingest /abs/path/to/source.md [topic]
 ```
 
 - `source` (required): **must be an absolute path.** `ingest.sh` runs `cd
@@ -49,7 +49,7 @@ Graceful-skip if the vault isn't present — this command must degrade silently
 on any install that doesn't have `~/llm-wiki`:
 
 ```bash
-VAULT="${KBG_WIKI_VAULT:-$HOME/llm-wiki}"
+VAULT="${MH_WIKI_VAULT:-$HOME/llm-wiki}"
 [ -d "$VAULT/wiki" ] || { echo "llm-wiki vault not found at $VAULT — nothing to ingest into"; exit 0; }
 ```
 
@@ -59,11 +59,11 @@ relative path, resolve it against their actual cwd, not the vault.
 ## Invocation
 
 ```bash
-VAULT="${KBG_WIKI_VAULT:-$HOME/llm-wiki}" \
-  bash "${KBG_WIKI_VAULT:-$HOME/llm-wiki}/scripts/ingest.sh" /abs/path/to/source.md <topic>
+VAULT="${MH_WIKI_VAULT:-$HOME/llm-wiki}" \
+  bash "${MH_WIKI_VAULT:-$HOME/llm-wiki}/scripts/ingest.sh" /abs/path/to/source.md <topic>
 ```
 
-(Repeats the full `${KBG_WIKI_VAULT:-$HOME/llm-wiki}` expression rather than
+(Repeats the full `${MH_WIKI_VAULT:-$HOME/llm-wiki}` expression rather than
 referencing `$VAULT` on the same line — a prefix assignment's value isn't
 visible to a same-line expansion in bash, so referencing `$VAULT` here would
 silently resolve against whatever was already exported, not this value.)
@@ -83,7 +83,7 @@ silently resolve against whatever was already exported, not this value.)
    write-contract above. **Do not just report success.** After invoking,
    check whether it actually wrote:
    ```bash
-   git -C "${KBG_WIKI_VAULT:-$HOME/llm-wiki}" diff --stat hotcache.md
+   git -C "${MH_WIKI_VAULT:-$HOME/llm-wiki}" diff --stat hotcache.md
    ```
    Quote this command's actual output in your response — even when it's
    empty — rather than just stating a conclusion inferred from the guard's
@@ -99,5 +99,5 @@ Report back:
 2. `ingest.sh`'s own stdout verbatim.
 3. The `hotcache.md` diff-stat check from gotcha 3 — explicit skip notice if
    it didn't change.
-4. Suggested next step: `kbg:wiki-scan` to confirm the new page doesn't
+4. Suggested next step: `mh:wiki-scan` to confirm the new page doesn't
    introduce an orphan or a broken citation.

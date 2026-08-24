@@ -16,7 +16,7 @@ ticket #87 owns any rename.)
   `hooks/gates/lib/_protected_paths.py`'s `is_gate_path()`:
 
   ```bash
-  python3 -c "import sys; sys.path.insert(0,'${KBG_PLUGIN_ROOT}/hooks/gates/lib'); from _protected_paths import is_gate_path; [print(p) for p in sys.stdin.read().splitlines() if is_gate_path(p)]" <<<"$(gh pr diff <n> --name-only)"
+  python3 -c "import sys; sys.path.insert(0,'${MH_PLUGIN_ROOT}/hooks/gates/lib'); from _protected_paths import is_gate_path; [print(p) for p in sys.stdin.read().splitlines() if is_gate_path(p)]" <<<"$(gh pr diff <n> --name-only)"
   ```
 
   — the same classifier `hooks/gates/verifier-protect.sh` and `commands/risk-check.md`

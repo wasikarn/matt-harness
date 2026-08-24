@@ -194,7 +194,7 @@ Use the ladder for **implementation and design choices inside an established arc
 | API contract / data model | Frame | Narrow framing around current schema; missing consumer perspective |
 | Deploy / rollout strategy | Estimate risk + Commit | False precision on downtime; soft commitment without rollback owner |
 | Refactor scope and sequence | Recognize + Commit | Sunk-cost attachment to old code; no revisit trigger |
-| Hotfix vs. proper fix | Recognize | Treating an incident as a normal decision; use `kbg:incident` instead |
+| Hotfix vs. proper fix | Recognize | Treating an incident as a normal decision; use `mh:incident` instead |
 
 **Quick coding flow:**
 1. Is the decision hard to reverse or long-lived? → the strategic-judgment loop (`strategic-judgment.md`).
@@ -248,7 +248,7 @@ work). Use them as a cross-check at the rung where each one is most dangerous.
 - `mattpocock-skills:grilling` — adversarial stress-test of the reasoning in a decision or ADR
 - `docs/reference/strategic-judgment.md` — upstream lens for irreversible / long-horizon commitments
 
-> **Named thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality are cc-thinking-skills lenses cataloged in `docs/reference/reasoning-models.md`, which points to the upstream repo for full write-ups (kbg does not vendor them locally). Use them as reasoning frames, not as invokable skills.
+> **Named thinking references (not loadable `mh:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality are cc-thinking-skills lenses cataloged in `docs/reference/reasoning-models.md`, which points to the upstream repo for full write-ups (kbg does not vendor them locally). Use them as reasoning frames, not as invokable skills.
 
 ## References
 

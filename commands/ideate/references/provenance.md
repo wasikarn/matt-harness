@@ -28,7 +28,7 @@ how many waves a skill runs.
 Source for the algorithm shape: upstream
 `/tmp/adhd-repo/skills/adhd/SKILL.md:47-82` and
 `/tmp/adhd-repo/src/engine.ts:28-36, 61-101`. The
-`kbg-vs-adhd.md` doc (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
+`kbg-vs-adhd.md` doc (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
 records the port decisions (deterministic frame pick replacing
 `Math.random()`, no zod, parse-failure surface-not-swallow).
 
@@ -106,7 +106,7 @@ MCP tool:
 
 ## Cross-references
 
-- **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
+- **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
@@ -134,7 +134,7 @@ MCP tool:
   built.
 - **Eval rigor limitation (explicit)** — this skill ports
   faithfully from an n=1 upstream demo. The
-  `kbg-vs-adhd.md` §"Eval rigor limitation" section (read via Bash: `cat "${KBG_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
+  `kbg-vs-adhd.md` §"Eval rigor limitation" section (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   is the load-bearing
   disclaimer: treat this as a structured brainstorming tool, not
   a quality-validated generator.

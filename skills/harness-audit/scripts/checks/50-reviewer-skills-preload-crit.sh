@@ -13,18 +13,18 @@
 # a prose comment. Mirrors #36/#45's shape — a silently-dropped field here is
 # a capability regression invisible at dispatch time (the agent still
 # answers, just without the injected patterns content).
-# nextjs-reviewer|kbg:review-lens-nextjs-routing added 2026-08-18 (v0.68.345):
+# nextjs-reviewer|mh:review-lens-nextjs-routing added 2026-08-18 (v0.68.345):
 # same preload mechanism, added when nextjs-reviewer.md was split under check
 # 52's 20K-char threshold — carries App Router File Conventions/Middleware
 # content this agent has no Skill tool to fetch on demand, so an unguarded
 # drop here is the identical silent-regression shape this check exists for.
-# requirement-analyst|kbg:requirement-analyst-format added 2026-08-18: same
+# requirement-analyst|mh:requirement-analyst-format added 2026-08-18: same
 # split, same reason — requirement-analyst.md has no Skill tool by design
 # (its own Tool guardrails section blocks adding one, to preserve the
 # Jira/Confluence no-self-fetch boundary), so this preload is the only lawful
 # extraction path and carries the self-consistency pass, Output Format
 # template, and Anti-Patterns list this agent has no other way to reach.
-# blind-spot-hunter|kbg:blind-spot-hunter-shapes added 2026-08-18: same split,
+# blind-spot-hunter|mh:blind-spot-hunter-shapes added 2026-08-18: same split,
 # same reason — blind-spot-hunter.md has no Skill tool (tools: [Read, Grep,
 # Glob, Bash]) and no prior companion skill existed, so this preload is the
 # only lawful extraction path and carries the 7-shape hunt catalog this agent
@@ -32,30 +32,30 @@
 # plan-reviewer|kbg:plan-reviewer-format was in this list 2026-08-18 through
 # 2026-08-24, removed with the agent+skill themselves (#78, planning/prep
 # surfaces retired) — not a preload regression.
-# summarizer|kbg:summarizer-format added 2026-08-18: same split, same reason
+# summarizer|mh:summarizer-format added 2026-08-18: same split, same reason
 # — summarizer.md has no Skill tool (tools: ["Read", "Grep", "Glob"]) and no
 # prior companion skill existed, so this preload is the only lawful
 # extraction path and carries the Output Format templates, word-level
 # compression BAD/GOOD table, and Anti-Patterns list this agent has no other
 # way to reach.
-# security-reviewer|kbg:security-reviewer-patterns added 2026-08-18: same
+# security-reviewer|mh:security-reviewer-patterns added 2026-08-18: same
 # split, same reason — security-reviewer.md has no Skill tool (tools:
 # ["Read", "Bash", "Grep", "Glob"]). `security-auditor` already existed but
 # is a DIFFERENT skill (a separate deep-audit workflow with its own callers)
 # — this new skill carries only the BAD/GOOD code-example appendix this
 # agent has no other way to reach, without blurring security-auditor's scope.
-# spec-miner|kbg:spec-miner-anti-patterns added 2026-08-18: same split, same
+# spec-miner|mh:spec-miner-anti-patterns added 2026-08-18: same split, same
 # reason — spec-miner.md has no Skill tool (tools: ["Read", "Grep", "Glob",
 # "Bash", "Write"]) and no prior companion skill existed, so this preload is
 # the only lawful extraction path and carries the 10-item Anti-Patterns list
 # this agent has no other way to reach.
-# performance-optimizer|kbg:performance-optimizer-algorithms added 2026-08-18:
+# performance-optimizer|mh:performance-optimizer-algorithms added 2026-08-18:
 # same split, same reason — performance-optimizer.md has no Skill tool
 # (tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]) and no prior
 # companion skill existed, so this preload is the only lawful extraction path
 # and carries the 14-row Algorithmic Analysis pattern table this agent has no
 # other way to reach.
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "summarizer|kbg:summarizer-format" "security-reviewer|kbg:security-reviewer-patterns" "spec-miner|kbg:spec-miner-anti-patterns" "performance-optimizer|kbg:performance-optimizer-algorithms"; do
+for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "spec-miner|mh:spec-miner-anti-patterns" "performance-optimizer|mh:performance-optimizer-algorithms"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

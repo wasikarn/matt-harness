@@ -36,7 +36,7 @@ hold. That is the trigger to re-measure.
 ## Cadence
 
 1. **Surface candidates** — run the audits that already exist; add no new tool:
-   - `harness-audit` (`bash "${KBG_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" ["${KBG_PLUGIN_ROOT}"]`) for fleet
+   - `harness-audit` (`bash "${MH_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" ["${MH_PLUGIN_ROOT}"]`) for fleet
      health and dead / unloadable components;
    - `inventory` (`skills/inventory`) + a `BOUNDARY.md` drift snapshot it can
      emit and you commit — to catch a component that silently appeared or vanished;
@@ -193,7 +193,7 @@ matchers each):
   forcing routing through jira-acli's templates. Cold-start guard, not a
   per-call router: later calls allow once engaged).
 - **Guarded-worktree writes** — `hooks/gates/worktree-guard.py` (PreToolUse on
-  Write|Edit|NotebookEdit AND on Bash; opt-in via `KBG_GUARDED_WORKSPACE`:
+  Write|Edit|NotebookEdit AND on Bash; opt-in via `MH_GUARDED_WORKSPACE`:
   redirects Write/Edit on a guarded sub-repo main checkout into a session
   worktree, denies the Bash-mediated equivalent. Off by default everywhere —
   no workspace path ships in this public plugin. Bash early-exit skips the
@@ -375,7 +375,7 @@ cost — do not conflate them.
   whether `decide` picked the *right mode*. Only pursue this if Tier A looks
   healthy and misrouting is still suspected: hand-sample real `decide`
   transcripts from `~/.claude/projects/*.jsonl` and re-score via
-  `kbg:score-decision`. No tool automates this step. Per the 2026-07-10
+  `mh:score-decision`. No tool automates this step. Per the 2026-07-10
   Decision Score (19/100, FAIL), a mode-routing logic change is premature
   until several more real `decide` transcripts accumulate (n=1 at that
   writing) — don't reopen that question on a hunch; reopen it on volume.

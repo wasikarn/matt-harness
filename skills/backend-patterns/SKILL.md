@@ -1,6 +1,6 @@
 ---
 name: backend-patterns
-description: Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (kbg:frontend-patterns).
+description: Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (mh:frontend-patterns).
 bucket: patterns
 metadata:
   origin: ECC
@@ -129,7 +129,7 @@ surfaces in the store's own dashboard, logs, and debugging tools in plaintext.
 `reference.md#rate-limiting-key-hashing`.
 
 Keep the backend layer responsible for choosing the integration point, the HTTP
-contract, and the error shape; use `kbg:security-auditor` for abuse case review.
+contract, and the error shape; use `mh:security-auditor` for abuse case review.
 
 ## Background Jobs & Queues
 

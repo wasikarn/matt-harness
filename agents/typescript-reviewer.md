@@ -8,7 +8,7 @@ model: sonnet
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:typescript-patterns
+  - mh:typescript-patterns
 effort: medium
 ---
 
@@ -52,7 +52,7 @@ You DO NOT refactor or rewrite code — you report findings only.
 - **`any` without justification**: Disables type checking — use `unknown` and narrow, or a precise type
 - **Non-null assertion abuse**: `value!` without a preceding guard — add a runtime check
 - **`as` casts that bypass checks**: Casting to unrelated types to silence errors — fix the type instead
-- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness (turning `strict`/`noImplicitAny` off, disabling a check), call it out explicitly. Don't confuse this with `kbg:typescript-patterns`' forward-compat table — dropping `baseUrl`, flipping `esModuleInterop`/`allowSyntheticDefaultImports` to `true`, or moving off `node10`/`classic` resolution replace options TypeScript 6.0 already errors on by default; they tighten conformance, they don't relax it
+- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness (turning `strict`/`noImplicitAny` off, disabling a check), call it out explicitly. Don't confuse this with `mh:typescript-patterns`' forward-compat table — dropping `baseUrl`, flipping `esModuleInterop`/`allowSyntheticDefaultImports` to `true`, or moving off `node10`/`classic` resolution replace options TypeScript 6.0 already errors on by default; they tighten conformance, they don't relax it
 
 ### HIGH -- Async Correctness
 - **Unhandled promise rejections**: `async` functions called without `await` or `.catch()`
@@ -143,8 +143,8 @@ These tiers key off what you actually report after Noise Control's filters above
 ## Reference
 
 For write-time TypeScript language idioms and version-compatible `tsconfig.json` choices, use
-`kbg:typescript-patterns`. For API/DB architecture on a plain Node/Express/Next.js backend, use
-`kbg:backend-patterns`. This agent reviews the diff after the fact —
+`mh:typescript-patterns`. For API/DB architecture on a plain Node/Express/Next.js backend, use
+`mh:backend-patterns`. This agent reviews the diff after the fact —
 it does not load either skill itself. For a deeper algorithmic fix beyond the common patterns
 above (heap/priority-queue, sliding window, binary search, backtracking) once a real bottleneck
 is confirmed, hand off to `performance-optimizer`.

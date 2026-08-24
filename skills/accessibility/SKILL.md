@@ -1,6 +1,6 @@
 ---
 name: accessibility
-description: WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (kbg:frontend-patterns).
+description: WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (mh:frontend-patterns).
 bucket: patterns
 metadata:
   origin: ECC + community (via ECC)
@@ -84,12 +84,12 @@ in practice if `aria-live` timing or focus order doesn't match what the markup i
 
 ## Related
 
-- Skill: `kbg:frontend-patterns` — already covers the keyboard-nav combobox
-  (`kbg:frontend-patterns/reference.md#keyboard-navigation`) and modal focus-restoration
-  (`kbg:frontend-patterns/reference.md#focus-management`) examples; this skill doesn't duplicate those.
-- Skill: `kbg:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
+- Skill: `mh:frontend-patterns` — already covers the keyboard-nav combobox
+  (`mh:frontend-patterns/reference.md#keyboard-navigation`) and modal focus-restoration
+  (`mh:frontend-patterns/reference.md#focus-management`) examples; this skill doesn't duplicate those.
+- Skill: `mh:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
   skill's checklist.
-- Agent: `kbg:a11y-architect` — dispatch for a dedicated accessibility audit pass on a component
+- Agent: `mh:a11y-architect` — dispatch for a dedicated accessibility audit pass on a component
   or design system rather than working the checklist inline.
 
 ## References

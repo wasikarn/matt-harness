@@ -22,7 +22,7 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/command-root-anchor.sh"]
           }
         ],
-        "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${KBG_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably"
+        "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${MH_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably"
       },
       {
         "id": "session:memory-health-nudge",
@@ -138,7 +138,7 @@
       {
         "id": "gate:mcp:atlassian-cold-start",
         "matcher": "mcp__.*",
-        "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call (mcp__*atlassian*/mcp__*rovo*, both a local/plugin MCP server and a claude.ai connector) before a jira-acli:* skill loaded this session -- forces routing through jira-acli's templates instead of a cold MCP call. Cold-start guard, not a per-call router: allows every later call once the session is marked engaged (confluence-content's page create/update and acli's own 'When acli can't' fallback list legitimately use this same MCP). Escape: KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1.",
+        "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call (mcp__*atlassian*/mcp__*rovo*, both a local/plugin MCP server and a claude.ai connector) before a jira-acli:* skill loaded this session -- forces routing through jira-acli's templates instead of a cold MCP call. Cold-start guard, not a per-call router: allows every later call once the session is marked engaged (confluence-content's page create/update and acli's own 'When acli can't' fallback list legitimately use this same MCP). Escape: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1.",
         "hooks": [
           {
             "type": "command",
@@ -150,7 +150,7 @@
       {
         "id": "gate:write:worktree-guard",
         "matcher": "Write|Edit|NotebookEdit",
-        "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via KBG_WORKTREE_BASE, e.g. =main for hotfix). Opt-in and off by default: no-op everywhere unless KBG_GUARDED_WORKSPACE is set (this is a public plugin — no workspace path ships in code). Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when the var is unset or CLAUDE_PROJECT_DIR is known and outside the guarded workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the guarded path spawns python.",
+        "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via MH_WORKTREE_BASE, e.g. =main for hotfix). Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set (this is a public plugin — no workspace path ships in code). Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when the var is unset or CLAUDE_PROJECT_DIR is known and outside the guarded workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the guarded path spawns python.",
         "hooks": [
           {
             "type": "command",
@@ -162,7 +162,7 @@
       {
         "id": "gate:bash:worktree-guard",
         "matcher": "Bash",
-        "description": "Gate: deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a guarded sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default: no-op everywhere unless KBG_GUARDED_WORKSPACE is set.",
+        "description": "Gate: deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a guarded sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set.",
         "hooks": [
           {
             "type": "command",
@@ -214,7 +214,7 @@
     "SessionEnd": [
       {
         "id": "advisory:learn-nudge",
-        "description": "Advisory: remind the operator that kbg:learn exists when the session had enough activity (transcript user-turn count) to plausibly contain a durable learning. Never blocks — SessionEnd has no decision control. Emits to stderr (SessionEnd stdout is discarded; stderr is shown to the user).",
+        "description": "Advisory: remind the operator that mh:learn exists when the session had enough activity (transcript user-turn count) to plausibly contain a durable learning. Never blocks — SessionEnd has no decision control. Emits to stderr (SessionEnd stdout is discarded; stderr is shown to the user).",
         "hooks": [
           {
             "type": "command",

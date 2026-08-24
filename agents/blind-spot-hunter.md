@@ -8,7 +8,7 @@ tools: [Read, Grep, Glob, Bash]
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:blind-spot-hunter-shapes
+  - mh:blind-spot-hunter-shapes
 effort: xhigh
 ---
 
@@ -46,7 +46,7 @@ already passed it. That independence is the mechanism; protect it.
 
 Full 7-shape catalog (cross-file/interaction, framework/library auto-behavior, data-flow
 asymmetry, identity assumption, scope/glob breadth mismatch, emitted-string contradiction,
-vacuous test) preloaded via `kbg:blind-spot-hunter-shapes` (see `skills:` frontmatter). Walk the
+vacuous test) preloaded via `mh:blind-spot-hunter-shapes` (see `skills:` frontmatter). Walk the
 delta's data path end to end and hunt each shape — the bug is always specific, the shapes
 generalize, and these seven are the seed, not the ceiling.
 
@@ -166,7 +166,7 @@ vulnerability that did not exist, caught only by an empirical test. So:
 - **On a trivial diff** (a single non-test file). Rule 2 (match surface area to proven need) — not worth the dispatch.
 - **For a single narrow class.** Swallowed errors / silent failures → `silent-failure-hunter`
   (one fixed class, checklist-driven; you are the open-ended emergent/interaction case).
-  Security-specific → `security-reviewer` / `kbg:security-auditor`.
+  Security-specific → `security-reviewer` / `mh:security-auditor`.
 - **To pressure-test reasoning, a plan, or a decision** (no code delta) → that's `advisor()`. You
   trace code data-flow; you don't grade arguments. (A plan/spec/requirements blind-spot lens is a
   possible future sibling — not this agent, and not built until a real miss in that domain names

@@ -20,8 +20,8 @@ pushes, or ships — the result returns to the human.
 ## Usage
 
 ```
-/kbg:tiered-pipeline Add input validation to the /signup endpoint; acceptance: bad-email POST returns 400, tests pass
-/kbg:tiered-pipeline --final-always Refactor the retry helper to exponential backoff
+/mh:tiered-pipeline Add input validation to the /signup endpoint; acceptance: bad-email POST returns 400, tests pass
+/mh:tiered-pipeline --final-always Refactor the retry helper to exponential backoff
 ```
 
 ## Behaviour
@@ -33,13 +33,13 @@ pushes, or ships — the result returns to the human.
 2. A task with no verifiable acceptance criteria in it is still runnable — the
    Fable plan stage derives mechanical criteria itself — but if the task text is
    empty, stop and ask for one; never invent a task.
-3. Resolve the script path first — `${KBG_PLUGIN_ROOT}` is a shell env var
+3. Resolve the script path first — `${MH_PLUGIN_ROOT}` is a shell env var
    (bridged at SessionStart by `command-root-anchor.sh`), and the Workflow
    tool's `scriptPath` is a plain JSON parameter that no shell ever expands.
    Never paste the unexpanded variable into the tool call:
 
    ```bash
-   echo "${KBG_PLUGIN_ROOT}/scripts/workflows/tiered-pipeline.js"
+   echo "${MH_PLUGIN_ROOT}/scripts/workflows/tiered-pipeline.js"
    ```
 
    Then invoke the Workflow tool with the literal absolute path that printed:

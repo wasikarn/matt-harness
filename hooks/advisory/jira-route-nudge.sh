@@ -32,18 +32,20 @@
 #   - jira/confluence token => fire only with a work verb (create/file/write/
 #     edit/update/comment/transition/publish/search/view/find/list/query/
 #     export/check/post + Thai สร้าง/แก้/อัปเดต/ย้าย/เขียน/ค้น/หา/ดู/เช็ค/โพสต์)
-#     AND no harness-meta signal (plugin|jira-acli|matt-harness|hook|skill|
-#     doctrine) -- the meta signal means the prompt is ABOUT the plugin system,
-#     not a Jira/Confluence task. "acli" alone is NOT meta (raw acli is the
-#     bypass this nudge catches).
+#     AND no harness-meta signal (plugin|jira-acli|matt-harness|kbg-harness|
+#     hook|skill|doctrine) -- the meta signal means the prompt is ABOUT the
+#     plugin system, not a Jira/Confluence task. "acli" alone is NOT meta (raw
+#     acli is the bypass this nudge catches). kbg-harness kept alongside
+#     matt-harness (T10 #89 namespace rename) -- users will type the repo's
+#     old name for months.
 set -uo pipefail
 
 # Feature-detect the jira-acli plugin (same shape as doctrine-bootstrap.sh's
 # mattpocock-preflight check) -- this nudge is meaningless noise on a machine
 # that never installed jira-acli@wasikarn; skip firing entirely rather than
-# route the user toward a plugin they don't have. KBG_JIRA_ACLI_CACHE is a
+# route the user toward a plugin they don't have. MH_JIRA_ACLI_CACHE is a
 # test-only override so unit tests don't depend on the real plugin cache.
-JIRA_ACLI_CACHE="${KBG_JIRA_ACLI_CACHE:-${HOME:-}/.claude/plugins/cache/wasikarn/jira-acli}"
+JIRA_ACLI_CACHE="${MH_JIRA_ACLI_CACHE:-${HOME:-}/.claude/plugins/cache/wasikarn/jira-acli}"
 [[ -d "$JIRA_ACLI_CACHE" ]] || exit 0
 
 INPUT=$(cat)
@@ -53,7 +55,7 @@ if /usr/bin/grep -qiE '\btp-[0-9]+\b' <<< "$INPUT"; then
   : # fall through to emit
 elif /usr/bin/grep -qiE '\b(jira|confluence)\b' <<< "$INPUT"; then
   # harness-meta signal = discussion about the plugin/harness, not jira work.
-  if /usr/bin/grep -qiE '\b(plugin|jira-acli|matt-harness|hooks?|skills?|doctrine)\b' <<< "$INPUT"; then
+  if /usr/bin/grep -qiE '\b(plugin|jira-acli|matt-harness|kbg-harness|hooks?|skills?|doctrine)\b' <<< "$INPUT"; then
     exit 0
   fi
   # require a work verb (EN + TH); bare mention without one is not work intent.
@@ -66,7 +68,7 @@ fi
 
 cat <<'EOF'
 
-[kbg:jira-route-nudge] Jira/Confluence work detected.
+[mh:jira-route-nudge] Jira/Confluence work detected.
   Route through jira-acli first: jira-acli:acli (mechanical/query/bulk ops),
   jira-acli:jira-content (Bug/Story/Task/Epic/Sub-task templates), or
   jira-acli:confluence-content (Spec/PRD pages) -- not a raw acli command or

@@ -4,7 +4,7 @@ Every operator-tunable env var the harness reads, with its default and the surfa
 Re-derive the live set with:
 
 ```bash
-/usr/bin/grep -rhoE 'KBG_[A-Z0-9_]+' --include='*.sh' --include='*.py' hooks/ skills/ scripts/ | sort | uniq -c | sort -rn
+/usr/bin/grep -rhoE 'MH_[A-Z0-9_]+' --include='*.sh' --include='*.py' hooks/ skills/ scripts/ | sort | uniq -c | sort -rn
 ```
 
 **Scope:** this lists the **user-facing knobs** only. Internal bash→python IPC vars
@@ -20,8 +20,8 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 
 | Key class | Settable where | Why |
 |---|---|---|
-| **Tuning** (`KBG_IDEATE_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
-| **Safety-gate config** (`KBG_GUARDED_WORKSPACE`) | User-global `env` is the *only* placement that reliably reaches every session — a multi-repo client workspace typically has no per-sub-repo `.claude/settings.json` of its own, so a project-scoped setting at the workspace root is never read when a session opens directly in a sub-repo. | Unset = the gate is a total no-op (the shipped default for every user of this public plugin). This is deliberately NOT documented as a value in this repo — it names a real path outside the plugin's own source. |
+| **Tuning** (`MH_IDEATE_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
+| **Safety-gate config** (`MH_GUARDED_WORKSPACE`) | User-global `env` is the *only* placement that reliably reaches every session — a multi-repo client workspace typically has no per-sub-repo `.claude/settings.json` of its own, so a project-scoped setting at the workspace root is never read when a session opens directly in a sub-repo. | Unset = the gate is a total no-op (the shipped default for every user of this public plugin). This is deliberately NOT documented as a value in this repo — it names a real path outside the plugin's own source. |
 
 ## Autonomy flags — RETIRED 2026-06-26 (ADR 0006)
 
@@ -37,21 +37,21 @@ Read by `hooks/gates/worktree-guard.py` (redirects Edit/Write off a protected ma
 checkout into a session worktree) and the `bash -c` early-exit wrapper around it in
 `hooks/hooks.json`. This gate ships generic — no client name or workspace path in this
 repo's source — and is a **total no-op for every user of this public plugin** unless
-`KBG_GUARDED_WORKSPACE` is explicitly set.
+`MH_GUARDED_WORKSPACE` is explicitly set.
 
 | Var | Default | Effect |
 |---|---|---|
-| `KBG_GUARDED_WORKSPACE` | **none — gate is off when unset** | Absolute path to the workspace root to protect. Must be absolute: the gate's own kill-switch (`classify()` in `worktree-guard.py`) treats an unset or non-absolute value as "off", not "guard the current directory" — a relative/empty value resolving via `realpath` to the current working tree was the exact bug this guards against. |
-| `KBG_WORKTREE_ROOT` | `~/.worktrees` | Where auto-created session worktrees live. Generic default, never client-specific. |
-| `KBG_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
-| `KBG_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
+| `MH_GUARDED_WORKSPACE` | **none — gate is off when unset** | Absolute path to the workspace root to protect. Must be absolute: the gate's own kill-switch (`classify()` in `worktree-guard.py`) treats an unset or non-absolute value as "off", not "guard the current directory" — a relative/empty value resolving via `realpath` to the current working tree was the exact bug this guards against. |
+| `MH_WORKTREE_ROOT` | `~/.worktrees` | Where auto-created session worktrees live. Generic default, never client-specific. |
+| `MH_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
+| `MH_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
 ## Gate valves (per-run escapes, not standing config)
 
 | Var | Default | Effect |
 |---|---|---|
-| `KBG_SKIP_VERSION_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s version-bump layer for one commit (the amend flow). One-off escape — never pre-populate in `env`; a standing skip re-opens the same-version stale-cache trap the layer exists to close. |
-| `KBG_SKIP_LOC_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s new-file LOC gate for one commit (a brand-new `agents/*.md`/`commands/*.md`/`commands/*/COMMAND.md`/`skills/*/SKILL.md` over 200 lines). Rescue valve for a bug in the gate itself — checked before the gate's detection scan runs, so it stays reachable even if that scan breaks. One-off escape, same discipline as `KBG_SKIP_VERSION_GATE`. |
+| `MH_SKIP_VERSION_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s version-bump layer for one commit (the amend flow). One-off escape — never pre-populate in `env`; a standing skip re-opens the same-version stale-cache trap the layer exists to close. |
+| `MH_SKIP_LOC_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s new-file LOC gate for one commit (a brand-new `agents/*.md`/`commands/*.md`/`commands/*/COMMAND.md`/`skills/*/SKILL.md` over 200 lines). Rescue valve for a bug in the gate itself — checked before the gate's detection scan runs, so it stays reachable even if that scan breaks. One-off escape, same discipline as `MH_SKIP_VERSION_GATE`. |
 
 ## Token-optimization settings (set in `~/.claude/settings.json` → `env`)
 
@@ -115,15 +115,15 @@ Context management is native: use the `/compact` command and auto-compaction.
 
 ## Special — infrastructure vars (not user knobs)
 
-- **`KBG_PLUGIN_ROOT`** — deliberate alias of the vendor `CLAUDE_PLUGIN_ROOT`, re-exported so docs and
+- **`MH_PLUGIN_ROOT`** — deliberate alias of the vendor `CLAUDE_PLUGIN_ROOT`, re-exported so docs and
   scripts resolve the plugin root from any working directory (the vendor var is only set inside hook
   shells). ~483 references; treat as fixed infrastructure.
-- **`KBG_CACHE_DIR`** — overrides the harness-audit runner's default plugin-cache **root**
-  (`~/.claude/plugins/cache/kobig/kbg`); the runner still picks the highest-semver subdir under it.
+- **`MH_CACHE_DIR`** — overrides the harness-audit runner's default plugin-cache **root**
+  (`~/.claude/plugins/cache/kobig/mh`); the runner still picks the highest-semver subdir under it.
   `--plugin-cache <full versioned path>` wins over both. (Wired 2026-08-24, #93 — previously
   documented but never read.)
-- **`KBG_GAUNTLET_PLUGIN_CACHE`** — cache path override for `run-gauntlet.sh` validation.
-- **`KBG_JIRA_ACLI_CACHE`** — test-only override for the plugin-cache path
+- **`MH_GAUNTLET_PLUGIN_CACHE`** — cache path override for `run-gauntlet.sh` validation.
+- **`MH_JIRA_ACLI_CACHE`** — test-only override for the plugin-cache path
   `hooks/advisory/jira-route-nudge.sh` feature-detects (default
   `~/.claude/plugins/cache/wasikarn/jira-acli`, matching the fixture layout
   already used in `tests/hooks/test-gates.sh`). Lets the nudge's own test

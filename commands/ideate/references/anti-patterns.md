@@ -27,7 +27,7 @@ These are how this skill goes wrong. Watch for them.
   or unparseable, surface the failure to the user — do not
   pretend the run succeeded. The upstream `engine.ts:88-91`
   silent-empty return is *not* the kbg posture; see
-  `kbg:silent-failure-hunter` and COMMAND.md's "3-axis scoring rubric"
+  `mh:silent-failure-hunter` and COMMAND.md's "3-axis scoring rubric"
   section's note on `trap` being a free-text reason field rather than a
   silent drop.
 - **Same-model judge treated as ground truth.** Phase 2 + 3 scoring runs on

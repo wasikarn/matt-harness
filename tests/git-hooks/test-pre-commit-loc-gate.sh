@@ -54,7 +54,7 @@ git -C "$FIX" add .claude-plugin skills
 git -C "$FIX" commit -qm baseline
 
 run_hook() { # run_hook [extra env K=V ...]
-  (cd "$FIX" && env KBG_SKIP_VERSION_GATE= "$@" bash "$HOOK")
+  (cd "$FIX" && env MH_SKIP_VERSION_GATE= "$@" bash "$HOOK")
 }
 
 reset_fixture() {
@@ -152,12 +152,12 @@ out=$(run_hook 2>&1); rc=$?
 check "new skills/_lib/SKILL.md at 400 lines → allowed (underscore-dir exemption)" $?
 reset_fixture
 
-# 9. KBG_SKIP_LOC_GATE=1 → valve honored even for a 300-line new file
+# 9. MH_SKIP_LOC_GATE=1 → valve honored even for a 300-line new file
 mkfile agents/skipped.md 300
 bump_and_add agents/skipped.md
-out=$(run_hook KBG_SKIP_LOC_GATE=1 2>&1); rc=$?
+out=$(run_hook MH_SKIP_LOC_GATE=1 2>&1); rc=$?
 [ "$rc" -eq 0 ] && grep -q "new-file LOC gate skipped" <<<"$out"
-check "KBG_SKIP_LOC_GATE=1 → skip valve honored" $?
+check "MH_SKIP_LOC_GATE=1 → skip valve honored" $?
 reset_fixture
 
 # 10. Sync guard: the cap value here must match check 56's cap value —

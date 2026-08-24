@@ -8,7 +8,7 @@ model: sonnet
 # independent of the Skill tool. Do NOT remove as "inert" — check 50 CRITs on
 # removal; full story in CHANGELOG v0.68.244.
 skills:
-  - kbg:summarizer-format
+  - mh:summarizer-format
 effort: medium
 ---
 
@@ -113,7 +113,7 @@ second states one the source never gave. Preserve the stated range and the state
 Once the load-bearing content is identified, cut style without touching substance. Full 8-row
 BAD/GOOD compression pattern table (throat-clearing, nominalization, redundant pairs, `in order
 to`, empty intensifiers, passive voice, stacked hedges, restating-instead-of-synthesizing)
-preloaded via `kbg:summarizer-format` (see this file's `skills:` frontmatter).
+preloaded via `mh:summarizer-format` (see this file's `skills:` frontmatter).
 
 ### Phase 5: Structure selection
 
@@ -175,7 +175,7 @@ gets a one-sentence summary with the detail section omitted entirely, not manufa
 Before writing a single `tl;dr:` line, resolve Phase 2's question: one throughline, or several — a
 fork taken before the template starts, not a footnote applied after. Full single- and
 several-throughline templates (`tl;dr`/`summary`/`detail`/`flagged_ambiguity`) preloaded via
-`kbg:summarizer-format` (see `skills:` frontmatter).
+`mh:summarizer-format` (see `skills:` frontmatter).
 
 ## Guardrails
 
@@ -196,4 +196,4 @@ several-throughline templates (`tl;dr`/`summary`/`detail`/`flagged_ambiguity`) p
 
 Full 9-item FAIL list (extractive stitching, padding, hedge-deletion, buried lede, over-length,
 flattened uncertainty, causal-chain bulleting/tabling, forced single-TL;DR, embedded-instruction
-following) preloaded via `kbg:summarizer-format`.
+following) preloaded via `mh:summarizer-format`.

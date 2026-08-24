@@ -28,7 +28,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 **Actions**:
 1. Check `$ARGUMENTS` for a bug identifier (JIRA key, GitHub issue, PR number, or short summary).
-2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `mattpocock-skills:diagnosing-bugs` or `kbg:incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
+2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `mattpocock-skills:diagnosing-bugs` or `mh:incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
 3. For whatever remains missing or unclear, ask the user explicitly:
    - **Reproducible trigger**: exact steps, environment, inputs that cause the failure. Can someone else make it happen?
    - **Known mechanism**: what code path, what invariant, what race, what assumption broke? One-paragraph explanation.
@@ -158,4 +158,4 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 
 ## Named Model
 
-Section 7 "Escape Reason" (how did this reach production? what check missed it?) is the *pre-mortem* lens — not "what did we miss" but "what catastrophic-failure branch + detection + rollback" was missing pre-incident. Section 6 "Discovery Method" + section 8 "Validation Proof" together are *scientific-method* (repro → falsify → regression test). Catalog + honesty caveat: read via Bash with `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
+Section 7 "Escape Reason" (how did this reach production? what check missed it?) is the *pre-mortem* lens — not "what did we miss" but "what catastrophic-failure branch + detection + rollback" was missing pre-incident. Section 6 "Discovery Method" + section 8 "Validation Proof" together are *scientific-method* (repro → falsify → regression test). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

@@ -32,7 +32,7 @@ esac
 # rm/find/git/dd token, `git status` included. Announced fail-open is the
 # lesser harm; doctrine-bootstrap.sh names the missing dep once at SessionStart.
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "[kbg:gate] python3 not found — irrecoverable-pattern gate cannot run; allowing (install python3 to restore deny coverage)" >&2
+  echo "[mh:gate] python3 not found — irrecoverable-pattern gate cannot run; allowing (install python3 to restore deny coverage)" >&2
   exit 0
 fi
 
@@ -49,7 +49,7 @@ except Exception:
 # command to check" — that collapse let empty stdin, truncated JSON, and
 # tool_input:null bypass every check below (found 2026-08-06).
 if not isinstance(d, dict) or not isinstance(d.get("tool_input"), dict):
-    print("[kbg:gate] BLOCKED: malformed PreToolUse payload — failing closed", file=sys.stderr)
+    print("[mh:gate] BLOCKED: malformed PreToolUse payload — failing closed", file=sys.stderr)
     sys.exit(2)
 
 SQ = chr(39)
@@ -106,7 +106,7 @@ def _strip_heredocs(cmd):
 cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
 def deny(reason):
-    print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)
+    print("[mh:gate] BLOCKED: " + reason, file=sys.stderr)
     sys.exit(2)
 
 def delete_hint():
@@ -396,6 +396,12 @@ for w in windows:
             if branch_name is not None and branch_name != "develop":
                 # Resolve project root: CLAUDE_PROJECT_DIR env first,
                 # then walk up from cwd looking for .git OR sentinel.
+                # Expand-not-rename (T10 #89): accept BOTH the old
+                # .kbg-no-worktree and new .mh-no-worktree sentinel names,
+                # indefinitely -- a sentinel file in some OTHER repo is
+                # invisible to this one, so there is no way to force every
+                # other repo to rename when this repo does.
+                _SENTINEL_NAMES = (".kbg-no-worktree", ".mh-no-worktree")
                 root = os.environ.get("CLAUDE_PROJECT_DIR") or ""
                 if not root:
                     d = os.getcwd() or "/"
@@ -404,7 +410,7 @@ for w in windows:
                             break
                         try:
                             if os.path.isdir(os.path.join(d, ".git")) or \
-                               os.path.isfile(os.path.join(d, ".kbg-no-worktree")):
+                               any(os.path.isfile(os.path.join(d, _s)) for _s in _SENTINEL_NAMES):
                                 root = d
                                 break
                         except Exception:
@@ -413,8 +419,14 @@ for w in windows:
                         if parent == d:
                             break
                         d = parent
-                sentinel = os.path.join(root, ".kbg-no-worktree") if root else ""
-                if sentinel and os.path.isfile(sentinel):
+                sentinel = ""
+                if root:
+                    for _s in _SENTINEL_NAMES:
+                        _cand = os.path.join(root, _s)
+                        if os.path.isfile(_cand):
+                            sentinel = _cand
+                            break
+                if sentinel:
                     # No allowlist: any new non-develop branch via worktree
                     # is denied in a sentinel repo. (The former review-pr
                     # detached-worktree allowlist was removed with the
@@ -424,7 +436,7 @@ for w in windows:
                     deny("git worktree add -b new-branch blocked by matt-harness doctrine "
                          "(no new non-develop branches via worktree; single branch develop only); "
                          "use detached worktrees, develop, or an existing branch. "
-                         "Remove /.kbg-no-worktree to allow")
+                         "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
 
     if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
         deny("dd writing to a raw device — irrecoverable disk-level destruction")
@@ -444,7 +456,7 @@ sys.exit(0)
 '
 rc=$?
 if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
-  echo "[kbg:gate] internal error (rc=$rc) — failing closed" >&2
+  echo "[mh:gate] internal error (rc=$rc) — failing closed" >&2
   exit 2
 fi
 exit "$rc"
