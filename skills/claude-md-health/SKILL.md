@@ -23,9 +23,9 @@ Don't use for:
 
 ## The 3 checks
 
-1. **Readable** (อ่านง่ายไหม) — In 30 seconds, can you name every distinct behavior area the file covers? Headers must be behavior-scoped ("before deleting a file, ask first"), not generic buckets ("notes", "gotchas", "misc") hiding unrelated rules under one label.
-2. **Findable** (หาเจอไหม) — Given one specific behavior, can you point to the exact line without reading the whole file? A flat list of 8+ unrelated bullets under one header fails this even with bold lead-ins — it needs sub-headers or a table.
-3. **Fix-once** (แก้แล้วจบไหม) — Edit the rule in one place: does the behavior actually change everywhere, with no old copy left in another doc — **and** does the rule still match what's actually true right now (a branch that no longer exists, a domain that changed, a count nobody re-grepped)? This is the direct analogue of the paper's BGPD verification step: don't trust a candidate location, check it against the real current source.
+1. **Readable** — In 30 seconds, can you name every distinct behavior area the file covers? Headers must be behavior-scoped ("before deleting a file, ask first"), not generic buckets ("notes", "gotchas", "misc") hiding unrelated rules under one label.
+2. **Findable** — Given one specific behavior, can you point to the exact line without reading the whole file? A flat list of 8+ unrelated bullets under one header fails this even with bold lead-ins — it needs sub-headers or a table.
+3. **Fix-once** — Edit the rule in one place: does the behavior actually change everywhere, with no old copy left in another doc — **and** does the rule still match what's actually true right now (a branch that no longer exists, a domain that changed, a count nobody re-grepped)? This is the direct analogue of the paper's BGPD verification step: don't trust a candidate location, check it against the real current source.
 
 **Test 3 is the one that matters most.** Across the 3 audits that produced this skill, every real finding — a stale flag-count in a memory file, a duplicated ticket-prefix rule, a branch-model claim that had drifted out of sync with both its own canonical doc *and* the repo's actual git history, and could send a hotfix to the wrong branch — came from Test 3. Tests 1 and 2 caught cosmetics. Don't let a clean Test-1/2 pass read as "the file is healthy" when Test 3 wasn't actually run.
 

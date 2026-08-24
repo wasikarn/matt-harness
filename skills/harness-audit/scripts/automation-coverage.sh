@@ -7,7 +7,7 @@
 # This is a REPORTING script, not a harness-audit check: it prints the score and
 # exits 0 always (never CRITs, never gates). Run it before a change (baseline)
 # and after; the delta is the demonstrated improvement — measured from the code,
-# not asserted from memory ("ไม่ใช่คิดมโน"). The enumeration is grep-based so a
+# not asserted from memory. The enumeration is grep-based so a
 # missing or invented site shows up; the G/H/X/J label per site is a curated
 # table below that changes only when the code changes.
 #
