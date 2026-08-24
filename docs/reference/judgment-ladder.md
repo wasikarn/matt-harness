@@ -248,7 +248,7 @@ work). Use them as a cross-check at the rung where each one is most dangerous.
 - `mattpocock-skills:grilling` — adversarial stress-test of the reasoning in a decision or ADR
 - `docs/reference/strategic-judgment.md` — upstream lens for irreversible / long-horizon commitments
 
-> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality prompts live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
+> **Named thinking references (not loadable `kbg:` surfaces).** Cynefin, OODA, pre-mortem, debiasing, and bounded-rationality are cc-thinking-skills lenses cataloged in `docs/reference/reasoning-models.md`, which points to the upstream repo for full write-ups (kbg does not vendor them locally). Use them as reasoning frames, not as invokable skills.
 
 ## References
 

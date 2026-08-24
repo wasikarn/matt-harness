@@ -38,6 +38,14 @@
 #     bypass this nudge catches).
 set -uo pipefail
 
+# Feature-detect the jira-acli plugin (same shape as doctrine-bootstrap.sh's
+# mattpocock-preflight check) -- this nudge is meaningless noise on a machine
+# that never installed jira-acli@wasikarn; skip firing entirely rather than
+# route the user toward a plugin they don't have. KBG_JIRA_ACLI_CACHE is a
+# test-only override so unit tests don't depend on the real plugin cache.
+JIRA_ACLI_CACHE="${KBG_JIRA_ACLI_CACHE:-${HOME:-}/.claude/plugins/cache/wasikarn/jira-acli}"
+[[ -d "$JIRA_ACLI_CACHE" ]] || exit 0
+
 INPUT=$(cat)
 
 # TP-* ticket key = unambiguous work intent.
@@ -63,8 +71,8 @@ cat <<'EOF'
   jira-acli:jira-content (Bug/Story/Task/Epic/Sub-task templates), or
   jira-acli:confluence-content (Spec/PRD pages) -- not a raw acli command or
   a direct mcp__*atlassian*/mcp__*Rovo* tool call.
-  See ~/.claude/CLAUDE.md's "Atlassian / Jira & Confluence Work" section for
-  the closed-gap list where the Atlassian MCP is the documented fallback.
+  jira-acli's own docs list the cases where the Atlassian MCP is the
+  documented fallback (e.g. Confluence page create/update).
 The nudge is advisory; the model judges.
 EOF
 

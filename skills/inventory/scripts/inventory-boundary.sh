@@ -418,9 +418,12 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 XREF4
 
 # Reference docs cross-link (added 2026-06-18).
-# Points at the non-loadable reasoning-models catalog and its vendored
-# thinking-skills library so BOUNDARY.md readers can find the L3 reference
-# surface without adding a new invokable skill.
+# Points at the non-loadable reasoning-models catalog so BOUNDARY.md readers
+# can find the L3 reference surface without adding a new invokable skill.
+# (The vendored thinking-skills library this used to also point at was removed
+# 2026-08-24, ticket 94 — operator-only reference surface with no bearing on a
+# plugin user's session; reasoning-models.md now points to the upstream repo
+# for full write-ups instead of a local vendored copy.)
   cat <<'XREF5'
 
 ---
@@ -429,8 +432,7 @@ XREF4
 
 These files live in the plugin cache, not the project CWD. Read them via Bash with `KBG_PLUGIN_ROOT` (exported by `hooks/session/command-root-anchor.sh`), not as relative markdown links.
 
-- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 vendored cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each.
-- **Vendored thinking-skills library** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/README.md"` — verbatim upstream copies of the 39 mental-model SKILL.md files, kept under `docs/` so they are never auto-discovered as invokable skills.
+- **Reasoning-models catalog** — `cat "${KBG_PLUGIN_ROOT}/docs/reference/reasoning-models.md"` — 39 named cc-thinking-skills mental models and the kbg surface that applies (or deliberately does not apply) each; points to the upstream repo for full write-ups.
 
 XREF5
 fi

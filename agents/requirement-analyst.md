@@ -11,7 +11,7 @@ effort: medium
 
 ## Tool guardrails
 
-- **This agent never fetches from Jira or Confluence itself.** A subagent has no `Skill` tool, so it cannot route through `jira-acli:acli` the way CLAUDE.md's global routing rule requires for any Jira/Confluence interaction — including read-only search/view. Self-fetching via raw `acli`/MCP calls would be exactly the un-routed bypass that rule exists to prevent. The **caller** (main loop or dispatching skill) fetches the ticket/spec via `jira-acli:acli` (or the Atlassian MCP) and hands the body down as text in the dispatch prompt.
+- **This agent never fetches from Jira or Confluence itself.** A subagent has no `Skill` tool, so it cannot route through `jira-acli:acli` the way this harness's Jira/Confluence convention requires for any such interaction — including read-only search/view — when that plugin is installed. Self-fetching via raw `acli`/MCP calls would be exactly the un-routed bypass that convention exists to prevent. The **caller** (main loop or dispatching skill) fetches the ticket/spec via `jira-acli:acli` if installed (otherwise the Atlassian MCP directly) and hands the body down as text in the dispatch prompt.
 - `Read`/`Grep`/`Glob` are for a local file the caller points you at (an exported spec, a PRD in the repo, a saved ticket dump) — not for reaching out to Jira/Confluence.
 - No `Write`/`Edit`, no `Bash`. This agent produces a report; it never edits the source ticket or spec, and never writes findings back — that's `jira-acli:jira-content`'s job if the user wants them filed.
 

@@ -43,24 +43,28 @@ pre-push: full gauntlet (all validation layers in parallel).
 
 Before writing a new skill, command, or agent from scratch, check sources in this order: **(1)**
 `mattpocock/skills` first — what's installed under the `mattpocock-skills@mattpocock` plugin
-(`claude plugin list` / the Skill tool's listing, namespaced `mattpocock-skills:<name>`), plus the
-local clone at `~/Codes/Personals/mattpocock-skills` for what's upstream but not yet
-installed. This is a **Matt-Pocock-first harness**; checking ECC/superpowers before matt's own repo
-gets the priority backwards. `git fetch` the local clone before trusting it — the installed plugin
-can be *newer* than the clone, inverting this section's "upstream but not yet installed" framing.
+(`claude plugin list` / the Skill tool's listing, namespaced `mattpocock-skills:<name>`), plus —
+if this machine has it — the local clone at `~/Codes/Personals/mattpocock-skills` for what's
+upstream but not yet installed. This is a **Matt-Pocock-first harness**; checking ECC/superpowers
+before matt's own repo gets the priority backwards. If the clone exists, `git fetch` it before
+trusting it — the installed plugin can be *newer* than the clone, inverting this section's
+"upstream but not yet installed" framing. On a machine without these clones, the installed plugin
+alone is the available source — skip straight to it.
 
 **If any of these clones is reached via `claude --add-dir` instead of `cd`, none of its own
 CLAUDE.md instructions load by default** — `--add-dir` grants file access only. Set
 `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` before the command if you need that clone's own
 CLAUDE.md/rules read into context, not just its files.
 
-**(2)** the upstream ECC repo at `~/Codes/Personals/ECC`
-and the vendored superpowers checkout at `~/Codes/Personals/superpowers`. **(3)** sibling
-harnesses under `~/Codes/Personals/` for structural patterns (e.g. `oh-my-claudecode`;
+**(2)** if present on this machine, the upstream ECC repo at `~/Codes/Personals/ECC`
+and the vendored superpowers checkout at `~/Codes/Personals/superpowers`. **(3)** if present,
+sibling harnesses under `~/Codes/Personals/` for structural patterns (e.g. `oh-my-claudecode`;
 ask if unsure which qualify). Cherry-pick and adapt from whichever source fits; create kbg-native
 surfaces only when none do. Skipping straight to (2) or (3) risks colliding with a skill matt
 already built. (Paths are the stable anchor, not pinned hashes — run
-`git rev-parse HEAD` there when you need the current commit.)
+`git rev-parse HEAD` there when you need the current commit.) None of these clones is bundled with
+the plugin — on a machine without them, (1)'s installed `mattpocock-skills@mattpocock` plugin is
+the only available source; build kbg-native only after checking what that plugin already offers.
 
 <!-- The clone silently lagged origin/main by a full minor release before being caught. Confirmed
 gap (2026-07-17): `code-implementer`/`/implement` were built checking only (2), skipping (1) —
@@ -83,12 +87,15 @@ Single-context — root `CONTEXT.md` + `docs/adr/` (neither exists yet; created 
 ## Research: check qmd before web search
 
 Before starting primary-source research — fact-checking a claim, investigating a library/API,
-verifying a citation — search the local `qmd` collections first, then query `context7` for any
-library/framework doc lookup, before reaching for `WebSearch`. Relevant collections: `kbg-research`
+verifying a citation — if a `qmd`-style MCP is configured, search the local `qmd` collections
+first; if a `context7`-style MCP is configured, query it for any library/framework doc lookup —
+both before reaching for `WebSearch`. Neither is bundled with this plugin; skip straight to
+`WebSearch` when not configured. Relevant collections when `qmd` is available: `kbg-research`
 (this repo's own `docs/research/`), `kbg-memory` (this repo's own memory store), `llm-wiki` (the
-operator's personal knowledge vault, 1,600+ docs spanning every project), plus other project-specific
-collections. Run `qmd status` (or the `status` MCP tool) for the full current list; scope a query
-to the relevant collections rather than searching all of them blind.
+operator's personal knowledge vault, 1,600+ docs spanning every project, when it exists on this
+machine), plus other project-specific collections. Run `qmd status` (or the `status` MCP tool) for
+the full current list; scope a query to the relevant collections rather than searching all of them
+blind.
 
 **Why this line lives here, not in a skill:** kbg built exactly this qmd-first behavior once
 already, vendored into a `research` skill — and two unrelated namespace-collision migrations
@@ -109,9 +116,10 @@ scoped to `llm-wiki` unprompted — the one part of the design no grep or script
 **Verify technical claims before shipping them into agent/skill content, not just when asked to
 "research."** A confidently-worded complexity, security-mechanism, or framework-behavior claim can
 read as correct and still be wrong — plausibility isn't verification. Before treating that kind of
-addition as done: deep-read the relevant `qmd`/`llm-wiki` content first, then `WebSearch` (or the
-`deep-research` workflow for a claim worth a multi-source adversarial pass). Claims that look
-obviously correct on read have shipped wrong before; each needed an actual source check to catch it.
+addition as done: deep-read the relevant `qmd`/`llm-wiki` content first if either is configured on
+this machine, then `WebSearch` (or the `deep-research` workflow for a claim worth a multi-source
+adversarial pass). Claims that look obviously correct on read have shipped wrong before; each
+needed an actual source check to catch it.
 
 <!-- Confirmed load-bearing 2026-08-05 — caught 3 shipped, plausible-reading errors:
 `performance-optimizer.md`'s two-pointer "O(n) 3-sum" (it's O(n²)), `drizzle-patterns`' "one query
@@ -121,6 +129,8 @@ CWE-1333/CWE-400 pairing contradicting MITRE's own page. -->
 ## Architecture
 
 The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Claude Code loads all surfaces from `~/.claude/plugins/cache/kobig/kbg/<version>/` at startup. Nothing is symlinked.
+
+The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
 
 **Doctrine injection:** `hooks/session/doctrine-bootstrap.sh` fires on SessionStart and injects `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context via `$CLAUDE_PLUGIN_ROOT` (the plugin install dir; the older `$CLAUDE_PLUGIN_DIR` name is not a real CC variable and expands empty).
 
@@ -228,7 +238,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 ### Skill/agent/command mechanics & routing
 
 - **Skill descriptions load on every Task spawn** (~words×1.3 tokens). Keep descriptions ≤25 words.
-- **Thinking models:** default is the triad + `advisor()` inline (METHODOLOGY Rule 1); `mattpocock-skills:grilling` is the on-demand escalation for genuinely hard/contested-diagnosis choices (the former `decide` skill was de-scoped 2026-07-02 — 0 real-world invocations vs 55 `advisor()` calls across 182 sessions — and deleted 2026-08-24, #79). The 39 on-demand mental-model files live in `docs/reference/thinking-skills/skills/` — never move them to `skills/` (breaks fleet count; WARNed by harness-audit check 41).
+- **Thinking models:** default is the triad + `advisor()` inline (METHODOLOGY Rule 1); `mattpocock-skills:grilling` is the on-demand escalation for genuinely hard/contested-diagnosis choices (the former `decide` skill was de-scoped 2026-07-02 — 0 real-world invocations vs 55 `advisor()` calls across 182 sessions — and deleted 2026-08-24, #79). The 39 named mental models are cataloged in `docs/reference/reasoning-models.md`, which points to the upstream cc-thinking-skills repo for full write-ups — the 42-file vendored local copy under `docs/reference/thinking-skills/` was removed 2026-08-24 (ticket 94, operator-only reference surface); harness-audit check 41 (formerly the promotion guard against re-vendoring into `skills/`) is stubbed now that there's no local tree to promote from.
 - **`disable-model-invocation: true`:** carried by 2 skills (`recursive-improve`, `score-decision`) **+ 7 commands** currently (`ideate-search`, `post-mortem`, `ship-release`, `tiered-pipeline`, `wiki-ingest`, `address-review/COMMAND.md`, `ship-merge/COMMAND.md`) — `ask-kbg`, `compliance-audit`, and `iterate-skill/COMMAND.md` were deleted 2026-08-24 (#80); `ship/COMMAND.md` was deleted 2026-08-24 (#86, matt-harness migration — `/mattpocock-skills:implement` covers the job now). Re-check **both surface types together** — this line drifted once by tracking only skills — via the frontmatter-scoped sweep (a bare `grep -rl` misreports: surfaces that only *mention* another one's flag in prose also match): `for f in skills/*/SKILL.md commands/*.md commands/*/COMMAND.md; do [ -f "$f" ] && head -20 "$f" | grep -qF 'disable-model-invocation: true' && echo "$f"; done`. 3 of the 9 carriers are **CRIT**-guarded against a rewrite silently dropping the flag: `recursive-improve/SKILL.md` (check 39), `score-decision/SKILL.md` (check 49), `ship-merge/COMMAND.md` (check 44); the other 6 commands have no equivalent guard yet. Check 30 only WARNs that a `-reason` field exists — it's the presence-of-reason check, not the flag-survives-a-rewrite check; the three CRIT checks are what close that gap.
 
 <!-- The both-surface-types line caught 2026-07-22, not folded back here until 2026-08-04. -->

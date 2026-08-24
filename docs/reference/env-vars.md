@@ -123,5 +123,12 @@ Context management is native: use the `/compact` command and auto-compaction.
   `--plugin-cache <full versioned path>` wins over both. (Wired 2026-08-24, #93 — previously
   documented but never read.)
 - **`KBG_GAUNTLET_PLUGIN_CACHE`** — cache path override for `run-gauntlet.sh` validation.
+- **`KBG_JIRA_ACLI_CACHE`** — test-only override for the plugin-cache path
+  `hooks/advisory/jira-route-nudge.sh` feature-detects (default
+  `~/.claude/plugins/cache/wasikarn/jira-acli`, matching the fixture layout
+  already used in `tests/hooks/test-gates.sh`). Lets the nudge's own test
+  suite (`tests/hooks/test-jira-route-nudge.sh`) point at a fake cache dir
+  instead of depending on whether jira-acli is actually installed. Not a user
+  knob — no reason to set it outside a test harness.
 - **`CLAUDE_PLUGIN_ROOT`** / **`CLAUDE_SKILL_DIR`** / **`CLAUDE_PROJECT_DIR`** / **`CLAUDE_SESSION_ID`** —
   vendor-injected path vars; implementation detail, set nothing.

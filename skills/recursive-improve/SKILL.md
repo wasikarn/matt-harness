@@ -22,8 +22,8 @@ hand the human always holds.
 multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion` gate before any
 mutation. The skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and the human is the loop's real stop condition at the per-mutation gate; the iteration cap is a
-context-exhaustion backstop. See CLAUDE.md's Operating model (§Architecture):
-`cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`.
+context-exhaustion backstop. See the Operating model doctrine (self-contained excerpt of
+CLAUDE.md's §Architecture): `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`.
 
 **When to use / not:** the user asks to improve/fix/audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap — not for a

@@ -25,11 +25,13 @@ search helper and return the ranked results exactly as-is.
 ## Behaviour
 
 1. Extract the query text from the command invocation (everything after `/ideate-search`).
-2. Search the `ideate-memory` qmd collection via the qmd MCP tool: run both a
+2. If no `qmd`-style MCP is configured on this machine, tell the user this command needs one and
+   stop — there is no fallback search path.
+3. Otherwise, search the `ideate-memory` qmd collection via the qmd MCP tool: run both a
    lexical (`type:'lex'`) and a semantic (`type:'vec'`) sub-query for the
    extracted text, `intent` set to "Find a past /ideate run matching this
    query", and `minScore: 0.5` to drop weak hits.
-3. Return the ranked results to the user verbatim.
+4. Return the ranked results to the user verbatim.
 
 ## What this command does NOT do
 

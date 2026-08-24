@@ -13,10 +13,10 @@ vault) — orphaned pages, missing frontmatter, raw sources with no wiki page
 built from them yet, broken citations, and corpus stats. Wraps the vault's
 own `scripts/lint-scan.sh` and `scripts/stats.sh`; never reimplements them.
 
-**Search goes to `qmd` first, not here.** Use the `qmd` MCP `query` tool
-scoped to `collection: "llm-wiki"` for finding content by meaning — it's
-semantic search, this skill isn't. This skill covers the two things qmd
-cannot: vault *health*, and *exact* citation-integrity resolution.
+**Search goes to `qmd` first, not here, when a `qmd`-style MCP is configured.** Use its `query`
+tool scoped to `collection: "llm-wiki"` for finding content by meaning — it's semantic search,
+this skill isn't. This skill covers the two things qmd cannot (vault *health*, and *exact*
+citation-integrity resolution) regardless of whether qmd is available.
 
 ## Graceful-skip preflight
 

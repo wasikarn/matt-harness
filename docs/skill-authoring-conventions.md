@@ -48,8 +48,8 @@ may end with a `## Named Model` footer citing cc-thinking-skills lenses. Apply t
 rubric from `memory/mental-models-sweep-v0302-2026-07-03.md`: (1) load-bearing reasoning gap, (2)
 name-a-lens benefit for the operator, (3) honesty posture preserved (footer is a scaffold +
 catalog pointer, never "this lens proves correctness"). The curated catalog is
-`docs/reference/reasoning-models.md`; the 39 raw models live under
-`docs/reference/thinking-skills/skills/`.
+`docs/reference/reasoning-models.md`; full write-ups for the 39 raw models live upstream in the
+cc-thinking-skills repo it links to — kbg does not vendor them locally.
 
 **Suggested next step footers:** a workflow surface (command or workflow skill run as a discrete
 step) may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched

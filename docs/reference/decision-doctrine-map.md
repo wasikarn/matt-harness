@@ -78,9 +78,10 @@ per-topic doctrine split described here did not survive that reset — there is 
 current equivalent for risk/gate, Atlassian-contract, or db-write doctrine as
 standalone files.
 
-## Vendored thinking-skills (on-demand reference, NOT promoted)
+## Named thinking-skills (on-demand reference, NOT promoted)
 
-The 39 TJ Boudreaux thinking skills are vendored at `docs/reference/thinking-skills/`
-as reference catalog — kept on-demand, **not** auto-loaded, **not** promoted to a
-skill under `skills/`. Their own replication-gated eval shows zero of 39 clear an accuracy
-bar; promoting them would couple kbg to unproven scaffolds (METHODOLOGY Rule 2).
+The 39 TJ Boudreaux thinking skills are cataloged as a reference in
+`docs/reference/reasoning-models.md`, which points to the upstream repo for full write-ups —
+kept on-demand, **not** auto-loaded, **not** vendored locally, **not** promoted to a skill under
+`skills/`. Their own replication-gated eval shows zero of 39 clear an accuracy bar; promoting
+them would couple kbg to unproven scaffolds (METHODOLOGY Rule 2).

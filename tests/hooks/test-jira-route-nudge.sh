@@ -12,6 +12,13 @@ HOOK="$ROOT/hooks/advisory/jira-route-nudge.sh"
 pass=0
 fail=0
 
+# The hook feature-detects the jira-acli plugin cache and skips silently when
+# absent (#94) -- fake it present so the "must nudge" assertions below don't
+# depend on whether this runner actually has jira-acli installed.
+FAKE_JIRA_CACHE="$(mktemp -d)"
+trap 'rm -rf "$FAKE_JIRA_CACHE"' EXIT
+export KBG_JIRA_ACLI_CACHE="$FAKE_JIRA_CACHE"
+
 user_prompt_payload() {
   # ensure_ascii=False mirrors CC's real payload: Node JSON.stringify writes
   # UTF-8 directly (not \uXXXX escapes), so the hook sees real Thai bytes.
@@ -85,6 +92,19 @@ if [[ "$empty_rc" == "0" && -z "$empty_out" ]]; then
   pass=$((pass + 1))
 else
   echo "  ❌ SILENT EXPECTED but rc=$empty_rc stdout=<$(printf '%s' "$empty_out" | head -c 80)>: empty stdin" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
+echo "--- jira-acli not installed (must stay silent regardless of content) ---"
+NOT_INSTALLED_CACHE="$FAKE_JIRA_CACHE/nonexistent"
+out=$(KBG_JIRA_ACLI_CACHE="$NOT_INSTALLED_CACHE" bash -c "echo '$(user_prompt_payload "create a Jira ticket for this bug")' | bash '$HOOK'" 2>/dev/null)
+rc=$?
+if [[ "$rc" == "0" && -z "$out" ]]; then
+  echo "  ✅ SILENT: jira-acli plugin cache absent"
+  pass=$((pass + 1))
+else
+  echo "  ❌ SILENT EXPECTED but rc=$rc stdout=<$(printf '%s' "$out" | head -c 80)>: jira-acli plugin cache absent" >&2
   fail=$((fail + 1))
 fi
 

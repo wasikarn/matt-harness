@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.453-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.454-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -283,7 +283,7 @@ kbg-harness/
 ├── scripts/              # Validation helpers (run-gauntlet.sh — full parallel gauntlet)
 ├── docs/
 │   ├── onboarding.md     # 10-minute cold-start
-│   └── reference/        # thinking-skills library, reasoning-models.md, env-vars.md
+│   └── reference/        # reasoning-models.md, env-vars.md, operating-model.md
 ├── git-hooks/            # pre-commit (lint + JSON + syntax + new-file LOC gate) · pre-push (gauntlet)
 ├── CLAUDE.md             # Project instructions for Claude Code instances
 └── CHANGELOG.md          # Release notes
@@ -336,7 +336,7 @@ git config core.hooksPath git-hooks
 | File | What's in it |
 |---|---|
 | [`docs/onboarding.md`](docs/onboarding.md) | 10-minute cold-start guide |
-| [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 vendored mental models (cc-thinking-skills) |
+| [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 named mental models (cc-thinking-skills), pointing to the upstream repo for full write-ups |
 | [`docs/reference/env-vars.md`](docs/reference/env-vars.md) | Operator-tunable environment variables |
 | [`docs/reference/graph-model.md`](docs/reference/graph-model.md) | Orchestration graph formalization — nodes, typed edges, anchors (see [Engineering Doctrine](#engineering-doctrine)) |
 | [`docs/research/harness-engineering-2026-04.md`](docs/research/harness-engineering-2026-04.md) | Primary-source grounding for the gates/advisory split |
@@ -359,7 +359,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 |---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored — see Quick Start), 0 kbg-modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
-| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models vendored into `docs/reference/thinking-skills/skills/` (on-demand reference, not an auto-discovered skill) |
+| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models cataloged by name in `docs/reference/reasoning-models.md`, pointing to the upstream repo for full write-ups (no local vendored copy since ticket 94; on-demand reference, not an auto-discovered skill) |
 | [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | 3 voice rules folded into `output-styles/staff-eng.md` (v0.68.126) |
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |

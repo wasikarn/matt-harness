@@ -13,15 +13,17 @@ The named-model vocabulary and taxonomy are from
 [**cc-thinking-skills**](https://github.com/tjboudreaux/cc-thinking-skills) by TJ Boudreaux
 (MIT, © 2025) — 39 mental-model skills for Claude Code.
 
-The full skill files are **vendored verbatim** as a common-references library under
-`docs/reference/thinking-skills/` (commit `0313ee0`, MIT `LICENSE` retained). They are
-stored under `docs/` deliberately — they are reference material, **not** invokable kbg
-skills. Read a model's full write-up there; use the table below to find which kbg surface
-already applies it.
+Full write-ups for all 39 models live upstream in that repo. kbg does not vendor them
+locally — a 42-file verbatim copy shipped under `docs/reference/thinking-skills/` through
+2026-08-24, then was removed as an operator-only reference surface with no bearing on a
+plugin user's session (ticket 94, spec 75). Use the table below to find which kbg surface
+already applies a given model, then read the upstream repo directly for its full write-up
+(the `Upstream dir` column names the folder inside that repo).
 
-> **Path note:** all internal paths below are shown as code-spans, not markdown links,
-> because this file is read from the plugin cache and relative links would resolve against
-> the user's project CWD, not the cache. Use the Bash recipes in the next section.
+> **Path note:** internal paths shown as code-spans elsewhere in this file (e.g. in the
+> "kbg-native reasoning scaffolds" section below) are read via Bash, not a `Read` tool call
+> on a literal `${KBG_PLUGIN_ROOT}` path — the variable expands only in shell context and is
+> only set after a successful SessionStart (`hooks/session/command-root-anchor.sh`).
 
 ## The honesty caveat — read this first
 
@@ -82,6 +84,12 @@ against. Drop that framing if it resurfaces. What **is** well-evidenced:
   files, or a new skill built on top of one, into `skills/` without deliberately clearing
   the evaluation-first bar above first.
 
+  **Update (2026-08-24, ticket 94):** the vendored copy this bullet describes was removed
+  entirely (see "Source + attribution" above) — there is no longer a local tree to promote
+  from. The anti-pattern lesson still stands for the general case: never promote an
+  externally-sourced, auto-selecting router skill into `skills/` without clearing the
+  evaluation-first bar first.
+
 ## How to use
 
 Short-circuit rule (from their `thinking-model-router`): **if you already know the model,
@@ -96,35 +104,14 @@ tables below (model→home, workflow-pattern→models) are **reference**, not a 
 situation-router; for the reference-only frames that no kbg skill applies (the model→home table
 below marks each), the on-demand path is
 `BOUNDARY.md` (the generated capability map — the `inventory` skill wrapper was removed
-2026-08-24 #80) + `docs/reference/thinking-skills/`.
+2026-08-24 #80) + the upstream cc-thinking-skills repo linked above (no local vendored copy
+since ticket 94).
 
-To read the full upstream write-up for any model, run the Bash recipes in the next section.
-**Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path** — the variable expands
-only in shell context. The recipes also guard against the variable being unset, which happens
-before restart or if `hooks/session/command-root-anchor.sh` did not run.
-
-## Reading a vendored model from any project CWD
-
-Run these in the **Bash** tool. `${KBG_PLUGIN_ROOT}` is exported by
-`hooks/session/command-root-anchor.sh` on every SessionStart.
-
-```bash
-# Guard: the variable is only available after a successful SessionStart hook
-: "${KBG_PLUGIN_ROOT:?KBG_PLUGIN_ROOT is not set — run 'claude plugin update kbg@kobig' and restart Claude Code}"
-
-# List all 39 vendored mental models (directory names start with `thinking-`)
-find "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills" -maxdepth 2 -name SKILL.md \
-  | sed 's|.*/skills/||; s|/SKILL.md||' | sort
-
-# Read a specific model. Use the exact `Upstream dir` value from the table below
-# (it always starts with `thinking-`). Do not strip the prefix.
-cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/<thinking-dir>/SKILL.md"
-# Example — read the systems-thinking vendored file (upstream dir is `thinking-systems`):
-cat "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills/thinking-systems/SKILL.md"
-
-# Search the vendored models for a keyword
-grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"/*/SKILL.md
-```
+To read the full upstream write-up for any model, open the upstream repo linked above at
+`skills/<Upstream dir>/SKILL.md` — use the exact `Upstream dir` value from the table below
+(it always starts with `thinking-`; do not strip the prefix). Example — the systems-thinking
+model's upstream dir is `thinking-systems`, so its file is
+`skills/thinking-systems/SKILL.md` in that repo.
 
 ## Unified 39-model index
 
@@ -198,7 +185,7 @@ cat "${KBG_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture; read in Bash: `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`).
+unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
@@ -225,4 +212,4 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture; read in Bash: `cat "${KBG_PLUGIN_ROOT}/CLAUDE.md"`). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${KBG_PLUGIN_ROOT}/docs/reference/operating-model.md"`). It may still appear as *framing* inside an applied surface.

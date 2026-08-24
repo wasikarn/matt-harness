@@ -136,4 +136,4 @@ Software strategy is not about picking technologies. It is about choosing commit
 - `mattpocock-skills:grilling` — adversarial stress-test of a contested plan, decision, or diagnosis
 - `mattpocock-skills:research` — external and competitive intelligence, including mining a strategy article or book chapter for doctrine
 
-> **Vendored thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking live under `docs/reference/thinking-skills/skills/`. Use them as reasoning frames, not as invokable skills.
+> **Named thinking references (not loadable `kbg:` surfaces).** Cynefin, second-order thinking, red-team reasoning, and systems thinking are cc-thinking-skills lenses cataloged in `docs/reference/reasoning-models.md`, which points to the upstream repo for full write-ups (kbg does not vendor them locally). Use them as reasoning frames, not as invokable skills.

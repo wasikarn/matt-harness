@@ -14,8 +14,29 @@ The gate is a *verifier*: deterministic shell returning a branchable result. The
 *maker* and can never grade its own work — so gates deny the irrecoverable set computationally;
 everything else is advisory.
 
-All hooks degrade gracefully when external tools (`rtk`, `qmd`, `code-review-graph`) are
-absent (`command -v` guard, silent no-op).
+Hooks degrade around the CLI tools they actually depend on, but the mechanism differs per
+tool — not a single uniform pattern. `python3`, `jq`, and `git` are each guarded by an explicit
+`command -v` check in the hook script itself: `python3`-dependent deny gates (`irrecoverable.sh`,
+`db-write-gate.sh`, `verifier-protect.sh`, `atlassian-mcp-gate.sh`, `worktree-guard-dispatch.sh`,
+`task-complete-separation.sh`, `doctrine-bootstrap.sh`, `memory-health-nudge.sh`) fail OPEN with a
+per-call stderr note when it's missing (announced once, up front, by `doctrine-bootstrap.sh`'s
+portability preflight — see #93); `jq`-dependent advisory nudges and the cost tracker
+(`stale-task-nudge.sh`, `flow-nudge.sh`, `cost-tracker.sh`, `doctrine-bootstrap.sh`) skip
+themselves silently per event; `git`-dependent hooks (e.g. `memory-audit-commit.sh`) exit 0
+silently. `trash` is different: there's no `command -v` guard in a hook script — `irrecoverable.sh`
+detects it from inside its python3 payload via `shutil.which()`, picking whichever of
+`trash`/`trash-put` exists (#93) to name in its deny message, and denies (asks the user first)
+rather than silently degrading when neither is present. `jira-acli` is different again: it's a
+Claude Code plugin, not a shell binary, so nothing checks for it with `command -v`.
+`atlassian-mcp-gate.sh` doesn't feature-detect its installation at all — it only tracks whether a
+`jira-acli:*` skill has loaded this session (a session marker file). The only installation-level
+feature-detection is in the advisory `jira-route-nudge.sh`, which checks for the plugin's cache
+directory (`~/.claude/plugins/cache/wasikarn/jira-acli`, override via `KBG_JIRA_ACLI_CACHE`) and
+exits silently if absent, added ticket 94. `rtk` and `code-review-graph` have zero call sites in
+any shipped hook — they're operator-environment tools referenced only in doctrine prose (CLAUDE.md's
+env-quirk notes), never something a hook checks for. `qmd` likewise has no hook call site; it's an
+MCP tool referenced only in skill/command doctrine (hedged to "if configured" per ticket 94), not
+something any hook invokes or guards.
 
 ## The 2×2 cell each event populates
 
