@@ -30,7 +30,7 @@ flagged over its 20K-char threshold (checks 42/51).
 
 Don't use for:
 - Grading a `CLAUDE.md`'s content completeness or currency — `claude-md-management:claude-md-improver`
-  and `kbg:claude-md-health` do that; this skill only shrinks, it doesn't audit accuracy.
+  does that; this skill only shrinks, it doesn't audit accuracy.
 - A quick manual trim of one or two sentences — just edit it, this skill's overhead isn't worth it
   for a change that small.
 - Non-markdown files, or code files of any kind.

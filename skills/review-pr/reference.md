@@ -79,7 +79,7 @@ Source: Fowler, *Refactoring* ch.3.
 
 ## Agent Descriptions
 
-One-line orientation; **see kbg:inventory for current frontmatter descriptions and the agent file (plugin-delivered or project-local) for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
+One-line orientation; **see `BOUNDARY.md` for current frontmatter descriptions and the agent file (plugin-delivered or project-local) for full body** (single source of truth — these blurbs intentionally stay terse to avoid drift).
 
 | Agent | Specialty |
 |---|---|

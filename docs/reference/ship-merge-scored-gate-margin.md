@@ -62,7 +62,7 @@ defeated, even though `D` never moved.
 one edit against a fixed printed threshold and assume the table as a whole is still safe. Not
 hypothetical: the 2026-07-23 Approval-status removal already moved this arithmetic once.
 
-## Known gap (filed 2026-07-29, `/kbg:compliance-audit` on v0.68.97 — not yet closed)
+## Known gap (filed 2026-07-29 by the former `compliance-audit` command, on v0.68.97 — not yet closed)
 
 This invariant only covers edits to the criteria table's own weights (`C` and `D`). The "70" pass
 threshold — shared infrastructure across this whole scored gate, also referenced by the floor

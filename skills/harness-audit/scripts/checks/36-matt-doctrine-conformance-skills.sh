@@ -36,14 +36,17 @@
 # Per memory `harness-audit-gauntlet-policy`, this is INFO-only. The check is
 # the visibility layer for the doctrine rule in CLAUDE.md; tightening to
 # WARN/CRIT deliberately rejects the WARN→CRIT escalation trap.
-# Excluded: harness-audit (self-references the check); kbg-help + ideate (skill
-# + command twins with shared descriptions would false-positive on every leg).
+# Excluded: harness-audit (self-references the check); ideate (defensive:
+# historically a skill+command twin with a shared description — the loop only
+# sees skills/*/SKILL.md, so the entry is inert while only the command form
+# exists). kbg-help's entry (same twin rationale) was removed 2026-08-24 (#80)
+# with its command — no skills/kbg-help/ exists, so the entry was dead anyway.
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   name=$(basename "$(dirname "$f")")
   case "$name" in
-    harness-audit|kbg-help|ideate) continue ;;
+    harness-audit|ideate) continue ;;
   esac
 
   desc=$(fm_get "$f" "description" --block)

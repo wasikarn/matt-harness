@@ -59,8 +59,8 @@ Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-rea
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
 gates a done-declaration. Several commands already do this
-(`ship`, `ship-merge`, `ship-release`, `fix-bug`, `post-mortem`, `address-review`,
-`compliance-audit`, `ask-kbg`, `ideate-search`). `harness-audit` checks 30
+(`ship`, `ship-merge`, `ship-release`, `post-mortem`, `address-review`,
+`ideate-search`). `harness-audit` checks 30
 (reason presence, WARN) and 44 (`ship-merge` specifically, CRIT) enforce this.
 
 **Why:** this is the only mechanism blocking the model from self-invoking a real,
@@ -110,8 +110,8 @@ command delegates to, per `agent-authoring-conventions.md`).
 5. Run `bash skills/harness-audit/scripts/audit.sh` — checks 06 (frontmatter
    completeness), 20 (description length + duplicate-surface), 30 (disable-model-invocation
    reason), 46 (reference-file frontmatter leak) all touch new commands directly.
-6. Bump `.claude-plugin/plugin.json` + `marketplace.json` per
-   `skills/add-surface/SKILL.md`'s standard procedure.
+6. Bump `.claude-plugin/plugin.json` + `marketplace.json` per root `CLAUDE.md`
+   § "Adding or removing a surface".
 
 ## Cross-references
 
@@ -120,8 +120,9 @@ command delegates to, per `agent-authoring-conventions.md`).
 - [`agent-authoring-conventions.md`](./agent-authoring-conventions.md) — the same kind of
   doc for `agents/`; several principles here (grow on proven need, dead-field hygiene)
   mirror it directly.
-- `skills/add-surface/SKILL.md` — the mechanical add/remove/bump procedure for
-  any auto-discovered surface, commands included.
+- Root `CLAUDE.md` § "Adding or removing a surface" — the mechanical add/remove/bump
+  procedure for any auto-discovered surface, commands included (inlined there when the
+  `add-surface` skill was removed, 2026-08-24 #80).
 - `skills/harness-audit/scripts/checks/` — 06, 20, 30, 44, 46 are the mechanical checks
   over this doc's §2–§4. As with the agent doc, there is deliberately no structural
   body-regex check (heading presence, phase-count, etc.) — that class was tried for

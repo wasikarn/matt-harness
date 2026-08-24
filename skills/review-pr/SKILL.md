@@ -132,7 +132,7 @@ Run a comprehensive pull request review using multiple specialized agents, each 
 - **Reference tables** (aspect routing, agent descriptions, tips, workflow examples): `reference.md` in this skill directory.
 - Agents run autonomously, use models per their own frontmatter, and return detailed reports with
   actionable file:line references.
-- Routed agents listed via `kbg:inventory` (your skill that lists everything available) or `claude agents` CLI — **not** `/agents` (that's a UI command for managing definitions, not a listing).
+- Routed agents listed in `BOUNDARY.md` (the generated capability map) or via `claude agents` CLI — **not** `/agents` (that's a UI command for managing definitions, not a listing).
 - **Integration (project-specific)**: scope (reviews code, not CI status — never gates on `gh pr
   checks`, that's `/ship-merge`'s job), security-reviewer/`kbg:security-auditor` split, severity
   tiers, SCRUTINIZE-4, GH CLI mechanics, token-budget estimate, routing table, ledger spec —

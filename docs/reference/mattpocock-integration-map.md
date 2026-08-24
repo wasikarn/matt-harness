@@ -18,7 +18,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
-| ask-matt | user | `commands/ask-kbg.md` — "The other fleet" defers matt's map to it (with staleness caveat) |
+| ask-matt | user | no kbg touchpoint — routing questions go to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
 | code-review | model | deferred — ask-matt's map owns it; kbg's native review path is `kbg:code-reviewer` / `kbg:review-pr` |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `kbg:code-architect` / `kbg:backend-architect` |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md` |
@@ -27,19 +27,19 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | implement | user | `agents/code-implementer.md` (boundary: kbg agent implements autonomously; matt's is user-typed) |
 | improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling) |
 | prototype | model | deferred — ask-matt's map owns it |
-| research | model | `commands/kbg-help.md` (DEFINE row), `skills/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
+| research | model | `skills/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
 | resolving-merge-conflicts | model | deferred — ask-matt's map owns it |
 | setup-matt-pocock-skills | user | `README.md` Quick Start step 4 |
 | tdd | model | `skills/production-audit` |
 | to-spec | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
 | to-tickets | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
-| triage | user | `commands/kbg-help.md` (PLAN row; user-typed issue router) |
+| triage | user | deferred — ask-matt's map owns it (user-typed issue router; former `kbg-help` touchpoint removed 2026-08-24 #80) |
 | wayfinder | user | `skills/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
-| wizard | model | `commands/ask-kbg.md` matt-only list (human-only provisioning steps) |
-| grill-me | user | `commands/ask-kbg.md` matt-only list (batched grilling interview) |
+| wizard | model | deferred — ask-matt's map owns it (human-only provisioning steps) |
+| grill-me | user | deferred — ask-matt's map owns it (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |
-| handoff | user | `commands/ask-kbg.md` "Crossing sessions" (no kbg equivalent) |
+| handoff | user | deferred — ask-matt's map owns it (no kbg equivalent) |
 | teach | user | deferred — ask-matt's map owns it |
-| to-questionnaire | user | `commands/ask-kbg.md` matt-only list (decision → stakeholder questionnaire) |
-| wait-what | user | `commands/ask-kbg.md` matt-only list (re-pitch last reply) |
+| to-questionnaire | user | deferred — ask-matt's map owns it (decision → stakeholder questionnaire) |
+| wait-what | user | deferred — ask-matt's map owns it (re-pitch last reply) |
 | writing-for-agents | model | root `CLAUDE.md` § Skill authoring doctrine, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |

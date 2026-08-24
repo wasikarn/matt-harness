@@ -22,8 +22,8 @@ ticket #87 owns any rename.)
   — the same classifier `hooks/gates/verifier-protect.sh` and `commands/risk-check.md`
   import. **Don't hardcode this path list in prose here** — it drifted silently once
   already: `hooks/advisory/**` coverage was added to the classifier 2026-08-06, and this
-  guard's own hardcoded copy missed it until a `/kbg:claude-md-health` audit caught it
-  2026-08-17.
+  guard's own hardcoded copy missed it until a doctrine-health audit (the former
+  `claude-md-health` skill, removed 2026-08-24 #80) caught it 2026-08-17.
 
 **What the result does.** Nothing computational: a **sensitive** result never STOPs Phase 1
 by itself, and a **not sensitive** result never authorizes anything. Both land verbatim in

@@ -16,5 +16,10 @@ if [ -f "$BOUNDARY" ] && [ -f "$BOUNDARY_GEN" ]; then
     warn "could not regenerate boundary map to check drift (inventory-boundary.sh failed)"
   fi
   rm -f "$_tmp_boundary"
+else
+  # Never silently no-op: a missing map or generator would otherwise make this
+  # drift check invisible with zero signal (#80). Name whichever is absent.
+  [ -f "$BOUNDARY" ] || warn "BOUNDARY.md missing ($BOUNDARY) — boundary-drift check cannot run"
+  [ -f "$BOUNDARY_GEN" ] || warn "boundary generator missing ($BOUNDARY_GEN) — boundary-drift check cannot run"
 fi
 

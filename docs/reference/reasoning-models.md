@@ -94,7 +94,8 @@ reasoning scaffold when the call is hard," added v0.3.5) — `clarify-first` / `
 `strategize` / `critical-eval` / `doubt-driven`, split by reversibility. This catalog and its
 tables below (model→home, workflow-pattern→models) are **reference**, not a competing
 situation-router; for the 9 reference-only frames that no kbg skill applies, the on-demand path is
-`kbg:inventory` (discovery escape hatch) + `docs/reference/thinking-skills/`.
+`BOUNDARY.md` (the generated capability map — the `inventory` skill wrapper was removed
+2026-08-24 #80) + `docs/reference/thinking-skills/`.
 
 To read the full upstream write-up for any model, run the Bash recipes in the next section.
 **Do not use a `Read` tool on a literal `${KBG_PLUGIN_ROOT}` path** — the variable expands
@@ -148,7 +149,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule; in probe mode it's a reference frame, not a distinct step |
 | debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception frame; in probe mode it's a reference frame, not a distinct step |
 | socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
-| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation), commands/compliance-audit (falsify-don't-rubber-stamp) | repro → hypothesize → instrument → falsify |
+| scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
 | red-team | `thinking-red-team` | applied | skills/decide (critique mode), skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
 | steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode), skills/review-pr, skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives |

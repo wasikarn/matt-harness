@@ -44,14 +44,11 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Commands — Repo
 | Command | Description |
 |---|---|
-| ask-kbg | Context-aware guide to kbg's own fleet: recommends the on-ramp for what this session is doing right now, plus the full narrative map of what chains to what and why. Say 'ask kbg', Thai 'จะเริ่ม flow ไหนดี'. Don't use for a full listing (kbg:inventory), a stage table (/kbg-help), or matt's fleet (the user types /mattpocock-skills:ask-matt). |
 | bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (/review-pr) or session audit (/deep-audit). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
-| compliance-audit | Audit a completed implementation against its approved plan via fresh-context verifiers — plan-conformance, not code quality. Use after finishing a multi-phase plan. Don't use for reviewing an unplanned diff (kbg:review-pr) or prod-readiness (kbg:production-audit). |
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see /kbg:review-pr. |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
 | ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
-| kbg-help | kbg-harness quick reference: skills, commands, agents, validation, context tiers. Use for 'help', 'what can you do', 'list skills', 'kbg commands', 'ช่วยเหลือ', 'มีอะไรบ้าง'. |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after /fix-bug; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | review-dashboard | List every in-flight PR review's status in one table, or drill into one PR/branch. Don't use for merge decisions (/ship-merge) or running a review (kbg:review-pr). |
@@ -66,7 +63,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. |
 | fix-bug | Guided 7-phase bug-fix workflow. Use for non-trivial bugs needing root-cause or regression pinning. Say 'แก้บั๊ก/fix bug'. Don't use for typos, TDD (tdd), or refactors (/refactor-clean). |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
-| iterate-skill | Bounded, human-gated improve loop for a skill/agent/command's SKILL.md-style body content, using kbg:review-fixtures as the quality signal. Use after a review-fixtures pass has target-attributable findings you want to act on. Don't use for description-only tuning (skill-creator's own run_loop.py) or a single one-off fix (just edit the file). |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (kbg:code-reviewer) or skill-creator's own quantitative grading/benchmark step. |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (kbg:incident). |
 | ship | Land a code change end-to-end: classify, implement, test, review, fix-loop, merge. Say 'ship this/ทำงานใหม่'. Don't use for releases (/ship-release) or a PR already ready to merge (/ship-merge). |
@@ -92,15 +88,12 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### meta
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| add-surface | Build or remove a plugin surface (agent, skill, command, hook, output-style, theme). Use when creating one in an auto-discovered directory. Don't use for editing content. | inline | auto |
 | agent-architecture-audit | Scan 12-layer agent stacks, regression, memory pollution, tool discipline, repair loops. Use when debugging a misbehaving harness (stuck loops, rot). Don't use for code review. | inline | auto |
-| claude-md-health | Scan a CLAUDE.md/doctrine file against 3 health checks (readable-by-behavior, findable, fix-once). Use when a governance doc has grown stale. Don't use for content-completeness (claude-md-management:claude-md-improver). | inline | auto |
 | compress-docs | Compact a bloated markdown doc for tokens; verify-before-overwrite, grammar stays full. Use when over harness-audit's 20K threshold. Don't use for content grading or suggest-only scans. | inline | auto |
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (kbg:security-auditor). | inline | auto |
-| inventory | Catalogue loadable skills/agents/commands/hooks + the escape hatch. Use when stuck on routing. Thai: 'หา skill ไหนเหมาะ'. Don't use for single-layer lists or governance health. | inline | auto |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
 | loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
@@ -148,7 +141,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Hooks — Repo
 | Hook | Purpose |
 |---|---|
-| compliance-audit-nudge.sh | Advisory: after a git commit, if a plan was approved earlier this session, remind the model to tell the user that /kbg:compliance-audit exists -- never to dispatch it (commands/compliance-audit.md is disable-model-invocation:true; the reason: "costly multi-agent fan-out that gates a done-declaration -- user decides when the audit runs, not the model"). PostToolUse hook, matcher "Bash" -- fires on tool completion regardless of the commit's own exit code (a failed/empty commit still nudges; low-impact, same advisory-noise tolerance as every other nudge here). Never blocks; always exits 0. |
 | flow-nudge.sh | Advisory: when the user's prompt looks like non-trivial engineering work, nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) before editing, with the heavyweight spec flow (mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /ship; to-spec/to-tickets are disable-model-invocation upstream) as the branch for a feature to spec out. UserPromptSubmit hook. Output → plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"; this script uses plain stdout instead, a separately-documented mechanism with the same practical effect); never blocks, always exits 0. Errors are silently swallowed. […] |
 | jira-route-nudge.sh | Advisory: when the user's prompt mentions Jira/Confluence work, nudge routing through the jira-acli plugin's skills (jira-acli:acli, jira-acli:jira-content, jira-acli:confluence-content) before any direct mcp__*atlassian*/mcp__*Rovo* tool call or raw acli command. UserPromptSubmit hook. Output -> plain stdout — docs: "added as context Claude can see and act on" (not the JSON hookSpecificOutput.additionalContext path, which is what's specifically documented as wrapped in a "system reminder"); never blocks, always exits 0. Errors are silently swallowed. |
 | learn-nudge.sh | Advisory: remind the operator that kbg:learn exists when a session had enough activity to plausibly contain a durable learning worth capturing. SessionEnd hook. Never blocks (SessionEnd has no decision control at all), never writes memory, never judges WHAT the learnings are — that's kbg:learn's job, gated by its own AskUserQuestion. This hook only decides whether to say "consider running it." |
@@ -171,7 +163,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | cost-tracker.sh | Stop: log cumulative per-model token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | memory-audit-commit.sh | Stop: commit any dirty changes in the current project's memory store to its own git history. Restores a real audit trail / rollback path for the memory store, which previously had zero version control — see docs/research/agent-memory-engineering-2026-08-07.md proposal A4 (verified 2026-08-07: `git rev-parse --is-inside-work-tree` failed against the live store, confirmed, not assumed). |
 | stale-task-nudge.sh | Stop: nudge the model when a task it created is still `in_progress` right as the turn ends, with nothing in this turn touching it — the exact shape of a real incident (2026-08-09): a task was marked in_progress, a final report delivered as the turn's last output, and TaskUpdate(completed) never called. Caught only because the user happened to ask "check tasks that are still open". |
-| test-compliance-audit-nudge.sh | compliance-audit-nudge unit tests: simulates PostToolUse/Bash JSON payloads (with a real fixture transcript file for the ExitPlanMode-detection cases) and asserts stdout output (JSON with additionalContext) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash tests/hooks/test-compliance-audit-nudge.sh |
 | test-convergence-merge-gate.sh | Behavioral tests for hooks/gates/convergence-merge-gate.sh -- this gate's FIRST persisted test coverage of any kind (confirmed zero references in test-gates.sh before this file was added, 2026-08-15). |
 | test-flow-nudge.sh | Flow-nudge unit tests: simulates UserPromptSubmit JSON payloads and asserts stdout output (nudge fired) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash tests/hooks/test-flow-nudge.sh |
 | test-gates.sh | Gate unit tests: simulates PreToolUse JSON payloads and asserts allow/deny/ask. Each test_deny call expects exit 2; test_allow expects exit 0 + empty stdout; test_ask expects exit 0 + a permissionDecision: ask JSON on stdout. Run standalone: bash tests/hooks/test-gates.sh |
@@ -190,7 +181,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-24T11:07:55Z_
+_Generated: 2026-08-24T11:30:07Z_
 
 ---
 

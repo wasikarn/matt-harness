@@ -8,6 +8,10 @@
 > **Historical note (2026-08-24, #78):** the `task-prep` skill and the `plan-reviewer` agent this
 > plan mentions were retired with the planning/prep-surface removal — mentions below are records
 > of the 2026-07 pass, not references to live surfaces.
+>
+> **Historical note (2026-08-24, #80):** `add-surface`, `claude-md-health`, `inventory`'s skill
+> wrapper, and the `ask-kbg`/`kbg-help`/`compliance-audit`/`iterate-skill` commands were removed
+> in the meta/routing-surface cut — same reading applies to their mentions below.
 
 ## Progress
 
