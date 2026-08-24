@@ -16,7 +16,7 @@ This mode is **advisory only**: it never writes, never emits a `permissionDecisi
 
 - **Deep cost report / historical trends** → use `kbg:cost-report`.
 - **Fleet-level audit** (schema/manifest drift, plugin-cache freshness, tool-grant scoping) → use `harness-audit` default (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`).
-- **Deep PR review** → use `kbg:review-pr`.
+- **Deep PR review** → use `mattpocock-skills:code-review`.
 - **Security posture** → defer to `kbg:security-auditor`.
 
 ## Quick start

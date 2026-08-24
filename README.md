@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.451-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.452-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/kbg-harness/actions/workflows/validate.yml)
 
@@ -118,9 +118,9 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 46 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
-| **Agents** | 18 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 22 | `/kbg:<command>` — e.g. `/kbg:ship`, `/kbg:address-review`, `/kbg:fix-bug` (namespaced identically to skills — see Quick Start step 7) |
+| **Skills** | 39 | `kbg:<skill>` — e.g. `kbg:pr`, `kbg:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Agents** | 17 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
+| **Commands** | 21 | `/kbg:<command>` — e.g. `/kbg:ship`, `/kbg:address-review`, `/kbg:fix-bug` (namespaced identically to skills — see Quick Start step 7) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -248,7 +248,6 @@ Agents run in a delegated sub-task context. Claude spawns them automatically, or
 | `code-implementer` | Detects the stack, loads the matching `kbg:*-patterns` skill, writes the smallest-scope diff, verifies |
 | `backend-architect` | API contracts, service boundaries, data ownership, caching, reliability — the systems-design layer above framework-narrow `*-patterns` skills |
 | `security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks |
-| `code-reviewer` | Quality, correctness, patterns, and missing edge cases |
 | `blind-spot-hunter` | Post-review adversarial hunter for cross-file, framework-behavior, and data-flow blind spots normal review misses |
 | `performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs |
 | `refactor-cleaner` | Dead code removal, simplification, and naming cleanup |
@@ -357,7 +356,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 46 skills · 18 agents · 22 commands).
+> `ls commands/` (real current fleet: 39 skills · 17 agents · 21 commands).
 
 | Source | License | Adopted |
 |---|---|---|
@@ -368,7 +367,7 @@ kbg-harness aggregates components from these upstream projects under their respe
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance-machinery rubric adapted into a new Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130) |
-| kbg-native | MIT | 46 skills · 18 agents · 22 commands |
+| kbg-native | MIT | 39 skills · 17 agents · 21 commands |
 
 ---
 

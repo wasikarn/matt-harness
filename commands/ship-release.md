@@ -80,9 +80,9 @@ the branch you're releasing from.
 
 **Actions**:
 1. If a dedicated release branch exists (project convention, not this command's default): tell
-   user "Run `review-pr` on the release branch for a final sanity check," then wait for it.
+   user "Run `mattpocock-skills:code-review` on the release branch for a final sanity check," then wait for it.
 2. If there's no separate release branch (trunk-based, releasing directly off `main`/`develop`):
-   there's no PR to run `review-pr` against — do a final manual read-through of the diff since
+   there's no separate branch to review — do a final manual read-through of the diff since
    the previous release instead (the previous tag if one exists, or the repository's first
    commit if this is the first release — Phase 1 Action 2 already determined which case
    applies), and say explicitly that this is the trunk-based path, not a silently-skipped

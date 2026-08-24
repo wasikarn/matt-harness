@@ -1,6 +1,6 @@
 ---
 name: deep-audit
-description: "Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see /kbg:review-pr."
+description: "Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review."
 model: inherit
 effort: xhigh
 ---
@@ -50,8 +50,7 @@ Do not assume the current implementation is correct. Treat the entire session ou
     **Zero or few findings is a valid outcome of this step, not evidence the pass was too shallow.**
     Do not manufacture findings — filler nits, speculative "consider using X," or a hypothetical
     edge case with no concrete trigger — to give step 5 something to fix. This matches the standard
-    already held elsewhere in this fleet: `agents/code-reviewer.md`'s "It Is Acceptable And Expected
-    To Return Zero Findings" and `agents/blind-spot-hunter.md`'s severity-earning discipline
+    already held elsewhere in this fleet: `agents/blind-spot-hunter.md`'s severity-earning discipline
     (no finding ships without a traced path to an earned severity). An already-high baseline score
     is a legitimate baseline. This doesn't relax the Critical Rule below — if the score genuinely
     doesn't improve, say so explicitly; it just means "nothing worth fixing" and "under-audited" are

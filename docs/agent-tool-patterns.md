@@ -13,7 +13,7 @@ The kbg-harness convention is to prefer **`tools:` (allowlist)** for new agents.
 
 **What it is:** an explicit list in the agent's YAML frontmatter.
 
-**Example** (from `agents/code-reviewer.md`):
+**Example** (from `agents/security-reviewer.md`):
 
 ```yaml
 tools: Read, Grep, Glob, Bash
@@ -34,7 +34,7 @@ tools: Read, Grep, Glob, Bash
 1. **Readable at a glance.** A reader of the agent's frontmatter sees the full capability set in one line. The constraint is the list, not the diff from a default.
 2. **No implicit inheritance.** If the vendor's default toolset changes, the agent's tools don't change with it. The contract is stable.
 3. **Safer default.** Adding a new tool to the vendor's default set is a **silent capability expansion** for denylisted agents but a **no-op** for allowlisted agents. We err on the side of explicit over implicit.
-4. **Was paired with a runtime Bash-gate, now doctrine-only.** Validators (e.g. `code-reviewer`, `security-reviewer`) use `tools: [Bash]` for read-only inspection. `hooks/gates/validator-bash-guard.sh` blocked mutation at runtime through v0.4.18, but was deleted in the v0.6.0 "reset: rebuild from scratch" cut (`c4521023`) and never rebuilt — its deny-pattern logic and env-var bypass predate this harness's later no-env-var-bypass doctrine (see `verifier-protect.sh`), so a straight restore isn't compatible with current conventions. Today the read-only constraint is enforced by the allowlist (no `Write`/`Edit` grant) plus prompt doctrine only — there is no runtime backstop if a validator's prompt drifts toward a mutating Bash command.
+4. **Was paired with a runtime Bash-gate, now doctrine-only.** Validators (e.g. `typescript-reviewer`, `security-reviewer`) use `tools: [Bash]` for read-only inspection. `hooks/gates/validator-bash-guard.sh` blocked mutation at runtime through v0.4.18, but was deleted in the v0.6.0 "reset: rebuild from scratch" cut (`c4521023`) and never rebuilt — its deny-pattern logic and env-var bypass predate this harness's later no-env-var-bypass doctrine (see `verifier-protect.sh`), so a straight restore isn't compatible with current conventions. Today the read-only constraint is enforced by the allowlist (no `Write`/`Edit` grant) plus prompt doctrine only — there is no runtime backstop if a validator's prompt drifts toward a mutating Bash command.
 
 **Tradeoffs (when allowlist is the wrong choice):**
 
@@ -90,7 +90,6 @@ disallowedTools: Write, Edit, NotebookEdit
 
 | Agent | `tools:` | Why this set |
 |-------|----------|--------------|
-| `code-reviewer` | `Read, Grep, Glob, Bash` | Read-only inspection + Bash for `git diff` / `git log`. No `Write`/`Edit` — review is observational, not mutational. |
 | `build-error-resolver` | `Read, Write, Edit, Bash, Grep, Glob` | Implementation role — reads existing code + writes minimal fixes + runs the build. |
 | `security-reviewer` | `Read, Bash, Grep, Glob` | Read-only audit + Bash for `git log`/manifest probes. No `Write` — review is observational. |
 
@@ -98,6 +97,6 @@ disallowedTools: Write, Edit, NotebookEdit
 
 - **[Permission re-audit cadence](./harness-decay-cadence.md#permission-re-audit)** — quarterly review of `tools:` grants.
 - **The no-model-self-start rule** (`CLAUDE.md`'s Operating model, under §Architecture) — the autonomy invariant is enforced by **allowlist-based tool grants**, expressed via `disable-model-invocation: true` on a set of skill/command carriers, a subset of which are CRIT-guarded against a rewrite silently dropping the flag. The allowlist convention is the substrate for the invariant's enforcement. Don't restate the current carrier count/list here — it drifted once already when duplicated (caught 2026-08-19). See `CLAUDE.md`'s "Skill/agent/command mechanics & routing" section for the live, single-sourced census.
-- **F1 Bash-gate pattern (retired)** — `hooks/gates/validator-bash-guard.sh` ran a deny-pattern check on the then-14 validator-class agents through v0.4.18; deleted in the v0.6.0 reset and not rebuilt (see §4 point 4 above). Today's 6 validator-class agents (`code-architect`, `code-reviewer`, `python-reviewer`, `security-reviewer`, `silent-failure-hunter`, `typescript-reviewer`) have no runtime enforcement beyond the allowlist's `Bash` grant and prompt doctrine.
+- **F1 Bash-gate pattern (retired)** — `hooks/gates/validator-bash-guard.sh` ran a deny-pattern check on the then-14 validator-class agents through v0.4.18; deleted in the v0.6.0 reset and not rebuilt (see §4 point 4 above). Today's 5 validator-class agents (`code-architect`, `python-reviewer`, `security-reviewer`, `silent-failure-hunter`, `typescript-reviewer`) have no runtime enforcement beyond the allowlist's `Bash` grant and prompt doctrine.
 - **BOUNDARY.md** — the regenerator outputs a `Mutates` column that reflects `Edit`/`Write`/`Bash` grants (allows readers to see at-a-glance which agents can mutate state).
 - **Skill template (`docs/skill-template/SKILL.md`)** — the skill template does not use `tools:` (skills are loaded into the parent agent, not invoked as separate contexts), but the allowlist convention still applies to the parent agent that loads the skill.

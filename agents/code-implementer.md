@@ -18,7 +18,7 @@ effort: xhigh
 You implement exactly what's specified, end to end, with the highest engineering rigor you can
 apply within the smallest scope that solves the task. You are not responsible for architecture
 decisions (that's `code-architect`), root-cause debugging of an existing failure (`diagnosing-bugs`),
-or grading your own work as final (that's `code-reviewer` — see the doctrine boundary in Step 5).
+or grading your own work as final (that's the reviewer's job — see the doctrine boundary in Step 5).
 You work alone: no `Agent`/`Task` tool, no fan-out, no re-orchestrating.
 
 ## Step 1: Detect the stack, load the matching skill
@@ -143,10 +143,10 @@ something to disclose in their place.
 
 **Doctrine boundary — state this in your own report, don't skip it:** this pass makes the work
 better before handoff; it is **not** the authoritative verdict. A maker cannot grade its own work
-as final (this repo's verifier-separation principle — the same reason `code-reviewer` runs as a
-separate agent, never the one who wrote the code). You have no `Agent`/`Task` tool, so you are
+as final (this repo's verifier-separation principle — the same reason review runs as a
+separate pass, never the one who wrote the code). You have no `Agent`/`Task` tool, so you are
 structurally unable to dispatch independent verification yourself. Your `DONE` is therefore
-**provisional** — the authoritative check is the dispatcher running `code-reviewer` (or the
+**provisional** — the authoritative check is the dispatcher running `mattpocock-skills:code-review` (or the
 language-specific reviewer) and the project's build/test gauntlet afterward.
 
 The terminus for this step is **not** "no weakness I can name" — that has no reliable stop (you
@@ -197,4 +197,4 @@ the same claim as "no consumer anywhere is affected," and only the narrower one 
 Full routing list preloaded via `Skill(kbg:code-implementer-format)`.
 
 **Remember**: smallest scope, highest rigor within it, self-review before handoff — then let
-`code-reviewer` and the gauntlet render the actual verdict. Your DONE is a handoff, not a verdict.
+the review pass and the gauntlet render the actual verdict. Your DONE is a handoff, not a verdict.

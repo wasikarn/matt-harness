@@ -13,7 +13,7 @@ effort: medium
 Create a GitHub PR from the current branch with a **consistent, templated body** the user
 approves **before** the PR exists. The preview-confirm gate (Phase 4) is the point of this
 skill: it enforces the body format and is the in-flow confirmation an unflagged
-external-write surface requires (same posture as `kbg:review-pr`'s submit gate).
+external-write surface requires.
 
 **Use when** the user says "create/open/raise a PR", "เปิด PR", "PR ให้หน่อย", or asks to
 turn the current branch's commits into a pull request.
@@ -21,7 +21,7 @@ turn the current branch's commits into a pull request.
 **When NOT to use:**
 - Merging a reviewed PR → `/ship-merge`.
 - Replying to reviewer comments → `/address-review`.
-- Reviewing a PR's code → `kbg:review-pr`.
+- Reviewing a PR's code → `mattpocock-skills:code-review`.
 
 **Done when:** a PR exists on the base branch with a body that matches the template
 (`reference.md#pr-body-structure-phase-41`, or the repo's `.github` template merged with it),
@@ -182,7 +182,7 @@ gh pr checks --json name,state,bucket 2>/dev/null || true
 Report to the user using `reference.md#output-report-template-phase-6`.
 
 **Suggested next step:**
-- Needs review           → `kbg:review-pr`
+- Needs review           → `mattpocock-skills:code-review`
 - Reviewed, ready to land → `/ship-merge <number>`
 - Reviewer left comments  → `/address-review <number>`
 - Open in browser         → `gh pr view <number> --web`

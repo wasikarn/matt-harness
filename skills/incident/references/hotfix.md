@@ -1,6 +1,6 @@
 # Hotfix path (reference for `kbg:incident`)
 
-The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `/fix-bug` + `kbg:review-pr` + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
+The fix-forward branch of `kbg:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `/fix-bug` + fast review + `/ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
 
 ## Core Principles
 
@@ -21,7 +21,7 @@ Infer from user input or ask explicitly.
 | Tier | User Says | MTTM Target | Merge Gate |
 |------|-----------|-------------|------------|
 | **P0** | "down", "outage", "exploit", "data loss", "P0" | <15 min | Zero Block items. Skip non-Critical review. `--admin` merge immediately after fix + 1 reviewer. |
-| **P1** | "critical", "security patch", "broken", "P1" | <1 hr | Fast review (code-reviewer + conditional security-reviewer). Minimal regression test. `--admin` merge. |
+| **P1** | "critical", "security patch", "broken", "P1" | <1 hr | Fast review (per-language reviewer agent + conditional security-reviewer). Minimal regression test. `--admin` merge. |
 | **P2** | "degraded", "slow", "SLO breach", "P2" | <4 hr | Standard fast review. Full regression test. Use `/ship-merge` (admin-merges when branch protection is active); only hold for full CI when CI is green and the change is large enough to warrant the wait. |
 
 **Default if unclear:** Assume P1. Do not waste time debating — pick one and move.
@@ -46,7 +46,7 @@ Infer from user input or ask explicitly.
 |---|---|---|
 | 0 → 1 | Rollback or kill-switch check | Before any code change |
 | 1 → 2 | Branch `hotfix/<ticket>-<slug>` from `origin/<prod-branch>`, then fix inline | After repro confirmed ≤5 min |
-| 2 → 3 | Launch `code-reviewer` (+ `security-reviewer` if needed) | After fix + regression test |
+| 2 → 3 | Launch the matching per-language reviewer agent (+ `security-reviewer` if needed) | After fix + regression test |
 | 3 → 4 | Commit + push + `gh pr merge --admin --squash --delete-branch` | After zero Block findings |
 | 4 → 5 | `gh run watch` + repro against prod | After merge |
 | 5 → 6 | Tell user to schedule `/post-mortem` | After verify passes |

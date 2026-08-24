@@ -274,8 +274,9 @@ test_allow "$IRRECOVERABLE" "git branch newbranch (create, must not over-block)"
   "$(bash_payload 'git branch newbranch')"
 test_allow "$IRRECOVERABLE" "git branch featureD (name containing D, must not over-block)" \
   "$(bash_payload 'git branch featureD')"
-# --- review-pr allowlist is dead code: a disguised detached worktree must still deny ---
-test_deny  "$IRRECOVERABLE" "git worktree add --detach -b into a review-pr-looking path (allowlist is dead code)" \
+# --- detached-looking worktree with -b must still deny (no allowlist survives; the former
+# review-pr allowlist was removed with the review pipeline, 2026-08-24 #82) ---
+test_deny  "$IRRECOVERABLE" "git worktree add --detach -b (disguised new-branch worktree)" \
   "$(bash_payload 'git worktree add --detach -b evil /tmp/review-pr-1')"
 # --- fail-closed internal-error backstop (irrecoverable.sh:431-433): a payload that makes the
 # Python raise (command is a JSON array, not a string) must still exit 2, never fall open. ---

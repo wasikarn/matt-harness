@@ -24,7 +24,7 @@ Merges the former `/ship-task` (blank-slate, 9-step) and `kbg:ship-change` (alre
 | 3 | **Define done** — full checkable criteria list | **Define done** — 1-2 items, stated inline from the Phase 0 boundary |
 | 4 | **Classify + Implement** — bug→`/fix-bug` · feature→inline TDD · refactor→`/refactor-clean` | same |
 | 5 | **Test** — project test-suite + type-check | same |
-| 6 | **Review** — `kbg:review-pr`, SCRUTINIZE-4 filter | same |
+| 6 | **Review** — `mattpocock-skills:code-review` | same |
 | 7 | **Fix loop** — `/address-review` → re-run Phase 6 until clean | same |
 | 8 | **Ship** — `/ship-merge` | same |
 
@@ -104,7 +104,7 @@ Both paths converge at Phase 4 and share every phase after it verbatim.
    - **Clarifying questions** — present all underspecified aspects to the user and wait for answers before designing. If the scope changes materially, revise the Phase 3 criteria.
    - **Architecture design** — spawn 2–3 `code-architect` agents in parallel (minimal changes, clean architecture, pragmatic balance), self-review each surviving approach for placeholder/scope/ambiguity, then present all surviving approaches with their trade-offs and ask the user to pick — don't silently narrow to one before the user sees the field; name any dropped during self-review and why.
    - **Implementation** — wait for explicit approval, then default to TDD red → green → refactor unless one of the documented opt-out criteria applies (visual-only change, hard race with named tool, integration boundary with stated harness rejection, 1-line cosmetic).
-   - **Quality review** — spawn conditional reviewers (code-reviewer always — covers type-design and test-coverage lenses; security-reviewer, silent-failure-hunter as needed), consolidate findings into Critical/Important/Minor — do NOT blend findings across agents; when two reviewers independently flag the same file:line, note the overlap explicitly rather than merging or dropping one — and ask the user how to proceed.
+   - **Quality review** — run `mattpocock-skills:code-review` (plus security-reviewer, silent-failure-hunter agents as needed), consolidate findings into Critical/Important/Minor — do NOT blend findings across agents; when two reviewers independently flag the same file:line, note the overlap explicitly rather than merging or dropping one — and ask the user how to proceed.
    - **Summary** — mark todos complete, document decisions, files modified, and next steps.
 
 **Carve-out**: genuinely trivial work (a one-liner, a copy tweak) may skip the design-approval gate and implement directly, per METHODOLOGY Rule 1. Don't manufacture a design for a one-line change.
@@ -135,11 +135,9 @@ Detailed test-runner auto-detect and the criteria cross-check are in `commands/s
 **Goal**: Fresh-context multi-agent critic with no context contamination from the build.
 
 **Actions**:
-1. Invoke `kbg:review-pr`. For high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests), run `kbg:security-auditor` first — the `security-reviewer` pass inside `kbg:review-pr` covers routine auth/secrets-touching diffs; don't run both.
-2. SCRUTINIZE-4 gate in Phase 5 of that skill filters false positives.
-3. Phase 7 of that skill writes `${REVIEW_PR_STATE_DIR:-~/.claude/state}/review-last.json`.
+1. Invoke `mattpocock-skills:code-review` (Standards + Spec, parallel sub-agents). For high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests), run `kbg:security-auditor` first — a routine auth/secrets-touching diff is covered by the review pass; don't run both.
 
-**Gate**: `review-last.json: clean: true`. If Critical findings → fix inline or return to Phase 4 for scope-narrowed fix → re-run Phase 6.
+**Gate**: the review reports no blocking findings. If it raises blocking findings → fix inline or return to Phase 4 for scope-narrowed fix → re-run Phase 6.
 
 ---
 
@@ -149,8 +147,8 @@ Detailed test-runner auto-detect and the criteria cross-check are in `commands/s
 
 **Actions**:
 1. If Phase 6 returned findings: fix them.
-2. Re-run `kbg:review-pr` (Phase 6 of this command).
-3. Repeat until `review-last.json` shows `clean: true` and `last_sha == HEAD`.
+2. Re-run the Phase 6 review.
+3. Repeat until the review comes back clean against the current HEAD.
 
 There is no autonomous loop. Each iteration requires explicit user re-invocation of Phase 6.
 
@@ -185,8 +183,7 @@ There is no autonomous loop. Each iteration requires explicit user re-invocation
 - Phase 1 unclear area → narrow scope, re-explore a smaller subsystem.
 - Phase 3 non-machine-checkable criteria → rewrite criteria with a specific command.
 - Phase 6 Critical findings → must fix before Phase 8. No exceptions.
-- **Sensitive-path own-branch STOP at Phase 8**: if the diff touches a sensitive path — `ship-merge/COMMAND.md`'s automation-bias guard is the canonical definition (auth/secret/credential/payment/billing/token, or the harness's own verifier/gate paths per `hooks/gates/lib/_protected_paths.py`'s `is_gate_path()` — don't re-copy that list here), Phase 6's in-session review writes `review_mode: "own-branch"` — `/ship-merge`'s automation-bias guard won't trust that self-tiering and scores Critical findings 0, which STOPs the merge regardless of how clean the review looked. This isn't a bug in Phase 8; re-review via `kbg:review-pr`'s PR-by-number mode (isolated worktree) before retrying.
-- `review-last.json` absent or stale → re-run `kbg:review-pr`.
+- **Sensitive-path diffs at Phase 8**: if the diff touches a sensitive path — `ship-merge/COMMAND.md`'s sensitive-path check is the canonical definition (auth/secret/credential/payment/billing/token, or the harness's own verifier/gate paths per `hooks/gates/lib/_protected_paths.py`'s `is_gate_path()` — don't re-copy that list here) — `/ship-merge` carries that label into its explicit user go/no-go; expect the stricter prompt there, not a silent pass.
 - **Circular handoffs**: never tell the user to re-run `/ship` from within one of its own phases. Use the specific phase's underlying command instead.
 - **Bloated command**: if you find yourself adding implementation detail (e.g., "how to write a test") beyond a pointer, it belongs in `/fix-bug` or `/refactor-clean`, not here.
 - Autonomy invariant: fix loop (Phase 7) is manual — no unattended retry.

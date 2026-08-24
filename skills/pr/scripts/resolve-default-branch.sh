@@ -3,9 +3,9 @@
 # silent wrong default misroutes a PR exactly as effectively as a
 # persuasive wrong guess does (same principle as this skill's hotfix-base
 # guard). Extracted 2026-08-15: skills/pr/SKILL.md documented this full
-# fallback chain, but skills/review-pr/SKILL.md only ever inlined the first
-# 2 lines of it — a correctness fix to one path never reached the other.
-# Both skills now call this instead of re-describing/partially-implementing
+# fallback chain, but the then-extant skills/review-pr/SKILL.md only ever
+# inlined the first 2 lines of it — a correctness fix to one path never
+# reached the other. Callers use this instead of re-describing/partially-implementing
 # it.
 #
 # Stdout contract:

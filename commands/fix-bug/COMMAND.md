@@ -152,11 +152,11 @@ Initial report: $ARGUMENTS
 **Actions**:
 1. Conditional routing — launch in parallel based on what the fix touched (full trigger criteria: `references/phase7-agent-routing.md`):
    - Error-handling → `silent-failure-hunter`
-   - Tests added/modified → `code-reviewer` (test-coverage lens)
+   - Tests added/modified → the matching per-language reviewer (`typescript-reviewer`/`python-reviewer`)
    - Auth / secrets / external input → `security-reviewer`
-   - Comments added/modified, or a shared function's behavior changed → `code-reviewer` (comment-accuracy lens)
+   - Comments added/modified, or a shared function's behavior changed → the matching per-language reviewer
    - Performance-shaped root cause (algorithm/data-structure/query-pattern issue, not a plain logic error) → `performance-optimizer`
-   - None of the above → `code-reviewer` (general correctness pass against Phase 4 strategy)
+   - None of the above → `mattpocock-skills:code-review` (general correctness pass against Phase 4 strategy)
 2. Consolidate findings into severity tiers, present to user. Do NOT blend findings across agents — if two reviewers flag the same file:line, note the overlap rather than merging or dropping one; agreement is a confidence signal, not noise to blend away. Assign each finding a tier by asking *"if this ships as-is, what's the worst that could happen?"*:
    - **Critical** (must fix before merge: security, data integrity, broken functionality) / **Important** (should fix: real but non-blocking) / **Minor** (nice to have: style, optional).
    - Ask per tier: fix now, defer, or proceed as-is.
@@ -165,7 +165,7 @@ Initial report: $ARGUMENTS
    symptom — this text often lands verbatim in a commit/PR description read without this
    session's diagnosis context.
 4. Suggest next step:
-   - If not yet reviewed → invoke `kbg:review-pr`
+   - If not yet reviewed → invoke `mattpocock-skills:code-review`
    - If review addressed and approved → `/ship-merge`
    - If documenting the fix → `/post-mortem`
    - If fix touched auth/secrets → `kbg:security-auditor`

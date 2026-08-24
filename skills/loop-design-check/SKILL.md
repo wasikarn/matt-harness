@@ -94,7 +94,7 @@ The loop isn't "run a fixed check on a timer," it's **"read a doc on a timer, an
 
 Three iron rules: ① **the judge must be independent** — not the same agent as Build; ② **deterministic rules**, never "looks right"; ③ **Build may not edit the acceptance conditions to pass**. Three failed retries → escalate to a human.
 
-This fleet's clearest skeleton match is plan/build/judge, not document-driven dispatch: `orchestrate`'s Validator/Re-validator chain runs the judge as a separate agent invocation from the one that wrote the fix, and `review-pr`'s Phase 5 scrutinize step sends every Critical/Important finding to a fresh, independent agent that tries to refute it — the reviewer that surfaced the finding never gets to be its sole judge either. `recursive-improve`'s gated propose-loop (`AskUserQuestion` as the human-only approve flip) is close in spirit but re-derives its candidate list fresh every run rather than reading a persisted doc that only advances on change — not a strict document-driven-dispatch instance.
+This fleet's clearest skeleton match is plan/build/judge, not document-driven dispatch: `orchestrate`'s Validator/Re-validator chain runs the judge as a separate agent invocation from the one that wrote the fix — the maker never gets to be its own sole judge. `recursive-improve`'s gated propose-loop (`AskUserQuestion` as the human-only approve flip) is close in spirit but re-derives its candidate list fresh every run rather than reading a persisted doc that only advances on change — not a strict document-driven-dispatch instance.
 
 ### Step 4 · Add damping (against oscillation/runaway)
 
@@ -123,7 +123,7 @@ way to lose control than oscillation, and just as real.
 | 4 | Counts on the agent asking mid-run → **it runs the wrong answer to the end** | Is there any "clarify only at runtime" point? | **Front-load every clarification**; settle it once before launch |
 | 5 | Bloated CLAUDE.md + stale memory → **the faster it loops, the more it errs** | Are the docs/memory it depends on fresh? | Layered memory + periodic lint — this repo's own antibodies: `kbg:memory-lint`, `kbg:context-budget`, `kbg:harness-audit` |
 
-Rows 2–3 are the same discipline as `CLAUDE.md`'s verifier-separation crux and `review-pr`'s fail-closed disposition — a loop's judge role should never be filled by the agent under review, in this repo or anywhere else.
+Rows 2–3 are the same discipline as `CLAUDE.md`'s verifier-separation crux — a loop's judge role should never be filled by the agent under review, in this repo or anywhere else.
 
 **Plus three red lines (violate any = not allowed to go automatic):**
 - **Keep judgment with the human.** Acceptance / the "done" cell is flipped by a human; the loop is not the acceptance officer. In this repo, this is ADR 0006 — see `docs/harness-decay-cadence.md` and `docs/reference/env-vars.md` § Autonomy flags for what got retired and why.

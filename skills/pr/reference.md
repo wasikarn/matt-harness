@@ -14,8 +14,8 @@ silent default misroutes the fix just as effectively as a persuasive wrong guess
 
 ## resolve-default-branch.sh provenance
 
-2026-08-15 extraction — the full fallback chain SKILL.md's bullet used to describe inline, now
-shared with `skills/review-pr/SKILL.md`, which previously only had the first 2 lines of it.
+2026-08-15 extraction — the full fallback chain SKILL.md's bullet used to describe inline, moved
+to the script below (originally also shared with the since-retired `skills/review-pr/SKILL.md`).
 
 ## Template-merge rationale (Phase 2)
 

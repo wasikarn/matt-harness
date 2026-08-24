@@ -39,10 +39,9 @@ python3 -c '
 import sys, json, re
 
 # lib_dir is argv[1] -- $(dirname "$0")/lib, appended below where this
-# python3 -c block is invoked. Same $0-based resolution as
-# hooks/gates/convergence-merge-gate.sh already uses for its own shared-lib
-# import (CLAUDE_PLUGIN_ROOT can be empty in some invocation contexts;
-# $0 cannot, since bash sets it from the literal command that ran this file).
+# python3 -c block is invoked. $0-based resolution because
+# CLAUDE_PLUGIN_ROOT can be empty in some invocation contexts;
+# $0 cannot, since bash sets it from the literal command that ran this file.
 sys.path.insert(0, sys.argv[1])
 from _hook_output import emit_ask
 

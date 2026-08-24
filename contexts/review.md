@@ -23,4 +23,4 @@ Focus: Quality, security, maintainability
 Group findings by severity (Critical / Important / Minor), each with file:line and a fix.
 
 ## Not this frame's job
-This is a lighter posture for ad hoc review conversation. A full PR review — adversarial verification, GitHub posting, requirement-coverage against a ticket — is the `review-pr` skill; load that instead of hand-replicating its pipeline under this frame.
+This is a lighter posture for ad hoc review conversation. A full review — standards + spec, in parallel sub-agents — is `mattpocock-skills:code-review`; load that instead of hand-replicating its pipeline under this frame.

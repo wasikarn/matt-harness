@@ -141,7 +141,7 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | feedback-loops | `thinking-feedback-loops` | considered | — | reinforcing-vs-balancing loops as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | first-principles | `thinking-first-principles` | considered | — | "probe one level deeper" Root-Why frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | second-order | `thinking-second-order` | considered | — | 10x/fail/nothing what-if branches as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/review-pr (tier assignment), commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in review-pr/post-mortem |
+| pre-mortem | `thinking-pre-mortem` | applied | commands/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in post-mortem (its former review-pr home was deleted 2026-08-24 #82) |
 | five-whys-plus | `thinking-five-whys-plus` | considered | — | Root-Why probing as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | thought-experiment | `thinking-thought-experiment` | applied | /ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
@@ -150,8 +150,8 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | socratic | `thinking-socratic` | considered | — | named-method questioning + "Socratic Trap" failure mode; its former kbg home was deleted 2026-08-24, no live anchor |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
-| red-team | `thinking-red-team` | applied | skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/review-pr, skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives |
+| red-team | `thinking-red-team` | considered | — | Skeptic role: argue AGAINST and find risks; its former kbg home (review-pr) was deleted 2026-08-24 #82, no live anchor |
+| steel-manning | `thinking-steel-manning` | applied | skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives (its former review-pr home was deleted 2026-08-24 #82) |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
@@ -211,7 +211,7 @@ They are read-only framing labels, not dispatch instructions.
 |---|---|---|---|
 | **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `kbg:orchestrate`, `triage` |
 | **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `research` |
-| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `kbg:review-pr`, `mattpocock-skills:grilling` |
+| **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `mattpocock-skills:code-review`, `mattpocock-skills:grilling` |
 | **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `/ideate`, `domain-modeling`, `/ship` scoping |
 | **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix) |
 | **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `commands/fix-bug`, `kbg:recursive-improve` (human-gated), `kbg:orchestrate` per-task validation chain |

@@ -9,8 +9,8 @@ converged on a real, working set of conventions across 91 individually-justified
 `feat(agents): add X` commits — but nothing wrote them down. The external canonical-structure
 doc (`~/.claude/docs/agent-anatomy.md`, in the sibling **dotfiles** repo) prescribes a header
 shape (`## Why this role exists`, `## Domain focus`, `## Cross-role boundaries`, etc.) that
-**zero of the 19 real agents follow — including its own two named exemplars**
-(`code-reviewer.md`, `security-reviewer.md`). This doc does not enforce that structure. It's
+**zero of the 17 real agents follow — including its own named exemplar**
+(`security-reviewer.md`). This doc does not enforce that structure. It's
 what the fleet actually does, made explicit, so a new agent has something accurate to
 pattern-match against.
 
@@ -23,7 +23,7 @@ Every agent declares `tools:` as an explicit allowlist (see
 [`agent-tool-patterns.md`](./agent-tool-patterns.md) for the full allowlist-vs-denylist
 rationale). Grant only what the role needs:
 
-- **Read-only reviewers/analysts** (`code-reviewer`, `security-reviewer`,
+- **Read-only reviewers/analysts** (`security-reviewer`,
   `python-reviewer`, `typescript-reviewer`, `nextjs-reviewer`,
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
   `requirement-analyst`, `spec-miner`, `summarizer`): `Read`, `Grep`,
@@ -133,7 +133,7 @@ does this yet — this is a convention for new/revised `Output Format` sections,
 requirement.
 
 **Why:** kbg has already paid for the alternative once, in a state file rather than an agent
-return value, but the same discipline gap. The `rehunt` field in `review-pr`'s state file — a
+return value, but the same discipline gap. The `rehunt` field in the retired review-pr pipeline's state file — a
 semi-structured status written by whichever session ran the review, never schema-enforced — drifted
 into 15+ distinct shapes against 4 documented canonical values, with 20/105 real production files
 missing it entirely (v0.68.77, `CHANGELOG.md`; `state-file-contract-drift-mine-before-dispatch`

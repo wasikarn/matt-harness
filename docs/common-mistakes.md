@@ -13,7 +13,7 @@ The claudefa.st corpus documents four mistakes that crop up when teams build cus
 
 **Harness fix:** Every agent file under `agents/` starts with a narrow `description:` in YAML frontmatter and a `## Domain focus` section in the body that names the single responsibility. The `## Cross-role boundaries` section explicitly lists what the agent does **not** do, so the orchestrator routes outbound work to the right specialist.
 
-Example from `agents/code-reviewer.md`:
+Example (the shape every reviewer agent follows, e.g. `agents/security-reviewer.md`):
 
 ```markdown
 ---
@@ -29,7 +29,7 @@ Read-only inspection of diffs and source files. Verdicts are pass/minor/reject w
 - Defer to devops-engineer for deployment pipeline changes
 ```
 
-The orchestrate skill's routing table (`skills/orchestrate/SKILL.md` § Procedure step 4) reads this boundary list before dispatch. A task that touches auth/secrets is routed to `security-reviewer`, not `code-reviewer`, because the boundary says so.
+The orchestrate skill's routing table (`skills/orchestrate/SKILL.md` § Procedure step 4) reads this boundary list before dispatch. A task that touches auth/secrets is routed to `security-reviewer`, not a general reviewer, because the boundary says so.
 
 **Self-check:**
 
@@ -45,7 +45,7 @@ Any file that appears in the output is missing the boundary guard.
 
 **Root cause:** The builder did not read the vendor's baseline capability list or the harness's existing agent fleet before adding a new surface. Custom agents should encode *team-specific* expertise, not reimplement vendor primitives.
 
-**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `research`, and PR review to `kbg:review-pr`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's agent fleet already covers the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
+**Harness fix:** The `orchestrate` skill (`skills/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `research`, and PR review to `mattpocock-skills:code-review`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's agent fleet already covers the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
 
 The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to the built-in `Explore` subagent inline, not to a new agent.
 
@@ -59,13 +59,13 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ## Mistake 3 — Giving write access to read-only agents
 
-**Symptom:** A validator agent (e.g., `code-reviewer`) claims it is "fixing" issues during review. It edits files, reformats code, or pushes commits. The review is no longer independent — the validator became the builder, collapsing the maker≠checker separation that `METHODOLOGY.md` Rule 4 requires.
+**Symptom:** A validator agent (e.g., `typescript-reviewer`) claims it is "fixing" issues during review. It edits files, reformats code, or pushes commits. The review is no longer independent — the validator became the builder, collapsing the maker≠checker separation that `METHODOLOGY.md` Rule 4 requires.
 
 **Root cause:** The agent's YAML frontmatter grants `Edit` or `Write`, or it holds `Bash` and uses a mutation command (`sed -i`, `git commit`, `rm`, `mv`). The vendor's `allowedTools` list is the gate, but it is advisory unless paired with runtime enforcement.
 
 **Harness fix:** Two layers:
 
-1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `code-reviewer`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
+1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
 
 2. **No runtime Bash guard today.** There is currently no `PreToolUse` hook that intercepts a validator's Bash commands and blocks mutation patterns at runtime — the allowlist frontmatter above is the only gate, and it is doctrine, not runtime-enforced. A validator that reformats code, runs `git commit`, or otherwise mutates state during review is a bug to file (fix the frontmatter or the prompt), not something a live hook currently catches.
 
@@ -75,7 +75,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${KBG_PLUGIN_ROOT}/agents"/{code-architect,code-reviewer,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
+  "${KBG_PLUGIN_ROOT}/agents"/{code-architect,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
 ```
 
 The grep should return no files — if it does, a validator-class agent picked up a mutation tool and the frontmatter needs fixing.

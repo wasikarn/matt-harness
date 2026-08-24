@@ -50,7 +50,6 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 
 | Var | Default | Effect |
 |---|---|---|
-| `KBG_SKIP_LOOP_GATE` | unset | `=1` disarms `hooks/gates/review-pr-loop-gate.sh`'s exhaustion `ask` on `Skill(kbg:review-pr)`. For headless runs (`claude -p`, cron) where an `ask` would hang — the one valve here that's legitimate standing config, but only in a headless environment; interactively, answer the ask. |
 | `KBG_SKIP_VERSION_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s version-bump layer for one commit (the amend flow). One-off escape — never pre-populate in `env`; a standing skip re-opens the same-version stale-cache trap the layer exists to close. |
 | `KBG_SKIP_LOC_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s new-file LOC gate for one commit (a brand-new `agents/*.md`/`commands/*.md`/`commands/*/COMMAND.md`/`skills/*/SKILL.md` over 200 lines). Rescue valve for a bug in the gate itself — checked before the gate's detection scan runs, so it stays reachable even if that scan breaks. One-off escape, same discipline as `KBG_SKIP_VERSION_GATE`. |
 

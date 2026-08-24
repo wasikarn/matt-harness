@@ -48,7 +48,7 @@ paraphrase). The per-agent PRIMARY lens below exists to force route diversity.
 |---|---|
 | Grading/reviewing fixture outputs from a `skill-creator`-style improve loop (skill, agent, or command target), ≥2 eval cases | **This template**, 2 agents |
 | A single eval case, or a quick sanity check with no downstream content decision riding on it | Solo review — the 2-agent cost isn't earning its keep |
-| Reviewing a PR / production diff (not a fixture from this kind of loop) | Use `kbg:code-reviewer` instead — different tool, same "don't review solo" instinct doesn't transfer verbatim |
+| Reviewing a PR / production diff (not a fixture from this kind of loop) | Use `mattpocock-skills:code-review` instead — different tool, same "don't review solo" instinct doesn't transfer verbatim |
 
 ## Fixture-construction hygiene (before you dispatch)
 

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-# Shared CODEOWNERS discovery + matching logic, used by both
+# Shared CODEOWNERS discovery + matching logic, used by
 # commands/ship-merge/COMMAND.md's step 7 (CLI wrapper below, argv/stdout contract
-# unchanged from the original embedded block) and
-# hooks/gates/convergence-merge-gate.sh (imports evaluate()/discover()
-# in-process, no subprocess spawn).
+# unchanged from the original embedded block). Its second caller,
+# hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82).
 #
 # Extracted 2026-08-15 from ship-merge.md's already-fixed matcher (3 bugs
 # fixed same day in cdd3cbd: case-fold-independent path matching was never

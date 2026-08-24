@@ -2,7 +2,7 @@
 # 42. Skill body size outlier — flag SKILL.md bodies large enough to warrant a
 # token-optimizer pass (e.g. `/markdown-token-optimizer`). INFO only, never a
 # hard cap: kbg's skills are legitimately denser than a generic small-skill
-# target (orchestrate, review-pr carry load-bearing procedure/reference
+# target (orchestrate carries load-bearing procedure/reference
 # content). Threshold is the fleet's own distribution, not an imported one —
 # picked 2026-07-17 from n=33 (p90 ~15K chars); the two skills currently above
 # it are the two that already needed a manual token-optimizer pass this

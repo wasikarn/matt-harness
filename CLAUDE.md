@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 claude plugin validate . --strict
 ```
 
-Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit + the behavioral test suite (shell files via a for-loop, plus 2 Python files — memory-lint and compress-docs verify-preserved — and 1 node file — tiered-pipeline — via separate `if` blocks: deny-gate, advisory-sensor, session/stop-hook, harness-audit, review-pr convergence-state, review-pr bounded-auto-loop, pre-commit version-gate, pre-commit loc-gate, inventory-witness canonical-mode, gauntlet test-wiring, and slash-command-script unit tests — the script's `run_hook_tests()` is the authoritative file list; no count stated here, counts drift) in parallel. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt: most of what they tested was L3/L4/L5 autonomy machinery retired by ADR 0006, and current coverage already exceeds them.
+Plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs plugin-validate + full shell-lint + JSON lint + harness-audit + the behavioral test suite (shell files via a for-loop, plus 2 Python files — memory-lint and compress-docs verify-preserved — and 1 node file — tiered-pipeline — via separate `if` blocks: deny-gate, advisory-sensor, session/stop-hook, harness-audit, pre-commit version-gate, pre-commit loc-gate, inventory-witness canonical-mode, gauntlet test-wiring, and slash-command-script unit tests — the script's `run_hook_tests()` is the authoritative file list; no count stated here, counts drift) in parallel. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt: most of what they tested was L3/L4/L5 autonomy machinery retired by ADR 0006, and current coverage already exceeds them.
 
 <!-- Deleted in the 2026-06-27 owner-authorized reset (`c452102`). Recovery anchor if ever wanted: `24d7663`. -->
 
@@ -128,7 +128,7 @@ The plugin ships as `kbg@kobig` from the `wasikarn/kbg-harness` GitHub repo. Cla
 
 **Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
 
-**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only where no code layer exists to hold a real reducer (a markdown-only command like `bug-sweep`/`ideate` has no backing script — the dispatching model's own step-by-step discipline is the only mechanism available there); it is not an equivalent-strength substitute for code where a script already exists, and doctrine text should say plainly which one a given fix actually is. Default: never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real reference implementations. `review-pr` Phase 5 and `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row enforce the same discipline via prompt instruction instead — real and load-bearing (review-pr backs it with a fresh-context adversarial-verify pass), but a weaker mechanism than code, and should be named as such rather than blurred together with it. The context-economy cost of a synthesis call reading unfiltered fan-out output is covered by `docs/METHODOLOGY.md` Rule 13's context-economy block.
+**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only where no code layer exists to hold a real reducer (a markdown-only command like `bug-sweep`/`ideate` has no backing script — the dispatching model's own step-by-step discipline is the only mechanism available there); it is not an equivalent-strength substitute for code where a script already exists, and doctrine text should say plainly which one a given fix actually is. Default: never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real reference implementations. `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row enforces the same discipline via prompt instruction instead — real and load-bearing, but a weaker mechanism than code, and should be named as such rather than blurred together with it. The context-economy cost of a synthesis call reading unfiltered fan-out output is covered by `docs/METHODOLOGY.md` Rule 13's context-economy block.
 
 <!-- Gap confirmed 2026-08-17: `bug-sweep`'s Consolidate step and `deep-research.js`'s Synthesize step
 both silently blended before the first fix; a follow-up audit found that fix was itself mostly
@@ -153,8 +153,8 @@ PR/feature-branch flow; *when* to push still follows the global confirm-before-p
 **Computationally enforced for the Bash entry point only** by the `git worktree add -b` block in
 `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via the `/.kbg-no-worktree` sentinel —
 present in the kbg-harness repo, absent from other client/ECC/scratch repos (which keep their
-existing `gate:write:worktree-guard` redirect). Detached `review-pr-<N>` worktrees in `$TMPDIR` are
-explicitly allowlisted so the Phase 2 PR-by-number review path keeps working.
+existing `gate:write:worktree-guard` redirect). (The former allowlist for detached `review-pr-<N>`
+worktrees was removed with the review pipeline, 2026-08-24 #82.)
 
 **Not covered: the native `claude --worktree <name>` CLI flag**
 (`code.claude.com/docs/en/common-workflows.md`, confirmed 2026-08-20 — the doc's own recommended way
@@ -165,8 +165,8 @@ silently broken every legitimate worktree creation if left registered, so removi
 but it means this doctrine's coverage was never — and still isn't — anything more than the literal
 `git worktree add -b` typed into Bash. Full writeup: `docs/research/official-docs-audit-2026-07-31.md`.
 
-**Also not covered: the PowerShell tool.** `irrecoverable.sh` (this gate, plus the other 3
-`PreToolUse (Bash)` deny/ask gates — `convergence-merge-gate.sh`, `verifier-protect.sh`'s Bash leg,
+**Also not covered: the PowerShell tool.** `irrecoverable.sh` (this gate, plus the other 2
+`PreToolUse (Bash)` deny/ask gates — `verifier-protect.sh`'s Bash leg,
 `worktree-guard.py`'s Bash branch) matches on the `Bash` tool only. `tools-reference.md:361`
 (confirmed 2026-08-20) prescribes matching `Bash|PowerShell` for any hook inspecting shell
 commands — deliberately not done here, since a matcher-only fix would claim coverage this repo's

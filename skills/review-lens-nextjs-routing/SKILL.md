@@ -36,11 +36,11 @@ list (pin the exact Next.js major version before applying any runtime-dependent 
 - **Heavy computation or a synchronous external call in middleware** — Edge middleware has tight execution-time limits; a slow auth check here adds latency to *every* matched request, not just the ones that need it. Prefer a lightweight cookie/JWT check in middleware and defer the expensive verification to the route/action itself.
 - **Middleware setting cookies then redirecting** — must construct the response first (`NextResponse.redirect` / `.next()`), set cookies on that response object, then return it; setting cookies on a discarded intermediate response is a silent no-op.
 
-## Scope vs typescript-reviewer / code-reviewer
+## Scope vs typescript-reviewer / mattpocock-skills:code-review
 
 | Concern | Owner |
 |---|---|
-| Hooks rules, dependency arrays, `key` props, generic memoization | `typescript-reviewer` / `code-reviewer` |
+| Hooks rules, dependency arrays, `key` props, generic memoization | `typescript-reviewer` / `mattpocock-skills:code-review` |
 | `any` abuse, `as` casts, generic async/promise correctness | `typescript-reviewer` |
 | Generic XSS via `innerHTML`, Node.js sync-fs | `typescript-reviewer` |
 | **Static vs Dynamic rendering, Data/Full-Route/Client-Router cache** | **nextjs-reviewer** |
@@ -52,7 +52,7 @@ list (pin the exact Next.js major version before applying any runtime-dependent 
 | **Metadata API, `generateMetadata` waterfalls** | **nextjs-reviewer** |
 | **Server/Client boundary: serialization, `server-only` leaks, `NEXT_PUBLIC_*`** | **nextjs-reviewer** (deeper than typescript-reviewer's basic check) |
 
-For a PR touching App Router internals (caching, Server Actions, middleware, route conventions), invoke this agent. For plain component-logic changes with no framework-specific surface, `typescript-reviewer`/`code-reviewer` alone is sufficient.
+For a PR touching App Router internals (caching, Server Actions, middleware, route conventions), invoke this agent. For plain component-logic changes with no framework-specific surface, `typescript-reviewer`/`mattpocock-skills:code-review` alone is sufficient.
 
 ## Server Actions — validation+auth example
 

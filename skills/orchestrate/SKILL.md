@@ -47,7 +47,7 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
 
 ## Validation chain (builder → validator → fix → re-validator)
 
-**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — read `reference.md` § Validation chain (builder → validator → fix → re-validator) — full text before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** reuses `review-pr`'s own trivial-diff threshold: ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, and a full worked 4-task example.
+**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — read `reference.md` § Validation chain (builder → validator → fix → re-validator) — full text before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, and a full worked 4-task example.
 
 **Cross-references:** this pattern uses the F9 spawn-prompt template above; enforce the ordering with the native `TaskCreate` + `addBlockedBy` protocol.
 

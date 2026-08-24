@@ -68,9 +68,9 @@ moves to Phase 6 (Review); declining means treating the criterion as unmet, same
 back to Phase 4 or explicitly accept the risk and note it in the audit trail.
 
 **GREEN:** state the change is verified. Suggest next step:
-- Not pushed yet → push the branch, then proceed to Phase 6 (`kbg:review-pr`).
-- Proceed to Phase 6 regardless of whether a PR exists — `kbg:review-pr`'s own-branch mode
-  diffs against `git merge-base`, not a PR, so it doesn't need one. **A PR is not required
+- Not pushed yet → push the branch, then proceed to Phase 6 (`mattpocock-skills:code-review`).
+- Proceed to Phase 6 regardless of whether a PR exists — `mattpocock-skills:code-review`
+  diffs against a fixed point (e.g. the merge-base), not a PR, so it doesn't need one. **A PR is not required
   until Phase 8** (`/ship-merge` hard-requires one); if none exists yet, that's handled there
   via `kbg:pr`, not here.
 

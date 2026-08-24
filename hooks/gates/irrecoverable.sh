@@ -415,21 +415,16 @@ for w in windows:
                         d = parent
                 sentinel = os.path.join(root, ".kbg-no-worktree") if root else ""
                 if sentinel and os.path.isfile(sentinel):
-                    # review-pr allowlist. skills/review-pr/SKILL.md
-                    # Phase 2 (PR-by-number path) uses the shape "git
-                    # worktree add --detach path sha" with no -b. A
-                    # command that combines --detach and -b new is
-                    # doctrine-breaking disguised as review-pr — deny it.
-                    is_review_pr = (
-                        "--detach" in args
-                        and any("review-pr-" in a for a in args)
-                        and branch_name is None
-                    )
-                    if not is_review_pr:
-                        deny("git worktree add -b new-branch blocked by kbg-harness doctrine "
-                             "(no new non-develop branches via worktree; single branch develop only); "
-                             "use detached worktrees, develop, or an existing branch. "
-                             "Remove /.kbg-no-worktree to allow")
+                    # No allowlist: any new non-develop branch via worktree
+                    # is denied in a sentinel repo. (The former review-pr
+                    # detached-worktree allowlist was removed with the
+                    # review pipeline, 2026-08-24 #82 — it was dead code
+                    # anyway: this branch only runs when -b/-B/--branch is
+                    # present, and the allowlist required its absence.)
+                    deny("git worktree add -b new-branch blocked by kbg-harness doctrine "
+                         "(no new non-develop branches via worktree; single branch develop only); "
+                         "use detached worktrees, develop, or an existing branch. "
+                         "Remove /.kbg-no-worktree to allow")
 
     if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
         deny("dd writing to a raw device — irrecoverable disk-level destruction")

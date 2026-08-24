@@ -167,11 +167,6 @@ matchers each):
   branching doctrine, `deny` not `ask` — see `docs/reference/hook-lifecycle-
   contracts.md`'s hook-by-hook table for the exact pattern list, don't
   restate it here).
-- **Unreviewed merge** — `hooks/gates/convergence-merge-gate.sh` (PreToolUse
-  on Bash; blocks a raw `gh pr merge` when the review-pr state's `clean !=
-  true`, and on `clean == true` requires CI green — the merge one-way door
-  gates on BOTH clean AND CI-green. Bash fast-path exits 0 on non-merge
-  commands; fail-closed on unreadable/missing-`clean` state).
 - **Verifier tamper-protection + hardcoded paths** —
   `hooks/gates/verifier-protect.sh` (PreToolUse on Write|Edit|NotebookEdit
   AND on Bash — the latter catches Bash-mediated writes like `tee`/`sed -i`/
@@ -220,8 +215,8 @@ existing gate covers, so a future contributor can find the right
 precedent before adding a new one.
 
 `deny` (exit 2) is what `irrecoverable.sh`, `task-complete-separation.sh`,
-`worktree-guard.py` (its Bash deny leg), `convergence-merge-gate.sh` (block
-non-clean), and `verifier-protect.sh`'s path-hardcode leg use — reserved for
+`worktree-guard.py` (its Bash deny leg),
+and `verifier-protect.sh`'s path-hardcode leg use — reserved for
 actions the model should never be trusted to do even with human in-the-loop
 confirmation. `ask` (`permissionDecision: ask`) is what `verifier-protect.sh`
 (verifier edits), `db-write-gate.sh`, and `atlassian-mcp-gate.sh` use — a live

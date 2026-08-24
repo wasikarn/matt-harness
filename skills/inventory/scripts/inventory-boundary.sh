@@ -247,7 +247,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # only, not part of the generated BOUNDARY.md content, and not a numbered
   # harness-audit check — adding one would hit audit.sh's fail-closed
   # contiguous check-numbering guard, out of scope for this fix).
-  _xref3_table_agents=(code-architect code-reviewer typescript-reviewer python-reviewer
+  _xref3_table_agents=(code-architect typescript-reviewer python-reviewer
     security-reviewer silent-failure-hunter spec-miner refactor-cleaner
     build-error-resolver performance-optimizer ideate-critic
     a11y-architect backend-architect blind-spot-hunter code-implementer
@@ -309,7 +309,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
 | `code-architect` | `architecture/`, `*.md` (design docs) | yes | Blueprints, not implementation — but `tools:` grants Bash (Bash can mutate) |
-| `code-reviewer` | any file | yes | Read-only review *by intent* (comment-accuracy / type-design / test-coverage lenses) — `tools:` grants Bash (Bash can mutate) |
 | `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | yes | Read-only TS/JS review *by intent* — type safety, async correctness — `tools:` grants Bash (Bash can mutate) |
 | `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
@@ -407,7 +406,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | User says | Dispatch | Why |
 |---|---|---|
 | "research this", "deep dive on X", "how does Y work" | `research` | Brain dump + Q&A + plan |
-| "review this PR", "check this code" | `kbg:review-pr` skill | Multi-lens PR review |
+| "review this PR", "check this code" | `mattpocock-skills:code-review` skill | Standards + spec review since the kbg review pipeline retired (2026-08-24 #82) |
 | "audit the harness", "check health" | `kbg:harness-audit` skill | Self-audit |
 
 ### Incident & post-mortem

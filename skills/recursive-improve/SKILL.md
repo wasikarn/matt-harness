@@ -15,7 +15,7 @@ harness's own health signals, propose the highest-leverage fixes, and — only w
 go-ahead — apply and verify them, one bounded iteration at a time.
 
 Convergence step of harness-recursive-improvement (Phase 4): Phases 1–3 gave the harness eyes
-(nudge telemetry, the review-pr marker, the verification journal); this skill is the hand — a
+(nudge telemetry, the verification journal); this skill is the hand — a
 hand the human always holds.
 
 **The operating invariant (load-bearing — do not soften):** there is **no** autonomous,

@@ -18,7 +18,7 @@ alongside `agents/security-reviewer.md`: the CWE pattern table in that file's §
 examples illustrate.
 
 **Distinct from `kbg:security-auditor`:** that skill is a separate, dedicated deep-audit workflow
-(threat model → remediation plan → re-audit) with its own callers (`kbg:review-pr`, `/fix-bug`,
+(threat model → remediation plan → re-audit) with its own callers (`/fix-bug`,
 `kbg:incident`) — this file is background material for `security-reviewer`'s own flagging pass
 only, not a substitute for or extension of that audit procedure.
 

@@ -13,7 +13,7 @@
 # "review's own output" line where summarizer isn't a review — both fixed
 # same day. NOT a catch of this mechanism, despite an earlier draft
 # of this comment claiming otherwise: agents/code-reviewer.md's Block-tier
-# drift vs. nextjs/python/typescript-reviewer (also fixed 2026-08-21) scores
+# drift (that agent removed 2026-08-24 #82) vs. nextjs/python/typescript-reviewer (also fixed 2026-08-21) scores
 # J=0.35-0.48 against all three — below this check's own 0.60 floor. That one
 # was found by a manual grep run alongside this check's design, not by the
 # Jaccard pipeline; corrected here after the real run exposed the gap.

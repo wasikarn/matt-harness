@@ -23,7 +23,7 @@ effort: high
 5. Check mergeable state: no conflicts, no "requirements not met" flags.
 6. **Sensitive-path check — deterministic classification, never a merge decision.** Run the PR's changed file paths (`gh pr diff <n> --name-only`) through the two classifiers documented in `references/scored-gate-guards.md`: the `auth|secret|credential|payment|billing|token` keyword regex, and the harness's own verifier/gate paths via `hooks/gates/lib/_protected_paths.py`'s `is_gate_path()` (the shared classifier — never a hardcoded path list; that file has the exact command and the drift history). Record the result — **sensitive** (list the matched paths) or **not sensitive** — and carry it into Phase 2 step 5's prompt. This step never STOPs and never auto-passes anything: its whole job is putting an honest risk label in front of the explicit user go/no-go, which is the only authorization to merge. If `gh pr diff` itself fails, STOP — an unclassified diff is not a "not sensitive" diff.
 
-7. **CODEOWNER check — binary/3-way gate.** Read `references/codeowners-gate-detail.md` (matching grammar, SHA-pinning rationale, fixture coverage, and the convergence-merge-gate.sh relationship) before ever changing this step's shape.
+7. **CODEOWNER check — binary/3-way gate.** Read `references/codeowners-gate-detail.md` (matching grammar, SHA-pinning rationale, fixture coverage) before ever changing this step's shape.
 
    **Locate CODEOWNERS pinned to this PR's head SHA** (not the local working tree — Phase 2's rebase hasn't run yet), via GitHub's search order (`.github/`, root, `docs/` — first found wins). Resolve `<head_sha>` once (`gh pr view <n> --json headRefOid --jq .headRefOid`) and reuse it for both calls below — never a value captured earlier in Phase 1 (a new commit landing between captures would let a review pinned to the older SHA still pass, the staleness issue #50 fixed):
    ```bash
@@ -46,11 +46,11 @@ effort: high
    REVIEWS_JSON=$(gh pr view <n> --json reviews -q .reviews)
    python3 "${KBG_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON" "<head_sha>"
    ```
-   `tests/commands/test-ship-merge-codeowners.sh` and `tests/hooks/test-convergence-merge-gate.sh` exercise this shared script directly — see `references/codeowners-gate-detail.md` for the matching grammar and fixture list.
+   `tests/commands/test-ship-merge-codeowners.sh` exercises this shared script directly — see `references/codeowners-gate-detail.md` for the matching grammar and fixture list.
 
    **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (an unsatisfied `@username` entry, an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure; render the reason + detail lines. `DEFERRED` (every remaining entry is `@org/team` or a bare email — unresolvable against the reviews API's usernames) → don't stop; carry the detail lines into Phase 2 step 5's prompt for human acknowledgment (same pattern as the branch-protection `--admin` bypass) — proceed to Phase 2.
 
-   **Not standalone:** `hooks/gates/convergence-merge-gate.sh` intercepts a raw `gh pr merge` outside this flow (see that hook and `docs/reference/hook-lifecycle-contracts.md`), calling the same script, mapping `DEFERRED` to `permissionDecision: "ask"` rather than a hard block. `KBG_SKIP_CODEOWNERS_GATE=1` is the escape hatch for a repo with no CODEOWNERS policy; detail in `references/codeowners-gate-detail.md`.
+   `KBG_SKIP_CODEOWNERS_GATE=1` is the escape hatch for a repo with no CODEOWNERS policy; detail in `references/codeowners-gate-detail.md`. (The former `convergence-merge-gate.sh` hook that intercepted a raw `gh pr merge` outside this flow was retired with the review pipeline, 2026-08-24 #82 — this command's in-flow gates are now the only merge-door protection.)
 
 ---
 

@@ -52,7 +52,7 @@ the `## Status` field below lives in that file, not here.
 - Residual concerns (if any): [named honestly, not hidden]
 
 ## Status
-DONE (provisional — pending code-reviewer + gauntlet) | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+DONE (provisional — pending review + gauntlet) | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 ```
 
 ## When NOT to use this agent
@@ -62,7 +62,7 @@ DONE (provisional — pending code-reviewer + gauntlet) | DONE_WITH_CONCERNS | B
 - Code exists but the build is red → `build-error-resolver`
 - Removing dead code, not adding new code → `refactor-cleaner`
 - Optimizing an existing slow path → `performance-optimizer`
-- Need the independent verdict on this agent's own output → `code-reviewer` (or the matching
+- Need the independent verdict on this agent's own output → `mattpocock-skills:code-review` (or the matching
   language reviewer)
 - Want tests written first, feature after → the `tdd` skill
 - Want to drive implementation yourself, interactively, in one chat turn — not dispatched

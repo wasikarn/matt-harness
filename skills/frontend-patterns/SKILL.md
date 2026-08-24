@@ -20,7 +20,7 @@ route handlers, or the metadata API — that's `kbg:nextjs-reviewer`. TypeScript
 choices and `tsconfig.json` underneath these patterns — that's `kbg:typescript-patterns`
 (composes with this skill; a component using both loads this skill for the React layer and
 that one for the TS layer underneath). Post-hoc review of a diff — that's
-`kbg:code-reviewer`/`kbg:typescript-reviewer`. Non-React UI frameworks (Vue, Svelte, Angular)
+`mattpocock-skills:code-review`/`kbg:typescript-reviewer`. Non-React UI frameworks (Vue, Svelte, Angular)
 have a different component model entirely and aren't covered here.
 
 ## When to Activate

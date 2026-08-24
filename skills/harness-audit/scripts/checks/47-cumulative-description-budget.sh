@@ -42,7 +42,7 @@ if [ -n "${SLASH_COMMAND_TOOL_CHAR_BUDGET:-}" ]; then
   # Validate as a plain non-negative integer before it ever reaches
   # $(( )) arithmetic below — an unvalidated value there is bash
   # arithmetic-eval injection via array-subscript expansion (found
-  # 2026-08-06). Same guard shape as write-review-state.sh's PREV_ROUND.
+  # 2026-08-06). Same guard shape as the retired write-review-state.sh's PREV_ROUND.
   case "$SLASH_COMMAND_TOOL_CHAR_BUDGET" in
     ''|*[!0-9]*)
       BUDGET_CHARS=8000

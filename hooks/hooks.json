@@ -76,18 +76,6 @@
         ]
       },
       {
-        "id": "gate:bash:convergence-merge",
-        "matcher": "Bash",
-        "description": "Gate: block a raw `gh pr merge` on a non-clean review-pr state (clean != true) — closes the bypass where the model merged via raw gh (ship-merge is disable-model-invocation, so the convergence gate's enforcement point was never reached). Bash fast-path exits 0 on non-merge commands (no python cold-start); on a merge candidate, reads ${REVIEW_PR_STATE_DIR:-~/.claude/state}/review-pr-<N>.json (or review-last.json), allows when clean==true, denies + redirects to /kbg:ship-merge otherwise. Fail-closed on unreadable/missing-clean state. No state file → allow (unreviewed is ship-merge's concern).",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/convergence-merge-gate.sh"]
-          }
-        ]
-      },
-      {
         "id": "gate:write:verifier-protect",
         "matcher": "Write|Edit|NotebookEdit",
         "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06 (the script already read notebook_path; the matcher just never granted it), matching gate:write:worktree-guard's coverage.",
@@ -132,18 +120,6 @@
             "type": "command",
             "command": "bash",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/task-complete-separation.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:skill:review-pr-loop",
-        "matcher": "Skill",
-        "description": "Gate (ask-tier): a Skill(kbg:review-pr) call while review-last.json's persisted loop verdict says the auto-loop died exhausted (loop_reason ceiling/regressed/churning/stalled, or force_human=true) AND the state still describes the current HEAD+branch gets permissionDecision ask — ADR 0009's human-at-exhaustion made computational. Allows on: converged/clean stops (success path), missing/malformed/stale state, HEAD moved, other branch, any git error (fail-open — re-review is recoverable cost). Journals matched decisions to ~/.local/share/kbg/metrics/review-pr-loop-gate.jsonl. Escape for headless: KBG_SKIP_LOOP_GATE=1.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/review-pr-loop-gate.sh"]
           }
         ]
       },

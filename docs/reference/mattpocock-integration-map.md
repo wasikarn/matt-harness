@@ -19,7 +19,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
 | ask-matt | user | no kbg touchpoint — routing questions go to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
-| code-review | model | deferred — ask-matt's map owns it; kbg's native review path is `kbg:code-reviewer` / `kbg:review-pr` |
+| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82) |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `kbg:code-architect` / `kbg:backend-architect` |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md` |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |

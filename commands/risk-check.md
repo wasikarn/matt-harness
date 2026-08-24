@@ -21,8 +21,8 @@ risk judgment must not be trusted to bypass anything on its own say-so.
 Same pattern as `address-review/COMMAND.md`'s Phase 1 step 1:
 - No argument → current branch's PR: `gh pr view --json number,additions,deletions,changedFiles,files`
 - A bare integer `<n>` → `gh pr view <n> --json number,additions,deletions,changedFiles,files`
-- Anything else → not a PR — this command has no branch-only mode (unlike
-  `review-dashboard`), since diff-size/file-list only exist for an actual
+- Anything else → not a PR — this command has no branch-only mode,
+  since diff-size/file-list only exist for an actual
   PR's comparison; tell the user to open one first.
 
 ## Classify
@@ -48,8 +48,7 @@ paths = [f.get("path", "") for f in d.get("files", [])]
 # guard -- the second surface reusing this exact regex
 # (ship-merge/COMMAND.md is the canonical source; ship/COMMAND.md's Phase-8
 # failure-mode note points at ship-merge/COMMAND.md rather than holding its
-# own copy -- confirmed 2026-08-17, review-pr has no copy of this list at
-# all despite an earlier version of this comment claiming otherwise). Do
+# own copy -- confirmed 2026-08-17). Do
 # not redefine it here.
 # Case-insensitive to match verifier-protect.sh -- CHANGELOG.md already
 # documents a real bypass from skipping this fold on macOS/APFS.
@@ -90,13 +89,13 @@ print("sensitive path HIGH), not calibrated against this repo history -- no inci
 print("exists here to calibrate against.")
 print()
 print("Advisory only -- does not gate or skip anything. See /kbg:ship-merge for the actual")
-print("merge decision, /kbg:review-pr for the actual review.")
+print("merge decision, mattpocock-skills:code-review for the actual review.")
 ' "$PR_JSON" "${KBG_PLUGIN_ROOT}/hooks/gates/lib"
 ```
 
 ## Notes
 
-- Deliberately does not wire this tier into `review-pr`'s dispatch/aspect
+- Deliberately does not wire this tier into any review dispatch/aspect
   routing (would scale reviewer-agent effort by risk — real value, but a
   separate follow-up, not folded into this command).
 - Deliberately does not touch `ship-merge.md` at all — no bypass, no

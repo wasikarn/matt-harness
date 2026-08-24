@@ -14,7 +14,7 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 **When NOT to use:** General code review, live incident response, infrastructure/policy topics.
 
-**`security-reviewer` agent vs this skill (canonical):** the `security-reviewer` agent is a *flagging* pass — it rides inside `kbg:review-pr`'s panel and serves as orchestrate's pre-write gate on any auth/secrets change. This skill is the *dedicated, comprehensive* audit (threat model → remediation plan → re-audit). Reach for the skill on high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests) or an explicit "audit" request; for a routine auth/secrets-touching diff, the `security-reviewer` pass inside `kbg:review-pr` is enough — don't run both.
+**`security-reviewer` agent vs this skill (canonical):** the `security-reviewer` agent is a *flagging* pass — it serves as orchestrate's pre-write gate on any auth/secrets change. This skill is the *dedicated, comprehensive* audit (threat model → remediation plan → re-audit). Reach for the skill on high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests) or an explicit "audit" request; for a routine auth/secrets-touching diff, a `security-reviewer` agent pass is enough — don't run both.
 
 ---
 
@@ -55,7 +55,7 @@ Security review is not a checkbox — it's threat modeling. Every line of code i
 
 4. **Remediation Plan** — Per Critical/Important: what to change, why vulnerable, how to verify. Prioritize by exploitability × blast radius.
 
-5. **Verify Fixes** — Don't re-audit your own remediation. Spawn the `security-reviewer` agent (fresh context) as a Task-tool subagent against the remediated files — the same invocation shape `kbg:review-pr` already uses to route security findings. Run static analysis if available. Confirm regression tests pass.
+5. **Verify Fixes** — Don't re-audit your own remediation. Spawn the `security-reviewer` agent (fresh context) as a Task-tool subagent against the remediated files. Run static analysis if available. Confirm regression tests pass.
 
 Done.
 
@@ -85,6 +85,6 @@ End with a one-line verdict: `BLOCK` (any Critical/Important open) or `PASS`.
 
 ## Related
 
-- `kbg:review-pr` — general code review
+- `mattpocock-skills:code-review` — general code review
 - `/fix-bug` — after security bug fix, audit before merge
 - `kbg:incident` — production security patch / live incident response first

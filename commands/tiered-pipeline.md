@@ -75,7 +75,7 @@ pushes, or ships — the result returns to the human.
 
 - Does **not** commit, push, merge, or ship anything.
 - Does **not** loop past the shared 3-fix cap — exhaustion stops and reports.
-- Does **not** substitute for PR review (`/kbg:review-pr`) or a quick inline edit.
+- Does **not** substitute for PR review (`mattpocock-skills:code-review`) or a quick inline edit.
 
 **Suggested next step:** on `approved`, review the diff yourself and commit;
 on `needs-human`/`escalated`, read the open findings and decide — rerun with a

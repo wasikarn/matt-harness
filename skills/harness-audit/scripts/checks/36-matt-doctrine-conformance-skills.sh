@@ -87,8 +87,10 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
     # framework-proper-noun class as M12's adonisjs/drizzle/fastapi — an
     # unambiguous named standard/taxonomy, not a generic noun, even read
     # standalone. tier and finish are kbg-native coined pipeline-stage verbs
-    # (review-pr's SCRUTINIZE-4 tiering / decide-and-write-state finish
-    # step), same class as the already-accepted score/triage. pre-flight is
+    # (the since-retired review-pr pipeline's SCRUTINIZE-4 tiering /
+    # decide-and-write-state finish step — skills removed 2026-08-24 #82,
+    # entries kept as historical allowlist), same class as the
+    # already-accepted score/triage. pre-flight is
     # a real, specific engineering idiom (a gate-before-launch check), not a
     # generic noun — same bar as no-op/two-cut. next.js and
     # frontend-design-direction follow M12's framework-proper-noun and the

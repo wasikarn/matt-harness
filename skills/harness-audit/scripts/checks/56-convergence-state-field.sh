@@ -1,29 +1,14 @@
 #!/usr/bin/env bash
-# 56. Convergence-state write contract — write-review-state.sh (the
-# deterministic verifier) must keep emitting force_human, convergence_state,
-# and file_streaks in its state JSON (CRIT).
+# 56. Convergence-state write contract — STUBBED to a no-op PASS (2026-08-24, ticket 82).
 #
-# Writer-only since the matt-harness migration (spec #75, ticket #76): the
-# old reader half — ship-merge's Phase 1 scored gate reading force_human at
-# the merge door — was removed along with the scored gate itself (ship-merge
-# now gates on deterministic sensitive-path classification plus an explicit
-# user go/no-go), so the reader-side grep over commands/ship-merge/ was
-# dropped here in the same commit or it would CRIT on the new shape. The
-# fields are still load-bearing on the writer side: review-pr's own loop
-# (should-continue-loop.sh) and review-pr-finish's Phase 7 footer read
-# force_human/convergence_state, and file_streaks is INPUT for the next
-# round's streak count — dropping it from the write silently resets every
-# streak to 0, permanently killing churn detection with no signal anywhere
-# in the gauntlet. The closeout ticket (#87) re-derives what remains of this
-# contract once the convergence machinery lands its final shape.
-_w="$CLAUDE_DIR/skills/review-pr/scripts/write-review-state.sh"
-if [ -f "$_w" ]; then
-  /usr/bin/grep -q '"force_human"' "$_w" || \
-    crit "write-review-state.sh: JSON output contract lost 'force_human' — the convergence verifier no longer emits the field the review-pr loop reads; a non-converged review loop keeps auto-continuing with no computational backstop"
-  /usr/bin/grep -q '"convergence_state"' "$_w" || \
-    crit "write-review-state.sh: JSON output contract lost 'convergence_state' — the convergence-state token (converged/regressed/churning/stalled/progressing) is no longer emitted; the loop's STOP reason can't name the cause"
-  /usr/bin/grep -q '"file_streaks"' "$_w" || \
-    crit "write-review-state.sh: JSON output contract lost 'file_streaks' — same-file churn detection reads this as INPUT for the next round's streak count; dropping it from the write silently resets every streak to 0, permanently killing churn detection with no signal anywhere in the gauntlet"
-else
-  crit "write-review-state.sh: not found at $_w — the convergence verifier is missing entirely"
-fi
+# The check asserted write-review-state.sh (the review-pr loop's deterministic
+# verifier) kept emitting force_human / convergence_state / file_streaks. The
+# whole review pipeline — skills/review-pr{,-tier,-finish}, the script itself,
+# and its readers — was retired in the matt-harness migration (spec ticket 75;
+# `mattpocock-skills:code-review` is the review surface now), so there is no
+# writer or reader left to hold to the contract.
+#
+# The file is kept (with its '# 56.' header intact) because audit.sh's
+# split-integrity guard fail-closes on any gap in the 1..N check numbering.
+# Closeout ticket 87 deletes the stubs and renumbers the fragments once.
+:
