@@ -35,7 +35,6 @@ kbg's shape differs from matt's: matt's flow is many small skills you chain your
 - **One hard, contested-diagnosis decision, before any task exists yet** → `kbg:decide` (full breakdown below, under "Thinking & deciding"). `/ship` Phase 2 already calls this internally for blank-slate ambiguity; reach for it standalone when the decision is upstream of a task, or isn't code at all.
 - **A production fire** → `kbg:incident` — mitigate first (rollback/kill-switch/circuit-breaker/scale before hotfix), hands off to `/fix-bug` (S3) or its own hotfix path (S1/S2), closes to `/post-mortem`.
 - **A known bug, not urgent** → `/fix-bug` directly, or let `/ship` Phase 4 route to it once scope is known.
-- **A non-trivial task you're about to hand off (fresh session or sub-agent) and don't want three "wait, I forgot to mention" rounds** → `kbg:task-prep` — maps the draft against the 9-field handoff template, fills gaps, verifies fresh-context.
 
 ## Thinking & deciding — the layer under every on-ramp, not one itself
 

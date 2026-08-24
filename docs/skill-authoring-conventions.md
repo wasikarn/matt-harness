@@ -27,8 +27,9 @@ phrasing, a no-op-test line-count heuristic); "two-cuts" and "failure-mode guard
 failure-mode regex proxy was tried and retired 2026-07-16 (vacuous before a reset-bug fix, 5/5
 false-positive after: every flagged skill already named its failure mode in a prose section or
 bullet list the numbered-window proxy couldn't see). INFO findings never fail the gate. Confirmed
-2026-07-22: only 2/35 native skills (`pr`, `task-prep`) actually carry a `## Design checks`
-section — the template's checklist is documentation, not an enforced requirement.
+2026-07-22: only 2/35 then-native skills actually carried a `## Design checks` section (`pr` is
+the sole survivor — the other was removed in the 2026-08-24 planning-surface retirement) — the
+template's checklist is documentation, not an enforced requirement.
 
 **No-op test — the qualitative backstop for every size-driven trim:** source doctrine
 `mattpocock-skills:writing-for-agents`. One operative sentence: delete the line — does agent

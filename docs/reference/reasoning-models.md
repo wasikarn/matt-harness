@@ -146,12 +146,12 @@ grep -Ril "<keyword>" "${KBG_PLUGIN_ROOT}/docs/reference/thinking-skills/skills"
 | thought-experiment | `thinking-thought-experiment` | applied | skills/decide (probe mode), /ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame; in probe mode it's a reference frame, not a distinct step |
 | inversion | `thinking-inversion` | applied | /ideate | named ideate frame: ask the OPPOSITE question |
 | reversibility | `thinking-reversibility` | applied | domain-modeling, skills/decide (probe mode), the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule; in probe mode it's a reference frame, not a distinct step |
-| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode), skills/task-prep (fresh-context checker) | Check yourself — anti-self-deception step, genuinely operationalized in task-prep's fresh-context checker; in probe mode it's a reference frame, not a distinct step |
-| socratic | `thinking-socratic` | applied | skills/decide (clarify mode), skills/task-prep (gap questions) | named method + "Socratic Trap" failure mode |
+| debiasing | `thinking-debiasing` | applied | skills/decide (probe mode) | Check yourself — anti-self-deception frame; in probe mode it's a reference frame, not a distinct step |
+| socratic | `thinking-socratic` | applied | skills/decide (clarify mode) | named method + "Socratic Trap" failure mode |
 | scientific-method | `thinking-scientific-method` | applied | commands/fix-bug, diagnosing-bugs, commands/post-mortem (Discovery + Validation), commands/compliance-audit (falsify-don't-rubber-stamp) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
 | red-team | `thinking-red-team` | applied | skills/decide (critique mode), skills/review-pr (argue against the finding) | Skeptic role: argue AGAINST and find risks |
-| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode), skills/review-pr, skills/score-decision, skills/task-prep | Synthesizer: evaluate both sides; unconsidered alternatives |
+| steel-manning | `thinking-steel-manning` | applied | skills/decide (critique mode), skills/review-pr, skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives |
 | model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
 | model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |

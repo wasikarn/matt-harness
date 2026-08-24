@@ -50,7 +50,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 2. Fetch the regression test (if any): test file path, test name, assertion that would fail pre-fix.
 3. Check CI status on the fix commit: `gh run list --commit <sha>` or `gh pr checks <pr>`.
 4. If a previous fix attempt existed (common for regressions), note the SHA of the previous fix + why it was incomplete.
-5. Check for related issues: `gh issue list --search <keyword>` (GitHub) or, for Jira, search via the **`jira-acli:acli`** skill — never a raw `acli`/MCP call. If `jira-acli` isn't installed, note it and skip (same fallback `review-pr`/`task-prep` use — an unresolved search never blocks this).
+5. Check for related issues: `gh issue list --search <keyword>` (GitHub) or, for Jira, search via the **`jira-acli:acli`** skill — never a raw `acli`/MCP call. If `jira-acli` isn't installed, note it and skip (same fallback `review-pr` uses — an unresolved search never blocks this).
 6. Check for customer / workload impact: any support tickets, SLO breaches, or error-rate spikes tied to this bug?
 
 ---

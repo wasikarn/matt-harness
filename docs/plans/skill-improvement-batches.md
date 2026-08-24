@@ -4,6 +4,10 @@
 > (`~/.claude/plans/replicated-bouncing-rivest.md`) gets overwritten on the next plan-mode cycle —
 > **this file is the source of truth going forward.** Check off batches in the Progress table below
 > as they close.
+>
+> **Historical note (2026-08-24, #78):** the `task-prep` skill and the `plan-reviewer` agent this
+> plan mentions were retired with the planning/prep-surface removal — mentions below are records
+> of the 2026-07 pass, not references to live surfaces.
 
 ## Progress
 

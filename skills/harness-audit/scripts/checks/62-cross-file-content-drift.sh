@@ -7,10 +7,11 @@
 # Defense Baseline, catalog pointers). The real signal is NEAR-duplication —
 # two passages that used to say the same thing and have since drifted apart.
 # Confirmed catches on first real run (2026-08-21, 19 WARNs on this fleet):
-# task-prep-checker.md's field-name list had dropped `<artifacts>` vs
-# task-prep/SKILL.md's, and plan-reviewer-format/summarizer-format shared a
-# copy-paste "review's own output" line where summarizer isn't a review —
-# both fixed same day. NOT a catch of this mechanism, despite an earlier draft
+# a checker agent's field-name list had dropped `<artifacts>` vs its paired
+# skill's authoritative list (the task-prep pair — both surfaces deleted
+# 2026-08-24, #78), and two catalog-format skills shared a copy-paste
+# "review's own output" line where summarizer isn't a review — both fixed
+# same day. NOT a catch of this mechanism, despite an earlier draft
 # of this comment claiming otherwise: agents/code-reviewer.md's Block-tier
 # drift vs. nextjs/python/typescript-reviewer (also fixed 2026-08-21) scores
 # J=0.35-0.48 against all three — below this check's own 0.60 floor. That one
@@ -23,8 +24,9 @@
 # --find-contradictions ("Read each pair by hand; never auto-merge"), not a
 # verdict. No same-kind (agent-vs-skill-vs-command) restriction on purpose —
 # unlike memory-lint's type: filter, the block-level unit here has no `type:`
-# to restrict on, and the highest-value catch this check exists for
-# (task-prep-checker.md vs task-prep/SKILL.md) IS a cross-surface pair.
+# to restrict on, and the first real run's highest-value catch (an
+# agent-vs-skill field-list drift — that pair since deleted, see above) WAS a
+# cross-surface pair, so a same-kind restriction would have missed it.
 #
 # Known ceiling, not fixed here: hashing the token SET (not raw text) survives
 # in-block whitespace/wording-neutral reflow, but a blank-line insertion that

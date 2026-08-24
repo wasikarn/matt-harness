@@ -29,11 +29,9 @@
 # Glob, Bash]) and no prior companion skill existed, so this preload is the
 # only lawful extraction path and carries the 7-shape hunt catalog this agent
 # has no other way to reach.
-# plan-reviewer|kbg:plan-reviewer-format added 2026-08-18: same split, same
-# reason — plan-reviewer.md has no Skill tool (tools: [Read, Grep, Glob,
-# Bash]) and no prior companion skill existed, so this preload is the only
-# lawful extraction path and carries the Output Format YAML template and
-# Anti-Patterns list this agent has no other way to reach.
+# plan-reviewer|kbg:plan-reviewer-format was in this list 2026-08-18 through
+# 2026-08-24, removed with the agent+skill themselves (#78, planning/prep
+# surfaces retired) — not a preload regression.
 # summarizer|kbg:summarizer-format added 2026-08-18: same split, same reason
 # — summarizer.md has no Skill tool (tools: ["Read", "Grep", "Glob"]) and no
 # prior companion skill existed, so this preload is the only lawful
@@ -57,7 +55,7 @@
 # companion skill existed, so this preload is the only lawful extraction path
 # and carries the 14-row Algorithmic Analysis pattern table this agent has no
 # other way to reach.
-for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "plan-reviewer|kbg:plan-reviewer-format" "summarizer|kbg:summarizer-format" "security-reviewer|kbg:security-reviewer-patterns" "spec-miner|kbg:spec-miner-anti-patterns" "performance-optimizer|kbg:performance-optimizer-algorithms"; do
+for _pair in "typescript-reviewer|kbg:typescript-patterns" "nextjs-reviewer|kbg:frontend-patterns" "nextjs-reviewer|kbg:review-lens-nextjs-routing" "requirement-analyst|kbg:requirement-analyst-format" "blind-spot-hunter|kbg:blind-spot-hunter-shapes" "summarizer|kbg:summarizer-format" "security-reviewer|kbg:security-reviewer-patterns" "spec-miner|kbg:spec-miner-anti-patterns" "performance-optimizer|kbg:performance-optimizer-algorithms"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

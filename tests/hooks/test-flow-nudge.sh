@@ -318,8 +318,9 @@ echo "--- requirement-interrogation reminder (content contract, v0.66.0 widened 
 # the widened signal. The base nudge deliberately does NOT name
 # 'requirement-analyst' directly (the plan explicitly rejected a standalone
 # 5th route naming it — that would just stack a 4th/5th route onto an already
-# crowded nudge; the deep pass is carried by the existing kbg:task-prep route,
-# which now dispatches requirement-analyst itself). The ticket-SPECIFIC
+# crowded nudge; the kbg:task-prep route that used to carry the deep pass was
+# removed with the surface itself 2026-08-24 (#78) — the base route now points
+# at plan mode / mattpocock-skills:grilling instead). The ticket-SPECIFIC
 # addendum ("Ticket reference detected", naming requirement-analyst directly)
 # stays gated on TICKET_KEY — unchanged, pre-existing behavior.
 ticket_impl_out=$(echo "$(user_prompt_payload "implement TP-919")" | bash "$HOOK" 2>/dev/null)

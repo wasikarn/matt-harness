@@ -249,9 +249,9 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # contiguous check-numbering guard, out of scope for this fix).
   _xref3_table_agents=(code-architect code-reviewer typescript-reviewer python-reviewer
     security-reviewer silent-failure-hunter spec-miner refactor-cleaner
-    build-error-resolver performance-optimizer ideate-critic task-prep-checker
+    build-error-resolver performance-optimizer ideate-critic
     a11y-architect backend-architect blind-spot-hunter code-implementer
-    nextjs-reviewer plan-reviewer requirement-analyst summarizer)
+    nextjs-reviewer requirement-analyst summarizer)
   if [ -d "$_boundary_base/agents" ]; then
     for _af in "$_boundary_base/agents"/*.md; do
       [ -f "$_af" ] || continue
@@ -319,13 +319,11 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
 | `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
-| `task-prep-checker` | none (read-only) | no | Fresh-context verifier for a task-prep prompt (Read/Glob/Grep only — no Bash) |
 | `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
 | `code-implementer` | any file | yes | Feature implementer — direct Write/Edit + Bash + Skill |
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
-| `plan-reviewer` | none (read-only) | yes | Adversarial plan review before code exists — `tools:` grants Bash (Bash can mutate; no target files to own) |
 | `requirement-analyst` | none (read-only) | no | Requirement analysis from tickets/specs (Read/Glob/Grep only — no Bash) |
 | `summarizer` | none (read-only) | no | Condenses text/docs/transcripts (Read/Glob/Grep only — no Bash) |
 

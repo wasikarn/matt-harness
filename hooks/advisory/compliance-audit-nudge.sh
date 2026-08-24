@@ -12,8 +12,9 @@
 # Why PostToolUse:Bash and not Stop: Stop fires on every turn end (this
 # hook only cares about ones that just committed); Stop DOES support
 # hookSpecificOutput.additionalContext as of Claude Code 2.1.163 (the
-# channel this hook relies on -- see plan-review-nudge.sh, the sibling
-# this mirrors), but that alone doesn't justify the switch here -- the
+# channel this hook relies on -- the same one the since-removed
+# plan-review-nudge.sh sibling used), but that alone doesn't justify the
+# switch here -- the
 # one existing Stop hook (stop/cost-tracker.sh) is wired
 # async:true (dead for any output-based contract), and a sync Stop hook
 # emitting continuation-style output needs the stop_hook_active loop guard,
@@ -33,8 +34,9 @@
 # transcript_path (same idiom); missing/unreadable -> exit 0. (3) a cheap
 # grep prefilter for the literal string ExitPlanMode anywhere in the
 # transcript -- this is the same naive check known to false-positive on
-# deferred_tools_delta attachment entries (see plan-review-nudge.sh's own
-# design notes), which is fine here since it's a gate, not the final
+# deferred_tools_delta attachment entries (documented in the since-removed
+# plan-review-nudge.sh's design notes), which is fine here since it's a
+# gate, not the final
 # answer; no match anywhere -> exit 0, skipping the expensive parse
 # entirely for the common case of a session that never touched plan mode.
 # (4) only on a prefilter hit: python3, reading the transcript line-by-line
@@ -45,8 +47,8 @@
 # transcript in this environment: the full precise parse costs ~0.3s: only
 # paid when both bash gates already hit.
 #
-# No suppression/state tracking -- matches plan-review-nudge.sh's own
-# lack of an "already nudged" memory. Named cost: a long session with one
+# No suppression/state tracking -- matches this repo's other advisory
+# nudges' lack of an "already nudged" memory. Named cost: a long session with one
 # early plan approval and several later, unrelated commits can re-fire
 # this more than once. Advisory, cheap to ignore, same risk profile as
 # every other nudge in this repo.
@@ -60,11 +62,12 @@
 # gate:task:complete-separation's maker!=checker completion ownership) and
 # not verifiable without a live subagent dispatch.
 #
-# Built after kbg:plan-reviewer caught a Critical finding on the first
-# draft of this hook's design: the nudge text must never use
-# plan-review-nudge.sh's "consider dispatching" verb, because that
-# skill/agent (plan-reviewer) carries no disable-model-invocation flag and
-# this one does. See docs/reference/decision-doctrine-map.md's
+# Built after an adversarial plan-review pass (the plan-review agent,
+# retired 2026-08-24 with #78) caught a Critical finding on the first
+# draft of this hook's design: the nudge text must never use a
+# "consider dispatching" verb, because compliance-audit carries
+# disable-model-invocation and self-dispatch is exactly what that flag
+# forbids. See docs/reference/decision-doctrine-map.md's
 # "Implementation -> verify" row for the full routing this points at.
 set -uo pipefail
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Advisory: when the user's prompt looks like non-trivial engineering work,
-# nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode) or kbg:task-prep
+# nudge plan-first — enter plan mode (Shift+Tab / EnterPlanMode)
 # before editing, with the heavyweight spec flow (mattpocock-skills:grilling,
 # then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets
 # → /ship; to-spec/to-tickets are disable-model-invocation upstream) as the
@@ -286,7 +286,7 @@ cat <<'EOF'
 
 [kbg:flow-nudge] Non-trivial work detected — interrogate the requirement, then plan before you edit.
   Multi-file / unfamiliar / architectural / hard-to-reverse?
-    → enter plan mode (Shift+Tab, or EnterPlanMode) or kbg:task-prep first (now also surfaces requirement gaps — Rule 3).
+    → enter plan mode (Shift+Tab, or EnterPlanMode) first, or stress-test the ask with mattpocock-skills:grilling.
   A new feature to spec out? → mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /ship (both are user-invoked only — never Skill-call them)
   Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see kbg:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).

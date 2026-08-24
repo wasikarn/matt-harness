@@ -7,7 +7,7 @@ evidence behind a rule that stays stated at its point of use in COMMAND.md.
 
 Fresh reviewers on an already-reconciled workspace burn two dispatches re-deriving a recorded
 verdict, with no way to tell after the fact whether the second pass found anything new.
-Confirmed once (`plan-reviewer`, 2026-07-27) — a second pass re-derived a conclusion
+Confirmed once (a plan-review agent since removed from the fleet, 2026-07-27) — a second pass re-derived a conclusion
 `feedback.json` already had, caught only because `git diff` came back empty.
 
 ## Why eval prompts must be quoted verbatim (Step 6)

@@ -26,7 +26,7 @@ rationale). Grant only what the role needs:
 - **Read-only reviewers/analysts** (`code-reviewer`, `security-reviewer`,
   `python-reviewer`, `typescript-reviewer`, `nextjs-reviewer`,
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
-  `requirement-analyst`, `task-prep-checker`, `spec-miner`, `summarizer`): `Read`, `Grep`,
+  `requirement-analyst`, `spec-miner`, `summarizer`): `Read`, `Grep`,
   `Glob`, sometimes `Bash` for inspection (`git log`, `git diff`). Never `Write`/`Edit`.
 - **Mutating implementers** (`code-implementer`, `build-error-resolver`, `refactor-cleaner`,
   `performance-optimizer`): add `Write`/`Edit` on top of the read-only set.
@@ -60,8 +60,8 @@ content an attacker (or a compromised upstream source) could embed instructions 
 
 Most agents omit `model:` (inherits the session default). Pin `model: opus` when the task is
 genuinely analysis-heavy and benefits from independent judgment quality —
-`requirement-analyst` and `task-prep-checker` do this. `task-prep-checker` being pinned while
-the main session often runs a different model is deliberate: it makes the verifier
+`requirement-analyst` does this. Pinning a fresh-context verifier while the main session
+often runs a different model is deliberate: it makes the verifier
 independent by *model*, not just by context, which is a stronger form of the maker≠checker
 separation in §4.
 
@@ -74,7 +74,7 @@ work (build-error fixing, refactor cleanup).
 If a new agent's job is to judge, verify, or gate another agent's or the main session's
 output (a completion check, a spec-compliance check, a quality gate) — it must be a
 **fresh-context, advisory-only** pass. It returns a finding list; it never itself blocks or
-"passes" the work by fiat. `blind-spot-hunter`, `ideate-critic`, and `task-prep-checker` are
+"passes" the work by fiat. `blind-spot-hunter` and `ideate-critic` are
 the reference examples.
 
 **Why:** an LLM cannot reliably grade its own same-context output (Panickssery et al.,
