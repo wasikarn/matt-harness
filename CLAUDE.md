@@ -191,7 +191,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 ### Repo & commit hygiene
 
 - **Hardcoded home paths blocked:** `.sh`/`.py` files must use `$HOME` or `~`, never `/Users/<name>`. This repo is **public** — committed text files (`.md`/`.json`/`.yaml`/`.txt`) must not carry this machine's literal home path either (use `~`; `/Users/<name>` placeholder text is fine). Enforced twice: staged files by the pre-commit gate (`git-hooks/pre-commit` Layer 1), all tracked files by the gauntlet's path-hygiene layer (pre-push). Paths that are operator-layout-specific (like the composer-source clones) are fine in operator-facing files but don't present them as universal in reader-facing docs.
-- **Never `rm -rf`:** use `trash` for deletions. Enforced by `hooks/gates/irrecoverable.sh`.
+- **Never `rm -rf`:** use `trash` (or `trash-put` on Linux; neither installed → ask the user) for deletions. Enforced by `hooks/gates/irrecoverable.sh`, whose deny message names whichever CLI the machine actually has.
 - **Never `--no-verify`** on commits or pushes. Enforced by `hooks/gates/irrecoverable.sh`.
 - **Stage by name:** never `git add -A` or `git add .`. Enforced by `hooks/gates/irrecoverable.sh`.
 

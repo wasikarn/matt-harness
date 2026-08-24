@@ -26,6 +26,16 @@ case "$_norm" in
   *) exit 0 ;;                                                   # no destructive token possible -> allow
 esac
 
+# Portability guard (#93): without python3 the deny logic below cannot run,
+# and the rc!=0/2 tail reads the resulting 127 as "internal error — fail
+# closed" — which on a python3-less machine blocks EVERY command carrying an
+# rm/find/git/dd token, `git status` included. Announced fail-open is the
+# lesser harm; doctrine-bootstrap.sh names the missing dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — irrecoverable-pattern gate cannot run; allowing (install python3 to restore deny coverage)" >&2
+  exit 0
+fi
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 printf '%s' "$_input" | python3 -c '
 import json, os, re, shlex, sys
@@ -98,6 +108,16 @@ cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 def deny(reason):
     print("[kbg:gate] BLOCKED: " + reason, file=sys.stderr)
     sys.exit(2)
+
+def delete_hint():
+    # trash is not stock on macOS or Linux (#93) — offer whichever CLI exists,
+    # else route the model to the user. Lazy shutil import: only paid on a deny.
+    import shutil
+    t = next((c for c in ("trash", "trash-put") if shutil.which(c)), None)
+    if t:
+        return "use " + t + " instead"
+    return ("no trash CLI on this machine — ask the user before a destructive "
+            "delete, or install one (macOS: brew install trash; Linux: trash-cli)")
 
 # Tokenize respecting quotes. The bare token "rm" and the word rm both
 # resolve to a bare rm token. Quoted free text (commit messages, grep
@@ -211,12 +231,12 @@ for w in windows:
         # the lowercase-only "r"/"f" substring check (found 2026-07-01).
         flags = "".join(t for t in rest if t.startswith("-")).lower()
         if "r" in flags and "f" in flags:
-            deny("rm -rf detected — use trash instead")
+            deny("rm -rf detected — " + delete_hint())
 
     if argv0 == "find" and ("-exec" in rest or "-execdir" in rest) and "rm" in [basename(t) for t in rest]:
-        deny("find -exec/-execdir rm detected — destructive delete, use trash or confirm with user")
+        deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
     if argv0 == "find" and "-delete" in rest:
-        deny("find -delete detected — destructive delete, use trash or confirm with user")
+        deny("find -delete detected — destructive delete; " + delete_hint())
 
     if argv0 == "git" and rest:
         # --no-verify skips pre-commit/pre-push hooks — block it on any git

@@ -391,6 +391,8 @@ test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .sh" \
   "$(write_payload 'script.sh' "export PATH=$_UD/bin:\$PATH")"
 test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .py" \
   "$(write_payload 'setup.py' "BASE = $_UD/data")"
+test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .js (#93: shipped workflow runners)" \
+  "$(write_payload 'runner.js' "const base = \"$_UD/data\"")"
 test_deny  "$VERIFIER_PROTECT" "Edit new_string with /Users/ in .sh" \
   "$(edit_payload 'deploy.sh' "cd $_UD/app")"
 test_allow "$VERIFIER_PROTECT" "\$HOME reference in .sh" \
@@ -568,6 +570,17 @@ echo ""
 echo "=== atlassian-mcp-gate (cold-start guard: Skill(jira-acli:*) must load before Atlassian MCP) ==="
 ATLASSIAN_GATE="$ROOT/hooks/gates/atlassian-mcp-gate.sh"
 
+# Fixture HOME (#93): the gate now feature-detects the jira-acli plugin under
+# $HOME/.claude/plugins/cache/*/jira-acli and allows everything when absent —
+# so these tests must run under a HOME that HAS it (any publisher dir works),
+# or they'd vacuously pass/fail depending on what the dev machine has
+# installed. Side benefit: session markers land under the fixture, not the
+# real ~/.local/share/kbg/.
+AG_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ag-home.XXXXXX")
+mkdir -p "$AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
+AG_REAL_HOME="$HOME"
+export HOME="$AG_HOME"
+
 # Build a Skill tool payload.
 skill_payload() {
   python3 -c 'import json, sys; print(json.dumps({"tool_name": "Skill", "tool_input": {"skill": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"
@@ -610,11 +623,15 @@ test_allow "$ATLASSIAN_GATE" "escape hatch KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypa
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ESCAPE")" \
   "KBG_ALLOW_DIRECT_ATLASSIAN_MCP=1"
 
-rm -f "$HOME/.local/share/kbg/jira-acli-sessions/$AG_COLD" \
-      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_ENGAGED" \
-      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_WRONGSKILL" \
-      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_OTHER" \
-      "$HOME/.local/share/kbg/jira-acli-sessions/$AG_ESCAPE" 2>/dev/null
+# Portability (#93): without the jira-acli plugin installed anywhere in the
+# cache, a cold Atlassian call must pass untouched — blocking would prescribe
+# skills the machine cannot load. Empty fixture HOME = no plugin.
+AG_NOPLUGIN_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ag-nohome.XXXXXX")
+test_allow "$ATLASSIAN_GATE" "no jira-acli plugin in cache -> cold Atlassian call allowed (feature-detect)" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_COLD")" \
+  "HOME=$AG_NOPLUGIN_HOME"
+
+export HOME="$AG_REAL_HOME"
 
 echo ""
 echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
@@ -646,6 +663,72 @@ test_allow "$VERIFIER_PROTECT" "ls (no write token -> fast allow)" \
   "$(bash_payload 'ls -la')"
 test_allow "$VERIFIER_PROTECT" "echo > /tmp/x (redirect, no verifier path -> allow)" \
   "$(bash_payload 'echo x > /tmp/x')"
+
+echo ""
+echo "=== python3-missing fail-open (#93: every deny gate must exit 0 with ONE stderr note, never rc=127 or a silent block) ==="
+# A PATH stub dir with the gates' shell dependencies (cat/sed/tr/grep + bash)
+# but NO python3. Payloads are built FIRST, with python3 still on PATH.
+# Each case asserts rc=0 AND the announced note — a bare rc=0 could also mean
+# the payload took a fast-path exit and the guard was never reached (proven
+# possible during this battery's own smoke run), so the note is the real assert.
+NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy.XXXXXX")
+for _t in bash cat sed tr grep; do
+  _src=$(PATH="/usr/bin:/bin" command -v "$_t" || command -v "$_t")
+  ln -s "$_src" "$NOPY_BIN/$_t"
+done
+
+# test_nopython_allow <gate> <desc> <payload> [extra env VAR=VAL...]
+test_nopython_allow() {
+  local gate="$1" desc="$2" payload="$3"; shift 3
+  local rc errf
+  errf=$(mktemp "${TMPDIR:-/tmp}/kbg-nopy-err.XXXXXX")
+  rc=$(echo "$payload" | env "$@" PATH="$NOPY_BIN" bash "$gate" 2>"$errf"; echo $?)
+  if [[ "$rc" == "0" ]] && grep -q 'python3 not found' "$errf"; then
+    echo "  ✅ NO-PYTHON ALLOW: $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ NO-PYTHON ALLOW expected (rc=0 + note) but got rc=$rc, stderr: $(cat "$errf")" >&2
+    fail=$((fail + 1))
+  fi
+  rm -f "$errf"
+}
+
+NOPY_AG_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy-home.XXXXXX")
+mkdir -p "$NOPY_AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
+
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: rm -rf passes with note (was: rc=127 read as fail-CLOSED, blocking every git/rm command)" \
+  "$(bash_payload 'rm -rf /tmp/x')"
+test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path passes with note" \
+  "$(write_payload 'hooks/gates/x.sh' 'echo y')"
+test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \
+  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users')"
+test_nopython_allow "$TASK_COMPLETE" "task-complete-separation: subagent completion passes with note" \
+  "$(taskupdate_payload 'completed' 'code-implementer')"
+test_nopython_allow "$ATLASSIAN_GATE" "atlassian gate: cold Atlassian call passes with note (jira-acli present in fixture HOME)" \
+  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' 'nopy-session')" \
+  "HOME=$NOPY_AG_HOME"
+test_nopython_allow "$ROOT/hooks/gates/worktree-guard-dispatch.sh" "worktree-guard-dispatch: guarded workspace passes with note" \
+  "$(bash_payload 'echo x')" \
+  "KBG_GUARDED_WORKSPACE=/tmp/kbg-nopy-ws" "CLAUDE_PROJECT_DIR=/tmp/kbg-nopy-ws" "CLAUDE_PLUGIN_ROOT=$ROOT"
+
+# trash-fallback deny message (#93): with python3 present but NO trash CLI on
+# PATH, the rm -rf deny must still fire (rc=2) and the message must route to
+# the user instead of prescribing a binary the machine doesn't have.
+TRASHLESS_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-notrash.XXXXXX")
+for _t in bash cat sed tr grep python3; do
+  _src=$(PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" command -v "$_t" || command -v "$_t")
+  ln -s "$_src" "$TRASHLESS_BIN/$_t"
+done
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-notrash-err.XXXXXX")
+_rc=$(bash_payload 'rm -rf /tmp/x' | env PATH="$TRASHLESS_BIN" bash "$IRRECOVERABLE" 2>"$_errf"; echo $?)
+if [[ "$_rc" == "2" ]] && grep -q 'no trash CLI' "$_errf" && grep -q 'ask the user' "$_errf"; then
+  echo "  ✅ DENY: rm -rf without a trash CLI still denies, message routes to the user (#93)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ rm -rf trashless deny expected (rc=2 + user-routing message) but got rc=$_rc, stderr: $(cat "$_errf")" >&2
+  fail=$((fail + 1))
+fi
+rm -f "$_errf"
 
 echo ""
 total=$((pass + fail))

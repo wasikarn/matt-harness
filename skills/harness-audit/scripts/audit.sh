@@ -3,6 +3,13 @@
 # Usage: bash audit.sh [<repo-root>] [--plugin-cache <path>]
 # Exit code = number of findings (0 = clean).
 set -euo pipefail
+# bash >= 4 required (#93): globstar (below) and five checks' `declare -A`
+# are bash-4 features — on stock macOS bash 3.2 the run would otherwise die
+# mid-audit with an unexplained rc=127. Refuse up front with the fix named.
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "audit.sh: needs bash >= 4 (this is bash ${BASH_VERSION}); stock macOS ships 3.2 — brew install bash" >&2
+  exit 1
+fi
 # Hooks moved into subdirs (gates/, advisory/, lifecycle/, …); the per-hook
 # checks (#3/#11/#29) and the Fleet count must recurse, not glob top-level —
 # else they silently scan 0 of ~36 real hooks (green-because-empty).
@@ -96,7 +103,11 @@ fi
 # so a version bump (e.g. 0.1.0 -> 0.1.1 -> 0.1.2) doesn't silently disable
 # F1 plugin-aware bypass. PLUGIN_CACHE_ARG still wins for explicit override.
 if [ -z "$PLUGIN_CACHE_ARG" ]; then
-  _KBG_CACHE_DIR="$HOME/.claude/plugins/cache/kobig/kbg"
+  # KBG_CACHE_DIR (docs/reference/env-vars.md) overrides the versionless cache
+  # ROOT; the highest-semver subdir is still picked below. --plugin-cache (a
+  # full versioned path) wins over both. Wired 2026-08-24 (#93) — the knob was
+  # documented but never read.
+  _KBG_CACHE_DIR="${KBG_CACHE_DIR:-$HOME/.claude/plugins/cache/kobig/kbg}"
   if [ -d "$_KBG_CACHE_DIR" ]; then
     # Glob + for-loop (avoiding SC2010 ls|grep). Picks the highest semver of any
     # subdirectory matching X.Y.Z or vX.Y.Z, so a version bump (0.1.0 -> 0.1.1

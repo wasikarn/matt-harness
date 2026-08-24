@@ -27,6 +27,13 @@
 # future MCP tool with a non query/sql/statement/text argument shape.
 set -uo pipefail
 
+# Portability guard (#93): announced fail-open when python3 is missing;
+# doctrine-bootstrap.sh names the missing dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — db-write gate cannot run; allowing (install python3 to restore SQL-write asks)" >&2
+  exit 0
+fi
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 python3 -c '
 import sys, json, re

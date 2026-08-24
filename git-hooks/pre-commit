@@ -6,7 +6,7 @@
 # (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
-#      *.sh / *.py        → no hardcoded /Users/<name> home paths (use $HOME/~)
+#      *.sh / *.py / *.js → no hardcoded /Users/<name> home paths (use $HOME/~)
 #      *.md/.json/.yaml/.txt → no literal $HOME path of this machine (public repo)
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
@@ -36,7 +36,11 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-mapfile -t STAGED < <(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR)
+# while-read, not mapfile (#93): mapfile is bash-4-only and this hook runs
+# under whatever bash `git` finds — stock macOS ships 3.2, where mapfile
+# aborts the whole hook rc=127 and no commit can land.
+STAGED=()
+while IFS= read -r _f; do STAGED+=("$_f"); done < <(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR)
 
 fail=0
 
@@ -68,9 +72,11 @@ run_syntax_layer() {
         fi
       fi
 
-      # Scripts only (.sh/.py): no hardcoded /Users/<name> home paths — use
+      # Scripts only (.sh/.py/.js): no hardcoded /Users/<name> home paths — use
       # $HOME/~ ($HOME always resolves in a script; config/docs aren't checked).
-      if [[ "$f" == *.sh || "$f" == *.py ]]; then
+      # .js added 2026-08-24 (#93): shipped workflow runners are .js and were
+      # the one scripted-surface class this check missed.
+      if [[ "$f" == *.sh || "$f" == *.py || "$f" == *.js ]]; then
         if grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" >/dev/null 2>&1; then
           echo "  hardcoded home path in $f — use \$HOME or ~:" >&2
           grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" | sed 's/^/    /' >&2
@@ -246,8 +252,9 @@ LOC_RENAMES=()
 if [ -n "${KBG_SKIP_LOC_GATE:-}" ]; then
   echo "  new-file LOC gate skipped (KBG_SKIP_LOC_GATE set — rescue use only)"
 else
-  mapfile -t LOC_ADDED < <(git -c core.quotepath=false diff --cached --name-only --no-renames --diff-filter=A)
-  mapfile -t LOC_RENAMES < <(git -c core.quotepath=false diff --cached --diff-filter=R --name-status)
+  # while-read, not mapfile — bash-3.2 compat, same rationale as STAGED above.
+  while IFS= read -r _f; do LOC_ADDED+=("$_f"); done < <(git -c core.quotepath=false diff --cached --name-only --no-renames --diff-filter=A)
+  while IFS= read -r _f; do LOC_RENAMES+=("$_f"); done < <(git -c core.quotepath=false diff --cached --diff-filter=R --name-status)
   [ "${#LOC_ADDED[@]}" -gt 0 ] && loc_gate_needed=1
 fi
 

@@ -14,6 +14,14 @@ set -uo pipefail
 
 payload=$(cat)
 
+# Portability guard (#93): every extraction and aggregation below is jq. Skip
+# metrics entirely without it — announced once per session by
+# doctrine-bootstrap.sh's preflight, not per-stop (a Stop hook fires every turn).
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s' "$payload"
+  exit 0
+fi
+
 transcript=$(printf '%s' "$payload" | jq -r '.transcript_path // empty' 2>/dev/null)
 session_id=$(printf '%s' "$payload" | jq -r '.session_id // "default"' 2>/dev/null)
 

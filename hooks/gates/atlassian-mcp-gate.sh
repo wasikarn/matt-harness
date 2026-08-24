@@ -65,6 +65,25 @@ if ! grep -qiE '"tool_name": ?"Skill"|atlassian|rovo' <<< "$INPUT"; then
   exit 0
 fi
 
+# Portability (#93): this gate enforces "route through jira-acli first" — a
+# doctrine that only applies when the jira-acli plugin is actually installed.
+# On a machine without it, blocking would prescribe skills the user cannot
+# load, so the correct behavior is a clean allow. Glob probes any publisher
+# (cache/<publisher>/jira-acli) rather than hardcoding one; with no match the
+# glob stays literal and the -d test fails, so this is bash-3.2-safe.
+_jira_acli_found=0
+for _d in "${HOME:-}"/.claude/plugins/cache/*/jira-acli; do
+  if [ -d "$_d" ]; then _jira_acli_found=1; break; fi
+done
+[ "$_jira_acli_found" -eq 1 ] || exit 0
+
+# Portability guard (#93): announced fail-open when python3 is missing;
+# doctrine-bootstrap.sh names the missing dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — atlassian-routing gate cannot run; allowing (install python3 to restore jira-acli routing)" >&2
+  exit 0
+fi
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 python3 -c '
 import json, os, re, sys

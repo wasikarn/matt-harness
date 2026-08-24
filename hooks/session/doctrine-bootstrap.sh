@@ -31,4 +31,21 @@ elif [[ -n "${HOME:-}" && -f "$MATTPOCOCK_SETTINGS" ]] && grep -q '"mattpocock-s
   echo "<!-- /kbg:mattpocock-preflight -->"
 fi
 
+# Dependency preflight (#93): the deny gates fail OPEN (with a per-call stderr
+# note) when python3 is missing — announce that once, up front, so the
+# degradation is visible at session start instead of being discovered
+# mid-destructive-command. jq gates the cost tracker and several nudges the
+# same way (they skip themselves silently per-event; this is their one
+# announcement).
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "<!-- kbg:portability-preflight -->"
+  echo "**kbg-harness:** \`python3\` not found on PATH. Every deny gate (rm -rf / --no-verify / verifier-protect / worktree-guard / SQL-write ask / atlassian routing / maker-checker task-completion) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
+  echo "<!-- /kbg:portability-preflight -->"
+fi
+if ! command -v jq >/dev/null 2>&1; then
+  echo "<!-- kbg:portability-preflight -->"
+  echo "**kbg-harness:** \`jq\` not found on PATH. Cost tracking (hooks/stop/cost-tracker.sh) and several advisory nudges will skip themselves this session."
+  echo "<!-- /kbg:portability-preflight -->"
+fi
+
 exit 0

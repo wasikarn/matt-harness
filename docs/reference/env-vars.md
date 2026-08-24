@@ -119,7 +119,10 @@ Context management is native: use the `/compact` command and auto-compaction.
 - **`KBG_PLUGIN_ROOT`** — deliberate alias of the vendor `CLAUDE_PLUGIN_ROOT`, re-exported so docs and
   scripts resolve the plugin root from any working directory (the vendor var is only set inside hook
   shells). ~483 references; treat as fixed infrastructure.
-- **`KBG_CACHE_DIR`** — plugin cache directory used by the gauntlet/audit scripts.
+- **`KBG_CACHE_DIR`** — overrides the harness-audit runner's default plugin-cache **root**
+  (`~/.claude/plugins/cache/kobig/kbg`); the runner still picks the highest-semver subdir under it.
+  `--plugin-cache <full versioned path>` wins over both. (Wired 2026-08-24, #93 — previously
+  documented but never read.)
 - **`KBG_GAUNTLET_PLUGIN_CACHE`** — cache path override for `run-gauntlet.sh` validation.
 - **`CLAUDE_PLUGIN_ROOT`** / **`CLAUDE_SKILL_DIR`** / **`CLAUDE_PROJECT_DIR`** / **`CLAUDE_SESSION_ID`** —
   vendor-injected path vars; implementation detail, set nothing.

@@ -79,7 +79,8 @@ Common fixes:
 | `Hook called conditionally` | Move hooks to top level |
 | `'await' outside async` | Add `async` keyword |
 
-Quick recovery (never `rm -rf` — always `trash`):
+Quick recovery (never `rm -rf` — use `trash`, or `trash-put` on Linux; if
+neither CLI is installed, ask the user before deleting anything):
 
 ```bash
 trash .next node_modules/.cache && npm run build          # clear caches

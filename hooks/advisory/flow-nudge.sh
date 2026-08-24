@@ -129,6 +129,10 @@ EOF
 # empty stdin, jq fails and INPUT stays empty — every check below then misses
 # and the hook falls through to the silent exit, matching this file's
 # documented "errors silently swallowed" contract.
+# Portability guard (#93): same jq check as stale-task-nudge.sh — without jq
+# the extraction below yields empty and every branch silently misses anyway;
+# make the skip explicit instead of incidental.
+command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(printf '%s' "$(cat)" | jq -r '.prompt // empty' 2>/dev/null)
 # เพิ่มเติม ("additionally" / "more") is a bare superstring of the THAI_IMPL
 # verb เพิ่ม ("add") — POSIX ERE has no lookahead to exclude it inline, so it

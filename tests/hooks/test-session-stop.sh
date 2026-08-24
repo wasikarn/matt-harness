@@ -64,6 +64,25 @@ rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, silent) when plugin root path doesn't exist" "$ok"
 
+# Dependency preflight (#93): with python3 and jq missing from PATH, the
+# SessionStart injection must NAME both missing deps (the gates' per-call
+# stderr notes rely on this being the one up-front announcement).
+NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ss-nopy.XXXXXX")
+for _t in bash cat grep sed tr; do
+  _src=$(PATH="/usr/bin:/bin" command -v "$_t" || command -v "$_t")
+  ln -s "$_src" "$NOPY_BIN/$_t"
+done
+out=$(env PATH="$NOPY_BIN" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q 'portability-preflight' \
+  && echo "$out" | /usr/bin/grep -q 'python3.*not found' \
+  && echo "$out" | /usr/bin/grep -q 'jq.*not found' && ok=1 || ok=0
+assert "preflight names python3 AND jq when both are missing from PATH (#93)" "$ok"
+
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DOCTRINE" 2>/dev/null)
+echo "$out" | /usr/bin/grep -q 'portability-preflight' && ok=0 || ok=1
+assert "no portability preflight when python3/jq are present" "$ok"
+
 # mattpocock-skills companion-plugin preflight: fixture $HOME, independent of
 # whatever plugins happen to be installed on the machine running this test.
 fake_home_present=$(mktemp -d)
@@ -211,6 +230,21 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 [[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
 assert "fails safe (exit 0, echoes payload, no metrics row) for a missing transcript" "$ok"
 trash "$fake_home" 2>/dev/null || true
+
+# Portability (#93): with jq missing from PATH the tracker must echo the
+# payload through and write NOTHING — not garbage rows. Payload is built
+# first, with python3/jq still available; NOPY_BIN comes from the
+# doctrine-bootstrap preflight test above (bash/cat/grep/sed/tr, no jq).
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-nojq"}))' "$transcript")
+out=$(printf '%s' "$payload" | env PATH="$NOPY_BIN" HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "no jq on PATH -> echoes payload, exit 0, zero metrics rows (#93)" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 # Adversarial: malformed (non-JSON) transcript content. The jq `try fromjson`
 # filter skips unparseable lines → usage is null → no row. Must fail safe.

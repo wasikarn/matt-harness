@@ -28,7 +28,10 @@
 # Reads the PreToolUse JSON payload from stdin. Exit 0 + ask JSON on hit
 # (JSON honored); exit 0 + no output on miss (clean allow); exit 0 + ask JSON
 # on internal error too (fail-safe: an unparseable payload must never resolve
-# to a silent allow on a tamper-resistance gate).
+# to a silent allow on a tamper-resistance gate). One deliberate carve-out
+# (#93): a machine with no python3 at all allows with a stderr note instead —
+# announced fail-open, not silent (doctrine-bootstrap.sh also names it at
+# SessionStart), because the classifier below cannot run at all there.
 #
 # Path matching is case-INsensitive: macOS/APFS is case-insensitive but
 # case-preserving, and os.path.realpath() does not correct a path's casing to
@@ -40,7 +43,7 @@
 #
 # Folded path-hardcode deny (2026-07-03): the former gate:write:path-hardcode
 # hook (a separate parallel PreToolUse hook) is folded into this gate's Write
-# branch. It blocks a hardcoded /Users/<name> path written into a .sh or .py
+# branch. It blocks a hardcoded /Users/<name> path written into a .sh/.py/.js
 # file (case-insensitive endswith; scans content/new_string and MultiEdit
 # edits[]) by exiting 2 BEFORE the verifier ask — a block wins over an ask,
 # matching the prior parallel behavior where path-hardcode denied while this
@@ -97,6 +100,14 @@ if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
   esac
 fi
 [ "$_run" -eq 0 ] && exit 0
+
+# Portability guard (#93): announced fail-open — without python3 this gate
+# cannot classify the call at all; doctrine-bootstrap.sh names the missing
+# dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — verifier-protect gate cannot run; allowing (install python3 to restore verifier-surface protection)" >&2
+  exit 0
+fi
 
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 printf '%s' "$_input" | python3 -c '
@@ -454,11 +465,13 @@ try:
 
     fp = ti.get("file_path", "") or ti.get("notebook_path", "") or ""
 
-    # path-hardcode deny (folded 2026-07-03): block /Users/[a-zA-Z] in .sh/.py
-    # before the ask (a block exit 2 wins over an ask). Preserves the
-    # case-insensitive .sh/.py endswith gate, the content/new_string scan, and
-    # the MultiEdit edits[] accumulation.
-    if fp and fp.lower().endswith((".sh", ".py")):
+    # path-hardcode deny (folded 2026-07-03): block /Users/[a-zA-Z] in
+    # .sh/.py/.js before the ask (a block exit 2 wins over an ask). Preserves
+    # the case-insensitive endswith gate, the content/new_string scan, and
+    # the MultiEdit edits[] accumulation. .js added 2026-08-24 (#93): shipped
+    # workflow runners under scripts/workflows/ are .js and were the one
+    # scripted-surface class this deny did not cover.
+    if fp and fp.lower().endswith((".sh", ".py", ".js")):
         content = ti.get("content") or ti.get("new_string") or ""
         for edit in ti.get("edits") or []:
             content += "\n" + (edit.get("new_string") or "")

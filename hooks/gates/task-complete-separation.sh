@@ -19,6 +19,13 @@
 # so a maker literally cannot call TaskUpdate(completed).
 set -uo pipefail
 
+# Portability guard (#93): announced fail-open when python3 is missing;
+# doctrine-bootstrap.sh names the missing dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — task-complete-separation gate cannot run; allowing (install python3 to restore maker/checker separation)" >&2
+  exit 0
+fi
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 python3 -c '
 import json, sys

@@ -10,4 +10,10 @@ p="${CLAUDE_PROJECT_DIR:-$PWD}"
 if [[ -z "$w" || ( "$w" == /* && -n "$p" && "$p" != "$w" && "$p" != "$w/"* ) ]]; then
   exit 0
 fi
+# Portability guard (#93): announced fail-open when python3 is missing;
+# doctrine-bootstrap.sh names the missing dep once at SessionStart.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[kbg:gate] python3 not found — worktree-guard cannot run; allowing (install python3 to restore workspace-guard redirects)" >&2
+  exit 0
+fi
 exec python3 "${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard.py"
