@@ -19,18 +19,20 @@ risk judgment must not be trusted to bypass anything on its own say-so.
 
 ## Resolve the target
 
-Same pattern as `address-review/SKILL.md`'s Phase 1 step 1:
-- No argument → current branch's PR: `gh pr view --json number,additions,deletions,changedFiles,files`
-- A bare integer `<n>` → `gh pr view <n> --json number,additions,deletions,changedFiles,files`
+Skills get no positional-argument substitution — decide which `gh pr view` form
+applies from the user's own words, then run that literal command yourself:
+- No target mentioned → current branch's PR: `gh pr view --json number,additions,deletions,changedFiles,files`
+- A bare integer `<n>` mentioned → substitute it directly: `gh pr view <n> --json number,additions,deletions,changedFiles,files`
 - Anything else → not a PR — this command has no branch-only mode,
   since diff-size/file-list only exist for an actual
   PR's comparison; tell the user to open one first.
 
 ## Classify
 
+Run the resolved `gh pr view` command from above, capture its output as `PR_JSON`, then classify it:
+
 ```bash
-PR_JSON=$(gh pr view "${1:-}" --json number,additions,deletions,changedFiles,files 2>/dev/null) \
-  || PR_JSON=$(gh pr view --json number,additions,deletions,changedFiles,files)
+PR_JSON=$(gh pr view --json number,additions,deletions,changedFiles,files)  # or: gh pr view <n> --json ...
 python3 -c '
 import json, re, sys
 

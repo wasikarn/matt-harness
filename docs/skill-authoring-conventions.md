@@ -44,7 +44,7 @@ explanatory prose into an unclear telegram, as long as every structural element 
 The no-op test is what catches that case — a size check and `verify-preserved.py` passing is
 necessary, never sufficient, on its own.
 
-**Named Model footers:** a skill/command/agent that makes load-bearing reasoning/judgment choices
+**Named Model footers:** a skill/agent that makes load-bearing reasoning/judgment choices
 may end with a `## Named Model` footer citing cc-thinking-skills lenses. Apply the 3-condition
 rubric from `memory/mental-models-sweep-v0302-2026-07-03.md`: (1) load-bearing reasoning gap, (2)
 name-a-lens benefit for the operator, (3) honesty posture preserved (footer is a scaffold +
@@ -52,12 +52,14 @@ catalog pointer, never "this lens proves correctness"). The curated catalog is
 `docs/reference/reasoning-models.md`; full write-ups for the 39 raw models live upstream in the
 cc-thinking-skills repo it links to — kbg does not vendor them locally.
 
-**Suggested next step footers:** a workflow surface (command or workflow skill run as a discrete
-step) may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched
-(`situation → action`), citing skills as `mh:<name>` and commands as `/<name>`. Skills are ALWAYS
+**Suggested next step footers:** a workflow skill run as a discrete
+step may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched
+(`situation → action`), citing skills as `mh:<name>` (the only surface type left — commands/
+retired 2026-08-25, #112). Skills are ALWAYS
 cited `mh:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 37
-only catches rename/deletion drift on refs already in `mh:` form, it does **not** scan for a skill
-mis-cited in slash form (confirmed: this exact bug shipped twice — `commands/pr.md` and
+only catches rename/deletion drift on refs already in `mh:` form; check 46 catches a skill
+mis-cited in bare slash form (confirmed: this exact bug shipped historically — a former
+`commands/pr.md` and
 `diagnosing-bugs/SKILL.md` both cited a skill as `/name` undetected until a manual survey caught
 it, v0.35.0). Passive suggestion only — never "invoke X now" / auto-chain (that collides with the
 no-model-self-start doctrine). Skip self-contained reference/pattern/catalog surfaces (a forced
@@ -76,8 +78,8 @@ rule-of-three), which decays across model generations. No shell check enforces r
 today — it's a human-cadence pointer, not a gate.
 
 **Explicit `model:` + `effort:` on every surface (fleet convention, v0.68.430):** every file in
-`agents/`, `commands/*.md` + `commands/*/COMMAND.md`, and `skills/*/SKILL.md` carries both keys
-explicitly — a new surface must ship with them. Rules: skills/commands always use
+`agents/` and `skills/*/SKILL.md` carries both keys
+explicitly — a new surface must ship with them. Rules: skills always use
 `model: inherit` (a main-thread `model:` value switches the session model for the REST OF THE
 TURN — official skills.md frontmatter reference — so a concrete pin there is a footgun unless the
 skill runs `context: fork`); effort tiers are low = script wrapper/display, medium =
@@ -88,11 +90,11 @@ round. A support skill that an agent preloads via `skills:` frontmatter OR runti
 must carry the SAME effort as its host agent (preload-vs-agent effort precedence is undocumented
 platform behavior — matching values moots it). Deliberate exceptions: `frontend-patterns` and
 `typescript-patterns` stay `high` despite medium reviewer hosts (dual-use; main-thread coding
-dominates). The 26 command entrypoints only — `commands/*/references/*.md` fragments stay
-unstamped. Scope facts: skill/command `effort:` applies only while the surface is active;
+dominates). Skill entrypoints only — `skills/*/references/*.md` fragments stay
+unstamped. Scope facts: skill `effort:` applies only while the surface is active;
 `CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
 harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 54 WARNs on
-any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill/command
+any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill
 `model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
 judgment call retiered via normal version-bumped edits.
 

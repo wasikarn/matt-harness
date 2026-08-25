@@ -55,7 +55,7 @@ Workspace root is `<skill-name>-workspace/` relative to the repo root — a dev-
 sibling of `skills/<skill-name>/`, not inside the installed plugin; never resolve it from
 `${MH_PLUGIN_ROOT}`.
 
-- If `$2` was given, use it as the iteration path directly.
+- If the user gave an iteration path (Step 1's parse), use it directly.
 - Otherwise glob `iteration-*` under the workspace root and pick the highest N.
 - If the workspace root doesn't exist: stop and tell the user to run
   `skill-creator:skill-creator`'s fixture-generation steps (1–4) first — this command

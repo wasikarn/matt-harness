@@ -19,7 +19,7 @@
 # skills/*/references/*.md fragments stay unstamped by design (check 42 owns
 # the reference-file frontmatter class).
 #
-# WARN (not CRIT): convention drift, not the tamper-sensitive class 39/44/49 guard.
+# WARN (not CRIT): convention drift, not the tamper-sensitive class 36/40/45 guard.
 shopt -s nullglob
 _me_files=("$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/*/SKILL.md)
 shopt -u nullglob

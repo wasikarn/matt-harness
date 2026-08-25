@@ -23,6 +23,12 @@
 # docs/reference/hook-lifecycle-contracts.md's "the removed `/learn` command").
 # WARN, not CRIT — advisory, matching 35/37 (the old check 38 covering the
 # same class was retired 2026-08-25, ticket 87).
+# Scan list widened 2026-08-25 (deep-audit pass) to include
+# `skills/*/references/*.md` (plural subfolder) — the prior list covered only
+# `skills/*/reference.md` (singular), so a dead `/name` citation inside one
+# of these subfolder files went unseen with no functional signal. Found 4 live
+# instances on the first run after widening (address-review's and ideate's
+# reference files) — fixed alongside this guard.
 # Sets built once; lookups below are pure-bash array membership (was: two
 # `grep -qx` re-scans per cited name).
 declare -A _known_skills50=()
@@ -35,6 +41,7 @@ if [ -d "$CLAUDE_DIR/skills" ]; then
     done | sort -u)
 fi
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
+          "$CLAUDE_DIR"/skills/*/references/*.md \
           "$CLAUDE_DIR"/agents/*.md \
           "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
           "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md \

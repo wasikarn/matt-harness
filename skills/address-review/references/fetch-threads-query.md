@@ -1,6 +1,6 @@
 # Address Review — Fetch Threads Query
 
-The exact GraphQL query for Phase 1 step 2 (`/address-review`) — fetches every review thread with its resolved/outdated status and root comment ids. REST `pulls/<n>/comments` has no resolved-status field at all, so it cannot answer "is this thread open" — GraphQL is required, not optional.
+The exact GraphQL query for Phase 1 step 2 (`mh:address-review`) — fetches every review thread with its resolved/outdated status and root comment ids. REST `pulls/<n>/comments` has no resolved-status field at all, so it cannot answer "is this thread open" — GraphQL is required, not optional.
 
 ```graphql
 query($owner:String!, $repo:String!, $number:Int!, $cursor:String) {

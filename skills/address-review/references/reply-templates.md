@@ -1,6 +1,6 @@
 # Comment Templates
 
-Review-comment and reply-comment shapes for `/address-review` — the single source COMMAND.md Phases 4–5 point at.
+Review-comment and reply-comment shapes for `mh:address-review` — the single source SKILL.md Phases 4–5 point at.
 
 ---
 
@@ -58,7 +58,7 @@ Every review comment should contain:
 
 ## Reply Comment Templates (Author → Reviewer)
 
-Phase 5 of `/address-review` requires every thread gets a reply. Use these as starting points.
+Phase 5 of `mh:address-review` requires every thread gets a reply. Use these as starting points.
 
 ### Fixed
 ```
@@ -86,7 +86,7 @@ Tracked as #<issue-number>. Out of scope for this PR — [reason]. Will pick up 
 
 ### Blending a sha into Wontfix / Clarify
 
-The Wontfix and Clarify shapes aren't mutually exclusive with citing a sha. If a commit landed and genuinely fixed part of the concern before the cluster stalled or got reclassified (e.g. `/address-review` Phase 4 step 3's one-retry-then-stop), lead with the Fixed template's sha + one-line summary, then follow with the full Wontfix or Clarify body — don't drop the citation, and don't abbreviate the body, just because the category ended up Wontfix/Clarify instead of Fixed:
+The Wontfix and Clarify shapes aren't mutually exclusive with citing a sha. If a commit landed and genuinely fixed part of the concern before the cluster stalled or got reclassified (e.g. `mh:address-review` Phase 4 step 3's one-retry-then-stop), lead with the Fixed template's sha + one-line summary, then follow with the full Wontfix or Clarify body — don't drop the citation, and don't abbreviate the body, just because the category ended up Wontfix/Clarify instead of Fixed:
 ```
 Fixed in `<short-sha>`: [what that commit changed].
 [Rationale in 1-3 sentences].
