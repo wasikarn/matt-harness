@@ -42,17 +42,14 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Commands — Repo
 | Command | Description |
 |---|---|
-| bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (/deep-audit). |
+| bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
-| deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
-| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /mh:ship-merge for the decision. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
 | ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). |
 | summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
-| test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Don't use for quick edits or PR review. |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). |
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (mh:ship-merge). |
@@ -110,11 +107,14 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
+| deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`/address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
+| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge). | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
+| test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. Use when coverage is below target. Don't use for a single failing test (debug it directly). | inline | auto |
 
 ### workflow
 | Skill | Description | Agent | Invoke |
@@ -142,7 +142,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by skills/ship-merge/SKILL.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block). Its second caller, hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82). |
 | _hook_output.py | Shared hook-output JSON primitive. Used by hooks/gates/db-write-gate.sh and hooks/gates/verifier-protect.sh's embedded python3 -c blocks, both of which defined an identical emit_ask() before this extraction (2026-08-15) -- each gate still builds its own reason message inline (that part is legitimately gate-specific), only the JSON-shape emission is shared here. |
-| _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. commands/risk-check.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
+| _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. skills/risk-check/SKILL.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | verifier-protect.sh | Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated write (redirect, tee, sed -i, perl -i, cp, mv, rm, trash) — to the verifier surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, the PreToolUse dispatcher's own routing (hooks/pretooluse-table.json, hooks/dispatch-pretooluse.py/.sh), AND the non-model audit verifier (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot neuter the deny-gates, silently turn an advisory sensor into something that emits permissionDecision, repoint or delete a gate's table entry, OR weaken the audit checks that judge it without an in-session human approval (the tamper-resistance principle: the agent cannot edit the code that judges it). hooks/advisory/** added 2026-08-06: previously unprotected, meaning a sensor could be edited into a real gate with zero […] |
 | worktree-guard-dispatch.sh | Shared early-exit prelude for gate:write:worktree-guard and gate:bash:worktree-guard. Both hooks.json entries pointed the same inline `bash -c` one-liner at worktree-guard.py -- extracted here so the two matchers (Write|Edit|NotebookEdit vs Bash) stay separate registrations with their own descriptions (redirect vs deny is a real behavioral difference, decided inside worktree-guard.py by tool_name), while the identical no-op-unless-guarded check isn't duplicated as a JSON string literal twice. |
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T07:49:26Z_
+_Generated: 2026-08-25T07:54:15Z_
 
 ---
 

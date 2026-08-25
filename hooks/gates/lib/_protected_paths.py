@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Shared gate/verifier-governance path classifier. Ported near-verbatim
 # (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path()
-# -- the more complete of two prior copies. commands/risk-check.md's
+# -- the more complete of two prior copies. skills/risk-check/SKILL.md's
 # embedded is_gate_path() was the other, missing hooks/advisory/ coverage;
 # both now call this one instead, closing that gap.
 #

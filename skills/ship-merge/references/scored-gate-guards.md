@@ -10,7 +10,7 @@ ticket #87 owns any rename.)
 (`gh pr diff <n> --name-only`) matches either leg:
 
 - **(a) keyword regex** `auth|secret|credential|payment|billing|token`, case-insensitive —
-  `commands/risk-check.md` and `hooks/gates/verifier-protect.sh` fold case for the same
+  `skills/risk-check/SKILL.md` and `hooks/gates/verifier-protect.sh` fold case for the same
   list; CHANGELOG.md documents a real bypass from skipping that fold on macOS/APFS.
 - **(b) the harness's own verifier/gate paths**, classified by running each path through
   `hooks/gates/lib/_protected_paths.py`'s `is_gate_path()`:
@@ -19,7 +19,7 @@ ticket #87 owns any rename.)
   python3 -c "import sys; sys.path.insert(0,'${MH_PLUGIN_ROOT}/hooks/gates/lib'); from _protected_paths import is_gate_path; [print(p) for p in sys.stdin.read().splitlines() if is_gate_path(p)]" <<<"$(gh pr diff <n> --name-only)"
   ```
 
-  — the same classifier `hooks/gates/verifier-protect.sh` and `commands/risk-check.md`
+  — the same classifier `hooks/gates/verifier-protect.sh` and `skills/risk-check/SKILL.md`
   import. **Don't hardcode this path list in prose here** — it drifted silently once
   already: `hooks/advisory/**` coverage was added to the classifier 2026-08-06, and this
   guard's own hardcoded copy missed it until a doctrine-health audit (the former

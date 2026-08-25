@@ -1,6 +1,7 @@
 ---
 name: deep-audit
 description: "Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review."
+bucket: review
 model: inherit
 effort: xhigh
 ---

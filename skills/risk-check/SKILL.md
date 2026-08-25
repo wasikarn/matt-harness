@@ -1,6 +1,7 @@
 ---
 name: risk-check
-description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /mh:ship-merge for the decision."
+description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge)."
+bucket: review
 argument-hint: "[pr-number|branch]"
 model: inherit
 effort: low
@@ -44,11 +45,11 @@ total_lines = additions + deletions
 paths = [f.get("path", "") for f in d.get("files", [])]
 
 # Sensitive-path definition reused verbatim from
-# commands/ship-merge/references/scored-gate-guards.md's automation-bias
+# skills/ship-merge/references/scored-gate-guards.md's automation-bias
 # guard -- the second surface reusing this exact regex
-# (ship-merge/COMMAND.md is the canonical source; ship/COMMAND.md's Phase-8
-# failure-mode note points at ship-merge/COMMAND.md rather than holding its
-# own copy -- confirmed 2026-08-17). Do
+# (skills/ship-merge/SKILL.md is the canonical source; ship/COMMAND.md's
+# Phase-8 failure-mode note points at ship-merge/SKILL.md rather than
+# holding its own copy -- confirmed 2026-08-17). Do
 # not redefine it here.
 # Case-insensitive to match verifier-protect.sh -- CHANGELOG.md already
 # documents a real bypass from skipping this fold on macOS/APFS.

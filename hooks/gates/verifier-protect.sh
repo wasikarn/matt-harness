@@ -240,7 +240,7 @@ def _verifier_reason(fp, reason=None):
 
 # is_gate_path -- imported above from _protected_paths (2026-08-15
 # extraction; was is_verifier_path, defined inline here). Also used by
-# the embedded classifier in commands/risk-check.md, which previously had its own
+# the embedded classifier in skills/risk-check/SKILL.md, which previously had its own
 # narrower copy missing hooks/advisory/ coverage.
 
 def bash_write_targets(cmd):

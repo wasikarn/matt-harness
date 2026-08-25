@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.472] — 2026-08-25
+
+### Changed
+
+- `commands/deep-audit.md`, `commands/risk-check.md`, and `commands/test-coverage.md`
+  converted to skills (#106, commands→skills convergence, spec #101). Same invocation and
+  behavior; none needed an argument-handling change. Every citation updated to `mh:`-form
+  across `commands/bug-sweep.md`, `commands/build-fix.md`, `hooks/gates/lib/
+  _protected_paths.py`, `hooks/gates/verifier-protect.sh`, `skills/ship-merge/references/
+  scored-gate-guards.md`, and `tests/commands/test-risk-check.sh`'s path variable. Added
+  missing `Use when`/`Don't use for` trigger clauses to risk-check's and test-coverage's
+  descriptions (newly required by check 05 now that they're skills; risk-check's
+  description also dropped a stray hybrid `/mh:ship-merge` citation in favor of the
+  standard `mh:ship-merge` form).
+
 ## [0.68.471] — 2026-08-25
 
 ### Changed

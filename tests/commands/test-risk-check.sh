@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression test for commands/risk-check.md's embedded "## Classify" script.
+# Regression test for skills/risk-check/SKILL.md's embedded "## Classify" script.
 # Extracts the script the same way a user's shell would run it, the same
 # pattern as tests/commands/test-ship-merge-codeowners.sh and
 # tests/commands/test-cost-report.sh.
@@ -7,7 +7,7 @@
 # Built alongside a deep-audit pass on the sibling CODEOWNER-check command
 # this session (2026-08-15) that found zero persisted tests existed for
 # either embedded classifier -- only ephemeral /tmp fixture runs at build
-# time. This makes risk-check.md's classifier reproducible too.
+# time. This makes the risk-check skill's classifier reproducible too.
 #
 # Case 6 (KEYWORD_RE case-insensitivity) was verified against the ORIGINAL
 # dce81fe classifier and already passed there -- KEYWORD_RE had
@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-RISK_CHECK_MD="$ROOT/commands/risk-check.md"
+RISK_CHECK_MD="$ROOT/skills/risk-check/SKILL.md"
 
 pass=0
 fail=0
