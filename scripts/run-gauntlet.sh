@@ -105,9 +105,12 @@ run_path_hygiene() {
   hits="$(git -C "$ROOT" grep -lF "$HOME" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
   dash_hits="$(git -C "$ROOT" grep -lF "$home_dash" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
   # THIRD form: the bare username as published IDENTITY metadata, no path
-  # around it. `"author": {"name": "KOBIG"}` and `Copyright (c) 2026 KOBIG`
-  # both leaked the machine account name in uppercase, so the two path checks
-  # above (case-sensitive, slash/dash-anchored) were structurally blind to it.
+  # around it. `"author": {"name": "<ACCOUNT>"}` and `Copyright (c) <year>
+  # <ACCOUNT>` both leaked the machine account name in UPPERCASE, so the two
+  # path checks above (case-sensitive, slash/dash-anchored) were structurally
+  # blind to it. Written with placeholders on purpose — an earlier draft of
+  # this very comment spelled the real account name out and was itself the
+  # last leak in the repo.
   # Found 2026-08-26 by a case-insensitive whole-repo sweep, after the path
   # forms were already clean.
   #
