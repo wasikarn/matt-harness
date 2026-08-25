@@ -96,6 +96,19 @@ run_syntax_layer() {
           rc=1
         fi
       fi
+
+      # ALL committed files: the dash-encoded home path leaks the username too.
+      # Claude Code encodes a project dir as ~/.claude/projects/<cwd with / as ->,
+      # so /Users/<name>/... becomes -Users-<name>-..., which neither check above
+      # matches. Found in 4 files (docs + scripts) on 2026-08-26; both this hook
+      # and the gauntlet's path-hygiene layer had only ever caught the slash form.
+      # Applies to every extension, since the leak showed up in .md and .py alike.
+      _home_dash="$(printf '%s' "$HOME" | tr '/' '-')"   # /Users/<name> -> -Users-<name>
+      if grep -nF "$_home_dash" "$f" >/dev/null 2>&1; then
+        echo "  dash-encoded home path in $f — public repo, use a <placeholder>:" >&2
+        grep -nF "$_home_dash" "$f" | head -5 | sed 's/^/    /' >&2
+        rc=1
+      fi
     done
   fi
   return "$rc"

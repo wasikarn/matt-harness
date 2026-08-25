@@ -1107,7 +1107,7 @@ Shipped proposals A1 and A4 from `docs/research/agent-memory-engineering-2026-08
   commits dirty changes in the current project's memory store to its own git history, but only if
   that store is already a git repo (one-time, user-run `git init` — the hook never inits it
   itself). The live store
-  (`~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`) had zero version control
+  (`~/.claude/projects/<project-dir>/memory/`) had zero version control
   before today (confirmed, not assumed) — it's now `git init`'d with a baseline commit, and the
   auto-commit + `git revert` rollback path was verified end-to-end against the real store (a test
   file was created, auto-committed by the real hook, then actually removed from disk via

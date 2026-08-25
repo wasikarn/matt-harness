@@ -89,13 +89,25 @@ run_audit() {
 # path that got committed anyway (a clone without core.hooksPath wired, a
 # commit from another machine). $HOME expands per-machine so each machine
 # guards its own leak; /Users/<name> placeholder text passes untouched.
+#
+# TWO forms, both leak the username. The dash form is Claude Code's own
+# project-dir encoding (~/.claude/projects/<cwd with / replaced by ->), so it
+# shows up in any doc quoting a real memory/transcript path. It slipped past
+# this layer AND pre-commit until 2026-08-26, when 6 occurrences were found
+# across 4 files — both layers only ever matched the slash form. Script
+# extensions are included here too: pre-commit covers .sh/.py/.js but only for
+# STAGED files and only the slash form, so an unstaged-then-committed script
+# (or a commit from a clone without core.hooksPath) had no backstop at all.
 run_path_hygiene() {
   [ -z "${HOME:-}" ] && return 0  # empty pattern would match everything
-  local hits
-  hits="$(git -C "$ROOT" grep -lF "$HOME" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' 2>/dev/null)"
-  if [ -n "$hits" ]; then
-    echo "  literal home path in tracked files — use ~:" >&2
-    printf '%s\n' "$hits" | sed 's/^/    /' >&2
+  local home_dash hits dash_hits
+  home_dash="$(printf '%s' "$HOME" | tr '/' '-')"   # /Users/<name> -> -Users-<name>
+  hits="$(git -C "$ROOT" grep -lF "$HOME" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
+  dash_hits="$(git -C "$ROOT" grep -lF "$home_dash" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
+  if [ -n "$hits" ] || [ -n "$dash_hits" ]; then
+    echo "  literal home path in tracked files (public repo) — use ~ or a <placeholder>:" >&2
+    [ -n "$hits" ] && printf '%s\n' "$hits" | sed 's/^/    [slash] /' >&2
+    [ -n "$dash_hits" ] && printf '%s\n' "$dash_hits" | sed 's/^/    [dash]  /' >&2
     return 1
   fi
   return 0

@@ -50,8 +50,8 @@ Windows for the 06-01 re-measure (run BOTH with identical method — fix #1):
     measure-autotrigger.py --since 2026-05-25 --scope kobig
 
 Scope presets (fix #3):
-    dotfiles  only -Users-kobig-Codes-Personals-dotfiles (this repo's sessions)
-    kobig     all -Users-kobig-* project dirs (skills are global -> fire there)
+    dotfiles  only the -*-dotfiles project dir (this repo's sessions)
+    kobig     all -Users-<user>-* project dirs (skills are global -> fire there)
     all       every project dir under ~/.claude/projects
 
 Output is descriptive, not a verdict. Caveats are printed inline. The decision

@@ -230,7 +230,7 @@ def iter_project_dirs(scope: str, projects: list):
         yield from (str(d) for d in PROJECTS_ROOT.iterdir() if d.is_dir())
     elif scope == "kobig":
         # Named project dirs only. The trailing '-' deliberately excludes the
-        # bare '-Users-kobig' home-default project (~2661 throwaway/misc
+        # bare '-Users-<user>' home-default project (~2661 throwaway/misc
         # sessions). Verified 2026-05-30: that dir contributes ZERO custom-skill
         # invocations post-nudge, so kobig == all for the rate while scanning
         # ~10x fewer files. Use --scope all to re-confirm that holds.

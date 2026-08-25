@@ -47,7 +47,7 @@ account. Both are exactly the kind of thing "prove it by hand first" is supposed
   Anthropic and Nvidia.md` (@N01ennn, 2026-08-03) — hereafter **Article 1**.
 - `llm-wiki/raw/Pydantic fixed my Agent's Memory.md` (@akshay_pachaar, 2026-05-26) — hereafter
   **Article 2**.
-- Live measurement against `~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`
+- Live measurement against `~/.claude/projects/<project-dir>/memory/`
   via `skills/memory-lint/scripts/memory-lint.py`, run 2026-08-07 (detector mode, read-only;
   `--auto-archive` was never invoked against the live store while producing this report).
 - **Primary sources, independently verified 2026-08-07** (a second, line-by-line re-read of
@@ -383,7 +383,7 @@ this repo's own existing precedent for "don't lose the data" hooks (`stop:cost-t
 for the same reason), not the once-per-session `SessionEnd` `learn-nudge` uses for its
 lower-stakes advisory case. `git add`/`commit` is a no-op when the tree is already clean, so the
 extra firing frequency buys finer rollback granularity at effectively zero cost. The live memory
-store (`~/.claude/projects/-Users-kobig-Codes-Personals-kbg-harness/memory/`) was `git init`'d and
+store (`~/.claude/projects/<project-dir>/memory/`) was `git init`'d and
 given a baseline commit as part of shipping this — see Part 3's live-evidence table for the
 "before" state (confirmed no version control existed prior).
 
