@@ -125,7 +125,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    the body shape stays the same so a hotfix PR reads like every other PR in this repo.
 4. **AskUserQuestion** single-select: "Phase 4: severity = [P0/P1/P2], Block items = [0 / N], CI = [green / pending]. Merge will bypass branch protection (--admin). Proceed?" Recommend whichever option this incident's actual severity favors — P0/P1 favors Merge now (production stays broken every minute you wait, and Phase 0 already ruled out rollback/kill-switch as sufficient); P2 favors Wait for normal CI — and render that pick as the literal `(Recommended)` tag on the matching option below, replacing its `(best when X)` clause at render time; the template below spans all severities, it isn't fixed text to paste verbatim.
    - `Merge now (best when Block items are resolved and the user accepts the bypass risk)` — execute server-side merge. Bypasses branch protection.
-   - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `/ship-merge` later. Production stays on the current build for however long CI + normal review takes.
+   - `Wait for normal CI (best for P2 or when bypass is not acceptable)` — stop; user can run `mh:ship-merge` later. Production stays on the current build for however long CI + normal review takes.
 5. **Merge via GitHub CLI (server-side only):**
    ```bash
    gh pr merge <n> --admin --squash --delete-branch
@@ -135,7 +135,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - `--delete-branch` cleans up.
    - **Caveat:** If repo has merge queues with "Do not allow bypassing" enabled, `--admin` may be blocked. Escalate to repo admin or use a GitHub App token.
 
-**Sync seam:** `commands/ship-merge/COMMAND.md` Phase 2 duplicates this exact merge command
+**Sync seam:** `skills/ship-merge/SKILL.md` Phase 2 duplicates this exact merge command
 (same `gh pr merge`/`AskUserQuestion` shape) — the two are intentionally not the
 same call, since hotfix strips the scored gate for speed. Unconditional `--admin`
 here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,

@@ -1,6 +1,6 @@
 ---
 name: pr
-description: "PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`)."
+description: "PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`/address-review`)."
 bucket: review
 allowed-tools: AskUserQuestion Read Glob Grep Bash(gh pr *) Bash(gh repo view *) Bash(git push *) Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git branch *) Bash(git remote *) Bash(git fetch *) Bash(git rebase *)
 metadata.origin: kbg-native
@@ -19,7 +19,7 @@ external-write surface requires.
 turn the current branch's commits into a pull request.
 
 **When NOT to use:**
-- Merging a reviewed PR → `/ship-merge`.
+- Merging a reviewed PR → `mh:ship-merge`.
 - Replying to reviewer comments → `/address-review`.
 - Reviewing a PR's code → `mattpocock-skills:code-review`.
 
@@ -183,7 +183,7 @@ Report to the user using `reference.md#output-report-template-phase-6`.
 
 **Suggested next step:**
 - Needs review           → `mattpocock-skills:code-review`
-- Reviewed, ready to land → `/ship-merge <number>`
+- Reviewed, ready to land → `mh:ship-merge <number>`
 - Reviewer left comments  → `/address-review <number>`
 - Open in browser         → `gh pr view <number> --web`
 

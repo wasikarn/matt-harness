@@ -1,6 +1,7 @@
 ---
 name: ship-merge
-description: "Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident)."
+description: "Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident)."
+bucket: workflow
 argument-hint: Optional PR number or branch name
 disable-model-invocation: true
 disable-model-invocation-reason: external, irreversible action — executes a server-side PR merge on GitHub that cannot be undone; only a human-typed /mh:ship-merge, confirmed through Phase 2's explicit go/no-go, may trigger it

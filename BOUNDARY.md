@@ -51,16 +51,15 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /mh:ship-merge for the decision. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
-| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (mh:incident). |
+| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). |
 | summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
 | test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Don't use for quick edits or PR review. |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). |
-| address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (/ship-merge). |
+| address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (mh:ship-merge). |
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
-| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). |
 
 ## Skills — Repo
 ### agent-support
@@ -112,7 +111,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
-| pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`/ship-merge`) or review replies (`/address-review`). | inline | auto |
+| pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`/address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
@@ -123,6 +122,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 |---|---|---|---|
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
+| ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -140,7 +140,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | credential-guard.sh | Gate: block Read/Grep access to credential-bearing file paths. #96. Resolves the target via realpath BEFORE matching, closing the bypass where a symlink with an innocuous name (e.g. notes.txt) points at a real credential file (e.g. ~/.ssh/id_rsa) -- a naive string match on the unresolved path would sail straight through. |
 | db-write-gate.sh | Gate: ask on any MCP execute_sql-shaped call (mcp__<server>__execute_sql*) unless the statement is provably a simple read. Generic — matches any server, no config needed. |
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
-| _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by commands/ship-merge/COMMAND.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block). Its second caller, hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82). |
+| _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by skills/ship-merge/SKILL.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block). Its second caller, hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82). |
 | _hook_output.py | Shared hook-output JSON primitive. Used by hooks/gates/db-write-gate.sh and hooks/gates/verifier-protect.sh's embedded python3 -c blocks, both of which defined an identical emit_ask() before this extraction (2026-08-15) -- each gate still builds its own reason message inline (that part is legitimately gate-specific), only the JSON-shape emission is shared here. |
 | _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. commands/risk-check.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T05:25:30Z_
+_Generated: 2026-08-25T07:31:20Z_
 
 ---
 
@@ -296,7 +296,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "build one feature", "implement X", "scope this change" | `/mattpocock-skills:implement` | Implement a spec/tickets with TDD where possible → `mattpocock-skills:code-review` → commit |
 | "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `/address-review` | PR review response |
-| "ship it", "merge this" | `/ship-merge` | Pre-merge gate |
+| "ship it", "merge this" | `mh:ship-merge` | Pre-merge gate |
 | "release now", "cut a release" | `/ship-release` | Release ceremony |
 
 ### Research & analysis

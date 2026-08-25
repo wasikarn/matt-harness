@@ -1,6 +1,6 @@
 ---
 name: ship-release
-description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (/ship-merge) or hotfixes (mh:incident)."
+description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident)."
 argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — cuts a release (tag/merge/publish)

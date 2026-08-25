@@ -23,7 +23,7 @@ see `BOUNDARY.md` below for the live count.
 |---|---|---|
 | `/mattpocock-skills:implement` | From spec/tickets to committed code | Implements with `/tdd` where possible, typechecks, runs the suite, commits. |
 | `mattpocock-skills:code-review` | After pushing a PR | Standards + spec review over the diff (parallel sub-agents). |
-| `/ship-merge` | After review | Verifies the diff + merges. The human gate sits between review and merge. |
+| `mh:ship-merge` | After review | Verifies the diff + merges. The human gate sits between review and merge. |
 
 Other useful ones: `mattpocock-skills:diagnosing-bugs`, `research`, `/frame`,
 `/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).

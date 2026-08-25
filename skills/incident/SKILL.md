@@ -99,7 +99,7 @@ Produce at close:
 - `references/hotfix.md` — hotfix path when rollback/kill-switch is insufficient (formerly `kbg:hotfix`)
 - `mattpocock-skills:diagnosing-bugs` — non-urgent root cause fix after mitigation
 - `/post-mortem` — after resolution, blameless analysis
-- `/ship-merge` — deploying fix PR after resolution
+- `mh:ship-merge` — deploying fix PR after resolution
 
 **Named model** (cc-thinking-skills): the detect → assess → mitigate → monitor loop is *ooda* (observe-orient-decide-act under time pressure). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 

@@ -1,6 +1,6 @@
 ---
 name: address-review
-description: "Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (/ship-merge)."
+description: "Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (mh:ship-merge)."
 argument-hint: Optional PR number
 disable-model-invocation: true
 disable-model-invocation-reason: external write — posts replies to GitHub PR review threads

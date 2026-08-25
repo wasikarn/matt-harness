@@ -44,8 +44,8 @@ emit() { printf '%s\n' "$1"; }
 emit "Human-gated / one-way-door / judgment-bound (stay human by doctrine):"
 
 # 1. H: disable-model-invocation surfaces (model can't invoke — human-only).
-if [ -f "$CLAUDE_DIR/commands/ship-merge.md" ] || [ -f "$CLAUDE_DIR/commands/ship-merge/COMMAND.md" ]; then
-  emit "H  ship-merge.md             disable-model-invocation (human-only merge flow)"
+if [ -f "$CLAUDE_DIR/skills/ship-merge/SKILL.md" ]; then
+  emit "H  ship-merge/SKILL.md       disable-model-invocation (human-only merge flow)"
   _h=$((_h + 1))
 fi
 # (ship-release, post-mortem, recursive-improve, address-review,

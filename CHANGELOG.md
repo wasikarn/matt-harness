@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.469] — 2026-08-25
+
+### Changed
+
+- `commands/ship-merge/COMMAND.md` converted to `skills/ship-merge/SKILL.md` (#103,
+  commands→skills convergence, spec #101 / ticket breakdown #102-#112). Same invocation
+  name, same `disable-model-invocation: true` gating, same end-to-end behavior. Harness-audit
+  check 40 (CRIT-guards the gating flag) and `automation-coverage.sh` repointed to the new
+  path; every live citation of `/ship-merge` updated to `mh:ship-merge` across
+  `docs/onboarding.md`, `skills/pr/SKILL.md`, `skills/incident/` (SKILL.md +
+  references/hotfix*.md), `commands/address-review/`, `commands/ship-release.md`, and
+  `inventory-boundary.sh`'s BOUNDARY.md generator. `tests/commands/test-ship-merge-codeowners.sh`
+  repointed to the new source path (directory move to `tests/skills/` deferred to the final
+  #112 ticket, once every command has moved).
+
 ## [0.68.390] — 2026-08-19
 
 ### Added

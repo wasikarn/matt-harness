@@ -10,7 +10,7 @@
    - CI state from Phase 6
    - **Suggested next step:**
      - Fixes pushed, awaiting re-review → await reviewer; ping if urgent
-     - Reviewer approves on push        → /ship-merge
+     - Reviewer approves on push        → mh:ship-merge
      - Another pass wanted before merge → mattpocock-skills:code-review
      - wontfix-heavy and abandoned      → `gh pr close <n>` — "abandoned" means the user has explicitly said they're not pursuing this PR further (dropped the effort, superseded by other work, priorities changed). It is never inferable from wontfix density alone — a session where every thread got a substantive wontfix reply is NOT "abandoned" by that fact; see the two bullets below for that exact shape, both of which route to waiting or to nothing further needed, not to closing.
      - Pushback posted, nothing to push, at least one required reviewer's block still stands → Phase 6 step 3 already re-requested review from every stale required reviewer — now await their responses to the rationale; escalate if unresponsive. Don't reach for `gh pr close` here — no code changed doesn't mean the effort is abandoned, it means the ball is in the reviewer's court.
