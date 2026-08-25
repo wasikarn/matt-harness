@@ -14,7 +14,7 @@ fixture for this — `eval/` does not exist in this repo (the eval
 dataset gate was deleted, not rebuilt, in the 2026-06-27 reset;
 see `CLAUDE.md`'s Validation section). What is actually code-enforced
 is narrower than a fixture would claim: the F8.5 hard cap in
-`skills/orchestrate/SKILL.md` clamps any single wave's work-list
+`skills/workflow/orchestrate/SKILL.md` clamps any single wave's work-list
 to ≤5 before spawning ("the clamp is the JS work-list slice
 before `parallel()`/`pipeline()`"). This command's Phase 1 (5)
 and Phase 3 (3) sizes are written to sit inside that per-wave
@@ -110,7 +110,7 @@ mh:ideate-search หาไอเดียที่เคยคิดเรื่
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **F8.5 hard cap (load-bearing)** —
-  `skills/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
+  `skills/workflow/orchestrate/SKILL.md` §"Bounded fan-out — hard cap
   (F8.5)"
   sets the peak-concurrent cap at 5 agents per wave, enforced by
   the lead clamping the work-list before spawning. The 2-wave

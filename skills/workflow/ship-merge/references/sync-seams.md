@@ -1,9 +1,9 @@
 # Phase 2 step 6 — merge-command sync seam
 
-Reference for `skills/ship-merge/SKILL.md` Phase 2 step 6 (the server-side `gh pr merge`
+Reference for `skills/workflow/ship-merge/SKILL.md` Phase 2 step 6 (the server-side `gh pr merge`
 call).
 
-`skills/incident/references/hotfix-reference.md` Phase 4 duplicates this exact merge command
+`skills/workflow/incident/references/hotfix-reference.md` Phase 4 duplicates this exact merge command
 for the P0/P1 emergency path — the two are intentionally separate calls, not a shared
 subroutine, since hotfix strips ship-merge's Phase 1 validation for speed. Hotfix's unconditional
 `--admin` is a deliberate difference (an emergency merge always needs the bypass), not drift

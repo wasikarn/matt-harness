@@ -37,7 +37,7 @@ template's checklist is documentation, not an enforced requirement.
 behavior change on a real branch of the skill's own worked examples? If not, prunable regardless
 of what the char count says; if so, load-bearing regardless of char count. Applies to every trim
 driven by any of the six size checks — 20, 34, 38, 43, 47, 52 — not just 34. It's the required
-pair to `skills/compress-docs/scripts/verify-preserved.py`, which checks structural preservation
+pair to `skills/meta/compress-docs/scripts/verify-preserved.py`, which checks structural preservation
 only (fenced code blocks, headings, inline code spans, link URLs, frontmatter) and never prose
 comprehension: a compression pass can pass that script at 100% green while still turning
 explanatory prose into an unclear telegram, as long as every structural element survives untouched.

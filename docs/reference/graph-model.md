@@ -1,7 +1,7 @@
 # Orchestration Graph Model
 
 Formalizes matt-harness's existing dispatch/verification structure as an explicit graph — nodes,
-typed edges, anchors — instead of leaving it scattered across `skills/orchestrate/SKILL.md`,
+typed edges, anchors — instead of leaving it scattered across `skills/workflow/orchestrate/SKILL.md`,
 `BOUNDARY.md`, and per-skill "Boundary with X" notes. **This document adds no new mechanism.** It
 names what already runs today; where prior art (GraphBit, LangGraph) enforces something kbg only
 enforces by prompt discipline, that gap is stated plainly, not silently closed.
@@ -25,7 +25,7 @@ this doc doesn't duplicate that table, it names the node *types* the edges below
 | Node type | Defined in | Computational role |
 |---|---|---|
 | Skill | `skills/*/SKILL.md` | Loaded on-demand by Claude Code's own description-matching; carries `allowed-tools` (pre-approval only, not a hard ceiling) |
-| Agent | `agents/*.md` | Dispatched via the `Agent` tool; carries a hard `tools:` allowlist — the real authorization boundary (`skills/orchestrate/SKILL.md` lines 24–32) |
+| Agent | `agents/*.md` | Dispatched via the `Agent` tool; carries a hard `tools:` allowlist — the real authorization boundary (`skills/workflow/orchestrate/SKILL.md` lines 24–32) |
 | Gate | `hooks/gates/*.sh` | Deterministic verifier node — runs on a `PreToolUse`/`WorktreeCreate` hook, returns a branchable score, can deny |
 | Advisory sensor | `hooks/advisory/*.sh` | Journal-only node — never emits `permissionDecision`, never blocks |
 
@@ -37,10 +37,10 @@ no runtime check that they did.
 
 | Edge | Definition | Where implemented | Enforcement |
 |---|---|---|---|
-| `routes-to` | Orchestrator → executor, one of 4 typed values | `skills/orchestrate/SKILL.md` lines 360–370 (`inline`/`parallel`/`sequential`/`drop`) | Prompt-discipline — the lead picks the Route cell by matrix judgment; nothing validates the choice against the matrix mechanically |
+| `routes-to` | Orchestrator → executor, one of 4 typed values | `skills/workflow/orchestrate/SKILL.md` lines 360–370 (`inline`/`parallel`/`sequential`/`drop`) | Prompt-discipline — the lead picks the Route cell by matrix judgment; nothing validates the choice against the matrix mechanically |
 | `depends-on` | Downstream task requires an upstream task's verified output before it may run | Builder→Validator→Fixer→Re-validator chain (`SKILL.md` lines 108–153); `addBlockedBy` / `board.json`'s `depends_on` field | **Ordering** is mechanical (`gate:task:complete-separation`, `hooks/gates/task-complete-separation.sh`, blocks a subagent from self-marking `completed`) — but the **payload** crossing the edge (task 2 needs task 1's exact files, task 3 needs the validator's verdict text verbatim) is prompt-discipline: the lead manually copies the right content into the next spawn prompt (`SKILL.md` lines 145–151, "Upstream contract propagation"). No schema checks that the copy was complete or correct. |
 | `verifies` | A gate or sensor checks an action/artifact against a deterministic rule | `hooks/gates/*.sh` → the Bash call, git operation, or task-completion claim it inspects | Mechanical by construction — this is the one edge type kbg enforces the same way GraphBit enforces typed edges (a non-LLM engine decides, not the model) |
-| `hands-off-to` | One skill's scope ends and names the skill that owns the next piece | The "Boundary with X" prose sections — currently only 2 in the whole fleet, both in `skills/orchestrate/reference.md` (boundary with the decision doctrine, METHODOLOGY Rule 1; boundary with `/mattpocock-skills:wayfinder`, user-invoked) | Prompt-discipline only — this edge exists purely as prose a human/model reads, not a structure anything queries or validates. Sparse: worth naming as under-instrumented rather than assuming it's systematic. |
+| `hands-off-to` | One skill's scope ends and names the skill that owns the next piece | The "Boundary with X" prose sections — currently only 2 in the whole fleet, both in `skills/workflow/orchestrate/reference.md` (boundary with the decision doctrine, METHODOLOGY Rule 1; boundary with `/mattpocock-skills:wayfinder`, user-invoked) | Prompt-discipline only — this edge exists purely as prose a human/model reads, not a structure anything queries or validates. Sparse: worth naming as under-instrumented rather than assuming it's systematic. |
 
 ## Anchors — what's real, what's missing
 

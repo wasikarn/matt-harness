@@ -96,7 +96,7 @@ kbg-shaped skill files.
    look like it did something.
 3. **Verify.** Run:
    ```bash
-   python3 skills/compress-docs/scripts/verify-preserved.py <file>
+   python3 skills/meta/compress-docs/scripts/verify-preserved.py <file>
    ```
    It diffs the file's fenced code blocks, inline code spans, and link URLs against the
    last-committed version (`git show HEAD:<file>`), in order. Exit 0 = all protected regions

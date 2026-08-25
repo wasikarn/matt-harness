@@ -38,7 +38,7 @@ mechanism available there); it is not an equivalent-strength substitute for code
 already exists, and doctrine text should say plainly which one a given fix actually is. Default:
 never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s
 claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real
-reference implementations. `skills/orchestrate/reference.md`'s `fan-out-and-synthesize` row
+reference implementations. `skills/workflow/orchestrate/reference.md`'s `fan-out-and-synthesize` row
 enforces the same discipline via prompt instruction instead — real and load-bearing, but a weaker
 mechanism than code, and should be named as such rather than blurred together with it. The
 context-economy cost of a synthesis call reading unfiltered fan-out output is covered by

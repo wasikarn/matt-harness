@@ -67,7 +67,7 @@ not wired. Mechanics: `references/provenance.md` §"Advisory hooks — full mech
 > - **Phase 2 (Focus)**: sequential score + cluster on the host, no fan-out.
 > - **Phase 3 (Deepen)**: 3 parallel Agent calls, peak 3.
 >
-> **Peak concurrent = 5** (the F8.5 hard cap, `skills/orchestrate/SKILL.md`
+> **Peak concurrent = 5** (the F8.5 hard cap, `skills/workflow/orchestrate/SKILL.md`
 > §"Bounded fan-out — hard cap (F8.5)"). Sequential: Phase 1 → Phase 2 →
 > Phase 3. ≈8-10 Agent calls/run. **Do not collapse into 1 wave.**
 >
@@ -158,7 +158,7 @@ Phase 1 payload does NOT list other branches or carry peer `Idea` objects, and i
 prompt forbids cross-talk. Sibling recombination is passed ONLY at Phase 3 (deepen), never
 during Diverge. This is load-bearing: a branch seeing another's output anchors the two
 together, collapsing the method to one wider thought (no shared mutable state across parallel
-branches — `skills/orchestrate/SKILL.md` §F8.5).
+branches — `skills/workflow/orchestrate/SKILL.md` §F8.5).
 
 **Practical rules:** don't call one Diverge Agent from another; don't include a "here's what
 the other branches generated" line in any Diverge userPrompt; don't carry `Idea` objects

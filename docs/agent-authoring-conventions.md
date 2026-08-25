@@ -99,7 +99,7 @@ anti-hallucination discipline is a real, evidenced mitigation, not ceremony.
 
 ## 6. Central routing, one-level-deep dispatch
 
-Every new agent must be added to `skills/orchestrate/reference.md`'s routing table (checked
+Every new agent must be added to `skills/workflow/orchestrate/reference.md`'s routing table (checked
 by `harness-audit` check 12) — that table is where domain disambiguation actually lives.
 Individual agents do **not** need to fully self-disambiguate against every neighboring agent
 in their own body; router coverage is the primary mechanism, a "when NOT to use me" note in
@@ -152,8 +152,8 @@ mining production data to discover it after.
 6. If the agent reports findings: state a confidence bar; zero findings is a valid output.
 7. If the agent returns a branchable status (not just findings prose): define it as a closed
    set of terminal first-token codes in `## Output Format`.
-8. Add the agent to `skills/orchestrate/reference.md`'s routing table.
-9. Run `bash skills/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/41 all touch new
+8. Add the agent to `skills/workflow/orchestrate/reference.md`'s routing table.
+9. Run `bash skills/meta/harness-audit/scripts/audit.sh` — checks 04/09/12/24/25/41 all touch new
    agents directly.
 
 ## Cross-references
@@ -162,8 +162,8 @@ mining production data to discover it after.
   in full (§1 here summarizes it).
 - [`agent-voice-extension.md`](./agent-voice-extension.md) — when a personality merits its own
   slash command (rare; default is no).
-- `skills/orchestrate/reference.md` — the routing table §6 requires new agents to join.
-- `skills/harness-audit/scripts/checks/` — 04 (frontmatter completeness), 09 (explicit
+- `skills/workflow/orchestrate/reference.md` — the routing table §6 requires new agents to join.
+- `skills/meta/harness-audit/scripts/checks/` — 04 (frontmatter completeness), 09 (explicit
   `tools:`, CRIT), 12 (routing coverage), 24 (tool-token validity), 25 (skills-ref
   resolution), 45 (no `Agent` grant, WARN) are the mechanical checks over this doc's §1–§6.
   There is deliberately no structural body-regex check (heading presence, etc.) — that class

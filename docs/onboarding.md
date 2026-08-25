@@ -32,7 +32,7 @@ Other useful ones: `mattpocock-skills:diagnosing-bugs`, `research`, `mh:frame`,
 
 **Do not let the model edit the code that judges it.** `hooks/gates/verifier-protect.sh`
 asks for explicit human approval before any edit to `hooks/gates/**`, `hooks/hooks.json`
-(the deny-gates + wiring), or the harness-audit verifier (`skills/harness-audit/scripts/audit.sh`
+(the deny-gates + wiring), or the harness-audit verifier (`skills/meta/harness-audit/scripts/audit.sh`
 + `checks/**`) — no env-var bypass. The L3–L5 autonomy ladder (bounded-autonomy cage, self-launch,
 auto-push ship-gate) that previously enforced this via a caged file list was retired in the v0.6.0
 reset; today's protection is this computational deny-gate, not a file-based cage. The invariant is

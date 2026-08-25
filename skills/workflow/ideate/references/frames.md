@@ -1,7 +1,7 @@
 # Ideate frames
 
 The 15-frame pool for `mh:ideate` Phase 1. Pick 5 per run; see **Picking
-frames** in `skills/ideate/SKILL.md` for the selection rule. The `code` and `design` tags
+frames** in `skills/workflow/ideate/SKILL.md` for the selection rule. The `code` and `design` tags
 bias the picker toward engineering vantages for code-shaped problems; the
 `wild` tag guarantees range.
 

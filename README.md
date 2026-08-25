@@ -201,7 +201,7 @@ science.
   as an explicit graph: 5 node types (Skill, Agent, Command, Gate, Advisory sensor) and 4
   typed edges (`routes-to`, `depends-on`, `verifies`, `hands-off-to`). It adds no new
   mechanism — it names structure that was already running, scattered across
-  `skills/orchestrate/SKILL.md` and `BOUNDARY.md`, in one place.
+  `skills/workflow/orchestrate/SKILL.md` and `BOUNDARY.md`, in one place.
 - Only one edge type — `verifies`, what the gates in `hooks/gates/` already do — is
   mechanically enforced the way GraphBit enforces typed edges (a non-LLM engine decides).
   The rest (which route an orchestrator picks, whether an upstream artifact was copied

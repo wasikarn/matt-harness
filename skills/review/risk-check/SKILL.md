@@ -46,9 +46,9 @@ total_lines = additions + deletions
 paths = [f.get("path", "") for f in d.get("files", [])]
 
 # Sensitive-path definition reused verbatim from
-# skills/ship-merge/references/scored-gate-guards.md's automation-bias
+# skills/workflow/ship-merge/references/scored-gate-guards.md's automation-bias
 # guard -- the second surface reusing this exact regex
-# (skills/ship-merge/SKILL.md is the canonical source; ship/COMMAND.md's
+# (skills/workflow/ship-merge/SKILL.md is the canonical source; ship/COMMAND.md's
 # Phase-8 failure-mode note points at ship-merge/SKILL.md rather than
 # holding its own copy -- confirmed 2026-08-17). Do
 # not redefine it here.

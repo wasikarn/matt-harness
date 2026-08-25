@@ -91,7 +91,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    Write the body to a temp file first (the Write tool, not a bash heredoc or quoted string —
    real hotfix content routinely contains apostrophes/backticks that break inline shell-string
    construction; `--body-file` sidesteps quoting entirely), matching this structure — mirrors
-   `mh:pr`'s Summary/Changes/Testing/Related-Issues headings (see `skills/pr/SKILL.md` Phase 4)
+   `mh:pr`'s Summary/Changes/Testing/Related-Issues headings (see `skills/review/pr/SKILL.md` Phase 4)
    plus a hotfix-only **Rollback** section:
 
    ```markdown
@@ -135,7 +135,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
    - `--delete-branch` cleans up.
    - **Caveat:** If repo has merge queues with "Do not allow bypassing" enabled, `--admin` may be blocked. Escalate to repo admin or use a GitHub App token.
 
-**Sync seam:** `skills/ship-merge/SKILL.md` Phase 2 duplicates this exact merge command
+**Sync seam:** `skills/workflow/ship-merge/SKILL.md` Phase 2 duplicates this exact merge command
 (same `gh pr merge`/`AskUserQuestion` shape) — the two are intentionally not the
 same call, since hotfix strips the scored gate for speed. Unconditional `--admin`
 here is deliberate, not drift: an emergency P0/P1 merge always needs the bypass,

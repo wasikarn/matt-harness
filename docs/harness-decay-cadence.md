@@ -36,7 +36,7 @@ hold. That is the trigger to re-measure.
 ## Cadence
 
 1. **Surface candidates** — run the audits that already exist; add no new tool:
-   - `harness-audit` (`bash "${MH_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" ["${MH_PLUGIN_ROOT}"]`) for fleet
+   - `harness-audit` (`bash "${MH_PLUGIN_ROOT}/skills/meta/harness-audit/scripts/audit.sh" ["${MH_PLUGIN_ROOT}"]`) for fleet
      health and dead / unloadable components;
    - `inventory` (`skills/inventory`) + a `BOUNDARY.md` drift snapshot it can
      emit and you commit — to catch a component that silently appeared or vanished;
@@ -172,7 +172,7 @@ matchers each):
   AND on Bash — the latter catches Bash-mediated writes like `tee`/`sed -i`/
   `cp`/`mv` to verifier surfaces). Emits `permissionDecision: ask` for edits
   to `hooks/gates/**`, `hooks/advisory/**`, `hooks/hooks.json`, and
-  `skills/harness-audit/scripts/{audit.sh,checks/**}` — the class is "the
+  `skills/meta/harness-audit/scripts/{audit.sh,checks/**}` — the class is "the
   model editing the code that judges it." **Also folds the former standalone
   `path-hardcode.sh`** (deleted 2026-07-03): an `exit 2` deny leg blocks a
   literal `/Users/<name>` written into a `.sh`/`.py` file before the ask —

@@ -191,7 +191,7 @@ lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
 
 The six patterns below mirror the CC Workflow vocabulary documented in
-`skills/orchestrate/reference.md §Dynamic-workflow pattern vocabulary`.
+`skills/workflow/orchestrate/reference.md §Dynamic-workflow pattern vocabulary`.
 They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |

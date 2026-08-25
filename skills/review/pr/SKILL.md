@@ -40,7 +40,7 @@ the user confirmed the body before creation, and Phase 6 reported the number + U
 - If no base branch given (non-hotfix), resolve the repo's actual default branch (don't
   assume `main`) via the shared script (provenance: `reference.md`):
   ```bash
-  bash skills/pr/scripts/resolve-default-branch.sh
+  bash skills/review/pr/scripts/resolve-default-branch.sh
   ```
   Exit 0 → stdout is the branch name, use it. Exit 1 → stdout starts `AMBIGUOUS: ...` —
   more than one candidate survives the `git merge-base` disambiguation; ask the user rather

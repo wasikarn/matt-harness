@@ -81,7 +81,7 @@ effort: high
    - `--squash` collapses the PR into a single commit **on GitHub**; `--delete-branch` removes the remote branch **on GitHub**.
    - Gate: merge attempted without `--admin` and GitHub refuses because a required check is still pending on the post-rebase SHA → STOP, tell the user CI needs to finish or the merge needs the bypass. Don't silently retry with `--admin` unprompted.
 
-**Sync seam:** this merge command is duplicated in `skills/incident/references/hotfix-reference.md` Phase 4 for the P0/P1 emergency path (hotfix strips Phase 1's validation for speed, so it's a deliberately separate call, not a shared subroutine) — see `references/sync-seams.md` before changing the merge flags or confirm-prompt shape here.
+**Sync seam:** this merge command is duplicated in `skills/workflow/incident/references/hotfix-reference.md` Phase 4 for the P0/P1 emergency path (hotfix strips Phase 1's validation for speed, so it's a deliberately separate call, not a shared subroutine) — see `references/sync-seams.md` before changing the merge flags or confirm-prompt shape here.
 
 7. Pull the result locally: `git checkout <base-branch> && git pull`
 8. Verify merge landed: `git log --oneline -3` on target branch.

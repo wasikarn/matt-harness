@@ -145,7 +145,7 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   rollback decision (Step 6); the audit exit count is the deterministic stop condition (score,
   not feel).
 - **Named bias guard — survivorship.** If the candidate's diff touched the verifier itself
-  (`hooks/gates/**`, `hooks/hooks.json`, `skills/harness-audit/**`, `checks/**`), a lower count
+  (`hooks/gates/**`, `hooks/hooks.json`, `skills/meta/harness-audit/**`, `checks/**`), a lower count
   could mean the check narrowed, not the defect fixed — apply extra scrutiny (read the diff,
   don't trust the count) before calling it "improved."
 - Run the relevant deterministic check on touched code: `bash scripts/run-gauntlet.sh`

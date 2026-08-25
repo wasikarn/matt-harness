@@ -1,6 +1,6 @@
 # Phase 1 step 7 — CODEOWNER gate detail
 
-Reference for `skills/ship-merge/SKILL.md` Phase 1 step 7 (the CODEOWNER
+Reference for `skills/workflow/ship-merge/SKILL.md` Phase 1 step 7 (the CODEOWNER
 binary/3-way gate). The step keeps the commands to run and the gate outcomes inline;
 this file covers the matching engine's grammar, the discovery loop's implementation
 note, review-approval SHA-pinning, and fixture coverage — everything a maintainer needs

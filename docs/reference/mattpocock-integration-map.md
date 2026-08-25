@@ -21,20 +21,20 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | ask-matt | user | no kbg touchpoint — routing questions go to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
 | code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82) |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` |
-| diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
+| diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/workflow/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
 | grill-with-docs | user | `docs/agents/domain.md` (path into domain-modeling) |
 | implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`) |
 | improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling) |
 | prototype | model | deferred — ask-matt's map owns it |
-| research | model | `skills/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
+| research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
 | resolving-merge-conflicts | model | deferred — ask-matt's map owns it |
 | setup-matt-pocock-skills | user | `README.md` Quick Start step 4 |
 | tdd | model | `skills/production-audit` |
 | to-spec | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
 | to-tickets | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
 | triage | user | deferred — ask-matt's map owns it (user-typed issue router; former `kbg-help` touchpoint removed 2026-08-24 #80) |
-| wayfinder | user | `skills/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
+| wayfinder | user | `skills/workflow/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
 | wizard | model | deferred — ask-matt's map owns it (human-only provisioning steps) |
 | grill-me | user | deferred — ask-matt's map owns it (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |

@@ -100,4 +100,4 @@ ledger: ~/.local/share/kbg/metrics/skill-usage.jsonl
 - **Cost writer:** `hooks/stop/cost-tracker.sh` (appends one row per session; the rate table).
 - **Skill-usage writer:** `hooks/session/skill-usage-telemetry.sh` (appends one row per skill invocation; PostToolUse matched on `Skill`).
 - **Deep cost report:** `mh:cost-report` (historical trends, not just last-N).
-- **Sibling skill:** `skills/harness-audit/SKILL.md` — fleet-level audit; this is the cost counterpart.
+- **Sibling skill:** `skills/meta/harness-audit/SKILL.md` — fleet-level audit; this is the cost counterpart.
