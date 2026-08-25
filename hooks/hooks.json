@@ -34,6 +34,17 @@
           }
         ],
         "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start, plus an UNINDEXED fold-vs-forgotten triage when applicable — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset. Tier: standard."
+      },
+      {
+        "id": "session:injection-budget-check",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:injection-budget-check", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/session/injection-budget-check.sh"]
+          }
+        ],
+        "description": "Advisory: WARN when kbg's own SessionStart injection (doctrine-bootstrap.sh + memory-health-nudge.sh combined) exceeds a 24KB cap -- silent when under. Does not cover Claude Code's own native MEMORY.md load. Tier: standard."
       }
     ],
     "UserPromptSubmit": [
