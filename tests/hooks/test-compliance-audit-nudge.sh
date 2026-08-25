@@ -47,6 +47,18 @@ cat > "$NO_PLAN" <<'EOF'
 {"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"done, no plan mode used"}]}}
 EOF
 
+# Fixture: a REAL "name":"ExitPlanMode" tool_use entry (passes the line-88
+# bash grep prefilter, so python3 confirmation actually runs) but with an
+# empty plan -- must still resolve found_plan=False. Without this fixture
+# the python3 confirmation step's negative branch is never exercised: every
+# other silent case is rejected earlier by the bash-side gates, so a broken
+# `if not found_plan` could regress with zero test warning.
+EMPTY_PLAN="$WORKDIR/empty-plan.jsonl"
+cat > "$EMPTY_PLAN" <<'EOF'
+{"type":"user","message":{"role":"user","content":"do the thing"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","name":"ExitPlanMode","input":{"plan":""}}]}}
+EOF
+
 echo "=== compliance-audit-nudge hook (PostToolUse:Bash) ==="
 echo ""
 echo "--- commit after a real plan approval (must emit nudge JSON, exit 0) ---"
@@ -111,6 +123,10 @@ silent_case "commit, but transcript has no real ExitPlanMode entry" \
   "$(bash_payload 'git commit -m "no plan"' "$NO_PLAN")"
 silent_case "commit, but transcript_path missing/nonexistent" \
   "$(bash_payload 'git commit -m "no transcript"' '/nonexistent/path.jsonl')"
+silent_case "commit, but the ExitPlanMode tool_use has an empty plan (python3 confirmation must reject it)" \
+  "$(bash_payload 'git commit -m "test commit"' "$EMPTY_PLAN")"
+silent_case "decoy 'command' key inside tool_response must not win over the real tool_input.command" \
+  '{"tool_name":"Bash","tool_input":{"command":"ls -la"},"tool_response":{"stdout":"ok","command":"git commit -m \"evil\""},"transcript_path":"'"$WITH_PLAN"'"}'
 silent_case "malformed JSON" \
   'not json at all'
 silent_case "empty stdin" \

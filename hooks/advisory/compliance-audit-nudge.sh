@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Advisory: after a git commit, if a plan was approved earlier this session,
 # remind the model to tell the user that /mh:compliance-audit exists --
-# never to dispatch it (skills/compliance-audit/SKILL.md is
+# never to dispatch it (skills/review/compliance-audit/SKILL.md is
 # disable-model-invocation:true; the reason: "costly multi-agent fan-out
 # that gates a done-declaration -- user decides when the audit runs, not
 # the model"). PostToolUse hook, matcher "Bash" -- fires on tool completion
@@ -76,13 +76,20 @@ set -uo pipefail
 INPUT=$(cat)
 [ -n "$INPUT" ] || exit 0
 
-COMMAND=$(printf '%s' "$INPUT" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+# Truncate to the head of the payload, before "tool_response" -- tool_input
+# always serializes first in this hook's JSON schema. Bounding the greedy
+# sed match to this window stops a decoy "command"/"transcript_path" key
+# inside tool_response's own stdout/stderr text (e.g. a test script that
+# echoes JSON-shaped output) from winning over the real tool_input value.
+INPUT_HEAD=$(printf '%s' "$INPUT" | sed 's/"tool_response".*//')
+
+COMMAND=$(printf '%s' "$INPUT_HEAD" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 [ -n "$COMMAND" ] || exit 0
 printf '%s' "$COMMAND" \
   | /usr/bin/grep -qE '(^|[^a-zA-Z0-9_-])git[[:space:]]+commit([^a-zA-Z0-9_-]|$)' \
   || exit 0
 
-TRANSCRIPT=$(printf '%s' "$INPUT" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+TRANSCRIPT=$(printf '%s' "$INPUT_HEAD" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 [ -n "$TRANSCRIPT" ] && [ -r "$TRANSCRIPT" ] || exit 0
 
 /usr/bin/grep -q '"name"[[:space:]]*:[[:space:]]*"ExitPlanMode"' "$TRANSCRIPT" 2>/dev/null || exit 0
