@@ -5,6 +5,32 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.479] — 2026-08-25
+
+### Changed
+
+- Converted `commands/bug-sweep.md`, `build-fix.md`, `refactor-clean.md`,
+  `security-scan.md`, and `summarize.md` (none `disable-model-invocation`-gated) to
+  `skills/<name>/SKILL.md` (#111, spec #101). Fixed real check-05 negation/trigger-clause
+  gaps on all 5 descriptions — none had ever been skill-checked as commands. Citation
+  sweep: `bug-sweep`/`ideate` example wording in `CLAUDE.md` and
+  `docs/reference/operating-model.md` corrected from "a markdown-only command" to "a
+  markdown-only skill" (both were already stale re: `ideate`, converted back in #104, and
+  now doubly so for `bug-sweep`); README's Spotlight `### Commands` table (now empty)
+  folded into `### Skills`.
+- Only 1 command remains (`review-fixtures`) — not part of any ticket (#102-111
+  covered 18 of the original 19; found via cross-check against the plan's own inventory
+  during this batch).
+
+### Fixed
+
+- `skills/inventory/scripts/sync-fleet-counts.sh`'s `COMMANDS` count used a bare
+  `ls -1 commands/*.md commands/*/COMMAND.md` under `set -euo pipefail` with no
+  fallback for the zero-match case — surfaced when this ticket moved the last flat
+  `commands/*.md` files, making the glob empty for the first time. Wrapped in the same
+  `{ ... 2>/dev/null || true; }` pattern `harness-audit`'s own `safe_count` helper
+  already uses for the identical glob (checks 01, 44).
+
 ## [0.68.478] — 2026-08-25
 
 ### Changed

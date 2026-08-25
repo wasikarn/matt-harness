@@ -42,11 +42,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Commands — Repo
 | Command | Description |
 |---|---|
-| bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). |
-| build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
-| refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
-| security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
-| summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
 
 ## Skills — Repo
@@ -103,6 +98,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 |---|---|---|---|
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Use when replying to reviewer feedback; say 'address review/แก้ตามรีวิว'. Don't use for review (mattpocock-skills:code-review) or merge (mh:ship-merge). | inline | manual |
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
+| bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Use when hunting for small bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). | inline | auto |
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
@@ -110,17 +106,21 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge). | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
+| security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Use when auditing harness/agent surfaces for security issues. Don't use for code-vulnerability review — use mh:security-auditor. | inline | auto |
 | test-coverage | Analyze coverage, identify gaps, and generate missing tests toward the target threshold. Use when coverage is below target. Don't use for a single failing test (debug it directly). | inline | auto |
 
 ### workflow
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
+| build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Use when a build or type-check is failing. Delegates to the build-error-resolver agent. Don't use for logic bugs (mattpocock-skills:diagnosing-bugs). | inline | auto |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. | inline | manual |
+| refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Use when cleaning up unused code. Delegates to the refactor-cleaner agent. Don't use for logic refactors beyond dead-code removal. | inline | auto |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
 | ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Use when cutting a release; say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). | inline | manual |
+| summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content for a reader. Delegates to the summarizer agent. Don't use for structured data extraction or code review. | inline | auto |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Use when a task warrants multi-tier review. Don't use for quick edits or PR review. | inline | manual |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Use when the user asks to save a document into the vault. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). | inline | manual |
 
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T11:36:20Z_
+_Generated: 2026-08-25T11:43:04Z_
 
 ---
 

@@ -1,6 +1,7 @@
 ---
-description: Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor.
 name: security-scan
+description: "Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Use when auditing harness/agent surfaces for security issues. Don't use for code-vulnerability review — use mh:security-auditor."
+bucket: review
 metadata:
   origin: ECC
 model: inherit
@@ -13,7 +14,8 @@ Run AgentShield against the current project or a target path, then turn the find
 
 ## Usage
 
-`/security-scan [path] [--format text|json|markdown|html] [--min-severity low|medium|high|critical] [--fix]`
+Optionally name a target path and/or flags when invoking this skill (`--format
+text|json|markdown|html`, `--min-severity low|medium|high|critical`, `--fix`).
 
 - `path` (optional): defaults to the current project. Use a `.claude/` path, a repo root, or a checked-in template directory.
 - `--format`: output format. Use `json` for CI, `markdown` for handoffs, and `html` for standalone review reports.
@@ -87,9 +89,3 @@ Use AgentShield in GitHub Actions for enforced gates:
 
 - Deeper code-vulnerability pass: `mh:security-auditor` (matches this file's own description and Output Contract step 7 — not `agents/security-reviewer.md`, a different surface)
 - Scanner: <https://github.com/affaan-m/agentshield>
-
-## Arguments
-
-$ARGUMENTS:
-- optional target path
-- optional AgentShield flags

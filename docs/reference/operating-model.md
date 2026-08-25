@@ -32,7 +32,7 @@ on, never a vibe the model rationalizes. (This is the agent-loop verifier-separa
 **Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the
 merge is the same problem — dropping malformed entries and surfacing agreement/conflict is
 deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only
-where no code layer exists to hold a real reducer (a markdown-only command like `bug-sweep`/
+where no code layer exists to hold a real reducer (a markdown-only skill like `bug-sweep`/
 `ideate` has no backing script — the dispatching model's own step-by-step discipline is the only
 mechanism available there); it is not an equivalent-strength substitute for code where a script
 already exists, and doctrine text should say plainly which one a given fix actually is. Default:

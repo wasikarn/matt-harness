@@ -1,6 +1,7 @@
 ---
-description: Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent.
 name: summarize
+description: "Compress a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content for a reader. Delegates to the summarizer agent. Don't use for structured data extraction or code review."
+bucket: workflow
 model: inherit
 effort: low
 ---
@@ -13,11 +14,11 @@ owns the reader-identification → load-bearing-extraction → compression → f
 
 ## Usage
 
-`/summarize [path]` — summarize a local file.
-`/summarize` with pasted text in the same message — summarize that text directly.
+Optionally name a local file path when invoking this skill — otherwise summarize the text
+pasted alongside the invocation.
 
 The agent only reads local files or text handed to it directly (no `Bash`, no fetch) — resolve a
-URL or ticket key to its actual content before invoking this command.
+URL or ticket key to its actual content before invoking this skill.
 
 ## Output Contract
 
@@ -29,8 +30,3 @@ The agent returns:
    (prose / bullets / table).
 3. `detail` — only if the source has material worth drilling into beyond the summary.
 4. `flagged_ambiguity` — only if the source itself was unclear or self-contradictory.
-
-## Arguments
-
-$ARGUMENTS:
-- optional target file path; if omitted, summarize the text pasted alongside the command

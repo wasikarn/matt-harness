@@ -1,6 +1,7 @@
 ---
-description: Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent.
 name: build-fix
+description: "Detect the project build system and incrementally fix build/type errors with minimal safe changes. Use when a build or type-check is failing. Delegates to the build-error-resolver agent. Don't use for logic bugs (mattpocock-skills:diagnosing-bugs)."
+bucket: workflow
 model: inherit
 effort: low
 ---
@@ -11,9 +12,7 @@ Incrementally fix build and type errors with minimal, safe changes. Delegates to
 
 ## Usage
 
-`/build-fix [path]`
-
-- `path` (optional): defaults to the current project.
+Optionally name a target path when invoking this skill; defaults to the current project.
 
 ## Output Contract
 
@@ -24,8 +23,3 @@ The agent returns:
 3. New errors introduced (should be zero).
 4. Unresolved issues, if any — with a suggested next step per issue.
 5. If no unresolved issues remain: suggested next step — a compiling build is not a passing one, run the test suite / mh:test-coverage before continuing.
-
-## Arguments
-
-$ARGUMENTS:
-- optional target path

@@ -1,6 +1,7 @@
 ---
 name: bug-sweep
-description: "Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit)."
+description: "Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Use when hunting for small bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit)."
+bucket: review
 argument-hint: "[path] [count]"
 model: inherit
 effort: high
@@ -12,7 +13,8 @@ Spawn parallel agents to hunt for small, concrete bugs across the codebase — r
 
 ## Usage
 
-`/bug-sweep [path] [count]`
+Optionally name a path to scope the sweep and/or an agent count when invoking this skill
+(e.g. "sweep src/ with 8 agents").
 
 - `path` (optional): scope the sweep to one directory or file. Defaults to the whole repo (respecting `.gitignore`).
 - `count` (optional): number of parallel agents. Defaults to **5**.
@@ -42,9 +44,3 @@ Suggested next step: to fix one directly, verify it yourself first — reproduce
 don't just trust the dispatched agent's report — then apply the smallest change that addresses
 it, then re-run whatever surfaced the bug to confirm it's actually gone. Route anything bigger
 than a one-line fix through `mattpocock-skills:diagnosing-bugs` instead.
-
-## Arguments
-
-$ARGUMENTS:
-- optional target path (defaults to repo root)
-- optional agent count (defaults to 5)

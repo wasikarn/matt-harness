@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.478-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.479-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
@@ -124,9 +124,9 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 
 | Component | Count | How to invoke |
 |---|---|---|
-| **Skills** | 51 | `mh:<skill>` — e.g. `mh:pr`, `mh:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
+| **Skills** | 56 | `mh:<skill>` — e.g. `mh:pr`, `mh:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 16 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 6 | `/mh:<command>` — e.g. `/mh:security-scan`, `/mh:summarize` (namespaced identically to skills — see Quick Start step 7; shrinking as the commands→skills convergence lands, spec #101) |
+| **Commands** | 1 | `/mh:review-fixtures` — the last directory-form command, retiring shortly (commands→skills convergence, spec #101) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `mh:frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |
@@ -221,17 +221,12 @@ predates the term, and the doc is explicit that this is naming, not new capabili
 
 ## Spotlight
 
-### Commands
-
-| Command | What it does |
-|---|---|
-| `/mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
-
 ### Skills
 
 | Skill | When to reach for it |
 |---|---|
 | `mh:pr` | Create a GitHub PR — templated body, previewed for confirmation before creation |
+| `mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent |
 | `mh:ship-merge` · `mh:ship-release` | Pre-merge gate · end-to-end release ceremony |
 | `mh:score-decision` | Weighted numeric verdict for a decision — pass/fail + confidence + trace |
 | `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building |
@@ -359,7 +354,7 @@ matt-harness aggregates components from these upstream projects under their resp
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`,
-> `ls commands/` (real current fleet: 51 skills · 16 agents · 6 commands).
+> `ls commands/` (real current fleet: 56 skills · 16 agents · 1 commands).
 
 | Source | License | Adopted |
 |---|---|---|
@@ -370,7 +365,7 @@ matt-harness aggregates components from these upstream projects under their resp
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance-machinery rubric adapted into a new Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both the agent and this lens were retired 2026-08-24, #82, with the review pipeline — `mattpocock-skills:code-review` is now the review surface, with no equivalent lens) |
-| kbg-native | MIT | 51 skills · 16 agents · 6 commands |
+| kbg-native | MIT | 56 skills · 16 agents · 1 commands |
 
 ---
 

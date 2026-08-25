@@ -1,6 +1,7 @@
 ---
-description: Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent.
 name: refactor-clean
+description: "Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Use when cleaning up unused code. Delegates to the refactor-cleaner agent. Don't use for logic refactors beyond dead-code removal."
+bucket: workflow
 model: inherit
 effort: low
 ---
@@ -11,9 +12,7 @@ Safely identify and remove dead code with test verification at every step. Deleg
 
 ## Usage
 
-`/refactor-clean [path]`
-
-- `path` (optional): defaults to the current project.
+Optionally name a target path when invoking this skill; defaults to the current project.
 
 ## Output Contract
 
@@ -24,8 +23,3 @@ The agent returns:
 3. Test status before and after (all green required to keep a deletion).
 4. Lines saved.
 5. Suggested next step: deletions landed, tests green → mattpocock-skills:code-review before shipping the removal; nothing safe to remove → done.
-
-## Arguments
-
-$ARGUMENTS:
-- optional target path
