@@ -15,6 +15,7 @@ import os
 import sys
 
 DEFAULT_COSTS = os.path.expanduser("~/.local/share/kbg/metrics/costs.jsonl")
+DEFAULT_SKILLS = os.path.expanduser("~/.local/share/kbg/metrics/skill-usage.jsonl")
 
 
 def warn(msg):
@@ -70,24 +71,73 @@ def render_cost(rows, costs_path):
           f"(rates are heuristic — see hooks/stop/cost-tracker.sh)")
 
 
+def render_skill_usage(rows, skills_path):
+    # Invocation counts only, split by plugin — no outcome/success field.
+    # No reliable success signal exists for a Skill call (see
+    # hooks/session/skill-usage-telemetry.sh's header); this is usage
+    # evidence for the future matt-skill vs harness-skill overlap cull,
+    # not a success-rate panel.
+    print(f"\n## Skill usage (skill-usage.jsonl)\nledger: {skills_path}\n")
+    if not rows:
+        print("0 rows — the session:skill-usage-telemetry PostToolUse hook appends one per skill invocation")
+        return
+    now = dt.datetime.now(dt.timezone.utc)
+
+    def cutoff(days):
+        return (now - dt.timedelta(days=days)).isoformat(
+            timespec="milliseconds").replace("+00:00", "Z")
+    c7, c30 = cutoff(7), cutoff(30)
+    counts = {}
+    for r in rows:
+        ts = r.get("ts", "")
+        skill = r.get("skill", "unknown")
+        plugin = r.get("plugin", "unknown")
+        n7, n30 = counts.get((plugin, skill), (0, 0))
+        if ts >= c30:
+            n30 += 1
+        if ts >= c7:
+            n7 += 1
+        counts[(plugin, skill)] = (n7, n30)
+    print("| plugin | skill | last 7d | last 30d |")
+    print("|---|---|---|---|")
+    for (plugin, skill), (n7, n30) in sorted(counts.items(), key=lambda kv: -kv[1][1]):
+        if n30 == 0:
+            continue
+        print(f"| {plugin} | {skill} | {n7} | {n30} |")
+    by_plugin_30 = {}
+    for (plugin, _), (_, n30) in counts.items():
+        by_plugin_30[plugin] = by_plugin_30.get(plugin, 0) + n30
+    total7 = sum(n7 for n7, _ in counts.values())
+    total30 = sum(n30 for _, n30 in counts.values())
+    plugin_summary = ", ".join(f"{p}={n}" for p, n in
+                                sorted(by_plugin_30.items(), key=lambda kv: -kv[1]) if n)
+    print(f"\n**Σ last 7d: {total7} invocation(s) · last 30d: {total30} invocation(s)** "
+          f"({plugin_summary or 'no plugin data'})")
+
+
 def main():
     ap = argparse.ArgumentParser(prog="harness-health",
         description="Read-only query surface over the live cost ledger (costs.jsonl).")
     ap.add_argument("--last", type=int, default=None, help="last N sessions (after other filters)")
     ap.add_argument("--since", type=float, default=None, help="sessions newer than N days")
     ap.add_argument("--costs", default=DEFAULT_COSTS, help="path to costs.jsonl ledger")
+    ap.add_argument("--skills", default=DEFAULT_SKILLS, help="path to skill-usage.jsonl ledger")
     ap.add_argument("--json", action="store_true", help="emit JSON instead of markdown")
     if len(sys.argv) == 1:  # no CLI flags → print help + exit 0
         ap.print_help(); return 0
     args = ap.parse_args()
 
     rows = list(filter_rows(load_rows(args.costs), args))
+    skill_rows = list(load_rows(args.skills))  # unfiltered — panel is its own fixed 7d/30d windows
     if args.json:
-        print(json.dumps({"ledger": args.costs, "sessions": rows}, indent=2, default=str))
+        print(json.dumps({"ledger": args.costs, "sessions": rows,
+                           "skills_ledger": args.skills, "skill_usage": skill_rows},
+                          indent=2, default=str))
         return 0
     if not rows and not os.path.isfile(args.costs):
         print(f"ERROR: ledger not found: {args.costs}", file=sys.stderr); return 1
     render_cost(rows, args.costs)
+    render_skill_usage(skill_rows, args.skills)
     return 0
 
 

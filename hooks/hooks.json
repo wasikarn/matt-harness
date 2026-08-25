@@ -76,6 +76,20 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "id": "session:skill-usage-telemetry",
+        "matcher": "Skill",
+        "description": "PostToolUse(Skill): journal every skill invocation (skill, plugin, ts) to ~/.local/share/kbg/metrics/skill-usage.jsonl -- usage evidence for the future matt-skill vs harness-skill overlap cull (#90/T11). Invocation counts only, no outcome/success field -- no reliable success signal exists for a Skill call (see hooks/session/skill-usage-telemetry.sh's header). This event has no decision control -- audit logging only. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:skill-usage-telemetry", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh"]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "id": "stop:cost-tracker",

@@ -6,6 +6,10 @@ The verdict + staleness lenses that previously read `~/.claude/governance-events
 
 This mode is **advisory only**: it never writes, never emits a `permissionDecision`, never invokes an LLM. Stdlib only, no subprocess.
 
+Also renders a **skill usage panel** (#90/T11) from `~/.local/share/kbg/metrics/skill-usage.jsonl` — the `session:skill-usage-telemetry` PostToolUse(Skill) hook appends one row per skill invocation. Per-skill invocation counts over the last 7 and 30 days, split by plugin (`mh:` vs `mattpocock-skills:` etc., derived from the skill name's namespace prefix). This is the data source for a future partial-overlap cull — usage evidence instead of feel.
+
+**Scope note:** counts only, no outcome/success field. No reliable success signal exists for a Skill invocation — it loads instructions into context rather than returning an inspectable result the way a Bash exit code does, and Claude Code's own docs don't define one for PostToolUse either. A fabricated constant "outcome" would be a false metric, not a health signal (operator decision, 2026-08-25) — so the panel reports usage, not success rate.
+
 ## When to use
 
 - The user asks "token usage / cost this session", "harness health", or "ใช้ token เท่าไหร่".
@@ -41,13 +45,15 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py"
 |---|---|---|---|
 | `--last N` | int | none | last N sessions (applied AFTER other filters) |
 | `--since DAYS` | float | none | sessions newer than N days |
-| `--costs PATH` | path | `~/.local/share/kbg/metrics/costs.jsonl` | override ledger path |
+| `--costs PATH` | path | `~/.local/share/kbg/metrics/costs.jsonl` | override cost ledger path |
+| `--skills PATH` | path | `~/.local/share/kbg/metrics/skill-usage.jsonl` | override skill-usage ledger path |
 | `--json` | bool | false | emit JSON instead of markdown |
 
 ## Read paths
 
-- **Ledger** — `~/.local/share/kbg/metrics/costs.jsonl` by default. Each row: `timestamp`, `session_id`, `transcript_path`, `model`, `input_tokens`, `output_tokens`, `cache_write_tokens`, `cache_read_tokens`, `estimated_cost_usd`.
-- **No write paths.** The script never appends to the ledger, never invokes an agent, never emits a `permissionDecision`.
+- **Cost ledger** — `~/.local/share/kbg/metrics/costs.jsonl` by default. Each row: `timestamp`, `session_id`, `transcript_path`, `model`, `input_tokens`, `output_tokens`, `cache_write_tokens`, `cache_read_tokens`, `estimated_cost_usd`.
+- **Skill-usage ledger** — `~/.local/share/kbg/metrics/skill-usage.jsonl` by default (`--skills PATH` overrides). Each row: `ts`, `session_id`, `skill` (full namespaced name, e.g. `mh:harness-audit`), `plugin` (the namespace prefix before `:`, or `unknown`).
+- **No write paths.** The script never appends to either ledger, never invokes an agent, never emits a `permissionDecision`.
 
 ## Output Format
 
@@ -60,6 +66,16 @@ ledger: ~/.local/share/kbg/metrics/costs.jsonl
 | 2026-06-30T14:23:00Z | a1b2c3d4 | claude-... | 12,345 | 1,200 | 8,000 | 45,000 | 0.1234 |
 
 **Σ across N session(s): input ... · output ... · cache_write ... · cache_read ... · est_cost $X.XXXX**
+
+## Skill usage (skill-usage.jsonl)
+ledger: ~/.local/share/kbg/metrics/skill-usage.jsonl
+
+| plugin | skill | last 7d | last 30d |
+|---|---|---|---|
+| mh | mh:harness-audit | 3 | 11 |
+| mattpocock-skills | mattpocock-skills:code-review | 1 | 4 |
+
+**Σ last 7d: 4 invocation(s) · last 30d: 15 invocation(s)** (mh=11, mattpocock-skills=4)
 ```
 
 `estimated_cost_usd` uses the heuristic rates in `hooks/stop/cost-tracker.sh` (haiku/opus/sonnet tiers) — it is an estimate, not a bill.
@@ -67,18 +83,21 @@ ledger: ~/.local/share/kbg/metrics/costs.jsonl
 ## Failure modes for the CLI
 
 - **No args** → prints help, exit 0.
-- **Ledger missing** → ERROR to stderr, exit 1 (cost cannot be served without the ledger).
-- **Malformed JSONL line** → WARN to stderr with the line number, skip the line, continue.
+- **Cost ledger missing** → ERROR to stderr, exit 1 (cost cannot be served without the ledger).
+- **Skill-usage ledger missing** → renders "0 rows" for that panel, exit 0 — a fresh install with no skill invocations yet is expected, not an error.
+- **Malformed JSONL line** (either ledger) → WARN to stderr with the line number, skip the line, continue.
 - **0 rows match** → prints "0 rows" + a note, exit 0.
 
 ## What this skill does NOT do
 
-- Does **not** write to the ledger (read-only; the cost-tracker Stop hook is the sole writer).
+- Does **not** write to either ledger (read-only; the cost-tracker Stop hook and skill-usage-telemetry PostToolUse hook are the sole writers).
 - Does **not** invoke an LLM or `claude` via subprocess (stdlib only).
 - Does **not** emit a `permissionDecision` anywhere (no blocking, no gating; advisory only).
+- Does **not** report skill success/failure rates — see the scope note above.
 
 ## See also
 
-- **Writer:** `hooks/stop/cost-tracker.sh` (appends one row per session; the rate table).
+- **Cost writer:** `hooks/stop/cost-tracker.sh` (appends one row per session; the rate table).
+- **Skill-usage writer:** `hooks/session/skill-usage-telemetry.sh` (appends one row per skill invocation; PostToolUse matched on `Skill`).
 - **Deep cost report:** `mh:cost-report` (historical trends, not just last-N).
 - **Sibling skill:** `skills/harness-audit/SKILL.md` — fleet-level audit; this is the cost counterpart.

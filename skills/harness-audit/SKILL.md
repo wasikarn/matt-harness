@@ -11,7 +11,7 @@ effort: medium
 Single harness-state surface with two modes:
 
 - **Default (audit)** — deterministic fleet/schema/structural check. Detects drift before it becomes a silent failure.
-- **--health mode** — per-session token cost from the live cost ledger (formerly `kbg:harness-health`). See `references/health.md`.
+- **--health mode** — per-session token cost from the live cost ledger, plus a per-skill usage panel (7d/30d invocation counts by plugin) from the skill-usage ledger (formerly `kbg:harness-health`). See `references/health.md`.
 
 ## Mode selection
 
