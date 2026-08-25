@@ -65,6 +65,15 @@ Hooks live in `git-hooks/` (not `.git/hooks/`). Wire once per clone:
 git config core.hooksPath git-hooks
 ```
 
+**Keep that path RELATIVE.** An absolute `core.hooksPath` dies silently the moment the working
+directory is renamed or the repo is re-cloned elsewhere: git does not warn when `core.hooksPath`
+points at a directory that no longer exists — it just runs no hooks. Confirmed 2026-08-26, when
+renaming this clone `kbg-harness` → `matt-harness` left the config pointing at the old absolute
+path; one commit and one push then completed with **zero** gates (both happened to be clean, and
+the gauntlet re-run afterwards confirmed it, but nothing would have caught a bad one). A relative
+`git-hooks` resolves from the repo root and survives any rename. Verify with
+`test -d "$(git config core.hooksPath)"` — the check is cheap and the failure mode is invisible.
+
 pre-commit is the fast gate: syntax/lint (`bash -n` + shellcheck), JSON validation, CRITICAL
 harness-audit (graceful-skip if absent), and the new-file LOC gate. That gate hard-blocks a
 brand-new `agents/*.md` or `skills/*/SKILL.md` over 200 lines; editing an existing one past
