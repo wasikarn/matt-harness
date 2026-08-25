@@ -157,8 +157,13 @@ fi
 is_plugin_delivered() {
   local kind="$1"
   local name="$2"
+  local _d
   case "$kind" in
-    skills)        [ -f "$PLUGIN_CACHE/skills/$name/SKILL.md" ] ;;
+    skills)
+      [ -f "$PLUGIN_CACHE/skills/$name/SKILL.md" ] && return 0
+      _d="$(find "$PLUGIN_CACHE/skills" -mindepth 2 -maxdepth 2 -type d -name "$name" 2>/dev/null | head -1)"
+      [ -n "$_d" ] && [ -f "$_d/SKILL.md" ]
+      ;;
     agents)        [ -f "$PLUGIN_CACHE/agents/$name.md" ] ;;
     hooks)         [ -f "$PLUGIN_CACHE/hooks/$name" ] ;;
     output-styles) [ -f "$PLUGIN_CACHE/output-styles/$name.md" ] ;;

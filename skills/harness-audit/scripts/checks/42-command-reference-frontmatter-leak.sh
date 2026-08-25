@@ -25,7 +25,7 @@
 # WARN (not CRIT): a real but non-catastrophic namespace/token-budget leak —
 # not the tamper-sensitive class checks 36/40 CRIT-guard.
 shopt -s nullglob
-_leak_candidates=("$CLAUDE_DIR"/skills/*/references/*.md)
+_leak_candidates=("$CLAUDE_DIR"/skills/*/references/*.md "$CLAUDE_DIR"/skills/*/*/references/*.md)
 shopt -u nullglob
 for _f in "${_leak_candidates[@]}"; do
   [ -f "$_f" ] || continue

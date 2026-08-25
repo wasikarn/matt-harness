@@ -131,15 +131,26 @@ out=$(run_hook 2>&1); rc=$?
 check "new skills/newthing/reference.md at 500 lines → allowed (exempt)" $?
 reset_fixture
 
-# 7. New nested SKILL.md (one directory level too deep) at 400 lines → allowed.
-# Negative control for the glob-vs-regex parity claim: check 55's real
-# filesystem glob (skills/[!_]*/SKILL.md) never crosses a `/`; this pins that
-# the hook's regex doesn't either.
-mkfile skills/foo/deep/SKILL.md 400
-bump_and_add skills/foo/deep/SKILL.md
+# 7a. New bucketed SKILL.md (skills/<bucket>/<name>/SKILL.md, 2 levels) at
+# 400 lines → blocked. Positive control for the bucketed-skills migration:
+# check 55's glob now covers skills/[!_]*/[!_]*/SKILL.md alongside the flat
+# form, and the hook's regex must stay in parity with it.
+mkfile skills/meta/foo/SKILL.md 400
+bump_and_add skills/meta/foo/SKILL.md
+out=$(run_hook 2>&1); rc=$?
+[ "$rc" -ne 0 ] && grep -q "new file 'skills/meta/foo/SKILL.md' is 400 lines" <<<"$out"
+check "new skills/meta/foo/SKILL.md (bucketed) at 400 lines → blocked" $?
+reset_fixture
+
+# 7b. New SKILL.md 3 levels deep (one level past the bucketed form) at 400
+# lines → allowed. Negative control for the glob-vs-regex parity claim:
+# check 55's real filesystem glob never crosses more than one bucket level;
+# this pins that the hook's regex doesn't either.
+mkfile skills/foo/bar/deep/SKILL.md 400
+bump_and_add skills/foo/bar/deep/SKILL.md
 out=$(run_hook 2>&1); rc=$?
 [ "$rc" -eq 0 ] && grep -q "new-file LOC gate" <<<"$out" && ! grep -q "cap 200" <<<"$out"
-check "new nested skills/foo/deep/SKILL.md at 400 lines → allowed (glob-parity control)" $?
+check "new nested skills/foo/bar/deep/SKILL.md (3 levels) at 400 lines → allowed (glob-parity control)" $?
 reset_fixture
 
 # 8. New SKILL.md under an underscore-prefixed dir at 400 lines → allowed.

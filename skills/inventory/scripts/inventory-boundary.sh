@@ -98,7 +98,7 @@ print_boundary() {
     echo ""
     echo "## Skills — $label"
     local _skill_rows=()
-    for d in "$base/skills"/[!_]*/; do  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit
+    for d in "$base/skills"/[!_]*/ "$base/skills"/[!_]*/[!_]*/; do  # [!_]*/ skips _-prefixed scaffolds (e.g. _template), per install.sh/harness-audit; second term covers a bucketed skill dir (skills/<bucket>/<name>/)
       [ -d "$d" ] || continue
       local name desc agent invoke bucket
       name=$(basename "$d")

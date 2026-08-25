@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 5. Frontmatter completeness — skills
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac  # skip _-prefixed scaffolds (e.g. _template), per the _* convention
   name=$(basename "$(dirname "$f")")

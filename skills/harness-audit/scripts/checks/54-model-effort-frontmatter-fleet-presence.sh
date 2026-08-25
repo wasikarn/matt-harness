@@ -21,7 +21,7 @@
 #
 # WARN (not CRIT): convention drift, not the tamper-sensitive class 36/40/45 guard.
 shopt -s nullglob
-_me_files=("$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/*/SKILL.md)
+_me_files=("$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/*/SKILL.md)
 shopt -u nullglob
 for _f in "${_me_files[@]}"; do
   [ -f "$_f" ] || continue

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 2. Symlink integrity — skills
-for d in "$CLAUDE_DIR/skills"/*/; do
+for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
   [ -d "$d" ] || continue
   name=$(basename "$d")
   # Skip self during bootstrap; skip _-prefixed scaffolds (not deployed skills —

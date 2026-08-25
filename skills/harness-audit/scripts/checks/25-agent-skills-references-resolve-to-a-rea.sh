@@ -10,15 +10,17 @@ _known_skills=$(mktemp)
   # an if so the command group ends with exit 0 even when the directory is
   # missing; with set -euo pipefail the pipeline would otherwise abort here.
   if [ -d "$CLAUDE_DIR/skills" ]; then
-    for d in "$CLAUDE_DIR/skills"/[!_]*/; do
+    for d in "$CLAUDE_DIR/skills"/[!_]*/ "$CLAUDE_DIR/skills"/[!_]*/[!_]*/; do
       [ -d "$d" ] || continue
       n=$(basename "$d")
       case "$n" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces, review-fixtures's working dir) -- never real skills
-      echo "$n"
+      [ -f "${d}SKILL.md" ] && echo "$n"
     done
   fi
   if [ -d "$HOME/.claude/skills" ]; then
-    for d in "$HOME/.claude/skills"/[!_]*/; do [ -d "$d" ] && basename "$d"; done
+    for d in "$HOME/.claude/skills"/[!_]*/ "$HOME/.claude/skills"/[!_]*/[!_]*/; do
+      [ -f "${d}SKILL.md" ] && basename "$d"
+    done
   fi
   # Plugin-delivered skills (e.g. mattpocock-skills:grilling) live under the
   # plugin cache, not $CLAUDE_DIR/skills or $HOME/.claude/skills — without

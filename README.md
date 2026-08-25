@@ -348,7 +348,7 @@ matt-harness aggregates components from these upstream projects under their resp
 > **Point-in-time snapshot (counts as of 2026-07-18), not live-derived.** There is no
 > `origin:` frontmatter field on surface files to auto-regenerate this table: it's a
 > manual tally. To browse what's actually shipping today: `ls skills/`, `ls agents/`
-> (commands/ retired as a surface type 2026-08-25, #112 — real current fleet: 57 skills · 16 agents).
+> (commands/ retired as a surface type 2026-08-25, #112 — real current fleet: 56 skills · 16 agents).
 
 | Source | License | Adopted |
 |---|---|---|
@@ -359,7 +359,7 @@ matt-harness aggregates components from these upstream projects under their resp
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md` + a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs` skill's safety pattern — verify-before-overwrite, frontmatter handling, sensitive-file refusal — adapted from `caveman-compress` (v0.68.128, compression technique itself is kbg-native, not caveman-grammar); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder + `ponytail:` shortcut-marker convention + root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance-machinery rubric adapted into a new Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both the agent and this lens were retired 2026-08-24, #82, with the review pipeline — `mattpocock-skills:code-review` is now the review surface, with no equivalent lens) |
-| kbg-native | MIT | 57 skills · 16 agents |
+| kbg-native | MIT | 56 skills · 16 agents |
 
 ---
 

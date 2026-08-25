@@ -77,7 +77,7 @@ else
   _live55=()
   for _f in "$CLAUDE_DIR"/CLAUDE.md "$CLAUDE_DIR"/README.md "$CLAUDE_DIR"/BOUNDARY.md \
             "$CLAUDE_DIR"/agents/*.md \
-            "$CLAUDE_DIR"/skills/*/*.md \
+            "$CLAUDE_DIR"/skills/*/*.md "$CLAUDE_DIR"/skills/*/*/*.md \
             "$CLAUDE_DIR"/hooks/**/*.sh "$CLAUDE_DIR"/hooks/hooks.json \
             "$CLAUDE_DIR"/output-styles/*.md "$CLAUDE_DIR"/contexts/*.md \
             "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \

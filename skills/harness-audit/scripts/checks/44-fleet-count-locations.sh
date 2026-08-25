@@ -38,7 +38,7 @@ fi
 if [ "$_is_mh" = "1" ]; then
   # Live counts — duplicates check-01's methodology directly (3 short finds);
   # not worth a shared lib for this size, matching the sync script's own copy.
-  _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
+  _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -name SKILL.md -not -path '*/_*' -not -path '*-workspace/*')
   _LIVE_AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
   _EXPECT_TRIPLE="${_LIVE_SKILLS} skills · ${_LIVE_AGENTS} agents"
 

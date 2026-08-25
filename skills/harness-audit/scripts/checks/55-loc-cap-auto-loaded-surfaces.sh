@@ -14,7 +14,7 @@
 # glob 2026-08-25, #112 — commands/ retired as a surface type entirely.)
 LOC_CAP=200
 for _f in "$CLAUDE_DIR"/agents/*.md \
-          "$CLAUDE_DIR"/skills/[!_]*/SKILL.md; do
+          "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/skills/[!_]*/[!_]*/SKILL.md; do
   [ -f "$_f" ] || continue
   _lines=$(wc -l < "$_f" | tr -d ' ')
   if [ "$_lines" -gt "$LOC_CAP" ]; then

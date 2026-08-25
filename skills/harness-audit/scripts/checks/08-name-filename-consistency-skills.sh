@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 8. Name/filename consistency — skills
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   [ -f "$f" ] || continue
   dir=$(basename "$(dirname "$f")")
   # _-prefixed scaffolds ship placeholder names (e.g. your-skill-name); not deployed

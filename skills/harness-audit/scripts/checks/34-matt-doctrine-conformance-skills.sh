@@ -41,7 +41,7 @@
 # sees skills/*/SKILL.md, so the entry is inert while only the command form
 # exists). kbg-help's entry (same twin rationale) was removed 2026-08-24 (#80)
 # with its command — no skills/kbg-help/ exists, so the entry was dead anyway.
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   name=$(basename "$(dirname "$f")")

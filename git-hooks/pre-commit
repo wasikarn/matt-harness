@@ -120,7 +120,9 @@ run_audit_layer() {
   local rc=0
   if [ "$ecosystem_staged" -eq 1 ]; then
     local AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
-    [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
+    [ -f "$AUDIT" ] || AUDIT="$(find "$ROOT/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
+    [ -n "$AUDIT" ] && [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
+    [ -f "$AUDIT" ] || AUDIT="$(find "$HOME/.claude/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
     if [ -f "$AUDIT" ]; then
       local audit_out
       local audit_cmd="bash $AUDIT $ROOT"
@@ -265,6 +267,7 @@ is_capped_surface() {
   local p="$1"
   [[ "$p" =~ ^agents/[^/]+\.md$ ]] && return 0
   [[ "$p" =~ ^skills/[^_][^/]*/SKILL\.md$ ]] && return 0
+  [[ "$p" =~ ^skills/[^_][^/]*/[^_][^/]*/SKILL\.md$ ]] && return 0
   return 1
 }
 

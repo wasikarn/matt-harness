@@ -22,7 +22,8 @@ while IFS= read -r _path; do
 done < <(find "$CLAUDE_DIR" \( -name '*.sh' -o -name '*.py' -o -name '*.js' \) \
             -not -path '*/.git/*' -not -path '*/.scratch/*' 2>/dev/null)
 
-for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
+for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/*/SKILL.md \
+          "$CLAUDE_DIR"/skills/*/reference.md "$CLAUDE_DIR"/skills/*/*/reference.md \
           "$CLAUDE_DIR"/agents/*.md \
           "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
           "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md; do

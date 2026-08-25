@@ -10,7 +10,7 @@
 # `--health`) reports SKILL.md body size — `--health` is session token COST,
 # inventory lists surfaces with no size field at all.
 SIZE_THRESHOLD_CHARS=20000
-for _f in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md; do
+for _f in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/skills/[!_]*/[!_]*/SKILL.md; do
   [ -f "$_f" ] || continue
   _chars=$(wc -c < "$_f" | tr -d ' ')
   if [ "$_chars" -gt "$SIZE_THRESHOLD_CHARS" ]; then

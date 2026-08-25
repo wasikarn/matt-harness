@@ -6,7 +6,7 @@
 # returns the full block-scalar body (with indent stripped), so multi-line
 # descriptions are measured accurately against the limit.
 DESC_MAX=1536
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   label=$(basename "$f" .md); [ "$label" = "SKILL" ] && label=$(basename "$(dirname "$f")")
@@ -28,7 +28,7 @@ done
 # an intentional twin pair that drifts into similarity is a routing smell, not a
 # build-breaker.
 _dup_tsv=$(mktemp)
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   label=$(basename "$f" .md); [ "$label" = "SKILL" ] && label=$(basename "$(dirname "$f")")
