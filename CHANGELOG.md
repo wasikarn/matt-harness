@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.470] — 2026-08-25
+
+### Changed
+
+- `commands/ideate/COMMAND.md` converted to `skills/ideate/SKILL.md` (#104, commands→skills
+  convergence, spec #101). Same invocation, same 2-wave algorithm, same
+  `disable-model-invocation: false` auto-fire-on-vague-prompts behavior. Harness-audit check
+  31's disable-model-invocation assertion is kept (checked against actual evidence — checks
+  30/55 already treat the flag identically regardless of commands/ vs skills/ origin, and
+  ideate already relied on this exact flag to auto-fire as a command; the ticket's premise
+  that a skill's default is "the opposite" of a command's didn't hold up) and additionally
+  now requires the `-reason` field, since `false` is a skill's redundant default and the
+  reason field is what preserves the deliberate-opt-in intent against a future cleanup pass.
+  Every live citation of `/ideate` updated to `mh:ideate` across `docs/reference/
+  reasoning-models.md`, `docs/reference/decision-doctrine-map.md`, `docs/research/
+  kbg-vs-adhd.md`'s instructional path pointers, `agents/ideate-critic.md`,
+  `skills/orchestrate/reference.md`, `skills/ideate/references/frames.md`,
+  `commands/ideate-search.md`, `docs/onboarding.md`, and `inventory-boundary.sh`'s
+  BOUNDARY.md generator.
+
 ## [0.68.469] — 2026-08-25
 
 ### Changed

@@ -317,7 +317,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
 | `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
-| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
+| `ideate-critic` | none (read-only) | no | Fresh-context critic for `mh:ideate` Phase 2 (Read only — no Bash) |
 | `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |

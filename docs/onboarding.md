@@ -26,7 +26,7 @@ see `BOUNDARY.md` below for the live count.
 | `mh:ship-merge` | After review | Verifies the diff + merges. The human gate sits between review and merge. |
 
 Other useful ones: `mattpocock-skills:diagnosing-bugs`, `research`, `/frame`,
-`/ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
+`mh:ideate`. Full list in [`BOUNDARY.md`](../BOUNDARY.md).
 
 ## The 1 thing to never do
 

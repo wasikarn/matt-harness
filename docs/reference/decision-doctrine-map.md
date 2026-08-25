@@ -61,7 +61,7 @@ kbg-native (this plugin's own fleet) unless noted.
 |---|---|
 | Requirement → build | `mh:requirement-analyst` — ambiguity/gap/edge-case/testability sweep, readiness verdict |
 | Diff → merge | `mattpocock-skills:code-review`, `mh:blind-spot-hunter`, `mh:ship-merge`'s in-flow gates |
-| Idea → spec | `mh:ideate-critic` (`/ideate` Phase 2 fresh-context critic) |
+| Idea → spec | `mh:ideate-critic` (`mh:ideate` Phase 2 fresh-context critic) |
 | Task prompt → dispatch | `mh:orchestrate`'s F9 spawn-prompt discipline — the dedicated prep skill + fresh-context checker agent were retired 2026-08-24 (#78), and the 9-field handoff-template doc followed 2026-08-24 (#80) |
 | Task/requirement → plan authoring | `mh:code-architect` — codebase-grounded blueprint (pattern analysis, layer-direction check, DI-style check, test-impact check) for a multi-file or architectural plan-mode draft; its output format (Design Decisions, Trade-offs, Build Sequence, Risks, Success Criteria) is the plan. Named in METHODOLOGY Rule 1's plan-mode section since v0.68.297 — doctrine text only, no deterministic hook (a `PostToolUse:EnterPlanMode` hook was considered and rejected: Shift+Tab, the common entry path, never calls that tool, so the hook would miss most real entries) |
 | Plan → implement | plan mode itself is the checkpoint — stress-test a consequential plan (multi-file, one-way door, unfamiliar subsystem) with `mattpocock-skills:grilling` before approving. The dedicated pre-code plan-review agent and its `ExitPlanMode` nudge hook were retired 2026-08-24 (#78) |

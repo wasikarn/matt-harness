@@ -13,7 +13,7 @@
 # 2026-08-24 ticket #86), both carrying their own `name:`/`description:`
 # frontmatter, loaded as fully independent skills
 # (`kbg:ship:references:classify`, userFacingName="ship-classify") even
-# though `ship/COMMAND.md` only ever read them by file path. `commands/ideate/
+# though `ship/COMMAND.md` only ever read them by file path. `skills/ideate/
 # references/frames.md` carries no frontmatter and correctly does NOT leak —
 # proving the rule is precise: any `.md` under `commands/` (other than a
 # command's own `COMMAND.md` entrypoint) that carries a `description:` in
@@ -33,7 +33,7 @@ for _f in "${_leak_candidates[@]}"; do
   case "$(basename "$_f")" in COMMAND.md|SKILL.md) continue ;; esac
   grep -q '^---' "$_f" || continue
   if [ -n "$(fm_get "$_f" "description" --block)" ]; then
-    warn "reference file ${_f#"$CLAUDE_DIR"/} carries frontmatter with a description: — Claude Code loads it as an independent command/skill, not inert supporting material (strip the frontmatter, matching commands/ideate/references/frames.md's shape, or move the file outside commands/ or skills/)"
+    warn "reference file ${_f#"$CLAUDE_DIR"/} carries frontmatter with a description: — Claude Code loads it as an independent command/skill, not inert supporting material (strip the frontmatter, matching skills/ideate/references/frames.md's shape, or move the file outside commands/ or skills/)"
   fi
 done
 unset _f _leak_candidates

@@ -6,7 +6,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### analysis
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| ideate-critic | Fresh-context critic for /ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (mattpocock-skills:code-review) or security audit (security-reviewer). | Read | no |
+| ideate-critic | Fresh-context critic for mh:ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (mattpocock-skills:code-review) or security audit (security-reviewer). | Read | no |
 | requirement-analyst | Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts. | ["Read", "Grep", "Glob"] | no |
 | spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
 
@@ -46,7 +46,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
-| ideate-search | Search past /ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (/ideate) or code/web research (research). |
+| ideate-search | Search past mh:ideate runs via the local qmd collection. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (mh:ideate) or code/web research (research). |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Advisory only — never gates a merge. See /mh:ship-merge for the decision. |
@@ -58,7 +58,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). |
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (mh:ship-merge). |
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. |
-| ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
 
 ## Skills — Repo
@@ -120,6 +119,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### workflow
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
+| ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T07:31:20Z_
+_Generated: 2026-08-25T07:43:33Z_
 
 ---
 
@@ -235,7 +235,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
 | `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
-| `ideate-critic` | none (read-only) | no | Fresh-context critic for `/ideate` Phase 2 (Read only — no Bash) |
+| `ideate-critic` | none (read-only) | no | Fresh-context critic for `mh:ideate` Phase 2 (Read only — no Bash) |
 | `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |

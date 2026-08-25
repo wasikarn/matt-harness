@@ -1,6 +1,7 @@
 ---
 name: ideate
-description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
+description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
+bucket: workflow
 argument-hint: Problem statement to ideate on
 disable-model-invocation: false
 disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout below — NOT by this flag.
@@ -10,8 +11,8 @@ effort: high
 
 # Ideate
 
-Single kbg ideation surface. Type `/ideate` explicitly (e.g.
-`/ideate How should we design a feature flag service?`), or let the model auto-route here on
+Single kbg ideation surface. Type `mh:ideate` explicitly (e.g.
+`mh:ideate How should we design a feature flag service?`), or let the model auto-route here on
 vague, open-ended, high-stakes prompts — either path runs the same algorithm.
 
 ## Pre-flight gate
@@ -24,13 +25,13 @@ answer — so don't pay that cost when a direct answer is better. Run this gate 
 An `<ideate-budget status="warning">` block means the daily threshold is crossed; an
 `<ideate-convergence status="warning">` block means recent runs on similar problems are
 converging. Either one: **don't auto-fire from Step 2** — let the self-judge gate abort and
-answer directly. If Step 1 matches (explicit `/ideate`), still proceed to Phase 1 but surface
+answer directly. If Step 1 matches (explicit `mh:ideate`), still proceed to Phase 1 but surface
 the warning in the brief. (kbg ships no producer for either block currently — check for one
 before relying on Step 0 seeing it; capture-side status: § Session frame rotation.)
 
 **Step 1. Explicit invocation check.**
 
-If the user typed `/ideate` or asked for "ideate mode"/"use the ideate skill"/"run ideate on
+If the user typed `mh:ideate` or asked for "ideate mode"/"use the ideate skill"/"run ideate on
 this"/"brainstorm", **skip the rest of this section and go straight to Phase 1** — they opted
 in, don't second-guess.
 
@@ -47,7 +48,7 @@ Ask three questions. If any answer is NO, ABORT.
 
 All three pass → proceed to Phase 1. Any fails → ABORT and answer directly, optionally
 appending: *"If you want a wider exploration under parallel cognitive frames with explicit
-trap detection, run `/ideate <your problem>`."*
+trap detection, run `mh:ideate <your problem>`."*
 
 ## Session frame rotation, convergence, and memory search (advisory)
 
