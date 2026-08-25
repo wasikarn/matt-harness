@@ -203,7 +203,7 @@ else
 fi
 
 echo ""
-echo "--- reply-to-PR-review intent (routes to /address-review) ---"
+echo "--- reply-to-PR-review intent (routes to /mh:address-review) ---"
 test_nudge  "reply to review comments"      "reply to the review comments on this PR"
 test_nudge  "respond to reviewer feedback"  "respond to the reviewer feedback"
 test_nudge  "address the review feedback"   "address the review feedback on PR 42"
@@ -278,11 +278,11 @@ test_nudge  "Thai: fix-per-review (แก้ตามรีวิว, address-re
 # product/restaurant reviews — must NOT fire on a non-PR product-review ask.
 test_silent "Thai: answer customer questions in a product review (not a PR)" "ตอบคำถามลูกค้าในรีวิวสินค้าให้หน่อย"
 addr_out=$(echo "$(user_prompt_payload "reply to the review comments on this PR")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$addr_out" | /usr/bin/grep -qi "address-review"; then
-  echo "  ✅ CONTENT: reply-to-review ask names '/address-review'"
+if printf '%s' "$addr_out" | /usr/bin/grep -qi "mh:address-review"; then
+  echo "  ✅ CONTENT: reply-to-review ask names '/mh:address-review'"
   pass=$((pass + 1))
 else
-  echo "  ❌ CONTENT EXPECTED '/address-review': <$(printf '%s' "$addr_out" | head -c 120)>" >&2
+  echo "  ❌ CONTENT EXPECTED '/mh:address-review': <$(printf '%s' "$addr_out" | head -c 120)>" >&2
   fail=$((fail + 1))
 fi
 

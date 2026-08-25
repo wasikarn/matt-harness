@@ -5,6 +5,24 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.476] — 2026-08-25
+
+### Changed
+
+- Converted `commands/address-review/` (directory-form, `disable-model-invocation: true`)
+  to `skills/address-review/SKILL.md` (#108, spec #101). Argument handling rewritten from
+  `$ARGUMENTS`-token parsing to prose (per #102's confirmed finding: skills get zero
+  positional substitution). `hooks/advisory/flow-nudge.sh`'s reminder and
+  `tests/hooks/test-flow-nudge.sh`'s assertion both updated together from `/address-review`
+  to `/mh:address-review` — they share the literal string per the ticket. Fixed 2 real
+  check-05 WARNs surfaced by the conversion (address-review was never skill-checked as a
+  command): "Don't use to review" → "Don't use for review" (negation-clause regex match),
+  added a "Use when replying to reviewer feedback" trigger clause. Citation sweep across
+  `CLAUDE.md`, `README.md`, `docs/command-authoring-conventions.md`,
+  `skills/pr/SKILL.md`, `skills/risk-check/SKILL.md`, `skills/inventory/scripts/
+  inventory-boundary.sh` — `mh:<name>` form in prose/routing text, `/mh:<name>` only where
+  the text is a literal string for the user to type.
+
 ## [0.68.475] — 2026-08-25
 
 ### Fixed

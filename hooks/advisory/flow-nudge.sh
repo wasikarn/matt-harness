@@ -111,10 +111,10 @@ EOF
 emit_address_review_nudge() {
   cat <<'EOF'
 
-[mh:flow-nudge] Replying to PR review feedback → tell the user to type `/address-review`
+[mh:flow-nudge] Replying to PR review feedback → tell the user to type `/mh:address-review`
   It triages every open thread, fixes in clusters, and replies per-thread with a commit
   sha citation — instead of an ad-hoc `gh pr comment`/`gh api` reply with no fixed shape.
-  `/address-review` is user-invocation-only (disable-model-invocation: true) — the model
+  `/mh:address-review` is user-invocation-only (disable-model-invocation: true) — the model
   cannot run it; say the literal string so the user can type it themselves.
 The nudge is advisory; the model judges.
 EOF
@@ -173,9 +173,9 @@ fi
 # IMPL gate for the same reason as PR_INTENT: reply/respond/answer aren't IMPL
 # verbs, so without this carve-out the whole hook stays silent on exactly the
 # prompt that reported this gap (ad-hoc `gh pr comment`/`gh api` replies with no
-# fixed shape, because the model never learns `/address-review` exists — it's a
-# command, not a listed skill, and disable-model-invocation blocks the model
-# from just running it). Partial verb stems (repl/respond/answer/address), no
+# fixed shape, because the model never learns `/mh:address-review` exists —
+# disable-model-invocation blocks the model from just running it, so it has to
+# be told the literal string to say instead). Partial verb stems (repl/respond/answer/address), no
 # \b, mirrors this file's existing PR_INTENT convention (creat/open/rais/mak).
 # Context set is `review|reviewer` only — NOT comment/feedback (excluded up
 # front: everyday words like "respond to the comment about the budget") and

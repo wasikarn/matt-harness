@@ -1,6 +1,7 @@
 ---
 name: address-review
-description: "Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Say 'address review/แก้ตามรีวิว'. Don't use to review (mattpocock-skills:code-review) or merge (mh:ship-merge)."
+description: "Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Use when replying to reviewer feedback; say 'address review/แก้ตามรีวิว'. Don't use for review (mattpocock-skills:code-review) or merge (mh:ship-merge)."
+bucket: review
 argument-hint: Optional PR number
 disable-model-invocation: true
 disable-model-invocation-reason: external write — posts replies to GitHub PR review threads
@@ -29,12 +30,11 @@ You are helping a developer respond to PR review feedback from someone else (hum
 
 **Goal**: Get every open review thread + comment into structured state. Don't lose any.
 
-Initial input: $ARGUMENTS
-
 **Actions**:
 1. Resolve PR + pin review window:
-   - No args → `gh pr view --json number,baseRefName,headRefName,headRefOid,state,url` (current branch's PR)
-   - `<n>` → `gh pr view <n> --repo "$(gh repo view --json nameWithOwner --template '{{.nameWithOwner}}')" --json number,baseRefName,headRefName,headRefOid,state,url`
+   - Check whether the user named a specific PR number when invoking this skill. If not
+     → `gh pr view --json number,baseRefName,headRefName,headRefOid,state,url` (current branch's PR)
+   - If a PR number `<n>` was given → `gh pr view <n> --repo "$(gh repo view --json nameWithOwner --template '{{.nameWithOwner}}')" --json number,baseRefName,headRefName,headRefOid,state,url`
    - Abort if no PR found OR state != OPEN.
    - **Assert working branch == PR branch before doing anything else in this command.** Run `git rev-parse --abbrev-ref HEAD`; it must equal `headRefName`. If it differs, STOP the entire run — don't fetch, triage, or edit: `git checkout <headRefName>` (if the local branch exists and worktree is clean) or tell the user they're on the wrong branch. This is a whole-flow halt, not just an edit gate — Phase 2's `isOutdated` handling reads the worktree's current state, so a mismatch corrupts triage too, and risks landing fixes on the wrong PR (the `fix/TP-582`-while-addressing-`feature/TP-650` failure mode).
    - Once the branch check passes, confirm local HEAD is current: `git fetch` and compare against `headRefOid` (or `git pull --ff-only` if behind) — branch-name equality alone doesn't catch a stale worktree, which risks an outdated diff or a rejected non-fast-forward push later.

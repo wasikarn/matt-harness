@@ -38,12 +38,12 @@ directory only earns its cost when the content genuinely doesn't fit in one file
 
 `commands/<name>/COMMAND.md` + a `references/` subfolder is a recognized Claude Code
 loader category — `getSkills` reports a distinct `N skill dir commands` bucket separate
-from flat plugin skills (confirmed via a live `--debug-file` capture). Two commands
-use it today (`address-review`, `review-fixtures`), each because its procedure outgrew a
+from flat plugin skills (confirmed via a live `--debug-file` capture). One command
+still uses it today (`review-fixtures`), because its procedure outgrew a
 single file's reasonable token budget (the same size concern documented elsewhere for
-`SKILL.md` bodies) — `ideate` and `ship-merge` used to be the worked examples here before
-converting to `skills/ideate/SKILL.md` and `skills/ship-merge/SKILL.md` (2026-08-25,
-#104/#103).
+`SKILL.md` bodies) — `ideate`, `ship-merge`, and `address-review` used to be the worked
+examples here before converting to `skills/ideate/SKILL.md`, `skills/ship-merge/SKILL.md`,
+and `skills/address-review/SKILL.md` (2026-08-25, #104/#103/#108).
 
 **The rule this doc exists to state:** any `.md` file under `commands/` — at any depth —
 that carries its own YAML frontmatter with a `description:` becomes an independently
@@ -69,9 +69,10 @@ has to be enforced by the author (no frontmatter), not assumed from directory po
 Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-reason:` on
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
-gates a done-declaration. Several remaining commands already do this
-(`ship-release`, `post-mortem`, `address-review`) — `ship-merge` and `ideate-search` did
-too before converting to skills (2026-08-25, #103/#105), keeping the flag exactly as-is.
+gates a done-declaration. The remaining commands
+(`ship-release`, `post-mortem`) already do this — `ship-merge`, `ideate-search`, and
+`address-review` did too before converting to skills (2026-08-25, #103/#105/#108),
+keeping the flag exactly as-is.
 `harness-audit` checks 30 (reason presence, WARN) and 40 (`ship-merge`'s new
 `skills/ship-merge/SKILL.md` location specifically, CRIT) enforce this.
 

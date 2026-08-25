@@ -19,7 +19,7 @@ risk judgment must not be trusted to bypass anything on its own say-so.
 
 ## Resolve the target
 
-Same pattern as `address-review/COMMAND.md`'s Phase 1 step 1:
+Same pattern as `address-review/SKILL.md`'s Phase 1 step 1:
 - No argument → current branch's PR: `gh pr view --json number,additions,deletions,changedFiles,files`
 - A bare integer `<n>` → `gh pr view <n> --json number,additions,deletions,changedFiles,files`
 - Anything else → not a PR — this command has no branch-only mode,

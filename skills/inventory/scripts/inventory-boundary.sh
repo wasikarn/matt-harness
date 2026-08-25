@@ -397,7 +397,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 |---|---|---|
 | "build one feature", "implement X", "scope this change" | `/mattpocock-skills:implement` | Implement a spec/tickets with TDD where possible → `mattpocock-skills:code-review` → commit |
 | "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
-| "address review feedback" | `/address-review` | PR review response |
+| "address review feedback" | `mh:address-review` | PR review response |
 | "ship it", "merge this" | `mh:ship-merge` | Pre-merge gate |
 | "release now", "cut a release" | `/ship-release` | Release ceremony |
 
