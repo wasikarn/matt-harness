@@ -42,6 +42,12 @@
     "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call before a jira-acli:* skill loaded this session — forces routing through jira-acli's templates instead of a cold MCP call. Escape: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1."
   },
   {
+    "id": "gate:read:credential-guard",
+    "matcher": "Read|Grep",
+    "script": "hooks/gates/credential-guard.sh",
+    "description": "Gate: block Read/Grep access to credential-bearing file paths (.env, id_rsa/id_ed25519/id_ecdsa, *.pem/*.key, service-account JSON, .netrc, .npmrc, .htpasswd), resolved via realpath to close symlink-indirection bypass. Read/Grep only; Bash-mediated reads are a scoped follow-up (#96)."
+  },
+  {
     "id": "gate:write:worktree-guard",
     "matcher": "Write|Edit|NotebookEdit",
     "script": "hooks/gates/worktree-guard-dispatch.sh",
