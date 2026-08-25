@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.478] — 2026-08-25
+
+### Changed
+
+- Converted `commands/frame.md` and `commands/ship-release.md` (`disable-model-invocation:
+  true`) to `skills/frame/SKILL.md` and `skills/ship-release/SKILL.md` (#110, spec #101).
+  Argument handling rewritten to prose. No command carries `disable-model-invocation: true`
+  any more — all 9 carriers are now skills. Citation sweep to `mh:<name>` form across
+  `CLAUDE.md`, `README.md` (including a previously-missed 4th stale location — the
+  "Spotlight" section's separate `### Commands`/`### Skills` tables, which had kept
+  `ship-merge` mis-listed under Commands since its own #103 conversion), `contexts/dev.md`,
+  `docs/onboarding.md`, `docs/command-authoring-conventions.md`,
+  `skills/inventory/scripts/inventory-boundary.sh`, `skills/ship-merge/SKILL.md`. Fixed a
+  check-46 self-citation in frame's own body.
+
 ## [0.68.477] — 2026-08-25
 
 ### Changed

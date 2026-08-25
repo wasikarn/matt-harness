@@ -1,6 +1,7 @@
 ---
 name: ship-release
-description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident)."
+description: "Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Use when cutting a release; say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident)."
+bucket: workflow
 argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — cuts a release (tag/merge/publish)
@@ -26,7 +27,8 @@ Cut a release from the current branch. This orchestrates version bump, changelog
 **Goal**: Confirm what's in this release and pin the state.
 
 **Actions**:
-1. Parse `$ARGUMENTS` for version bump type (`major` / `minor` / `patch`) or specific version.
+1. Check whether the user specified a version bump type (`major` / `minor` / `patch`) or an
+   exact version when invoking this skill.
    Also sanity-check any branch name implied by the request against what the repo actually has
    (e.g. a task mentioning "develop" when the repo only has `main`) — release off the branch
    that actually contains the commits, and say so if it differs from what was assumed.

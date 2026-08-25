@@ -44,10 +44,8 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 |---|---|
 | bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
-| frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
-| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). |
 | summarize | Compress a document, transcript, or pasted text into a BLUF-structured summary. Delegates to the summarizer agent. |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. |
 
@@ -76,6 +74,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-report | Generate a local Claude Code cost report from the cost-tracker metrics log. Use when checking session spend. Don't use for scheduling or budget alerts (none exist). | inline | auto |
 | eval-harness | Eval-driven development (EDD) framework for Claude Code. Use when setting up EDD, building graders, or measuring AI-assisted workflow quality. Don't use for end-user feature work. | inline | auto |
+| frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Use when switching task posture; say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
 | ideate-search | Search past mh:ideate runs via the local qmd collection. Use when recalling a prior ideation run. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (mh:ideate) or code/web research (research). | inline | manual |
@@ -121,6 +120,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. | inline | manual |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
+| ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Use when cutting a release; say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). | inline | manual |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Use when a task warrants multi-tier review. Don't use for quick edits or PR review. | inline | manual |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Use when the user asks to save a document into the vault. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). | inline | manual |
 
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T11:30:43Z_
+_Generated: 2026-08-25T11:36:20Z_
 
 ---
 
@@ -297,7 +297,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `mh:address-review` | PR review response |
 | "ship it", "merge this" | `mh:ship-merge` | Pre-merge gate |
-| "release now", "cut a release" | `/ship-release` | Release ceremony |
+| "release now", "cut a release" | `mh:ship-release` | Release ceremony |
 
 ### Research & analysis
 | User says | Dispatch | Why |

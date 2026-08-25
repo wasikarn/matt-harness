@@ -47,4 +47,4 @@ loss, security, or accessibility — laziness stops there.
 - Grep, Glob for finding code
 
 ## Not this frame's job
-A full spec→ship pipeline is a skill or command (`/mattpocock-skills:implement`), not this frame — `/frame dev` only sets posture for the current conversation, it doesn't replace those workflows.
+A full spec→ship pipeline is a skill or command (`/mattpocock-skills:implement`), not this frame — `mh:frame dev` only sets posture for the current conversation, it doesn't replace those workflows.
