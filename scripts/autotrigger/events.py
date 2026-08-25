@@ -132,6 +132,31 @@ def _has_dmi(path: Path) -> bool:
     return bool(re.search(r"disable-model-invocation:\s*true", fm))
 
 
+def _walk_skills_dir(base: Path) -> dict:
+    """{name: dmi_bool} for every SKILL.md under base, flat or one bucket dir deep.
+
+    Depth-tolerant: matt-harness moved skills to skills/<bucket>/<name>/SKILL.md
+    (2026-08-25); a one-level-only walk silently discovers zero skills there.
+    """
+    found = {}
+    if not base.is_dir():
+        return found
+    for entry in base.iterdir():
+        if not entry.is_dir() or entry.name.startswith("_"):
+            continue
+        skill_md = entry / "SKILL.md"
+        if skill_md.exists():
+            found[entry.name.lower()] = _has_dmi(skill_md)
+            continue
+        for sub in entry.iterdir():
+            if not sub.is_dir() or sub.name.startswith("_"):
+                continue
+            sub_md = sub / "SKILL.md"
+            if sub_md.exists():
+                found[sub.name.lower()] = _has_dmi(sub_md)
+    return found
+
+
 def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     """Custom skills and commands from the repo, with disable-model-invocation flags.
 
@@ -155,10 +180,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     used_fallback = False
 
     # Repo-root walk (no-op for post-cutover matt-harness; kept for dotfiles/other).
-    if sdir.is_dir():
-        for d in sdir.iterdir():
-            if d.is_dir() and not d.name.startswith("_") and (d / "SKILL.md").exists():
-                skills[d.name.lower()] = _has_dmi(d / "SKILL.md")
+    skills.update(_walk_skills_dir(sdir))
     if cdir.is_dir():
         for f in cdir.glob("*.md"):
             if not f.name.startswith("_"):
@@ -187,11 +209,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
                 continue
             latest = versions[-1]
             used_fallback = True
-            fb_skills = latest / "skills"
-            if fb_skills.is_dir():
-                for d in fb_skills.iterdir():
-                    if d.is_dir() and not d.name.startswith("_") and (d / "SKILL.md").exists():
-                        skills[d.name.lower()] = _has_dmi(d / "SKILL.md")
+            skills.update(_walk_skills_dir(latest / "skills"))
             fb_cmds = latest / "commands"
             if fb_cmds.is_dir():
                 for f in fb_cmds.glob("*.md"):

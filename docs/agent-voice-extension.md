@@ -11,7 +11,7 @@ The question this doc answers: **when a user types `/<personality>`, what should
 
 1. **Surface bloat** — every personality command is a discoverability weight. The user has to remember `/architect` exists, then remember what it routes to. Routing the request to `code-architect` directly (via the orchestrator or the user typing `@code-architect`) already gets the personality.
 2. **Personality drift** — the command's frontmatter and the agent's voice block can diverge silently. The F5 contract says "personality is in the agent's `## Voice` block." A command wrapper is a second place to keep in sync.
-3. **ROUTER bypass** — the orchestrator (`skills/orchestrate/SKILL.md`) routes by domain (`code-architect` for "design this", `security-reviewer` for "audit this for vulns"). A personality command skips the router, which means the user's `/architect` request might land on a domain that doesn't match (e.g. user types `/architect` for a backend scaling question, gets a system-design personality, but the right agent is `platform-engineer`).
+3. **ROUTER bypass** — the orchestrator (`skills/workflow/orchestrate/SKILL.md`) routes by domain (`code-architect` for "design this", `security-reviewer` for "audit this for vulns"). A personality command skips the router, which means the user's `/architect` request might land on a domain that doesn't match (e.g. user types `/architect` for a backend scaling question, gets a system-design personality, but the right agent is `platform-engineer`).
 
 **Rule of thumb:** if the personality command would just be `<verb> → invoke <agent> with no transformation`, don't ship it. The agent already exists.
 
@@ -130,6 +130,6 @@ The command's value is the **output shape** (ADR-shaped critique), not a new cap
 
 - **[F5 voice blocks](./agent-tool-patterns.md#5-cross-references)** — the personality surface this doc protects. Agents with `## Voice` blocks are documented in `agents/*.md`; this doc governs whether and how to wrap one in a command.
 - **[F5 ship commit `4d2ad91`](../CHANGELOG.md)** — the Phase 3 commit that added voice blocks; the D6 decision was made in the context of what that commit shipped.
-- **[orchestrate router](../skills/orchestrate/SKILL.md)** — the domain-routing layer. A personality command should not duplicate this routing; it should layer on top (pre-load context, enforce output shape) or below (trigger a procedure).
+- **[orchestrate router](../skills/workflow/orchestrate/SKILL.md)** — the domain-routing layer. A personality command should not duplicate this routing; it should layer on top (pre-load context, enforce output shape) or below (trigger a procedure).
 - **[diagnose skill](https://docs.claude.com)** (plugin-shipped, not in this harness) — the disciplined-diagnosis procedure referenced in the `/debug` worked example.
 - **2026-06-12 audit spec, D6** (local scratch file, not in repo) — the originating finding. Closed by this doc; SPEC.md § D6 marked RESOLVED → FOLDED INTO F5 EXTENSION.
