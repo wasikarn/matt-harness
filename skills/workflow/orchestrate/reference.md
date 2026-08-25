@@ -268,7 +268,8 @@ the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktre
   depend on. The subagent re-hashes before acting; on mismatch it STOPS and reports
   `STALE-BASIS <path>` — never work on a stale basis. (Concurrent sessions share this
   working tree; the file may have changed since dispatch. Skip for single-shot
-  read-only lookups — agents read files fresh.)
+  read-only lookups — agents read files fresh. An agent without Bash cannot re-hash:
+  the hash is provenance only, and the orchestrator re-hashes at collect time.)
 (Empty list if no upstream.)
 
 ## Files + Criteria + Constraints
