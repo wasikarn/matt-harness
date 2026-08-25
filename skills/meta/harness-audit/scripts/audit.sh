@@ -121,9 +121,18 @@ if [ -z "$PLUGIN_CACHE_ARG" ]; then
   if [ -n "${MH_CACHE_DIR:-}" ]; then
     _MH_CACHE_ROOTS="$MH_CACHE_DIR"                       # explicit override wins
   else
-    _MH_CACHE_ROOTS=$(for _d in "$HOME"/.claude/plugins/cache/*/mh; do
-      [ -d "$_d" ] && echo "$_d"
-    done)
+    # Trailing `:` is load-bearing under `set -e`. nullglob is NOT set, so on a
+    # machine with no plugin cache the glob stays literal, `[ -d ]` fails, and
+    # that failure becomes the command substitution's exit status — aborting the
+    # whole audit before it prints a Summary. Caught by
+    # tests/skills/harness-audit/test-harness-audit.sh's empty-cache $HOME case.
+    _MH_CACHE_ROOTS=$(
+      for _d in "$HOME"/.claude/plugins/cache/*/mh; do
+        [ -d "$_d" ] || continue
+        echo "$_d"
+      done
+      :
+    )
   fi
   # Highest semver across every candidate root, emitted as "<version> <path>"
   # so the winning root travels with its own version (a plain sort -V on bare
