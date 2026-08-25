@@ -20,7 +20,6 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DISPATCH_SH="$ROOT/hooks/dispatch-pretooluse.sh"
 DISPATCH_PY="$ROOT/hooks/dispatch-pretooluse.py"
-REAL_TABLE="$ROOT/hooks/pretooluse-table.json"
 
 pass=0
 fail=0
