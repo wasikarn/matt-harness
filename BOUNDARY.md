@@ -102,7 +102,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
 | review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use when fixtures already exist mid an improve+optimize loop. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
-| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge). | inline | auto |
+| risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size, sensitive-path, and file-hotspot signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge). | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Use when auditing harness/agent surfaces for security issues. Don't use for code-vulnerability review — use mh:security-auditor. | inline | auto |
@@ -185,7 +185,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T16:18:12Z_
+_Generated: 2026-08-25T17:50:41Z_
 
 ---
 

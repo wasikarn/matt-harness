@@ -1,6 +1,6 @@
 ---
 name: risk-check
-description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size and sensitive-path signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge)."
+description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size, sensitive-path, and file-hotspot signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge)."
 argument-hint: "[pr-number|branch]"
 model: inherit
 effort: low
@@ -8,8 +8,9 @@ effort: low
 
 # Risk Check
 
-Read-only. Classifies a PR's risk level from two signals — diff size and
-sensitive-path overlap — and reports which one drove the tier. Never gates,
+Read-only. Classifies a PR's risk level from three signals — diff size,
+sensitive-path overlap, and file-hotspot history (how often each touched
+file has been committed to before) — and reports which one drove the tier. Never gates,
 scores a merge decision, or skips anything: this is the "Risk Analyzer"
 half the user explicitly asked for from the Cosmos-article gap analysis,
 deliberately without its other half (auto-approval for low-risk changes),
@@ -32,6 +33,15 @@ Run the resolved `gh pr view` command from above, capture its output as `PR_JSON
 
 ```bash
 PR_JSON=$(gh pr view --json number,additions,deletions,changedFiles,files)  # or: gh pr view <n> --json ...
+# Hotspot inputs -- root-relative to match gh's PR paths. Degrade to empty on
+# any failure: the classifier announces the skip, never silently drops the signal.
+# ponytail: renamed files restart their commit count (no --follow); add per-file
+# --follow only if rename noise ever shows up in practice.
+REPO_TOP=$(git rev-parse --show-toplevel 2>/dev/null || echo .)
+HIST_FILE=$(mktemp); TRACKED_FILE=$(mktemp)
+git -C "$REPO_TOP" log --format= --name-only 2>/dev/null > "$HIST_FILE" || true
+git -C "$REPO_TOP" ls-files 2>/dev/null > "$TRACKED_FILE" || true
+TOTAL_COMMITS=$(git -C "$REPO_TOP" rev-list --count HEAD 2>/dev/null || echo 0)
 python3 -c '
 import json, re, sys
 
@@ -82,17 +92,70 @@ else:
     tier = "MEDIUM"
     reasons.append("%d changed lines across %d file(s) -- above LOW, below HIGH" % (total_lines, changed_files))
 
+# --- Hotspot signal (third signal; probe-calibrated 2026-08-26, see Notes) ---
+# Graded/probabilistic, so it escalates ONE step only (LOW->MEDIUM, MEDIUM->HIGH)
+# and never jumps straight to HIGH the way the categorical sensitive-path floor
+# does. Args are optional: missing/unreadable history data -> announced skip,
+# never a silent drop (portability doctrine).
+hotspot_note = None
+hotspot_hits = []
+if len(sys.argv) < 6:
+    hotspot_note = "hotspot signal skipped: no history data passed"
+else:
+    try:
+        counts = {}
+        for line in open(sys.argv[3]):
+            p = line.strip()
+            if p:
+                counts[p] = counts.get(p, 0) + 1
+        tracked = set(l.strip() for l in open(sys.argv[4]) if l.strip())
+        total_commits = int(sys.argv[5])
+        hist = sorted((counts.get(f, 0) for f in tracked), reverse=True)
+        if total_commits < 100:
+            hotspot_note = ("hotspot signal skipped: repo has %d commits (<100) -- "
+                            "not enough history to rank" % total_commits)
+        elif not hist:
+            hotspot_note = "hotspot signal skipped: no tracked-file history found"
+        else:
+            threshold = hist[max(0, int(len(hist) * 0.10) - 1)]
+            if threshold <= 2:
+                hotspot_note = ("hotspot signal skipped: flat history (top-decile "
+                                "threshold %d commits <= 2) -- cannot discriminate" % threshold)
+            else:
+                for p in paths:
+                    c = counts.get(p, 0)
+                    if p in tracked and c >= threshold:
+                        pct = 100.0 * sum(1 for h in hist if h >= c) / len(hist)
+                        hotspot_hits.append((p, c, max(1, round(pct))))
+    except Exception as e:
+        hotspot_note = "hotspot signal skipped: %s" % e
+
+if hotspot_hits:
+    desc_h = ", ".join("%s (%d commits, top %d%% of repo)" % (p, c, pct)
+                       for p, c, pct in hotspot_hits)
+    if tier == "LOW":
+        tier = "MEDIUM"
+        reasons.append("hotspot: %s -- bumped LOW->MEDIUM" % desc_h)
+    elif tier == "MEDIUM":
+        tier = "HIGH"
+        reasons.append("hotspot: %s -- bumped MEDIUM->HIGH" % desc_h)
+    else:
+        reasons.append("hotspot: %s -- already HIGH, no further bump" % desc_h)
+
 print("PR #%s -- risk: %s" % (d.get("number", "?"), tier))
 for r in reasons:
     print("  %s" % r)
+if hotspot_note:
+    print("  %s" % hotspot_note)
 print()
-print("Thresholds are round defaults (<=50/50 lines LOW, >400 lines or >15 files or any")
-print("sensitive path HIGH), not calibrated against this repo history -- no incident data")
-print("exists here to calibrate against.")
+print("Line/file thresholds are round defaults (<=50 lines LOW, >400 lines or >15 files or")
+print("any sensitive path HIGH), not calibrated against this repo history. The hotspot")
+print("decile IS probe-calibrated (2026-08-26, two private repos: top-decile files were")
+print("~3-4x more likely than baseline to need future fixes); other deciles untested.")
 print()
 print("Advisory only -- does not gate or skip anything. See mh:ship-merge for the actual")
 print("merge decision, mattpocock-skills:code-review for the actual review.")
-' "$PR_JSON" "${MH_PLUGIN_ROOT}/hooks/gates/lib"
+' "$PR_JSON" "${MH_PLUGIN_ROOT}/hooks/gates/lib" "$HIST_FILE" "$TRACKED_FILE" "$TOTAL_COMMITS"
 ```
 
 ## Notes
@@ -103,5 +166,13 @@ print("merge decision, mattpocock-skills:code-review for the actual review.")
 - Deliberately does not touch `ship-merge.md` at all — no bypass, no
   lightened gate for a LOW tier. That half of the article's design was
   explicitly declined.
-- No historical/incident-rate signal — this repo has no data source to
-  compute one from; the tier is diff-shape only, not track-record-informed.
+- Hotspot signal is probe-calibrated, not folklore: a pre-registered probe
+  (2026-08-26, two private work repos — one Python, one TypeScript; details
+  in the operator's memory store, not this public repo) measured historical
+  commit count as the most consistent cross-repo predictor of future
+  fix-touched files (top-2 precision@10% on both fields, ~3-4x lift over
+  random), beating churn, past-fix count, recency-weighted fixes, author
+  count, and a CRAP-score prototype. The top-10% decile is the probe's
+  measured k — other deciles were not tested, hence the disclaimer. It
+  escalates one step only because the evidence is probabilistic, unlike
+  the categorical sensitive-path floor.

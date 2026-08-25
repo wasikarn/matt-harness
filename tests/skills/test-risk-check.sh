@@ -125,6 +125,75 @@ check_tier "KNOWN GAP: missing 'files' key on a small diff silently reads as LOW
   '{"number":8,"additions":10,"deletions":5,"changedFiles":2}' \
   LOW
 
+# 9. Legacy 2-arg invocation must ANNOUNCE the hotspot skip, never drop it
+# silently (portability doctrine: feature-detect + announced skip). This is
+# also what keeps fixtures 1-8 meaningful: they exercise the base chain with
+# the hotspot signal visibly absent, not silently absent.
+out9=$(run_classifier '{"number":9,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"a.py"}]}')
+assert "2-arg invocation announces 'hotspot signal skipped: no history data passed'" \
+  "$(printf '%s' "$out9" | /usr/bin/grep -q 'hotspot signal skipped: no history data passed' && echo 1 || echo 0)"
+
+# --- Hotspot fixtures (signal added 2026-08-26, probe-calibrated) ---
+# Fixture history: 20 tracked files, decile index = max(0, int(20*0.10)-1) = 1,
+# so threshold = 2nd-highest count. hot.py=50 and warm.py=10 sit at/above it;
+# the 18 cold files (1 commit each) sit below.
+HOT_HIST="$WORK/hist.txt"; HOT_TRACKED="$WORK/tracked.txt"
+: > "$HOT_HIST"
+for i in $(seq 1 50); do echo "hot.py" >> "$HOT_HIST"; done
+for i in $(seq 1 10); do echo "warm.py" >> "$HOT_HIST"; done
+for i in $(seq 1 18); do echo "cold$i.py" >> "$HOT_HIST"; done
+{ echo "hot.py"; echo "warm.py"; for i in $(seq 1 18); do echo "cold$i.py"; done; } > "$HOT_TRACKED"
+# Flat history: same 20 files, 2 commits each -> threshold 2 -> announced skip
+FLAT_HIST="$WORK/hist-flat.txt"
+: > "$FLAT_HIST"
+for i in $(seq 1 20); do echo "cold$i.py" >> "$FLAT_HIST"; echo "cold$i.py" >> "$FLAT_HIST"; done
+{ for i in $(seq 1 20); do echo "cold$i.py"; done; } > "$WORK/tracked-flat.txt"
+
+run_classifier_hist() {
+  # $1: PR_JSON  $2: hist file  $3: tracked file  $4: total commits
+  python3 -c "$(cat "$WORK/classify.py")" "$1" "$ROOT/hooks/gates/lib" "$2" "$3" "$4" 2>/dev/null
+}
+
+check_hotspot() {
+  # $1 desc  $2 pr_json  $3 hist  $4 tracked  $5 total  $6 expected tier  $7 required substring
+  local out tier got
+  out=$(run_classifier_hist "$2" "$3" "$4" "$5")
+  got=$(printf '%s\n' "$out" | head -1 | sed -n 's/.*risk: //p')
+  assert "$1 -- tier (expected $6, got '${got:-<empty>}')" "$([[ "$got" == "$6" ]] && echo 1 || echo 0)"
+  assert "$1 -- output names the driver" \
+    "$(printf '%s' "$out" | /usr/bin/grep -qF "$7" && echo 1 || echo 0)"
+}
+
+# 10. Small diff touching the hot file -> one-step bump LOW->MEDIUM
+check_hotspot "hot-file small diff bumps LOW->MEDIUM" \
+  '{"number":10,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"hot.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 150 MEDIUM "bumped LOW->MEDIUM"
+
+# 11. Mid diff touching the hot file -> one-step bump MEDIUM->HIGH
+check_hotspot "hot-file mid diff bumps MEDIUM->HIGH" \
+  '{"number":11,"additions":100,"deletions":50,"changedFiles":6,"files":[{"path":"hot.py"},{"path":"cold1.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 150 HIGH "bumped MEDIUM->HIGH"
+
+# 12. Sensitive path already HIGH -> hotspot adds a reason, never a further bump
+check_hotspot "sensitive+hot stays HIGH with hotspot as extra reason only" \
+  '{"number":12,"additions":2,"deletions":0,"changedFiles":2,"files":[{"path":"hooks/gates/foo.sh"},{"path":"hot.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 150 HIGH "already HIGH, no further bump"
+
+# 13. Cold-only PR with the same history -> no bump, LOW stays LOW
+check_hotspot "cold-only small diff stays LOW (no hotspot hit)" \
+  '{"number":13,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"cold1.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 150 LOW "under the LOW thresholds"
+
+# 14. Young repo (<100 commits) -> announced skip, tier unchanged
+check_hotspot "young repo (<100 commits) announces skip, no bump" \
+  '{"number":14,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"hot.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 3 LOW "not enough history to rank"
+
+# 15. Flat history (top-decile threshold <=2) -> announced skip, tier unchanged
+check_hotspot "flat history announces skip, no bump" \
+  '{"number":15,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"cold1.py"}]}' \
+  "$FLAT_HIST" "$WORK/tracked-flat.txt" 150 LOW "flat history"
+
 echo ""
 total_t=$((pass + fail))
 echo "=== $pass/$total_t passed ==="
