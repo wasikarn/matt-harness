@@ -134,6 +134,15 @@ assert "2-arg invocation announces 'hotspot signal skipped: no history data pass
   "$(printf '%s' "$out9" | /usr/bin/grep -q 'hotspot signal skipped: no history data passed' && echo 1 || echo 0)"
 
 # --- Hotspot fixtures (signal added 2026-08-26, probe-calibrated) ---
+# Bite matrix, MEASURED against the pre-hotspot (v0.68.490) classifier
+# 2026-08-26 -- correcting commit 1f2fbd3c's message, which overclaimed
+# "all new assertions fail against the pre-edit classifier":
+#   bite (fail on old code): case 9 substr; case 10 tier+substr;
+#     case 11 tier+substr; case 12 substr; case 14 substr; case 15 substr  (8)
+#   pin-only (pass on old code, guard the NEW code against over-firing):
+#     case 12 tier; case 13 tier+substr; case 14 tier; case 15 tier  (5)
+# The pins are deliberate: they fail if the hotspot signal ever bumps past
+# HIGH, bumps cold files, or bumps when it announced a skip.
 # Fixture history: 20 tracked files, decile index = max(0, int(20*0.10)-1) = 1,
 # so threshold = 2nd-highest count. hot.py=50 and warm.py=10 sit at/above it;
 # the 18 cold files (1 commit each) sit below.
@@ -179,10 +188,16 @@ check_hotspot "sensitive+hot stays HIGH with hotspot as extra reason only" \
   '{"number":12,"additions":2,"deletions":0,"changedFiles":2,"files":[{"path":"hooks/gates/foo.sh"},{"path":"hot.py"}]}' \
   "$HOT_HIST" "$HOT_TRACKED" 150 HIGH "already HIGH, no further bump"
 
-# 13. Cold-only PR with the same history -> no bump, LOW stays LOW
+# 13. Cold-only PR with the same history -> no bump, LOW stays LOW, and no
+# hotspot line at all (catches the reason-without-bump failure class the
+# tier assert alone would miss)
 check_hotspot "cold-only small diff stays LOW (no hotspot hit)" \
   '{"number":13,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"cold1.py"}]}' \
   "$HOT_HIST" "$HOT_TRACKED" 150 LOW "under the LOW thresholds"
+out13=$(run_classifier_hist '{"number":13,"additions":5,"deletions":0,"changedFiles":1,"files":[{"path":"cold1.py"}]}' \
+  "$HOT_HIST" "$HOT_TRACKED" 150)
+assert "cold-only output carries no 'hotspot:' reason line at all" \
+  "$(printf '%s' "$out13" | /usr/bin/grep -q '^  hotspot:' && echo 0 || echo 1)"
 
 # 14. Young repo (<100 commits) -> announced skip, tier unchanged
 check_hotspot "young repo (<100 commits) announces skip, no bump" \
