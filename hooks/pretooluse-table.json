@@ -1,0 +1,56 @@
+[
+  {
+    "id": "gate:bash:irrecoverable",
+    "matcher": "Bash",
+    "script": "hooks/gates/irrecoverable.sh",
+    "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)"
+  },
+  {
+    "id": "gate:write:verifier-protect",
+    "matcher": "Write|Edit|NotebookEdit",
+    "script": "hooks/gates/verifier-protect.sh",
+    "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py/.js) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06."
+  },
+  {
+    "id": "gate:bash:verifier-protect",
+    "matcher": "Bash",
+    "script": "hooks/gates/verifier-protect.sh",
+    "description": "Gate: ask the human to approve Bash-mediated writes (redirect, tee, sed -i, cp, mv) to verifier surfaces — closes the Write/Edit matcher's blind spot. Emits permissionDecision: ask."
+  },
+  {
+    "id": "gate:db:sql-write",
+    "matcher": "mcp__.*__execute_sql.*",
+    "script": "hooks/gates/db-write-gate.sh",
+    "description": "Gate: ask on non-SELECT execute_sql-shaped MCP calls, on any server. No-op when no such MCP server is configured (matcher never fires)."
+  },
+  {
+    "id": "gate:task:complete-separation",
+    "matcher": "TaskUpdate",
+    "script": "hooks/gates/task-complete-separation.sh",
+    "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_type is present (subagent). Exit 2 + stderr; fail-safe allow on parse error."
+  },
+  {
+    "id": "gate:skill:jira-acli-engage",
+    "matcher": "Skill",
+    "script": "hooks/gates/atlassian-mcp-gate.sh",
+    "description": "Marks the session jira-acli-engaged when a jira-acli:* skill loads, so the companion gate:mcp:atlassian-cold-start gate can allow-list it. Never blocks Skill itself."
+  },
+  {
+    "id": "gate:mcp:atlassian-cold-start",
+    "matcher": "mcp__.*",
+    "script": "hooks/gates/atlassian-mcp-gate.sh",
+    "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call before a jira-acli:* skill loaded this session — forces routing through jira-acli's templates instead of a cold MCP call. Escape: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1."
+  },
+  {
+    "id": "gate:write:worktree-guard",
+    "matcher": "Write|Edit|NotebookEdit",
+    "script": "hooks/gates/worktree-guard-dispatch.sh",
+    "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set."
+  },
+  {
+    "id": "gate:bash:worktree-guard",
+    "matcher": "Bash",
+    "script": "hooks/gates/worktree-guard-dispatch.sh",
+    "description": "Gate: deny (not redirect) a Bash-mediated write that targets a guarded sub-repo main checkout or protected branch. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default."
+  }
+]

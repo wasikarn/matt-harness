@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.457-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.458-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
@@ -306,8 +306,8 @@ matt-harness/
 claude plugin validate --strict .
 
 # Full gauntlet (plugin-validate + shell-lint + JSON lint + harness-audit +
-# the 12-file hook/skill behavioral test suite — see CLAUDE.md's Validation
-# section for the full file list)
+# the behavioral test suite — see CLAUDE.md's Validation section for the
+# full, authoritative file list; no count stated here, counts drift)
 bash scripts/run-gauntlet.sh
 ```
 

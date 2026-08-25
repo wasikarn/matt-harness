@@ -136,36 +136,39 @@ out=$(echo "$(payload "$TMP/elsewhere2.txt" sessnorm)" \
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "MH_GUARDED_WORKSPACE unset (default case): exit 0, no output" "$ok"
 
-# Wrapper-script test: gate:bash:worktree-guard's hooks.json entry points
+# Wrapper-script test: gate:bash:worktree-guard's registration points
 # `command`/`args` at a real file (hooks/gates/worktree-guard-dispatch.sh,
 # extracted 2026-08-19 to dedupe the byte-identical prelude that used to be
 # inlined separately in both worktree-guard hooks.json entries) instead of an
 # embedded bash -c string. Shellcheck now lints that file directly as a
 # tracked .sh in the normal lint layer, so this test no longer needs to
-# extract-and-eval a JSON string in isolation -- it resolves the args path
-# hooks.json declares and runs that file, which is what actually happens at
-# runtime. $ROOT passed via argv, not spliced into source -- matches the
-# fleet convention after the 2026-08-06 check-43 injection fix.
+# extract-and-eval a JSON string in isolation -- it resolves the declared
+# script path and runs that file, which is what actually happens at runtime.
+# T12 (#91): the individual gate:* PreToolUse entries moved out of hooks.json
+# into hooks/pretooluse-table.json (hooks.json now names one dispatcher for
+# the whole event) -- extraction points there instead. The table's "script"
+# field is repo-relative with no ${CLAUDE_PLUGIN_ROOT} placeholder (unlike
+# the old hooks.json args), so resolution is a plain join, not a substitution.
 WRAPPER_SCRIPT=$(python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
-for blk in d["hooks"]["PreToolUse"]:
-    if blk.get("id") == "gate:bash:worktree-guard":
-        print(blk["hooks"][0]["args"][0])
+for entry in d:
+    if entry.get("id") == "gate:bash:worktree-guard":
+        print(entry["script"])
         break
-' "$ROOT/hooks/hooks.json")
+' "$ROOT/hooks/pretooluse-table.json")
 ok=1; [ -n "$WRAPPER_SCRIPT" ] && ok=0
-check "wrapper script path extracted from hooks.json" "$ok"
+check "wrapper script path extracted from pretooluse-table.json" "$ok"
 
 out=$( (unset MH_GUARDED_WORKSPACE CLAUDE_PROJECT_DIR
   export CLAUDE_PLUGIN_ROOT="$ROOT"
-  echo '{}' | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
+  echo '{}' | bash "$ROOT/$WRAPPER_SCRIPT") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "wrapper script: var unset -> exit 0, no output (python never spawned)" "$ok"
 
 bashpayload=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "echo x >> $WS/repo1/f.txt")
 out=$( (export MH_GUARDED_WORKSPACE="$WS" CLAUDE_PROJECT_DIR="$WS/repo1" CLAUDE_PLUGIN_ROOT="$ROOT"
-  echo "$bashpayload" | bash "${WRAPPER_SCRIPT/\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}") 2>/dev/null); rc=$?
+  echo "$bashpayload" | bash "$ROOT/$WRAPPER_SCRIPT") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "wrapper script: var set + Bash write to protected checkout -> deny exit 2" "$ok"
 

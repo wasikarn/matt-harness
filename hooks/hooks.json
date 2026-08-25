@@ -8,10 +8,10 @@
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/doctrine-bootstrap.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:doctrine-bootstrap", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/doctrine-bootstrap.sh"]
           }
         ],
-        "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context"
+        "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context. Tier: minimal (always on) -- disabling this is a functionality loss, not a noise reduction."
       },
       {
         "id": "session:command-root-anchor",
@@ -19,10 +19,10 @@
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/command-root-anchor.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:command-root-anchor", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/command-root-anchor.sh"]
           }
         ],
-        "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${MH_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably"
+        "description": "Bridge hook-only ${CLAUDE_PLUGIN_ROOT} into the session as ${MH_PLUGIN_ROOT} so command markdown (no official ${CLAUDE_COMMAND_DIR}) can reference bundled scripts portably. Tier: minimal (always on) -- other scripts depend on the env var this sets."
       },
       {
         "id": "session:memory-health-nudge",
@@ -30,144 +30,48 @@
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/memory-health-nudge.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:memory-health-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/session/memory-health-nudge.sh"]
           }
         ],
-        "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start, plus an UNINDEXED fold-vs-forgotten triage when applicable — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset"
+        "description": "Advisory: surface memory-lint findings (dangling links, orphans, index drift) at session start, plus an UNINDEXED fold-vs-forgotten triage when applicable — silent when clean; restores the surfacing loop dropped in the 2026-06-27 reset. Tier: standard."
       }
     ],
     "UserPromptSubmit": [
       {
         "id": "advisory:flow-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement",
+        "description": "Advisory: when user prompt looks like non-trivial engineering work, nudge mattpocock-skills:grilling, then the user types /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement. Tier: standard.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/flow-nudge.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:flow-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/flow-nudge.sh"]
           }
         ]
       },
       {
         "id": "advisory:jira-route-nudge",
         "matcher": "*",
-        "description": "Advisory: when user prompt mentions Jira/Confluence/TP-* work, nudge routing through jira-acli's skills before any raw acli command or direct Atlassian MCP tool call. Never blocks.",
+        "description": "Advisory: when user prompt mentions Jira/Confluence/TP-* work, nudge routing through jira-acli's skills before any raw acli command or direct Atlassian MCP tool call. Never blocks. Tier: standard.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/jira-route-nudge.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:jira-route-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/jira-route-nudge.sh"]
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "id": "gate:bash:irrecoverable",
-        "matcher": "Bash",
-        "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)",
+        "id": "gate:pretooluse-dispatch",
+        "matcher": "*",
+        "description": "T12 (#91): single PreToolUse entry point, replacing the 9 individual gate registrations below (irrecoverable, verifier-protect x2, db-write, task-complete-separation, atlassian-mcp-gate x2, worktree-guard x2). Fans out in parallel to every gate whose matcher matches this tool call per hooks/pretooluse-table.json, merges results per Claude Code's own documented precedence (deny > defer > ask > allow; a blocking decision suppresses updatedInput; additionalContext concatenated) -- see hooks/dispatch-pretooluse.py's own header for the verified doc citations. All 9 table entries are gate:* -- immune to any profile/kill-switch (no PreToolUse hook here is advisory-tiered). Each underlying gate script is unchanged.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/irrecoverable.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:write:verifier-protect",
-        "matcher": "Write|Edit|NotebookEdit",
-        "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py, exit 2 before the ask — block wins) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06 (the script already read notebook_path; the matcher just never granted it), matching gate:write:worktree-guard's coverage.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/verifier-protect.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:bash:verifier-protect",
-        "matcher": "Bash",
-        "description": "Gate: ask the human to approve Bash-mediated writes (redirect, tee, sed -i, cp, mv) to verifier surfaces — closes the Write/Edit matcher's blind spot. Emits permissionDecision: ask.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/verifier-protect.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:db:sql-write",
-        "matcher": "mcp__.*__execute_sql.*",
-        "description": "Gate: ask on non-SELECT execute_sql-shaped MCP calls, on any server. Restores coverage lost when hooks/db-write-gate.sh was deleted in the v0.6.0 reset. No-op when no such MCP server is configured (matcher never fires).",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/db-write-gate.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:task:complete-separation",
-        "matcher": "TaskUpdate",
-        "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_type is present (subagent). Exit 2 + stderr; fail-safe allow on parse error.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/task-complete-separation.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:skill:jira-acli-engage",
-        "matcher": "Skill",
-        "description": "Marks the session jira-acli-engaged when a jira-acli:* skill loads (writes ~/.local/share/kbg/jira-acli-sessions/<session_id>), so the companion gate:mcp:atlassian-cold-start gate can allow-list it. Never blocks Skill itself.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/atlassian-mcp-gate.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:mcp:atlassian-cold-start",
-        "matcher": "mcp__.*",
-        "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call (mcp__*atlassian*/mcp__*rovo*, both a local/plugin MCP server and a claude.ai connector) before a jira-acli:* skill loaded this session -- forces routing through jira-acli's templates instead of a cold MCP call. Cold-start guard, not a per-call router: allows every later call once the session is marked engaged (confluence-content's page create/update and acli's own 'When acli can't' fallback list legitimately use this same MCP). Escape: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/atlassian-mcp-gate.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:write:worktree-guard",
-        "matcher": "Write|Edit|NotebookEdit",
-        "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees (base branch via MH_WORKTREE_BASE, e.g. =main for hotfix). Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set (this is a public plugin — no workspace path ships in code). Moved from dotfiles 2026-07-02. Bash early-exit (2026-07-03): when the var is unset or CLAUDE_PROJECT_DIR is known and outside the guarded workspace, skip the python3 cold-start entirely and exit 0 — this gate is a no-op there anyway; only the guarded path spawns python.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard-dispatch.sh"]
-          }
-        ]
-      },
-      {
-        "id": "gate:bash:worktree-guard",
-        "matcher": "Bash",
-        "description": "Gate: deny (not redirect) a Bash-mediated write (echo >>, sed -i, tee, cp/mv, …) that targets a guarded sub-repo main checkout or protected branch. Same protection as gate:write:worktree-guard's Write/Edit path, ported to Bash 2026-07-16 — the Write/Edit matcher never saw a Bash-mediated write, mirroring the gap verifier-protect.sh closed on 2026-07-03. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gates/worktree-guard-dispatch.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-pretooluse.sh"]
           }
         ]
       }
@@ -175,12 +79,12 @@
     "Stop": [
       {
         "id": "stop:cost-tracker",
-        "description": "Stop: track cumulative token and cost metrics per session; appends to ~/.local/share/kbg/metrics/costs.jsonl",
+        "description": "Stop: track cumulative token and cost metrics per session; appends to ~/.local/share/kbg/metrics/costs.jsonl. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "stop:cost-tracker", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh"],
             "async": true,
             "timeout": 10
           }
@@ -188,12 +92,12 @@
       },
       {
         "id": "stop:memory-audit-commit",
-        "description": "Stop: if the current project's memory store is already a git repo (opt-in, one-time user-run `git init` — this hook never inits it), commit any dirty changes for a real audit trail / rollback path. No-op otherwise.",
+        "description": "Stop: if the current project's memory store is already a git repo (opt-in, one-time user-run `git init` — this hook never inits it), commit any dirty changes for a real audit trail / rollback path. No-op otherwise. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "stop:memory-audit-commit", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh"],
             "async": true,
             "timeout": 10
           }
@@ -201,12 +105,12 @@
       },
       {
         "id": "stop:stale-task-nudge",
-        "description": "Stop: if a task this session created via TaskCreate still shows status in_progress with no TaskUpdate call for it since, nudge the model via additionalContext before the turn ends. Synchronous (not async) — additionalContext from an async hook only lands next turn, too late to matter. Deduped to one nudge per task per session via a marker file; never fires on stop_hook_active to avoid re-triggering itself.",
+        "description": "Stop: if a task this session created via TaskCreate still shows status in_progress with no TaskUpdate call for it since, nudge the model via additionalContext before the turn ends. Synchronous (not async) — additionalContext from an async hook only lands next turn, too late to matter. Deduped to one nudge per task per session via a marker file; never fires on stop_hook_active to avoid re-triggering itself. Tier: strict.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/stop/stale-task-nudge.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "stop:stale-task-nudge", "strict", "${CLAUDE_PLUGIN_ROOT}/hooks/stop/stale-task-nudge.sh"]
           }
         ]
       }
@@ -214,12 +118,12 @@
     "SessionEnd": [
       {
         "id": "advisory:learn-nudge",
-        "description": "Advisory: remind the operator that mh:learn exists when the session had enough activity (transcript user-turn count) to plausibly contain a durable learning. Never blocks — SessionEnd has no decision control. Emits to stderr (SessionEnd stdout is discarded; stderr is shown to the user).",
+        "description": "Advisory: remind the operator that mh:learn exists when the session had enough activity (transcript user-turn count) to plausibly contain a durable learning. Never blocks — SessionEnd has no decision control. Emits to stderr (SessionEnd stdout is discarded; stderr is shown to the user). Tier: strict.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/advisory/learn-nudge.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:learn-nudge", "strict", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/learn-nudge.sh"]
           }
         ]
       }
@@ -227,12 +131,12 @@
     "InstructionsLoaded": [
       {
         "id": "session:instructions-loaded-journal",
-        "description": "Journal every CLAUDE.md / .claude/rules/*.md load (file_path, memory_type, load_reason, session_id) to ~/.local/share/kbg/metrics/instructions-loaded.jsonl. This event has no decision control — output is discarded — so this is audit logging only, never surfaced in-session.",
+        "description": "Journal every CLAUDE.md / .claude/rules/*.md load (file_path, memory_type, load_reason, session_id) to ~/.local/share/kbg/metrics/instructions-loaded.jsonl. This event has no decision control — output is discarded — so this is audit logging only, never surfaced in-session. Tier: minimal (always on) -- pure audit logging, not advisory noise.",
         "hooks": [
           {
             "type": "command",
             "command": "bash",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/session/instructions-loaded-journal.sh"]
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:instructions-loaded-journal", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/instructions-loaded-journal.sh"]
           }
         ]
       }

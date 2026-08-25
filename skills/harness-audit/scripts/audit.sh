@@ -177,8 +177,43 @@ is_plugin_delivered() {
 # (falls back to the old text-sweep if jq is unavailable), and strip comment
 # text from the referenced file before matching so a prose mention doesn't
 # count as an invocation.
+#
+# T12 (#91): a second wiring shape exists since the PreToolUse dispatcher
+# landed -- hooks.json names dispatch-pretooluse.sh, which reads
+# hooks/pretooluse-table.json (data, not script text) to find each real gate
+# script. The one-hop text-scan above can never see this: dispatch-pretooluse.sh
+# does not name any gate script in its own source, by design (the whole point
+# of a table is that adding a gate never touches the dispatcher script). Two
+# cases, since a table entry's own script can itself be a further one-hop
+# wrapper (worktree-guard-dispatch.sh execs worktree-guard.py -- a THIRD hop
+# from hooks.json's perspective):
+#   1. direct: the hook basename matches a table "script" value itself.
+#   2. one more hop: read that script's own content (comment-stripped, same
+#      as the hooks.json-rooted scan below) for the hook basename.
+hook_wired_via_pretooluse_table() {
+  local name="$1" table="$CLAUDE_DIR/hooks/pretooluse-table.json" script_rel ref_file
+  [ -f "$table" ] || return 1
+  local scripts
+  if command -v jq >/dev/null 2>&1; then
+    scripts=$(jq -r '.[].script // empty' "$table" 2>/dev/null | sort -u)
+  else
+    scripts=$(grep -oE '"script"[[:space:]]*:[[:space:]]*"[^"]+"' "$table" 2>/dev/null \
+      | sed -E 's/.*"([^"]+)"$/\1/' | sort -u)
+  fi
+  [ -n "$scripts" ] || return 1
+  while IFS= read -r script_rel; do
+    [ -n "$script_rel" ] || continue
+    case "$script_rel" in */"$name") return 0 ;; esac
+    ref_file="$CLAUDE_DIR/$script_rel"
+    [ -f "$ref_file" ] || continue
+    sed 's/#.*$//' "$ref_file" 2>/dev/null | grep -qF "$name" && return 0
+  done <<< "$scripts"
+  return 1
+}
+
 hook_wired_transitively() {
   local name="$1" hooks_json="$CLAUDE_DIR/hooks/hooks.json" ref_file
+  hook_wired_via_pretooluse_table "$name" && return 0
   if command -v jq >/dev/null 2>&1; then
     while IFS= read -r ref_file; do
       [ -n "$ref_file" ] && [ -f "$ref_file" ] || continue
