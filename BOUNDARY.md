@@ -96,6 +96,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | address-review | Triage + respond to open PR review comments (fetch, classify, fix via mattpocock-skills:diagnosing-bugs, reply). Use when replying to reviewer feedback; say 'address review/แก้ตามรีวิว'. Don't use for review (mattpocock-skills:code-review) or merge (mh:ship-merge). | inline | manual |
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
 | bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Use when hunting for small bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). | inline | auto |
+| complexity-check | Measure cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell (unsupported) or Big-O (mh:performance-optimizer). | inline | auto |
 | compliance-audit | Audit a finished implementation against its plan via fresh-context verifiers. Use after a multi-phase plan. Don't use for an unplanned diff (mattpocock-skills:code-review) or readiness (mh:production-audit). | inline | manual |
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
@@ -185,7 +186,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T20:01:40Z_
+_Generated: 2026-08-25T20:23:50Z_
 
 ---
 
