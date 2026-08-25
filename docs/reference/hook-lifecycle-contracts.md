@@ -1,6 +1,6 @@
 # Hook Lifecycle Contracts
 
-Per-event **behavior contract** for the 7 hook events / 23 hooks kbg registers, separated
+Per-event **behavior contract** for the 9 hook events / 24 hooks kbg registers, separated
 from **execution** (`hooks/hooks.json` dispatch → which script fires on which event/matcher).
 This is the contract layer ECC separates as `memory-persistence/` (lifecycle definitions)
 from `hooks.json` (execution): this file is the *behavior* contract — what each event
@@ -67,6 +67,10 @@ of them requires a different model class than the maker and an advisory-only (ne
 | PreToolUse (Skill) | `atlassian-mcp-gate.sh` | FF / computational | Marks the session jira-acli-engaged when a `jira-acli:*` skill loads (writes a session marker), so the companion `mcp__.*` cold-start gate below can allow-list it. Never blocks Skill itself. |
 | PreToolUse (`mcp__.*`) | `atlassian-mcp-gate.sh` | FF / computational | Cold-start guard: block a direct Atlassian/Jira/Confluence MCP call before a `jira-acli:*` skill loaded this session — forces routing through jira-acli's templates. Allows every later call once the session is marked engaged (confluence-content page create/update + acli's "When acli can't" fallback legitimately use this same MCP). Escape: `MH_ALLOW_DIRECT_ATLASSIAN_MCP=1`. |
 | PreToolUse (Write\|Edit\|NotebookEdit + Bash) | `worktree-guard.py` | FF / computational | Redirect Write/Edit on a guarded sub-repo main checkout into a session worktree under `~/.worktrees`; deny (not redirect) the Bash-mediated equivalent (a raw shell target can't be rewritten via `updatedInput`). **Status of this claim, corrected 2026-08-20: likely outdated, not vendor-confirmed either way.** This is an internal engineering assumption dated 2026-07-16 (this file's own row), never checked against a primary source until a same-day plan to build a second Bash-`updatedInput` hook prompted the check. That check first produced a fabricated vendor quote (a `WebFetch` call invented specific "does not work for Bash" restriction text that a raw-content re-fetch confirmed does not exist on the page), then, after correcting that, a full raw read of `code.claude.com/docs/en/hooks.md` found: (1) the `updatedInput` field description is fully generic, no tool-type restriction stated anywhere on the page; (2) the `PermissionRequest` event's own official example rewrites a `command` field (`"updatedInput": {"command": "npm run lint"}`) — real vendor evidence of `updatedInput` touching a command-shaped field, though under `PermissionRequest` specifically, not the `PreToolUse` event this gate and `costs.md`'s worked example both use. Evidence now leans toward this working, not against it — but this file's own Bash-branch deny behavior was never empirically re-tested against a live session, so it stays in place pending that test. Full writeup: `docs/research/official-docs-best-practices-prompt-library-costs-audit-2026-08-20.md`. Opt-in and OFF by default — no-op everywhere unless `MH_GUARDED_WORKSPACE` is set (no workspace path ships in this public plugin). Bash early-exit skips the python3 cold-start when the var is unset or the project dir is outside the guarded workspace. |
+| PostToolUse (Skill) | `skill-usage-telemetry.sh` | FB / computational | Journal every skill invocation (skill, plugin, timestamp) to `~/.local/share/kbg/metrics/skill-usage.jsonl` — usage evidence for the future matt-skill vs harness-skill overlap cull (#90/T11). Invocation counts only, no outcome/success field. No decision control. |
+| PostToolUse (*) | `loop-repeat-nudge.sh` | FB / computational | Advisory (#99): warns when a tool is called with identical parameters 3+ times in the last 5 calls. Hash-based, purely mechanical, never judges "is this productive." Never blocks. |
+| PostToolUseFailure (*) | `mcp-failure-nudge.sh` | FB / computational | Advisory (#97): warns when an MCP server fails 3+ times within 300s. Purely observational — never probes, reconnects, or blocks. |
+| PreCompact | `precompact-state-flush.sh` | FB / computational | Flushes in-flight journal/review state to disk before compaction can destroy it. Async; no enforcement. |
 | Stop | `cost-tracker.sh` | FB / computational | Track cumulative token/cost metrics per session; append to `~/.local/share/kbg/metrics/costs.jsonl`. Async; no enforcement. |
 | Stop | `memory-audit-commit.sh` | FB / computational | If the project's memory store is already a git repo (opt-in, never auto-`init`s), commit any dirty changes for an audit trail. No-op otherwise. Async; no enforcement. |
 | Stop | `stale-task-nudge.sh` | FB / computational, model-facing | If a task created this session (`TaskCreate`) still shows `status: in_progress` with no `TaskUpdate` call for it since, emit `hookSpecificOutput.additionalContext` naming it before the turn ends. **Synchronous, not async** — `Stop` has no passive "show text, turn ends normally" lever at all (confirmed against `hooks.md` before building, not assumed): every field that reaches the model here (`decision: block`, `additionalContext`) forces one more visible agent turn, and an async hook's `additionalContext` only lands on the *next* turn — too late once this turn has already ended. Deduped to one nudge per task per session (`~/.local/share/kbg/task-nudge-sessions/<session_id>-<taskId>` marker) so a task legitimately left `in_progress` across several real turns doesn't re-nag every Stop. Guards on `stop_hook_active` to avoid re-triggering itself. Known gap, not hidden: "untouched since" is a mechanical last-write-wins check on `TaskUpdate` calls, not semantic judgment — it cannot distinguish "forgot to close" from "genuinely still working," so the dedup exists specifically to bound the false-positive cost to one nudge, not to eliminate it. |
@@ -77,19 +81,21 @@ of them requires a different model class than the maker and an advisory-only (ne
 and the SessionEnd inferential-FB sensors (`inferential-structural-judge`, `verification-gate`,
 `fabrication-verdict-log`) were removed in the v0.6.0 cut; the `PostToolUse` `observe.sh`
 sensor (retired-L4 residue that wrote `observations.jsonl` for the removed `/learn` command) was removed in
-v0.6.7 — but `PostToolUse` itself was re-wired 2026-07-22 (v0.68.3) with `plan-review-nudge.sh`, a
+v0.6.7 — `PostToolUse` itself was re-wired 2026-07-22 (v0.68.3) with `plan-review-nudge.sh`, a
 different, unrelated advisory hook (itself retired 2026-08-24, #78, along with the plan-review agent it
-nudged); `compliance-audit-nudge.sh` (v0.68.138) joined the same event 2026-08-03 with a
+nudged), then `compliance-audit-nudge.sh` (v0.68.138) joined the same event 2026-08-03 with a
 different matcher (`Bash`) and was itself retired 2026-08-24 (#80) along with the
-`compliance-audit` command it relayed — **no PostToolUse hook is
-currently live.** The maker≠checker
+`compliance-audit` command it relayed. **Two PostToolUse hooks are live today** (`skill-usage-telemetry.sh` on
+`Skill`, `loop-repeat-nudge.sh` on `*` — both added later, #90/T11 and #99 respectively, unrelated
+to the compliance-audit lineage above) — see the table rows above. The maker≠checker
 enforcement the F7 gate failed to provide is now carried by
 `gate:task:complete-separation` on `PreToolUse:TaskUpdate` (above) — a deterministic shell gate, not a
 model-as-gate, so it does not re-arm the autonomy invariant the v0.6.0 cut retired. `SessionEnd` itself
 was re-wired 2026-07-06 with `learn-nudge.sh` — a computational volume-proxy nudge, not a re-arm of the
 retired inferential-FB sensors above (those judged session *content*; this judges nothing beyond a raw
-turn count, and never emits a decision). `hooks/hooks.json` wires 6 events total: SessionStart,
-UserPromptSubmit, PreToolUse, Stop, SessionEnd, InstructionsLoaded.
+turn count, and never emits a decision). `hooks/hooks.json` wires 9 events total: SessionStart,
+UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, PreCompact, SessionEnd,
+InstructionsLoaded.
 
 **The three `PreToolUse (Bash)` deny/ask gates above** (`irrecoverable.sh`,
 the Bash leg of `verifier-protect.sh`, `worktree-guard.py`'s Bash branch) **match `Bash` only, not

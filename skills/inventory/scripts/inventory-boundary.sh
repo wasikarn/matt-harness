@@ -102,7 +102,7 @@ print_boundary() {
       [ -d "$d" ] || continue
       local name desc agent invoke bucket
       name=$(basename "$d")
-      case "$name" in *-workspace) continue ;; esac  # gitignored iterate-skill scratch dirs, not real skills
+      case "$name" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces, review-fixtures's working dir) -- never real skills
       local skill_file="$d/SKILL.md"
       [ -f "$skill_file" ] || continue
       desc=$(fm_get "$skill_file" description --block)
