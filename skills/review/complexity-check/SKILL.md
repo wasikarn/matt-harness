@@ -26,20 +26,29 @@ If missing: tell the user, don't fabricate a result. Offer `pip install lizard` 
 ## Usage
 
 ```bash
-lizard "${TARGET_PATH:-.}" -w -s cyclomatic_complexity
+lizard "${TARGET_PATH:-.}" -w -s cyclomatic_complexity -i -1
 ```
 
 - `-w` — clang-style warnings only: `file:line: warning: func has N NLOC, M CCN, ...`
   (functions under the threshold print nothing).
 - `-s cyclomatic_complexity` — sort warnings by CCN, worst first.
 - `-C N` — override the default threshold (15) if the caller names one.
+- `-i -1` — **required**, not optional: without it `lizard` exits 1 on any
+  threshold-breaching function (verified directly — an unqualified run is a blocking
+  gate by default, every dedicated complexity CLI checked works the same way: xenon,
+  gocyclo `-over`, gocognit `-over` all exit non-zero too). `-i -1` is lizard's own
+  documented switch for "exit 0 regardless of warning count" — this is what actually
+  keeps the scan advisory, not a property of the tool you can assume.
 - `--exclude "pattern"` — extra excludes; `.gitignore` is already honored by default.
 - Target a path (arg or `argument-hint`) to scope a single module instead of the whole repo.
 
-Exit code stays 0 even with warnings present — this tool is advisory, matching this
-repo's own gate-vs-advise split (deny is reserved for irrecoverable actions; a complexity
-score is a quality signal, not one). Never wire this into a blocking hook without the
-user asking for that explicitly.
+Advisory by design choice, not by default — deny is reserved for irrecoverable actions in
+this repo, and a complexity score, while a real signal, is a weak one: peer-reviewed
+studies find cyclomatic-complexity-derived features are noisy defect predictors (~0.55-0.58
+accuracy, 24-30% recall for the faulty class) and that cognitive complexity is not
+meaningfully better correlated with understandability than cyclomatic complexity or even
+plain LOC. Not strong enough evidence to block a commit on. Never drop `-i -1` or wire
+this into a blocking hook without the user asking for that explicitly.
 
 ## Reading the output
 
