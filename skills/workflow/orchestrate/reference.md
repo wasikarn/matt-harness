@@ -262,6 +262,13 @@ the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktre
 ## UPSTREAM CONTRACTS
 - From task <id>: <file:line or schema field> — <what you may rely on>
 - From task <id>: <file:line or schema field> — <what you may rely on>
+- Basis hash: <path> @ <output of `git hash-object <path>`> — one line per file this
+  brief's instructions were derived from. MANDATORY when the brief inlines a slice of
+  the file; recommended for any path whose dispatch-time state the task's decisions
+  depend on. The subagent re-hashes before acting; on mismatch it STOPS and reports
+  `STALE-BASIS <path>` — never work on a stale basis. (Concurrent sessions share this
+  working tree; the file may have changed since dispatch. Skip for single-shot
+  read-only lookups — agents read files fresh.)
 (Empty list if no upstream.)
 
 ## Files + Criteria + Constraints
@@ -292,7 +299,7 @@ Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
 - **What / Where / Focus / Deliverable** — the four required slots. Missing any one, the subagent guesses (usually wrong).
 - **Why** — *optional; omit when self-evident.* One clause of intent (the goal or ADR the task serves) so the subagent resolves an ambiguous edge case toward the goal instead of guessing. METHODOLOGY's "give the reason" sub-rule applied to the spawn prompt — never pad a task whose What already implies its why.
 - **FILES YOU OWN** — explicit boundary; eliminates "agent A and agent B both edited `SKILL.md`" conflicts. The orchestrator (not the subagent) arbitrates cross-boundary edits.
-- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the subagent either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected.
+- **UPSTREAM CONTRACTS** — what this task may rely on from previous waves. Without it, the subagent either re-derives (wasted work) or assumes (latent bug). Wave 2+ MUST receive this injected. Its `Basis hash` line is the stale-basis guard: `git hash-object` binds the brief to the exact file state it was written against, so a concurrent session's rewrite surfaces as `STALE-BASIS` instead of silently wrong work (adopted from autoprompt's mission-pointer binding, GH #114).
 - **Files + Criteria + Constraints** — the testable contract. "Make the code work" is not a criterion. "`POST /health` returns `{"status":"ok","db":"ping","uptime_s":N}` with HTTP 200" is.
 - **Done-when** — three observable checks. Passes the orchestrator's verify gate without re-asking the subagent.
 
