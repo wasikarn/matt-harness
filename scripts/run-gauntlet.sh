@@ -101,7 +101,7 @@ run_path_hygiene() {
 
 # ---- behavioral test suite (hooks + slash-command scripts) ----
 # Runs the actual gate scripts against fixture payloads and asserts allow/deny/ask;
-# also runs regression tests for bundled slash-command scripts (e.g. /cost-report's
+# also runs regression tests for bundled slash-command scripts (e.g. mh:cost-report's
 # scripts/workflows/cost-report-dedup.js aggregation). This is the safety-critical net: a
 # regression in irrecoverable.sh /
 # verifier-protect.sh (incl. the folded path-hardcode deny) fails here instead of shipping

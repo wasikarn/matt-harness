@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression test for the /cost-report dedup script,
+# Regression test for the mh:cost-report dedup script,
 # scripts/workflows/cost-report-dedup.js (extracted 2026-08-23 from the
 # command body's embedded fence — 200-LOC cap refactor; this file now runs the
 # real bundled script directly instead of extracting a fence, so there is no
@@ -25,7 +25,7 @@
 # mutating the file under test, which this suite intentionally doesn't do);
 # re-run it by hand if this test's fixtures are ever revised. (The pre-2026-08-23
 # fenced-script version of this recipe mutated a scratch copy of
-# commands/cost-report.md instead — same mutation, different file.)
+# skills/cost-report/SKILL.md instead — same mutation, different file.)
 # Extended 2026-08-07 for the agent_type breakdown (docs/research/
 # orchestrator-tax-gap-analysis-2026-08-07.md, "Re-read audit" G1 follow-up): the
 # dedup key widened again, from (session_id, stream, model) to (session_id, stream,
@@ -36,7 +36,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REPORT_JS="$ROOT/scripts/workflows/cost-report-dedup.js"
-COMMAND_MD="$ROOT/commands/cost-report/COMMAND.md"
+COMMAND_MD="$ROOT/skills/cost-report/SKILL.md"
 
 pass=0
 fail=0
@@ -52,7 +52,7 @@ assert() {
   fi
 }
 
-[[ -f "$REPORT_JS" ]] || { echo "FATAL: $REPORT_JS not found — the /cost-report script moved without updating this test" >&2; exit 1; }
+[[ -f "$REPORT_JS" ]] || { echo "FATAL: $REPORT_JS not found — the cost-report skill's script moved without updating this test" >&2; exit 1; }
 [[ -f "$COMMAND_MD" ]] || { echo "FATAL: $COMMAND_MD not found — the command moved without updating this test" >&2; exit 1; }
 
 echo "=== cost-report dedup (stream-aware) ==="

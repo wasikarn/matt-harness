@@ -7,7 +7,7 @@
 # whichever model was last active, is what makes a row's numbers belong to that model
 # alone: a session that switches models gets one row per model actually used, each
 # with that model's own true cumulative tokens/cost. `model_scoped: true` marks rows
-# in this format so a reader (commands/cost-report/COMMAND.md) can tell them apart from rows
+# in this format so a reader (skills/cost-report/SKILL.md) can tell them apart from rows
 # written by the pre-fix version of this hook, which never carried the field and whose
 # per-row cost was the whole session's cumulative total repriced at the current model.
 set -uo pipefail
@@ -135,7 +135,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # <session-id>/subagents/ directory — NOT into the main transcript, which never
   # carries a row with isSidechain:true (verified against a real 15-subagent session,
   # 2026-08-07). Reading only .transcript_path therefore made every subagent's spend
-  # invisible to /cost-report. Both halves are now counted and separable by `stream`.
+  # invisible to mh:cost-report. Both halves are now counted and separable by `stream`.
   sub_dir="${transcript%.jsonl}/subagents"
   if [[ -d "$sub_dir" ]]; then
     shopt -s nullglob

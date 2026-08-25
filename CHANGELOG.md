@@ -5,6 +5,20 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.471] — 2026-08-25
+
+### Changed
+
+- `commands/cost-report/COMMAND.md` and `commands/ideate-search.md` converted to
+  `skills/cost-report/SKILL.md` and `skills/ideate-search/SKILL.md` (#105, commands→skills
+  convergence, spec #101). Neither needed an argument-handling change. Every citation
+  updated to `mh:`-form across `hooks/stop/cost-tracker.sh`, `scripts/run-gauntlet.sh`,
+  `scripts/workflows/cost-report-dedup.js`, `tests/commands/test-cost-report.sh`
+  (path variable repointed), and `skills/ideate/SKILL.md` + its `references/provenance.md`
+  (forward references to ideate-search). README's "What You Get" table counts corrected
+  (this table isn't covered by `sync-fleet-counts.sh` or harness-audit check 44's anchor
+  list — a pre-existing gap, fixed by hand each ticket for now).
+
 ## [0.68.470] — 2026-08-25
 
 ### Changed

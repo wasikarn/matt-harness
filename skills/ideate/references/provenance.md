@@ -96,12 +96,12 @@ If present, prefer these 5 frames for the next ideate run.
 
 **Ideate memory search.** Past `/ideate` runs are saved as markdown under
 the ideate-memory location and indexed by the `ideate-memory` qmd
-collection; `/ideate-search` queries that collection directly via the qmd
+collection; `mh:ideate-search` queries that collection directly via the qmd
 MCP tool:
 
 ```
-/ideate-search caching
-/ideate-search หาไอเดียที่เคยคิดเรื่อง caching
+mh:ideate-search caching
+mh:ideate-search หาไอเดียที่เคยคิดเรื่อง caching
 ```
 
 ## Cross-references

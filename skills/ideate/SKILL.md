@@ -57,7 +57,7 @@ those (already covers the 1-wild minimum, rotated vs. prior sessions). If absent
 to [Picking frames](#picking-frames). Step 0's convergence capture side (SessionEnd embedding
 hook + `convergence.sh`) is **not currently wired** (removed in the reset) — treat
 convergence as advisory-only until rebuilt. Past runs are searchable via
-`/ideate-search <query>` (Thai OK; `ideate-memory` qmd collection) — its capture hook is also
+`mh:ideate-search <query>` (Thai OK; `ideate-memory` qmd collection) — its capture hook is also
 not wired. Mechanics: `references/provenance.md` §"Advisory hooks — full mechanics".
 
 ## 2-wave fan-out (load-bearing)
