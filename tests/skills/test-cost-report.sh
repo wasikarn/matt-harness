@@ -25,7 +25,7 @@
 # mutating the file under test, which this suite intentionally doesn't do);
 # re-run it by hand if this test's fixtures are ever revised. (The pre-2026-08-23
 # fenced-script version of this recipe mutated a scratch copy of
-# skills/cost-report/SKILL.md instead — same mutation, different file.)
+# skills/meta/cost-report/SKILL.md instead — same mutation, different file.)
 # Extended 2026-08-07 for the agent_type breakdown (docs/research/
 # orchestrator-tax-gap-analysis-2026-08-07.md, "Re-read audit" G1 follow-up): the
 # dedup key widened again, from (session_id, stream, model) to (session_id, stream,
@@ -36,7 +36,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REPORT_JS="$ROOT/scripts/workflows/cost-report-dedup.js"
-COMMAND_MD="$ROOT/skills/cost-report/SKILL.md"
+COMMAND_MD="$ROOT/skills/meta/cost-report/SKILL.md"
 
 pass=0
 fail=0

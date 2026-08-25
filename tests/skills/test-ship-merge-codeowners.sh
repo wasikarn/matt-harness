@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regression test for the CODEOWNER check: the shared
 # hooks/gates/lib/_codeowners_match.py (evaluate() + discover()) and
-# skills/ship-merge/SKILL.md's Phase 1 step 7 wiring around it (moved from
+# skills/workflow/ship-merge/SKILL.md's Phase 1 step 7 wiring around it (moved from
 # commands/ship-merge/COMMAND.md 2026-08-25, #103, commands→skills spec #101).
 #
 # MIGRATED 2026-08-15: the matcher and discovery loop used to be embedded
@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SHIP_MERGE_MD="$ROOT/skills/ship-merge/SKILL.md"
+SHIP_MERGE_MD="$ROOT/skills/workflow/ship-merge/SKILL.md"
 CM_LIB="$ROOT/hooks/gates/lib"
 
 pass=0

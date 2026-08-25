@@ -4,7 +4,7 @@
 # surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, the
 # PreToolUse dispatcher's own routing (hooks/pretooluse-table.json,
 # hooks/dispatch-pretooluse.py/.sh), AND the non-model audit verifier
-# (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot
+# (skills/meta/harness-audit/scripts/audit.sh + checks/**) — so the model cannot
 # neuter the deny-gates, silently turn an advisory sensor into something
 # that emits permissionDecision, repoint or delete a gate's table entry, OR
 # weaken the audit checks that judge it without an in-session human
@@ -98,7 +98,7 @@ if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
     *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
     *tee*|*sed*|*perl*|*cp*|*mv*|*install*|*rsync*|*dd*|*rm*|*trash*|*">"*)
       case "$_norm" in
-        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*hooks/pretooluse-table.json*|*hooks/dispatch-pretooluse*|*skills/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
+        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*hooks/pretooluse-table.json*|*hooks/dispatch-pretooluse*|*skills/harness-audit*|*skills/*/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
         *) _run=0 ;;  # write to a non-verifier, non-expandable surface -> allow fast
       esac
       ;;
@@ -240,7 +240,7 @@ def _verifier_reason(fp, reason=None):
 
 # is_gate_path -- imported above from _protected_paths (2026-08-15
 # extraction; was is_verifier_path, defined inline here). Also used by
-# the embedded classifier in skills/risk-check/SKILL.md, which previously had its own
+# the embedded classifier in skills/review/risk-check/SKILL.md, which previously had its own
 # narrower copy missing hooks/advisory/ coverage.
 
 def bash_write_targets(cmd):

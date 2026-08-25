@@ -2,7 +2,7 @@
 # Behavioral tests for git-hooks/pre-commit's version-bump layer — specifically
 # that scripts/ and contexts/ are shipped surfaces (added 2026-08-21 after three
 # scripts/-only commits silently never reached the installed plugin cache).
-# Runs the real hook against a throwaway repo; a stub skills/harness-audit/
+# Runs the real hook against a throwaway repo; a stub skills/meta/harness-audit/
 # scripts/audit.sh inside the fixture keeps the audit layer away from the real
 # $HOME fallback. Run standalone: bash tests/git-hooks/test-pre-commit-version-gate.sh
 set -uo pipefail
@@ -40,8 +40,8 @@ write_manifests() { # write_manifests <version>
 # (a real, slow audit against the fixture) never fires. scripts/base.sh exists
 # committed so the rename-out case below has something to move.
 write_manifests v0.0.1
-mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/scripts" "$FIX/contexts" "$FIX/docs"
-printf '#!/usr/bin/env bash\ntouch "$(dirname "$0")/audit-ran"\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
+mkdir -p "$FIX/skills/meta/harness-audit/scripts" "$FIX/scripts" "$FIX/contexts" "$FIX/docs"
+printf '#!/usr/bin/env bash\ntouch "$(dirname "$0")/audit-ran"\necho "Critical: 0"\n' > "$FIX/skills/meta/harness-audit/scripts/audit.sh"
 printf 'echo base\n' > "$FIX/scripts/base.sh"
 git -C "$FIX" add .claude-plugin skills scripts/base.sh
 git -C "$FIX" commit -qm baseline
@@ -151,11 +151,11 @@ reset_fixture
 # from the ACMR-filtered STAGED list, which drops the rename's D side — the
 # CRITICAL harness-audit silently skipped on exactly the commit shape that
 # removes a guarded file). The stub audit drops a witness file when invoked.
-rm -f "$FIX/skills/harness-audit/scripts/audit-ran"
+rm -f "$FIX/skills/meta/harness-audit/scripts/audit-ran"
 mkdir -p "$FIX/tools"
 git -C "$FIX" mv scripts/base.sh tools/base.sh
 run_hook >/dev/null 2>&1
-if [ -f "$FIX/skills/harness-audit/scripts/audit-ran" ]; then witness=0; else witness=1; fi
+if [ -f "$FIX/skills/meta/harness-audit/scripts/audit-ran" ]; then witness=0; else witness=1; fi
 check "git mv scripts/→tools/ still launches the audit layer (witness file)" "$witness"
 reset_fixture
 

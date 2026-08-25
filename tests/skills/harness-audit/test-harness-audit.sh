@@ -22,7 +22,7 @@
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
-AUDIT="$HERE/../../../skills/harness-audit/scripts/audit.sh"
+AUDIT="$HERE/../../../skills/meta/harness-audit/scripts/audit.sh"
 FIX="$HERE/known-bad"
 
 pass=0
@@ -167,13 +167,13 @@ unset MH_MATT_CACHE
 # Same class of guard as the check-25 test above: assert the run completes
 # (prints a Summary) instead of aborting mid-source.
 FAKE39=$(mktemp -d)
-mkdir -p "$FAKE39/skills/orchestrate" "$FAKE39/docs"
-cat > "$FAKE39/skills/orchestrate/SKILL.md" <<'EOF'
+mkdir -p "$FAKE39/skills/workflow/orchestrate" "$FAKE39/docs"
+cat > "$FAKE39/skills/workflow/orchestrate/SKILL.md" <<'EOF'
 # orchestrate
 no matching content in this fixture
 EOF
 cat > "$FAKE39/docs/common-mistakes.md" <<'EOF'
-Self-check: `grep -c "this-pattern-does-not-exist-anywhere" "skills/orchestrate/SKILL.md"`
+Self-check: `grep -c "this-pattern-does-not-exist-anywhere" "skills/workflow/orchestrate/SKILL.md"`
 EOF
 CHECK39_OUT=$(bash "$AUDIT" "$FAKE39" --only 39 2>&1 || true)
 trash "$FAKE39" 2>/dev/null || true

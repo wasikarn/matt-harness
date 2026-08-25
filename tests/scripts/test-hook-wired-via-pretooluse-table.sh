@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Direct unit tests for hook_wired_via_pretooluse_table() in
-# skills/harness-audit/scripts/audit.sh (used by checks 03/11 to decide
+# skills/meta/harness-audit/scripts/audit.sh (used by checks 03/11 to decide
 # whether a hook file on disk is reachable via the PreToolUse table).
 # Extracts the function's own source via sed (it only depends on
 # $CLAUDE_DIR, no other audit.sh state) rather than running the whole
@@ -18,7 +18,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-AUDIT_SH="$ROOT/skills/harness-audit/scripts/audit.sh"
+AUDIT_SH="$ROOT/skills/meta/harness-audit/scripts/audit.sh"
 
 pass=0
 fail=0
@@ -39,7 +39,7 @@ if ! /usr/bin/grep -q 'hook_wired_via_pretooluse_table' "$FUNC_FILE"; then
   exit 1
 fi
 
-echo "=== hook_wired_via_pretooluse_table (skills/harness-audit/scripts/audit.sh) ==="
+echo "=== hook_wired_via_pretooluse_table (skills/meta/harness-audit/scripts/audit.sh) ==="
 echo ""
 
 FIX=$(mktemp -d)

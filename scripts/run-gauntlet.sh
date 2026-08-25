@@ -71,9 +71,9 @@ run_json_lint() {
 
 # ---- harness-audit (all findings, graceful-skip if absent) ----
 run_audit() {
-  local AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
+  local AUDIT="$ROOT/skills/meta/harness-audit/scripts/audit.sh"
   [ -f "$AUDIT" ] || AUDIT="$(find "$ROOT/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
-  [ -n "$AUDIT" ] && [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
+  [ -n "$AUDIT" ] && [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/meta/harness-audit/scripts/audit.sh"
   [ -f "$AUDIT" ] || AUDIT="$(find "$HOME/.claude/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
   if [ ! -f "$AUDIT" ]; then
     echo "  harness-audit not found — skipped"

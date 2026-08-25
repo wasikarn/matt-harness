@@ -2,7 +2,7 @@
 # test-mattpocock-root-resolver.sh — direct unit tests for
 # scripts/_lib/mattpocock-root.sh's resolve_mattpocock_root (#92/T13). The
 # two real call sites (hooks/session/doctrine-bootstrap.sh's preflight,
-# skills/harness-audit/scripts/checks/51-mattpocock-integration-refs.sh) are
+# skills/meta/harness-audit/scripts/checks/51-mattpocock-integration-refs.sh) are
 # covered at the integration level by tests/hooks/test-session-stop.sh and
 # tests/skills/harness-audit/test-harness-audit.sh respectively; this file
 # covers the resolver's own contract directly — multi-version highest-semver

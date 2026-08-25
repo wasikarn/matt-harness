@@ -1,5 +1,5 @@
 // Tiered multi-model pipeline: fable plans → sonnet executes → opus reviews
-// (fix-retry cap 3, counted here in code per skills/orchestrate/reference.md
+// (fix-retry cap 3, counted here in code per skills/workflow/orchestrate/reference.md
 // § Concept) → opus bug-hunts fresh-eyes → fable final review, triage-gated on
 // contest signals (TAO arXiv:2506.12482: unconditional extra tiers degrade
 // agreement — pass args.finalReview = 'always' to force the unconditional form).

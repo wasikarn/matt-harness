@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # Shared gate/verifier-governance path classifier. Ported near-verbatim
 # (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path()
-# -- the more complete of two prior copies. skills/risk-check/SKILL.md's
+# -- the more complete of two prior copies. skills/review/risk-check/SKILL.md's
 # embedded is_gate_path() was the other, missing hooks/advisory/ coverage;
 # both now call this one instead, closing that gap.
 #
 # Covers: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, the
-# non-model audit verifier (skills/harness-audit/scripts/audit.sh +
+# non-model audit verifier (skills/meta/harness-audit/scripts/audit.sh +
 # checks/**), and (added 2026-08-25, #91 adversarial audit) the PreToolUse
 # dispatcher's own table + merge logic (hooks/pretooluse-table.json,
 # hooks/dispatch-pretooluse.py, hooks/dispatch-pretooluse.sh) -- T12 moved
@@ -44,10 +44,10 @@ def is_gate_path(fp):
         return True
     if nl.endswith("/hooks/dispatch-pretooluse.py") or nl.endswith("/hooks/dispatch-pretooluse.sh"):
         return True
-    if nl.endswith("/skills/harness-audit/scripts/audit.sh"):
+    if nl.endswith("/skills/meta/harness-audit/scripts/audit.sh"):
         return True
-    if "/skills/harness-audit/scripts/checks/" in nl or \
-       nl.endswith("/skills/harness-audit/scripts/checks"):
+    if "/skills/meta/harness-audit/scripts/checks/" in nl or \
+       nl.endswith("/skills/meta/harness-audit/scripts/checks"):
         return True
     if rl == "hooks/hooks.json" or rl.startswith("hooks/gates/") or \
        rl.startswith("hooks/advisory/"):
@@ -55,8 +55,8 @@ def is_gate_path(fp):
     if rl == "hooks/pretooluse-table.json" or rl == "hooks/dispatch-pretooluse.py" or \
        rl == "hooks/dispatch-pretooluse.sh":
         return True
-    if rl == "skills/harness-audit/scripts/audit.sh" or \
-       rl.startswith("skills/harness-audit/scripts/checks/") or \
-       rl == "skills/harness-audit/scripts/checks":
+    if rl == "skills/meta/harness-audit/scripts/audit.sh" or \
+       rl.startswith("skills/meta/harness-audit/scripts/checks/") or \
+       rl == "skills/meta/harness-audit/scripts/checks":
         return True
     return False

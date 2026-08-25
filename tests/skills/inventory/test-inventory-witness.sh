@@ -40,27 +40,25 @@ rm -f "$WITNESS_OUT" "$REPO_ONLY_OUT"
 # both sides and the diff would stay empty. This block runs the generator
 # directly against a small fixture and asserts on its actual output.
 FIXTURE=$(mktemp -d)
-mkdir -p "$FIXTURE/skills/alpha-skill" "$FIXTURE/skills/beta-skill" "$FIXTURE/skills/untagged-skill"
-cat > "$FIXTURE/skills/alpha-skill/SKILL.md" <<'EOF'
+mkdir -p "$FIXTURE/skills/alpha/alpha-skill" "$FIXTURE/skills/beta/beta-skill" "$FIXTURE/skills/untagged-skill"
+cat > "$FIXTURE/skills/alpha/alpha-skill/SKILL.md" <<'EOF'
 ---
 name: alpha-skill
-description: fixture skill tagged bucket alpha
-bucket: alpha
+description: fixture skill nested under bucket dir alpha
 ---
 body
 EOF
-cat > "$FIXTURE/skills/beta-skill/SKILL.md" <<'EOF'
+cat > "$FIXTURE/skills/beta/beta-skill/SKILL.md" <<'EOF'
 ---
 name: beta-skill
-description: fixture skill tagged bucket beta
-bucket: beta
+description: fixture skill nested under bucket dir beta
 ---
 body
 EOF
 cat > "$FIXTURE/skills/untagged-skill/SKILL.md" <<'EOF'
 ---
 name: untagged-skill
-description: fixture skill with no bucket key at all
+description: fixture skill left flat, one level deep — no bucket dir
 ---
 body
 EOF

@@ -12,11 +12,11 @@ import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# SUT (memory-lint.py) stayed at skills/memory-lint/scripts/ per the no-move
+# SUT (memory-lint.py) stayed at skills/meta/memory-lint/scripts/ per the no-move
 # rule — Claude Code skill invocation contract relies on ${CLAUDE_SKILL_DIR}/scripts/.
 # 3 levels up (tests/skills/memory-lint/ → repo root) then into the SUT dir.
 spec = importlib.util.spec_from_file_location("memory_lint",
-    os.path.join(HERE, "..", "..", "..", "skills", "memory-lint", "scripts", "memory-lint.py"))
+    os.path.join(HERE, "..", "..", "..", "skills", "meta", "memory-lint", "scripts", "memory-lint.py"))
 assert spec and spec.loader
 memory_lint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(memory_lint)
@@ -636,7 +636,7 @@ def test_find_patterns_cli_default_caps_giant_component():
             f.write("\n".join(index_lines) + "\n")
 
         script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                               "skills", "memory-lint", "scripts", "memory-lint.py")
+                               "skills", "meta", "memory-lint", "scripts", "memory-lint.py")
         result = subprocess.run(
             ["python3", script, d, "--find-patterns"],
             capture_output=True, text=True, check=True,
@@ -669,7 +669,7 @@ def test_find_patterns_reports_hidden_count_when_everything_is_capped_out():
             f.write("\n".join(index_lines) + "\n")
 
         script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                               "skills", "memory-lint", "scripts", "memory-lint.py")
+                               "skills", "meta", "memory-lint", "scripts", "memory-lint.py")
         result = subprocess.run(
             ["python3", script, d, "--find-patterns"],
             capture_output=True, text=True, check=True,
@@ -700,7 +700,7 @@ def test_find_patterns_json_prompt_includes_prompts():
             f.write("\n".join(index_lines) + "\n")
 
         script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                               "skills", "memory-lint", "scripts", "memory-lint.py")
+                               "skills", "meta", "memory-lint", "scripts", "memory-lint.py")
         with_prompt = subprocess.run(
             ["python3", script, d, "--find-patterns", "--json", "--prompt"],
             capture_output=True, text=True, check=True,
@@ -738,7 +738,7 @@ def test_find_patterns_cli_boundary_at_exact_cap_size():
             f.write("\n".join(index_lines) + "\n")
 
         script = os.path.join(os.path.dirname(__file__), "..", "..", "..",
-                               "skills", "memory-lint", "scripts", "memory-lint.py")
+                               "skills", "meta", "memory-lint", "scripts", "memory-lint.py")
         result = subprocess.run(
             ["python3", script, d, "--find-patterns", "--max-cluster", "5"],
             capture_output=True, text=True, check=True,
@@ -1030,7 +1030,7 @@ def test_class_d_break_is_inclusive_at_exact_line_target():
 # kills; every fs-mutating test uses its own tempdir (shared-working-tree discipline), every
 # cap patch restores under try/finally, and stdin-reaching subprocesses pass input="".
 
-SCRIPT = os.path.join(HERE, "..", "..", "..", "skills", "memory-lint", "scripts", "memory-lint.py")
+SCRIPT = os.path.join(HERE, "..", "..", "..", "skills", "meta", "memory-lint", "scripts", "memory-lint.py")
 
 
 def _class_a_fixture(d, stems=("stale-topic",)):

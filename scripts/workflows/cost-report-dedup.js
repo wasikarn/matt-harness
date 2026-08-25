@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // cost-report-dedup.js — the mh:cost-report skill's report + CSV logic.
-// Extracted verbatim from skills/cost-report/SKILL.md's two embedded fences
+// Extracted verbatim from skills/meta/cost-report/SKILL.md's two embedded fences
 // (2026-08-23, 200-LOC cap refactor) so the command body stays under cap and
 // this logic is directly testable: tests/skills/test-cost-report.sh runs
 // this file, not a fence extraction. Dedup semantics and their incident
-// history: skills/cost-report/references/schema-history.md.
+// history: skills/meta/cost-report/references/schema-history.md.
 // Usage: node cost-report-dedup.js        -> summary report
 //        node cost-report-dedup.js csv    -> CSV of the last 100 raw rows
 const fs=require("fs"),os=require("os"),path=require("path");

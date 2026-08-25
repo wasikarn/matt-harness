@@ -11,7 +11,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/session/skill-usage-telemetry.sh"
-HEALTH_PY="$ROOT/skills/harness-audit/scripts/harness-health.py"
+HEALTH_PY="$ROOT/skills/meta/harness-audit/scripts/harness-health.py"
 
 pass=0
 fail=0

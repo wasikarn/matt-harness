@@ -18,7 +18,7 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/git-hooks/pre-commit"
-CHECK55="$ROOT/skills/harness-audit/scripts/checks/55-loc-cap-auto-loaded-surfaces.sh"
+CHECK55="$ROOT/skills/meta/harness-audit/scripts/checks/55-loc-cap-auto-loaded-surfaces.sh"
 
 pass=0
 fail=0
@@ -48,8 +48,8 @@ mkfile() { # mkfile <relpath> <lines>
 }
 
 write_manifests v0.0.1
-mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/agents" "$FIX/skills" "$FIX/docs"
-printf '#!/usr/bin/env bash\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
+mkdir -p "$FIX/skills/meta/harness-audit/scripts" "$FIX/agents" "$FIX/skills" "$FIX/docs"
+printf '#!/usr/bin/env bash\necho "Critical: 0"\n' > "$FIX/skills/meta/harness-audit/scripts/audit.sh"
 git -C "$FIX" add .claude-plugin skills
 git -C "$FIX" commit -qm baseline
 

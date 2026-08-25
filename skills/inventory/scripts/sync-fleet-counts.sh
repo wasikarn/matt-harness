@@ -6,7 +6,7 @@
 # skills/inventory/scripts/, run manually — not wired into a hook).
 #
 # Sync-seam: the 4 anchors below mirror the _check_triple anchors in
-# skills/harness-audit/scripts/checks/44-fleet-count-locations.sh — an edit to
+# skills/meta/harness-audit/scripts/checks/44-fleet-count-locations.sh — an edit to
 # one location list should prompt a check of the other.
 #
 # Scoped to ONLY these 2 locations, each patched via its own anchor line, not

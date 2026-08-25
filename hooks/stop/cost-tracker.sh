@@ -7,7 +7,7 @@
 # whichever model was last active, is what makes a row's numbers belong to that model
 # alone: a session that switches models gets one row per model actually used, each
 # with that model's own true cumulative tokens/cost. `model_scoped: true` marks rows
-# in this format so a reader (skills/cost-report/SKILL.md) can tell them apart from rows
+# in this format so a reader (skills/meta/cost-report/SKILL.md) can tell them apart from rows
 # written by the pre-fix version of this hook, which never carried the field and whose
 # per-row cost was the whole session's cumulative total repriced at the current model.
 set -uo pipefail

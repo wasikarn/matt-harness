@@ -7,12 +7,12 @@ import importlib.util
 from pathlib import Path
 
 # hyphenated filename can't be imported by name — load it by path instead.
-# SUT (verify-preserved.py) stayed at skills/compress-docs/scripts/ per the
-# no-move rule — Claude Code skill invocation contract relies on
-# ${CLAUDE_SKILL_DIR}/scripts/. 3 levels up (tests/skills/compress-docs/
-# → repo root) then into the SUT dir.
+# SUT (verify-preserved.py) lives at skills/meta/compress-docs/scripts/ —
+# tests/ doesn't move with the skills/ bucket migration (2026-08-25), so the
+# "../../.." hop count up to repo root is unchanged; only the "meta" segment
+# is new, inserted where the old flat "compress-docs" path used to start.
 spec = importlib.util.spec_from_file_location("verify_preserved",
-    Path(__file__).parent / ".." / ".." / ".." / "skills" / "compress-docs" / "scripts" / "verify-preserved.py")
+    Path(__file__).parent / ".." / ".." / ".." / "skills" / "meta" / "compress-docs" / "scripts" / "verify-preserved.py")
 assert spec and spec.loader, "could not locate verify-preserved.py next to this test"
 vp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vp)

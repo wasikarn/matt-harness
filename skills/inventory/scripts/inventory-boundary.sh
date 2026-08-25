@@ -89,11 +89,13 @@ print_boundary() {
     done
   fi
 
-  # Skills — grouped by `bucket:` frontmatter key (v5). One pass collects
+  # Skills — grouped by bucket, derived from the skill's own directory path
+  # (skills/<bucket>/<name>/SKILL.md), not bucket: frontmatter — the folder
+  # move (2026-08-25) made the path the single source of truth, frontmatter
+  # dropped to avoid a two-places-that-can-drift risk. One pass collects
   # "bucket<TAB>row..." tuples, a stable sort by bucket groups them without
   # needing an associative array (kbg's other scripts assume portable bash,
-  # not bash-4+ only). Untagged skills land under "unbucketed" — visible,
-  # not silently dropped, so a missing bucket: is easy to spot in the diff.
+  # not bash-4+ only).
   if [ -d "$base/skills" ] && [ -n "$(ls -A "$base/skills" 2>/dev/null)" ]; then
     echo ""
     echo "## Skills — $label"
@@ -108,8 +110,14 @@ print_boundary() {
       desc=$(fm_get "$skill_file" description --block)
       agent=$(fm_get "$skill_file" agent)
       invoke=$(extract_auto_invoke "$skill_file")
-      bucket=$(fm_get "$skill_file" bucket)
-      _skill_rows+=("${bucket:-unbucketed}"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${agent:-inline}"$'\t'"$invoke")
+      local _parent
+      _parent="$(dirname "${d%/}")"
+      if [ "$_parent" = "$base/skills" ]; then
+        bucket="unbucketed"  # flat skills/<name>/SKILL.md, one level deep — no bucket dir
+      else
+        bucket=$(basename "$_parent")
+      fi
+      _skill_rows+=("$bucket"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${agent:-inline}"$'\t'"$invoke")
     done
     if [ "${#_skill_rows[@]}" -gt 0 ]; then
       local _cur_bucket=""
@@ -240,7 +248,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # it can't be generated the same way. Found 2026-08-19 during a deep-audit:
   # the table's own text claimed "harness-audit check 12 verifies orchestrate
   # references every agent" as if that covered this table too — it doesn't;
-  # check 12 only checks skills/orchestrate/SKILL.md + reference.md, never
+  # check 12 only checks skills/workflow/orchestrate/SKILL.md + reference.md, never
   # BOUNDARY.md. This stderr comparison at least surfaces a stale table the
   # moment someone next regenerates, instead of it silently drifting again the
   # way the "12-agent fleet"/"60 checks" text did. It is NOT a CI gate (stderr
@@ -304,7 +312,7 @@ Derived from the task-sizing guidance + article `agent-teams-best-practices`. Ap
 
 ## File ownership boundary table
 
-Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table is a hand-maintained literal, not generated from `agents/*.md` — keep it in sync by hand when an agent is added or removed. Not covered by harness-audit check 12 (that check only verifies `skills/orchestrate/SKILL.md` + `reference.md`, not this table or `BOUNDARY.md`) — `inventory-boundary.sh` prints a stderr warning at regen time if this table and `agents/` disagree, but that's advisory, not a CI gate.
+Canonical file patterns per agent. Assign each file to exactly one agent in an `orchestrate` dispatch plan to prevent silent overwrites. This table is a hand-maintained literal, not generated from `agents/*.md` — keep it in sync by hand when an agent is added or removed. Not covered by harness-audit check 12 (that check only verifies `skills/workflow/orchestrate/SKILL.md` + `reference.md`, not this table or `BOUNDARY.md`) — `inventory-boundary.sh` prints a stderr warning at regen time if this table and `agents/` disagree, but that's advisory, not a CI gate.
 
 | Agent | Canonical file patterns | Mutates | Notes |
 |---|---|---|---|
@@ -366,12 +374,12 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 ### Quick Context
 - **Stack:** Bash + Python 3 + jq; matt-harness is a Claude Code plugin (version in `.claude-plugin/plugin.json`)
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
-- **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
+- **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/meta/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
 - **Cache:** `~/.claude/plugins/cache/kobig/mh/<version>/` (rebuilt on `claude plugin update mh@kobig`)
 
 ### Verification
-- `bash "${MH_PLUGIN_ROOT}/skills/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
+- `bash "${MH_PLUGIN_ROOT}/skills/meta/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)
 - `claude plugin validate --strict "${MH_PLUGIN_ROOT}"` — exit 0
 - `bash "${MH_PLUGIN_ROOT}/scripts/run-gauntlet.sh"` — full parallel gauntlet (validate + lint + JSON + audit + 14-file hook suite)
 XREF2

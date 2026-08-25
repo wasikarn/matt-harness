@@ -9,7 +9,7 @@
     "id": "gate:write:verifier-protect",
     "matcher": "Write|Edit|NotebookEdit",
     "script": "hooks/gates/verifier-protect.sh",
-    "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py/.js) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06."
+    "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/meta/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py/.js) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06."
   },
   {
     "id": "gate:bash:verifier-protect",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression test for skills/risk-check/SKILL.md's embedded "## Classify" script.
+# Regression test for skills/review/risk-check/SKILL.md's embedded "## Classify" script.
 # Extracts the script the same way a user's shell would run it, the same
 # pattern as tests/skills/test-ship-merge-codeowners.sh and
 # tests/skills/test-cost-report.sh.
@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-RISK_CHECK_MD="$ROOT/skills/risk-check/SKILL.md"
+RISK_CHECK_MD="$ROOT/skills/review/risk-check/SKILL.md"
 
 pass=0
 fail=0

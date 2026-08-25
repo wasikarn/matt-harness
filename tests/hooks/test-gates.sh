@@ -291,11 +291,11 @@ test_ask   "$VP_BASH" "redirect > into hooks/gates/" \
 test_ask   "$VP_BASH" "append >> into hooks/hooks.json" \
   "$(bash_payload 'echo x >> hooks/hooks.json')"
 test_ask   "$VP_BASH" "sed -i on an audit check" \
-  "$(bash_payload 'sed -i s/a/b/ skills/harness-audit/scripts/checks/01-fleet-count.sh')"
+  "$(bash_payload 'sed -i s/a/b/ skills/meta/harness-audit/scripts/checks/01-fleet-count.sh')"
 test_ask   "$VP_BASH" "tee into a gate file" \
   "$(bash_payload 'echo x | tee hooks/gates/verifier-protect.sh')"
 test_ask   "$VP_BASH" "cp over an audit check (dest is verifier path)" \
-  "$(bash_payload 'cp foo skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
+  "$(bash_payload 'cp foo skills/meta/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
 test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
   "$(bash_payload "mv x $ROOT/hooks/gates/irrecoverable.sh")"
 # v0.36.0 audit: cp/mv/install -t <dir> made nonflag[-1] a SOURCE, so the real
@@ -304,7 +304,7 @@ test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
 test_ask   "$VP_BASH" "cp -t into hooks/gates/ (dest via -t, not source)" \
   "$(bash_payload 'cp -t hooks/gates/ evil.sh')"
 test_ask   "$VP_BASH" "mv -t into audit checks/ (--target-directory=)" \
-  "$(bash_payload 'mv --target-directory=skills/harness-audit/scripts/checks/ evil.sh')"
+  "$(bash_payload 'mv --target-directory=skills/meta/harness-audit/scripts/checks/ evil.sh')"
 test_ask   "$VP_BASH" "install -t into hooks/gates/" \
   "$(bash_payload 'install -t hooks/gates/ evil.sh')"
 test_ask   "$VP_BASH" "dd of= a gate file (was no coverage)" \
@@ -418,19 +418,19 @@ test_ask   "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
 test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
   "$(write_payload "$ROOT/hooks/gates/task-complete-separation.sh" 'echo neutered')"
 test_ask   "$VERIFIER_PROTECT" "Write to audit.sh (non-model verifier runner)" \
-  "$(write_payload 'skills/harness-audit/scripts/audit.sh' 'echo neutered')"
+  "$(write_payload 'skills/meta/harness-audit/scripts/audit.sh' 'echo neutered')"
 test_ask   "$VERIFIER_PROTECT" "Edit to a check file (grading logic)" \
-  "$(edit_payload 'skills/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh' 'echo neutered')"
+  "$(edit_payload 'skills/meta/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh' 'echo neutered')"
 test_ask   "$VERIFIER_PROTECT" "Write to a check via absolute path" \
-  "$(write_payload "$ROOT/skills/harness-audit/scripts/checks/01-fleet-count.sh" 'echo neutered')"
+  "$(write_payload "$ROOT/skills/meta/harness-audit/scripts/checks/01-fleet-count.sh" 'echo neutered')"
 test_allow "$VERIFIER_PROTECT" "Write to --health reporter (NOT a grader, out of scope)" \
-  "$(write_payload 'skills/harness-audit/scripts/harness-health.py' 'print(1)')"
+  "$(write_payload 'skills/meta/harness-audit/scripts/harness-health.py' 'print(1)')"
 test_allow "$VERIFIER_PROTECT" "Write to health.sh (NOT a grader, out of scope)" \
-  "$(write_payload 'skills/harness-audit/scripts/health.sh' 'echo ok')"
+  "$(write_payload 'skills/meta/harness-audit/scripts/health.sh' 'echo ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
   "$(write_payload 'skills/foo/SKILL.md' '# ok')"
 test_allow "$VERIFIER_PROTECT" "Write to another skill (normal work)" \
-  "$(write_payload 'skills/pr/SKILL.md' '# ok')"
+  "$(write_payload 'skills/review/pr/SKILL.md' '# ok')"
 
 echo ""
 echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="

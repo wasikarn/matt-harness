@@ -5,7 +5,7 @@
 # Restores the surfacing loop dropped in the 2026-06-27 "reset: rebuild from
 # scratch" (c452102), which deleted the prior
 # hooks/maintenance/memory-lint-check.sh without updating
-# skills/memory-lint/SKILL.md — that doc claimed this hook was still running
+# skills/meta/memory-lint/SKILL.md — that doc claimed this hook was still running
 # for ~6 weeks while it wasn't. See
 # docs/research/agent-memory-engineering-2026-08-07.md (proposal A1): 87
 # findings had accumulated silently on the live store before this was
@@ -34,7 +34,7 @@
 # a manual fixture run against /tmp during this hook's own testing).
 set -uo pipefail
 
-LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/memory-lint/scripts/memory-lint.py"
+LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/meta/memory-lint/scripts/memory-lint.py"
 [ -f "$LINT" ] || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
@@ -122,7 +122,7 @@ printf '%s\n' \
 
 # UNINDEXED findings conflate two states: an authoring oversight vs. the fold
 # rule's own correct end-state (pointer removed, file kept — see
-# skills/memory-lint/SKILL.md "UNINDEXED fold-vs-forgotten triage"). Only pay
+# skills/meta/memory-lint/SKILL.md "UNINDEXED fold-vs-forgotten triage"). Only pay
 # for the extra git-history scan (3 total git subprocess calls per
 # --classify-unindexed run, fixed regardless of UNINDEXED count — see
 # memory-lint.py's classify_unindexed() docstring; the older per-file
