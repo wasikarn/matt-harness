@@ -1,6 +1,7 @@
 ---
 name: review-fixtures
-description: "Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use mid an improve+optimize loop once fixtures exist. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step."
+description: "Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use when fixtures already exist mid an improve+optimize loop. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step."
+bucket: review
 argument-hint: <skill/agent/command-name> [iteration-path]
 model: inherit
 effort: high
@@ -30,24 +31,23 @@ and the 5 instructions that must not be cut; this command only orchestrates arou
 
 ### 1. Parse arguments and resolve the target surface
 
-`$1` = skill/agent/command name (strip a leading `mh:` if present). `$2` = optional iteration path.
+The user names a skill/agent/command (strip a leading `mh:` if present) when invoking this
+skill, optionally followed by an iteration path. If whitespace makes it ambiguous which part
+is the name vs the path, take the first token as the target name and the rest as the
+iteration path — Step 2's auto-glob-highest-N already covers the common no-path case.
 
-**Via the `Skill` tool's `args` param (not a typed slash command), `$2` may not populate** —
-a whitespace-containing `args` string can bind wholly to `$1` (confirmed on `deep-audit`,
-2026-08-09). If `$1` has whitespace, split on the first space: target name, then `$2`. This is
-a fallback only — Step 2's auto-glob-highest-N already covers the common no-path case.
-
-If `$1` is empty, show usage and stop — do not guess which target:
+If no target name was given, show usage and stop — do not guess which target:
 ```
-Usage: /review-fixtures <skill/agent/command-name> [iteration-path]
-Example: /review-fixtures backend-patterns backend-patterns-workspace/iteration-2
+Usage: mh:review-fixtures <skill/agent/command-name> [iteration-path]
+Example: mh:review-fixtures backend-patterns backend-patterns-workspace/iteration-2
 ```
 
-Resolve which surface `$1` is by checking, in order: `skills/$1/SKILL.md`, `agents/$1.md`,
-`commands/$1.md`, `commands/$1/COMMAND.md`. Whichever exists is the **target file** referenced
-in Steps 4 and 8. None exist → stop and report that, don't guess a path or default to skill.
-Steps 2–3's workspace/eval-case discovery don't need this resolution — the `<name>-workspace/`
-and `eval-*/` conventions are identical across all three surface types.
+Resolve which surface the name is by checking, in order: `skills/<name>/SKILL.md`,
+`agents/<name>.md`. Whichever exists is the **target file** referenced in Steps 4 and 8.
+Neither exists → stop and report that, don't guess a path or default to skill. (No
+`commands/` check any more — that surface retired, spec #101.) Steps 2–3's
+workspace/eval-case discovery don't need this resolution — the `<name>-workspace/` and
+`eval-*/` conventions are identical across surface types.
 
 ### 2. Locate the workspace
 

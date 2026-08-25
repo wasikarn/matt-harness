@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.480] — 2026-08-25
+
+### Changed
+
+- Converted `commands/review-fixtures/` (directory-form) to
+  `skills/review-fixtures/SKILL.md` — the 19th and last original command, missed by
+  #102-111's ticket breakdown but named in the underlying plan's own inventory (found
+  during #111's close-out, converted here as an explicit unticketed step so #112's
+  "no files remain under commands/" criterion is actually true). Argument handling
+  rewritten to prose. Its own Step 1 target-resolution logic dropped the now-dead
+  `commands/$1.md`/`commands/$1/COMMAND.md` checks — no future target can ever live there.
+  `commands/` is now empty. `README.md`'s fleet-count triple reads 0 commands for the
+  first time; the "Commands" row format is an interim "0" pending #112's own explicit
+  decision on whether to keep or drop the row.
+
 ## [0.68.479] — 2026-08-25
 
 ### Changed
