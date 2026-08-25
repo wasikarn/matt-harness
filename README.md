@@ -1,6 +1,6 @@
 # kbg — Claude Code Harness
 
-[![Version](https://img.shields.io/badge/version-v0.68.474-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.68.475-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
@@ -127,7 +127,7 @@ After changing any surface, follow the release cycle in [Adding a Component](#de
 |---|---|---|
 | **Skills** | 47 | `mh:<skill>` — e.g. `mh:pr`, `mh:orchestrate` (matt-origin skills install as a separate namespaced plugin — e.g. `mattpocock-skills:grilling`) |
 | **Agents** | 16 | Spawned by Claude or via the `Task` tool — e.g. `code-architect` |
-| **Commands** | 10 | `/mh:<command>` — e.g. `/mh:address-review`, `/mh:wiki-ingest` (namespaced identically to skills — see Quick Start step 7; shrinking as the commands→skills convergence lands, spec #101) |
+| **Commands** | 10 | `/mh:<command>` — e.g. `/mh:address-review`, `/mh:ship-release` (namespaced identically to skills — see Quick Start step 7; shrinking as the commands→skills convergence lands, spec #101) |
 | **Output Styles** | 1 | `staff-eng` — sole live-response register, self-calibrates terse vs full framing by stakes |
 | **Contexts** | 3 | `dev` · `review` · `research` — loaded by `/frame` to set session posture |
 | **Themes** | 1 | `catppuccin-mocha` |

@@ -5,6 +5,26 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.475] — 2026-08-25
+
+### Fixed
+
+- `mh:deep-audit` on the #102-#107 conversion work found 2 real remaining gaps neither
+  the gauntlet nor the code-review pass caught:
+  - `skills/risk-check/SKILL.md`'s embedded Python script still printed the stray hybrid
+    `/mh:ship-merge` form (leading slash + `mh:` prefix) in its output — the frontmatter
+    description's citation was fixed earlier, this second occurrence in the script body
+    was missed.
+  - `README.md`'s "Commands" row example still cited `` `/mh:wiki-ingest` `` — correct
+    when written for #105, but wiki-ingest itself converted to a skill in #107, making
+    it a self-contradicting example (a "Commands" row citing a skill). Swapped for
+    `ship-release`, a command that's actually still a command.
+- Also verified with live evidence, not just static review: `mh:cost-report` invoked
+  end-to-end post-move (real cost report, real numbers); `mh:risk-check`'s dependency
+  import and no-PR error path exercised directly; harness-audit checks 40 and 31
+  negative-tested via a safe mutate-then-restore cycle, confirming both still CRIT/WARN
+  correctly on tampered state, not just silently on the current good state.
+
 ## [0.68.474] — 2026-08-25
 
 ### Fixed

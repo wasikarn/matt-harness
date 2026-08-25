@@ -89,7 +89,7 @@ print("Thresholds are round defaults (<=50/50 lines LOW, >400 lines or >15 files
 print("sensitive path HIGH), not calibrated against this repo history -- no incident data")
 print("exists here to calibrate against.")
 print()
-print("Advisory only -- does not gate or skip anything. See /mh:ship-merge for the actual")
+print("Advisory only -- does not gate or skip anything. See mh:ship-merge for the actual")
 print("merge decision, mattpocock-skills:code-review for the actual review.")
 ' "$PR_JSON" "${MH_PLUGIN_ROOT}/hooks/gates/lib"
 ```
