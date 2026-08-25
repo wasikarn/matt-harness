@@ -1,6 +1,6 @@
 {
   "name": "mh",
-  "version": "v0.68.467",
+  "version": "v0.68.468",
   "description": "Matt-Pocock-first Claude Code harness. Tiered Fable→Sonnet→Opus maker/checker pipeline (plan → execute → review with code-counted fix caps → bug-hunt → gated final review), the idea→ship flow (grill → prototype → spec → tickets → ship), computational deny-gates + advisory sensors, SessionStart doctrine injection, self-auditing fleet of skills/agents/commands/hooks, and backend stacks (Drizzle, MySQL/MariaDB, gRPC).",
   "author": {
     "name": "KOBIG"

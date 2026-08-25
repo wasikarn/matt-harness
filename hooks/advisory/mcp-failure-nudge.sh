@@ -23,6 +23,12 @@
 # counter) mirrors loop-repeat-nudge.sh's rationale: re-emitting on every
 # single failure past threshold is the exact anti-pattern ECC's own notes
 # flag.
+#
+# ponytail: unbounded per-session file growth under
+# $HOME/.local/share/kbg/mcp-failure-nudge/ (one .ring + one .lastmsg per
+# unique session/server combo, ever), same precedent as
+# instructions-loaded-journal.sh and skill-usage-telemetry.sh -- rotate/trim
+# manually if it grows large.
 set -uo pipefail
 
 command -v jq >/dev/null 2>&1 || exit 0

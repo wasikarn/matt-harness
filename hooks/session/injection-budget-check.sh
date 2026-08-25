@@ -10,9 +10,15 @@
 # their REAL stdout size rather than a static estimate, which would silently
 # drift the moment either script's output logic changes. No shared
 # per-session state file fits this (checked dispatch-single.sh and
-# skill-usage-telemetry.sh) -- the extra python3/cat spawn this costs is
-# negligible next to the rest of SessionStart. WARNs, never truncates:
-# injected doctrine/advisory text is load-bearing, not safe to cut blind.
+# skill-usage-telemetry.sh) -- accepting a real, measured cost instead: on a
+# dirty memory store (findings present, the common case -- memory-lint's own
+# cache only ever caches a CLEAN result), this doubles memory-health-nudge.sh's
+# python3 memory-lint.py scan, measured ~225ms on this repo's live store
+# (2026-08-25) on top of that same scan's real registered SessionStart
+# invocation -- not negligible, the accepted price of measuring real output
+# instead of a static estimate that would silently drift. WARNs, never
+# truncates: injected doctrine/advisory text is load-bearing, not safe to
+# cut blind.
 set -uo pipefail
 
 # 24KB. Measured healthy-session total ~18KB (doctrine-bootstrap.sh dominant

@@ -13,6 +13,13 @@
 # ASK, not DENY: creating a new settings file is reversible (it can be
 # deleted), so this isn't the "irrecoverable set" DENY gates exist for.
 #
+# Scope: Write tool only, per #98's own ticket. A Bash-mediated create
+# (`echo '{}' > .claude/settings.json`) bypasses this gate entirely --
+# accepted gap, not closed here, same accepted-and-documented shape as
+# credential-guard.sh's own Bash-mediated-reads gap (#96). Unlike #96,
+# this axis was never discussed in #98's ticket thread; noting it now so
+# it's a documented limitation instead of a silent one.
+#
 # #98, deferred-idea backlog filed from spec #75's migration (2026-08-24).
 set -uo pipefail
 

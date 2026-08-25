@@ -15,6 +15,12 @@
 # a raw counter) to avoid re-firing the same warning on every subsequent
 # call once a loop is already flagged. Ported here without its metrics-
 # bridge dependency, which this repo doesn't have.
+#
+# ponytail: unbounded per-session file growth under
+# $HOME/.local/share/kbg/loop-nudge/ (one .ring + one .lastmsg per unique
+# session/tool/params combo, ever), same precedent as
+# instructions-loaded-journal.sh and skill-usage-telemetry.sh -- rotate/trim
+# manually if it grows large.
 set -uo pipefail
 
 command -v jq >/dev/null 2>&1 || exit 0
