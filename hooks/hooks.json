@@ -88,6 +88,18 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:skill-usage-telemetry", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh"]
           }
         ]
+      },
+      {
+        "id": "advisory:loop-repeat-nudge",
+        "matcher": "*",
+        "description": "Advisory (#99): PostToolUse loop-repetition sensor -- warns when a tool is called with identical parameters 3+ times in the last 5 calls. Purely mechanical signal (hash-based), never blocks. Tier: standard.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:loop-repeat-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/loop-repeat-nudge.sh"]
+          }
+        ]
       }
     ],
     "Stop": [
