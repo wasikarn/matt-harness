@@ -40,18 +40,18 @@ Ground-truth signals (see probes in 2026-05-30 session):
 
 Usage:
     python3 measure-autotrigger.py [--since YYYY-MM-DD] [--until YYYY-MM-DD]
-        [--projects GLOB ...] [--scope dotfiles|kobig|all]
+        [--projects GLOB ...] [--scope dotfiles|home|all]
         [--repo-root PATH] [--out DIR] [--json]
 
 Windows for the 06-01 re-measure (run BOTH with identical method — fix #1):
     # pre-nudge baseline (nudge deployed 2026-05-25)
-    measure-autotrigger.py --since 2026-05-13 --until 2026-05-25 --scope kobig
+    measure-autotrigger.py --since 2026-05-13 --until 2026-05-25 --scope home
     # post-nudge re-measure
-    measure-autotrigger.py --since 2026-05-25 --scope kobig
+    measure-autotrigger.py --since 2026-05-25 --scope home
 
 Scope presets (fix #3):
     dotfiles  only the -*-dotfiles project dir (this repo's sessions)
-    kobig     all -Users-<user>-* project dirs (skills are global -> fire there)
+    home      all -Users-<user>-* project dirs (skills are global -> fire there)
     all       every project dir under ~/.claude/projects
 
 Output is descriptive, not a verdict. Caveats are printed inline. The decision
@@ -73,8 +73,8 @@ def main():
     p = argparse.ArgumentParser(description="Per-turn skill auto-trigger measurement")
     p.add_argument("--since", help="ISO date (UTC) lower bound on turn timestamp")
     p.add_argument("--until", help="ISO date (UTC) upper bound (exclusive)")
-    p.add_argument("--scope", choices=["dotfiles", "kobig", "all"], default="kobig",
-                   help="corpus preset (default: kobig — skills are global)")
+    p.add_argument("--scope", choices=["dotfiles", "home", "all"], default="home",
+                   help="corpus preset (default: home — skills are global)")
     p.add_argument("--projects", nargs="*", default=[],
                    help="explicit project-dir globs (overrides --scope)")
     p.add_argument("--repo-root", type=Path,
@@ -82,7 +82,7 @@ def main():
                    help="dotfiles repo root for custom skill/command enumeration")
     p.add_argument("--use-plugin-cache-fallback", action="store_true",
                    help="if --repo-root has no claude/{skills,commands}/ (post-cutover "
-                        "matt-harness layout), walk ~/.claude/plugins/cache/kobig/mh/ "
+                        "matt-harness layout), walk ~/.claude/plugins/cache/wasikarn/mh/ "
                         "for the latest version. Avoids the /tmp symlink workaround.")
     p.add_argument("--out", type=Path, help="write report dir (md + json) here")
     p.add_argument("--json", action="store_true", help="print raw json to stdout")

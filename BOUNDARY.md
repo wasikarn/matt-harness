@@ -1,5 +1,5 @@
 # Boundary Map
-_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md` where `<matt-harness>` is the matt-harness repo root and `<dotfiles>` is the target repo root (or from the plugin cache: `bash ~/.claude/plugins/cache/kobig/mh/$(ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only`)._
+_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: `bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md` where `<matt-harness>` is the matt-harness repo root and `<dotfiles>` is the target repo root (or from the plugin cache: `bash ~/.claude/plugins/cache/wasikarn/mh/$(ls ~/.claude/plugins/cache/wasikarn/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only`)._
 _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatter key under `### <bucket>` subheads, replacing the single flat table each; v4 added Commands table and dropped the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented "Boundary map" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._
 
 ## Agents — Repo
@@ -186,7 +186,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T20:23:50Z_
+_Generated: 2026-08-25T21:16:33Z_
 
 ---
 
@@ -276,7 +276,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
 - **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/meta/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
-- **Cache:** `~/.claude/plugins/cache/kobig/mh/<version>/` (rebuilt on `claude plugin update mh@kobig`)
+- **Cache:** `~/.claude/plugins/cache/wasikarn/mh/<version>/` (rebuilt on `claude plugin update mh@wasikarn`)
 
 ### Verification
 - `bash "${MH_PLUGIN_ROOT}/skills/meta/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)

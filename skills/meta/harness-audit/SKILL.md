@@ -89,8 +89,8 @@ Exit: 2
 
 ## Plugin delivery (F1 is plugin-aware)
 
-When `mh@kobig` is enabled and its plugin cache is populated
-(`~/.claude/plugins/cache/kobig/mh/<version>/{agents,skills,commands,hooks,output-styles}/`),
+When `mh@wasikarn` is enabled and its plugin cache is populated
+(`~/.claude/plugins/cache/wasikarn/mh/<version>/{agents,skills,commands,hooks,output-styles}/`),
 F1 ("not symlinked to `~/.claude/…`") treats plugin-delivered components as
 loadable and does **not** fire — Claude Code resolves them via
 the plugin cache at runtime, not via a symlink. The audit emits an
@@ -99,7 +99,7 @@ symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
 The cache path can be overridden with `--plugin-cache <path>` (used by the
 test fixtures in `tests/skills/meta/harness-audit/known-bad/`, which point at fake caches so the F1
 check is exercised without a live install). The live cache version is
-auto-detected via `ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1` — do not hardcode.
+auto-detected via `ls ~/.claude/plugins/cache/wasikarn/mh/ | sort -V | tail -1` — do not hardcode.
 
 ## Integration
 

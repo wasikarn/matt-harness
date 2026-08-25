@@ -20,7 +20,7 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
     # Plugin-mode hooks are wired in hooks/hooks.json and resolved at runtime via
     # ${CLAUDE_PLUGIN_ROOT}; they are intentionally NOT symlinked into ~/.claude.
     # Distinguishing mark: present in hooks.json but absent from settings.json,
-    # OR present in the mh@kobig plugin cache (delivery model is plugin-enable,
+    # OR present in the mh@wasikarn plugin cache (delivery model is plugin-enable,
     # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
     if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
        && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi

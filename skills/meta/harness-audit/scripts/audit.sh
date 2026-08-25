@@ -94,9 +94,9 @@ if [ -f "$LOCK_FILE" ] && command -v jq >/dev/null 2>&1; then
   while IFS= read -r s; do LOCKED_SKILLS+=("$s"); done < <(jq -r '.skills | keys[]' "$LOCK_FILE")
 fi
 
-# Plugin delivery (kbg-cutover 2026-06-11). The mh@kobig plugin installs
+# Plugin delivery (kbg-cutover 2026-06-11). The mh@wasikarn plugin installs
 # agents/skills/hooks/output-styles into the user-scope plugin cache
-# (default ~/.claude/plugins/cache/kobig/mh/<version>/) and Claude Code loads
+# (default ~/.claude/plugins/cache/wasikarn/mh/<version>/) and Claude Code loads
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
 # plugin-delivered component as a false positive (62 CRITs on matt-harness).
@@ -109,31 +109,45 @@ if [ -z "$PLUGIN_CACHE_ARG" ]; then
   # ROOT; the highest-semver subdir is still picked below. --plugin-cache (a
   # full versioned path) wins over both. Wired 2026-08-24 (#93) — the knob was
   # documented but never read.
-  _MH_CACHE_DIR="${MH_CACHE_DIR:-$HOME/.claude/plugins/cache/kobig/mh}"
-  if [ -d "$_MH_CACHE_DIR" ]; then
-    # Glob + for-loop (avoiding SC2010 ls|grep). Picks the highest semver of any
-    # subdirectory matching X.Y.Z or vX.Y.Z, so a version bump (0.1.0 -> 0.1.1
-    # -> 0.1.2) never silently disables F1 plugin-aware bypass. The `v` prefix
-    # matches what `claude plugin install` writes to the cache.
-    _LATEST=$(for _entry in "$_MH_CACHE_DIR"/*/; do
+  # Marketplace-AGNOSTIC by design: the cache path is
+  # cache/<marketplace>/<plugin>/<version>, and the marketplace segment is a
+  # rename-able identity (it is the key in settings.json extraKnownMarketplaces,
+  # not the plugin name). Hardcoding it meant a marketplace rename silently
+  # pointed this at a dead path -> F1 "not loadable" on EVERY component -> a
+  # CRIT storm that blocks the pre-commit hook. Globbing cache/*/mh matches what
+  # check 25 and hooks/gates/atlassian-mcp-gate.sh already do. During a rename
+  # both old and new dirs can exist; taking the highest semver across all of
+  # them resolves to the freshest install without needing to know either name.
+  if [ -n "${MH_CACHE_DIR:-}" ]; then
+    _MH_CACHE_ROOTS="$MH_CACHE_DIR"                       # explicit override wins
+  else
+    _MH_CACHE_ROOTS=$(for _d in "$HOME"/.claude/plugins/cache/*/mh; do
+      [ -d "$_d" ] && echo "$_d"
+    done)
+  fi
+  # Highest semver across every candidate root, emitted as "<version> <path>"
+  # so the winning root travels with its own version (a plain sort -V on bare
+  # version strings would lose which marketplace it came from).
+  _BEST=$(for _root in $_MH_CACHE_ROOTS; do
+    for _entry in "$_root"/*/; do
       [ -d "$_entry" ] || continue
       _ver=$(basename "$_entry")
       _norm="${_ver#v}"   # strip optional 'v' prefix for comparison
       [[ "$_norm" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
-      echo "$_ver"
-    done | sort -V | tail -1)
-    if [ -n "$_LATEST" ]; then
-      PLUGIN_CACHE="$_MH_CACHE_DIR/$_LATEST"
-    else
-      PLUGIN_CACHE="${_MH_CACHE_DIR}/0.1.0"  # fallback for empty/missing cache
-    fi
+      printf '%s %s\n' "$_norm" "$_root/$_ver"
+    done
+  done | sort -V | tail -1)
+  if [ -n "$_BEST" ]; then
+    PLUGIN_CACHE="${_BEST#* }"
   else
-    PLUGIN_CACHE="${_MH_CACHE_DIR}/0.1.0"  # fallback when no cache dir
+    # No install found under any marketplace. Keep the old shape so the F1
+    # fallback stays a nonexistent-but-well-formed path, not an empty string.
+    PLUGIN_CACHE="${MH_CACHE_DIR:-$HOME/.claude/plugins/cache/mh}/0.1.0"
   fi
 else
   PLUGIN_CACHE="$PLUGIN_CACHE_ARG"
 fi
-unset _MH_CACHE_DIR _LATEST _ver _entry _norm
+unset _MH_CACHE_ROOTS _BEST _ver _entry _norm _root _d
 # PLUGIN_ACTIVE is read by checks 02 / 03 via the shared audit scope; shellcheck
 # can't see across the sourced check files, so disable SC2034 here.
 # shellcheck disable=SC2034

@@ -119,7 +119,7 @@ Context management is native: use the `/compact` command and auto-compaction.
   scripts resolve the plugin root from any working directory (the vendor var is only set inside hook
   shells). ~483 references; treat as fixed infrastructure.
 - **`MH_CACHE_DIR`** — overrides the harness-audit runner's default plugin-cache **root**
-  (`~/.claude/plugins/cache/kobig/mh`); the runner still picks the highest-semver subdir under it.
+  (`~/.claude/plugins/cache/wasikarn/mh`); the runner still picks the highest-semver subdir under it.
   `--plugin-cache <full versioned path>` wins over both. (Wired 2026-08-24, #93 — previously
   documented but never read.)
 - **`MH_GAUNTLET_PLUGIN_CACHE`** — cache path override for `run-gauntlet.sh` validation.

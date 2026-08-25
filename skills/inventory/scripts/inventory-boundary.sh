@@ -192,7 +192,7 @@ echo "# Boundary Map"
 # own location is the only path needed; output dir is whatever the caller wants.
 # Cache path stays literal because it IS host-relative (under $HOME) — that's
 # the only stable form across machines for that one command.
-echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<matt-harness>\` is the matt-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/kobig/mh/\$(ls ~/.claude/plugins/cache/kobig/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
+echo "_Canonical routing + capability reference (repo-scoped). Regenerate after agent/skill changes: \`bash <matt-harness>/skills/inventory/scripts/inventory-boundary.sh --repo-only > <dotfiles>/claude/BOUNDARY.md\` where \`<matt-harness>\` is the matt-harness repo root and \`<dotfiles>\` is the target repo root (or from the plugin cache: \`bash ~/.claude/plugins/cache/wasikarn/mh/\$(ls ~/.claude/plugins/cache/wasikarn/mh/ | sort -V | tail -1)/skills/inventory/scripts/inventory-boundary.sh --repo-only\`)._"
 echo "_Schema version: v5 (Skills and Agents tables now grouped by \`bucket:\` frontmatter key under \`### <bucket>\` subheads, replacing the single flat table each; v4 added Commands table and dropped the redundant inventory.sh bulleted-list dump in --repo-only mode — tables are now the sole listing, matching skills/inventory/reference.md's documented \"Boundary map\" contract; Hooks Purpose column now a full comment paragraph via fm_hook_desc, not a truncated first line)._"
 
 # Resolve repo root via git (works regardless of where the script is invoked from).
@@ -377,7 +377,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - **Entry:** `.claude-plugin/plugin.json` (manifest), `skills/` (skill auto-discovery)
 - **Tests:** harness-audit (64 checks) + a 14-file hook behavioral suite, run in parallel by `scripts/run-gauntlet.sh` — see `CLAUDE.md`'s Validation section. The old critical-hooks suite + eval dataset gate were deleted, not rebuilt, in the 2026-06-27 reset (`c452102`). (Check/test counts here are hand-maintained — keep in sync with `ls skills/meta/harness-audit/scripts/checks/*.sh | wc -l` and the test list in `scripts/run-gauntlet.sh`.)
 - **DB:** none (read-only data via inventory scripts)
-- **Cache:** `~/.claude/plugins/cache/kobig/mh/<version>/` (rebuilt on `claude plugin update mh@kobig`)
+- **Cache:** `~/.claude/plugins/cache/wasikarn/mh/<version>/` (rebuilt on `claude plugin update mh@wasikarn`)
 
 ### Verification
 - `bash "${MH_PLUGIN_ROOT}/skills/meta/harness-audit/scripts/audit.sh" "${MH_PLUGIN_ROOT}"` — 0C/0W expected (INFO findings are non-blocking)

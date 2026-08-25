@@ -5,7 +5,7 @@
 [![CI](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml/badge.svg)](https://github.com/wasikarn/matt-harness/actions/workflows/validate.yml)
 
 A personal [Claude Code](https://docs.anthropic.com/en/docs/claude-code) harness, packaged
-as one installable plugin (`mh@kobig`). You get specialist agents, workflow skills,
+as one installable plugin (`mh@wasikarn`). You get specialist agents, workflow skills,
 deny-gates and advisory sensors, an output style, and a terminal theme. There is no symlink
 farm and no manual wiring: Claude Code loads everything from the plugin cache. Matt
 Pocock's skills install alongside it as their own plugin (`mattpocock-skills@mattpocock`,
@@ -71,11 +71,11 @@ Run these commands inside Claude Code:
 
 # 2. Install. Default scope is user-wide; read the scope note below
 #    if you want to try it on one repo first.
-/plugin install mh@kobig
+/plugin install mh@wasikarn
 
 # 3. Enable, from a terminal. Needs Claude Code v2.1.154+; earlier
 #    versions auto-enable on install and can skip this step.
-claude plugin enable mh@kobig
+claude plugin enable mh@wasikarn
 
 # 4. Required: install matt-pocock's skills as their own plugin. mh's
 #    hooks and skills route to them by namespaced name; they are not
@@ -96,7 +96,7 @@ claude plugin enable mh@kobig
 
 # 8. Verify the install took (from a terminal, no session needed):
 claude plugin list                # both plugins "enabled"
-claude plugin details mh@kobig   # component inventory + token cost
+claude plugin details mh@wasikarn   # component inventory + token cost
 ```
 
 > **Note:** the plugin ships with `defaultEnabled: false`. Step 3 is required.
@@ -110,10 +110,10 @@ claude plugin details mh@kobig   # component inventory + token cost
 > deny-gates (`hooks/gates/irrecoverable.sh`, which blocks `rm -rf`, `git add -A`,
 > `git add .`, `--no-verify`, and hardcoded `/Users/<name>` paths) apply to every project
 > you open in Claude Code, not just the one you're evaluating. To try it on one repo
-> first: `/plugin install mh@kobig --scope project` (or `--scope local`).
+> first: `/plugin install mh@wasikarn --scope project` (or `--scope local`).
 
-**Uninstall:** `/plugin uninstall mh@kobig`  
-**Disable but keep installed:** `claude plugin disable mh@kobig`
+**Uninstall:** `/plugin uninstall mh@wasikarn`  
+**Disable but keep installed:** `claude plugin disable mh@wasikarn`
 
 ---
 
@@ -330,7 +330,7 @@ version:
    no-ops.
 3. `claude plugin validate . --strict`, then
    `bash skills/inventory/scripts/sync-fleet-counts.sh`.
-4. `claude plugin update mh@kobig`, commit, push, restart Claude Code.
+4. `claude plugin update mh@wasikarn`, commit, push, restart Claude Code.
 
 ---
 

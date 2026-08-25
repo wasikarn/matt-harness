@@ -169,7 +169,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
     Plugin-cache fallback (opt-in via use_plugin_cache_fallback=True): if
     --repo-root has no claude/{skills,commands}/ (post-cutover matt-harness
     layout, symlink-farm retired 2026-06-11), walk the cache for the user's own
-    plugins — mh (kobig/mh) and jira-acli (wasikarn/jira-acli) — taking the
+    plugins — mh (wasikarn/mh) and jira-acli (wasikarn/jira-acli) — taking the
     latest installed version of each and merging. Avoids the /tmp symlink
     workaround. Version dirs may carry a leading 'v' (mh ships v0.43.3); the
     regex tolerates it.
@@ -191,7 +191,7 @@ def load_custom_names(repo_root: Path, use_plugin_cache_fallback: bool = False):
         # ponytail: explicit pair list (not a walk of all cache/*/*/) keeps the
         # "custom" headline = the user's own plugins, comparable to the 38%
         # baseline; adding a plugin = one line here.
-        pairs = [("kobig", "mh"), ("wasikarn", "jira-acli")]
+        pairs = [("wasikarn", "mh"), ("wasikarn", "jira-acli")]
         ver_re = re.compile(r"^v?(\d+\.\d+\.\d+)")
         for vendor, plugin in pairs:
             pdir = cache_root / vendor / plugin
@@ -228,11 +228,11 @@ def iter_project_dirs(scope: str, projects: list):
         return
     if scope == "all":
         yield from (str(d) for d in PROJECTS_ROOT.iterdir() if d.is_dir())
-    elif scope == "kobig":
+    elif scope == "home":
         # Named project dirs only. The trailing '-' deliberately excludes the
         # bare '-Users-<user>' home-default project (~2661 throwaway/misc
         # sessions). Verified 2026-05-30: that dir contributes ZERO custom-skill
-        # invocations post-nudge, so kobig == all for the rate while scanning
+        # invocations post-nudge, so home == all for the rate while scanning
         # ~10x fewer files. Use --scope all to re-confirm that holds.
         yield from (str(d) for d in PROJECTS_ROOT.glob(f"{HOME_ENC}-*") if d.is_dir())
     else:  # dotfiles

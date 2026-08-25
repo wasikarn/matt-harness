@@ -43,7 +43,7 @@ removed `add-surface` skill, 2026-08-24 #80):
 5. Run `claude plugin validate . --strict`, then `bash
    skills/meta/harness-audit/scripts/audit.sh` and fix any WARN. A CRIT F1 ("not loadable")
    for a brand-new component is expected here; it clears at step 6.
-6. `claude plugin update mh@kobig` **before** committing. The pre-commit hook's
+6. `claude plugin update mh@wasikarn` **before** committing. The pre-commit hook's
    harness-audit F1 check only sees the latest *cached* plugin version, so a brand-new file
    blocks as CRIT F1 until this refreshes the cache.
 7. Regenerate `BOUNDARY.md` (see the regen gotcha under "Plugin lifecycle & install" below),
@@ -168,8 +168,8 @@ CWE-1333/CWE-400 pairing contradicting MITRE's own page. -->
 
 ## Architecture
 
-The plugin ships as `mh@kobig` from the `wasikarn/matt-harness` GitHub repo. Claude Code
-loads all surfaces from `~/.claude/plugins/cache/kobig/mh/<version>/` at startup. Nothing is
+The plugin ships as `mh@wasikarn` from the `wasikarn/matt-harness` GitHub repo. Claude Code
+loads all surfaces from `~/.claude/plugins/cache/wasikarn/mh/<version>/` at startup. Nothing is
 symlinked.
 
 The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
@@ -301,7 +301,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 
 ### Plugin lifecycle & install
 
-- **`defaultEnabled: false`:** plugin ships disabled. After install, add `"mh@kobig": true`
+- **`defaultEnabled: false`:** plugin ships disabled. After install, add `"mh@wasikarn": true`
   to Claude Code `settings.json`, then restart.
 - **Cache-invalidation:** same-version edits are no-ops. Always bump both manifests before
   `claude plugin update`. The pre-commit version-bump layer enforces it: shipped-surface
@@ -352,7 +352,7 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
 - **Output style:** `output-styles/crisp.md` is the sole live-response register — Claude
   Code's Concise contract as the base, staff-engineer decision-framing switched on by its
   "Calibrate to stakes" rule (renamed from `staff-eng.md` 2026-08-26; the old two-file split
-  was collapsed 2026-07-02). `force-for-plugin: true` auto-activates it whenever `mh@kobig`
+  was collapsed 2026-07-02). `force-for-plugin: true` auto-activates it whenever `mh@wasikarn`
   is enabled, overriding the user's own `outputStyle` setting. You can't run a different
   style while this plugin is on without disabling it first.
 

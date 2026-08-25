@@ -7,7 +7,7 @@ in-context, no scroll.
 
 ## What this repo is (1 sentence)
 
-A personal Claude Code harness delivered as an installable plugin (`mh@kobig`):
+A personal Claude Code harness delivered as an installable plugin (`mh@wasikarn`):
 skills, agents, commands, governance hooks, and mandatory doctrine injection —
 see `BOUNDARY.md` below for the live count.
 

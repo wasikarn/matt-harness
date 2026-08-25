@@ -11,13 +11,13 @@
 # example is mid-sentence ("See @README for project overview and @package.json
 # for dependencies"). The prior version of this check matched line-start only
 # and would have missed a real dangling mid-line import. It also never
-# excluded code spans, so a backtick-wrapped plugin id like `mh@kobig` would
-# match `@kobig`, resolve to no file, and fire a false CRIT the moment a real
+# excluded code spans, so a backtick-wrapped plugin id like `mh@wasikarn` would
+# match `@wasikarn`, resolve to no file, and fire a false CRIT the moment a real
 # import existed to trigger the scan at all — confirmed no false CRIT fires
 # today only because this repo has zero real imports (verified 2026-08-20).
 # Fenced code blocks are stripped first, then inline `backtick` spans, then a
 # match requires @ to be preceded by whitespace or start-of-line (real imports
-# per the doc are always in that position; a mid-word @ like `mh@kobig`
+# per the doc are always in that position; a mid-word @ like `mh@wasikarn`
 # never is — a second, independent guard against the same false-positive
 # class even if a future edit un-backticks a plugin id).
 #

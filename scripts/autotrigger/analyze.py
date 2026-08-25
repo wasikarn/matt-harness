@@ -42,7 +42,7 @@ def analyze(args):
     turns_total = 0
     # "active" = contributes a measured count (skill use, skill/command slash, or
     # nudge). Scope-invariant: empty home-dir sessions inflate scanned/total but
-    # never active — so reporting active makes the kobig==all equivalence visible.
+    # never active — so reporting active makes the home==all equivalence visible.
     files_active = 0
     turns_active = 0
 
@@ -261,7 +261,7 @@ def summarize(data: dict) -> str:
                  "referenced it (commands cannot auto-fire, so mention is their success).")
         L.append("")
         L.append("> SCOPE NOTE: the skill-nudge hook fires globally, so nudge counts "
-                 "are scope-DEPENDENT (kobig undercounts home-dir fires). Use "
+                 "are scope-DEPENDENT (home undercounts home-dir fires). Use "
                  "`--scope all` for the honest nudge action-rate; auto-rate above "
                  "stays scope-invariant either way.")
         L.append("")
