@@ -259,7 +259,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
     security-reviewer silent-failure-hunter spec-miner refactor-cleaner
     build-error-resolver performance-optimizer ideate-critic
     a11y-architect backend-architect blind-spot-hunter
-    nextjs-reviewer requirement-analyst summarizer)
+    nextjs-reviewer requirement-analyst summarizer plan-reviewer)
   if [ -d "$_boundary_base/agents" ]; then
     for _af in "$_boundary_base/agents"/*.md; do
       [ -f "$_af" ] || continue
@@ -332,6 +332,7 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
 | `requirement-analyst` | none (read-only) | no | Requirement analysis from tickets/specs (Read/Glob/Grep only — no Bash) |
 | `summarizer` | none (read-only) | no | Condenses text/docs/transcripts (Read/Glob/Grep only — no Bash) |
+| `plan-reviewer` | none (read-only) | yes | Adversarial pre-code plan review *by intent* — `tools:` grants Bash (Bash can mutate) |
 
 XREF3
 

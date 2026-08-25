@@ -29,9 +29,14 @@
 # Glob, Bash]) and no prior companion skill existed, so this preload is the
 # only lawful extraction path and carries the 7-shape hunt catalog this agent
 # has no other way to reach.
-# plan-reviewer|kbg:plan-reviewer-format was in this list 2026-08-18 through
-# 2026-08-24, removed with the agent+skill themselves (#78, planning/prep
-# surfaces retired) — not a preload regression.
+# plan-reviewer|mh:plan-reviewer-format added 2026-08-18: same split, same
+# reason — plan-reviewer.md has no Skill tool (tools: [Read, Grep, Glob,
+# Bash]) and no prior companion skill existed, so this preload is the only
+# lawful extraction path and carries the Output Format template, lens-
+# disambiguation notes, and Anti-Patterns list this agent has no other way
+# to reach. Removed from this list 2026-08-18 through 2026-08-24 (#78,
+# planning/prep surfaces wrongly judged to overlap
+# mattpocock-skills:grilling) — restored 2026-08-25.
 # summarizer|mh:summarizer-format added 2026-08-18: same split, same reason
 # — summarizer.md has no Skill tool (tools: ["Read", "Grep", "Glob"]) and no
 # prior companion skill existed, so this preload is the only lawful
@@ -55,7 +60,7 @@
 # companion skill existed, so this preload is the only lawful extraction path
 # and carries the 14-row Algorithmic Analysis pattern table this agent has no
 # other way to reach.
-for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "spec-miner|mh:spec-miner-anti-patterns" "performance-optimizer|mh:performance-optimizer-algorithms"; do
+for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "spec-miner|mh:spec-miner-anti-patterns" "performance-optimizer|mh:performance-optimizer-algorithms" "plan-reviewer|mh:plan-reviewer-format"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

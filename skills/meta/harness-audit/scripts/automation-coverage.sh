@@ -49,8 +49,8 @@ if [ -f "$CLAUDE_DIR/skills/workflow/ship-merge/SKILL.md" ]; then
   _h=$((_h + 1))
 fi
 # (ship-release, post-mortem, recursive-improve, address-review,
-#  ideate-search, wiki-ingest, tiered-pipeline, score-decision — all H by
-#  doctrine; listed compactly, not exhaustively grepped to keep the script readable.)
+#  ideate-search, wiki-ingest, tiered-pipeline, score-decision, compliance-audit
+#  — all H by doctrine; listed compactly, not exhaustively grepped to keep the script readable.)
 
 # 2. X: one-way doors (external/irreversible writes) — correctly human.
 emit "X  address-review Phase 5 auto-resolve  external write (resolve reviewer thread)"

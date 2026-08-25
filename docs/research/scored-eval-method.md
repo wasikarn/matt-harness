@@ -90,8 +90,8 @@ doc" brief, and not the doc path alone. The incident behind this
 (`docs/post-mortems/eval-report-skeleton-gaps-2026-08-10.md`): two review layers briefed
 generally caught only salient defects, while a silent absence and a silent substitution
 survived both and fell only to a fresh-context verifier walking the enumerated list. The
-maker never grades its own report. The user can additionally run `/kbg:compliance-audit`
-for the full multi-verifier pass — that command is user-invoked only; this step never
+maker never grades its own report. The user can additionally run `/mh:compliance-audit`
+for the full multi-verifier pass — that skill is user-invoked only; this step never
 invokes it and does not replace it.
 
 **No automated skeleton check, deliberately** *(same decision, that post-mortem's

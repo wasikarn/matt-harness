@@ -111,6 +111,30 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:loop-repeat-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/loop-repeat-nudge.sh"]
           }
         ]
+      },
+      {
+        "id": "advisory:compliance-audit-nudge",
+        "matcher": "Bash",
+        "description": "Advisory: after a git commit, if a plan was approved earlier this session, remind the model to tell the user they can run /mh:compliance-audit themselves (disable-model-invocation:true -- never dispatch it). Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:compliance-audit-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/compliance-audit-nudge.sh"]
+          }
+        ]
+      },
+      {
+        "id": "advisory:plan-review-nudge",
+        "matcher": "ExitPlanMode",
+        "description": "Advisory: after a plan is approved, nudge dispatching mh:plan-reviewer against the approved plan text for consequential plans before implementing. Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:plan-review-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/plan-review-nudge.sh"]
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [

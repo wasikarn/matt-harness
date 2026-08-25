@@ -31,8 +31,9 @@ third-party data sharing.
   use the `security-reviewer` agent first.
 - For pure libraries, templates, docs-only repos, or scaffolds unless the user
   wants packaging/release readiness rather than application readiness.
-- When the user asks for a formal compliance audit. This skill is engineering
-  triage, not legal, financial, medical, or regulatory certification.
+- When the user asks for a formal *regulatory* compliance audit. This skill is
+  engineering triage, not legal/financial/medical/regulatory certification —
+  not `mh:compliance-audit` (checks a diff against its own approved plan).
 - When the only available evidence is a product idea with no repo, deployment,
   CI, or runtime surface.
 
