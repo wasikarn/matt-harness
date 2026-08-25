@@ -1,6 +1,6 @@
 # Phase 1 step 6 — sensitive-path check
 
-Reference for `commands/ship-merge/COMMAND.md` Phase 1 step 6. (Filename is historical: the
+Reference for `skills/ship-merge/SKILL.md` Phase 1 step 6. (Filename is historical: the
 scored review gate that used to live here was removed in the matt-harness migration, spec
 #75 / ticket #76 — merge authorization is now Phase 2 step 5's explicit user go/no-go, and
 this step's only job is the deterministic risk label that go/no-go reads. The closeout

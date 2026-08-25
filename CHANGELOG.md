@@ -5,6 +5,28 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.474] — 2026-08-25
+
+### Fixed
+
+- `mattpocock-skills:code-review` (Standards + Spec axes, since `8ac01c55`) caught 3 real
+  gaps in #103-#107's citation cleanup that the automated citation checker (check 46)
+  can't see, exactly the class of miss its acceptance criteria called out:
+  - `docs/command-authoring-conventions.md` (live doctrine, linked from
+    `docs/skill-authoring-conventions.md`) still cited `ideate`/`ship-merge` as
+    directory-form command examples and `ideate-search` in the disable-model-invocation
+    roster — corrected, with a phase-out banner noting the whole doc dies at #112.
+  - `skills/ship-merge/references/codeowners-gate-detail.md` and `sync-seams.md` both
+    still self-cited `commands/ship-merge/COMMAND.md` — the citation pass fixed their
+    sibling `scored-gate-guards.md`'s cross-references to `risk-check` but missed these
+    two files' own self-references, applied unevenly within the same directory.
+  - `skills/ideate-search/SKILL.md`'s `disable-model-invocation-reason` still called
+    itself "a user-only slash command" — stale command-era phrasing.
+  - Standards axis also flagged all 9 converted descriptions exceed the 25-word cap
+    (`CLAUDE.md`) — accepted as-is: it's INFO-only (check 34), and each ticket's own
+    audit pass already traded a real WARN (missing trigger clause) for this softer INFO
+    deliberately, not by oversight.
+
 ## [0.68.473] — 2026-08-25
 
 ### Changed

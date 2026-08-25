@@ -1,6 +1,6 @@
 # Phase 2 step 6 — merge-command sync seam
 
-Reference for `commands/ship-merge/COMMAND.md` Phase 2 step 6 (the server-side `gh pr merge`
+Reference for `skills/ship-merge/SKILL.md` Phase 2 step 6 (the server-side `gh pr merge`
 call).
 
 `skills/incident/references/hotfix-reference.md` Phase 4 duplicates this exact merge command

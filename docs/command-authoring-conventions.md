@@ -3,6 +3,12 @@
 **Status:** Convention reference. Owned by the harness. Sibling of
 [`agent-authoring-conventions.md`](./agent-authoring-conventions.md).
 
+**Being phased out:** `commands/` is retiring as a surface type (spec #101, tickets
+#102-#112) — every command converts to a `skills/<name>/SKILL.md`. This document dies
+entirely once the last conversion (#112) lands, since its whole subject disappears. Its
+worked examples below are corrected as each conversion ticket moves them, not rewritten
+wholesale ahead of time.
+
 **Origin:** a deep-research critique of `commands/` (2026-07-20) confirmed the fleet's
 17 command surfaces converge on sound content/workflow design (flat-file-by-default,
 `disable-model-invocation` for irreversible actions, fresh-context verifiers), but found
@@ -32,10 +38,12 @@ directory only earns its cost when the content genuinely doesn't fit in one file
 
 `commands/<name>/COMMAND.md` + a `references/` subfolder is a recognized Claude Code
 loader category — `getSkills` reports a distinct `N skill dir commands` bucket separate
-from flat plugin skills (confirmed via a live `--debug-file` capture). Several commands
-use it today (e.g. `ideate`, `ship-merge`), each because its procedure outgrew a single
-file's reasonable token budget (the same size concern documented elsewhere for
-`SKILL.md` bodies).
+from flat plugin skills (confirmed via a live `--debug-file` capture). Two commands
+use it today (`address-review`, `review-fixtures`), each because its procedure outgrew a
+single file's reasonable token budget (the same size concern documented elsewhere for
+`SKILL.md` bodies) — `ideate` and `ship-merge` used to be the worked examples here before
+converting to `skills/ideate/SKILL.md` and `skills/ship-merge/SKILL.md` (2026-08-25,
+#104/#103).
 
 **The rule this doc exists to state:** any `.md` file under `commands/` — at any depth —
 that carries its own YAML frontmatter with a `description:` becomes an independently
@@ -44,8 +52,9 @@ directly: two files that lived in the now-removed `commands/ship/references/`
 directory (`classify.md` and `pre-ship-verify.md`; `ship` was retired in the
 2026-08-24 matt-harness migration, ticket #86) both had `name:`/`description:`
 frontmatter and were loaded as standalone commands (`ship-classify`, `pre-ship-verify`)
-even though `ship/COMMAND.md` only ever read them by file path. `commands/ideate/
-references/frames.md` carries no frontmatter and correctly does **not** leak.
+even though `ship/COMMAND.md` only ever read them by file path. `skills/ideate/
+references/frames.md` (moved from `commands/ideate/references/frames.md`, #104) carries
+no frontmatter and correctly does **not** leak.
 
 **A `references/` file must never carry a `--- ... ---` frontmatter block.** Point to
 `frames.md` as the correct shape: a plain heading, prose, and tables — nothing else.
@@ -60,10 +69,11 @@ has to be enforced by the author (no frontmatter), not assumed from directory po
 Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-reason:` on
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
-gates a done-declaration. Several commands already do this
-(`ship-merge`, `ship-release`, `post-mortem`, `address-review`,
-`ideate-search`). `harness-audit` checks 30
-(reason presence, WARN) and 40 (`ship-merge` specifically, CRIT) enforce this.
+gates a done-declaration. Several remaining commands already do this
+(`ship-release`, `post-mortem`, `address-review`) — `ship-merge` and `ideate-search` did
+too before converting to skills (2026-08-25, #103/#105), keeping the flag exactly as-is.
+`harness-audit` checks 30 (reason presence, WARN) and 40 (`ship-merge`'s new
+`skills/ship-merge/SKILL.md` location specifically, CRIT) enforce this.
 
 **Why:** this is the only mechanism blocking the model from self-invoking a real,
 irreversible external action — a human must type the literal `/name` themselves. It
