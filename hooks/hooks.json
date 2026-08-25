@@ -113,6 +113,20 @@
         ]
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "id": "advisory:mcp-failure-nudge",
+        "matcher": "mcp__.*",
+        "description": "Advisory (#97): PostToolUseFailure sensor for MCP server failures -- warns when a server fails 3+ times in 300s. Purely observational, never probes/reconnects/blocks. Tier: standard.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:mcp-failure-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/mcp-failure-nudge.sh"]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "id": "stop:cost-tracker",
