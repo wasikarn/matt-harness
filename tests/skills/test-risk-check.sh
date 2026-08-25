@@ -156,7 +156,7 @@ run_classifier_hist() {
 
 check_hotspot() {
   # $1 desc  $2 pr_json  $3 hist  $4 tracked  $5 total  $6 expected tier  $7 required substring
-  local out tier got
+  local out got
   out=$(run_classifier_hist "$2" "$3" "$4" "$5")
   got=$(printf '%s\n' "$out" | head -1 | sed -n 's/.*risk: //p')
   assert "$1 -- tier (expected $6, got '${got:-<empty>}')" "$([[ "$got" == "$6" ]] && echo 1 || echo 0)"
