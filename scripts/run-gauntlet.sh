@@ -104,10 +104,36 @@ run_path_hygiene() {
   home_dash="$(printf '%s' "$HOME" | tr '/' '-')"   # /Users/<name> -> -Users-<name>
   hits="$(git -C "$ROOT" grep -lF "$HOME" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
   dash_hits="$(git -C "$ROOT" grep -lF "$home_dash" -- '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.sh' '*.py' '*.js' 2>/dev/null)"
-  if [ -n "$hits" ] || [ -n "$dash_hits" ]; then
-    echo "  literal home path in tracked files (public repo) — use ~ or a <placeholder>:" >&2
-    [ -n "$hits" ] && printf '%s\n' "$hits" | sed 's/^/    [slash] /' >&2
-    [ -n "$dash_hits" ] && printf '%s\n' "$dash_hits" | sed 's/^/    [dash]  /' >&2
+  # THIRD form: the bare username as published IDENTITY metadata, no path
+  # around it. `"author": {"name": "KOBIG"}` and `Copyright (c) 2026 KOBIG`
+  # both leaked the machine account name in uppercase, so the two path checks
+  # above (case-sensitive, slash/dash-anchored) were structurally blind to it.
+  # Found 2026-08-26 by a case-insensitive whole-repo sweep, after the path
+  # forms were already clean.
+  #
+  # Deliberately scoped to the manifests + LICENSE, NOT a repo-wide bare-token
+  # grep: $HOME's basename is whatever this machine's account is called, and on
+  # a machine where that is a common word (dev, test, admin, build) a bare
+  # case-insensitive sweep would fire on ordinary prose everywhere. These four
+  # files are where identity is actually PUBLISHED, which is the leak that
+  # matters for a public repo.
+  local user_token id_hits
+  user_token="$(basename "$HOME")"
+  id_hits=""
+  if [ -n "$user_token" ]; then
+    for _idf in ".claude-plugin/plugin.json" ".claude-plugin/marketplace.json" "LICENSE"; do
+      [ -f "$ROOT/$_idf" ] || continue
+      if grep -iqF "$user_token" "$ROOT/$_idf" 2>/dev/null; then
+        id_hits="$id_hits$_idf"$'\n'
+      fi
+    done
+  fi
+
+  if [ -n "$hits" ] || [ -n "$dash_hits" ] || [ -n "$id_hits" ]; then
+    echo "  machine identity leaked into tracked files (public repo):" >&2
+    [ -n "$hits" ] && printf '%s\n' "$hits" | sed 's/^/    [slash path] /' >&2
+    [ -n "$dash_hits" ] && printf '%s\n' "$dash_hits" | sed 's/^/    [dash path]  /' >&2
+    [ -n "$id_hits" ] && printf '%s' "$id_hits" | sed "s|^|    [identity: '$user_token'] |" >&2
     return 1
   fi
   return 0
