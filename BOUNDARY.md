@@ -45,7 +45,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | bug-sweep | Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). |
 | build-fix | Detect the project build system and incrementally fix build/type errors with minimal safe changes. Delegates to the build-error-resolver agent. |
 | frame | Load a working-frame: dev/review/research (posture-setter, not a workflow or voice change). Say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. |
-| post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. |
 | refactor-clean | Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Delegates to the refactor-cleaner agent. |
 | security-scan | Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Don't use for code-vulnerability review — use mh:security-auditor. |
 | ship-release | Cut a release end-to-end: bump, changelog, review gate, tag, merge, monitor. Say 'ship release/ปล่อยเวอร์ชัน'. Don't use for PR merges (mh:ship-merge) or hotfixes (mh:incident). |
@@ -120,6 +119,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
+| post-mortem | Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents. | inline | manual |
 | ship-merge | Merge a PR safely: validate, server-side merge, cleanup, monitor CI. Use when a reviewed PR is ready to land. Say 'merge PR/รวมโค้ด'. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
 | tiered-pipeline | Run a bounded task through the Fable→Sonnet→Opus maker/checker pipeline (capped fixes, bug-hunt, gated final review). Use when a task warrants multi-tier review. Don't use for quick edits or PR review. | inline | manual |
 | wiki-ingest | Ingest a source document into the llm-wiki vault from any project. Use when the user asks to save a document into the vault. Don't use for searching the vault (qmd MCP, collection llm-wiki) or kbg's own memory store (mh:learn). | inline | manual |
@@ -182,7 +182,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T11:25:08Z_
+_Generated: 2026-08-25T11:30:43Z_
 
 ---
 
@@ -310,7 +310,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | User says | Dispatch | Why |
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `mh:incident` skill | Live incident response |
-| "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
+| "post-mortem", "writeup after incident" | `mh:post-mortem` | Incident documentation |
 | "save my session", "hand off" | `handoff` | Session state capture |
 
 

@@ -38,7 +38,7 @@ Infer from user input or ask explicitly.
 | 3 | Fast review (parallel) | Block items unresolved → abort |
 | 4 | Server-side merge via `gh pr merge --admin` | Never merge locally + push |
 | 5 | Post-merge verify + monitor | CI fails / symptoms return → revert |
-| 6 | Schedule `/post-mortem` | Within 24h (P0/P1) or 72h (P2) |
+| 6 | Schedule `mh:post-mortem` | Within 24h (P0/P1) or 72h (P2) |
 
 ## Handoff Reference
 
@@ -49,6 +49,6 @@ Infer from user input or ask explicitly.
 | 2 → 3 | Launch the matching per-language reviewer agent (+ `security-reviewer` if needed) | After fix + regression test |
 | 3 → 4 | Commit + push + `gh pr merge --admin --squash --delete-branch` | After zero Block findings |
 | 4 → 5 | `gh run watch` + repro against prod | After merge |
-| 5 → 6 | Tell user to schedule `/post-mortem` | After verify passes |
+| 5 → 6 | Tell user to schedule `mh:post-mortem` | After verify passes |
 
 See `hotfix-reference.md` (same dir) for: full Phase 0–6 procedures, output format (ledger), anti-patterns, and METHODOLOGY alignment.

@@ -5,6 +5,21 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.477] — 2026-08-25
+
+### Changed
+
+- Converted `commands/post-mortem.md` (`disable-model-invocation: true`) to
+  `skills/post-mortem/SKILL.md` (#109, spec #101). Argument handling rewritten to prose.
+  Citation sweep across `CLAUDE.md`, `README.md`, `docs/command-authoring-conventions.md`,
+  `docs/reference/mattpocock-integration-map.md`, `docs/reference/reasoning-models.md`,
+  `commands/ship-release.md`, `skills/incident/SKILL.md` + its `references/`,
+  `skills/ship-merge/SKILL.md`, `skills/inventory/scripts/inventory-boundary.sh` — all to
+  bare `mh:post-mortem` form, except the one literal "type this" instruction in
+  `skills/incident/references/hotfix-reference.md`, which keeps `/mh:post-mortem`. Fixed
+  1 check-46 self-citation the conversion surfaced (post-mortem's own body still cited
+  itself as `/post-mortem`).
+
 ## [0.68.476] — 2026-08-25
 
 ### Changed

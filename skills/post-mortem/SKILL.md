@@ -1,6 +1,7 @@
 ---
 name: post-mortem
 description: "Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents."
+bucket: workflow
 argument-hint: Optional bug ID, Jira key, or summary
 disable-model-invocation: true
 disable-model-invocation-reason: writes a canonical doc (and optional tracker post) — user decides to record
@@ -27,7 +28,8 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 **Goal**: Confirm the 4 required inputs are available before drafting.
 
 **Actions**:
-1. Check `$ARGUMENTS` for a bug identifier (JIRA key, GitHub issue, PR number, or short summary).
+1. Check whether the user supplied a bug identifier (JIRA key, GitHub issue, PR number, or
+   short summary) when invoking this skill.
 2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `mattpocock-skills:diagnosing-bugs` or `mh:incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
 3. For whatever remains missing or unclear, ask the user explicitly:
    - **Reproducible trigger**: exact steps, environment, inputs that cause the failure. Can someone else make it happen?
@@ -149,7 +151,7 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 
 - **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 8 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
 - **Gate revisit trigger (Rule 1)**: 3 repo-committed post-mortems now exist under `docs/post-mortems/` — re-check whether the Phase 1 four-input gate still causes abandonment, or drop this caveat. If usage shows people bouncing off it, loosen the gate before adding more structure elsewhere.
-- **Post-diagnosing-bugs workflow**: `mattpocock-skills:diagnosing-bugs` Phase 6 (Cleanup) requires the confirmed hypothesis stated in the commit/PR message, plus the regression test from Phase 5 and the minimised repro from Phase 2 — together these cover the 4 required inputs (reproducible trigger, known mechanism, identified patch, passing validation). That output IS the input to `/post-mortem` Phase 1. Run `/post-mortem` immediately after `diagnosing-bugs` concludes, while context is warm.
+- **Post-diagnosing-bugs workflow**: `mattpocock-skills:diagnosing-bugs` Phase 6 (Cleanup) requires the confirmed hypothesis stated in the commit/PR message, plus the regression test from Phase 5 and the minimised repro from Phase 2 — together these cover the 4 required inputs (reproducible trigger, known mechanism, identified patch, passing validation). That output IS the input to `mh:post-mortem` Phase 1. Run `mh:post-mortem` immediately after `diagnosing-bugs` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity; otherwise it's standard.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces, not CLAUDE.md/METHODOLOGY.md directly.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).

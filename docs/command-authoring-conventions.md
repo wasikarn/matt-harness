@@ -69,9 +69,9 @@ has to be enforced by the author (no frontmatter), not assumed from directory po
 Set `disable-model-invocation: true` + a non-empty `disable-model-invocation-reason:` on
 any command whose effect is hard to reverse or reaches outside the repo — merging a PR,
 cutting a release, posting to GitHub/Jira, spawning a costly multi-agent fan-out that
-gates a done-declaration. The remaining commands
-(`ship-release`, `post-mortem`) already do this — `ship-merge`, `ideate-search`, and
-`address-review` did too before converting to skills (2026-08-25, #103/#105/#108),
+gates a done-declaration. The remaining command
+(`ship-release`) already does this — `ship-merge`, `ideate-search`, `address-review`, and
+`post-mortem` did too before converting to skills (2026-08-25, #103/#105/#108/#109),
 keeping the flag exactly as-is.
 `harness-audit` checks 30 (reason presence, WARN) and 40 (`ship-merge`'s new
 `skills/ship-merge/SKILL.md` location specifically, CRIT) enforce this.

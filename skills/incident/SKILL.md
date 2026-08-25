@@ -46,7 +46,7 @@ Run a production incident from first alert to resolution. **Incident response is
 
 7. **Resolve & Monitor** — Verify fix in production. Monitor window: S1=1hr, S2=30min, S3=10min. Close incident, schedule post-mortem if S1/S2. For S3/S4, if this was an alert misfire or threshold is too sensitive, include alert tuning in the close notes.
 
-8. **Handoff to Post-Mortem** — Immediate notes, schedule within 24hr (S1) or 48hr (S2). Hand off to `/post-mortem`.
+8. **Handoff to Post-Mortem** — Immediate notes, schedule within 24hr (S1) or 48hr (S2). Hand off to `mh:post-mortem`.
 
 Done.
 
@@ -70,7 +70,7 @@ Produce at close:
 - **Severity:** S1–S4 (final, post-reassessment)
 - **Mitigation applied:** <rollback / kill-switch / circuit breaker / scale / hotfix — note N/A steps explicitly>
 - **MTTR:** <actual vs target>
-- **Root cause (preliminary):** <one line — full analysis is /post-mortem's job>
+- **Root cause (preliminary):** <one line — full analysis is mh:post-mortem's job>
 - **Evidence preserved:** <logs/metrics links or locations>
 - **Alert tuning:** <if S3/S4 misfire — threshold change, or "N/A">
 - **Post-mortem:** scheduled at <time> (S1 ≤24hr, S2 ≤48hr) | N/A (S3/S4)
@@ -98,7 +98,7 @@ Produce at close:
 
 - `references/hotfix.md` — hotfix path when rollback/kill-switch is insufficient (formerly `kbg:hotfix`)
 - `mattpocock-skills:diagnosing-bugs` — non-urgent root cause fix after mitigation
-- `/post-mortem` — after resolution, blameless analysis
+- `mh:post-mortem` — after resolution, blameless analysis
 - `mh:ship-merge` — deploying fix PR after resolution
 
 **Named model** (cc-thinking-skills): the detect → assess → mitigate → monitor loop is *ooda* (observe-orient-decide-act under time pressure). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

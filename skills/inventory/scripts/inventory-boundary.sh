@@ -412,7 +412,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `commands/`, 
 | User says | Dispatch | Why |
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `mh:incident` skill | Live incident response |
-| "post-mortem", "writeup after incident" | `/post-mortem` | Incident documentation |
+| "post-mortem", "writeup after incident" | `mh:post-mortem` | Incident documentation |
 | "save my session", "hand off" | `handoff` | Session state capture |
 
 XREF4

@@ -179,8 +179,8 @@ default-recommendation sentence too, keyed to its own rebase-freshness signal
 **Goal**: Ensure follow-up documentation happens within SLA.
 
 **Actions**:
-1. Tell user: "Schedule `/post-mortem` within 24 hours for P0/P1, within 72 hours for P2."
-2. If user says "do it now", invoke `/post-mortem` immediately.
+1. Tell user: "Schedule `/mh:post-mortem` within 24 hours for P0/P1, within 72 hours for P2."
+2. If user says "do it now", start the post-mortem work (`mh:post-mortem`) immediately.
 3. Summarize: severity, what broke, fix commit sha, rollback path, monitoring result.
 
 **Done.**

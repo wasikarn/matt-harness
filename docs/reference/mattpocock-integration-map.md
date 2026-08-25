@@ -21,7 +21,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | ask-matt | user | no kbg touchpoint — routing questions go to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
 | code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82) |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` |
-| diagnosing-bugs | model | `docs/agent-voice-extension.md`, `commands/post-mortem.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
+| diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
 | grill-with-docs | user | `docs/agents/domain.md` (path into domain-modeling) |
 | implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`) |
