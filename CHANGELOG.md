@@ -5,6 +5,22 @@ All notable changes to `kbg` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [0.68.473] — 2026-08-25
+
+### Changed
+
+- `commands/tiered-pipeline.md` and `commands/wiki-ingest.md` converted to skills (#107,
+  commands→skills convergence, spec #101) — the last two of the 6 no-blocker frontier
+  tickets. Both keep `disable-model-invocation: true` exactly as-is; confirmed zero stray
+  citations elsewhere in the repository before moving, per the ticket's own claim. Added
+  missing `Use when` trigger clauses to both descriptions (check 05, now applying since
+  they're skills). CLAUDE.md's disable-model-invocation carrier roster updated: 6 skills
+  + 3 remaining commands (post-mortem, ship-release, address-review — the tickets blocked
+  on #102's argument-delivery finding).
+- This closes the 6-ticket no-blocker frontier (#103-#107, plus the #102 spike). Remaining
+  work: #108-#111 (argument-handling rewrites, blocked by #102 — now unblocked) and #112
+  (retire commands/ as a surface type, blocked by all 9 conversion tickets).
+
 ## [0.68.472] — 2026-08-25
 
 ### Changed
