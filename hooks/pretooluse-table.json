@@ -48,6 +48,12 @@
     "description": "Gate: block Read/Grep access to credential-bearing file paths (.env, id_rsa/id_ed25519/id_ecdsa, *.pem/*.key, service-account JSON, .netrc, .npmrc, .htpasswd), resolved via realpath to close symlink-indirection bypass. Read/Grep only; Bash-mediated reads are a scoped follow-up (#96)."
   },
   {
+    "id": "gate:write:config-guard",
+    "matcher": "Write",
+    "script": "hooks/gates/config-write-guard.sh",
+    "description": "Gate: ask before creating a brand-new Claude Code settings file (.claude/settings.json, .claude/settings.local.json). Editing an existing one is unaffected — create-vs-modify asymmetry, mirrors the pre-commit new-file LOC gate at tool-call time (#98)."
+  },
+  {
     "id": "gate:write:worktree-guard",
     "matcher": "Write|Edit|NotebookEdit",
     "script": "hooks/gates/worktree-guard-dispatch.sh",
