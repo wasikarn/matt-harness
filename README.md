@@ -126,7 +126,7 @@ Fleet size (real current fleet: 58 skills · 17 agents) is patched into this lin
 |---|---|
 | Skills | `mh:<skill>`, e.g. `mh:pr`, `mh:orchestrate`. Matt-origin skills live in their own namespace, e.g. `mattpocock-skills:grilling`. |
 | Agents | Spawned by Claude, or requested via the `Task` tool, e.g. `mh:code-architect`. |
-| Output style | `staff-eng`, the only live-response register. It calibrates terse vs full framing by stakes. |
+| Output style | `crisp`, the only live-response register. Concise by default; full decision framing when stakes earn it. |
 | Contexts | `dev` · `review` · `research`, loaded by `mh:frame` to set session posture. |
 | Theme | `catppuccin-mocha`. |
 
@@ -278,7 +278,7 @@ matt-harness/
 ├── skills/               # SKILL.md per directory, grouped by bucket:
 │                         #   meta/ review/ workflow/ patterns/ agent-support/ design/
 ├── hooks/                # gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-├── output-styles/        # staff-eng, the only live-response register
+├── output-styles/        # crisp, the only live-response register
 ├── contexts/             # dev / review / research session frames
 ├── themes/               # catppuccin-mocha.json
 ├── scripts/              # validation helpers (run-gauntlet.sh runs the full parallel gauntlet)
@@ -365,8 +365,8 @@ licenses.
 | [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored; see Quick start), 0 modified |
 | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
 | [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models cataloged by name in `docs/reference/reasoning-models.md`, pointing to the upstream repo for full write-ups (no local vendored copy since ticket 94) |
-| [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | 3 voice rules folded into `output-styles/staff-eng.md` (v0.68.126) |
-| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/staff-eng.md`, plus a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs`' safety pattern (verify-before-overwrite, frontmatter handling, sensitive-file refusal) adapted from `caveman-compress` (v0.68.128); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
+| [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | 3 voice rules folded into `output-styles/crisp.md` (v0.68.126, then named `staff-eng.md`) |
+| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/crisp.md`, plus a terminal-token status-code convention in `docs/agent-authoring-conventions.md` §8 (v0.68.127); `compress-docs`' safety pattern (verify-before-overwrite, frontmatter handling, sensitive-file refusal) adapted from `caveman-compress` (v0.68.128); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder, the `ponytail:` shortcut-marker convention, and the root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance rubric, adapted into a Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both retired 2026-08-24, #82, with the review pipeline; `mattpocock-skills:code-review` is now the review surface) |
 | kbg-native | MIT | 58 skills · 17 agents |

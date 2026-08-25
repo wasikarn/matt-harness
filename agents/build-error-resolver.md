@@ -182,8 +182,7 @@ warnings and deprecated APIs last.
 
 ## Success Metrics
 
-The ecosystem's build command (Step 1) exits 0; no new errors introduced; minimal lines
-changed (< 5% of affected file); tests still passing.
+The ecosystem's build command (Step 1) exits 0; no new errors introduced; minimal lines changed (< 5% of affected file); tests still passing.
 
 ## Step 5: Summary (report back)
 

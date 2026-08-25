@@ -100,7 +100,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | deep-audit | Post-implementation adversarial audit: reconstruct session state, verify every claim against evidence, score before/after on a defined rubric, implement only evidence-backed fixes, re-score. Use after a significant implementation pass to check it actually improved something. Don't use for a first-pass code review — see mattpocock-skills:code-review. | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
-| review-fixtures | Dispatch 2 independent staff-eng agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use when fixtures already exist mid an improve+optimize loop. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. | inline | auto |
+| review-fixtures | Dispatch 2 independent staff-engineer agents to adversarially review skill-creator-style fixture outputs (with_skill vs baseline) for a skill, agent, or command before deciding a fix. Use when fixtures already exist mid an improve+optimize loop. Don't use for PR review (mattpocock-skills:code-review) or skill-creator's own quantitative grading/benchmark step. | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
 | risk-check | Classify a PR's risk as LOW/MEDIUM/HIGH from diff size, sensitive-path, and file-hotspot signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge). | inline | auto |
 | security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
@@ -182,10 +182,10 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ## Output styles — Repo
 | Style | Description |
 |---|---|
-| staff-eng | Sole live-response register — self-calibrating: state the answer first for how-to/lookup/local changes, use decision+constraint+owner+revisit-trigger+verification-step framing only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
+| crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-25T17:50:41Z_
+_Generated: 2026-08-25T19:21:20Z_
 
 ---
 
@@ -267,7 +267,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `agents/` — specialist subagents (.md each)
 - `skills/` — workflow skills (SKILL.md per directory; `_lib` is a shared shell library, not an invokable skill) — `commands/` retired as a surface type 2026-08-25, #112, every command converted to a skill
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-- `output-styles/` — staff-eng (sole live-response register)
+- `output-styles/` — crisp (sole live-response register)
 - `themes/` — catppuccin-mocha
 
 ### Quick Context

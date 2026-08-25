@@ -102,7 +102,7 @@ judgment call retiered via normal version-bumped edits.
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
 every branch is already true/decidable right now and there's no sensible default, that's a
 present-tense fork, not a suggestion — surface it via `AskUserQuestion` (per
-`output-styles/staff-eng.md`'s decision-question rule: one-line consequence per option) instead of
+`output-styles/crisp.md`'s decision-question rule: one-line consequence per option) instead of
 text the user might not read. Model: obra/superpowers' `finishing-a-development-branch` skill,
 which ends by presenting exactly N concrete options (merge/PR/keep/discard) and blocking for the
 pick — not superpowers' separate (and rejected) `using-superpowers` auto-chain directive. None of

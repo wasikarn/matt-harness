@@ -25,16 +25,26 @@ if [ "$_is_mh" = "1" ] && command -v jq >/dev/null 2>&1; then
   _readme="$CLAUDE_DIR/README.md"
   _manifest_version=$(jq -r '.version // empty' "$CLAUDE_DIR/.claude-plugin/plugin.json" 2>/dev/null)
   if [ -n "$_manifest_version" ] && [ -f "$_readme" ]; then
-    _badge_line=$(/usr/bin/grep -F 'img.shields.io/badge/version-' "$_readme" 2>/dev/null || true)
-    if [ -z "$_badge_line" ]; then
-      warn "readme version-badge check 48: no shields.io version badge found in README.md — location may have moved/been reworded"
+    # 2026-08-26: README switched to a shields.io *dynamic* JSON badge that
+    # reads plugin.json's version off the develop branch at render time —
+    # there is no third copy of the version string to drift any more. Accept
+    # that as the fixed state; keep the static-badge comparison as the
+    # fallback so a future revert to a hand-written badge is still checked.
+    _dyn_line=$(/usr/bin/grep -F 'img.shields.io/badge/dynamic/json' "$_readme" 2>/dev/null || true)
+    if [ -n "$_dyn_line" ] && printf '%s' "$_dyn_line" | /usr/bin/grep -qF 'plugin.json' && printf '%s' "$_dyn_line" | /usr/bin/grep -qF 'label=version'; then
+      : # self-updating badge sourced from plugin.json — nothing to drift
     else
-      case "$_badge_line" in
-        *"badge/version-${_manifest_version}-"*) : ;;
-        *) warn "README.md version badge is stale vs plugin.json ($_manifest_version) — bump the shields.io badge on or near the top of README.md" ;;
-      esac
+      _badge_line=$(/usr/bin/grep -F 'img.shields.io/badge/version-' "$_readme" 2>/dev/null || true)
+      if [ -z "$_badge_line" ]; then
+        warn "readme version-badge check 48: no shields.io version badge (static or dynamic-json) found in README.md — location may have moved/been reworded"
+      else
+        case "$_badge_line" in
+          *"badge/version-${_manifest_version}-"*) : ;;
+          *) warn "README.md version badge is stale vs plugin.json ($_manifest_version) — bump the shields.io badge on or near the top of README.md" ;;
+        esac
+      fi
     fi
   fi
-  unset _readme _manifest_version _badge_line
+  unset _readme _manifest_version _badge_line _dyn_line
 fi
 unset _is_mh

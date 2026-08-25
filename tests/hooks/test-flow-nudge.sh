@@ -223,7 +223,7 @@ test_silent "answer a forum thread (not a PR)" "answer this thread with a summar
 # must require an actual reply/replies/replying form.
 test_silent "replicate the reviewer environment (not a reply)" "we should replicate the reviewer environment on staging"
 # Distance-window regression guards (eval-set review, 2026-07-25): window
-# widened 15->18 chars after two independent staff-eng reviewers + a live
+# widened 15->18 chars after two independent staff-engineer reviewers + a live
 # run confirmed these natural phrasings were silently missed at 15.
 test_nudge  "address the feedback the reviewer left (18-char gap, was missed at 15)" "address the feedback the reviewer left before we merge"
 test_nudge  "answer all of X's review comments (18-char gap, was missed at 15)" "I need to answer all of miguel's review comments before we merge"

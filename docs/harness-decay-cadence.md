@@ -20,7 +20,7 @@ this compensate for?* Record that assumption. Examples:
 - a maker≠checker reviewer agent does **not** compensate for a limitation — see
   the guard below;
 - text that defines **product behavior** — a voice/register spec
-  (`output-styles/staff-eng.md`), a templated PR/command body, a team content
+  (`output-styles/crisp.md`), a templated PR/command body, a team content
   standard — also does not compensate for a limitation: it keeps output
   consistent for the people consuming it. Cherny drew this exact line when the
   Claude Code team cut >80% of its own system prompt for the Claude 5

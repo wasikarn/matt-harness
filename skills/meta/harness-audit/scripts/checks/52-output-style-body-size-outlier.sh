@@ -12,7 +12,7 @@
 # Gap this closes: neither 38 nor 51 globs output-styles/*.md, so this
 # surface has never been mechanically flagged for size — confirmed
 # 2026-08-18 (mattpocock wait-what/writing-for-agents doctrine session):
-# output-styles/staff-eng.md carries `force-for-plugin: true`, meaning it is
+# output-styles/crisp.md carries `force-for-plugin: true`, meaning it is
 # injected UNCONDITIONALLY every session the plugin is enabled, unlike a
 # skill/command/agent body (conditionally loaded on invocation) — the same
 # always-on cost profile as CLAUDE.md/METHODOLOGY.md, just with no check at

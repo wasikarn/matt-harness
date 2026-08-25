@@ -369,7 +369,7 @@ For live per-layer counts, read the auto-generated inventory header at the top o
 - `agents/` — specialist subagents (.md each)
 - `skills/` — workflow skills (SKILL.md per directory; `_lib` is a shared shell library, not an invokable skill) — `commands/` retired as a surface type 2026-08-25, #112, every command converted to a skill
 - `hooks/` — gates/ (deny) · advisory/ (journal) · session/ (inject) · stop/ (cost)
-- `output-styles/` — staff-eng (sole live-response register)
+- `output-styles/` — crisp (sole live-response register)
 - `themes/` — catppuccin-mocha
 
 ### Quick Context
