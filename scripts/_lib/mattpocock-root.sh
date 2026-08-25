@@ -22,10 +22,10 @@
 #      install (top-level dirs landed, the skill payload didn't) that a
 #      bare `-d .../skills` directory test would miss. Deliberately does
 #      NOT *require* .claude-plugin/plugin.json's declared skill list —
-#      check 51 already has to tolerate that manifest being absent or
+#      check 50 already has to tolerate that manifest being absent or
 #      malformed (its own "manifest format drifted" fail-closed path), so
 #      requiring it here too would tie cache-completeness to manifest-
-#      parsing correctness for every caller, including check 51's own
+#      parsing correctness for every caller, including check 50's own
 #      manifest-less fixtures.
 #   4. When a manifest IS present and declares a nonzero skill count,
 #      cross-check it: at least half the declared skills must actually
@@ -34,7 +34,7 @@
 #      stray SKILL.md behind would otherwise still pass step 3's bare
 #      ">=1" probe and be reported "installed and complete" by
 #      doctrine-bootstrap.sh every session — exactly the silent dead-end
-#      that preflight exists to prevent, and check 51's own per-reference
+#      that preflight exists to prevent, and check 50's own per-reference
 #      dead-ref check only catches it during a harness-audit run INSIDE
 #      this repo, not in every other project session that has the plugin
 #      enabled. No manifest (or one that fails to parse) -> step 3 alone

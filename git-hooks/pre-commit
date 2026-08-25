@@ -2,24 +2,26 @@
 # Pre-commit gate for the matt-harness plugin repo.
 #
 # This repo is the single source of truth for the harness fleet (agents/,
-# skills/, commands/, hooks/, scripts/, contexts/, output-styles/, themes/) — the flat
+# skills/, hooks/, scripts/, contexts/, output-styles/, themes/) — the flat
 # (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
+# (commands/ retired as a surface type 2026-08-25, #112 — every command
+# converted to a skill.)
 # Validates staged files before they land:
 #   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
 #      *.sh / *.py / *.js → no hardcoded /Users/<name> home paths (use $HOME/~)
 #      *.md/.json/.yaml/.txt → no literal $HOME path of this machine (public repo)
 #   2. **/*.json          → jq -e (parses cleanly)
-#   3. {agents,skills,commands,hooks,scripts}/* staged → harness-audit ecosystem
+#   3. {agents,skills,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
 #   4. shipped-surface files staged (6 surface dirs + scripts/ + contexts/ +
 #      docs/METHODOLOGY.md + docs/reference/** — everything loaded or sourced
 #      from the per-version plugin cache at runtime) → plugin.json version must
 #      change in this commit, and both manifests' version fields must agree
 #      (same-version edits are cache no-ops).
-#   5. brand-new agents/*.md, commands/*.md, commands/*/COMMAND.md, or
+#   5. brand-new agents/*.md, or
 #      skills/*/SKILL.md over 200 lines → hard-blocked (new-file LOC gate).
 #      Editing an existing one past the cap stays WARN-only (harness-audit
-#      check 56) — deliberate grandfather, see the gate's own comment block.
+#      check 55) — deliberate grandfather, see the gate's own comment block.
 #
 # The heavy layers above run in parallel so the commit gate stays fast.
 # The pre-push gauntlet adds the behavioral test suite (file list lives in
@@ -108,7 +110,7 @@ run_syntax_layer() {
 ecosystem_staged=0
 while IFS= read -r f; do
   case "$f" in
-    agents/*|skills/*|commands/*|hooks/*|scripts/*)
+    agents/*|skills/*|hooks/*|scripts/*)
       ecosystem_staged=1 ;;
   esac
 done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
@@ -154,7 +156,7 @@ run_audit_layer() {
 version_check_needed=0
 while IFS= read -r f; do
   case "$f" in
-    agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*)
+    agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*)
       version_check_needed=1 ;;
   esac
 done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
@@ -204,7 +206,7 @@ run_version_layer() {
   # commits never reached the installed cache until a manual bump).
   while IFS= read -r f; do
     case "$f" in
-      agents/*|skills/*|commands/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
+      agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
     esac
   done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
   if [ "$shipped" -eq 1 ]; then
@@ -220,26 +222,27 @@ run_version_layer() {
 
 # ---- Layer 4: new-file LOC gate (hard block) ----
 # Cap: 200 lines via `git show ":$f" | wc -l` — the STAGED INDEX content, not
-# the worktree. That matches what will actually land; check 56 below reads a
+# the worktree. That matches what will actually land; check 55 below reads a
 # checked-out tree because it audits at pre-push, which is the right read
 # for it but the wrong one here (stage, keep editing, forget to re-`git add`
 # → a worktree read would score the trimmed file and miss the committed one).
-# Same 4 patterns and same cap as harness-audit check 56
-# (skills/harness-audit/scripts/checks/56-loc-cap-auto-loaded-surfaces.sh) —
+# Same 2 patterns and same cap as harness-audit check 55
+# (skills/harness-audit/scripts/checks/55-loc-cap-auto-loaded-surfaces.sh) —
 # kept in sync by tests/git-hooks/test-pre-commit-loc-gate.sh, not a shared
 # file (git-hooks/ isn't a shipped surface; scripts/_lib/ is, and pulling the
 # constant there would drag an unrelated version bump into every
-# git-hooks/-only change).
+# git-hooks/-only change). (Dropped the 2 commands/-scoped patterns 2026-08-25,
+# #112 — commands/ retired as a surface type entirely.)
 #
 # Only blocks BRAND-NEW files. Editing an existing file past the cap, or
 # `git mv`-ing an already-in-scope file to a new in-scope path (e.g. the
-# reference-split migration check 56's own message recommends), stays
-# WARN-only via check 56 — a deliberate grandfather (2026-08-24 grilling:
-# don't reopen check 56's "WARN not CRIT" call from one day earlier). Known
+# reference-split migration check 55's own message recommends), stays
+# WARN-only via check 55 — a deliberate grandfather (2026-08-24 grilling:
+# don't reopen check 55's "WARN not CRIT" call from one day earlier). Known
 # gap, accepted rather than closed: `git commit --amend` growing a file past
 # cap that the commit-being-amended itself added — `--diff-filter=A` diffs
 # the index against HEAD, which already includes that add, so this reads as
-# an edit, not a new file. check 56's pre-push WARN is the backstop there.
+# an edit, not a new file. check 55's pre-push WARN is the backstop there.
 #
 # MH_SKIP_LOC_GATE (mirrors MH_SKIP_VERSION_GATE) is checked FIRST, before
 # the detection scan below runs at all — so a bug in the scan itself can't
@@ -261,8 +264,6 @@ fi
 is_capped_surface() {
   local p="$1"
   [[ "$p" =~ ^agents/[^/]+\.md$ ]] && return 0
-  [[ "$p" =~ ^commands/[^/]+\.md$ ]] && return 0
-  [[ "$p" =~ ^commands/[^/]+/COMMAND\.md$ ]] && return 0
   [[ "$p" =~ ^skills/[^_][^/]*/SKILL\.md$ ]] && return 0
   return 1
 }
@@ -289,7 +290,7 @@ run_loc_gate() {
     was_renamed_from_in_scope "$f" && continue
     lines=$(git show ":$f" 2>/dev/null | wc -l | tr -d ' ')
     if [ "$lines" -gt "$LOC_CAP" ]; then
-      echo "  new file '$f' is $lines lines (cap $LOC_CAP) — move detail to the surface's reference file before committing (skills: reference.md; commands: references/ via directory form; agents: compress)" >&2
+      echo "  new file '$f' is $lines lines (cap $LOC_CAP) — move detail to the surface's reference file before committing (skills: reference.md; agents: compress)" >&2
       rc=1
     fi
   done

@@ -83,10 +83,10 @@ check at all — reread the compressed prose yourself before calling it done, si
 will catch a clipped sentence. Preserve bullet/numbered-list nesting and tables.
 
 **Structural option, not a requirement:** if a section is detailed-but-rarely-needed, moving it to
-a `reference.md` (directory-form, see `docs/command-authoring-conventions.md`) is a valid
-alternative to cutting it — this is how several of this repo's own real optimizer passes worked
-(`orchestrate`, `backend-patterns`/`frontend-patterns`), not something `caveman-compress` itself
-offers, since it targets arbitrary docs rather than kbg-shaped skill/command files.
+a `references/` subfolder is a valid alternative to cutting it — this is how several of this
+repo's own real optimizer passes worked (`orchestrate`, `backend-patterns`/`frontend-patterns`),
+not something `caveman-compress` itself offers, since it targets arbitrary docs rather than
+kbg-shaped skill files.
 
 ## Workflow
 

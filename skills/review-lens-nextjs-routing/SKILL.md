@@ -10,7 +10,7 @@ effort: medium
 
 # Next.js App Router Conventions & Middleware Reference
 
-Extracted from `agents/nextjs-reviewer.md` (2026-08-18, harness-audit check 52 threshold) to keep
+Extracted from `agents/nextjs-reviewer.md` (2026-08-18, harness-audit check 51 threshold) to keep
 the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field (preloaded
 at spawn, independent of the Skill tool — `nextjs-reviewer` carries no `Skill` tool grant) — this
 file is background material for its checklist, not a separately-triggered review pass. Read it

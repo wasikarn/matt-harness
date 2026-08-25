@@ -1,4 +1,4 @@
-# Cross-file content-drift allowlist for check 54 (skills/harness-audit/scripts/checks/54-cross-file-content-drift.sh).
+# Cross-file content-drift allowlist for check 53 (skills/harness-audit/scripts/checks/53-cross-file-content-drift.sh).
 # Format: hash_a<TAB>hash_b<TAB>file_a<TAB>file_b<TAB>reason
 # Keys are the SORTED PAIR of sha1(sorted(token_set)) for each block — see the check script for
 # why (pair-order independence + survives whitespace/punctuation-only reflow, not wording changes).

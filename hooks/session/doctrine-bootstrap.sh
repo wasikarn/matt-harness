@@ -17,7 +17,7 @@ fi
 # own, later, as an unrelated-looking dead end with no link back to the real
 # cause. One check here, once, turns that into a single diagnostic up front.
 #
-# Resolution shared with check 51 (#92/T13, scripts/_lib/mattpocock-root.sh):
+# Resolution shared with check 50 (#92/T13, scripts/_lib/mattpocock-root.sh):
 # highest-semver cache dir + a real-SKILL.md completeness probe, replacing
 # this preflight's former bare `-d` directory test (which passed on a
 # half-extracted cache — dir present, nothing usable inside it). If the lib

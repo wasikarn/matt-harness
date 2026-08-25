@@ -10,7 +10,7 @@ effort: high
 
 # Spec-Miner Anti-Patterns Reference
 
-Extracted from `agents/spec-miner.md` (2026-08-18, harness-audit check 52 threshold) to keep
+Extracted from `agents/spec-miner.md` (2026-08-18, harness-audit check 51 threshold) to keep
 the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field (preloaded
 at spawn, independent of the Skill tool — `spec-miner` carries no `Skill` tool grant) — this file
 is the anti-pattern reference, not a separately-triggered pass.

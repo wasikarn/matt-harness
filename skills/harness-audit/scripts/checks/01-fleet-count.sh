@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # 1. Fleet count
+# commands/ retired as a surface type 2026-08-25 (#112) — every command
+# converted to a skill; dropped from this report rather than reporting a
+# permanent, always-zero count.
 AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
 SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
-COMMANDS=$(safe_count ls -1 "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md)
 HOOKS=$(safe_count find "$CLAUDE_DIR/hooks" -type f \( -name '*.sh' -o -name '*.py' \) -not -path '*__pycache__*' -not -name '_*')
 OUTPUT_STYLES=$(safe_count find "$CLAUDE_DIR/output-styles" -maxdepth 1 -name '*.md' -type f)
 THEMES=$(safe_count find "$CLAUDE_DIR/themes" -maxdepth 1 -name '*.json' -type f)
-echo "Fleet: ${AGENTS:-0} agents, ${SKILLS:-0} skills, ${COMMANDS:-0} commands, ${HOOKS:-0} hooks, ${OUTPUT_STYLES:-0} output-styles, ${THEMES:-0} themes"
+echo "Fleet: ${AGENTS:-0} agents, ${SKILLS:-0} skills, ${HOOKS:-0} hooks, ${OUTPUT_STYLES:-0} output-styles, ${THEMES:-0} themes"
 # Header context, NOT a finding: a plugin cache always exists for the owner who
 # dogfoods the plugin, so this fires every run and is never actionable. An
 # always-on non-actionable "finding" is noise in the findings channel — print it

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Behavioral tests for git-hooks/pre-commit's new-file LOC gate (Layer 4):
-# brand-new agents/*.md, commands/*.md, commands/*/COMMAND.md, or
-# skills/*/SKILL.md over 200 lines get hard-blocked; editing an existing file
+# brand-new agents/*.md or skills/*/SKILL.md over 200 lines get hard-blocked;
+# editing an existing file
 # past the cap stays WARN-only (grandfather — case 3 below also pins the
 # accepted `git commit --amend` gap, since the hook can't distinguish "HEAD is
 # the commit I'm about to replace" from any other HEAD: both read as an edit,
@@ -18,7 +18,7 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/git-hooks/pre-commit"
-CHECK56="$ROOT/skills/harness-audit/scripts/checks/56-loc-cap-auto-loaded-surfaces.sh"
+CHECK55="$ROOT/skills/harness-audit/scripts/checks/55-loc-cap-auto-loaded-surfaces.sh"
 
 pass=0
 fail=0
@@ -48,7 +48,7 @@ mkfile() { # mkfile <relpath> <lines>
 }
 
 write_manifests v0.0.1
-mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/agents" "$FIX/commands" "$FIX/skills" "$FIX/docs"
+mkdir -p "$FIX/skills/harness-audit/scripts" "$FIX/agents" "$FIX/skills" "$FIX/docs"
 printf '#!/usr/bin/env bash\necho "Critical: 0"\n' > "$FIX/skills/harness-audit/scripts/audit.sh"
 git -C "$FIX" add .claude-plugin skills
 git -C "$FIX" commit -qm baseline
@@ -60,7 +60,7 @@ run_hook() { # run_hook [extra env K=V ...]
 reset_fixture() {
   git -C "$FIX" reset -q --hard HEAD
   git -C "$FIX" clean -qfd # no --exclude: only the tracked stub needs to survive, and reset --hard already covers that
-  mkdir -p "$FIX/agents" "$FIX/commands" "$FIX/skills" "$FIX/docs" # clean -d drops empty untracked dirs
+  mkdir -p "$FIX/agents" "$FIX/skills" "$FIX/docs" # clean -d drops empty untracked dirs
 }
 
 next_version=1
@@ -101,15 +101,14 @@ reset_fixture
 
 # 4. git mv an over-cap file WITHIN scope (already-grandfathered content
 # moved to a new in-scope path) → allowed, not treated as brand-new
-mkfile commands/big.md 250
-git -C "$FIX" add commands/big.md
-git -C "$FIX" commit -qm "add commands/big.md at 250 lines (pre-existing over cap)"
-mkdir -p "$FIX/commands/big"
-git -C "$FIX" mv commands/big.md commands/big/COMMAND.md
+mkfile agents/movable.md 250
+git -C "$FIX" add agents/movable.md
+git -C "$FIX" commit -qm "add agents/movable.md at 250 lines (pre-existing over cap)"
+git -C "$FIX" mv agents/movable.md agents/movable-renamed.md
 bump_and_add
 out=$(run_hook 2>&1); rc=$?
-[ "$rc" -eq 0 ] && ! grep -q "new file 'commands/big/COMMAND.md'" <<<"$out"
-check "git mv commands/big.md→commands/big/COMMAND.md (in-scope→in-scope) → allowed" $?
+[ "$rc" -eq 0 ] && ! grep -q "new file 'agents/movable-renamed.md'" <<<"$out"
+check "git mv agents/movable.md→agents/movable-renamed.md (in-scope→in-scope) → allowed" $?
 reset_fixture
 
 # 5. git mv an over-cap file INTO scope FROM OUTSIDE → blocked (the source
@@ -124,7 +123,7 @@ out=$(run_hook 2>&1); rc=$?
 check "git mv docs/big.md→agents/big.md (out-of-scope→in-scope) → blocked" $?
 reset_fixture
 
-# 6. New reference.md at 500 lines → allowed (on-demand exemption, same as check 56)
+# 6. New reference.md at 500 lines → allowed (on-demand exemption, same as check 55)
 mkfile skills/newthing/reference.md 500
 bump_and_add skills/newthing/reference.md
 out=$(run_hook 2>&1); rc=$?
@@ -133,7 +132,7 @@ check "new skills/newthing/reference.md at 500 lines → allowed (exempt)" $?
 reset_fixture
 
 # 7. New nested SKILL.md (one directory level too deep) at 400 lines → allowed.
-# Negative control for the glob-vs-regex parity claim: check 56's real
+# Negative control for the glob-vs-regex parity claim: check 55's real
 # filesystem glob (skills/[!_]*/SKILL.md) never crosses a `/`; this pins that
 # the hook's regex doesn't either.
 mkfile skills/foo/deep/SKILL.md 400
@@ -144,7 +143,7 @@ check "new nested skills/foo/deep/SKILL.md at 400 lines → allowed (glob-parity
 reset_fixture
 
 # 8. New SKILL.md under an underscore-prefixed dir at 400 lines → allowed.
-# Pins the [!_] exemption check 56 also carries.
+# Pins the [!_] exemption check 55 also carries.
 mkfile skills/_lib/SKILL.md 400
 bump_and_add skills/_lib/SKILL.md
 out=$(run_hook 2>&1); rc=$?
@@ -160,13 +159,13 @@ out=$(run_hook MH_SKIP_LOC_GATE=1 2>&1); rc=$?
 check "MH_SKIP_LOC_GATE=1 → skip valve honored" $?
 reset_fixture
 
-# 10. Sync guard: the cap value here must match check 56's cap value —
+# 10. Sync guard: the cap value here must match check 55's cap value —
 # the pattern SET is asserted structurally above (cases 1/2/6/7/8); this
 # pins the numeric constant the two scripts don't share a source for.
 hook_cap=$(grep -m1 '^LOC_CAP=' "$HOOK" | cut -d= -f2)
-check56_cap=$(grep -m1 '^LOC_CAP=' "$CHECK56" | cut -d= -f2)
-[ -n "$hook_cap" ] && [ "$hook_cap" = "$check56_cap" ]
-check "git-hooks/pre-commit LOC_CAP ($hook_cap) matches check 56's LOC_CAP ($check56_cap)" $?
+check55_cap=$(grep -m1 '^LOC_CAP=' "$CHECK55" | cut -d= -f2)
+[ -n "$hook_cap" ] && [ "$hook_cap" = "$check55_cap" ]
+check "git-hooks/pre-commit LOC_CAP ($hook_cap) matches check 55's LOC_CAP ($check55_cap)" $?
 
 echo
 echo "pre-commit-loc-gate: $pass passed, $fail failed"

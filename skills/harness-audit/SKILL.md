@@ -73,7 +73,7 @@ don't count them into "the bottom N are vendor-validated" claims.
 
 ```
 === Skill Audit Report ===
-Fleet: <n> agents, <n> skills, <n> commands, <n> hooks
+Fleet: <n> agents, <n> skills, <n> hooks
 
 CRITICAL:
   F1: probe skill not loadable by Claude Code

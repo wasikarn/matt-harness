@@ -39,24 +39,18 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
   done < <(find "$CLAUDE_DIR/hooks" -type f -not -path '*__pycache__*' -print0 2>/dev/null || true)
 fi
 
-# 3b. Symlink integrity — agents and commands.
-# Regression guard: 14 agents (and at least one command) were committed to the
-# repo but never symlinked into ~/.claude/, so Claude Code could not load them.
-# No check caught it because symlink integrity covered only skills and hooks.
+# 3b. Symlink integrity — agents.
+# Regression guard: 14 agents (and, historically, at least one command — see
+# CLAUDE.md) were committed to the repo but never symlinked into ~/.claude/,
+# so Claude Code could not load them. No check caught it because symlink
+# integrity covered only skills and hooks. (The commands/ loop that used to
+# live here was dropped 2026-08-25, #112 — commands/ retired as a surface
+# type entirely, every command converted to a skill.)
 for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
   if [ ! -L "$HOME/.claude/agents/$name" ] && ! is_plugin_delivered agents "${name%.md}"; then
     crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
-  fi
-done
-for f in "$CLAUDE_DIR/commands"/*.md "$CLAUDE_DIR/commands"/*/COMMAND.md; do
-  [ -f "$f" ] || continue
-  name=$(basename "$f")
-  # A nested commands/<dir>/COMMAND.md loads by its parent dir name, not "COMMAND".
-  case "$f" in */COMMAND.md) name="$(basename "$(dirname "$f")").md" ;; esac
-  if [ ! -L "$HOME/.claude/commands/$name" ] && ! is_plugin_delivered commands "${name%.md}"; then
-    crit "command '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
 

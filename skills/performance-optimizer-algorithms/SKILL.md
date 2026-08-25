@@ -10,7 +10,7 @@ effort: high
 
 # Performance Optimizer — Algorithmic Analysis Reference
 
-Extracted from `agents/performance-optimizer.md` (2026-08-18, harness-audit check 52 threshold)
+Extracted from `agents/performance-optimizer.md` (2026-08-18, harness-audit check 51 threshold)
 to keep the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field
 (preloaded at spawn, independent of the Skill tool — `performance-optimizer` carries no `Skill`
 tool grant) — this file is the pattern reference, not a separately-triggered pass.

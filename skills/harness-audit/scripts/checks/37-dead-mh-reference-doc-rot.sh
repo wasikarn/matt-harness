@@ -48,14 +48,9 @@ while IFS= read -r _k; do [ -n "$_k" ] && _known_mh["$_k"]=1; done < <({
   if [ -d "$CLAUDE_DIR/agents" ]; then
     for f in "$CLAUDE_DIR/agents"/*.md; do [ -f "$f" ] && basename "$f" .md; done
   fi
-  if [ -d "$CLAUDE_DIR/commands" ]; then
-    for f in "$CLAUDE_DIR/commands"/*.md; do [ -f "$f" ] && basename "$f" .md; done
-    for d in "$CLAUDE_DIR/commands"/*/; do [ -f "${d}COMMAND.md" ] && basename "$d"; done
-  fi
 } | sort -u)
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
-          "$CLAUDE_DIR"/skills/*/references/*.md "$CLAUDE_DIR"/commands/*/references/*.md \
-          "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
+          "$CLAUDE_DIR"/skills/*/references/*.md \
           "$CLAUDE_DIR"/agents/*.md \
           "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
           "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md \

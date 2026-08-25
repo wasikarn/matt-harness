@@ -51,7 +51,7 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 | Var | Default | Effect |
 |---|---|---|
 | `MH_SKIP_VERSION_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s version-bump layer for one commit (the amend flow). One-off escape — never pre-populate in `env`; a standing skip re-opens the same-version stale-cache trap the layer exists to close. |
-| `MH_SKIP_LOC_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s new-file LOC gate for one commit (a brand-new `agents/*.md`/`commands/*.md`/`commands/*/COMMAND.md`/`skills/*/SKILL.md` over 200 lines). Rescue valve for a bug in the gate itself — checked before the gate's detection scan runs, so it stays reachable even if that scan breaks. One-off escape, same discipline as `MH_SKIP_VERSION_GATE`. |
+| `MH_SKIP_LOC_GATE` | unset | `=1` skips `git-hooks/pre-commit`'s new-file LOC gate for one commit (a brand-new `agents/*.md`/`skills/*/SKILL.md` over 200 lines). Rescue valve for a bug in the gate itself — checked before the gate's detection scan runs, so it stays reachable even if that scan breaks. One-off escape, same discipline as `MH_SKIP_VERSION_GATE`. |
 
 ## Token-optimization settings (set in `~/.claude/settings.json` → `env`)
 

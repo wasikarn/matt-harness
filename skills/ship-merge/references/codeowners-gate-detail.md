@@ -40,5 +40,5 @@ match, `db/**/index.md` recursive, last-match-wins, an `[abc]` bracket pattern
 correctly failing the whole check closed rather than silently resolving to no-match)
 plus the review-decision-state, email-owner-`DEFERRED`, and head-SHA-pinning
 regressions — plus `discover()`'s own found/found-but-empty/absent/error fixtures.
-`tests/commands/test-ship-merge-codeowners.sh` exercises the shared script
+`tests/skills/test-ship-merge-codeowners.sh` exercises the shared script
 directly, not a markdown-embedded copy.

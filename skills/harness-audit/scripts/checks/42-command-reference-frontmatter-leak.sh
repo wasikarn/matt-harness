@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# 42. Reference-file frontmatter leak (commands/ and skills/).
+# 42. Reference-file frontmatter leak (skills/).
 #
-# A directory-form command (`commands/<name>/COMMAND.md` + a `references/`
-# subfolder, e.g. `ideate`) or a skill's `references/` subfolder
+# A skill's `references/` subfolder
 # (`incident`, `memory-lint`, `harness-audit`, etc.) is meant to keep its
 # supporting files inert — read only via an explicit path pointer in the
 # parent COMMAND.md/SKILL.md's prose, never invoked on their own. Confirmed
@@ -26,14 +25,14 @@
 # WARN (not CRIT): a real but non-catastrophic namespace/token-budget leak —
 # not the tamper-sensitive class checks 36/40 CRIT-guard.
 shopt -s nullglob
-_leak_candidates=("$CLAUDE_DIR"/commands/*/*.md "$CLAUDE_DIR"/commands/*/*/*.md "$CLAUDE_DIR"/skills/*/references/*.md)
+_leak_candidates=("$CLAUDE_DIR"/skills/*/references/*.md)
 shopt -u nullglob
 for _f in "${_leak_candidates[@]}"; do
   [ -f "$_f" ] || continue
-  case "$(basename "$_f")" in COMMAND.md|SKILL.md) continue ;; esac
+  case "$(basename "$_f")" in SKILL.md) continue ;; esac
   grep -q '^---' "$_f" || continue
   if [ -n "$(fm_get "$_f" "description" --block)" ]; then
-    warn "reference file ${_f#"$CLAUDE_DIR"/} carries frontmatter with a description: — Claude Code loads it as an independent command/skill, not inert supporting material (strip the frontmatter, matching skills/ideate/references/frames.md's shape, or move the file outside commands/ or skills/)"
+    warn "reference file ${_f#"$CLAUDE_DIR"/} carries frontmatter with a description: — Claude Code loads it as an independent command/skill, not inert supporting material (strip the frontmatter, matching skills/ideate/references/frames.md's shape, or move the file outside skills/)"
   fi
 done
 unset _f _leak_candidates

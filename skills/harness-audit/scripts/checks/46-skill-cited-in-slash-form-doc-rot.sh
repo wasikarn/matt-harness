@@ -15,9 +15,9 @@
 # Scope: only backtick-wrapped, bare `` `/name` `` spans (nothing else inside
 # the backticks) — excludes file paths (`` `/Users/...` ``) and doc paths
 # (`` `/orchestrate/SKILL.md` ``), which have more content before the closing
-# backtick. `name` must match a known skill AND NOT also be a known command —
-# skill/command namespaces don't currently overlap, but the dual check keeps
-# this correct if that ever changes. "former/removed" lines are excluded,
+# backtick. `name` must match a known skill — the former dual check against a
+# `commands/` namespace was dropped 2026-08-25 (#112): commands/ retired for
+# good, so every `name` match is a skill by construction now. "former/removed" lines are excluded,
 # mirroring checks 35/37's guard for legitimate historical references (a
 # skill can share a name with a command retired long ago — confirmed live:
 # docs/reference/hook-lifecycle-contracts.md's "the removed `/learn` command").
@@ -34,15 +34,7 @@ if [ -d "$CLAUDE_DIR/skills" ]; then
       basename "$d"
     done | sort -u)
 fi
-declare -A _known_commands50=()
-while IFS= read -r _k; do [ -n "$_k" ] && _known_commands50["$_k"]=1; done < <({
-  if [ -d "$CLAUDE_DIR/commands" ]; then
-    for f in "$CLAUDE_DIR/commands"/*.md; do [ -f "$f" ] && basename "$f" .md; done
-    for d in "$CLAUDE_DIR/commands"/*/; do [ -f "${d}COMMAND.md" ] && basename "$d"; done
-  fi
-} | sort -u)
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
-          "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md \
           "$CLAUDE_DIR"/agents/*.md \
           "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
           "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md \
@@ -51,8 +43,7 @@ for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/reference.md \
   while IFS= read -r _name; do
     [ -z "$_name" ] && continue
     [ -n "${_known_skills50[$_name]:-}" ] || continue
-    [ -n "${_known_commands50[$_name]:-}" ] && continue
     warn "skill cited in slash form in ${_f#"$CLAUDE_DIR"/}: '/$_name' should be 'mh:$_name' — '$_name' is a skill, not a command (doc-rot, misleads readers)"
   done < <(grep -viE 'former|removed' "$_f" 2>/dev/null | grep -hoE '`/[a-zA-Z][a-zA-Z0-9_-]*`' | tr -d '`/' | sort -u)
 done
-unset _f _name _known_skills50 _known_commands50
+unset _f _name _known_skills50

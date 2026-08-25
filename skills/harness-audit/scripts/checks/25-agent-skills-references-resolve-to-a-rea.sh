@@ -35,7 +35,7 @@ _known_skills=$(mktemp)
   # mattpocock-skills (skills/<bucket>/<name>/). The single-depth glob alone
   # collected BUCKET names ("engineering", "productivity") as known skills —
   # latent false-WARN the moment an agent's skills: array names a matt skill
-  # (caught by the 2026-08-10 plan review that built check 51). Only dirs
+  # (caught by the 2026-08-10 plan review that built check 50). Only dirs
   # actually carrying a SKILL.md count, so bucket dirs never leak in.
   for d in "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/ \
            "$HOME"/.claude/plugins/cache/*/*/*/skills/[!_]*/[!_]*/; do

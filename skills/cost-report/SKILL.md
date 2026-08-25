@@ -45,7 +45,7 @@ never read a pre/post difference as a spending change.
 2. Run the report script (report + CSV logic live in one bundled node file —
    `node` rather than `sqlite3`/`jq` so it works identically on macOS, Linux,
    and Windows; the dedup logic is regression-tested by
-   `tests/commands/test-cost-report.sh` against this same file):
+   `tests/skills/test-cost-report.sh` against this same file):
 
 ```bash
 node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js"

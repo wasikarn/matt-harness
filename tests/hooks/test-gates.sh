@@ -429,8 +429,8 @@ test_allow "$VERIFIER_PROTECT" "Write to health.sh (NOT a grader, out of scope)"
   "$(write_payload 'skills/harness-audit/scripts/health.sh' 'echo ok')"
 test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
   "$(write_payload 'skills/foo/SKILL.md' '# ok')"
-test_allow "$VERIFIER_PROTECT" "Write to a command (normal work)" \
-  "$(write_payload 'commands/pr.md' '# ok')"
+test_allow "$VERIFIER_PROTECT" "Write to another skill (normal work)" \
+  "$(write_payload 'skills/pr/SKILL.md' '# ok')"
 
 echo ""
 echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="

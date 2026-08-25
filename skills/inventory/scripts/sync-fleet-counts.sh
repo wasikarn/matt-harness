@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# sync-fleet-counts.sh — patch the "N skills · M agents · P commands" triple
-# into the handful of structured locations that carry it verbatim. Mirrors
+# sync-fleet-counts.sh — patch the "N skills · M agents" pair into the
+# handful of structured locations that carry it verbatim ("commands" dropped
+# 2026-08-25, #112 — commands/ retired for good). Mirrors
 # inventory-boundary.sh's existing pattern (a small standalone script under
 # skills/inventory/scripts/, run manually — not wired into a hook).
 #
@@ -8,9 +9,9 @@
 # skills/harness-audit/scripts/checks/44-fleet-count-locations.sh — an edit to
 # one location list should prompt a check of the other.
 #
-# Scoped to ONLY these 4 locations, each patched via its own anchor line, not
+# Scoped to ONLY these 2 locations, each patched via its own anchor line, not
 # a blind whole-file regex — README.md carries a *different* project's
-# "N skills · M agents · P commands" line (a comparison table entry) a few
+# "N skills · M agents" line (a comparison table entry) a few
 # lines away from kbg's own; a file-wide substitution would corrupt it.
 #
 # Usage: bash sync-fleet-counts.sh [<repo-root>]
@@ -28,10 +29,9 @@ REPO_ROOT="${1:-$(cd -P "$SCRIPT_DIR/../../.." && pwd)}"
 # short finds); not worth a shared lib for this size.
 SKILLS=$(find "$REPO_ROOT/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace' | wc -l | tr -d ' ')
 AGENTS=$(find "$REPO_ROOT/agents" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d ' ')
-COMMANDS=$({ ls -1 "$REPO_ROOT"/commands/*.md "$REPO_ROOT"/commands/*/COMMAND.md 2>/dev/null || true; } | wc -l | tr -d ' ')
-TRIPLE="${SKILLS} skills · ${AGENTS} agents · ${COMMANDS} commands"
+TRIPLE="${SKILLS} skills · ${AGENTS} agents"
 
-# <file> <anchor> — replace the "N skills · M agents · P commands" substring
+# <file> <anchor> — replace the "N skills · M agents" substring
 # on the one line matching <anchor>, leave every other line untouched.
 _sync_triple() {
   local f="$1" anchor="$2" tmp
@@ -40,7 +40,7 @@ _sync_triple() {
   tmp=$(mktemp)
   awk -v anchor="$anchor" -v triple="$TRIPLE" '
     index($0, anchor) {
-      sub(/[0-9]+ skills · [0-9]+ agents · [0-9]+ commands/, triple)
+      sub(/[0-9]+ skills · [0-9]+ agents/, triple)
     }
     { print }
   ' "$f" > "$tmp"

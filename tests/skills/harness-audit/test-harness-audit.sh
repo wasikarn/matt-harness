@@ -120,43 +120,43 @@ else
 $CHECK25_OUT"
 fi
 
-# Check 51 — mattpocock-skills integration refs (A refs resolve / B flag
+# Check 50 — mattpocock-skills integration refs (A refs resolve / B flag
 # claims / C coverage ledger / D gated-ref phrasing). The check reads the
 # mattpocock plugin cache from $MH_MATT_CACHE when set (fixture override;
 # real runs default to ~/.claude/plugins/cache/mattpocock/mattpocock-skills).
-export MH_MATT_CACHE="$FIX/check-51-bad/fake-matt-cache"
-run_check 51 "$FIX/check-51-bad"
+export MH_MATT_CACHE="$FIX/check-50-bad/fake-matt-cache"
+run_check 50 "$FIX/check-50-bad"
 if [ "$WARN_FOUND" -ge 3 ] && [ "$INFO_FOUND" -ge 2 ]; then
-  ok "check-51 bad fixture fires A+B+C WARNs and D INFOs incl. marker-masking regression (warn=$WARN_FOUND info=$INFO_FOUND)"
+  ok "check-50 bad fixture fires A+B+C WARNs and D INFOs incl. marker-masking regression (warn=$WARN_FOUND info=$INFO_FOUND)"
 else
-  bad "check-51 bad fixture did NOT fire all sub-checks (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=3 info>=2 — info=1 means the free-text-marker masking regressed)"
+  bad "check-50 bad fixture did NOT fire all sub-checks (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=3 info>=2 — info=1 means the free-text-marker masking regressed)"
 fi
 # Manifest-drift regression (adversarial finding 2026-08-10): plugin.json's
 # skills array in an unrecognized format (object entries) must FAIL CLOSED —
 # a parse-blind WARN — never a vacuous sub-check-C pass. Same fixture also
 # carries a duplicate ledger row, which must fire its own WARN.
-export MH_MATT_CACHE="$FIX/check-51-bad-manifest-drift/fake-matt-cache"
-run_check 51 "$FIX/check-51-bad-manifest-drift"
+export MH_MATT_CACHE="$FIX/check-50-bad-manifest-drift/fake-matt-cache"
+run_check 50 "$FIX/check-50-bad-manifest-drift"
 if [ "$WARN_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
-  ok "check-51 manifest-drift fixture fails closed (parse-blind + duplicate-row WARNs, warn=$WARN_FOUND)"
+  ok "check-50 manifest-drift fixture fails closed (parse-blind + duplicate-row WARNs, warn=$WARN_FOUND)"
 else
-  bad "check-51 manifest-drift fixture did NOT fail closed (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=2 — 0 means sub-check C went vacuously green on a drifted manifest)"
+  bad "check-50 manifest-drift fixture did NOT fail closed (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=2 — 0 means sub-check C went vacuously green on a drifted manifest)"
 fi
-export MH_MATT_CACHE="$FIX/check-51-good/fake-matt-cache"
-run_check 51 "$FIX/check-51-good"
+export MH_MATT_CACHE="$FIX/check-50-good/fake-matt-cache"
+run_check 50 "$FIX/check-50-good"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -eq 0 ]; then
-  ok "check-51 good fixture silent"
+  ok "check-50 good fixture silent"
 else
-  bad "check-51 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+  bad "check-50 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
 # Graceful skip: no mattpocock cache at all → INFO note only, never WARN/CRIT,
 # and the run completes (same class of guard as the check-25 nullglob test).
-export MH_MATT_CACHE="$FIX/check-51-good/no-such-cache"
-run_check 51 "$FIX/check-51-good"
+export MH_MATT_CACHE="$FIX/check-50-good/no-such-cache"
+run_check 50 "$FIX/check-50-good"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then
-  ok "check-51 gracefully skips when no mattpocock cache exists (info=$INFO_FOUND)"
+  ok "check-50 gracefully skips when no mattpocock cache exists (info=$INFO_FOUND)"
 else
-  bad "check-51 missing-cache run not a graceful skip (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+  bad "check-50 missing-cache run not a graceful skip (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
 unset MH_MATT_CACHE
 

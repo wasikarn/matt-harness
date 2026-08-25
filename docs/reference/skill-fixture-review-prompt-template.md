@@ -158,7 +158,7 @@ dispatch or from `prompts.md`/`eval_metadata.json`/`prompt.md` — never paraphr
 Do NOT read any grading.json files in those directories — form your own independent
 judgment from the actual code first, to avoid anchoring on prior grading. After you've
 formed your own view, you may read the current target file at [path to the skill's
-SKILL.md, the agent's agents/<name>.md, or the command's commands/<name>.md — whichever
+SKILL.md or the agent's agents/<name>.md — whichever
 this target actually is] for calibration — specifically to check whether a bug you spot
 in a with_skill output is something the CURRENT content would still teach, or whether it's
 already been fixed since these fixtures were generated ([if this target has had bug-fix

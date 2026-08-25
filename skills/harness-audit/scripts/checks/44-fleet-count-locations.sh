@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 44. Fleet-count doc-rot at named locations. A hand-maintained fleet-count
-# string ("19-agent fleet", "11/19", "1/19", etc.) has gone stale 6 separate
+# 44. Fleet-count doc-rot at named locations (skills/agents pair — "commands"
+# dropped from the triple 2026-08-25, #112, since commands/ retired for good).
+# A hand-maintained fleet-count string ("19-agent fleet", "11/19", "1/19", etc.) has gone stale 6 separate
 # times in this repo's history, each caught by a different ad-hoc mechanism
 # (a proxy smoke test, a real agent dispatch, a manual grep sweep) rather than
 # a systemic check — see CHANGELOG v0.68.0. This is deliberately an EXPLICIT
@@ -39,8 +40,7 @@ if [ "$_is_mh" = "1" ]; then
   # not worth a shared lib for this size, matching the sync script's own copy.
   _LIVE_SKILLS=$(safe_count find "$CLAUDE_DIR/skills" -maxdepth 1 -type d -not -name '_*' -not -name 'skills' -not -name '*-workspace')
   _LIVE_AGENTS=$(safe_count find "$CLAUDE_DIR/agents" -maxdepth 1 -name '*.md' -type f)
-  _LIVE_COMMANDS=$(safe_count ls -1 "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/*/COMMAND.md)
-  _EXPECT_TRIPLE="${_LIVE_SKILLS} skills · ${_LIVE_AGENTS} agents · ${_LIVE_COMMANDS} commands"
+  _EXPECT_TRIPLE="${_LIVE_SKILLS} skills · ${_LIVE_AGENTS} agents"
 
   # <file> <anchor> — full "N skills · M agents · P commands" match. `--`
   # before the pattern: some anchors below start with '-' ("-agent fleet"),
@@ -87,6 +87,6 @@ if [ "$_is_mh" = "1" ]; then
   _check_agent_count "$CLAUDE_DIR/docs/agent-voice-extension.md" "-agent fleet"
 
   unset -f _check_triple _check_agent_count
-  unset _LIVE_SKILLS _LIVE_AGENTS _LIVE_COMMANDS _EXPECT_TRIPLE
+  unset _LIVE_SKILLS _LIVE_AGENTS _EXPECT_TRIPLE
 fi
 unset _is_mh

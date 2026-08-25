@@ -1,10 +1,11 @@
 # Skill authoring conventions
 
 **Status:** Convention reference. Owned by the harness. Sibling of
-[`agent-authoring-conventions.md`](./agent-authoring-conventions.md) and
-[`command-authoring-conventions.md`](./command-authoring-conventions.md). Load this when actually
-writing or editing a skill/command/agent's content — it moved out of the root `CLAUDE.md` because
-none of it is needed for routine work in this repo.
+[`agent-authoring-conventions.md`](./agent-authoring-conventions.md). Load this when actually
+writing or editing a skill/agent's content — it moved out of the root `CLAUDE.md` because
+none of it is needed for routine work in this repo. (`command-authoring-conventions.md` was
+deleted 2026-08-25, #112 — its whole subject, the commands/ vs skills/ distinction, no longer
+exists once commands/ retired as a surface type.)
 
 **Core doctrine:** when creating or editing a skill under `skills/`, follow matt-pocock's
 `writing-for-agents` doctrine — canonical: the `mattpocock-skills:writing-for-agents` skill
@@ -90,7 +91,7 @@ platform behavior — matching values moots it). Deliberate exceptions: `fronten
 dominates). The 26 command entrypoints only — `commands/*/references/*.md` fragments stay
 unstamped. Scope facts: skill/command `effort:` applies only while the surface is active;
 `CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
-harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 55 WARNs on
+harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 54 WARNs on
 any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill/command
 `model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
 judgment call retiered via normal version-bumped edits.

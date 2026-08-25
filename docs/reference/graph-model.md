@@ -26,7 +26,6 @@ this doc doesn't duplicate that table, it names the node *types* the edges below
 |---|---|---|
 | Skill | `skills/*/SKILL.md` | Loaded on-demand by Claude Code's own description-matching; carries `allowed-tools` (pre-approval only, not a hard ceiling) |
 | Agent | `agents/*.md` | Dispatched via the `Agent` tool; carries a hard `tools:` allowlist — the real authorization boundary (`skills/orchestrate/SKILL.md` lines 24–32) |
-| Command | `commands/*.md` | User-invoked slash command; some carry `disable-model-invocation: true` (model-uninvocable, user-only) |
 | Gate | `hooks/gates/*.sh` | Deterministic verifier node — runs on a `PreToolUse`/`WorktreeCreate` hook, returns a branchable score, can deny |
 | Advisory sensor | `hooks/advisory/*.sh` | Journal-only node — never emits `permissionDecision`, never blocks |
 
@@ -88,7 +87,7 @@ it here so a future author doesn't assume it's already mechanically checked.
 
 ## Relationship to existing docs
 
-- **`BOUNDARY.md`** — the canonical, auto-generated node inventory (agents/commands/hooks with
+- **`BOUNDARY.md`** — the canonical, auto-generated node inventory (agents/skills/hooks with
   tools/mutates columns). This doc adds the edge/anchor layer on top; it doesn't replace or
   duplicate BOUNDARY.md's tables.
 - **`docs/reference/decision-doctrine-map.md`** — already does the same situation→mechanism→owning-rule

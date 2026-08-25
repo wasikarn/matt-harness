@@ -75,8 +75,8 @@ MEMORY_DIR="$HOME/.claude/projects/${REPO_ROOT//\//-}/memory"
 # resolution failed — error out instead of a false-clean "0 artifacts" pass. A
 # post-extraction dotfiles root legitimately has only hooks/; that still counts.
 if [ ! -d "$CLAUDE_DIR/agents" ] && [ ! -d "$CLAUDE_DIR/skills" ] && \
-   [ ! -d "$CLAUDE_DIR/commands" ] && [ ! -d "$CLAUDE_DIR/hooks" ]; then
-  err_die "no harness fleet (agents/skills/commands/hooks) under: $CLAUDE_DIR — pass the repo root explicitly: bash audit.sh <repo-root>"
+   [ ! -d "$CLAUDE_DIR/hooks" ]; then
+  err_die "no harness fleet (agents/skills/hooks) under: $CLAUDE_DIR — pass the repo root explicitly: bash audit.sh <repo-root>"
 fi
 
 CRIT_COUNT=0
@@ -95,7 +95,7 @@ if [ -f "$LOCK_FILE" ] && command -v jq >/dev/null 2>&1; then
 fi
 
 # Plugin delivery (kbg-cutover 2026-06-11). The mh@kobig plugin installs
-# agents/skills/commands/hooks/output-styles into the user-scope plugin cache
+# agents/skills/hooks/output-styles into the user-scope plugin cache
 # (default ~/.claude/plugins/cache/kobig/mh/<version>/) and Claude Code loads
 # them from there at runtime — NO symlink into ~/.claude/ is created. Without
 # this awareness, F1 ("not symlinked to ~/.claude/…") fires on every
@@ -139,26 +139,27 @@ unset _MH_CACHE_DIR _LATEST _ver _entry _norm
 # shellcheck disable=SC2034
 PLUGIN_ACTIVE=0
 if [ -d "$PLUGIN_CACHE/agents" ] || [ -d "$PLUGIN_CACHE/skills" ] || \
-   [ -d "$PLUGIN_CACHE/commands" ] || [ -d "$PLUGIN_CACHE/hooks" ] || \
+   [ -d "$PLUGIN_CACHE/hooks" ] || \
    [ -d "$PLUGIN_CACHE/output-styles" ]; then
   # SC2034: PLUGIN_ACTIVE is reassigned here but read by sourced checks.
   # shellcheck disable=SC2034
   PLUGIN_ACTIVE=1
 fi
 # is_plugin_delivered <kind> <name> — returns 0 if a component named <name>
-# of kind <kind> (skills|agents|commands|hooks|output-styles) is present in
+# of kind <kind> (skills|agents|hooks|output-styles) is present in
 # the plugin cache. Kinds map to cache subdirs: skills/<name>/SKILL.md,
-# agents/<name>.md, commands/<name>.md, hooks/<name>, output-styles/<name>.md.
+# agents/<name>.md, hooks/<name>, output-styles/<name>.md.
 # Skills: a skill is a directory containing SKILL.md, so test the dir+file.
 # Hooks: a hook is a single file (.sh or .py), so test the file directly.
-# Agents/commands/output-styles: a single .md file.
+# Agents/output-styles: a single .md file.
+# ("commands" kind dropped 2026-08-25, #112 — commands/ retired as a surface
+# type entirely, every command converted to a skill.)
 is_plugin_delivered() {
   local kind="$1"
   local name="$2"
   case "$kind" in
     skills)        [ -f "$PLUGIN_CACHE/skills/$name/SKILL.md" ] ;;
     agents)        [ -f "$PLUGIN_CACHE/agents/$name.md" ] ;;
-    commands)      [ -f "$PLUGIN_CACHE/commands/$name.md" ] || [ -f "$PLUGIN_CACHE/commands/$name/COMMAND.md" ] ;;
     hooks)         [ -f "$PLUGIN_CACHE/hooks/$name" ] ;;
     output-styles) [ -f "$PLUGIN_CACHE/output-styles/$name.md" ] ;;
     *) return 1 ;;
@@ -333,8 +334,7 @@ fi
 # commit-frequency repo; risk to a safety-closed guard > seconds saved).
 # >/dev/null suppresses stdout; the write to _FM_CACHE persists because this
 # runs in the main shell, not a $(...) subshell.
-for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md \
-            "$CLAUDE_DIR"/commands/*.md "$CLAUDE_DIR"/commands/[!_]*/COMMAND.md; do
+for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md; do
   [ -f "$_fmf" ] || continue
   fm_get "$_fmf" name --block >/dev/null
   fm_get "$_fmf" description --block >/dev/null
@@ -359,7 +359,7 @@ _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids=$(seq 1 56 | tr '\n' ' ')
+_exp_ids=$(seq 1 55 | tr '\n' ' ')
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch — $_n_files files sourced but $_n_total '# N.' headers (a fragment lacks a header or carries >1) — fail-closed"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) — a number is duplicated, not exactly-once — fail-closed"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment integrity broken — set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared — fail-closed"
