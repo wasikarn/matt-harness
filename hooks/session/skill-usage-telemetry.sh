@@ -20,13 +20,25 @@ payload=$(cat)
 log_dir="$HOME/.local/share/kbg/metrics"
 mkdir -p "$log_dir"
 
+# Two adversarial-audit fixes (2026-08-25, #90 independent review):
+#   - tool_input.skill can be present but the WRONG type (a number, an
+#     object) rather than merely missing/null; `// "unknown"` alone only
+#     covers missing/null, so a wrong-typed value used to throw inside
+#     `split(":")` -- a jq error swallowed by 2>/dev/null, silently
+#     DROPPING the row entirely instead of falling back to "unknown" like
+#     every other malformed-input path here does. Now type-checked first.
+#   - an unnamespaced skill (no ":" at all -- several real skills in this
+#     fleet have no plugin prefix) used to fall through split(":")[0] and
+#     report plugin == skill, showing up in the health panel as its own
+#     fake single-skill "plugin". Now reported as "unnamespaced" instead.
 jq -c --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
-  (.tool_input.skill // "unknown") as $skill |
+  (if (.tool_input.skill? | type) == "string" and (.tool_input.skill | length) > 0
+   then .tool_input.skill else "unknown" end) as $skill |
   {
     ts: $ts,
     session_id: (.session_id // "unknown"),
     skill: $skill,
-    plugin: ($skill | split(":")[0])
+    plugin: (if ($skill | contains(":")) then ($skill | split(":")[0]) else "unnamespaced" end)
   }
 ' <<<"$payload" >>"$log_dir/skill-usage.jsonl" 2>/dev/null
 

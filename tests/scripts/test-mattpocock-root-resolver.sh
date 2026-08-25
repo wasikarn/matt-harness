@@ -96,8 +96,59 @@ mkdir -p "$CACHE_HALF/2.0.0/skills"  # version dir exists, skills/ is empty — 
 grep -q '^PASS$' /tmp/mattroot-out4.$$ && ok=1 || ok=0
 assert "rejects a half-extracted install: version dir present, no real SKILL.md under skills/ (acceptance criterion: 'rejects an incomplete cache')" "$ok"
 
-rm -f /tmp/mattroot-out.$$ /tmp/mattroot-out2.$$ /tmp/mattroot-out3.$$ /tmp/mattroot-out4.$$
-trash "$CACHE" "$CACHE2" "$CACHE_HALF" 2>/dev/null || true
+# Manifest cross-check (2026-08-25, #92 independent adversarial audit): a
+# near-total extraction failure that leaves ONE stray SKILL.md behind used
+# to still pass the bare ">=1" probe above and report "installed and
+# complete" -- exactly the silent dead-end doctrine-bootstrap.sh's preflight
+# exists to prevent. When the manifest is present and declares a nonzero
+# count, at least half the declared skills must actually have landed.
+CACHE_STRAY=$(mktemp -d)
+mkdir -p "$CACHE_STRAY/5.0.0/.claude-plugin" "$CACHE_STRAY/5.0.0/skills/engineering/survivor"
+printf '%s\n' '---
+name: survivor
+description: fixture
+---
+body' > "$CACHE_STRAY/5.0.0/skills/engineering/survivor/SKILL.md"
+python3 -c "
+import json
+decls = ['./skills/engineering/s%d' % i for i in range(10)]
+json.dump({'skills': decls}, open('$CACHE_STRAY/5.0.0/.claude-plugin/plugin.json', 'w'))
+"
+(
+  MH_MATT_CACHE="$CACHE_STRAY"
+  export MH_MATT_CACHE
+  # shellcheck source=../../scripts/_lib/mattpocock-root.sh
+  . "$LIB"
+  resolve_mattpocock_root
+  rc=$?
+  [[ "$rc" != "0" && -z "$MATT_ROOT" ]] && echo PASS || echo "FAIL rc=$rc root=$MATT_ROOT"
+) > /tmp/mattroot-out5.$$ 2>&1
+grep -q '^PASS$' /tmp/mattroot-out5.$$ && ok=1 || ok=0
+assert "manifest declares 10 skills, only 1 stray SKILL.md survives -> rejected (near-total extraction failure)" "$ok"
+
+# Same shape, but a healthy majority landed -> still resolves. Confirms the
+# cross-check doesn't false-positive-reject a real, mostly-complete install.
+CACHE_HEALTHY=$(mktemp -d)
+mkdir -p "$CACHE_HEALTHY/1.0.0/.claude-plugin"
+make_ver_dir "$CACHE_HEALTHY" "1.0.0"
+python3 -c "
+import json
+json.dump({'skills': ['./skills/engineering/to-spec']}, open('$CACHE_HEALTHY/1.0.0/.claude-plugin/plugin.json', 'w'))
+"
+(
+  MH_MATT_CACHE="$CACHE_HEALTHY"
+  export MH_MATT_CACHE
+  # shellcheck source=../../scripts/_lib/mattpocock-root.sh
+  . "$LIB"
+  resolve_mattpocock_root
+  rc=$?
+  [[ "$rc" == "0" && "$MATT_VER" == "1.0.0" ]] && echo PASS || echo "FAIL rc=$rc ver=$MATT_VER"
+) > /tmp/mattroot-out6.$$ 2>&1
+grep -q '^PASS$' /tmp/mattroot-out6.$$ && ok=1 || ok=0
+assert "manifest declares 1 skill, that 1 skill is present -> still resolves (no false-positive reject)" "$ok"
+
+rm -f /tmp/mattroot-out.$$ /tmp/mattroot-out2.$$ /tmp/mattroot-out3.$$ /tmp/mattroot-out4.$$ /tmp/mattroot-out5.$$ /tmp/mattroot-out6.$$
+trash "$CACHE" "$CACHE2" "$CACHE_HALF" "$CACHE_STRAY" "$CACHE_HEALTHY" 2>/dev/null || true
 
 echo ""
 total=$((pass + fail))

@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 # Gate: prompt the human to approve any Write/Edit/MultiEdit — OR a Bash-mediated
 # write (redirect, tee, sed -i, perl -i, cp, mv, rm, trash) — to the verifier
-# surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, AND the
-# non-model audit verifier (skills/harness-audit/scripts/audit.sh + checks/**)
-# — so the model cannot neuter the deny-gates, silently turn an advisory
-# sensor into something that emits permissionDecision, OR weaken the audit
-# checks that judge it without an in-session human approval (the
-# tamper-resistance principle: the agent cannot edit the code that judges
-# it). hooks/advisory/** added 2026-08-06: previously unprotected, meaning a
-# sensor could be edited into a real gate with zero prompt (found by a
-# blind-spot sweep). A gate/check the model can silently disable is not a
-# computational deny — and a half-protected perimeter is worse than none, so
-# ALL THREE deterministic verifier classes (gates, advisory sensors, audit)
-# are guarded.
+# surfaces: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, the
+# PreToolUse dispatcher's own routing (hooks/pretooluse-table.json,
+# hooks/dispatch-pretooluse.py/.sh), AND the non-model audit verifier
+# (skills/harness-audit/scripts/audit.sh + checks/**) — so the model cannot
+# neuter the deny-gates, silently turn an advisory sensor into something
+# that emits permissionDecision, repoint or delete a gate's table entry, OR
+# weaken the audit checks that judge it without an in-session human
+# approval (the tamper-resistance principle: the agent cannot edit the code
+# that judges it). hooks/advisory/** added 2026-08-06: previously
+# unprotected, meaning a sensor could be edited into a real gate with zero
+# prompt (found by a blind-spot sweep). hooks/pretooluse-table.json +
+# dispatch-pretooluse.* added 2026-08-25: T12 moved gate routing OUT of the
+# already-protected hooks/hooks.json into these three new files, which
+# inherited none of that protection (found by an independent adversarial
+# audit of #91, same day). A gate/check the model can silently disable is
+# not a computational deny — and a half-protected perimeter is worse than
+# none, so ALL FOUR deterministic verifier classes (gates, advisory
+# sensors, the dispatcher's own routing, and audit) are guarded.
 #
 # Bash mode (tool_name == Bash): the Write/Edit matchers above do not see Bash,
 # so `echo x > hooks/gates/irrecoverable.sh`, `sed -i …`, `tee`, `cp`/`mv` could
@@ -92,7 +98,7 @@ if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
     *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
     *tee*|*sed*|*perl*|*cp*|*mv*|*install*|*rsync*|*dd*|*rm*|*trash*|*">"*)
       case "$_norm" in
-        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*skills/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
+        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*hooks/pretooluse-table.json*|*hooks/dispatch-pretooluse*|*skills/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
         *) _run=0 ;;  # write to a non-verifier, non-expandable surface -> allow fast
       esac
       ;;

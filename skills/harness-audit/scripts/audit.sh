@@ -205,8 +205,17 @@ hook_wired_via_pretooluse_table() {
   [ -n "$scripts" ] || return 1
   while IFS= read -r script_rel; do
     [ -n "$script_rel" ] || continue
-    case "$script_rel" in */"$name") return 0 ;; esac
     ref_file="$CLAUDE_DIR/$script_rel"
+    # Exact match: the table's script path must resolve to a REAL file whose
+    # basename equals $name -- not just any path string ending in "/$name".
+    # A bash `case` glob's `*` matches `/` too, so the former (`*/"$name"`)
+    # let a WRONG directory in the table (e.g. hooks/gate/ typo'd from
+    # hooks/gates/) still report "wired" even though that entry's script
+    # points nowhere real and would never actually run (#91 adversarial
+    # audit, 2026-08-25).
+    if [ -f "$ref_file" ] && [ "$(basename "$ref_file")" = "$name" ]; then
+      return 0
+    fi
     [ -f "$ref_file" ] || continue
     sed 's/#.*$//' "$ref_file" 2>/dev/null | grep -qF "$name" && return 0
   done <<< "$scripts"

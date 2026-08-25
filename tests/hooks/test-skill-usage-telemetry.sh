@@ -70,11 +70,41 @@ fi
 
 payload3='{"session_id":"sess-1","hook_event_name":"PostToolUse","tool_name":"Skill","tool_input":{}}'
 run_hook "$payload3" >/dev/null 2>&1
-if jq -e 'select(.skill == "unknown") | .plugin == "unknown"' "$LOG_FILE" >/dev/null 2>&1; then
-  echo "  ✅ MISSING FIELD FALLBACK: no tool_input.skill -> skill/plugin both 'unknown', still appends"
+if jq -e 'select(.skill == "unknown") | .plugin == "unnamespaced"' "$LOG_FILE" >/dev/null 2>&1; then
+  echo "  ✅ MISSING FIELD FALLBACK: no tool_input.skill -> skill 'unknown', plugin 'unnamespaced', still appends"
   pass=$((pass + 1))
 else
-  echo "  ❌ missing tool_input.skill should fall back to skill=unknown plugin=unknown" >&2
+  echo "  ❌ missing tool_input.skill should fall back to skill=unknown plugin=unnamespaced" >&2
+  fail=$((fail + 1))
+fi
+
+# Adversarial fixes (2026-08-25, #90 independent review): tool_input.skill
+# present but the WRONG type used to throw inside split(":") -- a jq error
+# swallowed by 2>/dev/null, silently DROPPING the row entirely rather than
+# falling back to "unknown" like the missing-key case does.
+payload_badtype='{"session_id":"sess-1","hook_event_name":"PostToolUse","tool_name":"Skill","tool_input":{"skill":42}}'
+lines_before=$(wc -l <"$LOG_FILE" | tr -d ' ')
+run_hook "$payload_badtype" >/dev/null 2>&1
+lines_after=$(wc -l <"$LOG_FILE" | tr -d ' ')
+if [[ "$lines_after" == "$((lines_before + 1))" ]] && jq -e 'select(.skill == "unknown" and .plugin == "unnamespaced")' "$LOG_FILE" >/dev/null 2>&1; then
+  echo "  ✅ WRONG-TYPE SKILL: a non-string tool_input.skill (a number) still appends a row (skill=unknown), not silently dropped"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a non-string tool_input.skill should append a fallback row, not vanish silently (before=$lines_before after=$lines_after)" >&2
+  fail=$((fail + 1))
+fi
+
+# Unnamespaced skill (no ":" at all -- several real skills in this fleet
+# have no plugin prefix, e.g. "design", "run", "init"). Previously fell
+# through split(":")[0] to plugin == skill, showing up in the health panel
+# as its own fake single-skill "plugin".
+payload_unnamespaced='{"session_id":"sess-1","hook_event_name":"PostToolUse","tool_name":"Skill","tool_input":{"skill":"design"}}'
+run_hook "$payload_unnamespaced" >/dev/null 2>&1
+if jq -e 'select(.skill == "design") | .plugin == "unnamespaced"' "$LOG_FILE" >/dev/null 2>&1; then
+  echo "  ✅ UNNAMESPACED SKILL: a colon-free skill name reports plugin='unnamespaced', not plugin==skill"
+  pass=$((pass + 1))
+else
+  echo "  ❌ an unnamespaced skill name should report plugin='unnamespaced', not collapse plugin==skill" >&2
   fail=$((fail + 1))
 fi
 
@@ -119,6 +149,32 @@ if echo "$hp_stderr" | /usr/bin/grep -q "skipping malformed line"; then
   pass=$((pass + 1))
 else
   echo "  ❌ expected a malformed-line warning on stderr, got: $hp_stderr" >&2
+  fail=$((fail + 1))
+fi
+
+# Adversarial fix (2026-08-25, #90 independent review, reproduced live): a
+# SYNTACTICALLY valid row with the WRONG type (ts as a number, not a
+# string) passes load_rows()'s JSON-syntax check, then used to crash the
+# whole --health command with an uncaught TypeError on the string
+# comparison inside render_skill_usage — distinct from the syntax-error
+# case above, and previously untested.
+TYPE_LEDGER="$HP_TMP/skill-usage-badtype.jsonl"
+{
+  echo "{\"ts\":12345,\"session_id\":\"x\",\"skill\":\"mh:foo\",\"plugin\":\"mh\"}"
+  echo "{\"ts\":\"$NOW_UTC\",\"session_id\":\"y\",\"skill\":\"mh:foo\",\"plugin\":\"mh\"}"
+} >"$TYPE_LEDGER"
+type_out=$(python3 "$HEALTH_PY" --last 100 --skills "$TYPE_LEDGER" --costs "$HP_TMP/no-costs.jsonl" 2>/tmp/hp-stderr2.$$)
+type_rc=$?
+type_stderr=$(cat /tmp/hp-stderr2.$$)
+rm -f /tmp/hp-stderr2.$$
+if [[ "$type_rc" == "0" ]] && echo "$type_stderr" | /usr/bin/grep -qi "non-string" \
+   && echo "$type_out" | /usr/bin/grep -qE '\| mh \| mh:foo \| 1 \| 1 \|'; then
+  echo "  ✅ NON-STRING ts FIELD: warned + skipped, exit 0, the OTHER valid row still renders (no crash)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a non-string ts field should warn+skip, not crash (rc=$type_rc):" >&2
+  echo "$type_out" >&2
+  echo "$type_stderr" >&2
   fail=$((fail + 1))
 fi
 

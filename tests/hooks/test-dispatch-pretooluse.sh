@@ -195,6 +195,77 @@ check "multiple updatedInput: last in table order wins deterministically" "$ok"
 ok=1; echo "$stderr_out" | /usr/bin/grep -qi "more than one" && ok=0
 check "multiple updatedInput: warning logged to stderr" "$ok"
 
+# The SAME multi-updatedInput conflict, but a third gate also asks -- the ask
+# wins and suppresses updatedInput entirely. The warning about "applying the
+# last in table order" must NOT fire here: neither updatedInput was actually
+# applied, so warning about which one "won" would be misleading (#91
+# adversarial audit, 2026-08-25 -- the warning used to print unconditionally,
+# before the blocking-decision check that discards updatedInput).
+cat > "$TMP/table-multi-update-but-asked.json" <<EOF
+[
+  {"id": "t:updater_a", "matcher": "Bash", "script": "fixtures/updater_a.sh"},
+  {"id": "t:updater_b", "matcher": "Bash", "script": "fixtures/updater_b.sh"},
+  {"id": "t:asker", "matcher": "Bash", "script": "fixtures/asker.sh"}
+]
+EOF
+out=$(run_synthetic "$TMP/table-multi-update-but-asked.json" 2>"$TMP/multi-update-asked-stderr"); rc=$?
+stderr_out2=$(cat "$TMP/multi-update-asked-stderr" 2>/dev/null)
+ok=1
+if [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ! echo "$out" | /usr/bin/grep -q "updatedInput"; then
+  ok=0
+fi
+check "multi-updatedInput + a co-firing ask: ask wins, updatedInput suppressed (as before)" "$ok"
+ok=0; echo "$stderr_out2" | /usr/bin/grep -qi "more than one" && ok=1
+check "no misleading 'applying the last in table order' warning when updatedInput was never actually applied" "$ok"
+
+echo "=== failure isolation (#91 adversarial audit, 2026-08-25) ==="
+# Before this fix: an uncaught exception anywhere in table loading/matching
+# exited 1 -- Claude Code treats any non-2 exit as non-blocking, so a single
+# malformed table row silently disabled ALL 9 deny gates with nothing but a
+# raw Python traceback. Two failure classes now get two different responses.
+
+# The WHOLE table fails to parse -> deny this call (fail CLOSED). We're the
+# sole PreToolUse gate; silently proceeding with zero gate coverage is worse
+# than blocking one call with a clear reason.
+echo 'not valid json at all' > "$TMP/table-corrupt.json"
+out=$(run_synthetic "$TMP/table-corrupt.json" 2>"$TMP/corrupt-stderr"); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "totally unparseable table.json -> exit 2 (fail closed, not silently open)" "$ok"
+ok=1; /usr/bin/grep -qi "FATAL" "$TMP/corrupt-stderr" && ok=0
+check "unparseable table.json -> a clear FATAL stderr message, not a bare traceback" "$ok"
+
+out=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" python3 "$DISPATCH_PY" "$TMP/no-such-table.json" "$FIXTURE_DIR/.." 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "table.json path doesn't exist at all -> exit 2 (fail closed)" "$ok"
+
+# ONE malformed entry (missing "script") must not take down evaluation of the
+# OTHER entries in the same table -- the old single list-comprehension threw
+# on the first bad entry before any gate ever ran.
+cat > "$TMP/table-one-bad-entry.json" <<EOF
+[
+  {"id": "t:bad-entry", "matcher": "Bash"},
+  {"id": "t:denier", "matcher": "Bash", "script": "fixtures/denier.sh"}
+]
+EOF
+out=$(run_synthetic "$TMP/table-one-bad-entry.json" 2>"$TMP/bad-entry-stderr"); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "one entry missing 'script' -> the OTHER entry (a real denier) still runs and denies" "$ok"
+ok=1; /usr/bin/grep -q "t:bad-entry" "$TMP/bad-entry-stderr" && /usr/bin/grep -qi "malformed" "$TMP/bad-entry-stderr" && ok=0
+check "malformed entry is named and logged, not silently dropped" "$ok"
+
+# A bad matcher regex in one entry must not take down the others either.
+cat > "$TMP/table-bad-regex.json" <<EOF
+[
+  {"id": "t:bad-regex", "matcher": "Bash(", "script": "fixtures/asker.sh"},
+  {"id": "t:denier", "matcher": "Bash", "script": "fixtures/denier.sh"}
+]
+EOF
+out=$(run_synthetic "$TMP/table-bad-regex.json" 2>"$TMP/bad-regex-stderr"); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "one entry has an invalid matcher regex -> the OTHER entry still runs and denies" "$ok"
+ok=1; /usr/bin/grep -q "t:bad-regex" "$TMP/bad-regex-stderr" && /usr/bin/grep -qi "invalid matcher" "$TMP/bad-regex-stderr" && ok=0
+check "invalid matcher regex is named and logged, not silently dropped" "$ok"
+
 echo
 echo "PASS=$pass FAIL=$fail"
 [ "$fail" -eq 0 ]

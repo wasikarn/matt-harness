@@ -83,21 +83,36 @@ def render_skill_usage(rows, skills_path):
         return
     now = dt.datetime.now(dt.timezone.utc)
 
+    # timespec="seconds" (not "milliseconds") to match the writer's actual
+    # on-disk format (date -u +%Y-%m-%dT%H:%M:%SZ has no fractional
+    # seconds) -- the mismatch was harmless at day-granularity buckets but
+    # was a real string-comparison inconsistency (#90 adversarial audit,
+    # 2026-08-25).
     def cutoff(days):
         return (now - dt.timedelta(days=days)).isoformat(
-            timespec="milliseconds").replace("+00:00", "Z")
+            timespec="seconds").replace("+00:00", "Z")
     c7, c30 = cutoff(7), cutoff(30)
     counts = {}
+    skipped = 0
     for r in rows:
-        ts = r.get("ts", "")
-        skill = r.get("skill", "unknown")
-        plugin = r.get("plugin", "unknown")
+        ts, skill, plugin = r.get("ts"), r.get("skill", "unknown"), r.get("plugin", "unknown")
+        # load_rows() only catches JSON syntax errors; a syntactically valid
+        # row with the WRONG type (ts as an int, etc.) reaches here and used
+        # to crash the whole --health command with an uncaught TypeError on
+        # the string comparison below (#90 adversarial audit, 2026-08-25,
+        # reproduced live). Skip and warn instead, matching load_rows' own
+        # malformed-line convention.
+        if not isinstance(ts, str) or not isinstance(skill, str) or not isinstance(plugin, str):
+            skipped += 1
+            continue
         n7, n30 = counts.get((plugin, skill), (0, 0))
         if ts >= c30:
             n30 += 1
         if ts >= c7:
             n7 += 1
         counts[(plugin, skill)] = (n7, n30)
+    if skipped:
+        warn(f"skipped {skipped} skill-usage row(s) with a non-string ts/skill/plugin field")
     print("| plugin | skill | last 7d | last 30d |")
     print("|---|---|---|---|")
     for (plugin, skill), (n7, n30) in sorted(counts.items(), key=lambda kv: -kv[1][1]):

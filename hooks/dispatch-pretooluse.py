@@ -41,6 +41,20 @@
 #                            parity test run against the real gate
 #                            (2026-08-25), the exact kind of gap a synthetic
 #                            fixture alone would not have caught.
+#
+# Failure isolation (added 2026-08-25 after an independent adversarial audit
+# of #91): this file has no test/deploy step that validates
+# pretooluse-table.json's shape before it ships, so it must survive a
+# malformed table itself. Two failure classes, two different responses:
+#   - the WHOLE table fails to load/parse -> deny this call (fail CLOSED).
+#     We're the sole PreToolUse gate; an uncaught exception here used to
+#     exit 1 and silently disable all 9 deny gates with just a traceback —
+#     an accidental fail-open, not the deliberate announced kind every gate
+#     script's own python3-missing guard uses.
+#   - ONE table entry is malformed (missing field, bad regex) -> skip that
+#     entry, log it, keep evaluating the rest. Denying an unrelated tool
+#     call over a different gate's broken row would be disproportionate,
+#     and we can't even tell whether the broken entry would have matched.
 import json
 import re
 import subprocess
@@ -59,23 +73,75 @@ def main():
     except Exception:
         tool_name = ""
 
-    with open(table_path) as f:
-        table = json.load(f)
+    # Catastrophic failure: the table itself can't even be read/parsed. This
+    # dispatcher is now the SOLE PreToolUse gate — if we can't tell what's
+    # supposed to run, that's an unverified state, not a clean one. An
+    # uncaught exception here used to exit 1 (Claude Code treats any
+    # non-2 exit as non-blocking), silently disabling every one of the 9
+    # deny gates with nothing but a cryptic traceback (#91 audit finding,
+    # 2026-08-25) — an ACCIDENTAL fail-open, unlike every gate's own
+    # deliberate, announced python3-missing fail-open. Fail closed instead:
+    # deny this one call, loudly, rather than silently drop all coverage.
+    try:
+        with open(table_path) as f:
+            table = json.load(f)
+    except Exception as exc:
+        print(
+            f"[mh:dispatch] FATAL: pretooluse-table.json failed to load ({exc}) — "
+            "denying this call rather than silently disabling all PreToolUse gates. "
+            "Fix the table file (or its MH_MATT_CACHE-independent repo copy) to restore coverage.",
+            file=sys.stderr,
+        )
+        return 2
 
-    matched = [e for e in table if re.fullmatch(e["matcher"], tool_name or "")]
+    # Per-entry validation: one malformed table row (missing/bad matcher or
+    # script field) must not take down evaluation of the other 8 (#91 audit
+    # finding — the old single list-comprehension threw on the FIRST bad
+    # entry, before any gate ever ran). A malformed entry is logged and
+    # skipped for this call, not promoted to a deny — we don't know whether
+    # it would even have matched this tool_name, and denying an unrelated
+    # tool call over a different gate's broken config would be disproportionate.
+    matched = []
+    for e in table:
+        try:
+            matcher, script = e["matcher"], e["script"]
+        except Exception as exc:
+            print(
+                f"[mh:dispatch] table entry {e.get('id', '?')!r} is malformed, skipped: {exc}",
+                file=sys.stderr,
+            )
+            continue
+        try:
+            is_match = re.fullmatch(matcher, tool_name or "")
+        except re.error as exc:
+            print(
+                f"[mh:dispatch] table entry {e.get('id', '?')!r} has an invalid matcher regex, skipped: {exc}",
+                file=sys.stderr,
+            )
+            continue
+        if is_match:
+            matched.append(e)
     if not matched:
         return 0
 
     procs = []
     for entry in matched:
         script = root.rstrip("/") + "/" + entry["script"]
-        proc = subprocess.Popen(
-            ["bash", script],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        try:
+            proc = subprocess.Popen(
+                ["bash", script],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except OSError as exc:
+            print(
+                f"[mh:dispatch] {entry.get('id', '?')} failed to launch ({exc}) — "
+                "non-blocking error, proceeding without this gate's verdict",
+                file=sys.stderr,
+            )
+            continue
         procs.append((entry, proc))
 
     results = []
@@ -138,15 +204,6 @@ def main():
                 multi_update_ids.append(entry["id"])
             updated_input = ui  # table-order: last match wins (deterministic)
 
-    if multi_update_ids:
-        print(
-            "[mh:dispatch] more than one PreToolUse gate returned updatedInput "
-            f"for this call ({', '.join(multi_update_ids)}); applying the last "
-            "in table order. Claude Code's own docs caution against more than "
-            "one hook modifying the same tool's input.",
-            file=sys.stderr,
-        )
-
     if worst_rank == RANK["deny"]:
         for m in deny_messages:
             print(m, file=sys.stderr)
@@ -162,6 +219,20 @@ def main():
             }
         }
     elif updated_input is not None:
+        # The multi-updatedInput warning belongs HERE, not unconditionally
+        # earlier: a deny/ask/defer decision suppresses updatedInput
+        # entirely (this branch is only reached when it isn't), so warning
+        # about "applying the last in table order" for an input that was
+        # actually discarded a moment ago would be misleading (#91
+        # adversarial audit, 2026-08-25).
+        if multi_update_ids:
+            print(
+                "[mh:dispatch] more than one PreToolUse gate returned updatedInput "
+                f"for this call ({', '.join(multi_update_ids)}); applying the last "
+                "in table order. Claude Code's own docs caution against more than "
+                "one hook modifying the same tool's input.",
+                file=sys.stderr,
+            )
         result = {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",

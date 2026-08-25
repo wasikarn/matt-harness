@@ -43,6 +43,28 @@ out=$(payload_bash "cp a.sh /tmp/somewhere/b.sh" | bash "$GUARD" 2>/dev/null); r
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "unrelated benign write -> exit 0, no output" "$ok"
 
+# T12/#91's own new files (hooks/pretooluse-table.json, dispatch-pretooluse.py/.sh)
+# inherited none of the verifier-protect coverage that hooks/hooks.json itself
+# has, since gate routing MOVED into them -- a model could repoint a gate's
+# script, delete a table row, or rewrite the merge logic with zero prompt.
+# Found by an independent adversarial audit, 2026-08-25; fixed the same day
+# in both is_gate_path() and this gate's own Bash fast-path allowlist.
+out=$(payload_write "hooks/pretooluse-table.json" "[]" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write tool targeting hooks/pretooluse-table.json -> ask" "$ok"
+
+out=$(payload_write "hooks/dispatch-pretooluse.py" "print(1)" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write tool targeting hooks/dispatch-pretooluse.py -> ask" "$ok"
+
+out=$(payload_write "hooks/dispatch-pretooluse.sh" "echo x" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write tool targeting hooks/dispatch-pretooluse.sh -> ask" "$ok"
+
+out=$(payload_bash "sed -i '' 's/deny/allow/' hooks/pretooluse-table.json" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Bash-mediated sed -i on hooks/pretooluse-table.json -> ask (not the fast-path skip)" "$ok"
+
 # Round-3 port regressions/gaps (found by a subagent_type:kbg:silent-failure-hunter
 # re-verification dispatch against worktree-guard.py the same day, then confirmed to
 # also be exploitable here by direct reproduction against the unmodified file before
