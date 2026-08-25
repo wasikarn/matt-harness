@@ -68,6 +68,8 @@ MEMORY_DIR="$HOME/.claude/projects/${REPO_ROOT//\//-}/memory"
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/frontmatter-helpers.sh"
 # shellcheck source=../../../scripts/_lib/err.sh
 . "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/err.sh"
+# shellcheck source=../../../scripts/_lib/mattpocock-root.sh
+. "$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../scripts/_lib/mattpocock-root.sh"
 
 # Fail loud: if the resolved root holds none of the fleet dirs, root
 # resolution failed — error out instead of a false-clean "0 artifacts" pass. A

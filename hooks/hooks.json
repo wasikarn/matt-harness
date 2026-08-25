@@ -129,6 +129,19 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "id": "session:precompact-state-flush",
+        "description": "PreCompact: flush a deterministic snapshot (git HEAD, git status --porcelain, plugin/marketplace manifest versions) to ~/.local/share/kbg/metrics/precompact-snapshots.jsonl before compaction runs (#92/T13) -- a computational backstop for the same class of fact CLAUDE.md's own Compact-instructions section already asks the compacting model to preserve in prose. Pure flush, never a gate -- PreCompact supports permissionDecision:deny to block compaction, but this hook never emits one. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:precompact-state-flush", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/precompact-state-flush.sh"]
+          }
+        ]
+      }
+    ],
     "SessionEnd": [
       {
         "id": "advisory:learn-nudge",

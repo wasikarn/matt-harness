@@ -29,19 +29,19 @@
 # Historical names must be cited UNPREFIXED (plain `writing-great-skills`,
 # no `mattpocock-skills:` namespace) so A stays a live-ref check — matching
 # the former/removed convention checks 37/46 use for retired kbg names.
-# Cache root override for tests: MH_MATT_CACHE. Missing cache → INFO skip
-# (an uninstalled companion plugin is doctrine-bootstrap.sh's warning to own
-# — that session hook is the repo's informative-skip precedent, not check 25,
-# which silently shrinks its known-skills set when the cache is absent).
-_matt_root="${MH_MATT_CACHE:-$HOME/.claude/plugins/cache/mattpocock/mattpocock-skills}"
-_matt_ver=""
-if [ -d "$_matt_root" ]; then
-  _matt_ver=$(find "$_matt_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sed 's|.*/||' | sort -V | tail -1)
-fi
-if [ -z "$_matt_ver" ] || [ ! -d "$_matt_root/$_matt_ver/skills" ]; then
-  info "mattpocock-skills plugin cache not found under ${_matt_root/#"$HOME"/\~} — sub-checks A-D skipped (companion plugin not installed; doctrine-bootstrap owns that warning)"
+# Cache root resolution: scripts/_lib/mattpocock-root.sh's resolve_mattpocock_root
+# (#92/T13 — shared with doctrine-bootstrap.sh's session preflight, replacing
+# this check's own former ad-hoc version-scan). Override for tests:
+# MH_MATT_CACHE. Missing/incomplete cache → INFO skip (an uninstalled
+# companion plugin is doctrine-bootstrap.sh's warning to own — that session
+# hook is the repo's informative-skip precedent, not check 25, which
+# silently shrinks its known-skills set when the cache is absent).
+_matt_display_base="${MH_MATT_CACHE:-$HOME/.claude/plugins/cache/mattpocock/mattpocock-skills}"
+if ! resolve_mattpocock_root; then
+  info "mattpocock-skills plugin cache not found or incomplete under ${_matt_display_base/#"$HOME"/\~} — sub-checks A-D skipped (companion plugin not installed/half-extracted; doctrine-bootstrap owns that warning)"
 else
-  _mcache="$_matt_root/$_matt_ver"
+  _matt_ver="$MATT_VER"
+  _mcache="$MATT_ROOT"
   # name → invocation tier ("user" when disable-model-invocation: true, else "model")
   declare -A _matt_inv=()
   while IFS= read -r _sf; do
@@ -179,4 +179,4 @@ else
   done
   unset _mcache _ledger _row _col _pn _rn _sf _sn _live55 _routing55 _numline _ln _line _ref _base _matt_inv _matt_promoted
 fi
-unset _matt_root _matt_ver _f
+unset _matt_display_base _matt_ver _f MATT_ROOT MATT_VER

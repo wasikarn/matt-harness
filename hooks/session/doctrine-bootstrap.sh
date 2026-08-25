@@ -16,20 +16,33 @@ fi
 # runtime check — if that plugin isn't installed, each call site fails on its
 # own, later, as an unrelated-looking dead end with no link back to the real
 # cause. One check here, once, turns that into a single diagnostic up front.
-MATTPOCOCK_CACHE="${HOME:-}/.claude/plugins/cache/mattpocock/mattpocock-skills"
+#
+# Resolution shared with check 51 (#92/T13, scripts/_lib/mattpocock-root.sh):
+# highest-semver cache dir + a real-SKILL.md completeness probe, replacing
+# this preflight's former bare `-d` directory test (which passed on a
+# half-extracted cache — dir present, nothing usable inside it). If the lib
+# itself can't be resolved (CLAUDE_PLUGIN_ROOT unset/invalid), skip this
+# preflight silently rather than asserting a state the missing resolver
+# can't back.
 MATTPOCOCK_SETTINGS="${HOME:-}/.claude/settings.json"
-if [[ -n "${HOME:-}" && ! -d "$MATTPOCOCK_CACHE" ]]; then
-  echo "<!-- mh:mattpocock-preflight -->"
-  echo "**matt-harness:** the required companion plugin \`mattpocock-skills@mattpocock\` was not found installed. Several kbg skills/commands/hooks route to it by namespaced name (\`mattpocock-skills:<name>\`) and will fail if invoked. Install it: \`/plugin marketplace add mattpocock/skills\` then \`/plugin install mattpocock-skills@mattpocock\` — see README.md Quick Start step 4."
-  echo "<!-- /mh:mattpocock-preflight -->"
-elif [[ -n "${HOME:-}" && -f "$MATTPOCOCK_SETTINGS" ]] && grep -q '"mattpocock-skills@mattpocock"[[:space:]]*:[[:space:]]*false' "$MATTPOCOCK_SETTINGS" 2>/dev/null; then
-  # Installed (cache dir present) but disabled — a directory-only check would
-  # stay silent here while every mattpocock-skills:<name> route still fails,
-  # the exact dead-end this preflight exists to prevent.
-  echo "<!-- mh:mattpocock-preflight -->"
-  echo "**matt-harness:** the required companion plugin \`mattpocock-skills@mattpocock\` is installed but disabled. Several kbg skills/commands/hooks route to it by namespaced name (\`mattpocock-skills:<name>\`) and will fail until it's re-enabled: \`claude plugin enable mattpocock-skills@mattpocock\`."
-  echo "<!-- /mh:mattpocock-preflight -->"
+MATT_LIB="${CLAUDE_PLUGIN_ROOT:-}/scripts/_lib/mattpocock-root.sh"
+if [[ -n "${HOME:-}" && -f "$MATT_LIB" ]]; then
+  # shellcheck source=../../scripts/_lib/mattpocock-root.sh
+  . "$MATT_LIB"
+  if ! resolve_mattpocock_root; then
+    echo "<!-- mh:mattpocock-preflight -->"
+    echo "**matt-harness:** the required companion plugin \`mattpocock-skills@mattpocock\` was not found installed (or its cache is incomplete). Several kbg skills/commands/hooks route to it by namespaced name (\`mattpocock-skills:<name>\`) and will fail if invoked. Install it: \`/plugin marketplace add mattpocock/skills\` then \`/plugin install mattpocock-skills@mattpocock\` — see README.md Quick Start step 4."
+    echo "<!-- /mh:mattpocock-preflight -->"
+  elif [[ -f "$MATTPOCOCK_SETTINGS" ]] && grep -q '"mattpocock-skills@mattpocock"[[:space:]]*:[[:space:]]*false' "$MATTPOCOCK_SETTINGS" 2>/dev/null; then
+    # Installed (cache resolves) but disabled — resolving successfully would
+    # stay silent here while every mattpocock-skills:<name> route still
+    # fails, the exact dead-end this preflight exists to prevent.
+    echo "<!-- mh:mattpocock-preflight -->"
+    echo "**matt-harness:** the required companion plugin \`mattpocock-skills@mattpocock\` is installed but disabled. Several kbg skills/commands/hooks route to it by namespaced name (\`mattpocock-skills:<name>\`) and will fail until it's re-enabled: \`claude plugin enable mattpocock-skills@mattpocock\`."
+    echo "<!-- /mh:mattpocock-preflight -->"
+  fi
 fi
+unset MATT_LIB MATT_ROOT MATT_VER
 
 # Dependency preflight (#93): the deny gates fail OPEN (with a per-call stderr
 # note) when python3 is missing — announce that once, up front, so the

@@ -85,8 +85,22 @@ assert "no portability preflight when python3/jq are present" "$ok"
 
 # mattpocock-skills companion-plugin preflight: fixture $HOME, independent of
 # whatever plugins happen to be installed on the machine running this test.
+# make_matt_cache_fixture <home>: a "complete" cache the shared resolver
+# (scripts/_lib/mattpocock-root.sh, #92/T13) will actually resolve — a
+# version dir with a real SKILL.md under skills/, not just the bare parent
+# directory the old ad-hoc check accepted.
+make_matt_cache_fixture() {
+  local root="$1/.claude/plugins/cache/mattpocock/mattpocock-skills/9.9.9"
+  mkdir -p "$root/skills/engineering/to-spec"
+  printf '%s\n' '---
+name: to-spec
+description: test fixture
+---
+body' > "$root/skills/engineering/to-spec/SKILL.md"
+}
+
 fake_home_present=$(mktemp -d)
-mkdir -p "$fake_home_present/.claude/plugins/cache/mattpocock/mattpocock-skills"
+make_matt_cache_fixture "$fake_home_present"
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_present" bash "$DOCTRINE" 2>/dev/null)
 rc=$?
 [[ "$rc" == "0" ]] && ! echo "$out" | /usr/bin/grep -q 'mh:mattpocock-preflight' && ok=1 || ok=0
@@ -102,8 +116,22 @@ rc=$?
 assert "warns when mattpocock-skills plugin cache is absent" "$ok"
 trash "$fake_home_absent" 2>/dev/null || true
 
+# Half-extracted cache (#92/T13's actual new behavior): a version directory
+# exists but skills/ is empty — the OLD bare `-d $MATTPOCOCK_CACHE` check
+# would have passed this (parent dir present) and stayed silent; the shared
+# resolver's completeness probe (a real SKILL.md must exist somewhere under
+# skills/) correctly rejects it and warns instead.
+fake_home_half=$(mktemp -d)
+mkdir -p "$fake_home_half/.claude/plugins/cache/mattpocock/mattpocock-skills/9.9.9/skills"
+out=$(CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$fake_home_half" bash "$DOCTRINE" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- mh:mattpocock-preflight -->' \
+  && echo "$out" | /usr/bin/grep -qi 'incomplete' && ok=1 || ok=0
+assert "warns (not silent) when the cache's version dir exists but skills/ has no real SKILL.md — half-extracted install" "$ok"
+trash "$fake_home_half" 2>/dev/null || true
+
 fake_home_disabled=$(mktemp -d)
-mkdir -p "$fake_home_disabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
+make_matt_cache_fixture "$fake_home_disabled"
 cat > "$fake_home_disabled/.claude/settings.json" <<'EOF'
 {"enabledPlugins": {"mattpocock-skills@mattpocock": false}}
 EOF
@@ -115,7 +143,7 @@ assert "warns when mattpocock-skills plugin cache is present but disabled in set
 trash "$fake_home_disabled" 2>/dev/null || true
 
 fake_home_enabled=$(mktemp -d)
-mkdir -p "$fake_home_enabled/.claude/plugins/cache/mattpocock/mattpocock-skills"
+make_matt_cache_fixture "$fake_home_enabled"
 cat > "$fake_home_enabled/.claude/settings.json" <<'EOF'
 {"enabledPlugins": {"mattpocock-skills@mattpocock": true}}
 EOF
